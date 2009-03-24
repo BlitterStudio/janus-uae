@@ -6,6 +6,9 @@
   * (c) 1995 Bernd Schmidt
   */
 
+#ifndef _CUSTOM_H_
+#define _CUSTOM_H_
+
 #include "machdep/rpt.h"
 
 /* These are the masks that are ORed together in the chipset_mask option.
@@ -181,3 +184,5 @@ extern void misc_hsync_stuff (void);
 extern void hsync_handler (void);
 extern void copper_handler (void);
 #define HSYNCTIME (maxhpos * CYCLE_UNIT)
+
+#endif

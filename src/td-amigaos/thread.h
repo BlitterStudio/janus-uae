@@ -34,6 +34,21 @@ int uae_sem_trywait (uae_sem_t *sem);
 
 int uae_sem_get_value (uae_sem_t *sem);
 
+/*
+ * Handle CreateNewProc() differences between AmigaOS-like systems 
+ */
+#ifdef __MORPHOS__
+/* CreateNewProc() on MorphOS needs to be told that code is PPC */
+# define myCreateNewProcTags(...) CreateNewProcTags(NP_CodeType, CODETYPE_PPC, __VA_ARGS__)
+#else
+# ifdef __amigaos4__
+/* On OS4, we assert that the threads we create are our children */
+#  define myCreateNewProcTags(...) CreateNewProcTags(NP_Child, TRUE, __VA_ARGS__)
+# else
+#  define myCreateNewProcTags CreateNewProcTags
+# endif
+#endif
+
 
 #include "commpipe.h"
 

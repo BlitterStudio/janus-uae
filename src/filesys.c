@@ -3387,11 +3387,22 @@ action_flush (Unit *unit, dpacket packet)
  * know whether AmigaOS takes care of that, but this does. */
 static uae_sem_t singlethread_int_sem;
 
+extern void call_68k(TrapContext *context, 
+                     ULONG arg1,
+                     ULONG arg2,
+                     ULONG arg3,
+                     ULONG arg4,
+                     ULONG arg5,
+                     ULONG arg6,
+                     ULONG arg7,
+                     ULONG arg8); /* for ami-win.c*/
+
 static uae_u32 REGPARAM2 exter_int_helper (TrapContext *context)
 {
     UnitInfo *uip = current_mountinfo.ui;
     uaecptr port;
     static int unit_no;
+    int o1i=0;
 
     switch (m68k_dreg (&context->regs, 0)) {
      case 0:
@@ -3482,6 +3493,23 @@ static uae_u32 REGPARAM2 exter_int_helper (TrapContext *context)
 		m68k_areg (&context->regs, 1) = read_comm_pipe_u32_blocking (&native2amiga_pending);
 		return 5;
 
+#if 0
+       	    case 666:
+		/* o1i test ! */
+		o1i=1;
+		call_68k(context, 
+		         read_comm_pipe_u32_blocking (&native2amiga_pending),
+		         read_comm_pipe_u32_blocking (&native2amiga_pending),
+		         read_comm_pipe_u32_blocking (&native2amiga_pending),
+		         read_comm_pipe_u32_blocking (&native2amiga_pending),
+		         read_comm_pipe_u32_blocking (&native2amiga_pending),
+		         read_comm_pipe_u32_blocking (&native2amiga_pending),
+		         read_comm_pipe_u32_blocking (&native2amiga_pending),
+		         read_comm_pipe_u32_blocking (&native2amiga_pending)
+			 );
+
+		break;
+#endif
 	     default:
 		write_log ("exter_int_helper: unknown native action %d\n", cmd);
 		break;
@@ -3489,6 +3517,7 @@ static uae_u32 REGPARAM2 exter_int_helper (TrapContext *context)
 	}
 #endif
 
+	if(!o1i) {
 	/* Find some unit that needs a message sent, and return its port,
 	 * or zero if all are done.
 	 * Take care not to dereference self for units that didn't have their
@@ -3511,11 +3540,13 @@ static uae_u32 REGPARAM2 exter_int_helper (TrapContext *context)
 	    unit_no++;
 	    return 1;
 	}
+	}
 	break;
      case 4:
 	/* Exit the interrupt, and release the single-threading lock. */
 	uae_sem_post (&singlethread_int_sem);
 	break;
+
 
      default:
 	write_log ("Shouldn't happen in exter_int_helper.\n");
@@ -4328,6 +4359,7 @@ static uae_u32 REGPARAM2 filesys_dev_storeinfo (TrapContext *context)
     return type;
 }
 
+/******************** o1i calltrap here !! ********************/
 void filesys_install (void)
 {
     uaecptr loop;

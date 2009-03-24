@@ -29,6 +29,8 @@
 
 #define CONFIG_BLEN 2560
 
+#define GTKMUI
+
 static int config_newfilesystem;
 static struct strlist *temp_lines;
 
@@ -249,7 +251,7 @@ static int match_string (const char *table[], const char *str)
 char *cfgfile_subst_path (const char *path, const char *subst, const char *file)
 {
     /* @@@ use strcasecmp for some targets.  */
-    if (strlen (path) > 0 && strncmp (file, path, strlen (path)) == 0) {
+    if (path && strlen (path) > 0 && strncmp (file, path, strlen (path)) == 0) {
 	int l;
 	char *p = xmalloc (strlen (file) + strlen (subst) + 2);
 	strcpy (p, subst);
@@ -313,8 +315,11 @@ static void cfgfile_write_file_option (FILE *f, const char *option, const char *
     const char *subst_path = prefs_get_attr (subst_key);
     char *out_path = 0;
 
+#if !defined GTKMUI
+    /* no substitutuin for AROS necessary ? */
     if (subst_path)
 	out_path = cfgfile_subst_path (subst_path, UNEXPANDED, value);
+#endif
 
     cfgfile_write (f, "%s=%s\n", option, out_path ? out_path : value);
 
@@ -535,6 +540,7 @@ void save_options (FILE *f, const struct uae_prefs *p, int type)
 
     cfgfile_write (f, "cpu_type=%s\n", cpumode[p->cpu_level * 2 + !p->address_space_24]);
     cfgfile_write (f, "cpu_compatible=%s\n", p->cpu_compatible ? "true" : "false");
+    cfgfile_write (f, "cpu_24bit_addressing=%s\n",p->address_space_24 ? "true" : "false");
     cfgfile_write (f, "cpu_cycle_exact=%s\n", p->cpu_cycle_exact ? "true" : "false");
     cfgfile_write (f, "blitter_cycle_exact=%s\n", p->blitter_cycle_exact ? "true" : "false");
 

@@ -53,6 +53,10 @@
 #include "windows.h"
 #endif
 
+#ifdef __AROS__
+#define GTKMUI
+#endif
+
 struct uae_prefs currprefs, changed_prefs;
 
 static int restart_program;
@@ -507,9 +511,12 @@ void uae_resume (void)
 
 void uae_quit (void)
 {
+
+//printf("11 ================XXXXXXXXXXXXXXXX===================\n");
     if (uae_target_state != UAE_STATE_QUITTING) {
 	uae_target_state = UAE_STATE_QUITTING;
     }
+//printf("22 ================XXXXXXXXXXXXXXXX===================\n");
 }
 
 void uae_stop (void)
@@ -527,6 +534,8 @@ void uae_reset (int hard_reset)
 	case UAE_STATE_STOPPED:
 	case UAE_STATE_COLD_START:
 	case UAE_STATE_WARM_START:
+
+//printf("12 ================XXXXXXXXXXXXXXXX===================\n");
 	    /* Do nothing */
 	    break;
 	default:
@@ -754,9 +763,13 @@ static void do_run_machine (void)
 
 /*
  * Exit emulator
+ *
+ * o1i: this in only called, if the uae window is open,
+ *      not if only the gui is active.
  */
 static void do_exit_machine (void)
 {
+
     graphics_leave ();
     inputdevice_close ();
 
@@ -772,7 +785,8 @@ static void do_exit_machine (void)
 #ifdef CD32
     akiko_free ();
 #endif
-    gui_exit ();
+    /* leave the gui running!? */
+    gui_exit (); /* empty function */
 
 #ifdef AUTOCONFIG
     expansion_cleanup ();
@@ -787,12 +801,25 @@ static void do_exit_machine (void)
     cfgfile_addcfgparam (0);
 }
 
+#if defined GTKMUI
+void gui_shutdown (void);
+#endif
 
 /*
  * Here's where all the action takes place!
  */
 void real_main (int argc, char **argv)
 {
+   /* as uae crashes, if I disable Debut output for the GUI,
+    * I rather write it to a temp file.. 
+    * WARNING: Bad hack detected..
+    */
+    //set_logfile("T:uae.log");
+
+
+//#if defined GTKMUI
+    gui_init (argc, argv);
+//#endif
     show_version ();
 
     currprefs.mountinfo = changed_prefs.mountinfo = &options_mountinfo;
@@ -814,13 +841,16 @@ void real_main (int argc, char **argv)
 
         /* Should we open the GUI? TODO: This mess needs to go away */
 	want_gui = currprefs.start_gui;
+
+#if defined GTKMUI
+	//want_gui = 1; /*o1i use_gui hack */
+#endif
         if (restart_program == 2)
 	    want_gui = 0;
         else if (restart_program == 3)
 	    want_gui = 1;
 
 	changed_prefs = currprefs;
-
 
 	if (want_gui) {
 	    /* Handle GUI at start-up */
@@ -834,12 +864,15 @@ void real_main (int argc, char **argv)
 
 		} while (!uae_state_change_pending ());
 	    } else if (err == - 1) {
+		kprintf("o1i: err == - 1 (restart_program=%d\n",restart_program);
 		if (restart_program == 3) {
 		    restart_program = 0;
+
 		    uae_quit ();
 		}
-	    } else
+	    } else {
 		uae_quit ();
+	    }
 
 	    currprefs = changed_prefs;
 	    fix_options ();
@@ -848,8 +881,9 @@ void real_main (int argc, char **argv)
 
 	restart_program = 0;
 
-	if (uae_target_state == UAE_STATE_QUITTING)
+	if (uae_target_state == UAE_STATE_QUITTING) {
 	    break;
+	}
 
 	uae_target_state = UAE_STATE_COLD_START;
 
@@ -919,7 +953,9 @@ void real_main (int argc, char **argv)
 
 	} /* while (!QUITTING && !STOPPED) */
 
+
 	do_exit_machine ();
+
 
         /* TODO: This stuff is a hack. What we need to do is
 	 * check whether a config GUI is available. If not,
@@ -927,7 +963,27 @@ void real_main (int argc, char **argv)
 	 */
 	restart_program = 3;
     }
+
+    /* o1i: aehm, and if there is still a gui? */
+
+#if 0
+    uae_stop();
+    gui_notify_state(uae_get_state());
+#endif
+
+    /* o1i:
+     * what would be nice is, is to just shut down the emulator
+     * window and tell the GUI, the emulator is stopped.
+     * That seems not to be so easy, so I'll just shutdown all.
+     *
+     * gui_shutdown() at this place was not there in the original sources.
+     */
+
+    gui_shutdown (); /* seems as if under UNIX, e-uae let's the gui die
+                      * automatically. Not really nice?
+		      */
     zfile_exit ();
+  //set_logfile(NULL);
 }
 
 #ifdef USE_SDL

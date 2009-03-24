@@ -240,6 +240,10 @@ static struct zfile *gunzip (struct zfile *z)
 
     if (!zlib_test ())
 	return z;
+
+#if defined GTKMUI
+    return z;
+#else
     strcpy (name, z->name);
     memset (&zs, 0, sizeof (zs));
     memset (header, 0, sizeof (header));
@@ -307,6 +311,7 @@ static struct zfile *gunzip (struct zfile *z)
     }
     zfile_fclose (z);
     return z2;
+#endif
 }
 
 
@@ -689,6 +694,8 @@ int zfile_zuncompress (void *dst, int dstsize, struct zfile *src, int srcsize)
 
     if (!zlib_test ())
 	return 0;
+
+#if !defined GTKMUI
     memset (&zs, 0, sizeof(zs));
     if (inflateInit (&zs) != Z_OK)
 	return 0;
@@ -709,6 +716,7 @@ int zfile_zuncompress (void *dst, int dstsize, struct zfile *src, int srcsize)
 	v = inflate (&zs, 0);
     }
     inflateEnd (&zs);
+#endif
     return 0;
 }
 
@@ -722,6 +730,10 @@ int zfile_zcompress (struct zfile *f, void *src, int size)
     if (!is_zlib)
 	return 0;
 #endif
+
+#if defined GTKMUI
+    return 0;
+#else
     memset (&zs, 0, sizeof (zs));
     if (deflateInit (&zs, Z_DEFAULT_COMPRESSION) != Z_OK)
 	return 0;
@@ -737,6 +749,7 @@ int zfile_zcompress (struct zfile *f, void *src, int size)
     }
     deflateEnd (&zs);
     return zs.total_out;
+#endif
 }
 
 uae_u32 zfile_crc32 (struct zfile *f)

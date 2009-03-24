@@ -46,6 +46,7 @@
 #ifdef JIT
 int        have_done_picasso       = 0;         /* For the JIT compiler */
 # ifdef PICASSO96
+#include "aroswin.h"
 static int picasso_is_special      = PIC_WRITE; /* ditto */
 static int picasso_is_special_read = PIC_READ;  /* ditto */
 # endif
@@ -58,11 +59,13 @@ int p96hsync_counter;
 
 int p96hack_vpos, p96hack_vpos2, p96refresh_active;
 
-#define P96TRACING_ENABLED 0
+//#define P96TRACING_ENABLED 1
 #if P96TRACING_ENABLED
-#define P96TRACE(x)	do { write_log x; } while(0)
+#define P96TRACE(x)	do { kprintf x; } while(0)
+#define P96LOG(...)     do { kprintf("P96: ");kprintf(__VA_ARGS__); } while(0)
 #else
 #define P96TRACE(x)     do { ; } while(0)
+#define P96LOG(...)     do { ; } while(0)
 #endif
 
 static uae_u32 gfxmem_lget (uaecptr) REGPARAM;
@@ -269,10 +272,12 @@ static void ShowSupportedResolutions (void)
 {
     int i;
 
-    return;
+    P96LOG("ShowSupportedResolutions: modecount=%d\n",mode_count);
 
     for (i = 0; i < mode_count; i++)
-	write_log ("%s\n", DisplayModes[i].name);
+	P96LOG("%s\n", DisplayModes[i].name);
+
+    return;
 }
 
 STATIC_INLINE uae_u8 GetBytesPerPixel (uae_u32 RGBfmt)
@@ -464,6 +469,8 @@ static void do_fillrect (uae_u8 *src, int x, int y, int width, int height,
     /* Try OS specific fillrect function here; and return if successful. Make
      * sure we adjust for the pen values if we're doing 8-bit
      * display-emulation on a 16-bit or higher screen. */
+#if 0  
+    /*o1i removed..*/
     if (picasso_vidinfo.rgbformat == picasso96_state.RGBFormat) {
 #	ifndef WORDS_BIGENDIAN
             if (Bpp > 1)
@@ -482,6 +489,27 @@ static void do_fillrect (uae_u8 *src, int x, int y, int width, int height,
     }
 
     P96TRACE (("P96: WARNING - do_fillrect() using fall-back routine!\n"));
+#endif
+
+    /* Clipping.  */
+    x -= picasso96_state.XOffset;
+    y -= picasso96_state.YOffset;
+    if (x < 0) {
+	width += x;
+	x = 0;
+    }
+    if (y < 0) {
+	height += y;
+	y = 0;
+    }
+    if (x + width > picasso96_state.Width)
+	width = picasso96_state.Width - x;
+    if (y + height > picasso96_state.Height)
+	height = picasso96_state.Height - y;
+
+    if (width <= 0 || height <= 0)
+	return;
+/* end o1i */
 
     DX_Invalidate (y, y + height - 1);
     if (!picasso_vidinfo.extra_mem)
@@ -553,6 +581,10 @@ static void do_blit (struct RenderInfo *ri, int Bpp, int srcx, int srcy,
     int yoff = picasso96_state.YOffset;
     uae_u8 *srcp, *dstp;
 
+    /* TODO */
+
+    P96TRACE (("P96: do_blit(%lx, %lx, src (%d, %d), dst (%d, %d), w/w(%d, %d), can %d)\n",ri, Bpp, srcx, srcy, dstx, dsty, width, height, can_do_blit));
+
     /* Clipping.  */
     dstx -= xoff;
     dsty -= yoff;
@@ -586,8 +618,10 @@ static void do_blit (struct RenderInfo *ri, int Bpp, int srcx, int srcy,
 	 * Call OS blitting function that can do it in video memory.
 	 * Should return if it was successful
 	 */
+#ifndef __AROS__
         if (DX_Blit (srcx, srcy, dstx, dsty, width, height, opcode))
 	    return;
+#endif
     }
 
     /* If no OS blit available, we do a copy from the P96 framebuffer in Amiga
@@ -615,9 +649,6 @@ static void do_blit (struct RenderInfo *ri, int Bpp, int srcx, int srcy,
 	       srcp, dstp, picasso_vidinfo.rowbytes, srcx, srcy, dstx, dsty,
 	       width,height, picasso_vidinfo.pixbytes));
     P96TRACE (("P96: gfxmem is at 0x%x\n", gfxmemory));
-
-
-
 
     if (picasso_vidinfo.rgbformat == picasso96_state.RGBFormat) {
 	width *= Bpp;
@@ -657,6 +688,9 @@ static void do_blit (struct RenderInfo *ri, int Bpp, int srcx, int srcy,
 	    dstp += picasso_vidinfo.rowbytes;
 	}
     }
+    /* TODO: now as the screen has been refreshed, maybe we can just
+     * close those changes to the AROS window, too..?
+     */
   out:
     gfx_unlock_picasso ();
 }
@@ -827,6 +861,8 @@ void picasso_refresh (int call_setpalette)
 
     if (!picasso_on)
 	return;
+
+    P96LOG("picasso_refresh\n");
 
     { // for higher P96 mousedraw rate
 	extern uae_u16 vtotal;
@@ -1091,6 +1127,8 @@ uae_u32 REGPARAM2 picasso_FindCard (struct regstruct *regs)
     uaecptr AmigaBoardInfo = m68k_areg (regs, 0);
     /* NOTES: See BoardInfo struct definition in Picasso96 dev info */
 
+    P96LOG("picasso_FindCard\n");
+
     if (allocated_gfxmem && !picasso96_state.CardFound) {
 	/* Fill in MemoryBase, MemorySize */
 	put_long (AmigaBoardInfo + PSSO_BoardInfo_MemoryBase, gfxmem_start);
@@ -1208,6 +1246,8 @@ uae_u32 REGPARAM2 picasso_InitCard (struct regstruct *regs)
     uaecptr amigamemptr = 0;
     uaecptr AmigaBoardInfo = m68k_areg (regs, 2);
 
+    P96LOG("picasso_InitCard\n");
+
     put_word (AmigaBoardInfo + PSSO_BoardInfo_BitsPerCannon,	    DX_BitsPerCannon ());
     put_word (AmigaBoardInfo + PSSO_BoardInfo_RGBFormats,	    picasso96_pixel_format);
     put_word (AmigaBoardInfo + PSSO_BoardInfo_SoftSpriteFlags,	    picasso96_pixel_format);
@@ -1291,6 +1331,8 @@ uae_u32 REGPARAM2 picasso_SetSwitch (struct regstruct *regs)
 {
     uae_u16 flag = m68k_dreg (regs, 0) & 0xFFFF;
 
+    P96LOG("picasso_SetSwitch\n");
+
     /* Do not switch immediately.  Tell the custom chip emulation about the
      * desired state, and wait for custom.c to call picasso_enablescreen
      * whenever it is ready to change the screen state.  */
@@ -1316,6 +1358,8 @@ static int last_color_changed = -1;
 
 void picasso_handle_vsync (void)
 {
+  //P96LOG("picasso_handle_vsync\n");
+
     if (first_color_changed < last_color_changed) {
 	DX_SetPalette (first_color_changed,
 		       last_color_changed - first_color_changed);
@@ -1403,6 +1447,8 @@ uae_u32 REGPARAM2 picasso_SetColorArray (struct regstruct *regs)
     uae_u16 start     = m68k_dreg (regs, 0);
     uae_u16 count     = m68k_dreg (regs, 1);
 
+    P96LOG("picasso_SetColorArray\n");
+
     uaecptr clut = boardinfo + PSSO_BoardInfo_CLUT + start * 3;
     int changed = 0;
     int i;
@@ -1457,6 +1503,8 @@ static void init_picasso_screen (void)
     int xoff    = 0;
     int yoff    = 0;
 
+    P96LOG("init_picasso_screen\n");
+
     if (!set_gc_called)
 	return;
 
@@ -1491,6 +1539,8 @@ uae_u32 REGPARAM2 picasso_SetGC (struct regstruct *regs)
     /* Fill in some static UAE related structure about this new ModeInfo
      * setting */
     uaecptr modeinfo = m68k_areg (regs, 1);
+
+    P96LOG("picasso_SetGC\n");
 
     picasso96_state.Width = get_word (modeinfo + PSSO_ModeInfo_Width);
     picasso96_state.VirtualWidth = picasso96_state.Width;	/* in case SetPanning doesn't get called */
@@ -1542,6 +1592,7 @@ uae_u32 REGPARAM2 picasso_SetPanning (struct regstruct *regs)
     picasso96_state.YOffset   = (uae_s16) m68k_dreg (regs, 2);
     picasso96_state.RGBFormat =           m68k_dreg (regs, 7);
 
+    P96LOG("picasso_SetPanning\n");
     wgfx_flushline();
 
     /* Get our BoardInfo ptr's BitMapExtra ptr */
@@ -1627,6 +1678,7 @@ uae_u32 REGPARAM2 picasso_InvertRect (struct regstruct *regs)
     unsigned long width_in_bytes;
     int result = 0;
 
+    //P96LOG("picasso_InvertRect\n");
     wgfx_flushline ();
 
     if (CopyRenderInfoStructureA2U (renderinfo, &ri)) {
@@ -1842,6 +1894,9 @@ uae_u32 REGPARAM2 picasso_FillRect (struct regstruct *regs)
 	    }
         }
     }
+    else {
+      P96LOG("picasso_FillRect: not ok=?\n");
+    }
     return result;
 }
 
@@ -2002,6 +2057,7 @@ uae_u32 REGPARAM2 picasso_BlitRect (struct regstruct *regs)
 
     int result = 0;
 
+    P96LOG("picasso_BlitRect\n");
 #ifdef JIT
     special_mem |= picasso_is_special_read | picasso_is_special;
 #endif
@@ -2050,9 +2106,12 @@ uae_u32 REGPARAM2 picasso_BlitRectNoMaskComplete (struct regstruct *regs)
 
     int result = 0;
 
+    /* TODO */
+
 #ifdef JIT
     special_mem |= picasso_is_special_read | picasso_is_special;
 #endif
+    P96LOG("picasso_BlitRectNoMaskComplete\n");
 
     wgfx_flushline ();
 
@@ -2160,6 +2219,7 @@ uae_u32 REGPARAM picasso_BlitPattern (struct regstruct *regs)
 #ifdef JIT
     special_mem |= picasso_is_special_read | picasso_is_special;
 #endif
+    //P96LOG("picasso_BlitPattern\n");
 
     wgfx_flushline ();
 
@@ -2261,8 +2321,9 @@ uae_u32 REGPARAM picasso_BlitPattern (struct regstruct *regs)
             } /* for (rows) */
 
 	    /* If we need to update a second-buffer (extra_mem is set), then do it only if visible! */
-            if (picasso_vidinfo.extra_mem && renderinfo_is_current_screen (&ri))
+            if (picasso_vidinfo.extra_mem && renderinfo_is_current_screen (&ri)) {
 		do_blit (&ri, Bpp, X, Y, X, Y, W, H, BLIT_SRC, 0);
+	    }
 
 	    result = 1;
         }
@@ -2313,6 +2374,7 @@ uae_u32 REGPARAM2 picasso_BlitTemplate (struct regstruct *regs)
 #ifdef JIT
     special_mem |= picasso_is_special_read | picasso_is_special;
 #endif
+    //P96LOG("picasso_BlitTemplate\n");
 
     wgfx_flushline ();
 
@@ -2436,8 +2498,9 @@ uae_u32 REGPARAM2 picasso_BlitTemplate (struct regstruct *regs)
 	    } /* for (rows) */
 
 	    /* If we need to update a second-buffer (extra_mem is set), then do it only if visible! */
-	    if (picasso_vidinfo.extra_mem && renderinfo_is_current_screen (&ri))
+	    if (picasso_vidinfo.extra_mem && renderinfo_is_current_screen (&ri)) {
 		do_blit (&ri, Bpp, X, Y, X, Y, W, H, BLIT_SRC, 0);
+	    }
 	}
     }
     return 1;
@@ -2457,6 +2520,7 @@ uae_u32 REGPARAM2 picasso_CalculateBytesPerRow (struct regstruct *regs)
     uae_u32 type  = m68k_dreg (regs, 7);
 
     width = GetBytesPerPixel (type) * width;
+
     P96TRACE (("P96: CalculateBytesPerRow() = %d\n", width));
 
     return width;
@@ -2473,6 +2537,7 @@ uae_u32 REGPARAM2 picasso_CalculateBytesPerRow (struct regstruct *regs)
 uae_u32 REGPARAM2 picasso_SetDisplay (struct regstruct *regs)
 {
     uae_u32 state = m68k_dreg (regs, 0);
+    P96LOG("picasso_SetDisplay (doing nothing anyway)\n");
     P96TRACE (("P96: SetDisplay(%d)\n", state));
     return !state;
 }
@@ -2938,6 +3003,8 @@ addrbank gfxmem_bank = {
 int picasso_display_mode_index (uae_u32 x, uae_u32 y, uae_u32 d)
 {
     int i;
+
+    P96LOG("picasso_display_mode_index\n");
     for (i = 0; i < mode_count; i++) {
         if (DisplayModes[i].res.width == x
 	    && DisplayModes[i].res.height == y
@@ -2971,11 +3038,13 @@ void InitPicasso96 (void)
 {
     static int first_time = 1;
 
+
     memset (&picasso96_state, 0, sizeof (struct picasso96_state_struct));
 
     if (first_time) {
 	int i;
 
+	P96LOG("InitPicasso96 (first time)\n");
 	for (i = 0; i < 256; i++) {
 	    p2ctab[i][0] = (((i & 128) ? 0x01000000 : 0)
 			  | ((i & 64)  ? 0x010000 : 0)
@@ -3000,7 +3069,7 @@ void InitPicasso96 (void)
 	    picasso96_pixel_format &= RGBFF_CHUNKY;
 	    picasso96_pixel_format |= 1 << picasso_vidinfo.rgbformat;
 	    need_argb32_hack = 1;
-	   write_log ("Enabling argb32 byte-swapping for P96.\n");
+	   P96LOG ("Enabling argb32 byte-swapping for P96.\n");
 	}
 
 	for (i = 0; i < mode_count; i++) {
@@ -3037,6 +3106,9 @@ void InitPicasso96 (void)
 	ShowSupportedResolutions ();
 
 	first_time = 0;
+    }
+    else {
+	P96LOG("InitPicasso96 (nothing to do)\n");
     }
 }
 

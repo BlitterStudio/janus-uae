@@ -18,7 +18,7 @@
 
 #define UNSUPPORTED_OPTION_l
 
-#define OPTIONSFILENAME ".uaerc"
+#define OPTIONSFILENAME "uaerc.config"
 //#define OPTIONS_IN_HOME
 
 #define TARGET_SPECIAL_OPTIONS \
@@ -33,5 +33,7 @@
 
 #define DEFSERNAME "ser:"
 #define DEFPRTNAME "par:"
+
+#define PICASSO96_SUPPORTED
 
 #define NO_MAIN_IN_MAIN_C
