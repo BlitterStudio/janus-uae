@@ -7,8 +7,12 @@
   * Copyright 2003-2007 Richard Drummond
   */
 
+#include <gtk/gtk.h>
 #include "sysconfig.h"
 #include "sysdeps.h"
+
+
+#include "td-amigaos/thread.h"
 
 /* sam: Argg!! Why did phase5 change the path to cybergraphics ? */
 //#define CGX_CGX_H <cybergraphics/cybergraphics.h>
@@ -28,6 +32,16 @@
 # endif
 #endif
 
+//#define AWTRACING_ENABLED 1
+#if AWTRACING_ENABLED
+#define AWTRACE(...)	do { kprintf("AW: ");kprintf(__VA_ARGS__); } while(0)
+#else
+#define AWTRACE(...)     do { ; } while(0)
+#endif
+
+#ifdef __AROS__
+#define GTKMUI
+#endif
 //#define DEBUG
 
 /****************************************************************************/
@@ -37,6 +51,9 @@
 
 #include <dos/dos.h>
 #include <dos/dosextens.h>
+
+/* o1i added: */
+#include <graphics/gfx.h>
 
 #include <graphics/gfxbase.h>
 #include <graphics/displayinfo.h>
@@ -97,7 +114,17 @@
 #include "picasso96.h"
 #undef BitMap
 
+#include "aroswin.h"
+/* uae includes are a mess..*/
+void uae_Signal(uaecptr task, uae_u32 mask);
 /****************************************************************************/
+extern struct  smp_comm_pipe native2amiga_pending;
+extern volatile int uae_int_requested;
+
+extern struct uae_sem_t n2asem;
+/****************************************************************************/
+
+
 
 #define UAEIFF "UAEIFF"        /* env: var to trigger iff dump */
 #define UAESM  "UAESM"         /* env: var for screen mode */
@@ -119,12 +146,18 @@ enum {
     UAESCREENTYPE_LAST
 };
 
+static int  screen_is_picasso;
+static char picasso_invalid_lines[1200];
+static int  picasso_invalid_start;
+static int  picasso_invalid_end;
+
 /****************************************************************************/
 /*
  * prototypes & global vars
  */
 
 struct IntuitionBase    *IntuitionBase = NULL;
+struct DosLibrary       *DOSBase = NULL;
 struct GfxBase          *GfxBase = NULL;
 struct Library          *LayersBase = NULL;
 struct Library          *AslBase = NULL;
@@ -163,10 +196,14 @@ static int   get_color_failed;
 static int   maxpen;
 static UBYTE pen[256];
 
-#ifdef __amigaos4__
+#ifdef __amigaos4__ 
 static int mouseGrabbed;
 static int grabTicks;
 #define GRAB_TIMEOUT 50
+#endif
+
+#ifdef PICASSO96
+/*static*/ APTR picasso_memory;
 #endif
 
 static struct BitMap *myAllocBitMap(ULONG,ULONG,ULONG,ULONG,struct BitMap *);
@@ -179,6 +216,8 @@ static int  init_ham(void);
 static void ham_conv(UWORD *src, UBYTE *buf, UWORD len);
 static int  RPDepth(struct RastPort *RP);
 static int get_nearest_color(int r, int g, int b);
+
+static int get_BytesPerRow(struct Window *win);
 
 /****************************************************************************/
 
@@ -395,6 +434,7 @@ static void flush_block_cgx (struct vidbuf_description *gfxinfo, int first_line,
 # else
 static void flush_line_cgx_v41 (struct vidbuf_description *gfxinfo, int line_no)
 {
+  /* DONE! this for cloned windows!! */
     WritePixelArray (CybBuffer,
 		     0 , line_no,
 		     gfxinfo->rowbytes,
@@ -404,6 +444,12 @@ static void flush_line_cgx_v41 (struct vidbuf_description *gfxinfo, int line_no)
 		     gfxinfo->width,
 		     1,
 		     RECTFMT_RAW);
+    AWTRACE("flush_line_cgx_v41(%d, %d, %d, %d, %d, %d\n)",
+            0 , line_no, XOffset, YOffset + line_no, gfxinfo->width, 1);
+#if 0
+    clone_area(0 , line_no,
+               gfxinfo->width,1);
+#endif
 }
 
 static void flush_block_cgx_v41 (struct vidbuf_description *gfxinfo, int first_line, int last_line)
@@ -417,6 +463,14 @@ static void flush_block_cgx_v41 (struct vidbuf_description *gfxinfo, int first_l
 		     gfxinfo->width,
 		     last_line - first_line + 1,
 		     RECTFMT_RAW);
+    AWTRACE("flush_block_cgx_v41(%d, %d, %d, %d, %d, %d)\n",
+            0, first_line, XOffset, YOffset + first_line, 
+	    gfxinfo->width, last_line - first_line + 1);
+
+#if 0
+    clone_area(0 , first_line,
+               gfxinfo->width, last_line - first_line + 1);
+#endif
 }
 # endif
 #endif
@@ -427,11 +481,18 @@ static void flush_clear_screen_gfxlib (struct vidbuf_description *gfxinfo)
 {
     if (RP) {
 #ifdef USE_CYBERGFX
-	if (use_cyb)
+      /* DONE */
+	if (use_cyb) {
 	     FillPixelArray (RP, W->BorderLeft, W->BorderTop,
 			     W->Width - W->BorderLeft - W->BorderRight,
 			     W->Height - W->BorderTop - W->BorderBottom,
 			     0);
+#if 0
+	      clone_area(W->BorderLeft, W->BorderTop,
+	                 W->Width - W->BorderLeft - W->BorderRight,
+			 W->Height - W->BorderTop - W->BorderBottom);
+#endif
+	}
         else
 #endif
 	{
@@ -805,7 +866,7 @@ static void show_pointer (struct Window *w)
     SetWindowPointer (w, WA_Pointer, 0, TAG_DONE);
 }
 
-#ifdef __amigaos4__
+#ifdef __amigaos4__ 
 /*
  * Grab mouse pointer under OS4.0. Needs to be called periodically
  * to maintain grabbed status.
@@ -1341,6 +1402,7 @@ static int setup_userscreen (void)
 
 int graphics_setup (void)
 {
+  AWTRACE("graphics_setup\n");
     if (((struct ExecBase *)SysBase)->LibNode.lib_Version < 36) {
 	write_log ("UAE needs OS 2.0+ !\n");
 	return 0;
@@ -1349,7 +1411,10 @@ int graphics_setup (void)
 
     atexit (graphics_leave);
 
+
+#if !defined GTKMUI
     IntuitionBase = (void*) OpenLibrary ("intuition.library", 0L);
+#endif
     if (!IntuitionBase) {
 	write_log ("No intuition.library ?\n");
 	return 0;
@@ -1364,7 +1429,9 @@ int graphics_setup (void)
 #endif
     }
 
+#if !defined GTKMUI
     GfxBase = (void*) OpenLibrary ("graphics.library", 0L);
+#endif
     if (!GfxBase) {
 	write_log ("No graphics.library ?\n");
 	return 0;
@@ -1408,6 +1475,18 @@ int graphics_setup (void)
 #endif
     }
 #endif
+
+    /* o1i: for aroswin, we need also a DOSBase?! */
+#if 0
+    if(!DOSBase) {
+      DOSBase=OpenLibrary("dos.library",0);
+    }
+    if(!DOSBase) {
+      write_log ("No dos.library ?\n");
+      return 0;
+    }
+#endif
+
     init_pointer ();
 
     initpseudodevices ();
@@ -1505,6 +1584,8 @@ static APTR setup_cgx_buffer (struct vidbuf_description *gfxinfo, const struct R
 int graphics_init (void)
 {
     int i, bitdepth;
+
+    AWTRACE("graphics_init\n");
 
     use_delta_buffer = 0;
     need_dither = 0;
@@ -1680,6 +1761,8 @@ int graphics_init (void)
 
 void graphics_leave (void)
 {
+    AWTRACE("graphics_leave\n");
+    /* TODO: close clone windows */
     closepseudodevices ();
     appw_exit ();
 
@@ -1735,18 +1818,22 @@ void graphics_leave (void)
 	CloseLibrary( (void*) AslBase);
 	AslBase = NULL;
     }
+#if !defined GTKMUI
     if (GfxBase) {
 	CloseLibrary ((void*)GfxBase);
 	GfxBase = NULL;
     }
+#endif
     if (LayersBase) {
 	CloseLibrary (LayersBase);
 	LayersBase = NULL;
     }
+#if !defined GTKMUI
     if (IntuitionBase) {
 	CloseLibrary ((void*)IntuitionBase);
 	IntuitionBase = NULL;
     }
+#endif
     if (CyberGfxBase) {
 	CloseLibrary((void*)CyberGfxBase);
 	CyberGfxBase = NULL;
@@ -1757,12 +1844,13 @@ void graphics_leave (void)
 
 int do_inhibit_frame (int onoff)
 {
+  AWTRACE("do_inhibit_frame(%d)\n",onoff);
     if (onoff != -1) {
 	inhibit_frame = onoff ? 1 : 0;
 	if (inhibit_frame)
-	    write_log ("display disabled\n");
+	    AWTRACE ("display disabled\n");
 	else
-	    write_log ("display enabled\n");
+	    AWTRACE ("display enabled\n");
 	set_title ();
     }
     return inhibit_frame;
@@ -1772,12 +1860,444 @@ int do_inhibit_frame (int onoff)
 
 void graphics_notify_state (int state)
 {
+  AWTRACE("graphics_notify_state\n");
+}
+
+/***************************************************************************
+ * This stuff needs an own file, too 
+ ***************************************************************************/
+
+#include "aroswin.h"
+
+UWORD get_LeftEdge(ULONG win) {
+
+  return (UWORD) get_word(win+4); 
+}
+
+UWORD get_TopEdge(ULONG win) {
+
+  return (UWORD) get_word(win+6); 
+}
+
+UWORD get_Width(ULONG win) {
+
+  return (UWORD) get_word(win+8); 
+}
+
+UWORD get_Height(ULONG win) {
+
+  return (UWORD) get_word(win+10); 
+}
+
+UWORD get_Flags(ULONG win) {
+
+  return (UWORD) get_word(win+24); 
+}
+
+UWORD get_BorderLeft(ULONG win) {
+
+  return (UWORD) get_byte(win+54); 
+}
+
+UWORD get_BorderTop(ULONG win) {
+
+  return (UWORD) get_byte(win+55); 
+}
+
+UWORD get_BorderRight(ULONG win) {
+
+  return (UWORD) get_byte(win+56); 
+}
+
+UWORD get_BorderBottom(ULONG win) {
+
+  return (UWORD) get_byte(win+57); 
+}
+
+
+/* 
+ * clone_window_area(jwin, x, y, width, height)
+ *
+ * update the area in the aros window with the contents of
+ * the amigaOS3 window
+ *
+ * do nothing, if the area does not touch us
+ *
+ * TODO: jwin->plusx/y for area checks!
+ *
+ */
+
+BOOL clone_window_area(JanusWin *jwin, 
+                       WORD areax, WORD areay, 
+		       UWORD areawidth, UWORD areaheight) {
+  WORD winx, winy, winxend, winyend, areaxend, areayend;
+  //UWORD width, height;
+  WORD startx, starty, endx, endy; /* result */
+  struct Window* win;
+  ULONG aos3win;
+
+  win=jwin->aroswin;
+  aos3win=(ULONG) jwin->aos3win;
+
+  AWTRACE("clone_wia (%3d,%3d,%3d,%3d) (%lx)\n",
+           areax,areay,areawidth,areaheight, jwin);
+
+  if(!win || !aos3win) {
+    AWTRACE("clone_wia (%3d,%3d,%3d,%3d): win %lx||aos3win %lx is NULL!\n", 
+             areax,areay,areawidth,areaheight,win,aos3win);
+    return FALSE;
+  }
+
+  areaxend=areax+areawidth;
+  areayend=areay+areaheight;
+
+  winy=get_TopEdge(aos3win)   + get_BorderTop(aos3win);
+  winx=get_LeftEdge(aos3win)  + get_BorderLeft(aos3win);
+  winyend=get_TopEdge(aos3win)+ get_Height(aos3win) - get_BorderBottom(aos3win);
+  winxend=get_LeftEdge(aos3win) + get_Width(aos3win) - get_BorderRight(aos3win);
+
+  AWTRACE("clone_wia window x,y,xe,ye: %3d,%3d,%3d,%3d\n",
+           winx,winy,winxend,winyend);
+  AWTRACE("clone_wia area   x,y,xe,ye: %3d,%3d,%3d,%3d\n",
+           areax,areay,areaxend,areayend);
+
+  /* window is above or below our area */
+  if(winy > areayend || winyend < areay) {
+    AWTRACE("clone_wia (%3d,%3d,%3d,%3d): y out of bounds\n", 
+             areax,areay,areawidth,areaheight);
+
+    return FALSE;
+  }
+
+  /* window is left or right of our area */
+  if(winx > areaxend || winxend < areax) {
+    AWTRACE("clone_wia (%3d,%3d,%3d,%3d): x out of bounds\n", 
+             areax,areay,areawidth,areaheight);
+
+    return FALSE;
+  }
+
+  /* seems, as if we have to do something.. */
+
+  startx=MAX(areax, winx);
+  starty=MAX(areay, winy);
+  endx=MIN(areaxend, winxend);
+  endy=MIN(areayend, winyend);
+
+  AWTRACE("clone_wia: startx %3d starty %3d endx %3d endy %3d\n",
+           startx,starty,endx,endy);
+  AWTRACE("clone_wia: WritePixelArray(x %3d y %3d  width %3d height %3d)\n",
+           startx-winx,starty-winy,endx-startx,endy-starty);
+
+  WritePixelArray (
+      picasso_memory, 
+      startx, /* src x  */
+      starty,  /* src y  */
+      get_BytesPerRow(W),                                /* srcmod */
+      win->RPort, 
+      startx - winx, starty - winy,
+      endx - startx + jwin->plusx,
+      endy - starty + jwin->plusy,
+      RECTFMT_RAW
+  );
+  /* olioli*/
+#if 0
+  real_start=get_TopEdge(m68k_win)  + get_BorderTop(m68k_win);
+  real_start_dest=0;
+  real_lines=aros_win->Height;
+
+  WritePixelArray (
+      picasso_memory, 
+      get_LeftEdge(m68k_win) + get_BorderLeft(m68k_win), /* src x  */
+      real_start,  /* src y  */
+      get_BytesPerRow(W),                                /* srcmod */
+      /*native_window->RPort, */
+      aros_win->RPort, 
+      /* no WA_GimmeZeroZero
+      aros_win->BorderLeft, aros_win->BorderTop,
+      aros_win->Width  - aros_win->BorderLeft,
+      aros_win->Height - aros_win->BorderTop,
+      */
+      0, real_start_dest,
+      aros_win->Width,
+      real_lines,
+      RECTFMT_RAW
+  );
+#endif
+
+
+
+  return TRUE;
+}
+ 
+/* 
+ * clone_area(x, y, width, height)
+ * we are on a picasso96 level, we don't have intuition windows
+ * here any more, which is a pity. We need to clone activities
+ * in our aros windows, which took place in amigaOS3 bitmaps.
+ *
+ * As it is hard (impossible?) to find out, in which aros window
+ * a modification belongs, we just scan for all windows, which
+ * cover this area and update the area in those windows. Should
+ * be ok, we'll see.
+ */
+void clone_area(WORD x, WORD y, UWORD width, UWORD height) {
+  GSList *elem;
+
+  if(janus_windows) {
+    AWTRACE("clone_area(%3d,%3d,%3d,%3d)\n",x,y,width,height);
+    ObtainSemaphore(&sem_janus_window_list);
+    elem=janus_windows;
+    while(elem) {
+      AWTRACE("clone_area: jwin %lx\n",elem);
+      if(elem->data &&
+ 	 !(((JanusWin *)elem->data)->delay) &&
+	 !(((JanusWin *)elem->data)->dead)  &&
+	  ((JanusWin *)elem->data)->aos3win &&
+	  ((JanusWin *)elem->data)->aroswin) {
+
+	if(!clone_window_area((JanusWin *)elem->data, x, y, width, height)) {
+	  AWTRACE("clone_area(%3d,%3d,%3d,%3d): done nothing\n",x,y,width,height);
+	}
+      }
+      else {
+	/* debug only */
+	if(elem->data) {
+	  if(((JanusWin *)elem->data)->delay) {
+	    AWTRACE("clone_area: jwin->data->delay %d\n",((JanusWin *)elem->data)->delay);
+	  }
+	  else {
+	    AWTRACE("clone_area:          ->: %d %d %lx %lx\n",
+		   ((JanusWin *)elem->data)->delay,
+		   ((JanusWin *)elem->data)->dead,
+		   ((JanusWin *)elem->data)->aos3win,
+		   ((JanusWin *)elem->data)->aroswin);
+	  }
+	}
+	else {
+	  AWTRACE("clone_area: jwin->data 0\n");
+	}
+      }
+      elem=g_slist_next(elem);
+    }
+    ReleaseSemaphore(&sem_janus_window_list);
+  }
+}
+
+/*
+ * clone_window(m68k_win, aros_win)
+ *
+ * copy the bitmap of the m68k_win (without aos3.1 borders) to
+ * the aros_win bitmap. The aros_win keeps its borders.
+ *
+ * m68k_win needs to be on the picasso96 wb screen (otherwise not tested).
+ *
+ */
+static void clone_window(ULONG m68k_win, struct Window *aros_win, 
+                         int start, int lines) {
+
+  WORD src_y_start;
+  WORD src_y_lines;
+  WORD real_start;
+  WORD real_start_dest;
+  WORD real_lines;
+
+  /* only clone, if this window has already an AROS window */
+  if(!m68k_win || !aros_win) {
+    return;
+  }
+
+  src_y_start=get_TopEdge(m68k_win)  + get_BorderTop(m68k_win);
+  src_y_lines=aros_win->Height;
+
+  AWTRACE("clone_window(%lx,%lx) \n",m68k_win,aros_win);
+  AWTRACE("WritePixelArray(%lx, %3d, %3d => %lx, %3d, %3d, ..\n",
+		    picasso_memory,
+		    get_LeftEdge(m68k_win) + get_BorderLeft(m68k_win), 
+		    get_TopEdge(m68k_win)  + get_BorderTop(m68k_win), 
+		    //get_BytesPerRow(W),                              
+		    aros_win->RPort,
+		    aros_win->Width,
+		    aros_win->Height);
+
+  /* modified range outside our window, nothing to do */
+  if(src_y_start+src_y_lines < start ||
+     src_y_start             > start + lines) {
+    AWTRACE("CCC 0\n");
+    return;
+  }
+
+  if(start < src_y_start) {
+    /* modified area starts above us */
+    real_start=src_y_start; /* clip above */
+    real_start_dest=0; 
+    if(start + lines > src_y_start + src_y_lines) {
+      /* modified area ends below our window */
+      real_lines=src_y_lines;
+      AWTRACE("CCC 1\n");
+    }
+    else {
+      /* modified area ends inside our window */
+      real_lines= lines - (src_y_start - start);
+      AWTRACE("CCC 2\n");
+    }
+  }
+  else {
+    /* modified are starts inside window */
+    real_start=start;
+    real_start_dest=start - src_y_start;
+    if(start + lines > src_y_start + src_y_lines) {
+      /* modified area ends below our window */
+      AWTRACE("CCC 3\n");
+      real_lines=src_y_start + src_y_lines - start;
+    }
+    else {
+      /* modified area ends inside our window */
+      real_lines=lines; /* copy all */
+      AWTRACE("CCC 4\n");
+    }
+  }
+
+  /* TODO: fix above, remove 3 lines below! */
+  real_start=get_TopEdge(m68k_win)  + get_BorderTop(m68k_win);
+  real_start_dest=0;
+  real_lines=aros_win->Height;
+
+  WritePixelArray (
+      picasso_memory, 
+      get_LeftEdge(m68k_win) + get_BorderLeft(m68k_win), /* src x  */
+      real_start,  /* src y  */
+      get_BytesPerRow(W),                                /* srcmod */
+      /*native_window->RPort, */
+      aros_win->RPort, 
+      /* no WA_GimmeZeroZero
+      aros_win->BorderLeft, aros_win->BorderTop,
+      aros_win->Width  - aros_win->BorderLeft,
+      aros_win->Height - aros_win->BorderTop,
+      */
+      0, real_start_dest,
+      aros_win->Width,
+      real_lines,
+      RECTFMT_RAW
+  );
+
 }
 
 /***************************************************************************/
+/* same as DoMethod(uaedisplay, MUIM_UAEDisplay_Update, start, i)
+ * and same as MUIM_Draw
+ */
 
-void handle_events(void)
-{
+extern ULONG aos3_task;
+extern ULONG aos3_task_signal;
+
+int o1i_Draw_delay=0;
+
+
+void o1i_clone_windows(/* hand over start/end koords of changed area?*/) {
+  GSList *elem;
+  UWORD start, lines;
+  ULONG m68k_win;
+  struct Window *aros_win;
+
+  /* at startup, sem_janus_windows_list might not be initialized,
+   * but it is, if we have at least one element in the
+   * list.
+   */
+  if(janus_windows) {
+    ObtainSemaphore(&sem_janus_window_list);
+    elem=janus_windows;
+    while(elem) {
+      if(elem->data &&
+ 	 !(((JanusWin *)elem->data)->delay) &&
+	 !(((JanusWin *)elem->data)->dead)  &&
+	  ((JanusWin *)elem->data)->aos3win &&
+	  ((JanusWin *)elem->data)->aroswin) {
+
+	m68k_win=(ULONG) ((JanusWin *)elem->data)->aos3win;
+	aros_win=((JanusWin *)elem->data)->aroswin;
+
+      	start=get_TopEdge(m68k_win)  + get_BorderTop(m68k_win);
+	lines=aros_win->Height;
+
+	clone_window(m68k_win, aros_win, start, lines);
+
+      }
+      elem=g_slist_next(elem);
+    }
+    ReleaseSemaphore(&sem_janus_window_list);
+  }
+}
+
+void o1i_clone_windows_task() {
+
+  while(TRUE) {
+    WaitTOF();
+    o1i_clone_windows();
+  }
+
+}
+
+//static void o1i_Draw() {
+static void o1i_Display_Update(int start,int i) {
+
+  if(!picasso_memory) {
+    AWTRACE("ERROR: no picasso_memory!?\n");
+    return;
+  }
+
+  if(!W) {
+    AWTRACE("ERROR: no Window W!?\n");
+    return;
+  }
+
+  //o1i_clone_windows();
+  //clone_area(0, start, MAXWIDTHHEIGHT, i); /* should clip accordingly */
+  clone_area(0, 0, MAXWIDTHHEIGHT, MAXWIDTHHEIGHT); /* should clip accordingly */
+
+  if(!uae_main_window_closed) {
+    WritePixelArray (
+	picasso_memory, 0, start, get_BytesPerRow(W),
+	W->RPort, 
+	W->BorderLeft, W->BorderTop + start,
+	W->Width - W->BorderLeft - W->BorderRight, 
+	W->BorderTop + start + i,
+	RECTFMT_RAW
+    );
+  }
+}
+
+int aros_daemon_runing() {
+  return (aos3_task && aos3_task_signal);
+}
+/*******************************************
+ * The idea is, to scan the list of
+ * aos3 windows and open an aros window
+ * for every window found.
+ *
+ * Also launch a task for each aros window
+ * to take the events of the window and
+ * snd it forward to the original aos3 
+ * window.
+ *
+ * If this works? We'll see..
+ ********************************************/
+
+GSList *janus_windows=NULL;
+
+
+#if 0
+static void o1i_Display_Update(int start,int i) {
+  /* don't care for start and i*/
+
+ 
+  o1i_Draw();
+
+}
+#endif
+
+void handle_events(void) {
+
     struct IntuiMessage *msg;
     int dmx, dmy, mx, my, class, code, qualifier;
 
@@ -1798,6 +2318,43 @@ void handle_events(void)
     }
 #endif
 
+    #ifdef PICASSO96
+    if(aos3_task && aos3_task_signal) {
+      uae_Signal(aos3_task, aos3_task_signal);
+    }
+
+    if (screen_is_picasso)
+    {
+        int i;
+
+	//AWTRACE("handle_events->screen_is_picasso\n");
+
+        picasso_invalid_lines[picasso_invalid_end+1] = 0;
+        picasso_invalid_lines[picasso_invalid_end+2] = 1;
+
+    	//o1i_Display_Update(0,0);
+
+	/* o1i TODO: remove loops?*/
+	for (i = picasso_invalid_start; i < picasso_invalid_end;)
+	{
+	    int start = i;
+
+            for (;picasso_invalid_lines[i]; i++)
+	        picasso_invalid_lines[i] = 0;
+
+            //DoMethod(uaedisplay, MUIM_UAEDisplay_Update, start, i);
+	    //AWTRACE("MUIM_UAEDisplay_Update TODO\n");
+	    o1i_Display_Update(start,i);
+
+	    for (; !picasso_invalid_lines[i]; i++);
+	}
+
+	picasso_invalid_start = picasso_vidinfo.height + 1;
+	picasso_invalid_end   = -1;
+    }
+    #endif
+
+    gui_handle_events();
     while ((msg = (struct IntuiMessage*) GetMsg (W->UserPort))) {
 	class     = msg->Class;
 	code      = msg->Code;
@@ -1901,11 +2458,11 @@ void handle_events(void)
 		break;
 
 	    case IDCMP_INTUITICKS:
-#ifdef __amigaos4__
+#ifdef __amigaos4__ 
 		grabTicks--;
 		if (grabTicks < 0) {
 		    grabTicks = GRAB_TIMEOUT;
-		    #ifdef __amigaos4__
+		    #ifdef __amigaos4__ 
 			if (mouseGrabbed)
 			    grab_pointer (W);
 		    #endif
@@ -1948,31 +2505,258 @@ void LED (int on)
 
 #ifdef PICASSO96
 
+/* o1i: */
+
+/* WARNING: this will not work, if the uae window
+ *          is not un the public screen!
+ */
+static int get_BytesPerPix(void) {
+  struct Screen *scr;
+  int res;
+
+  scr=LockPubScreen(NULL);
+  res=GetCyberMapAttr(scr->RastPort.BitMap, CYBRMATTR_BPPIX);
+  UnlockPubScreen(NULL,scr);
+  return res;
+}
+
+static int get_BytesPerRow(struct Window *win) {
+  return win->Width * get_BytesPerPix();
+}
+
+static void set_screen_for_picasso(void) {
+
+  AWTRACE("set_screen_for_picasso\n");
+
+  AWTRACE("  old window      : %d x %d\n",W->Width,W->Height);
+  AWTRACE("  resize window to: %d x %d\n",picasso_vidinfo.width,picasso_vidinfo.height);
+
+  AWTRACE("  W->BorderLeft:   %d\n",W->BorderLeft);
+  AWTRACE("  W->BorderRight:  %d\n",W->BorderRight);
+  AWTRACE("  W->BorderTop:    %d\n",W->BorderTop);
+  AWTRACE("  W->BorderBottom: %d\n",W->BorderBottom);
+
+  ChangeWindowBox(W, W->LeftEdge, W->TopEdge,
+                     picasso_vidinfo.width  + W->BorderLeft + W->BorderRight,
+                     picasso_vidinfo.height + W->BorderTop  + W->BorderBottom);
+
+  /* error checks in ChangeWindowBox possible? 
+   * But should not be necessary, as we allowed only screenmodes,
+   * which are smaller/equal than the wb screen in DX_FillResolutions.
+   */
+#if 0
+  DoSizeWindow(0,0,picasso_vidinfo.width,picasso_vidinfo.height);
+#endif
+
+  picasso_vidinfo.extra_mem = 1;
+
+  picasso_vidinfo.rowbytes = get_BytesPerRow(W);
+  picasso_vidinfo.pixbytes = get_BytesPerPix();
+
+  if(picasso_memory) {
+    AWTRACE("FreeVec(%lx)\n",picasso_memory);
+    FreeVec(picasso_memory);
+    picasso_memory=NULL;
+  }
+  picasso_memory=AllocVec(W->Width * W->Height * picasso_vidinfo.pixbytes, 
+			  MEMF_CLEAR);
+
+  picasso_invalid_start = picasso_vidinfo.height + 1;
+  picasso_invalid_end   = -1;
+
+  AWTRACE("  new window size : %d x %d\n",W->Width,W->Height);
+  AWTRACE("  byte per row    : %d \n",picasso_vidinfo.rowbytes);
+  AWTRACE("  byte per pix    : %d \n",picasso_vidinfo.pixbytes);
+  AWTRACE("  set_screen_for_picasso done!\n");
+}
+
+/* un_set_screen_for_picasso
+ *
+ * seems to be not necessary for us (?)
+ * */
+static void un_set_screen_for_picasso(void) {
+
+  AWTRACE("entered\n");
+
+  AWTRACE("  old window      : %d x %d\n",W->Width,W->Height);
+  AWTRACE("  picasso_vidinfo : %d x %d\n",
+                  picasso_vidinfo.width,picasso_vidinfo.height);
+  AWTRACE("  currprefs_win   : %d x %d\n",
+                  currprefs.gfx_width_win,currprefs.gfx_height_win);
+
+  ChangeWindowBox(W, 
+                  W->LeftEdge, W->TopEdge,
+		  currprefs.gfx_width_win  + W->BorderLeft + W->BorderRight,
+		  currprefs.gfx_height_win + W->BorderTop  + W->BorderBottom);
+
+#if 0
+  /* this causes a FreeMem guru? */
+  if(gfxvidinfo.bufmem) {
+    AWTRACE("un_set_screen_for_picasso: FreeVec(%lx)\n",gfxvidinfo.bufmem);
+    FreeVec(gfxvidinfo.bufmem);
+    /* too big ..? */
+    gfxvidinfo.bufmem=AllocVec(W->Width * W->Height * get_BytesPerPix(), MEMF_CLEAR);
+  }
+  #endif
+}
+
+void gfx_set_picasso_state (int on)
+{
+    AWTRACE("gfx_set_picasso_state(%d)\n", on);
+
+    if (screen_is_picasso == on )
+	return;
+
+    AWTRACE("gfx_set_picasso_state: screen_is_picasso != on\n");
+    screen_is_picasso = on;
+    if (on)
+    {
+	AWTRACE("gfx_set_picasso_state: on!\n");
+        set_screen_for_picasso();
+    }
+    else
+    {
+	AWTRACE("gfx_set_picasso_state: off!\n");
+        un_set_screen_for_picasso();
+#if 0
+        if
+	(
+	   !SetAttrs
+            (
+                uaedisplay,
+                MUIA_UAEDisplay_Width,  currprefs.gfx_width,
+	        MUIA_UAEDisplay_Height, currprefs.gfx_height,
+	        TAG_DONE
+            )
+	)
+	{
+            AWTRACE ("SetAttrs - 2 - aborting()\n");
+	    abort();
+	};
+
+	gfxvidinfo.bufmem = (APTR)XGET(uaedisplay, MUIA_UAEDisplay_Memory);
+#endif
+    }
+}
+
 void DX_Invalidate (int first, int last)
 {
+  //AWTRACE("DX_Invalidate\n");
+
+  if (first < picasso_invalid_start)
+      picasso_invalid_start = first;
+
+  if (last > picasso_invalid_end)
+      picasso_invalid_end = last;
+
+  memset(&picasso_invalid_lines[first], 1, last-first+1);
 }
 
 int DX_BitsPerCannon (void)
 {
+  AWTRACE("DX_BitsPerCannon\n");
     return 8;
 }
 
 void DX_SetPalette (int start, int count)
 {
+  AWTRACE("DX_SetPalette\n");
 }
 
 int DX_FillResolutions (uae_u16 *ppixel_format)
 {
-    return 0;
+    int count = 0;
+    struct Screen *screen;
+    ULONG j;
+
+    write_log("DX_FillResolutions(%d)\n",ppixel_format);
+
+    static struct
+    {
+        int width, height;
+    } modes [] =
+    {
+        { 320,  200 },
+	{ 320,  240 },
+	{ 320,  256 },
+	{ 640,  200 },
+	{ 640,  240 },
+	{ 640,  256 },
+	{ 640,  400 },
+	{ 640,  480 },
+	{ 640,  512 },
+	{ 800,  600 },
+	{ 1024, 768 }
+    };
+
+    screen=LockPubScreen(NULL);
+
+    if(!screen) {
+      write_log("ERROR: no public screen available !?\n");
+      return 0;
+    }
+
+    //int bpx  = XGET(uaedisplay, MUIA_UAEDisplay_BytesPerPix);
+    int bpx  = GetCyberMapAttr(screen->RastPort.BitMap, CYBRMATTR_BPPIX);
+
+    //int maxw = XGET(uaedisplay, MUIA_UAEDisplay_MaxWidth);
+    int maxw = screen->Width;
+    //int maxh = XGET(uaedisplay, MUIA_UAEDisplay_MaxHeight);
+    int maxh = screen->Height;
+
+    write_log("maxheight = %d\n", maxh);
+    write_log("maxwidth  = %d\n", maxw);
+
+
+    for (j = 0; (j < (sizeof(modes)/sizeof(modes[0]))) && (j < MAX_PICASSO_MODES); j++)
+    {
+        static const int bpx2format[] = {0, RGBFF_CHUNKY, RGBFF_R5G6B5PC, 0, RGBFF_B8G8R8A8};
+
+	if (modes[j].width > maxw || modes[j].height > maxh)
+	    continue;
+
+	DisplayModes[count].res.width  = modes[j].width;
+        DisplayModes[count].res.height = modes[j].height;
+        DisplayModes[count].depth      = bpx;
+        DisplayModes[count].refresh    = 75;
+
+        count++;
+        *ppixel_format |= bpx2format[bpx];
+    }
+
+    UnlockPubScreen(NULL,screen);
+    return count;
 }
 
-void gfx_set_picasso_modeinfo (int w, int h, int depth)
+void gfx_set_picasso_modeinfo (int w, int h, int d, int rgbfmt)
 {
+    AWTRACE("gfx_set_picasso_modeinfo (w: %d, h: %d, d: %d, rgbfmt: %d)\n",w,h,d,rgbfmt);;
+
+    picasso_vidinfo.width = w;
+    picasso_vidinfo.height = h;
+    picasso_vidinfo.depth = d;
+    picasso_vidinfo.rgbformat = (d == 8 ? RGBFB_CHUNKY
+				 : d == 16 ? RGBFB_R5G6B5PC
+				 : RGBFB_B8G8R8A8);
+
+    if (screen_is_picasso)
+        set_screen_for_picasso();
 }
 
-void gfx_set_picasso_state (int on)
+
+uae_u8 *gfx_lock_picasso (void)
 {
+//    D(bug("gfx_lock_picasso()\n"));
+  //AWTRACE("gfx_lock_picasso\n");
+    return picasso_memory;
 }
+void gfx_unlock_picasso (void)
+{
+  //AWTRACE("gfx_unlock_picasso\n");
+//    D(bug("gfx_unlock_picasso()\n"));
+}
+
+/* o1i end */
 #endif
 
 /***************************************************************************/
@@ -2295,7 +3079,7 @@ int check_prefs_changed_gfx (void)
 
 void toggle_mousegrab (void)
 {
-#ifdef __amigaos4__
+#ifdef __amigaos4__ 
     mouseGrabbed = 1 - mouseGrabbed;
     grabTicks    = GRAB_TIMEOUT;
     if (W)
