@@ -3,8 +3,11 @@
  *
  * Part of the Gtk+ UI for E-UAE
  * Copyright 2003-2004 Richard Drummond
+ *
+ * This is not used in J-UAE any more. See display.c
  */
 
+#if 0
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -154,3 +157,4 @@ void chipsettypepanel_set_ntscmode (ChipsetTypePanel *panel, guint ntscmode)
    
    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (panel->frequency_widget[buttonno]), TRUE);
 }
+#endif

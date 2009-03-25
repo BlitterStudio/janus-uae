@@ -88,6 +88,7 @@ static gint led_expose (GtkWidget *w, GdkEventExpose *event)
 			    w->allocation.width, w->allocation.height);
     }
 #else
+    kprintf("LED: led_expose(%lx,%lx)\n",w,event);
     GtkStyle *style = gtk_style_copy (w->style);
     style->bg[GTK_STATE_NORMAL] = LED (w)->color;
     gtk_style_attach (style, w->window);

@@ -149,6 +149,14 @@ static const char *filtermode1[] = { "no_16", "bilinear_16", "no_32", "bilinear_
 static const char *filtermode2[] = { "0x", "1x", "2x", "3x", "4x", 0 };
 #endif
 
+/* Values for amiga_screen_type */
+enum {
+    UAESCREENTYPE_CUSTOM,
+    UAESCREENTYPE_PUBLIC,
+    UAESCREENTYPE_ASK,
+    UAESCREENTYPE_LAST
+};
+
 static const char *obsolete[] = {
     "accuracy","gfx_opengl","gfx_32bit_blits","32bit_blits",
     "gfx_immediate_blits","gfx_ntsc","win32",
@@ -797,6 +805,19 @@ static int cfgfile_parse_host (struct uae_prefs *p, char *option, char *value)
 #endif
 	    if (target_parse_option (p, option, value))
 		return 1;
+
+	    if (strcmp (option, "screen_type") == 0) {
+	      ULONG t;
+	      if (   (t = UAESCREENTYPE_ASK,    strcmp(value, "ask"   )==0)
+		  || (t = UAESCREENTYPE_PUBLIC, strcmp(value, "public")==0)
+		  || (t = UAESCREENTYPE_CUSTOM, strcmp(value, "custom")==0)) {
+		p->amiga_screen_type = t;
+	      }
+	      else {
+		write_log ("Unknown amiga.screen_type %s\n", value);
+	      }
+	      return 1;
+	    }
 	}
 	if (strcmp (section, MACHDEP_NAME) == 0)
 	    return machdep_parse_option (p, option, value);
@@ -1027,6 +1048,7 @@ static int cfgfile_parse_host (struct uae_prefs *p, char *option, char *value)
 	    write_log ("Unknown keyboard language\n");
 	return 1;
     }
+
 
     if (cfgfile_string (option, value, "config_version", tmpbuf, sizeof (tmpbuf))) {
 	char *tmpp2;

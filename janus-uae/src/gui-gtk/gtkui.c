@@ -44,12 +44,21 @@
 #include "gui-gtk/chipsettypepanel.h"
 #include "gui-gtk/chipsetspeedpanel.h"
 #include "gui-gtk/util.h"
+#include "gui-gtk/display.h"
 
 //#define GUI_DEBUG 1
 #ifdef  GUI_DEBUG
 #define DEBUG_LOG(...) do { kprintf("GUI: %s(): ",__func__);kprintf(__VA_ARGS__); } while(0)
 #else
 #define DEBUG_LOG(...) do ; while(0)
+#endif
+
+#if 0
+#ifdef __AROS__
+#include <proto/intuition.h>
+#include <proto/cybergraphics.h>
+#include <libraries/cybergraphics.h>
+#endif
 #endif
 
 
@@ -66,6 +75,8 @@
 #include "/home/oli/aros/gtk-mui/debug.h"
 #endif
 
+void chipsize_changed (void);
+
 static int gui_active;
 
 static int gui_available;
@@ -78,9 +89,9 @@ static GtkWidget *pause_uae_widget;
 static GtkWidget *reset_uae_widget;
 static GtkWidget *debug_uae_widget;
 
-static GtkWidget *chipsize_widget[5];
+extern GtkWidget *chipsize_widget[5];
 static GtkWidget *bogosize_widget[4];
-static GtkWidget *fastsize_widget[5];
+extern GtkWidget *fastsize_widget[5];
 static GtkWidget *z3size_widget[10];
 #ifdef PICASSO96
 static GtkWidget *p96size_widget[7];
@@ -95,8 +106,8 @@ static GtkWidget *power_led;
 
 static GtkWidget *ctpanel;
 static GtkWidget *cspanel;
-static GtkWidget *chipsettype_panel;
-static GtkWidget *chipsetspeed_panel;
+extern GtkWidget *chipsettype_panel;
+extern GtkWidget *chipsetspeed_panel;
 
 static GtkWidget *hdpanel;
 static GtkWidget *memorypanel;
@@ -127,6 +138,9 @@ static GtkWidget *readonly_widget, *bootpri_widget;
 static GtkWidget *dirdlg;
 static GtkWidget *dirdlg_ok;
 static char dirdlg_devname[256], dirdlg_volname[256], dirdlg_path[256], floppydlg_path[256];
+
+
+static GtkWidget *jdisp_panel=NULL;
 
 enum hdlist_cols {
     HDLIST_DEVICE,
@@ -249,14 +263,16 @@ static void set_cpu_state (void)
     //DebOut("exit\n");
 }
 
-static void set_chipset_state (void)
-{
+#if 0
+static void set_chipset_state (void) {
+
     chipsettypepanel_set_chipset_mask     (CHIPSETTYPEPANEL  (chipsettype_panel),  currprefs.chipset_mask);
     chipsettypepanel_set_ntscmode         (CHIPSETTYPEPANEL  (chipsettype_panel),  currprefs.ntscmode);
     chipsetspeedpanel_set_framerate       (CHIPSETSPEEDPANEL (chipsetspeed_panel), currprefs.gfx_framerate);
     chipsetspeedpanel_set_collision_level (CHIPSETSPEEDPANEL (chipsetspeed_panel), currprefs.collision_level);
     chipsetspeedpanel_set_immediate_blits (CHIPSETSPEEDPANEL (chipsetspeed_panel), currprefs.immediate_blits);
 }
+#endif
 
 static void set_sound_state (void)
 {
@@ -486,7 +502,9 @@ static void update_state (void)
 #ifdef FILESYS
     set_hd_state ();
 #endif
-    set_chipset_state ();
+    if(jdisp_panel) {
+      g_signal_emit_by_name(jdisp_panel,"read-prefs",NULL);
+    }
  
   //DebOut("done\n");
 }
@@ -507,6 +525,13 @@ static void update_buttons (int state)
         gtk_widget_set_sensitive (memorypanel, !running && !paused);
         gtk_widget_set_sensitive (rom_change_widget, !running && !paused);
         gtk_widget_set_sensitive (key_change_widget, !running && !paused);
+
+	if(!running && !paused) {
+	  g_signal_emit_by_name(jdisp_panel,"unlock-it",NULL);
+	}
+	else {
+	  g_signal_emit_by_name(jdisp_panel,"lock-it",NULL);
+	}
 
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (pause_uae_widget), paused);
     }
@@ -617,7 +642,7 @@ static int leds_callback (void)
     return 1;
 }
 
-static int find_current_toggle (GtkWidget **widgets, int count)
+int find_current_toggle (GtkWidget **widgets, int count)
 {
     int i;
     for (i = 0; i < count; i++)
@@ -641,6 +666,7 @@ static void joy_changed (void)
     set_joy_state ();
 }
 
+#if 0
 static void chipsize_changed (void)
 {
     int t = find_current_toggle (chipsize_widget, 5);
@@ -652,6 +678,7 @@ static void chipsize_changed (void)
 	changed_prefs.fastmem_size = 0;
     }
 }
+#endif
 
 static void bogosize_changed (void)
 {
@@ -970,9 +997,10 @@ static GtkWidget *add_labelled_widget_centered (const char *str, GtkWidget *thin
     return w;
 }
 
-static int make_radio_group (const char **labels, GtkWidget *tobox,
+static int make_radio_group_param (const char **labels, GtkWidget *tobox,
 			      GtkWidget **saveptr, gint t1, gint t2,
-			      void (*sigfunc) (void), int count, GSList *group)
+			      void (*sigfunc) (void), int count, GSList *group,
+			      GtkWidget *parameter)
 {
     int t = 0;
 
@@ -983,15 +1011,24 @@ static int make_radio_group (const char **labels, GtkWidget *tobox,
 	*saveptr++ = thing;
 	gtk_widget_show (thing);
 	gtk_box_pack_start (GTK_BOX (tobox), thing, t1, t2, 0);
-	gtk_signal_connect (GTK_OBJECT (thing), "clicked", (GtkSignalFunc) sigfunc, NULL);
+	gtk_signal_connect (GTK_OBJECT (thing), "clicked", (GtkSignalFunc) sigfunc, parameter);
 	t++;
     }
     return t;
 }
 
-static GtkWidget *make_radio_group_box (const char *title, const char **labels,
+static int make_radio_group (const char **labels, GtkWidget *tobox,
+			      GtkWidget **saveptr, gint t1, gint t2,
+			      void (*sigfunc) (void), int count, GSList *group)
+{
+  return make_radio_group_param(labels,tobox,saveptr,t1,t2,
+                                 sigfunc,count,group,NULL);
+}
+
+GtkWidget *make_radio_group_box_param (const char *title, const char **labels,
 					GtkWidget **saveptr, int horiz,
-					void (*sigfunc) (void))
+					void (*sigfunc) (void), 
+					GtkWidget *parameter)
 {
     GtkWidget *frame, *newbox;
 
@@ -1000,9 +1037,16 @@ static GtkWidget *make_radio_group_box (const char *title, const char **labels,
     gtk_widget_show (newbox);
     gtk_container_set_border_width (GTK_CONTAINER (newbox), 4);
     gtk_container_add (GTK_CONTAINER (frame), newbox);
-    make_radio_group (labels, newbox, saveptr, horiz, !horiz, sigfunc, -1, NULL);
+    make_radio_group_param (labels, newbox, saveptr, horiz, !horiz, sigfunc, -1, NULL,parameter);
     return frame;
 }
+
+GtkWidget *make_radio_group_box (const char *title, const char **labels,
+					GtkWidget **saveptr, int horiz,
+					void (*sigfunc) (void)) {
+  return make_radio_group_box_param(title,labels,saveptr,horiz,sigfunc,NULL);
+}
+
 
 static GtkWidget *make_radio_group_box_1 (const char *title, const char **labels,
 					  GtkWidget **saveptr, int horiz,
@@ -1178,14 +1222,6 @@ static void make_cpu_widgets (GtkWidget *vbox)
                         NULL);
 }
 
-
-
-static void on_chipset_changed (void)
-{
-    changed_prefs.chipset_mask = CHIPSETTYPEPANEL (chipsettype_panel)->chipset_mask;
-    changed_prefs.ntscmode     = CHIPSETTYPEPANEL (chipsettype_panel)->ntscmode;
-}
-
 static void on_framerate_changed (void)
 {
     changed_prefs.gfx_framerate = CHIPSETSPEEDPANEL (chipsetspeed_panel)->framerate;
@@ -1202,43 +1238,6 @@ static void on_immediate_blits_changed (void)
 {
     changed_prefs.immediate_blits = CHIPSETSPEEDPANEL (chipsetspeed_panel)->immediate_blits;
     DEBUG_LOG("immediate_blits = %d\n", changed_prefs.immediate_blits);
-}
-
-static void make_chipset_widgets (GtkWidget *vbox)
-{
-    GtkWidget *table;
-
-    table = make_xtable (5, 7);
-    add_table_padding (table, 0, 0);
-    add_table_padding (table, 4, 4);
-    add_table_padding (table, 1, 2);
-    gtk_box_pack_start (GTK_BOX (vbox), table, TRUE, TRUE, 0);
-
-    chipsettype_panel = chipsettypepanel_new ();
-    gtk_table_attach (GTK_TABLE (table), chipsettype_panel, 1, 4, 1, 2,
-                     (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
-                     (GtkAttachOptions) (GTK_EXPAND | GTK_FILL), 0, 0);
-    gtk_widget_show (chipsettype_panel);
-
-    chipsetspeed_panel = chipsetspeedpanel_new ();
-    gtk_table_attach (GTK_TABLE (table), chipsetspeed_panel, 1, 4, 3, 4,
-                     (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
-                     (GtkAttachOptions) (GTK_EXPAND | GTK_FILL), 0, 0);
-    gtk_widget_show (chipsetspeed_panel);
-
-
-    gtk_signal_connect (GTK_OBJECT (chipsettype_panel), "chipset-changed",
-                        GTK_SIGNAL_FUNC (on_chipset_changed),
-                        NULL);
-    gtk_signal_connect (GTK_OBJECT (chipsetspeed_panel), "framerate-changed",
-                        GTK_SIGNAL_FUNC (on_framerate_changed),
-                        NULL);
-    gtk_signal_connect (GTK_OBJECT (chipsetspeed_panel), "sprite-collisions-changed",
-                        GTK_SIGNAL_FUNC (on_collision_level_changed),
-                        NULL);
-    gtk_signal_connect (GTK_OBJECT (chipsetspeed_panel), "immediate-blits-changed",
-                        GTK_SIGNAL_FUNC (on_immediate_blits_changed),
-                        NULL);
 }
 
 static void make_sound_widgets (GtkWidget *vbox)
@@ -1278,6 +1277,19 @@ static void make_sound_widgets (GtkWidget *vbox)
     gtk_box_pack_start (GTK_BOX (hbox), newbox, FALSE, TRUE, 0);
 
     add_empty_vbox (vbox);
+}
+
+/* TODO: check if this should be disabled..? */
+static void chipsize_changed (void) {
+
+    int t = find_current_toggle (chipsize_widget, 5);
+    changed_prefs.chipmem_size = 0x80000 << t;
+    for (t = 0; t < 5; t++)
+	gtk_widget_set_sensitive (fastsize_widget[t], changed_prefs.chipmem_size <= 0x200000);
+    if (changed_prefs.chipmem_size > 0x200000) {
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (fastsize_widget[0]), 1);
+	changed_prefs.fastmem_size = 0;
+    }
 }
 
 static void make_mem_widgets (GtkWidget *vbox)
@@ -1926,6 +1938,103 @@ static void on_menu_saveconfig (void)
 	write_comm_pipe_int (&from_gui_pipe, UAECMD_SAVE_CONFIG, 1);
 }
 
+static void on_screen_changed (jDisplay *j) {
+
+  changed_prefs.gfx_width_fs  = j->gfx_width_fs;
+  changed_prefs.gfx_height_fs = j->gfx_height_fs;
+}
+
+static void on_window_changed (jDisplay *j) {
+
+  changed_prefs.gfx_width_win  = j->gfx_width_win;
+  changed_prefs.gfx_height_win = j->gfx_height_win;
+}
+
+static void on_chipset_changed (jDisplay *j) {
+
+  changed_prefs.chipset_mask = j->chipset_mask;
+  changed_prefs.ntscmode     = j->ntscmode;
+}
+
+static void on_linemode_changed (jDisplay *j) {
+
+  changed_prefs.gfx_linedbl  = j->gfx_linedbl;
+}
+
+/* Values for amiga_screen_type */
+enum {
+    UAESCREENTYPE_CUSTOM,
+    UAESCREENTYPE_PUBLIC,
+    UAESCREENTYPE_ASK,
+    UAESCREENTYPE_LAST
+};
+
+static void on_settings_changed (jDisplay *j) {
+
+  changed_prefs.gfx_correct_aspect= j->gfx_correct_aspect;
+  changed_prefs.gfx_lores         = j->gfx_lores;
+  changed_prefs.gfx_afullscreen   = j->gfx_fullscreen_amiga;
+  changed_prefs.gfx_pfullscreen   = j->gfx_fullscreen_p96;
+
+  if(changed_prefs.gfx_pfullscreen) {
+    currprefs.amiga_screen_type=UAESCREENTYPE_CUSTOM;
+    changed_prefs.amiga_screen_type=UAESCREENTYPE_CUSTOM;
+  }
+  else {
+    currprefs.amiga_screen_type=UAESCREENTYPE_PUBLIC;
+    changed_prefs.amiga_screen_type=UAESCREENTYPE_PUBLIC;
+  }
+}
+
+static void on_centering_changed (jDisplay *j) {
+
+  changed_prefs.gfx_xcenter= j->gfx_xcenter;
+  changed_prefs.gfx_ycenter= j->gfx_ycenter;
+}
+
+static void make_display_widgets (GtkWidget *vbox) {
+
+  jdisp_panel=jdisplay_new();
+
+  gtk_signal_connect (GTK_OBJECT (jdisp_panel), "screen-changed",
+		      GTK_SIGNAL_FUNC (on_screen_changed),
+     		      NULL);
+  gtk_signal_connect (GTK_OBJECT (jdisp_panel), "window-changed",
+		      GTK_SIGNAL_FUNC (on_window_changed),
+     		      NULL);
+  gtk_signal_connect (GTK_OBJECT (jdisp_panel), "chipset-changed",
+		      GTK_SIGNAL_FUNC (on_chipset_changed),
+     		      NULL);
+  gtk_signal_connect (GTK_OBJECT (jdisp_panel), "linemode-changed",
+		      GTK_SIGNAL_FUNC (on_linemode_changed),
+     		      NULL);
+  gtk_signal_connect (GTK_OBJECT (jdisp_panel), "settings-changed",
+		      GTK_SIGNAL_FUNC (on_settings_changed),
+     		      NULL);
+  gtk_signal_connect (GTK_OBJECT (jdisp_panel), "centering-changed",
+		      GTK_SIGNAL_FUNC (on_centering_changed),
+     		      NULL);
+
+
+  /* our child, the chipsetspeed_panel */
+  gtk_signal_connect (GTK_OBJECT (chipsetspeed_panel), "framerate-changed",
+		      GTK_SIGNAL_FUNC (on_framerate_changed),
+     		      NULL);
+  gtk_signal_connect (GTK_OBJECT (chipsetspeed_panel), 
+                        "sprite-collisisons-changed",
+		      GTK_SIGNAL_FUNC (on_collision_level_changed),
+     		      NULL);
+  gtk_signal_connect (GTK_OBJECT (chipsetspeed_panel), 
+                        "immediate-blits-changed",
+		      GTK_SIGNAL_FUNC (on_immediate_blits_changed),
+     		      NULL);
+
+
+  gtk_widget_show_all(jdisp_panel);
+
+  gtk_container_add (GTK_CONTAINER (vbox), jdisp_panel);
+}
+
 static void create_guidlg (void)
 {
     GtkWidget *window, *notebook;
@@ -1941,7 +2050,8 @@ static void create_guidlg (void)
 	{ "Memory",       make_mem_widgets },
 	{ "CPU",          make_cpu_widgets },
 //	{ "Graphics",     make_gfx_widgets },
-	{ "Chipset",      make_chipset_widgets },
+	//{ "Chipset",      make_chipset_widgets },
+	{ "Display",      make_display_widgets },
 	{ "Sound",        make_sound_widgets },
 #ifdef JIT
  	{ "JIT",          make_comp_widgets },
@@ -2113,6 +2223,11 @@ static void *gtk_gui_thread (void *dummy)
         uae_sem_post (&gui_init_sem);
     }
     //DebOut("exit\n");
+    /* e-uae does not quit, if the GUI dies.
+     * j-uae does qit, as this might be a commodity signal not
+     * only for the GUI.
+     */
+    uae_quit();
     return 0;
 }
 

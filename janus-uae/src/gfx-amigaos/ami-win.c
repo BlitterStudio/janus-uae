@@ -32,7 +32,7 @@
 # endif
 #endif
 
-//#define AWTRACING_ENABLED 1
+#define AWTRACING_ENABLED 0
 #if AWTRACING_ENABLED
 #define AWTRACE(...)	do { kprintf("AW: ");kprintf(__VA_ARGS__); } while(0)
 #else
@@ -217,7 +217,7 @@ static void ham_conv(UWORD *src, UBYTE *buf, UWORD len);
 static int  RPDepth(struct RastPort *RP);
 static int get_nearest_color(int r, int g, int b);
 
-static int get_BytesPerRow(struct Window *win);
+static int get_BytesPerRow(struct Window *win, WORD width);
 
 /****************************************************************************/
 
@@ -935,7 +935,7 @@ static POINTER_STATE get_pointer_state (const struct Window *w, int mousex, int 
 /*
  * Try to find a CGX/P96 screen mode which suits the requested size and depth
  */
-static ULONG find_rtg_mode (ULONG *width, ULONG *height, ULONG depth)
+ULONG find_rtg_mode (ULONG *width, ULONG *height, ULONG depth)
 {
     ULONG mode           = INVALID_ID;
 
@@ -947,9 +947,7 @@ static ULONG find_rtg_mode (ULONG *width, ULONG *height, ULONG depth)
     ULONG largest_width  = 0;
     ULONG largest_height = 0;
 
-#ifdef DEBUG
-    write_log ("Looking for RTG mode: w:%ld h:%ld d:%d\n", width, height, depth);
-#endif
+    AWTRACE ("Looking for RTG mode: w:%d h:%d d:%d\n", *width, *height, depth);
 
     if (CyberGfxBase) {
 	while ((mode = NextDisplayInfo (mode)) != (ULONG)INVALID_ID) {
@@ -957,9 +955,7 @@ static ULONG find_rtg_mode (ULONG *width, ULONG *height, ULONG depth)
 		ULONG cwidth  = GetCyberIDAttr (CYBRIDATTR_WIDTH, mode);
 		ULONG cheight = GetCyberIDAttr (CYBRIDATTR_HEIGHT, mode);
 		ULONG cdepth  = GetCyberIDAttr (CYBRIDATTR_DEPTH, mode);
-#ifdef DEBUG
-		write_log ("Checking mode:%08x w:%d h:%d d:%d -> ", mode, cwidth, cheight, cdepth);
-#endif
+		AWTRACE ("Checking mode:%08x w:%d h:%d d:%d -> ", mode, cwidth, cheight, cdepth);
 		if (cdepth == depth) {
 		    /*
 		     * If this mode has the largest screen size we've seen so far,
@@ -975,9 +971,7 @@ static ULONG find_rtg_mode (ULONG *width, ULONG *height, ULONG depth)
 		     * Is it large enough for our requirements?
 		     */
 		    if (cwidth >= *width && cheight >= *height) {
-#ifdef DEBUG
-			write_log ("large enough\n");
-#endif
+			AWTRACE ("large enough\n");
 			/*
 			 * Yes. Is it the best fit that we've seen so far?
 			 */
@@ -987,40 +981,39 @@ static ULONG find_rtg_mode (ULONG *width, ULONG *height, ULONG depth)
 			    best_mode   = mode;
 			}
 		    }
-#ifdef DEBUG
-		    else
-			write_log ("too small\n");
-#endif
+		    else {
+			AWTRACE ("too small\n");
+		    }
 
 		} /* if (cdepth == depth) */
-#ifdef DEBUG
-		else
-		    write_log ("wrong depth\n");
-#endif
+		else {
+		    AWTRACE ("wrong depth\n");
+		}
 	    } /* if (IsCyberModeID (mode)) */
 	} /* while */
 
 	if (best_mode != (ULONG)INVALID_ID) {
-#ifdef DEBUG
-	    write_log ("Found match!\n");
-#endif
+	    AWTRACE ("Found match!\n");
 	    /* We found a match. Return it */
 	    *height = best_height;
 	    *width  = best_width;
 	} else if (largest_mode != (ULONG)INVALID_ID) {
-#ifdef DEBUG
-	    write_log ("No match found!\n");
-#endif
+	    AWTRACE ("No match found!\n");
 	    /* We didn't find a large enough mode. Return the largest
 	     * mode found at the depth - if we found one */
 	    best_mode = largest_mode;
 	    *height   = largest_height;
 	    *width    = largest_width;
 	}
-#ifdef DEBUG
-	if (best_mode != (ULONG) INVALID_ID)
-	    write_log ("Best mode: %08x w:%d h:%d d:%d\n", best_mode, *width, *height, depth);
-#endif
+	else {
+	    AWTRACE ("WTF?\n");
+	}
+	if (best_mode != (ULONG) INVALID_ID) {
+	    AWTRACE ("Best mode: %08x w:%d h:%d d:%d\n", best_mode, *width, *height, depth);
+	}
+	else {
+	    AWTRACE ("No best mode found \n");
+	}
     }
     return best_mode;
 }
@@ -1046,11 +1039,15 @@ static int setup_customscreen (void)
     struct Screen *screen;
     ULONG error;
 
+    AWTRACE("entered\n");
+    AWTRACE("width x height: %d x %d\n",width,height);
+
 #ifdef USE_CYBERGFX
     /* First try to find an RTG screen that matches the requested size  */
     {
 	unsigned int i;
-	const UBYTE preferred_depth[] = {15, 16, 32, 8}; /* Try depths in this order of preference */
+	const UBYTE preferred_depth[] = {24, 15, 16, 32, 8}; 
+	/* Try depths in this order of preference */
 
 	for (i = 0; i < sizeof preferred_depth && mode == (ULONG) INVALID_ID; i++) {
 	    depth = preferred_depth[i];
@@ -1065,7 +1062,9 @@ static int setup_customscreen (void)
 #endif
 	/* No (suitable) RTG screen available. Try a native mode */
 	depth = os39 ? 8 : (currprefs.gfx_lores ? 5 : 4);
-	mode = PAL_MONITOR_ID; // FIXME: should check whether to use PAL or NTSC.
+	/* FIXME: should check whether to use PAL or NTSC.*/
+	mode = PAL_MONITOR_ID; 
+
 	if (currprefs.gfx_lores)
 	    mode |= (gfxvidinfo.height > 256) ? LORESLACE_KEY : LORES_KEY;
 	else
@@ -1080,25 +1079,32 @@ static int setup_customscreen (void)
     if (height > (ULONG) gfxvidinfo.height)
 	YOffset = (height - gfxvidinfo.height) / 2;
 
+    AWTRACE("width x height: %d x %d\n",width,height);
+    AWTRACE("mode: %lx\n",mode);
+
     do {
-	screen = OpenScreenTags (NULL,
-				 SA_Width,     width,
-				 SA_Height,    height,
-				 SA_Depth,     depth,
-				 SA_DisplayID, mode,
-				 SA_Behind,    TRUE,
-				 SA_ShowTitle, FALSE,
-				 SA_Quiet,     TRUE,
-				 SA_ErrorCode, (ULONG)&error,
-				 TAG_DONE);
-    } while (!screen && error == OSERR_TOODEEP && --depth > 1); /* Keep trying until we find a supported depth */
+      AWTRACE("depth: %d\n",depth);
+      screen = OpenScreenTags (NULL,
+			       SA_Width,     width,
+			       SA_Height,    height,
+			       SA_Depth,     depth,
+			       SA_DisplayID, mode,
+			       SA_Behind,    TRUE,
+			       SA_ShowTitle, FALSE,
+			       SA_Quiet,     TRUE,
+			       SA_ErrorCode, (ULONG)&error,
+			       TAG_DONE);
+    } while (!screen && error == OSERR_TOODEEP && --depth > 1); 
+    /* Keep trying until we find a supported depth */
 
     if (!screen) {
 	/* TODO; Make this error report more useful based on the error code we got */
-	write_log ("Error opening screen:%ld\n", error);
+	AWTRACE ("Error opening screen:%ld\n", error);
 	gui_message ("Cannot open custom screen for UAE.\n");
 	return 0;
     }
+
+    AWTRACE("screen: %lx (%d x %d)\n",screen,screen->Width,screen->Height);
 
     S  = screen;
     CM = screen->ViewPort.ColorMap;
@@ -1110,11 +1116,13 @@ static int setup_customscreen (void)
 
     W = (void*)OpenWindow (&NewWindowStructure);
     if (!W) {
-	write_log ("Cannot open UAE window on custom screen.\n");
+	AWTRACE ("Cannot open UAE window on custom screen.\n");
 	return 0;
     }
 
     hide_pointer (W);
+
+    AWTRACE("done\n");
 
     return 1;
 }
@@ -1126,6 +1134,8 @@ static int setup_publicscreen(void)
     UWORD ZoomArray[4] = {0, 0, 0, 0};
     char *pubscreen = strlen (currprefs.amiga_publicscreen)
 	? currprefs.amiga_publicscreen : NULL;
+
+    AWTRACE("entered (pubscreen >%s<)\n",currprefs.amiga_publicscreen);
 
     S = LockPubScreen (pubscreen);
     if (!S) {
@@ -1243,6 +1253,8 @@ static int setup_userscreen (void)
     UWORD OverscanType = OSCAN_STANDARD;
     BOOL AutoScroll = TRUE;
     int release_asl = 0;
+
+    AWTRACE("entered\n");
 
     if (!AslBase) {
 	AslBase = OpenLibrary ("asl.library", 36);
@@ -1378,7 +1390,7 @@ static int setup_userscreen (void)
 			TAG_DONE);
 
     if(!W) {
-	write_log ("AMIGFX: Unable to open the window.\n");
+	AWTRACE ("Unable to open the window.\n");
 	CloseScreen (S);
 	S  = NULL;
 	RP = NULL;
@@ -1390,9 +1402,10 @@ static int setup_userscreen (void)
 
     RP = W->RPort; /* &S->Rastport if screen is not public */
 
+    /* make screen public !? */
     PubScreenStatus (S, 0);
 
-    write_log ("AMIGFX: Using screenmode: 0x%lx:%ld (%lu:%ld)\n",
+    AWTRACE ("Using screenmode: 0x%lx:%ld (%lu:%ld)\n",
 	DisplayID, Depth, DisplayID, Depth);
 
     return 1;
@@ -1473,17 +1486,6 @@ int graphics_setup (void)
 	   }
 	}
 #endif
-    }
-#endif
-
-    /* o1i: for aroswin, we need also a DOSBase?! */
-#if 0
-    if(!DOSBase) {
-      DOSBase=OpenLibrary("dos.library",0);
-    }
-    if(!DOSBase) {
-      write_log ("No dos.library ?\n");
-      return 0;
     }
 #endif
 
@@ -1609,22 +1611,28 @@ int graphics_init (void)
     gfxvidinfo.width += 7;
     gfxvidinfo.width &= ~7;
 
+
     switch (currprefs.amiga_screen_type) {
 	case UAESCREENTYPE_ASK:
+	    AWTRACE("currprefs.amiga_screen_type: UAESCREENTYPE_ASK\n");
 	    if (setup_userscreen ())
 		break;
+	    AWTRACE ("Trying on public screen...\n");
 	    write_log ("Trying on public screen...\n");
 	    /* fall trough */
 	case UAESCREENTYPE_PUBLIC:
 	    is_halfbrite = 0;
+	    AWTRACE("currprefs.amiga_screen_type: UAESCREENTYPE_PUBLIC\n");
 	    if (setup_publicscreen ()) {
 		usepub = 1;
 		break;
 	    }
+	    AWTRACE ("Trying on public screen...\n");
 	    write_log ("Trying on custom screen...\n");
 	    /* fall trough */
 	case UAESCREENTYPE_CUSTOM:
 	default:
+	    AWTRACE("currprefs.amiga_screen_type: UAESCREENTYPE_CUSTOM\n");
 	    if (!setup_customscreen ())
 		return 0;
 	    break;
@@ -1989,11 +1997,20 @@ BOOL clone_window_area(JanusWin *jwin,
   AWTRACE("clone_wia: WritePixelArray(x %3d y %3d  width %3d height %3d)\n",
            startx-winx,starty-winy,endx-startx,endy-starty);
 
+  /* tis can happen, if we only have a window top border and no
+   * window body at all..?
+   */
+  if((endx-startx < 0) || (endy-starty < 0)) {
+    AWTRACE("WARNING: start - end < 0\n");
+    return TRUE;
+  }
+
+
   WritePixelArray (
       picasso_memory, 
       startx, /* src x  */
       starty,  /* src y  */
-      get_BytesPerRow(W),                                /* srcmod */
+      get_BytesPerRow(W, W->Width),         /* srcmod */
       win->RPort, 
       startx - winx, starty - winy,
       endx - startx + jwin->plusx,
@@ -2107,6 +2124,12 @@ static void clone_window(ULONG m68k_win, struct Window *aros_win,
     return;
   }
 
+  /* we only care for visible screen windows */
+  if(aros_win->WScreen != IntuitionBase->FirstScreen) {
+    AWTRACE("m68kwindow %lx aros_win %lx is not visible\n",m68k_win,aros_win);
+    return;
+  }
+
   src_y_start=get_TopEdge(m68k_win)  + get_BorderTop(m68k_win);
   src_y_lines=aros_win->Height;
 
@@ -2167,7 +2190,7 @@ static void clone_window(ULONG m68k_win, struct Window *aros_win,
       picasso_memory, 
       get_LeftEdge(m68k_win) + get_BorderLeft(m68k_win), /* src x  */
       real_start,  /* src y  */
-      get_BytesPerRow(W),                                /* srcmod */
+      get_BytesPerRow(W, W->Width),                      /* srcmod */
       /*native_window->RPort, */
       aros_win->RPort, 
       /* no WA_GimmeZeroZero
@@ -2188,8 +2211,8 @@ static void clone_window(ULONG m68k_win, struct Window *aros_win,
  * and same as MUIM_Draw
  */
 
-extern ULONG aos3_task;
-extern ULONG aos3_task_signal;
+extern ULONG   aos3_task;
+extern ULONG   aos3_task_signal;
 
 int o1i_Draw_delay=0;
 
@@ -2257,7 +2280,7 @@ static void o1i_Display_Update(int start,int i) {
 
   if(!uae_main_window_closed) {
     WritePixelArray (
-	picasso_memory, 0, start, get_BytesPerRow(W),
+	picasso_memory, 0, start, get_BytesPerRow(W, W->Width),
 	W->RPort, 
 	W->BorderLeft, W->BorderTop + start,
 	W->Width - W->BorderLeft - W->BorderRight, 
@@ -2282,9 +2305,6 @@ int aros_daemon_runing() {
  *
  * If this works? We'll see..
  ********************************************/
-
-GSList *janus_windows=NULL;
-
 
 #if 0
 static void o1i_Display_Update(int start,int i) {
@@ -2507,24 +2527,40 @@ void LED (int on)
 
 /* o1i: */
 
-/* WARNING: this will not work, if the uae window
- *          is not un the public screen!
+/* WARNING(?): this will not work, if the uae window
+ *          is not on the public screen!
  */
-static int get_BytesPerPix(void) {
+static int get_BytesPerPix(struct Window *win) {
   struct Screen *scr;
   int res;
 
-  scr=LockPubScreen(NULL);
+  if(!win) {
+    AWTRACE("\nERROR: win is NULL\n");
+    kprintf("\nERROR: win is NULL\n");
+    return 0;
+  }
+
+  scr=win->WScreen;
+
+  if(!GetCyberMapAttr(scr->RastPort.BitMap, CYBRMATTR_ISCYBERGFX)) {
+    AWTRACE("\nERROR: !CYBRMATTR_ISCYBERGFX\n");
+    kprintf("\nERROR: !CYBRMATTR_ISCYBERGFX\n");
+  }
+
   res=GetCyberMapAttr(scr->RastPort.BitMap, CYBRMATTR_BPPIX);
-  UnlockPubScreen(NULL,scr);
+
   return res;
 }
 
-static int get_BytesPerRow(struct Window *win) {
-  return win->Width * get_BytesPerPix();
+static int get_BytesPerRow(struct Window *win, WORD width) {
+  //AWTRACE("get_BytesPerRow(%lx)=%d * %d = %d\n",win,width,get_BytesPerPix(win),width*get_BytesPerPix(win));
+
+  return width * get_BytesPerPix(win);
 }
 
 static void set_screen_for_picasso(void) {
+
+  WORD width, height;
 
   AWTRACE("set_screen_for_picasso\n");
 
@@ -2536,37 +2572,55 @@ static void set_screen_for_picasso(void) {
   AWTRACE("  W->BorderTop:    %d\n",W->BorderTop);
   AWTRACE("  W->BorderBottom: %d\n",W->BorderBottom);
 
-  ChangeWindowBox(W, W->LeftEdge, W->TopEdge,
-                     picasso_vidinfo.width  + W->BorderLeft + W->BorderRight,
-                     picasso_vidinfo.height + W->BorderTop  + W->BorderBottom);
+  AWTRACE("  gfx_fullscreen_picasso: %d\n",currprefs.gfx_pfullscreen);
+  AWTRACE("  S: %lx\n",S);
+  if(currprefs.gfx_pfullscreen || !S) {
+    /* center it */
+    AWTRACE("  S->Width x S->Height: %d x %d\n",S->Width,S->Height);
+    width =picasso_vidinfo.width;
+    height=picasso_vidinfo.height;
+    ChangeWindowBox(W, (S->Width  - picasso_vidinfo.width )/2,
+		       (S->Height - picasso_vidinfo.height)/2,
+                       width,
+                       height);
+  }
+  else {
+    width =picasso_vidinfo.width  + W->BorderLeft + W->BorderRight;
+    height=picasso_vidinfo.height + W->BorderTop  + W->BorderBottom;
+    ChangeWindowBox(W, W->LeftEdge, W->TopEdge, width, height);
+  }
 
   /* error checks in ChangeWindowBox possible? 
    * But should not be necessary, as we allowed only screenmodes,
    * which are smaller/equal than the wb screen in DX_FillResolutions.
    */
-#if 0
-  DoSizeWindow(0,0,picasso_vidinfo.width,picasso_vidinfo.height);
-#endif
+
+  /* TAKE CARE: ChangeWindowBox is an asynchron call, the window
+   *            might still have the old size for a short while!
+   */
 
   picasso_vidinfo.extra_mem = 1;
 
-  picasso_vidinfo.rowbytes = get_BytesPerRow(W);
-  picasso_vidinfo.pixbytes = get_BytesPerPix();
+  picasso_vidinfo.rowbytes = get_BytesPerRow(W, width);
+  picasso_vidinfo.pixbytes = get_BytesPerPix(W);
 
   if(picasso_memory) {
     AWTRACE("FreeVec(%lx)\n",picasso_memory);
     FreeVec(picasso_memory);
     picasso_memory=NULL;
   }
-  picasso_memory=AllocVec(W->Width * W->Height * picasso_vidinfo.pixbytes, 
+  picasso_memory=AllocVec(width * height * picasso_vidinfo.pixbytes, 
 			  MEMF_CLEAR);
 
   picasso_invalid_start = picasso_vidinfo.height + 1;
   picasso_invalid_end   = -1;
 
-  AWTRACE("  new window size : %d x %d\n",W->Width,W->Height);
-  AWTRACE("  byte per row    : %d \n",picasso_vidinfo.rowbytes);
-  AWTRACE("  byte per pix    : %d \n",picasso_vidinfo.pixbytes);
+  AWTRACE("  actaul window size : %d x %d\n",W->Width,W->Height);
+  AWTRACE("  new window size    : %d x %d\n",width,height);
+  AWTRACE("  byte per row       : %d \n",picasso_vidinfo.rowbytes);
+  AWTRACE("  byte per pix       : %d \n",picasso_vidinfo.pixbytes);
+
+  /* wait here, until window has right size?? */
   AWTRACE("  set_screen_for_picasso done!\n");
 }
 
@@ -2595,7 +2649,7 @@ static void un_set_screen_for_picasso(void) {
     AWTRACE("un_set_screen_for_picasso: FreeVec(%lx)\n",gfxvidinfo.bufmem);
     FreeVec(gfxvidinfo.bufmem);
     /* too big ..? */
-    gfxvidinfo.bufmem=AllocVec(W->Width * W->Height * get_BytesPerPix(), MEMF_CLEAR);
+    gfxvidinfo.bufmem=AllocVec(W->Width * W->Height * get_BytesPerPix(W), MEMF_CLEAR);
   }
   #endif
 }
@@ -2669,7 +2723,7 @@ int DX_FillResolutions (uae_u16 *ppixel_format)
     struct Screen *screen;
     ULONG j;
 
-    write_log("DX_FillResolutions(%d)\n",ppixel_format);
+    AWTRACE("DX_FillResolutions(%d)\n",ppixel_format);
 
     static struct
     {
