@@ -193,7 +193,7 @@ static uaecptr m68k_return_trapaddr;
 static uaecptr exit_trap_trapaddr;
 
 /* For IPC between main thread and trap context */
-static uae_sem_t trap_mutex;
+uae_sem_t trap_mutex;
 static ExtendedTrapContext *current_context;
 
 

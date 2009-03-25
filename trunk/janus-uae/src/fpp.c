@@ -115,9 +115,11 @@ STATIC_INLINE uae_u32 get_fpsr (const struct regstruct *regs)
 {
     uae_u32 answer = regs->fpsr & 0x00ffffff;
 #ifdef HAVE_ISNAN
+    /*
     if (isnan (regs->fp_result))
 	answer |= 0x01000000;
     else
+      */
 #endif
     {
 	if (regs->fp_result == 0)
@@ -577,7 +579,9 @@ STATIC_INLINE int fpp_cond (uae_u32 opcode, int contition)
     int NotANumber = 0;
 
 #ifdef HAVE_ISNAN
+/*
     NotANumber = isnan (regs.fp_result);
+    */
 #endif
 
     if (NotANumber)

@@ -6,6 +6,9 @@
   * Copyright 1996 Bernd Schmidt
   */
 
+#ifndef _MACCESS_H_
+#define _MACCESS_H_
+
 STATIC_INLINE uae_u32 do_get_mem_long (uae_u32 *a)
 {
     uae_u32 retval;
@@ -50,3 +53,5 @@ STATIC_INLINE void do_put_mem_word (uae_u16 *a, uae_u32 v)
 #define call_mem_put_func(func,addr,v) ((*func)(addr,v))
 
 #define ALIGN_POINTER_TO32(p) ((~(unsigned long)(p)) & 3)
+
+#endif

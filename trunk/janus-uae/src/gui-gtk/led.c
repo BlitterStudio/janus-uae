@@ -67,21 +67,33 @@ static void led_class_init (LedClass *class)
 
 static void led_init (Led *theled)
 {
-    theled->color = LED_OFF;
+  theled->color = LED_OFF;
+#if defined GTKMUI
+  gtk_widget_set_size_request(theled,LED_W,LED_H);
+#endif
 }
 
 GtkWidget *led_new (void)
 {
-    return gtk_type_new (led_get_type ());
+  return gtk_type_new (led_get_type ());
 }
 
 static gint led_expose (GtkWidget *w, GdkEventExpose *event)
 {
+#if !defined GTKMUI
+  /* TODO */
     if (w && GTK_WIDGET_DRAWABLE (w)) {
 	Led *theled = LED (w);
 	gdk_draw_rectangle (w->window, theled->gc, TRUE, 0, 0,
 			    w->allocation.width, w->allocation.height);
     }
+#else
+    GtkStyle *style = gtk_style_copy (w->style);
+    style->bg[GTK_STATE_NORMAL] = LED (w)->color;
+    gtk_style_attach (style, w->window);
+    gtk_draw_flat_box (style, w->window, GTK_STATE_NORMAL, GTK_SHADOW_NONE,
+			0, 0, LED_W, LED_H);
+#endif
     return 0;
 }
 
@@ -166,7 +178,10 @@ void led_set_color (Led *l, GdkColor col)
     l->color = col;
 
     if (GTK_WIDGET_REALIZED (l)) {
+#if !defined GTKMUI
+      /* TODO */
 	gdk_gc_set_rgb_fg_color (l->gc, &l->color);
+#endif
 	led_expose (GTK_WIDGET (l), NULL);
     }
 }

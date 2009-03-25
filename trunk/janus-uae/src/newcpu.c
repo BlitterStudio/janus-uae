@@ -2271,6 +2271,8 @@ const uae_u8 *restore_cpu (const uae_u8 *src)
     changed_prefs.address_space_24 = 0;
     if (flags & CPUTYPE_EC)
 	changed_prefs.address_space_24 = 1;
+
+    //kprintf("oli: address_space_24: %d\n",changed_prefs.address_space_24);
     if (model > 68000)
 	changed_prefs.cpu_compatible = 0;
     currprefs.cpu_level = changed_prefs.cpu_level;
