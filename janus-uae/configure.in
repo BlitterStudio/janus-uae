@@ -4,7 +4,7 @@ dnl
 dnl Updated, re-written and generally mauled 2003 Richard Drummond
 
 AC_PREREQ(2.55)
-AC_INIT(E-UAE, 0.8.29-WIP4, ,e-uae)
+AC_INIT(JANUS-UAE, 0.2, ,janus-uae)
 AC_CONFIG_SRCDIR([bootstrap.sh])
 AM_CONFIG_HEADER([src/sysconfig.h])
 AC_CANONICAL_TARGET
@@ -17,7 +17,7 @@ dnl
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_CXX
-AS_PROG_OBJC
+dnl AS_PROG_OBJC
 AM_PROG_AS
 AC_PROG_MAKE_SET
 AC_PROG_RANLIB
@@ -53,10 +53,11 @@ dnl AC_CHECK_LIB(vga, vga_setmode, HAVE_SVGA_LIB=yes, HAVE_SVGA_LIB=no)
 
 AC_CHECK_LIB(ossaudio,_oss_ioctl, HAVE_LIBOSSAUDIO=yes, HAVE_LIBOSSAUDIO=no)
 
-dnl  Prefer Gtk2.x over Gtk1.x if both are available
-AM_PATH_GTK_2_0(2.0.0,HAVE_GTK=yes,HAVE_GTK=no)
-if [[ "x$HAVE_GTK" = "xno" ]]; then
-  AM_PATH_GTK(1.0.0,HAVE_GTK=yes,HAVE_GTK=no)
+dnl  Gtk2.x only
+if [[ "$HOST_OS" = "aros" ]];then
+  HAVE_GTK=yes
+else
+  AM_PATH_GTK_2_0(2.0.0,HAVE_GTK=yes,HAVE_GTK=no)
 fi
 
 dnl
@@ -501,6 +502,15 @@ else if [[ "$OSDEP" = "od-amiga" ]]; then
    JOY_NAME="Amiga lowlevel.library"
   fi
   WANT_BSDSOCK=no
+  if [[ "$HOST_OS" = "aros" ]];then
+    THREADNAME="native AROS"
+    GFX_NAME="native AROS"
+    GUI_DEP=gui-gtk
+    GUI_NAME="GTK-MUI"
+dnl    UAE_DEFINES="$UAE_DEFINES -DGTKMUI"
+    GTK_CFLAGS="-DGTKMUI"
+    GTK_LIBS="-lgtk-mui -lgobject-2.0 -lglib-2.0 -liconv"
+  fi
 else if [[ "$OSDEP" = "od-win32" ]]; then
   TARGET=win32
   TARGETDEP=t-win32.h
