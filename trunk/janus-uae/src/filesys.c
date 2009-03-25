@@ -52,7 +52,7 @@
 
 #define TRACING_ENABLED 0
 #if TRACING_ENABLED
-#define TRACE(x)	do { write_log x; } while(0)
+#define TRACE(x)	do { kprintf("FS %s",__func__);kprintf x; } while(0)
 #define DUMPLOCK(u,x)	dumplock(u,x)
 #else
 #define TRACE(x)
@@ -4237,6 +4237,7 @@ static void addfakefilesys (uaecptr parmpacket, uae_u32 dostype)
     put_long (parmpacket + PP_FSHDSTART + 44, 0xffffffff);
 }
 
+#if 0
 static void dofakefilesys (UnitInfo *uip, uaecptr parmpacket)
 {
     int i, size;
@@ -4291,6 +4292,75 @@ static void dofakefilesys (UnitInfo *uip, uaecptr parmpacket)
     addfakefilesys (parmpacket, dostype);
     write_log ("HDF: faked RDB filesystem %08.8X loaded\n", dostype);
 }
+#endif
+
+static void dofakefilesys (UnitInfo *uip, uaecptr parmpacket)
+{
+    int i, size;
+    char tmp[1024];
+    struct zfile *zf;
+    uae_u32 dostype, fsres, fsnode;
+
+    write_log("RDB dofakefilesys entered\n");
+
+    hdf_read (&uip->hf, tmp, 0, 4);
+    dostype = (tmp[0] << 24) | (tmp[1] << 16) |(tmp[2] << 8) | tmp[3];
+    if (dostype == 0)
+	return FILESYS_HARDFILE;
+    fsres = get_long (parmpacket + PP_FSRES);
+    fsnode = get_long (fsres + 18);
+    while (get_long (fsnode)) {
+	if (get_long (fsnode + 14) == dostype) {
+	    if (kickstart_version < 36) {
+		addfakefilesys (parmpacket, dostype);
+	    } else if ((dostype & 0xffffff00) != 0x444f5300) {
+		addfakefilesys (parmpacket, dostype);
+	    }
+	    return FILESYS_HARDFILE;
+	}
+	fsnode = get_long (fsnode);
+    }
+
+    tmp[0] = 0;
+    if (uip->filesysdir && strlen(uip->filesysdir) > 0) {
+	strcpy (tmp, uip->filesysdir);
+    } else if ((dostype & 0xffffff00) == 0x444f5300) {
+	strcpy (tmp, currprefs.romfile);
+	i = strlen (tmp);
+	while (i > 0 && tmp[i - 1] != '/' && tmp[i - 1] != '\\')
+	    i--;
+	strcpy (tmp + i, "FastFileSystem");
+    }
+    if (tmp[0] == 0) {
+	write_log ("RDB: no filesystem for dostype 0x%08X\n", dostype);
+	if ((dostype & 0xffffff00) == 0x444f5300)
+	    return FILESYS_HARDFILE;
+	return -1;
+    }
+    write_log ("RDB: fakefilesys, trying to load '%s', dostype 0x%08X\n", tmp, dostype);
+    zf = zfile_fopen (tmp, "rb");
+    if (!zf) {
+	write_log ("RDB: filesys not found\n");
+	if ((dostype & 0xffffff00) == 0x444f5300)
+	    return FILESYS_HARDFILE;
+	return -1;
+    }
+
+    zfile_fseek (zf, 0, SEEK_END);
+    size = zfile_ftell (zf);
+    if (size > 0) {
+	zfile_fseek (zf, 0, SEEK_SET);
+	uip->rdb_filesysstore = (uae_u8*)xmalloc (size);
+	zfile_fread (uip->rdb_filesysstore, size, 1, zf);
+    }
+    zfile_fclose (zf);
+    uip->rdb_filesyssize = size;
+    put_long (parmpacket + PP_FSSIZE, uip->rdb_filesyssize);
+    addfakefilesys (parmpacket, dostype);
+    write_log ("HDF: faked RDB filesystem %08X loaded\n", dostype);
+    return FILESYS_HARDFILE;
+}
+
 
 static void get_new_device (int type, uaecptr parmpacket, char **devname, uaecptr *devname_amiga, int unit_no)
 {

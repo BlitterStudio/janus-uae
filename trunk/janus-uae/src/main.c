@@ -300,6 +300,23 @@ static void fix_options (void)
 #endif
 #endif
 
+    if(!currprefs.gfx_afullscreen) {
+      /* if we are not fullscreen, we oepn a window on the
+       * specified public screen or on wb, if NULL
+       * 1 == UAESCREENTYPE_PUBLIC
+       *
+       * as we ignore picasso full screen option, we
+       * handle it analog to amiga_fullscreen
+       */
+      kprintf("currprefs.amiga_screen_type: %d\n",currprefs.amiga_screen_type);
+      currprefs.amiga_screen_type = 1;
+      kprintf("currprefs.amiga_screen_type: %d\n",currprefs.amiga_screen_type);
+      currprefs.gfx_pfullscreen = 0;
+    }
+    else {
+      currprefs.gfx_pfullscreen = 1;
+    }
+
     fixup_prefs_joysticks (&currprefs);
 
     if (err)

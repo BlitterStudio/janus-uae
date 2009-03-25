@@ -1021,7 +1021,7 @@ void init_row_map (void)
     }
 
     if(!gfxvidinfo.bufmem) {
-	write_log ("ERROR: init_row_map: gfxvidinfo.bufmem is NULL !? \n");
+	write_log ("WARNING: init_row_map: gfxvidinfo.bufmem is NULL !? \n");
     }
     j = 0;
     for (i = 0; i < gfxvidinfo.height + 1; i++, j += gfxvidinfo.rowbytes)

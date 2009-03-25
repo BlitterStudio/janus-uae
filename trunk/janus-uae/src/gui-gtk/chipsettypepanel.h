@@ -1,3 +1,4 @@
+#if 0
 /* chipsettypepanel.h */
 
 #ifndef __CHIPSETTYPEPANEL_H__
@@ -44,3 +45,4 @@ void            chipsettypepanel_set_ntscmode     (ChipsetTypePanel *panel, guin
 #endif /* __cplusplus */
 
 #endif /* __CHIPSETTYPEPANEL_H__ */
+#endif

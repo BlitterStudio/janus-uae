@@ -63,11 +63,17 @@
 #define NSCMD_TD_FORMAT64 0xc003
 
 #undef DEBUGME
-//#define DEBUGME
+#define DEBUGME
 #ifdef DEBUGME
+#ifdef __AROS__
+#define hf_log(...) do { kprintf("HF: ");kprintf(__VA_ARGS__); } while(0)
+#define hf_log2(...) do { kprintf("HF: ");kprintf(__VA_ARGS__); } while(0)
+#define scsi_log(...) do { kprintf("SCSI: ");kprintf(__VA_ARGS__); } while(0)
+#else
 #define hf_log write_log
 #define hf_log2 write_log
 #define scsi_log write_log
+#endif
 #else
 # ifdef __GCC__
 #  define hf_log(x...)    do { ; } while (0)
@@ -404,6 +410,8 @@ static uae_u32 REGPARAM2 hardfile_open (TrapContext *context)
     int unit = mangleunit (m68k_dreg (&context->regs, 0));
     struct hardfileprivdata *hfpd = &hardfpd[unit];
     int err = -1;
+
+    hf_log("hardfile_open entered\n");
 
     /* Check unit number */
     if (unit >= 0 && get_hardfile_data (unit) && start_thread (unit)) {

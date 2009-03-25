@@ -188,7 +188,7 @@ GtkWidget *gtkutil_add_table (GtkWidget *container, ...)
     int flags;
 
     table = gtk_table_new (3, 3, FALSE);
-    gtk_container_set_border_width (GTK_CONTAINER (table), TABLE_BORDER_WIDTH);
+    //gtk_container_set_border_width (GTK_CONTAINER (table), TABLE_BORDER_WIDTH);
     gtk_table_set_row_spacings (GTK_TABLE (table), TABLE_ROW_SPACING);
     gtk_table_set_col_spacings (GTK_TABLE (table), TABLE_COL_SPACING);
     gtk_container_add (GTK_CONTAINER (container), table);

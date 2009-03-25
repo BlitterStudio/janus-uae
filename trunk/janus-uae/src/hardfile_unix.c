@@ -12,9 +12,9 @@
 
 #include "filesys.h"
 
-//#define HDF_DEBUG
+#define HDF_DEBUG
 #ifdef  HDF_DEBUG
-#define DEBUG_LOG write_log( "%s: ", __func__); write_log
+#define DEBUG_LOG kprintf( "HDFU %s: ", __func__); kprintf
 #else
 #define DEBUG_LOG(...) do ; while(0)
 #endif

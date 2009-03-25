@@ -198,7 +198,8 @@ noinst_LIBRARIES = libguidep.a
 
 libguidep_a_SOURCES = gtkui.c util.c chooserwidget.c cputypepanel.c \
 		      cpuspeedpanel.c floppyfileentry.c led.c \
-		      chipsettypepanel.c chipsetspeedpanel.c
+		      chipsettypepanel.c chipsetspeedpanel.c \
+		      display.c
 
 
 noinst_HEADERS = util.h chooserwidget.h cputypepanel.h cpuspeedpanel.h \
@@ -216,7 +217,8 @@ libguidep_a_LIBADD =
 am_libguidep_a_OBJECTS = gtkui.$(OBJEXT) util.$(OBJEXT) \
 	chooserwidget.$(OBJEXT) cputypepanel.$(OBJEXT) \
 	cpuspeedpanel.$(OBJEXT) floppyfileentry.$(OBJEXT) led.$(OBJEXT) \
-	chipsettypepanel.$(OBJEXT) chipsetspeedpanel.$(OBJEXT)
+	chipsettypepanel.$(OBJEXT) chipsetspeedpanel.$(OBJEXT) \
+	display.$(OBJEXT)
 libguidep_a_OBJECTS = $(am_libguidep_a_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/src
@@ -227,6 +229,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/chooserwidget.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cpuspeedpanel.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cputypepanel.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/display.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/floppyfileentry.Po ./$(DEPDIR)/gtkui.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/led.Po ./$(DEPDIR)/util.Po
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -268,6 +271,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpuspeedpanel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cputypepanel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/floppyfileentry.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/display.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gtkui.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/led.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/util.Po@am__quote@
