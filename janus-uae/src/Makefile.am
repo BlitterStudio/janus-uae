@@ -1,5 +1,5 @@
 INCLUDES = \
-	-I$(top_srcdir)/src/include -I$(top_builddir)/src -I$(top_srcdir)/src -I$(top_srcdir)
+	-I$(top_srcdir)/src/include -I$(top_builddir)/src -I$(top_srcdir)/src -I$(top_srcdir) -I/usr/local/amiga/i686-aros/include/glib-2.0/glib -I/usr/local/amiga/i686-aros/include/glib-2.0 -I/usr/local/amiga/i686-aros/lib/glib-2.0/include
 
 SUBDIRS = \
 	tools @MACHDEP@ @THREADDEP@ @GFX_DEP@ @SND_DEP@ @JOY_DEP@ @GUI_DEP@ \
@@ -108,6 +108,7 @@ noinst_HEADERS = \
 	include/traps.h                                 \
 	include/tui.h		include/uae.h		\
 	include/uaeexe.h \
+	include/aroswin.h \
 	include/uae_endian.h \
 	include/uae_malloc.h \
 	include/uae_string.h \
@@ -135,7 +136,7 @@ uae_SOURCES = \
 	native2amiga.c disk.c crc32.c savestate.c unzip.c \
 	uaeexe.c uaelib.c fdi2raw.c hotkeys.c \
 	ar.c driveclick.c enforcer.c misc.c \
-	missing.c readcpu.c
+	missing.c readcpu.c aroswin.c
 
 EXTRA_uae_SOURCES = \
 	bsdsocket.c bsdsocket-posix-new.c build68k.c catweasel.c cdrom.c \

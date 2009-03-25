@@ -6,6 +6,9 @@
   * Copyright 1995 Bernd Schmidt
   */
 
+#ifndef __NEWCPU_H_
+#define __NEWCPU_H_
+
 #include "readcpu.h"
 #include "machdep/m68k.h"
 #include "events.h"
@@ -330,4 +333,6 @@ extern void flush_icache (int n);
 extern void compemu_reset (void);
 #else
 #define flush_icache(X) do {} while (0)
+#endif
+
 #endif

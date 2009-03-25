@@ -7,6 +7,9 @@
   * Copyright 1995-2001 Bernd Schmidt
   */
 
+#ifndef _OPTIONS_H_
+#define _OPTIONS_H_
+
 typedef enum { KBD_LANG_US, KBD_LANG_DK, KBD_LANG_DE, KBD_LANG_SE, KBD_LANG_FR, KBD_LANG_IT, KBD_LANG_ES } KbdLang;
 
 struct uaedev_mount_info;
@@ -399,4 +402,6 @@ STATIC_INLINE void fuzzy_memset_le32_1 (void *p, uae_u32 c, int offset, int len)
 
 #if defined TARGET_AMIGAOS && defined(__GNUC__)
 #include "od-amiga/amiga-kludges.h"
+#endif
+
 #endif

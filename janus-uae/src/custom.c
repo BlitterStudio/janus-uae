@@ -22,6 +22,11 @@
 
 #include <ctype.h>
 #include <assert.h>
+#include <proto/graphics.h>
+#include <proto/intuition.h>
+
+#include <gtk/gtk.h>
+
 
 #include "options.h"
 #include "uae.h"
@@ -56,6 +61,13 @@
 #endif
 #include "hrtimer.h"
 #include "sleep.h"
+#include "aroswin.h"
+
+
+#if defined GTKMUI
+#define MGTK_DEBUG 1
+#include "/home/oli/aros/gtk-mui/debug.h"
+#endif
 
 static void uae_abort (const char *format,...)
 {
@@ -2371,6 +2383,69 @@ static uae_u32 REGPARAM2 timehack_helper (TrapContext *context)
 #endif
 }
 
+/****************************************
+ * we want a lot of commands with one
+ * helper. So we create a dispatcher
+ * here.
+ ****************************************/
+
+struct Window *native_window;
+
+static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest, ULONG xdest,
+	ULONG minterm)
+{
+    ULONG sByte, sSet;
+    ULONG dByte, dSet;
+    UBYTE sBit;
+    UBYTE dBit;
+    BOOL set;
+
+    if (src == NULL)
+    {
+        sSet = FALSE;
+    } else if (src == (PLANEPTR)-1)
+    {
+        sSet = TRUE;
+    } else {
+	sByte = xsrc >> 3;
+	sBit = 1L << (7 - (xsrc & 0x07));
+	sSet = (src[sByte] & sBit) != 0;
+    }
+    
+    /* dest PLANEPTR here will never be NULL or -1 */
+    dByte = xdest >> 3;
+    dBit = 1L << (7 - (xdest & 0x07));
+    dSet = (dest[dByte] & dBit) != 0;
+
+    set = 0;
+
+    if (minterm & 0x0010)
+    {
+	if (!sSet && !dSet)
+	    set = 1;
+    }
+    if (minterm & 0x0020)
+    {
+	if (!sSet && dSet)
+	    set = 1;
+    }
+    if (minterm & 0x0040)
+    {
+	if (sSet && !dSet)
+	    set = 1;
+    }
+    if (minterm & 0x0080)
+    {
+	if (sSet && dSet)
+	    set = 1;
+    }
+
+    if (set)
+	dest[dByte] |= dBit;
+    else
+	dest[dByte] &= ~dBit;
+}
+
  /*
   * register functions
   */
@@ -4281,7 +4356,9 @@ static void vsync_handler (void)
 
 #ifdef PICASSO96
     /* And now let's update the Picasso palette, if required */
+#ifndef __AROS__
     DX_SetPalette_vsync();
+#endif
     if (picasso_on)
 	picasso_handle_vsync ();
 #endif
@@ -4767,6 +4844,11 @@ int custom_init (void)
 
 	org (RTAREA_BASE+0xFFA0);
 	calltrap (deftrap (timehack_helper));
+	dw (RTS);
+
+    /* o1i: init aros hack */
+	org (RTAREA_BASE+0xFF90);
+	calltrap (deftrap (aroshack_helper));
 	dw (RTS);
 
 	org (pos);

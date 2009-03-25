@@ -887,6 +887,9 @@ local int unzlocal_CheckCurrentFileCoherencyHeader (s,piSizeVar,
 extern int ZEXPORT unzOpenCurrentFile (file)
 	unzFile file;
 {
+#if defined GTKMUI
+    return UNZ_PARAMERROR;
+#else
 	int err=UNZ_OK;
 	int Store;
 	uInt iSizeVar;
@@ -972,6 +975,7 @@ extern int ZEXPORT unzOpenCurrentFile (file)
 
 	s->pfile_in_zip_read = pfile_in_zip_read_info;
     return UNZ_OK;
+#endif
 }
 
 
@@ -990,6 +994,9 @@ extern int ZEXPORT unzReadCurrentFile  (file, buf, len)
 	voidp buf;
 	unsigned len;
 {
+#if defined GTKMUI
+  return UNZ_PARAMERROR;
+#else
 	int err=UNZ_OK;
 	uInt iRead = 0;
 	unz_s* s;
@@ -1106,6 +1113,7 @@ extern int ZEXPORT unzReadCurrentFile  (file, buf, len)
 	if (err==Z_OK)
 		return iRead;
 	return err;
+#endif
 }
 
 
@@ -1215,6 +1223,9 @@ extern int ZEXPORT unzGetLocalExtrafield (file,buf,len)
 extern int ZEXPORT unzCloseCurrentFile (file)
 	unzFile file;
 {
+#if defined GTKMUI
+    return UNZ_PARAMERROR;
+#else
 	int err=UNZ_OK;
 
 	unz_s* s;
@@ -1246,6 +1257,7 @@ extern int ZEXPORT unzCloseCurrentFile (file)
     s->pfile_in_zip_read=NULL;
 
 	return err;
+#endif
 }
 
 

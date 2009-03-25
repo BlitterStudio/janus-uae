@@ -22,7 +22,7 @@
 #include "native2amiga.h"
 
 smp_comm_pipe native2amiga_pending;
-static uae_sem_t n2asem;
+/*static*/ uae_sem_t n2asem;
 
 /*
  * to be called when setting up the hardware

@@ -1019,6 +1019,10 @@ void init_row_map (void)
 	write_log ("Resolution too high, aborting\n");
 	abort ();
     }
+
+    if(!gfxvidinfo.bufmem) {
+	write_log ("ERROR: init_row_map: gfxvidinfo.bufmem is NULL !? \n");
+    }
     j = 0;
     for (i = 0; i < gfxvidinfo.height + 1; i++, j += gfxvidinfo.rowbytes)
 	row_map[i] = gfxvidinfo.bufmem + j;
@@ -1770,6 +1774,12 @@ static void draw_status_line (int line)
 	    num3 = idle % 10;
 	    num4 = num1 == 0 ? 13 : -1;
 	    am = 3;
+	}
+	else {
+	  /* o1i: pos and off_rgb were used uninitialized here ? */
+	  pos=0;
+	  off_rgb = 0x000;
+	  on_rgb = 0x000;
 	}
 	c = xcolors[on ? on_rgb : off_rgb];
 	if (y == 0 || y == TD_TOTAL_HEIGHT - 1)

@@ -1,3 +1,5 @@
+#ifndef _PICASSO_H_
+#define _PICASSO_H_
 
 #if 0//def WIN32
 
@@ -586,6 +588,8 @@ extern int NDX_BlitRectNoMaskComplete(struct RenderInfo* sri,struct RenderInfo* 
 
 extern int p96hack_vpos2;
 extern int p96refresh_active;
+#endif
+
 #endif
 
 #endif

@@ -16,6 +16,12 @@
 #include "chooserwidget.h"
 #include "util.h"
 
+
+#if defined GTKMUI
+//#define MGTK_DEBUG 1
+#include "/home/oli/aros/gtk-mui/debug.h"
+#endif
+
 static void cputypepanel_init (CpuTypePanel *pathent);
 static void cputypepanel_class_init (CpuTypePanelClass *class);
 static void update_state (CpuTypePanel *ctpanel);
@@ -142,7 +148,10 @@ static void update_state (CpuTypePanel *ctpanel)
 
 static void on_cputype_changed (GtkWidget *w, CpuTypePanel *ctpanel)
 {
+    //D(bug("on_cputype_changed!!\n"));
     ctpanel->cputype = CHOOSERWIDGET (w)->choice;
+
+    //D(bug("on_cputype_changed choice: %d\n",CHOOSERWIDGET (w)->choice));
     update_state (ctpanel);
     gtk_signal_emit_by_name (GTK_OBJECT(ctpanel), "cputype-changed");
 }
@@ -188,25 +197,33 @@ void cputypepanel_set_cpulevel (CpuTypePanel *ctpanel, guint cpulevel)
 {
     guint cputype; guint fpu = ctpanel->fpuenabled;
 
-    switch (cpulevel) {
-	case 0:  cputype = 0; break;
-	case 1:  cputype = 1; break;
-	case 2:  cputype = 2; fpu = 0; break;
-	case 3:  cputype = 2; fpu = 1; break;
-	case 4:  cputype = 3; fpu = 1; break;
-	case 6:  cputype = 4; fpu = 1; break;
-	default: cputype = 0;
-    }
-    if (cputype != ctpanel->cputype) {
-	ctpanel->cputype = cputype;
-	chooserwidget_set_choice (CHOOSERWIDGET (ctpanel->cputype_widget), cputype);
+    //DebOut("entered (%d)\n",cpulevel);
 
+    switch (cpulevel) {
+      case 0:  cputype = 0; break;
+      case 1:  cputype = 1; break;
+      case 2:  cputype = 2; fpu = 0; break;
+      case 3:  cputype = 2; fpu = 1; break;
+      case 4:  cputype = 3; fpu = 1; break;
+      case 6:  cputype = 4; fpu = 1; break;
+      default: cputype = 0;
     }
+    //DebOut("1\n");
+
+    if (cputype != ctpanel->cputype) {
+      ctpanel->cputype = cputype;
+      chooserwidget_set_choice (CHOOSERWIDGET (ctpanel->cputype_widget), cputype);
+    }
+    //DebOut("2\n");
+
     if (fpu != ctpanel->fpuenabled) {
-	ctpanel->fpuenabled = fpu;
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (ctpanel->fpuenabled_widget), fpu);
+      ctpanel->fpuenabled = fpu;
+      gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (ctpanel->fpuenabled_widget), fpu);
     }
+    //DebOut("3\n");
+
     update_state (ctpanel);
+    //DebOut("exit\n");
 }
 
 guint cputypepanel_get_cpulevel (CpuTypePanel *ctpanel)

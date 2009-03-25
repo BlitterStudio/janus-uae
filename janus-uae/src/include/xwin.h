@@ -7,6 +7,10 @@
   * Copyright 2005 Richard Drummond
   */
 
+
+#ifndef _XWIN_H_
+#define _XWIN_H_
+
 typedef uae_u32 xcolnr;
 
 typedef int (*allocfunc_type)(int, int, int, xcolnr *);
@@ -121,3 +125,5 @@ extern void toggle_mousegrab      (void);
 /* For ports using tui.c, this should be built by graphics_setup(). */
 extern struct bstring *video_mode_menu;
 extern void vidmode_menu_selected(int);
+
+#endif

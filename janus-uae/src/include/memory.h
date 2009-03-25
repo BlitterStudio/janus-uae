@@ -6,6 +6,8 @@
   * Copyright 1995 Bernd Schmidt
   */
 
+#ifndef _MEMORY_H_
+#define _MEMORY_H_
 extern void memory_reset (void);
 extern void a1000_reset (void);
 
@@ -283,3 +285,5 @@ extern uae_u8 *mapped_malloc (size_t, const char *);
 extern void mapped_free (uae_u8 *);
 extern void clearexec (void);
 extern void mapkick (void);
+
+#endif

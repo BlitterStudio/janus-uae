@@ -45,11 +45,25 @@
 #include "gui-gtk/chipsetspeedpanel.h"
 #include "gui-gtk/util.h"
 
-//#define GUI_DEBUG
+//#define GUI_DEBUG 1
 #ifdef  GUI_DEBUG
-#define DEBUG_LOG write_log( "%s: ", __func__); write_log
+#define DEBUG_LOG(...) do { kprintf("GUI: %s(): ",__func__);kprintf(__VA_ARGS__); } while(0)
 #else
 #define DEBUG_LOG(...) do ; while(0)
+#endif
+
+
+#define P96TRACING_ENABLED 1
+#if P96TRACING_ENABLED
+#define P96TRACE(x)	do { kprintf x; } while(0)
+#else
+#define P96TRACE(x)     do { ; } while(0)
+#endif
+
+
+#if defined GTKMUI
+//#define MGTK_DEBUG 1
+#include "/home/oli/aros/gtk-mui/debug.h"
 #endif
 
 static int gui_active;
@@ -197,6 +211,8 @@ static void set_mem32_widgets_state (void)
 {
     int enable = changed_prefs.cpu_level >= 2 && ! changed_prefs.address_space_24;
 
+    //D(bug("enable: %d\n",enable));
+
 #ifdef AUTOCONFIG
     int i;
 
@@ -218,17 +234,19 @@ static void set_cpu_state (void)
     int i;
 
     DEBUG_LOG ("set_cpu_state: %d %d %d\n", changed_prefs.cpu_level,
-	changed_prefs.address_space_24, changed_prefs.m68k_speed);
+    changed_prefs.address_space_24, changed_prefs.m68k_speed);
+
+    //DebOut ("%d %d %d\n", changed_prefs.cpu_level, changed_prefs.address_space_24, changed_prefs.m68k_speed);
 
     cputypepanel_set_cpulevel      (CPUTYPEPANEL (ctpanel), changed_prefs.cpu_level);
     cputypepanel_set_addr24bit     (CPUTYPEPANEL (ctpanel), changed_prefs.address_space_24);
     cputypepanel_set_compatible    (CPUTYPEPANEL (ctpanel), changed_prefs.cpu_compatible);
     cputypepanel_set_cycleexact    (CPUTYPEPANEL (ctpanel), changed_prefs.cpu_cycle_exact);
-
     cpuspeedpanel_set_cpuspeed     (CPUSPEEDPANEL (cspanel), changed_prefs.m68k_speed);
     cpuspeedpanel_set_cpuidle      (CPUSPEEDPANEL (cspanel), changed_prefs.cpu_idle);
 
     set_mem32_widgets_state ();
+    //DebOut("exit\n");
 }
 
 static void set_chipset_state (void)
@@ -456,6 +474,7 @@ static void set_floppy_state( void )
 
 static void update_state (void)
 {
+  //DebOut("entered\n");
     set_cpu_state ();
     set_joy_state ();
     set_sound_state ();
@@ -468,6 +487,8 @@ static void update_state (void)
     set_hd_state ();
 #endif
     set_chipset_state ();
+ 
+  //DebOut("done\n");
 }
 
 static void update_buttons (int state)
@@ -519,6 +540,7 @@ static int my_idle (void)
 	 }
 	 case GUICMD_SHOW:
 	 case GUICMD_FLOPPYDLG:
+//	  DebOut("case GUICMD_SHOW\n");
 	    if (!gui_window) {
 		create_guidlg ();
 		update_state ();
@@ -530,10 +552,14 @@ static int my_idle (void)
 		gtk_window_present (GTK_WINDOW (gui_window));
 	        gui_active = 1;
 #	    endif
+#if defined GTKMUI
+		gui_active = 1;
+#endif
 	    } else {
 		n = read_comm_pipe_int_blocking (&to_gui_pipe);
 		floppyfileentry_do_dialog (FLOPPYFILEENTRY (floppy_widget[n]));
 	    }
+	    //DebOut("case GUICMD_SHOW end\n");
 	    break;
 	 case GUICMD_DISKCHANGE:
 	    n = read_comm_pipe_int_blocking (&to_gui_pipe);
@@ -603,8 +629,9 @@ static int find_current_toggle (GtkWidget **widgets, int count)
 
 static void joy_changed (void)
 {
-    if (! gui_active)
+    if (!gui_active) 
 	return;
+
     changed_prefs.jport0 = map_widget_to_jsem (find_current_toggle (joy_widget[0], 7));
     changed_prefs.jport1 = map_widget_to_jsem (find_current_toggle (joy_widget[1], 7));
 
@@ -718,10 +745,14 @@ static void on_debug_clicked (void)
 
 static void on_quit_clicked (void)
 {
-    DEBUG_LOG ("Quit button clicked.\n");
+    DEBUG_LOG ("Quit button clicked (quit_gui: %d).\n",quit_gui);
 
-    if (!quit_gui)
+    if (!quit_gui) {
 	write_comm_pipe_int (&from_gui_pipe, UAECMD_QUIT, 1);
+#ifdef GTKMUI
+//olioli	gtk_main_quit ();
+#endif
+    }
 }
 
 static void on_pause_clicked (GtkWidget *widget, gpointer data)
@@ -752,7 +783,19 @@ static void disc_changed (FloppyFileEntry *ffe, gpointer p)
 	/* Get the pathname, not including the filename
 	 * Set floppydlg_path to this, so that when the requester
 	 * dialog pops up again, we don't have to navigate to the same place. */
+#if !defined GTKMUI
 	len = strrchr(s, '/') - s;
+#else
+      if(strrchr(s, '/')) {
+       	len = strrchr(s, '/') - s;
+      }
+      else if(strrchr(s, ':')) {
+	len = strrchr(s, ':') - s;
+      }
+      else {
+	len = 0;
+      }
+#endif
 	if (len > 254) len = 254;
 	strncpy(floppydlg_path, s, len);
 	floppydlg_path[len] = '\0';
@@ -779,6 +822,7 @@ static GtkWidget *make_file_selector (const char *title,
     gtk_signal_connect_object (GTK_OBJECT (GTK_FILE_SELECTION (p)->ok_button),
 			       "clicked", (GtkSignalFunc) insertfunc,
 			       GTK_OBJECT (p));
+#if !defined GTKMUI
     gtk_signal_connect_object (GTK_OBJECT (GTK_FILE_SELECTION (p)->cancel_button),
 			       "clicked", (GtkSignalFunc) gtk_widget_destroy,
 			       GTK_OBJECT (p));
@@ -786,8 +830,13 @@ static GtkWidget *make_file_selector (const char *title,
 #if 0
     gtk_window_set_title (GTK_WINDOW (p), title);
 #endif
-
     gtk_widget_show (p);
+
+#else
+    gtk_signal_connect_object (GTK_OBJECT (GTK_FILE_SELECTION (p)->cancel_button),
+				"clicked", (GtkSignalFunc) closefunc,
+				GTK_OBJECT (p));
+#endif
     return p;
 }
 
@@ -831,8 +880,14 @@ static void did_romchange (GtkWidget *w, gpointer data)
 {
     gtk_widget_set_sensitive (rom_change_widget, 0);
 
+    DEBUG_LOG("rom_selector = %lx\n",rom_selector);
     rom_selector = make_file_selector ("Select a ROM file",
 				       did_rom_select, did_close_rom);
+#if defined GTKMUI
+        gtk_widget_show(rom_selector);
+#endif
+    
+    DEBUG_LOG("rom_selector = %lx\n",rom_selector);
     filesel_set_path (rom_selector, prefs_get_attr ("rom_path"));
 }
 
@@ -866,6 +921,8 @@ static void did_keychange (GtkWidget *w, gpointer data)
 
     key_selector = make_file_selector ("Select a Kickstart key file",
 				       did_key_select, did_close_key);
+    gtk_widget_show(key_selector);
+
     filesel_set_path (key_selector, prefs_get_attr ("rom_path"));
 }
 
@@ -1047,8 +1104,8 @@ static void on_cputype_changed (void)
     set_mem32_widgets_state ();
 
     DEBUG_LOG ("cpu_level=%d address_space24=%d cpu_compatible=%d cpu_cycle_exact=%d\n",
-	changed_prefs.cpu_level, changed_prefs.address_space_24,
-	changed_prefs.cpu_compatible, changed_prefs.cpu_cycle_exact);
+    changed_prefs.cpu_level, changed_prefs.address_space_24,
+    changed_prefs.cpu_compatible, changed_prefs.cpu_cycle_exact);
 }
 
 static void on_addr24bit_changed (void)
@@ -1056,12 +1113,14 @@ static void on_addr24bit_changed (void)
     int i;
 
     DEBUG_LOG ("called\n");
+    //D(bug("called\n"));
 
     changed_prefs.address_space_24 = (cputypepanel_get_addr24bit (CPUTYPEPANEL (ctpanel)) != 0);
 
     set_mem32_widgets_state ();
 
     DEBUG_LOG ("address_space_24=%d\n", changed_prefs.address_space_24);
+    //D(bug("address_space_24=%d\n", changed_prefs.address_space_24));
 }
 
 static void on_cpuspeed_changed (void)
@@ -1496,11 +1555,13 @@ static void did_dirdlg_select (GtkObject *o, gpointer entry )
 
     /* Gtk1.2 doesn't have a directory chooser widget, so we fake one from the
      * file dialog by hiding the widgets related to file selection */
+#ifndef GTKMUI
     gtk_widget_hide ((GTK_FILE_SELECTION(path_selector)->file_list)->parent);
     gtk_widget_hide (GTK_FILE_SELECTION(path_selector)->fileop_del_file);
     gtk_widget_hide (GTK_FILE_SELECTION(path_selector)->fileop_ren_file);
     gtk_widget_hide (GTK_FILE_SELECTION(path_selector)->selection_entry);
     gtk_entry_set_text (GTK_ENTRY (GTK_FILE_SELECTION(path_selector)->selection_entry), "" );
+#endif
 
     gtk_widget_show (path_selector);
 }
@@ -1519,11 +1580,13 @@ static void create_dirdlg (const char *title)
     GtkWidget *dialog_vbox, *dialog_hbox, *vbox, *frame, *table, *hbox, *thing, *label, *button;
 
     dirdlg = gtk_dialog_new ();
+#if !defined GTKMUI
+    gtk_widget_show (dirdlg);
+#endif
 
     gtk_window_set_title (GTK_WINDOW (dirdlg), title);
     gtk_window_set_position (GTK_WINDOW (dirdlg), GTK_WIN_POS_MOUSE);
     gtk_window_set_modal (GTK_WINDOW (dirdlg), TRUE);
-    gtk_widget_show (dirdlg);
 
     dialog_vbox = GTK_DIALOG (dirdlg)->vbox;
     gtk_widget_show (dialog_vbox);
@@ -1547,7 +1610,11 @@ static void create_dirdlg (const char *title)
     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
     gtk_widget_show (label);
 
+#ifndef GTKMUI
     thing = gtk_entry_new_with_max_length (255);
+#else
+    thing = gtk_entry_new();
+#endif
     gtk_signal_connect (GTK_OBJECT (thing), "changed", (GtkSignalFunc) dirdlg_on_change, (gpointer) NULL);
     gtk_box_pack_start (GTK_BOX (hbox), thing, TRUE, TRUE, 0);
     gtk_widget_show (thing);
@@ -1575,7 +1642,11 @@ static void create_dirdlg (const char *title)
                         (GtkAttachOptions) (GTK_FILL),
                         (GtkAttachOptions) (0), 0, 0);
         gtk_widget_show (label);
+#if !defined GTKMUI
         thing = gtk_entry_new_with_max_length (255);
+#else
+        thing = gtk_entry_new();
+#endif
 	gtk_signal_connect (GTK_OBJECT (thing), "changed", (GtkSignalFunc) dirdlg_on_change, (gpointer) NULL);
         gtk_widget_show (thing);
         gtk_table_attach (GTK_TABLE (table), thing, 1, 2, 0, 1,
@@ -1589,7 +1660,11 @@ static void create_dirdlg (const char *title)
                         (GtkAttachOptions) (GTK_FILL),
                         (GtkAttachOptions) (0), 0, 0);
         gtk_widget_show (label);
+#if !defined GTKMUI
         thing = gtk_entry_new_with_max_length (255);
+#else
+        thing = gtk_entry_new();
+#endif
 	gtk_signal_connect (GTK_OBJECT (thing), "changed", (GtkSignalFunc) dirdlg_on_change, (gpointer) NULL);
         gtk_table_attach (GTK_TABLE (table), thing, 1, 2, 1, 2,
                         (GtkAttachOptions) (GTK_EXPAND | GTK_SHRINK | GTK_FILL),
@@ -1618,8 +1693,12 @@ static void create_dirdlg (const char *title)
 
     dialog_hbox = GTK_DIALOG (dirdlg)->action_area;
 
+#if defined GTKMUI
+    hbox = gtk_hbox_new(FALSE,4);
+#else
     hbox = gtk_hbutton_box_new();
     gtk_button_box_set_layout (GTK_BUTTON_BOX (hbox), GTK_BUTTONBOX_END);
+#endif
     gtk_box_pack_start (GTK_BOX (dialog_hbox), hbox, TRUE, TRUE, 0);
     gtk_widget_show (hbox);
 
@@ -1641,6 +1720,10 @@ static void create_dirdlg (const char *title)
     gtk_box_pack_start (GTK_BOX (hbox), button, TRUE, TRUE, 0);
     gtk_widget_grab_default (button);
     gtk_widget_show (button);
+
+#if defined GTKMUI
+    gtk_widget_show (dirdlg);
+#endif
 }
 
 static void did_newdir (void)
@@ -1744,11 +1827,17 @@ static void make_hd_widgets (GtkWidget *dvbox)
     gtk_container_add (GTK_CONTAINER (scrollbox), thing);
 
     /* The buttons */
+#if !defined GTKMUI
     buttonbox = gtk_hbutton_box_new ();
+#else
+    buttonbox = gtk_hbox_new (FALSE,4);
+#endif
     gtk_widget_show (buttonbox);
     gtk_box_pack_start (GTK_BOX (vbox), buttonbox, FALSE, FALSE, 0);
     gtk_container_set_border_width (GTK_CONTAINER (buttonbox), 8);
+#if !defined GTKMUI 
     gtk_button_box_set_layout (GTK_BUTTON_BOX (buttonbox), GTK_BUTTONBOX_SPREAD);
+#endif
 
     make_button ("Add...", buttonbox, did_newdir);
 #if 0 /* later... */
@@ -1773,11 +1862,21 @@ static void make_about_widgets (GtkWidget *dvbox)
 
     add_empty_vbox (dvbox);
 
-#if GTK_MAJOR_VERSION >= 2
+#if 0
+#ifdef GTKMUI
+    thing = gtk_label_new ("WARNING -- Crashes *will* happen -- WARNING");
+    gtk_widget_show (thing);
+    add_centered_to_vbox (dvbox, thing);
+#endif
+#endif
+
+
+#if GTK_MAJOR_VERSION >= 2 && !defined GTKMUI
     thing = gtk_label_new (NULL);
     gtk_label_set_markup (GTK_LABEL (thing), title);
 #else
     thing = gtk_label_new (title);
+#if !defined GTKMUI
     {
 	GdkFont *font = gdk_font_load ("-*-helvetica-medium-r-normal--*-240-*-*-*-*-*-*");
 	if (font) {
@@ -1789,6 +1888,7 @@ static void make_about_widgets (GtkWidget *dvbox)
 	}
     }
 #endif
+#endif
     gtk_widget_show (thing);
     add_centered_to_vbox (dvbox, thing);
 
@@ -1797,6 +1897,16 @@ static void make_about_widgets (GtkWidget *dvbox)
     gtk_widget_show (thing);
     add_centered_to_vbox (dvbox, thing);
 #endif
+#ifdef GTKMUI
+    thing = gtk_label_new ("GTK UI built with GTK-MUI");
+    gtk_widget_show (thing);
+    add_centered_to_vbox (dvbox, thing);
+    thing = gtk_label_new ("gtk-mui -at- oliver-brunner.de");
+    gtk_widget_show (thing);
+    add_centered_to_vbox (dvbox, thing);
+
+#endif
+
 
     add_empty_vbox (dvbox);
 }
@@ -1844,6 +1954,7 @@ static void create_guidlg (void)
     };
 
     DEBUG_LOG ("Entered\n");
+    //DebOut ("Entered\n");
 
     gui_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title (GTK_WINDOW (gui_window), PACKAGE_NAME " control");
@@ -1858,7 +1969,7 @@ static void create_guidlg (void)
     gtk_widget_show (menubar);
     gtk_box_pack_start (GTK_BOX (vbox), menubar, FALSE, FALSE, 0);
 
-    menuitem = gtk_menu_item_new_with_mnemonic ("_File");
+    menuitem = gtk_menu_item_new_with_mnemonic ("File");
     gtk_widget_show (menuitem);
     gtk_container_add (GTK_CONTAINER (menubar), menuitem);
 
@@ -1870,9 +1981,11 @@ static void create_guidlg (void)
     gtk_container_add (GTK_CONTAINER (menuitem_menu), thing);
     gtk_signal_connect (GTK_OBJECT(thing), "activate", GTK_SIGNAL_FUNC(on_menu_saveconfig), NULL);
 
+#if !defined GTKMUI
     thing = gtk_separator_menu_item_new ();
     gtk_widget_show (thing);
     gtk_container_add (GTK_CONTAINER (menuitem_menu), thing);
+#endif
 
     thing = gtk_menu_item_new_with_mnemonic ("Quit");
     gtk_widget_show (thing);
@@ -1920,23 +2033,27 @@ static void create_guidlg (void)
 
     /* Now the notebook */
     notebook = gtk_notebook_new ();
-    gtk_box_pack_start (GTK_BOX (vbox), notebook, TRUE, TRUE, 0);
-    gtk_widget_show (notebook);
 
     for (i = 0; i < sizeof pages / sizeof (struct _pages); i++) {
+    //  asm("int3");
+	//DebOut ("guiforloop - %s(%d)\n",pages[i].title,i);
 	thing = gtk_vbox_new (FALSE, 4);
-	gtk_widget_show (thing);
 	gtk_container_set_border_width (GTK_CONTAINER (thing), 10);
+	gtk_widget_show (thing);
 	pages[i].createfunc (thing);
+	gtk_mui_list_child_tree(thing);
 	gtk_notebook_append_page (GTK_NOTEBOOK (notebook), thing, gtk_label_new (pages[i].title));
     }
 
+    gtk_box_pack_start (GTK_BOX (vbox), notebook, TRUE, TRUE, 0);
+    gtk_widget_show (notebook);
     /* Put "about" screen first.  */
     gtk_notebook_set_page (GTK_NOTEBOOK (notebook), i - 1);
 
     gtk_widget_show (vbox);
 
     gtk_timeout_add (1000, (GtkFunction)leds_callback, 0);
+    //DebOut("end\n");
 }
 
 /*
@@ -1955,14 +2072,20 @@ static void *gtk_gui_thread (void *dummy)
     char **argv = a;
 
     DEBUG_LOG ("Started\n");
+    //DebOut ("Started\n");
 
     gui_active = 0;
 
     if (gtk_init_check (&argc, &argv)) {
 	DEBUG_LOG ("gtk_init() successful\n");
+	//DebOut ("gtk_init() successful\n");
 
+#if !defined GTKMUI
 	gtk_rc_parse ("uaegtkrc");
+#endif
 	gui_available = 1;
+	//DebOut("gui_available = 1\n");
+
 
 	/* Add callback to GTK+ mainloop to handle messages from UAE */
 	gtk_timeout_add (250, (GtkFunction)my_idle, 0);
@@ -1972,17 +2095,24 @@ static void *gtk_gui_thread (void *dummy)
 
 	/* Enter GTK+ main loop */
 	DEBUG_LOG ("Entering GTK+ main loop\n");
+	//DebOut ("Entering GTK+ main loop\n");
+
+
 	gtk_main ();
+	//DebOut ("gtk_main exit\n");
 
 	/* Main loop has exited, so the GUI will quit */
 	quitted_gui = 1;
+	//DebOut("quitted_gui = 1;\n");
+
 	uae_sem_post (&gui_quit_sem);
-	DEBUG_LOG ("Exiting\n");
+/*	DEBUG_LOG ("Exiting\n");*/
     } else {
         DEBUG_LOG ("gtk_init() failed\n");
         /* If GTK+ can't display, we still need to say we're done */
         uae_sem_post (&gui_init_sem);
     }
+    //DebOut("exit\n");
     return 0;
 }
 
@@ -2158,17 +2288,23 @@ void gui_exit (void)
  *
  * Tell the GUI thread it's time to say goodnight...
  */
-static void gui_shutdown (void)
+#ifndef GTKMUI
+static 
+#endif
+void gui_shutdown (void)
 {
     DEBUG_LOG( "Entered\n" );
+    //DebOut("entered\n");
 
     if (gui_available) {
 	if (!quit_gui) {
 	    quit_gui = 1;
 	    DEBUG_LOG( "Waiting for GUI thread to quit.\n" );
+	    //DebOut( "Waiting for GUI thread to quit.\n" );
 	    uae_sem_wait (&gui_quit_sem);
 	}
     }
+    //DebOut("left\n");
 }
 
 void gui_hd_led (int led)
@@ -2361,11 +2497,17 @@ static GtkWidget *make_message_box (const gchar *title, const gchar *message, in
     gtk_widget_show (hseparator);
     gtk_box_pack_start (GTK_BOX (vbox), hseparator, FALSE, FALSE, 8);
 
+#if !defined GTKMUI
     hbuttonbox = gtk_hbutton_box_new ();
+#else
+    hbuttonbox = gtk_hbox_new (FALSE,4);
+#endif
     gtk_widget_show (hbuttonbox);
     gtk_box_pack_start (GTK_BOX (vbox), hbuttonbox, FALSE, FALSE, 0);
+#if !defined GTKMUI
     gtk_button_box_set_layout (GTK_BUTTON_BOX (hbuttonbox), GTK_BUTTONBOX_END);
     gtk_button_box_set_spacing (GTK_BUTTON_BOX (hbuttonbox), 4);
+#endif
 
     button = make_labelled_button ("_Okay", accel_group);
     gtk_widget_show (button);
@@ -2379,7 +2521,9 @@ static GtkWidget *make_message_box (const gchar *title, const gchar *message, in
 			                           GTK_OBJECT (dialog));
 
     gtk_widget_grab_default (button);
+#if !defined GTKMUI
     gtk_window_add_accel_group (GTK_WINDOW (dialog), accel_group);
+#endif
     gtk_widget_show( dialog );
 
     return dialog;
@@ -2394,13 +2538,18 @@ int gui_open (void)
 {
     int result = 0;
 
-    DEBUG_LOG( "Entered\n" );
+    DEBUG_LOG("Entered\n" );
+    //DebOut("entered\n");
 
-    if (!gui_available)
+    if (!gui_available) {
+	DEBUG_LOG( " !gui_available\n" );
 	result = -1;
+    }
     else {
 	/* We have the technology and the will - so tell the GUI to
 	 * reveal itself */
+	//DebOut("GUICMD_SHOW\n");
+	DEBUG_LOG( " write_comm_pipe_int(GUICMD_SHOW)\n" );
 	write_comm_pipe_int (&to_gui_pipe, GUICMD_SHOW, 1);
     }
    return result;
@@ -2409,6 +2558,7 @@ int gui_open (void)
 void gui_init (int argc, char **argv)
 {
     uae_thread_id tid;
+    DEBUG_LOG ("entered\n");
 
     /* Check whether we are running with SUID bit set */
     if (getuid() == geteuid()) {

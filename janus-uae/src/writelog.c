@@ -25,9 +25,11 @@ static FILE *logfile;
  */
 void set_logfile (const char *logfile_name)
 {
+  printf("\n\n\n\n\nset_logfile(%s)\n",logfile_name);
     if (logfile_name && strlen (logfile_name)) {
 	FILE *newfile = fopen (logfile_name, "w");
 
+  printf("\n\n\n\n\nset_logfile(%s): newfile %lx\n",logfile_name,newfile);
 	if (newfile)
 	    logfile = newfile;
     } else {
@@ -57,7 +59,11 @@ void write_log (const char *fmt, ...)
 	x6 = va_arg (ap, int);
 	x7 = va_arg (ap, int);
 	x8 = va_arg (ap, int);
+#ifndef __AROS__
 	fprintf (logfile ? logfile : stderr, fmt, x1, x2, x3, x4, x5, x6, x7, x8);
+#else
+	kprintf (fmt, x1, x2, x3, x4, x5, x6, x7, x8);
+#endif
     }
 #endif
 }

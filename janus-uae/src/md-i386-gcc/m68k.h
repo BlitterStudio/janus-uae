@@ -10,6 +10,10 @@
  /*
   * Machine dependent structure for holding the 68k CCR flags
   */
+
+#ifndef _M68k_H_
+#define _M68k_H_
+
 struct flag_struct {
     unsigned int cznv;
     unsigned int x;
@@ -94,3 +98,5 @@ STATIC_INLINE int cctrue (struct flag_struct *flags, int cc)
 }
 
 #define USE_X86_FPUCW 1
+
+#endif
