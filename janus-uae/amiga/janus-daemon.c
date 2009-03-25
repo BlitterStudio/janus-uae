@@ -46,7 +46,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <proto/exec.h>
+//#include <proto/exec.h>
 #include <exec/devices.h>
 #include <exec/interrupts.h>
 #include <exec/nodes.h>
@@ -98,6 +98,7 @@ BOOL open_libs() {
      printf("unable to open intuition.library\n");
      return FALSE;
    }
+   return TRUE;
 }
 
 /****************************************************
@@ -109,11 +110,11 @@ int setup(struct Task *task, ULONG signal) {
   ULONG  result;
   ULONG *command_mem;
 
-  printf("setup(%lx,%lx)\n",task,signal);
+  printf("setup(%lx,%lx)\n",(ULONG) task,(ULONG) signal);
 
   command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
 
-  printf("memory: %lx\n",command_mem);
+  printf("memory: %lx\n",(ULONG) command_mem);
 
   command_mem[0]=(ULONG) task;
   command_mem[4]=(ULONG) signal;
@@ -122,7 +123,7 @@ int setup(struct Task *task, ULONG signal) {
 
   FreeVec(command_mem);
 
-  printf("setup done(): result %d\n",result);
+  printf("setup done(): result %d\n",(int) result);
 
   return result;
 }
@@ -137,7 +138,6 @@ int setup(struct Task *task, ULONG signal) {
 void forward_messages() {
   ULONG *command_mem;
   UBYTE done;
-  struct IntuiMessage *msg;
 
   //printf("forward_messages()\n");
 
@@ -210,6 +210,7 @@ int main (int argc, char **argv) {
   }
 
   init_sync_windows(); /* never fails */
+  init_sync_screens(); /* never fails */
 
   /* try te get a signal */
   mysignal_bit=AllocSignal(-1);
@@ -227,8 +228,12 @@ int main (int argc, char **argv) {
   setup(mytask,mysignal);
 
   patch_functions();
+  update_screens(); /* report all open screens once, 
+                     * updates again a every openwindow patch
+		     * call
+		     */
   update_windows(); /* report all open windows once,
-                     * new windows wil be handled by the patches
+                     * new windows will be handled by the patches
 		     */
 
   printf("running (CTRL-C to quit, CTRL-D to stop uae gfx update)..\n");
