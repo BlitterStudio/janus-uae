@@ -24,6 +24,12 @@
 #ifndef __JANUS_DAEMON_H_
 #define __JANUS_DAEMON_H_
 
+#include <stdio.h>
+//#include <proto/intuition.h>
+//#include <proto/exec.h>
+#include <clib/intuition_protos.h>
+
+
 #define AROSTRAPBASE 0xF0FF90
 
 #define REG(reg,arg) arg __asm(#reg)
@@ -32,7 +38,7 @@
 #define AD_SHUTDOWN
 #define AD_SETUP 10
 #define AD_GET_JOB  11
-#define AD_JOB_DONE 0
+#define AD_TEST 0
 #define AD_GET_JOB_RESIZE 1
 #define AD_GET_JOB_LIST_WINDOWS 2
 #define AD_GET_JOB_MESSAGES 3
@@ -44,6 +50,7 @@
 #define AD_GET_JOB_SWITCH_UAE_WINDOW 9
 #define AD_GET_JOB_ACTIVE_WINDOW 10
 #define AD_GET_JOB_NEW_WINDOW 11
+#define AD_GET_JOB_LIST_SCREENS 12
 
 extern ULONG (*calltrap)(ULONG __asm("d0"), 
                          ULONG __asm("d1"), 
@@ -61,10 +68,14 @@ void unpatch_functions();
 /* sync-windows.c */
 BOOL init_sync_windows();
 void update_windows();
+BOOL init_sync_screens();
+void update_screens();
 void report_uae_windows();
 void report_host_windows();
 void sync_windows();
 void sync_active_window();
 
+/* public_screen.c */
+char *public_screen_name(struct Screen *scr); 
 
 #endif
