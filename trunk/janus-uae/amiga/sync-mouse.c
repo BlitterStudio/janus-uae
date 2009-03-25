@@ -51,6 +51,8 @@
 
 #include "janus-daemon.h"
 
+extern struct IntuitionBase* IntuitionBase;
+
 LONG *mousebuffer=NULL;
 
 struct MsgPort        *InputMP;
@@ -109,7 +111,8 @@ BOOL init_sync_mouse() {
   }
 
   printf("ERROR: init_sync_mouse failed (%lx, %lx, %lx, %lx)\n",
-	  InputMP, FakeEvent, NeoPix, InputIO);
+	  (ULONG) InputMP, (ULONG) FakeEvent, 
+	  (ULONG) NeoPix, (ULONG) InputIO);
 
   free_sync_mouse();
 
@@ -160,12 +163,13 @@ void sync_mouse() {
   ULONG result;
   struct Screen *screen;
 
-  screen=(struct Screen *) LockPubScreen(NULL);
+  /*screen=(struct Screen *) LockPubScreen(NULL);*/
+  screen=IntuitionBase->FirstScreen;
   if(!screen) {
     printf("sync_mouse: screen==NULL?!\n");
     return;
   }
-  UnlockPubScreen(NULL,screen); 
+  /*  UnlockPubScreen(NULL,screen); */
 
   if(!mousebuffer) {
     mousebuffer=AllocVec(16,MEMF_CLEAR);
