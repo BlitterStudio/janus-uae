@@ -6,7 +6,7 @@ CC        = m68k-amigaos-gcc
 
 TARGETDIR = ./
 
-FLAGS     =
+FLAGS     = -Wall
 CDEFS     =
 INCLUDES  =
 DEBUGFLAGS=
@@ -14,7 +14,7 @@ LD_FLAGS  = -noixemul
 
 CFLAGS    = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
-OBJS      = janus-daemon.o sync-mouse.o patch.o sync-windows.o
+OBJS      = janus-daemon.o sync-mouse.o patch.o sync-windows.o sync-screens.o public-screen.o
 
 all: $(OBJS) 
 	$(CC) $(LD_FLAGS) $(OBJS) -o $(TARGETDIR)/janus-daemon 

@@ -24,7 +24,7 @@
 #include <proto/exec.h>
 #include "janus-daemon.h"
 
-extern struct Library* IntuitionBase;
+extern struct IntuitionBase* IntuitionBase;
 
 /****************************************************
  * patch_functions
@@ -39,10 +39,13 @@ extern struct Library* IntuitionBase;
  *   it is closed.
  *
  * - OpenWindow
- *   Not really necessary, but it feels too slow, to
- *   wait for the window sync cycle, as intuition
+ *   It feels too slow, to wait for the window 
+ *   sync cycle, as intuition
  *   also needs some time to open the window.
- *
+ *   Also it is necessary, to update the public
+ *   screen list, in case the window should be
+ *   opened on a public screen, which not yet
+ *   exists as an AROS public screen.
  */
 
 APTR           old_CloseWindow;
@@ -57,8 +60,6 @@ APTR           old_OpenWindowTagList;
 #define POPA3         "move.l (SP)+,a3\n"
 #define PUSHD3        "move.l d3,-(SP)\n"
 #define POPD3         "move.l (SP)+,d3\n"
-
-
 
 /*
  * _my_CloseWindow_SetFunc
@@ -109,6 +110,9 @@ __asm__("_my_OpenWindow_SetFunc:\n"
 	"move.l (a4),d4\n"
 	"clr.l (a4)\n"
 	*/
+	PUSHFULLSTACK
+	"jsr _update_screens\n"
+	POPFULLSTACK
 	PUSHA3
 	"move.l _old_OpenWindow,a3\n"
 	"jsr (a3)\n"
@@ -145,6 +149,9 @@ void my_OpenWindow(REG(a0, struct NewWindow *newwin),
 
 
 __asm__("_my_OpenWindowTagList_SetFunc:\n"
+	PUSHFULLSTACK
+	"jsr _update_screens\n"
+	POPFULLSTACK
 	PUSHA3
 	"move.l _old_OpenWindowTagList, a3\n"
 	"jsr (a3)\n"
@@ -158,6 +165,7 @@ __asm__("_my_OpenWindowTagList_SetFunc:\n"
 	POPFULLSTACK
         "rts\n");
 
+#if 0
 static void my_OpenWindowTagList(REG(a0, struct NewWindow *newwin),
                                  REG(a1, ULONG *tags),
                            REG(a2, ULONG a2),
@@ -178,12 +186,13 @@ static void my_OpenWindowTagList(REG(a0, struct NewWindow *newwin),
                                      REG(a6, APTR ibase))=old_OpenWindowTagList;
   register unsigned long _res __asm("d0");
 
-  printf("OpenWindowTagList (%lx)..\n",newwin);
+  printf("OpenWindowTagList (%lx)..\n",(ULONG) newwin);
   win=real_OpenWindowTagList(newwin, tags, ibase);
-  printf("OpenWindowTagList (%lx): %lx\n",newwin,win);
+  printf("OpenWindowTagList (%lx): %lx\n",(ULONG) newwin,(ULONG) win);
 
   _res=(unsigned long) win;
 }
+#endif
 
 /*
  * assembler functions need to be delcared or used, before
@@ -199,7 +208,6 @@ void my_OpenWindowTagList_SetFunc();
  * cache itself."
  */
 void patch_functions() {
-  APTR (*t);
 
   old_CloseWindow=SetFunction((struct Library *)IntuitionBase, 
                               -72, 
