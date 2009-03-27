@@ -126,7 +126,12 @@ static GtkWidget *comp_constjump_widget[2];
 static GtkAdjustment *cachesize_adj;
 #endif
 
-static GtkWidget *joy_widget[2][7];
+#ifdef XARCADE
+# define JOY_WIDGET_COUNT 9
+#else
+# define JOY_WIDGET_COUNT 7
+#endif
+static GtkWidget *joy_widget[2][JOY_WIDGET_COUNT];
 
 static unsigned int prevledstate;
 
@@ -386,6 +391,8 @@ static int map_widget_to_jsem (int widget)
 	case 4: jsem = JSEM_KBDLAYOUT;     break;
 	case 5: jsem = JSEM_KBDLAYOUT + 1; break;
 	case 6: jsem = JSEM_KBDLAYOUT + 2; break;
+	case 7: jsem = JSEM_KBDLAYOUT + 3; break;
+	case 8: jsem = JSEM_KBDLAYOUT + 4; break;
    }
 
    return jsem;
@@ -405,7 +412,7 @@ static void set_joy_state (void)
 	j0t %= 7;
     }
 
-    for (i = 0; i < 7; i++) {
+    for (i = 0; i < JOY_WIDGET_COUNT; i++) {
 	if (i == 1 && joy_count == 0) continue;
 	if (i == 2 && joy_count <= 1) continue;
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (joy_widget[0][i]), j0t == i);
@@ -451,12 +458,12 @@ static void set_hd_state (void)
 	    else
 	        strncpy (texts[HDLIST_DEVICE], devname, 255);
 	    sprintf (texts[HDLIST_VOLUME],  "N/A" );
-	    sprintf (texts[HDLIST_HEADS],   "%d", surfaces);
-	    sprintf (texts[HDLIST_CYLS],    "%d", cylinders);
-	    sprintf (texts[HDLIST_SECS],    "%d", secspertrack);
-	    sprintf (texts[HDLIST_RSRVD],   "%d", reserved);
-	    sprintf (texts[HDLIST_SIZE],    "%d", size);
-	    sprintf (texts[HDLIST_BLKSIZE], "%d", blocksize);
+	    sprintf (texts[HDLIST_HEADS],   "%u", surfaces);
+	    sprintf (texts[HDLIST_CYLS],    "%u", cylinders);
+	    sprintf (texts[HDLIST_SECS],    "%u", secspertrack);
+	    sprintf (texts[HDLIST_RSRVD],   "%u", reserved);
+	    sprintf (texts[HDLIST_SIZE],    "%u", size);
+	    sprintf (texts[HDLIST_BLKSIZE], "%u", blocksize);
 	} else {
 	    strncpy (texts[HDLIST_DEVICE], devname, 255);
 	    strncpy (texts[HDLIST_VOLUME], volname, 255);
@@ -665,20 +672,6 @@ static void joy_changed (void)
 
     set_joy_state ();
 }
-
-#if 0
-static void chipsize_changed (void)
-{
-    int t = find_current_toggle (chipsize_widget, 5);
-    changed_prefs.chipmem_size = 0x80000 << t;
-    for (t = 0; t < 5; t++)
-	gtk_widget_set_sensitive (fastsize_widget[t], changed_prefs.chipmem_size <= 0x200000);
-    if (changed_prefs.chipmem_size > 0x200000) {
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (fastsize_widget[0]), 1);
-	changed_prefs.fastmem_size = 0;
-    }
-}
-#endif
 
 static void bogosize_changed (void)
 {
@@ -1475,6 +1468,10 @@ static void make_joy_widgets (GtkWidget *dvbox)
 	"Numeric pad",
 	"Cursor keys/Right Ctrl or Alt",
 	"T/F/H/B/Left Alt",
+#ifdef XARCADE
+	"X-Arcade Left",
+	"X-Arcade Right",
+#endif
 	NULL
     };
 
@@ -2150,8 +2147,9 @@ static void create_guidlg (void)
 	thing = gtk_vbox_new (FALSE, 4);
 	gtk_container_set_border_width (GTK_CONTAINER (thing), 10);
 	gtk_widget_show (thing);
+
 	pages[i].createfunc (thing);
-	gtk_mui_list_child_tree(thing);
+	/* gtk_mui_list_child_tree(thing);*/
 	gtk_notebook_append_page (GTK_NOTEBOOK (notebook), thing, gtk_label_new (pages[i].title));
     }
 
@@ -2527,8 +2525,8 @@ static void do_message_box (const gchar *title, const gchar *message, gboolean m
     uae_sem_init (&msg_quit_sem, 0, 0);
 
     write_comm_pipe_int   (&to_gui_pipe, GUICMD_MSGBOX, 0);
-    write_comm_pipe_pvoid (&to_gui_pipe, (void *) title, 0);
-    write_comm_pipe_pvoid (&to_gui_pipe, (void *) message, 0);
+    write_comm_pipe_pvoid (&to_gui_pipe, (const void *) title, 0);
+    write_comm_pipe_pvoid (&to_gui_pipe, (const void *) message, 0);
     write_comm_pipe_int   (&to_gui_pipe, (int) modal, 0);
     write_comm_pipe_pvoid (&to_gui_pipe, wait?&msg_quit_sem:NULL, 1);
 
