@@ -12,11 +12,11 @@
 
 #include "filesys.h"
 
-#define HDF_DEBUG
+//#define HDF_DEBUG
 #ifdef  HDF_DEBUG
-#define DEBUG_LOG kprintf( "HDFU %s: ", __func__); kprintf
+#define DEBUG_LOG write_log ( "%s: ", __func__); write_log
 #else
-#define DEBUG_LOG(...) do ; while(0)
+#define DEBUG_LOG(...) do {} while(0)
 #endif
 
 
@@ -47,7 +47,7 @@ static int hdf_seek (struct hardfiledata *hfd, uae_u64 offset)
 	return -1;
     }
 
-    ret = lseek ((int)hfd->handle, offset, SEEK_SET);
+    ret = lseek (hfd->handle, offset, SEEK_SET);
 
     if (ret == -1) {
 	DEBUG_LOG ("seek failed\n");
@@ -67,7 +67,7 @@ static void poscheck (struct hardfiledata *hfd, int len)
 	abort ();
     }
 
-    pos = lseek ((int)hfd->handle, 0, SEEK_CUR);
+    pos = lseek (hfd->handle, 0, SEEK_CUR);
 
     if (pos == -1 ) {
 	gui_message ("hd: poscheck failed. seek failure, error %d", errno);
@@ -101,7 +101,7 @@ int hdf_open (struct hardfiledata *hfd, const char *name)
    if ((handle = open (name, hfd->readonly ? O_RDONLY : O_RDWR)) != -1) {
 	int i;
 
-	hfd->handle = (void *) handle;
+	hfd->handle = handle;
 	hfd->cache = 0;
 
 	i = strlen (name) - 1;
@@ -131,8 +131,8 @@ extern int hdf_dup (struct hardfiledata *dhfd, const struct hardfiledata *shfd)
 {
     DEBUG_LOG ("called\n");
 
-    if ((int)shfd->handle >= 0) {
-	dhfd->handle = (void *)dup ((int)shfd->handle);
+    if (shfd->handle >= 0) {
+	dhfd->handle = dup (shfd->handle);
     }
 
     return 0;
@@ -142,8 +142,8 @@ void hdf_close (struct hardfiledata *hfd)
 {
     DEBUG_LOG ("called\n");
 
-    close ((int)hfd->handle);
-    hfd->handle = (void *)-1;
+    close (hfd->handle);
+    hfd->handle = -1;
 }
 
 int hdf_read (struct hardfiledata *hfd, void *buffer, uae_u64 offset, int len)
@@ -155,7 +155,7 @@ int hdf_read (struct hardfiledata *hfd, void *buffer, uae_u64 offset, int len)
     hfd->cache_valid = 0;
     hdf_seek (hfd, offset);
     poscheck (hfd, len);
-    n = read ((int)hfd->handle, buffer, len);
+    n = read (hfd->handle, buffer, len);
 
     DEBUG_LOG ("read %d bytes\n", n);
 
@@ -171,7 +171,7 @@ int hdf_write (struct hardfiledata *hfd, void *buffer, uae_u64 offset, int len)
     hfd->cache_valid = 0;
     hdf_seek (hfd, offset);
     poscheck (hfd, len);
-    n = write ((int)hfd->handle, buffer, len);
+    n = write (hfd->handle, buffer, len);
 
     DEBUG_LOG ("Wrote %d bytes\n", n);
 
