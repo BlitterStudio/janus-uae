@@ -277,7 +277,6 @@ static void ShowSupportedResolutions (void)
     for (i = 0; i < mode_count; i++)
 	P96LOG("%s\n", DisplayModes[i].name);
 
-    return;
 }
 
 STATIC_INLINE uae_u8 GetBytesPerPixel (uae_u32 RGBfmt)
@@ -1191,29 +1190,86 @@ static void FillBoardInfo (uaecptr amigamemptr, struct LibResolution *res,
 	      dm->res.width * dm->res.height * dm->refresh);
 }
 
-static uae_u32 AssignModeID (int i, int count)
+struct modeids {
+    int width, height;
+    int id;
+};
+static const struct modeids mi[] =
 {
-    if (DisplayModes[i].res.width == 320 && DisplayModes[i].res.height == 200)
-	return 0x50001000;
-    else if (DisplayModes[i].res.width == 320 && DisplayModes[i].res.height == 240)
-	return 0x50011000;
-    else if (DisplayModes[i].res.width == 640 && DisplayModes[i].res.height == 400)
-	return 0x50021000;
-    else if (DisplayModes[i].res.width == 640 && DisplayModes[i].res.height == 480)
-	return 0x50031000;
-    else if (DisplayModes[i].res.width == 800 && DisplayModes[i].res.height == 600)
-	return 0x50041000;
-    else if (DisplayModes[i].res.width == 1024 && DisplayModes[i].res.height == 768)
-	return 0x50051000;
-    else if (DisplayModes[i].res.width == 1152 && DisplayModes[i].res.height == 864)
-	return 0x50061000;
-    else if (DisplayModes[i].res.width == 1280 && DisplayModes[i].res.height == 1024)
-	return 0x50071000;
-    else if (DisplayModes[i].res.width == 1600 && DisplayModes[i].res.height == 1280)
-	return 0x50081000;
+    /* "original" modes */
 
-    return 0x50091000 + count * 0x10000;
+    {  320, 200, 0 },
+    {  320, 240, 1 },
+    {  640, 400, 2 },
+    {  640, 480, 3 },
+    {  800, 600, 4 },
+    { 1024, 768, 5 },
+    { 1152, 864, 6 },
+    { 1280,1024, 7 },
+    { 1600,1280, 8 },
+
+    /* new modes */
+ 
+    {  704, 480, 129 },
+    {  704, 576, 130 },
+    {  720, 480, 131 },
+    {  720, 576, 132 },
+    {  768, 483, 133 },
+    {  768, 576, 134 },
+    {  800, 480, 135 },
+    {  848, 480, 136 },
+    {  854, 480, 137 },
+    {  948, 576, 138 },
+    { 1024, 576, 139 },
+    { 1152, 768, 140 },
+    { 1152, 864, 141 },
+    { 1280, 720, 142 },
+    { 1280, 768, 143 },
+    { 1280, 800, 144 },
+    { 1280, 854, 145 },
+    { 1280, 960, 146 },
+    { 1366, 768, 147 },
+    { 1440, 900, 148 },
+    { 1440, 960, 149 },
+    { 1600,1200, 150 },
+    { 1680,1050, 151 },
+    { 1920,1080, 152 },
+    { 1920,1200, 153 },
+    { 2048,1152, 154 },
+    { 2048,1536, 155 },
+    { 2560,1600, 156 },
+    { 2560,2048, 157 },
+    {  400, 300, 158 },
+    {  512, 384, 159 },
+    {  640, 432, 160 },
+    { 1360, 768, 161 },
+    { 1360,1024, 162 },
+    { 1400,1050, 163 },
+    { 1792,1344, 164 },
+    { 1800,1440, 165 },
+    { 1856,1392, 166 },
+    { 1920,1440, 167 },
+    {  480, 360, 168 },
+    {  640, 350, 169 },
+    { 1600, 900, 170 },
+    {  960, 600, 171 },
+    { 1088, 612, 172 },
+    {   -1,  -1, 0 }
+};
+
+static uae_u32 AssignModeID (int w, int h, unsigned int *non_standard_count)
+{
+    unsigned int i;
+
+    for (i = 0; mi[i].width > 0; i++) {
+	if (w == mi[i].width && h == mi[i].height)
+	    return 0x50001000 | (mi[i].id * 0x10000);
+    }
+    (*non_standard_count)++;
+    write_log ("P96: Non-stanard mode %dx%d\n", w, h);
+    return 0x51001000 - (*non_standard_count) * 0x10000;
 }
+
 
 /****************************************
 * InitCard()
@@ -1242,6 +1298,7 @@ uae_u32 REGPARAM2 picasso_InitCard (struct regstruct *regs)
 {
     struct LibResolution res;
     int i;
+    unsigned int non_standard_count = 0;
     int ModeInfoStructureCount = 1, LibResolutionStructureCount = 0;
     uaecptr amigamemptr = 0;
     uaecptr AmigaBoardInfo = m68k_areg (regs, 2);
@@ -1266,7 +1323,9 @@ uae_u32 REGPARAM2 picasso_InitCard (struct regstruct *regs)
     for (i = 0; i < mode_count;) {
 	int j = i;
 	/* Add a LibResolution structure to the ResolutionsList MinList in our BoardInfo */
-	res.DisplayID = AssignModeID (i, LibResolutionStructureCount);
+	res.DisplayID = AssignModeID (DisplayModes[i].res.width,  
+	                              DisplayModes[i].res.height, 
+				      &non_standard_count);
 	res.BoardInfo = AmigaBoardInfo;
 	res.Width     = DisplayModes[i].res.width;
 	res.Height    = DisplayModes[i].res.height;
