@@ -1025,7 +1025,7 @@ static void rand_shifter (void)
     }
 }
 
-static int drive_empty (drive * drv)
+STATIC_INLINE int drive_empty (const drive * drv)
 {
 #ifdef CATWEASEL
     if (drv->catweasel)
@@ -1055,7 +1055,7 @@ static void drive_step (drive * drv)
 #endif
     if (drv->steplimit && get_cycles () - drv->steplimitcycle < MIN_STEPLIMIT_CYCLE) {
 	if (disk_debug_logging > 1)
-    	    write_log (" step ignored %d", (int)((get_cycles () - drv->steplimitcycle) / CYCLE_UNIT));
+	    write_log (" step ignored %d", (int)((get_cycles () - drv->steplimitcycle) / CYCLE_UNIT));
 	return;
     }
     /* A1200's floppy drive needs at least 30 raster lines between steps
@@ -1074,7 +1074,7 @@ static void drive_step (drive * drv)
 #endif
 	}
 /*	else
-	    write_log("program tried to step beyond track zero\n");
+	    write_log ("program tried to step beyond track zero\n");
 	    "no-click" programs does that
 */
   } else {
@@ -1094,7 +1094,7 @@ static void drive_step (drive * drv)
     }
     rand_shifter ();
     if (disk_debug_logging > 1)
-        write_log (" ->step %d", drv->cyl);
+	write_log (" ->step %d", drv->cyl);
 }
 
 static int drive_track0 (drive * drv)
@@ -1237,7 +1237,7 @@ static void decode_pcdos (drive *drv)
     mfm2[93] = 0x5224;
     mfm2[94] = 0x5224;
     for (i = 0; i < drv->num_secs; i++) {
-        mfm2 = dstmfmbuf;
+	mfm2 = dstmfmbuf;
 	memset (secbuf, 0x00, 12);
 	secbuf[12] = 0xa1;
 	secbuf[13] = 0xa1;
@@ -1270,11 +1270,11 @@ static void decode_pcdos (drive *drv)
 	mfm2[58] = 0x4489;
     }
     for (i = 0; i < 200; i++)
-        *dstmfmbuf++ = 0x9254;
+	*dstmfmbuf++ = 0x9254;
     drv->skipoffset = 0;
     drv->tracklen = (dstmfmbuf - drv->bigmfmbuf) * 16;
     if (disk_debug_logging > 0)
-        write_log ("pcdos read track %d\n", tr);
+	write_log ("pcdos read track %d\n", tr);
 }
 
 static void decode_amigados (drive *drv)
@@ -1293,39 +1293,39 @@ static void decode_amigados (drive *drv)
     drv->tracklen = len * 2 * 8;
 
     for (sec = 0; sec < drv->num_secs; sec++) {
-        uae_u8 secbuf[544];
-        uae_u16 mfmbuf[544];
-        int i;
-        uae_u32 deven, dodd;
-        uae_u32 hck = 0, dck = 0;
+	uae_u8 secbuf[544];
+	uae_u16 mfmbuf[544];
+	int i;
+	uae_u32 deven, dodd;
+	uae_u32 hck = 0, dck = 0;
 
-        secbuf[0] = secbuf[1] = 0x00;
-        secbuf[2] = secbuf[3] = 0xa1;
-        secbuf[4] = 0xff;
-        secbuf[5] = tr;
-        secbuf[6] = sec;
-        secbuf[7] = drv->num_secs - sec;
+	secbuf[0] = secbuf[1] = 0x00;
+	secbuf[2] = secbuf[3] = 0xa1;
+	secbuf[4] = 0xff;
+	secbuf[5] = tr;
+	secbuf[6] = sec;
+	secbuf[7] = drv->num_secs - sec;
 
-        for (i = 8; i < 24; i++)
+	for (i = 8; i < 24; i++)
 	    secbuf[i] = 0;
 
 	read_floppy_data (drv->diskfile, ti, sec * 512, &secbuf[32], 512);
 
-        mfmbuf[0] = mfmbuf[1] = 0xaaaa;
-        mfmbuf[2] = mfmbuf[3] = 0x4489;
+	mfmbuf[0] = mfmbuf[1] = 0xaaaa;
+	mfmbuf[2] = mfmbuf[3] = 0x4489;
 
-        deven = ((secbuf[4] << 24) | (secbuf[5] << 16)
+	deven = ((secbuf[4] << 24) | (secbuf[5] << 16)
 		     | (secbuf[6] << 8) | (secbuf[7]));
-        dodd = deven >> 1;
-        deven &= 0x55555555;
-        dodd &= 0x55555555;
+	dodd = deven >> 1;
+	deven &= 0x55555555;
+	dodd &= 0x55555555;
 
-        mfmbuf[4] = dodd >> 16;
-        mfmbuf[5] = dodd;
-        mfmbuf[6] = deven >> 16;
-        mfmbuf[7] = deven;
+	mfmbuf[4] = dodd >> 16;
+	mfmbuf[5] = dodd;
+	mfmbuf[6] = deven >> 16;
+	mfmbuf[7] = deven;
 
-        for (i = 8; i < 48; i++)
+	for (i = 8; i < 48; i++)
 	    mfmbuf[i] = 0xaaaa;
 	for (i = 0; i < 512; i += 4) {
 	    deven = ((secbuf[i + 32] << 24) | (secbuf[i + 33] << 16)
@@ -1342,32 +1342,32 @@ static void decode_amigados (drive *drv)
 	for (i = 4; i < 24; i += 2)
 	    hck ^= (mfmbuf[i] << 16) | mfmbuf[i + 1];
 
-        deven = dodd = hck;
-        dodd >>= 1;
-        mfmbuf[24] = dodd >> 16;
-        mfmbuf[25] = dodd;
-        mfmbuf[26] = deven >> 16;
-        mfmbuf[27] = deven;
+	deven = dodd = hck;
+	dodd >>= 1;
+	mfmbuf[24] = dodd >> 16;
+	mfmbuf[25] = dodd;
+	mfmbuf[26] = deven >> 16;
+	mfmbuf[27] = deven;
 
-        for (i = 32; i < 544; i += 2)
+	for (i = 32; i < 544; i += 2)
 	    dck ^= (mfmbuf[i] << 16) | mfmbuf[i + 1];
 
-        deven = dodd = dck;
-        dodd >>= 1;
-        mfmbuf[28] = dodd >> 16;
-        mfmbuf[29] = dodd;
-        mfmbuf[30] = deven >> 16;
-        mfmbuf[31] = deven;
-        mfmcode (mfmbuf + 4, 544 - 4);
+	deven = dodd = dck;
+	dodd >>= 1;
+	mfmbuf[28] = dodd >> 16;
+	mfmbuf[29] = dodd;
+	mfmbuf[30] = deven >> 16;
+	mfmbuf[31] = deven;
+	mfmcode (mfmbuf + 4, 544 - 4);
 
-        for (i = 0; i < 544; i++) {
+	for (i = 0; i < 544; i++) {
 	    dstmfmbuf[dstmfmoffset % len] = mfmbuf[i];
 	    dstmfmoffset++;
 	}
      }
 
     if (disk_debug_logging > 0)
-        write_log ("amigados read track %d\n", tr);
+	write_log ("amigados read track %d\n", tr);
 }
 
 static void drive_fill_bigbuf (drive * drv, int force)
@@ -1807,7 +1807,7 @@ static void drive_eject (drive * drv)
     drv->crc32 = 0;
     drive_settype_id (drv); /* Back to 35 DD */
     if (disk_debug_logging > 0)
-        write_log ("eject drive %d\n", drv - &floppy[0]);
+	write_log ("eject drive %d\n", drv - &floppy[0]);
 }
 
 /* We use this function if we have no Kickstart ROM.
@@ -2122,7 +2122,7 @@ static char *tobin (uae_u8 v)
     static char buf[10];
     for ( i = 7; i >= 0; i--)
 	buf[7 - i] = v & (1 << i) ? '1' : '0';
-    buf[i] = 0;
+    buf[8] = 0;
     return buf;
 }
 
@@ -2213,7 +2213,7 @@ void DISK_select (uae_u8 data)
     }
     prevdata = data;
     if (disk_debug_logging > 1)
-        write_log ("\n");
+	write_log ("\n");
 }
 
 uae_u8 DISK_status (void)
@@ -2262,7 +2262,7 @@ uae_u8 DISK_status (void)
     return st;
 }
 
-static int unformatted (drive *drv)
+STATIC_INLINE int unformatted (const drive *drv)
 {
     unsigned int tr = drv->cyl * 2 + side;
     if (tr >= drv->num_tracks)
@@ -2442,20 +2442,20 @@ static void updatetrackspeed (drive *drv, unsigned int mfmpos)
     }
 }
 
-static void disk_doupdate_predict (drive * drv, unsigned int startcycle)
+STATIC_INLINE void disk_doupdate_predict (drive * drv, unsigned int startcycle, int write)
 {
     unsigned int firstcycle = startcycle;
+    unsigned int endcycle = maxhpos << 8;
     uae_u32 tword = word;
     unsigned int mfmpos = drv->mfmpos;
-    int indexhack = drv->indexhack;
     int is_empty       = drive_empty (drv);
     int is_unformatted = unformatted (drv);
+    unsigned int event_flag = 0;
 
-    diskevent_flag = 0;
-    while (startcycle < (maxhpos << 8) && !diskevent_flag) {
+    while (startcycle < endcycle && !event_flag) {
 	if (drv->tracktiming[0])
 	    updatetrackspeed (drv, mfmpos);
-	if (dskdmaen != 3) {
+	if (!write) {
 	    tword <<= 1;
 	    if (!is_empty) {
 		if (is_unformatted)
@@ -2464,34 +2464,31 @@ static void disk_doupdate_predict (drive * drv, unsigned int startcycle)
 		    tword |= getonebit (drv->bigmfmbuf, mfmpos);
 	    }
 	    if ((tword & 0xffff) == dsksync)
-		diskevent_flag |= DISK_WORDSYNC;
+		event_flag |= DISK_WORDSYNC;
 	}
 	mfmpos++;
 	mfmpos %= drv->tracklen;
 	if (mfmpos == 0)
-	    diskevent_flag |= DISK_REVOLUTION << (drv - floppy);
-	if (mfmpos == drv->indexoffset) {
-	    diskevent_flag |= DISK_INDEXSYNC;
-	    indexhack = 0;
-	}
-	if (dskdmaen != 3 && (int)mfmpos == drv->skipoffset) {
+	    event_flag |= DISK_REVOLUTION << (drv - floppy);
+	if (mfmpos == drv->indexoffset)
+	    event_flag |= DISK_INDEXSYNC;
+	if (!write && (int)mfmpos == drv->skipoffset) {
 	    int skipcnt = disk_jitter;
 	    while (skipcnt-- > 0) {
 		mfmpos++;
 		mfmpos %= drv->tracklen;
 		if (mfmpos == 0)
-		    diskevent_flag |= DISK_REVOLUTION << (drv - floppy);
-		if (mfmpos == drv->indexoffset) {
-		    diskevent_flag |= DISK_INDEXSYNC;
-		    indexhack = 0;
-		}
+		    event_flag |= DISK_REVOLUTION << (drv - floppy);
+		if (mfmpos == drv->indexoffset)
+		    event_flag |= DISK_INDEXSYNC;
 	    }
 	}
 	startcycle += drv->trackspeed;
     }
     if (drv->tracktiming[0])
 	updatetrackspeed (drv, drv->mfmpos);
-    if (diskevent_flag) {
+    diskevent_flag = event_flag;
+    if (event_flag) {
 	disk_sync_cycle = startcycle >> 8;
 	eventtab[ev_disk].oldcycles = get_cycles ();
 	eventtab[ev_disk].evtime = get_cycles () + startcycle - firstcycle;
@@ -2534,7 +2531,7 @@ static void disk_doupdate_read (drive * drv, int floppybits)
 	if (drv->tracktiming[0])
 	    updatetrackspeed (drv, drv->mfmpos);
 	word <<= 1;
-        if (!is_empty) {
+	if (!is_empty) {
 	    if (is_unformatted)
 		word |= (rand () & 0x1000) ? 1 : 0;
 	    else
@@ -2554,7 +2551,7 @@ static void disk_doupdate_read (drive * drv, int floppybits)
 	}
 	if (bitoffset == 15 && dma_enable && dskdmaen == 2 && dsklength >= 0) {
 	    if (dsklength > 0) {
-	        do_chipmem_wput (dskpt, word);
+		do_chipmem_wput (dskpt, word);
 		dskpt += 2;
 #ifdef CPUEMU_6
 		cycle_line[7] |= CYCLE_MISC;
@@ -2634,7 +2631,7 @@ uae_u16 DSKBYTR (unsigned int hpos)
     if (dsklen & 0x4000)
 	v |= 0x2000;
     if (disk_debug_logging > 1)
-        write_log ("DSKBYTR=%04.4X hpos=%d\n", v, hpos);
+	write_log ("DSKBYTR=%04.4X hpos=%d\n", v, hpos);
 #ifdef DEBUGGER
     if (disk_debug_mode & DISK_DEBUG_PIO) {
 	unsigned int dr;
@@ -2708,7 +2705,7 @@ void DISK_hsync (unsigned int tohpos)
 void DISK_update (unsigned int tohpos)
 {
     unsigned int dr;
-    unsigned int cycles = (tohpos << 8) - disk_hpos;
+    int cycles = (int)((tohpos << 8) - disk_hpos);
 
     disk_jitter = ((rand () >> 4) & 3) + 1;
     if (disk_jitter > 2)
@@ -2744,11 +2741,13 @@ void DISK_update (unsigned int tohpos)
 	    continue;
 	if (selected & (1 << dr))
 	    continue;
-	if (dskdmaen == 3)
+	if (dskdmaen == 3) {
 	    disk_doupdate_write (drv, drv->floppybitcounter);
-	else
+	    disk_doupdate_predict (drv, disk_hpos, 1);
+	} else {
 	    disk_doupdate_read (drv, drv->floppybitcounter);
-	disk_doupdate_predict (drv, disk_hpos);
+	    disk_doupdate_predict (drv, disk_hpos, 0);
+	}
 	drv->floppybitcounter %= drv->trackspeed;
 	break;
     }
@@ -2828,7 +2827,7 @@ void DSKLEN (uae_u16 v, unsigned int hpos)
 		dskdmaen == 3 ? "write" : "read", selected ^ 15,
 		floppy[dr].cyl * 2 + side, floppy[dr].mfmpos);
 	}
-        disk_dma_debugmsg ();
+	disk_dma_debugmsg ();
     }
 
     for (dr = 0; dr < MAX_FLOPPY_DRIVES; dr++)
@@ -2890,7 +2889,7 @@ void DSKLEN (uae_u16 v, unsigned int hpos)
 
 	    } else if (dskdmaen == 3) { /* TURBO write */
 
-	        int i;
+		int i;
 		for (i = 0; i < dsklength; i++) {
 		    drv->bigmfmbuf[pos >> 4] = get_word (dskpt + i * 2);
 		    pos += 16;
