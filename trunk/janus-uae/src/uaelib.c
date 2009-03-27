@@ -301,6 +301,7 @@ static uae_u32 emulib_Debug (void)
  * @@@ Brian: I disabled it to prevent people from starting to use it - if that happens, we're
  *            stuck with this.
  */
+#if 0
 static uae_u32 FindFunctionInObject (uae_u8 *objectptr)
 {
     uae_u8 *text_hdr;
@@ -312,6 +313,7 @@ static uae_u32 FindFunctionInObject (uae_u8 *objectptr)
     }
     return 0;
 }
+#endif
 
 #define CREATE_NATIVE_FUNC_PTR uae_u32 (* native_func)( uae_u32, uae_u32, uae_u32, uae_u32, uae_u32, uae_u32, uae_u32, \
 						 uae_u32, uae_u32, uae_u32, uae_u32, uae_u32, uae_u32)
