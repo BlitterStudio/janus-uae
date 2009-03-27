@@ -29,7 +29,7 @@ static int *fs_np;
 static int *fs_np;
 static int *fs_ck;
 static int *fs_se;
-#ifdef ARCADIA
+#ifdef XARCADE
 static int *fs_xa1;
 static int *fs_xa2;
 #endif
@@ -114,7 +114,7 @@ void record_key (int kc)
 	case AK_LSH: fs = 1; fs_se[5] = b; break;
 	}
     }
-#ifdef ARCADIA
+#ifdef XARCADE
     if (fs_xa1 != 0) {
 	switch (k) {
 	case AK_NP8: fs = 1; fs_xa1[0] = b; break;
@@ -149,7 +149,7 @@ void record_key (int kc)
 	    kc ^= AK_RCTRL << 1;
 	    kc ^= AK_CTRL << 1;
 	}
-#ifdef ARCADIA
+#ifdef XARCADE
 	if (fs_xa1 || fs_xa2) {
 	    int k2 = k;
 	    if (k == AK_1)
@@ -187,7 +187,7 @@ void record_key (int kc)
 void joystick_setting_changed (void)
 {
     fs_np = fs_ck = fs_se = 0;
-#ifdef ARCADIA
+#ifdef XARCADE
     fs_xa1 = fs_xa2 = 0;
 #endif
 
@@ -206,7 +206,7 @@ void joystick_setting_changed (void)
     else if (JSEM_ISSOMEWHEREELSE (1, &currprefs))
 	fs_se = fakestate[1];
 
-#ifdef ARCADIA
+#ifdef XARCADE
     if (JSEM_ISXARCADE1 (0, &currprefs))
 	fs_xa1 = fakestate[0];
     else if (JSEM_ISXARCADE1 (1, &currprefs))
