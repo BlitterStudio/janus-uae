@@ -1,26 +1,65 @@
+/************************************************************************ 
+ *
+ * Copyright 2009 Oliver Brunner - aros<at>oliver-brunner.de
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-Daemon is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-Daemon is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ ************************************************************************/
+#ifndef __J_H_
+#define __J_H_
 
-#ifndef __AROS_WIN_H_
-#define __AROS_WIN_H_
+#include <exec/exec.h>
+#include <dos/dos.h>
+#include <dos/dostags.h>
+#include <proto/dos.h>
 
 #ifdef __AROS__
 #include <proto/arossupport.h>
 #endif
 
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 
 #include "options.h"
-#include "uae.h"
-#include "memory.h"
+/* there are *two* memory.h files :( */
+#include "../include/memory.h"
 #include "custom.h"
+#include "memory.h"
 #include "newcpu.h"
 #include "xwin.h"
 #include "picasso96.h"
 #include "traps.h"
 #include "uae_endian.h"
 
+#include "threaddep/thread.h"
+
 #include <gtk/gtk.h>
 #include "uae.h"
+
+#define JWTRACING_ENABLED 1
+#if JWTRACING_ENABLED
+#define JWLOG(...)   do { kprintf("JW: %s(): ",__func__);kprintf(__VA_ARGS__); } while(0)
+#else
+#define JWLOG(...)     do { ; } while(0)
+#endif
+
+void handle_msg(struct Window *win, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, BOOL *done);
+WORD get_lo_word(ULONG *field);
+WORD get_hi_word(ULONG *field);
 
 #define TASK_PREFIX_NAME "AOS3 Window "
 
@@ -52,9 +91,11 @@ extern struct SignalSemaphore sem_janus_window_list;
 extern struct SignalSemaphore sem_janus_screen_list;
 extern struct SignalSemaphore aos3_thread_start;
 extern struct SignalSemaphore janus_messages_access;
+extern struct SignalSemaphore sem_janus_active_win;
 
 /* main uae window active ? */
 extern BOOL uae_main_window_closed;
+
 
 #define WIN_DEFAULT_DELAY 20
 
@@ -120,6 +161,28 @@ UWORD get_BorderTop(ULONG m68kwin);
 UWORD get_BorderRight(ULONG m68kwin);
 UWORD get_BorderBottom(ULONG m68kwin);
 
+/* ad_jobs */
+uae_u32 ad_job_new_window          (ULONG aos3win);
+uae_u32 ad_job_mark_window_dead    (ULONG aos3win);
+uae_u32 ad_job_active_window       (ULONG *m68k_results);
+uae_u32 ad_job_list_screens        (ULONG *m68k_results);
+uae_u32 ad_job_report_host_windows (ULONG *m68k_results);
+uae_u32 ad_job_report_uae_windows  (ULONG *m68k_results);
+uae_u32 ad_job_switch_uae_window   (ULONG *m68k_results);
+uae_u32 ad_job_sync_windows        (ULONG *m68k_results);
+uae_u32 ad_job_update_janus_windows(ULONG *m68k_results);
+
+/* compare hooks */
+gint aos3_process_compare(gconstpointer aos3win, gconstpointer t);
+gint aos3_window_compare (gconstpointer aos3win, gconstpointer w);
+gint aros_window_compare (gconstpointer aos3win, gconstpointer w);
+gint aos3_screen_compare (gconstpointer jscreen, gconstpointer s);
+
+/* threads */
+int aros_win_start_thread (JanusWin *win);
+
+/* assert */
+struct Window *assert_window (struct Window *search);
 
 /* e-uae stuff */
 int match_hotkey_sequence(int key, int state);
@@ -130,5 +193,7 @@ void inputdevice_release_all_keys(void);
 void reset_hotkeys(void);
 void inputdevice_unacquire(void);
 ULONG find_rtg_mode (ULONG *width, ULONG *height, ULONG depth);
+
+STATIC_INLINE uae_u32 get_byte(uaecptr addr);
 
 #endif
