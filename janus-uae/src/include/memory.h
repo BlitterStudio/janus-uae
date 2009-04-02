@@ -11,6 +11,7 @@
 extern void memory_reset (void);
 extern void a1000_reset (void);
 
+
 #ifdef JIT
 extern int special_mem;
 #define SPECIAL_MEM_READ 1
