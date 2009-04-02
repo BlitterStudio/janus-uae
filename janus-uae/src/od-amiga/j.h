@@ -18,8 +18,8 @@
  * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
  *
  ************************************************************************/
-#ifndef __J_H_
-#define __J_H_
+#ifndef __J_H__
+#define __J_H__
 
 #include <exec/exec.h>
 #include <dos/dos.h>
