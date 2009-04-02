@@ -1,10 +1,29 @@
- /*
-  * E-UAE - The portable Amiga Emulator
-  *
-  * Thread and semaphore support using AmigaOS processes
-  *
-  * Copyright 2003-2005 Richard Drummond
-  */
+/************************************************************************ 
+ *
+ * Thread and semaphore support using AmigaOS processes
+ *
+ * Copyright 2003-2005 Richard Drummond
+ * Copyright 2009 Oliver Brunner - aros<at>oliver-brunner.de
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-Daemon is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-Daemon is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ ************************************************************************/
+
+#ifndef __THREAD_H__
+#define __THREAD_H__
 
 #include <exec/semaphores.h>
 #include <exec/lists.h>
@@ -66,3 +85,5 @@ extern void uae_set_thread_priority (int pri);
 #define UAE_THREAD_EXIT do {} while (0)
 
 #define uae_wait_thread(id)
+
+#endif /* __THREAD_H__ */
