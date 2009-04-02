@@ -77,7 +77,7 @@ am_uae_OBJECTS = main.$(OBJEXT) newcpu.$(OBJEXT) fpp.$(OBJEXT) \
 	uaeexe.$(OBJEXT) uaelib.$(OBJEXT) fdi2raw.$(OBJEXT) \
 	hotkeys.$(OBJEXT) ar.$(OBJEXT) driveclick.$(OBJEXT) \
 	enforcer.$(OBJEXT) misc.$(OBJEXT) missing.$(OBJEXT) \
-	readcpu.$(OBJEXT) aroswin.$(OBJEXT)
+	readcpu.$(OBJEXT)
 uae_OBJECTS = $(am_uae_OBJECTS)
 SCRIPTS = $(dist_noinst_SCRIPTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
@@ -162,6 +162,9 @@ MAKEINFO = @MAKEINFO@
 MATHLIB = @MATHLIB@
 MKDIR_P = @MKDIR_P@
 NO_SCHED_CFLAGS = @NO_SCHED_CFLAGS@
+OBJC = @OBJC@
+OBJCDEPMODE = @OBJCDEPMODE@
+OBJCFLAGS = @OBJCFLAGS@
 OBJEXT = @OBJEXT@
 OSDEP = @OSDEP@
 PACKAGE = @PACKAGE@
@@ -202,6 +205,7 @@ abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
+ac_ct_OBJC = @ac_ct_OBJC@
 ac_cv_c_inline = @ac_cv_c_inline@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
@@ -264,7 +268,7 @@ DIST_SUBDIRS = \
 	gfx-amigaos gfx-beos gfx-x11 gfx-sdl gfx-curses gfx-svga \
 	sd-none sd-alsa sd-amigaos sd-beos sd-sdl sd-solaris sd-uss \
 	jd-none jd-amigainput jd-amigaos jd-beos jd-linuxold jd-sdl \
-	gui-none gui-beos gui-cocoa gui-gtk gui-muirexx \
+	gui-none gui-gtk gui-muirexx \
 	od-generic od-amiga od-beos od-linux od-macosx od-win32 \
 	td-none td-amigaos td-beos td-posix td-sdl td-win32 \
 	keymap \
@@ -336,7 +340,6 @@ noinst_HEADERS = \
 	include/traps.h                                 \
 	include/tui.h		include/uae.h		\
 	include/uaeexe.h \
-	include/aroswin.h \
 	include/uae_endian.h \
 	include/uae_malloc.h \
 	include/uae_string.h \
@@ -364,7 +367,7 @@ uae_SOURCES = \
 	native2amiga.c disk.c crc32.c savestate.c unzip.c \
 	uaeexe.c uaelib.c fdi2raw.c hotkeys.c \
 	ar.c driveclick.c enforcer.c misc.c \
-	missing.c readcpu.c aroswin.c
+	missing.c readcpu.c 
 
 EXTRA_uae_SOURCES = \
 	bsdsocket.c bsdsocket-posix-new.c build68k.c catweasel.c cdrom.c \
@@ -520,7 +523,6 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/akiko.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ar.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/aroswin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/audio.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/autoconf.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/blitops.Po@am__quote@
@@ -896,7 +898,7 @@ uninstall-am: uninstall-binPROGRAMS
 
 uae$(EXEEXT):	$(uae_OBJECTS) $(uae_DEPENDENCIES)
 		@rm -f uae$(EXEEXT)
-		$(LINK) $(uae_LDFLAGS) $(uae_OBJECTS) $(uae_LDADD) $(LIBS)
+		$(LINK) $(uae_LDFLAGS) $(uae_OBJECTS) $(uae_LDADD) $(LIBS) -lgtk-mui -lgobject-2.0 -lglib-2.0 -liconv -lmui -larossupport -lamiga -larosc  -larosm
 @TARGET_BEOS_TRUE@		xres -o $@ @UAE_RSRCFILE@
 @TARGET_BEOS_TRUE@		mimeset -f $@
 @BUILD_MACOSX_BUNDLE_TRUE@		rm -fr $(bundle)

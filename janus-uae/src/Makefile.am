@@ -10,7 +10,7 @@ DIST_SUBDIRS = \
 	gfx-amigaos gfx-beos gfx-x11 gfx-sdl gfx-curses gfx-svga \
 	sd-none sd-alsa sd-amigaos sd-beos sd-sdl sd-solaris sd-uss \
 	jd-none jd-amigainput jd-amigaos jd-beos jd-linuxold jd-sdl \
-	gui-none gui-beos gui-cocoa gui-gtk gui-muirexx \
+	gui-none gui-gtk gui-muirexx \
 	od-generic od-amiga od-beos od-linux od-macosx od-win32 \
 	td-none td-amigaos td-beos td-posix td-sdl td-win32 \
 	keymap \
@@ -53,7 +53,7 @@ endif
 
 uae$(EXEEXT):	$(uae_OBJECTS) $(uae_DEPENDENCIES)
 		@rm -f uae$(EXEEXT)
-		$(LINK) $(uae_LDFLAGS) $(uae_OBJECTS) $(uae_LDADD) $(LIBS)
+		$(LINK) $(uae_LDFLAGS) $(uae_OBJECTS) $(uae_LDADD) $(LIBS) -lgtk-mui -lgobject-2.0 -lglib-2.0 -liconv -lmui -larossupport -lamiga -larosc  -larosm
 if TARGET_BEOS
 		xres -o $@ @UAE_RSRCFILE@
 		mimeset -f $@
@@ -108,7 +108,6 @@ noinst_HEADERS = \
 	include/traps.h                                 \
 	include/tui.h		include/uae.h		\
 	include/uaeexe.h \
-	include/aroswin.h \
 	include/uae_endian.h \
 	include/uae_malloc.h \
 	include/uae_string.h \
@@ -136,7 +135,7 @@ uae_SOURCES = \
 	native2amiga.c disk.c crc32.c savestate.c unzip.c \
 	uaeexe.c uaelib.c fdi2raw.c hotkeys.c \
 	ar.c driveclick.c enforcer.c misc.c \
-	missing.c readcpu.c aroswin.c
+	missing.c readcpu.c 
 
 EXTRA_uae_SOURCES = \
 	bsdsocket.c bsdsocket-posix-new.c build68k.c catweasel.c cdrom.c \
