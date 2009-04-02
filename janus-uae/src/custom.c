@@ -1,12 +1,28 @@
- /*
-  * UAE - The Un*x Amiga Emulator
-  *
-  * Custom chip emulation
-  *
-  * Copyright 1995-2002 Bernd Schmidt
-  * Copyright 1995 Alessandro Bissacco
-  * Copyright 2000-2004 Toni Wilen
-  */
+/************************************************************************ 
+ *
+ * Custom chip emulation
+ *
+ * Copyright 1995-2002 Bernd Schmidt
+ * Copyright 1995 Alessandro Bissacco
+ * Copyright 2000-2004 Toni Wilen
+ * Copyright 2009 Oliver Brunner - aros<at>oliver-brunner.de
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-Daemon is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-Daemon is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ ************************************************************************/
 
 //#define CUSTOM_DEBUG
 #define SPRITE_DEBUG 0
@@ -26,7 +42,6 @@
 #include <proto/intuition.h>
 
 #include <gtk/gtk.h>
-
 
 #include "options.h"
 #include "uae.h"
@@ -61,13 +76,7 @@
 #endif
 #include "hrtimer.h"
 #include "sleep.h"
-#include "aroswin.h"
-
-
-#if defined GTKMUI
-#define MGTK_DEBUG 1
-#include "/home/oli/aros/gtk-mui/debug.h"
-#endif
+#include "od-amiga/j.h"
 
 static void uae_abort (const char *format,...)
 {
@@ -4846,10 +4855,12 @@ int custom_init (void)
 	calltrap (deftrap (timehack_helper));
 	dw (RTS);
 
-    /* o1i: init aros hack */
+#ifdef __AROS__
+	/* init janus-daemon callbacks */
 	org (RTAREA_BASE+0xFF90);
 	calltrap (deftrap (aroshack_helper));
 	dw (RTS);
+#endif
 
 	org (pos);
     }
