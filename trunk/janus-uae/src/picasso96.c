@@ -1,13 +1,31 @@
-/*
- * UAE - The U*nix Amiga Emulator
+/************************************************************************ 
  *
  * Picasso96 Support Module
  *
  * Copyright 1997-2001 Brian King <Brian_King@Mitel.com, Brian_King@Cloanto.com>
  * Copyright 2000-2001 Bernd Roesch
  * Copyright 2003-2005 Richard Drummond
+ * Copyright 2009 Oliver Brunner - aros<at>oliver-brunner.de
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-Daemon is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-Daemon is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ ************************************************************************
  *
  * Theory of operation:
+ * 
  * On the Amiga side, a Picasso card consists mainly of a memory area that
  * contains the frame buffer.  On the UAE side, we allocate a block of memory
  * that will hold the frame buffer.  This block is in normal memory, it is
@@ -46,7 +64,7 @@
 #ifdef JIT
 int        have_done_picasso       = 0;         /* For the JIT compiler */
 # ifdef PICASSO96
-#include "aroswin.h"
+#include "od-amiga/j.h"
 static int picasso_is_special      = PIC_WRITE; /* ditto */
 static int picasso_is_special_read = PIC_READ;  /* ditto */
 # endif
