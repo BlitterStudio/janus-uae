@@ -26,7 +26,7 @@
 #include <dos/dostags.h>
 #include <proto/dos.h>
 
-#include "aroswin.h"
+#include "j.h"
 #include "threaddep/thread.h"
 
 /* we need that, to wake up the aos3 high pri daemon */
