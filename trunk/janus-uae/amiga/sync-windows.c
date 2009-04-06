@@ -272,19 +272,19 @@ void report_host_windows() {
     win=(struct Window *)command_mem[i];
     printf("resize window %lx (%s)\n",(ULONG) win,win->Title);
 
-    printf("  w/h: %d x %d\n",get_hi(command_mem[i+2]),get_lo(command_mem[i+2]));
     printf("  x/y: %d x %d\n",get_hi(command_mem[i+1]),get_lo(command_mem[i+1]));
+    printf("  w/h: %d x %d\n",get_hi(command_mem[i+2]),get_lo(command_mem[i+2]));
 
-    printf("  (long x/y: %lx)\n",command_mem[i+1]);
-    printf("  (long w/y: %lx)\n",command_mem[i+2]);
-    //assert_window(win);..
+    //printf("  (long x/y: %lx)\n",command_mem[i+1]);
+    //printf("  (long w/y: %lx)\n",command_mem[i+2]);
+    /* TODO(?) assert_window(win);..*/
     ChangeWindowBox(win,
-                    get_hi(command_mem[i+1])-win->BorderLeft,
-                    get_lo(command_mem[i+1])-win->BorderTop,
-		    get_hi(command_mem[i+2])+
-		    win->BorderLeft + win->BorderRight,
-		    get_lo(command_mem[i+2])+
-		    win->BorderTop + win->BorderTop);
+                    get_hi(command_mem[i+1]) - win->BorderLeft,
+                    get_lo(command_mem[i+1]) - win->BorderTop,
+		    get_hi(command_mem[i+2]) +
+		      win->BorderLeft + win->BorderRight,
+		    get_lo(command_mem[i+2]) +
+		      win->BorderTop + win->BorderBottom);
 
     i=i+5;
   }
