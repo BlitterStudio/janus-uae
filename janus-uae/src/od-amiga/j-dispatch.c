@@ -59,6 +59,15 @@ gint aos3_process_compare(gconstpointer aos3win, gconstpointer t) {
   return 1; /* don't care for sorting here */
 }
 
+gint aos3_screen_process_compare(gconstpointer jscreen, gconstpointer t) {
+
+  if(((JanusScreen *)jscreen)->task == t) {
+    return 0;
+  }
+  return 1; /* don't care for sorting here */
+}
+
+
 gint aos3_window_compare(gconstpointer aos3win, gconstpointer w) {
 
   if(((JanusWin *)aos3win)->aos3win == w) {
@@ -229,6 +238,14 @@ static uae_u32 ad_job_fetch_message(ULONG *m68k_results) {
 static uae_u32 ad_test(ULONG *m68k_results) {
   JWLOG("\nAD_TEST AD_TEST AD_TEST\n\n");
   return TRUE;
+}
+
+void put_long_p(ULONG *p, ULONG value) {
+  put_long((ULONG) p, value);
+}
+
+ULONG get_long_p(ULONG *p) {
+  return (ULONG) get_long((uaecptr) p);
 }
 
 /**********************************************************
