@@ -21,6 +21,8 @@
 
 #include "j.h"
 
+static void new_aos3window(ULONG aos3win);
+
 /*********************************************************
  * ad_job_update_janus_windows(aos3 window array)
  *
@@ -33,8 +35,8 @@ uae_u32 ad_job_update_janus_windows(ULONG *m68k_results) {
   ULONG i;
 
   i=0;
-  while(get_long(m68k_results+i)) {
-    new_aos3window(get_long(m68k_results+i));
+  while(get_long_p(m68k_results+i)) {
+    new_aos3window(get_long_p(m68k_results+i));
     i++;
   }
 
@@ -52,8 +54,8 @@ uae_u32 ad_job_update_janus_windows(ULONG *m68k_results) {
 static int is_in_results(LONG *m68k_results, gconstpointer w) {
   int i=0;
 
-  while(get_long((uaecptr) m68k_results+i)) {
-    if(get_long((uaecptr) m68k_results+i)==w) {
+  while(get_long_p(m68k_results+i)) {
+    if(get_long_p(m68k_results+i)==(ULONG) w) {
       return TRUE;
     }
     i++;
@@ -119,7 +121,7 @@ static void new_aos3window(ULONG aos3win) {
 
   JWLOG("jwin %lx is on jscreen %lx\n",jwin,jscreen);
 
-  jwin->aos3win=aos3win;
+  jwin->aos3win=(gpointer) aos3win;
   jwin->jscreen=jscreen; 
   janus_windows=g_slist_append(janus_windows,jwin);
 
@@ -142,7 +144,7 @@ uae_u32 ad_job_active_window(ULONG *m68k_results) {
     win=0;
   }
   else {
-    win=janus_active_window->aos3win;
+    win=(uae_u32) janus_active_window->aos3win;
   }
 
   ReleaseSemaphore(&sem_janus_active_win);
@@ -191,71 +193,124 @@ uae_u32 ad_job_report_uae_windows(ULONG *m68k_results) {
   JanusWin       *win;
   ULONG          aos3win;
   ULONG          i;
+  BOOL           need_resize;
+  UWORD          raw_w, raw_h;
+  UWORD          raw_x, raw_y;
 
   /* resize/move windows according to the supplied data:
    *
    * command mem fields (LONG):
    * 0: window pointer (LONG)
-   * 1: LeftEdge, TopEdge (WORD,WORD)
-   * 2: Width, Height (WORD, WORD)
+   * 1: LeftEdge, TopEdge (WORD,WORD) (raw values)
+   * 2: Width, Height (WORD, WORD) (raw values)
    * 3: reserved NULL (LONG)
    * 4: reserved NULL (LONG)
    * 5: next window starts here
    */
 
-  JWLOG("ad_job_report_uae_windows: entered\n");
+  JWLOG("++++++++++++++ entered ++++++++++++++\n");
   i=0;
-  while(get_long(m68k_results+i)) {
-    //JWLOG("ad_job_report_uae_windows: i=%d\n",i);
-    aos3win=(ULONG) get_long(m68k_results+i);
-    //JWLOG("ad_job_report_uae_windows: window=%lx\n",aos3win);
+  while(get_long_p(m68k_results+i)) {
+    aos3win=(ULONG) get_long_p(m68k_results+i);
     list_win=g_slist_find_custom(janus_windows, 
 			          (gconstpointer) aos3win,
 			          &aos3_window_compare);
-    //JWLOG("ad_job_report_uae_windows: list_win=%lx\n",list_win);
-    if(list_win) {
-      win=list_win->data;
-      if(win->delay > 0) {
-	win->delay--;
-      }
-      else {
-	JWLOG("ad_job_report_uae_windows: win->delay=WIN_DEFAULT_DELAY\n");
-	window=win->aroswin;
-	if(assert_window(window)) {
-	  //JWLOG("ad_job_report_uae_windows: aros window %lx is alive\n", window);
-	  if((win->LeftEdge != get_hi_word(m68k_results+i+1)) ||
-	     (win->TopEdge  != get_lo_word(m68k_results+i+1)) ||
-	     (win->Width    != get_hi_word(m68k_results+i+2)) ||
-	     (win->Height   != get_lo_word(m68k_results+i+2))) { 
-	    /* aos3 size changed -> we take the change */
-	    win->delay=WIN_DEFAULT_DELAY;
-	    JWLOG("ad_job_report_uae_windows: window %lx size/pos changed\n",window);
-	    win->LeftEdge=get_hi_word(m68k_results+i+1);
-	    win->TopEdge =get_lo_word(m68k_results+i+1);
-	    win->Width   =get_hi_word(m68k_results+i+2);
-	    win->Height  =get_lo_word(m68k_results+i+2);
-	    JWLOG("ad_job_report_uae_windows: resize window %lx\n",window);
-	    JWLOG("ad_job_report_uae_windows: w/h: %dx%d\n",win->Width,win->Height);
-	    JWLOG("ad_job_report_uae_windows: x/y: %dx%d\n",win->LeftEdge,win->TopEdge);
-	    ChangeWindowBox(window,
-			    win->LeftEdge - window->BorderLeft, 
-			    win->TopEdge - window->BorderTop,
-			    win->Width + 
-			    window->BorderLeft + 
-			    window->BorderRight +
-			    win->plusx,
-			    win->Height + 
-			    window->BorderTop + 
-			    window->BorderBottom +
-			    win->plusy);
-	  }
-	}
-      }
+
+    /* quite some sanity checks here */
+    if(!list_win) {
+      JWLOG("no Janus window found for aos3win %lx !?\n",aos3win);
+      goto NEXT;
     }
+
+    win=list_win->data;
+    if(!win) {
+      JWLOG("list_win %lx has no data??\n", list_win);
+      goto NEXT;
+    }
+
+    window=win->aroswin;
+    if(!window) {
+      JWLOG("no AROS window found for aos3win %lx\n",aos3win);
+      goto NEXT;
+    }
+
+    JWLOG("check window %lx (%s)\n", window, window->Title);
+
+    if(win->delay > 0) {
+      win->delay--;
+      goto NEXT;
+    }
+
+    if(!assert_window(window)) {
+      JWLOG(" window assert failed\n");
+      goto NEXT;
+    }
+   
+    need_resize=FALSE;
+    if((win->LeftEdge != get_hi_word(m68k_results+i+1)) ||
+       (win->TopEdge  != get_lo_word(m68k_results+i+1))) {
+
+      JWLOG(" window has beed moved\n");
+      win->LeftEdge = get_hi_word(m68k_results+i+1); /* both are raw */
+      win->TopEdge  = get_lo_word(m68k_results+i+1);
+
+      need_resize=TRUE;
+    }
+
+    if((win->Width  != get_hi_word(m68k_results+i+2)) ||
+       (win->Height != get_lo_word(m68k_results+i+2))) { 
+      /* aos3 size changed -> we take the change */
+      JWLOG(" window has been resized\n",window);
+      JWLOG("  aos3win->Width:  %3d\n",get_hi_word(m68k_results+i+2));
+      JWLOG("  win->Width:      %3d\n",win->Width);
+      JWLOG("  aroswin->Width:  %3d (raw)\n",window->Width-
+                                             window->BorderLeft -
+					     window->BorderRight);
+      JWLOG("\n");
+
+      JWLOG("  aos3win->Height: %3d\n",get_lo_word(m68k_results+i+2));
+      JWLOG("  win->Height:     %3d\n",win->Height);
+      JWLOG("  aroswin->Height  %3d (raw)\n",window->Height -
+                                             window->BorderTop -
+					     window->BorderBottom);
+      win->Width   =get_hi_word(m68k_results+i+2);
+      win->Height  =get_lo_word(m68k_results+i+2);
+
+      need_resize=TRUE;
+    }
+
+    if(need_resize) {
+      JWLOG(" change window %lx\n",window);
+      win->delay=WIN_DEFAULT_DELAY; 
+
+      /* You can detect that this operation has completed by receiving
+       * the IDCMP_CHANGEWINDOW IDCMP message  .. TODO?*/
+      ChangeWindowBox(window,
+		      win->LeftEdge - window->BorderLeft, 
+		      win->TopEdge - window->BorderTop,
+		      win->Width + 
+		      window->BorderLeft + 
+		      window->BorderRight +
+		      win->plusx,
+		      win->Height + 
+		      window->BorderTop + 
+		      window->BorderBottom +
+		      win->plusy);
+      JWLOG("  aroswin->Width:  %3d (new raw)\n",window->Width-
+                                             window->BorderLeft -
+					     window->BorderRight);
+      JWLOG("  aroswin->Height  %3d (new raw)\n",window->Height -
+                                             window->BorderTop -
+					     window->BorderBottom);
+
+
+
+    }
+NEXT:
     i=i+5;
   }
 
-  JWLOG("ad_job_report_uae_windows: left\n");
+  JWLOG("left\n");
   return TRUE;
 }
 
@@ -282,6 +337,8 @@ uae_u32 ad_job_report_host_windows(ULONG *m68k_results) {
   ULONG          aos3win;
   ULONG          i;
   ULONG          l;
+  UWORD          raw_w, raw_h;
+  BOOL           need_resize;
 
   /* 
    * command mem fields (LONG):
@@ -293,75 +350,100 @@ uae_u32 ad_job_report_host_windows(ULONG *m68k_results) {
    * 5: next window starts here
    */
 
-  JWLOG("ad_job_report_host_windows: entered\n");
+  JWLOG("========== entered ========== \n");
   i=0;
 
   ObtainSemaphore(&sem_janus_window_list);
   list_win=janus_windows;
   while(list_win) {
     win=(JanusWin *) list_win->data;
+    window=win->aroswin;
+
+    if(!assert_window(window)){
+      goto NEXT;
+    }
+
     if(win->delay > 0) {
       win->delay--;
+      goto NEXT;
     }
-    else {
 
-      window=win->aroswin;
+    need_resize=FALSE;
 
-      if(assert_window(window)) {
-	/* check if we have been resized */
-	if((window->LeftEdge + window->BorderLeft != win->LeftEdge) ||
-	   (window->TopEdge  + window->BorderTop  != win->TopEdge)  ||
-	   (window->Width    - 
-	    window->BorderLeft -  window->BorderRight -
-	    win->plusx
-						  != win->Width)    ||
-	   (window->Height   - 
-	    window->BorderTop  - window->BorderBottom -
-	    win->plusy
-						  != win->Height)) {
-	  JWLOG("ad_job_report_host_windows: win->delay=WIN_DEFAULT_DELAY\n");
-	  win->delay=WIN_DEFAULT_DELAY; 
+    JWLOG("check window %lx (%s)\n",window,window->Title);
 
+    /* check if we have been moved */
+    if((window->LeftEdge + window->BorderLeft != win->LeftEdge) ||
+       (window->TopEdge  + window->BorderTop  != win->TopEdge)) {
+      JWLOG("window %lx has been moved:\n",window);
+      JWLOG(" window->LeftEdge: %d\n",window->LeftEdge);
+      JWLOG("  + BorderLeft:    %d\n",window->LeftEdge + 
+                                      window->BorderLeft);
+      JWLOG(" os3win->LeftEdge: %d\n",win->LeftEdge);
+      JWLOG(" window->TopEdge:  %d\n",window->TopEdge);
+      JWLOG("  + BorderTop:     %d\n",window->TopEdge+window->BorderTop);
+      JWLOG(" os3win->TopEdge:  %d\n",win->TopEdge);
 
-	  JWLOG("ad_job_report_host_windows: window %lx was resized\n",window);
-	  JWLOG("ad_job_report_host_windows: full w/h %dx%d\n",window->Width,
-							    window->Height);
-	  JWLOG("ad_job_report_host_windows: full x/y %dx%d\n",window->LeftEdge,
-							    window->TopEdge);
+      win->LeftEdge = window->LeftEdge + window->BorderLeft;
+      win->TopEdge  = window->TopEdge  + window->BorderTop;
 
-	  JWLOG("ad_job_report_host_windows: old w/h %dx%d\n",win->Width,
-							    win->Height);
-	  JWLOG("ad_job_report_host_windows: old x/y %dx%d\n",win->LeftEdge,
-							    win->TopEdge);
-	  /* update our list*/
-	  win->LeftEdge = window->LeftEdge + window->BorderLeft;
-	  win->TopEdge  = window->TopEdge  + window->BorderTop;
-	  win->Width  = window->Width  - window->BorderLeft - window->BorderRight - win->plusx;
-	  win->Height = window->Height - window->BorderTop - window->BorderBottom - win->plusy;
+      JWLOG(" os3 win %lx should become: x:%3d y:%3d (raw)\n",
+                                       win->aos3win,
+                                       win->LeftEdge,
+				       win->TopEdge);
 
-	  JWLOG("ad_job_report_host_windows: new w/h %dx%d\n",win->Width,
-							    win->Height);
-	  JWLOG("ad_job_report_host_windows: new x/y %dx%d\n",win->LeftEdge,
-							    win->TopEdge);
-
-	  put_long(m68k_results+i,win->aos3win);
-
-	  /* put it in a ULONG, make sure, gcc does not optimize it too much */
-	  l=win->LeftEdge;
-	  l=l*0x10000 + win->TopEdge;
-	  JWLOG("ad_job_report_host_windows: long x/y %lx\n",l);
-	  put_long(m68k_results+i+1,l);
-
-	  l=win->Width;
-	  l=l*0x10000 + win->Height;
-	  JWLOG("ad_job_report_host_windows: long w/h %lx\n",l);
-	  put_long(m68k_results+i+2,l);
-	  put_long(m68k_results+i+3,NULL);
-	  put_long(m68k_results+i+4,NULL);
-	  i=i+5;
-	}
-      }
+      need_resize=TRUE;
     }
+
+    /* check if we have been resized */
+    raw_w=window->Width - 
+          window->BorderLeft - window->BorderRight -
+	  win->plusx;
+    raw_h=window->Height -
+          window->BorderTop - window->BorderBottom -
+	  win->plusy;
+
+    if (raw_w != win->Width || raw_h!=win->Height) {
+
+      JWLOG("window %lx has been resized:\n",window);
+      JWLOG(" window->Width x Height %3d x %3d (full)\n",window->Width, 
+                                                  window->Height);
+      JWLOG(" window->Width x Height %3d x %3d (raw)\n", raw_w, raw_h);
+
+      JWLOG(" os3win->Width x Height %3d x %3d\n",win->Width,
+					  	  win->Height);
+
+      /* update our list*/
+      win->Width  = raw_w;
+      win->Height = raw_h;
+
+      JWLOG(" os3 win %lx should become: %3d x %3d (raw)\n",
+                                                      win->aos3win,
+                                                      win->Width,
+						      win->Height);
+      need_resize=TRUE;
+    }
+
+    if(need_resize) {
+      win->delay=WIN_DEFAULT_DELAY; 
+      put_long_p(m68k_results+i,(ULONG) win->aos3win);
+
+      /* put it in a ULONG, make sure, gcc does not 
+       * optimize it too much */
+      l=win->LeftEdge;
+      l=(l*0x10000) + win->TopEdge;
+      //JWLOG("report long x/y %lx\n",l);
+      put_long_p(m68k_results+i+1,l);
+
+      l=win->Width;
+      l=l*0x10000 + win->Height;
+      //JWLOG("report long w/h %lx\n",l);
+      put_long_p(m68k_results+i+2, l);
+      put_long_p(m68k_results+i+3, 0);
+      put_long_p(m68k_results+i+4, 0);
+      i=i+5;
+    }
+NEXT:
     list_win=g_slist_next(list_win);
   }
   ReleaseSemaphore(&sem_janus_window_list);
@@ -420,7 +502,7 @@ uae_u32 ad_job_mark_window_dead(ULONG aos_window) {
 
 uae_u32 ad_job_switch_uae_window(ULONG *m68k_results) {
 
-  if(!get_long(m68k_results)) { /* just xor status */
+  if(!get_long_p(m68k_results)) { /* just xor status */
     if(uae_main_window_closed) {
       JWLOG("ad_job_switch_uae_window: open window\n");
       uae_main_window_closed=FALSE;
@@ -431,7 +513,7 @@ uae_u32 ad_job_switch_uae_window(ULONG *m68k_results) {
     }
   }
   else {
-    if(get_long(m68k_results+1)) {
+    if(get_long_p(m68k_results+1)) {
       uae_main_window_closed=FALSE; 
     }
     else {
@@ -501,10 +583,10 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
 	win=(JanusWin *) list_win->data;
 	if(win->aos3win != last_window) {
 	  last_window=win->aos3win;
-	  JWLOG("ad_job_sync_windows: win %lx added at %d\n",win->aos3win,i*4);
+	  //JWLOG("ad_job_sync_windows: win %lx added at %d\n",win->aos3win,i*4);
 	  if(!win->dead) { /* hmmm..?*/
 	    /* put_long cares for *4 ? */
-	    put_long(m68k_results+i, win->aos3win); 
+	    put_long_p(m68k_results+i, (ULONG) win->aos3win); 
 	  }
 	  i++;
 	}
