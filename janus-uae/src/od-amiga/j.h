@@ -61,7 +61,8 @@ void handle_msg(struct Window *win, ULONG class, UWORD code, int dmx, int dmy, W
 WORD get_lo_word(ULONG *field);
 WORD get_hi_word(ULONG *field);
 
-#define TASK_PREFIX_NAME "AOS3 Window "
+#define TASK_PREFIX_NAME        "AOS3 Window "
+#define SCREEN_TASK_PREFIX_NAME "AOS3 Screen "
 
 #define AD_SHUTDOWN    9
 #define AD_SETUP    10
@@ -97,7 +98,7 @@ extern struct SignalSemaphore sem_janus_active_win;
 extern BOOL uae_main_window_closed;
 
 
-#define WIN_DEFAULT_DELAY 20
+#define WIN_DEFAULT_DELAY 50
 
 #define MAXWIDTHHEIGHT 0x7777
 
@@ -106,12 +107,14 @@ typedef struct {
   struct Screen       *arosscreen;
   char                *title;
   char                *pubname;
+  char                *name; /* name of process */
+  struct Task         *task;
   ULONG                depth;
   BOOL                 ownscreen;
 } JanusScreen;
 
 typedef struct {
-  gpointer       aos3win;
+  gpointer       aos3win; /* gpointer !? */
   struct Window *aroswin;
   JanusScreen   *jscreen; /* screens on which window is running */
   struct Task   *task;
@@ -173,16 +176,22 @@ uae_u32 ad_job_sync_windows        (ULONG *m68k_results);
 uae_u32 ad_job_update_janus_windows(ULONG *m68k_results);
 
 /* compare hooks */
-gint aos3_process_compare(gconstpointer aos3win, gconstpointer t);
-gint aos3_window_compare (gconstpointer aos3win, gconstpointer w);
-gint aros_window_compare (gconstpointer aos3win, gconstpointer w);
-gint aos3_screen_compare (gconstpointer jscreen, gconstpointer s);
+gint aos3_process_compare       (gconstpointer aos3win, gconstpointer t);
+gint aos3_window_compare        (gconstpointer aos3win, gconstpointer w);
+gint aros_window_compare        (gconstpointer aos3win, gconstpointer w);
+gint aos3_screen_compare        (gconstpointer jscreen, gconstpointer s);
+gint aos3_screen_process_compare(gconstpointer jscreen, gconstpointer t);
 
 /* threads */
 int aros_win_start_thread (JanusWin *win);
+int aros_screen_start_thread (JanusScreen *screen);
 
 /* assert */
 struct Window *assert_window (struct Window *search);
+
+/* casting helpers */
+void  put_long_p(ULONG *p, ULONG value);
+ULONG get_long_p(ULONG *p);
 
 /* e-uae stuff */
 int match_hotkey_sequence(int key, int state);
