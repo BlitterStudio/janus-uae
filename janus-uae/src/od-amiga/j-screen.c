@@ -21,18 +21,93 @@
 
 #include "j.h"
 
-struct Screen *new_aros_screen(JanusScreen *jscreen) {
+/************************************************************************
+ * new_aros_pub_screen for an aos3screen
+ *
+ * check if there is already a pubscreen with this name
+ * - if yes, return that one
+ * - if not, open new one
+ ************************************************************************/
+static struct Screen *new_aros_pub_screen(JanusScreen *jscreen, 
+                                          uaecptr aos3screen) {
+  ULONG width;
+  ULONG height;
+  ULONG depth;
+  LONG mode  = INVALID_ID;
+  ULONG i;
+  ULONG err;
   struct Screen *arosscr;
+  const UBYTE preferred_depth[] = {24, 32, 16, 15, 8};
+  struct screen *pub;
+
+  JWLOG("screen public name: >%s<\n",jscreen->pubname);
+
+  /* search for already open screen by name */
+  pub=LockPubScreen(jscreen->pubname);
+  if(pub) {
+    JWLOG("screen %s already exists\n",jscreen->pubname);
+    UnlockPubScreen(NULL, pub);
+    return pub;
+  }
+
+  aros_screen_start_thread(jscreen);
+
+  return jscreen->arosscreen;
+
+#if 0
+  /* we need a new screen */
+  width =get_word(aos3screen+12);
+  height=get_word(aos3screen+14);
+  depth =jscreen->depth;
+
+  JWLOG("we want %dx%d in %d bit\n",width,height,depth);
+
+  mode=find_rtg_mode(&width, &height, depth);
+  JWLOG("screen mode with depth %d: %lx\n",depth,mode);
+
+  if(mode == INVALID_ID) {
+    JWLOG("try different depth:\n");
+    i=0;
+    while( (i<sizeof(preferred_depth)) && (mode==INVALID_ID)) {
+      depth = preferred_depth[i];
+      mode = find_rtg_mode (&width, &height, depth);
+      i++;
+    }
+    JWLOG("screen mode with depth %d: %lx\n",depth,mode);
+  }
+
+  if(mode==INVALID_ID) {
+    JWLOG("ERROR: unable to find a screen mode !?\n");
+    return NULL;
+  }
+
+  arosscr=OpenScreenTags(NULL,
+		     SA_Type, PUBLICSCREEN,
+		     SA_DisplayID, mode,
+		     SA_Width, width, /* necessary ? */
+		     SA_Height, height,
+		     SA_Title, get_real_address(get_long(aos3screen+26)),
+		     SA_PubName, jscreen->pubname,
+#if 0
+		     SA_PubTask, jscreen->task,
+		     SA_SA_PubSig, jscreen->signal,
+#endif
+		     SA_ErrorCode, &err,
+		     TAG_DONE);
+
+  jscreen->ownscreen=TRUE; /* TODO we have to close this one, how..? */
+
+  return arosscr;
+#endif
+}
+
+static struct Screen *new_aros_screen(JanusScreen *jscreen) {
+  struct Screen *arosscr=NULL;
   UWORD flags;
   UWORD screentype;
   uaecptr aos3screen;
-  int delme;
   ULONG lock;
   ULONG err;
-  ULONG mode  = INVALID_ID;
-  ULONG width =get_word(aos3screen+ 8);
-  ULONG height=get_word(aos3screen+10);
-  ULONG depth =jscreen->depth;
   ULONG i;
 
   const UBYTE preferred_depth[] = {24, 32, 16, 15, 8};
@@ -88,48 +163,9 @@ struct Screen *new_aros_screen(JanusScreen *jscreen) {
   /********************* Public Screen **************************/
   else if(screentype==PUBLICSCREEN) {
     JWLOG("screen %lx is PUBLICSCREEN\n",aos3screen);
-    JWLOG("screen public name: >%s<\n",jscreen->pubname);
-
-    width =get_word(aos3screen+12);
-    height=get_word(aos3screen+14);
-    depth =jscreen->depth;
-
-    JWLOG("we want %dx%d in %d bit\n",width,height,depth);
-
-    mode=find_rtg_mode(&width, &height, depth);
-    JWLOG("screen mode with depth %d: %lx\n",depth,mode);
-
-    if(mode == INVALID_ID) {
-      JWLOG("try different depth:\n");
-      i=0;
-      while( (i<sizeof(preferred_depth)) && (mode==(ULONG) INVALID_ID)) {
-	depth = preferred_depth[i];
-	mode = find_rtg_mode (&width, &height, depth);
-	i++;
-      }
-      JWLOG("screen mode with depth %d: %lx\n",depth,mode);
-    }
-
-    if(mode==(ULONG) INVALID_ID) {
-      JWLOG("ERROR: unable to find a screen mode !?\n");
-      return NULL;
-    }
-
-    arosscr=OpenScreenTags(NULL,
-                       SA_Type, PUBLICSCREEN,
-		       SA_DisplayID, mode,
-		       SA_Width, width, /* necessary ? */
-		       SA_Height, height,
-		       SA_Title, get_real_address(get_long(aos3screen+26)),
-		       SA_PubName, jscreen->pubname,
-#if 0
-		       SA_PubTask, jscreen->task,
-		       SA_SA_PubSig, jscreen->signal,
-#endif
-		       SA_ErrorCode, &err,
-                       TAG_DONE);
-
-    jscreen->ownscreen=TRUE; /* TODO we have to close this one, how..? */
+    //arosscr=new_aros_pub_screen(jscreen, aos3screen);
+    new_aros_pub_screen(jscreen, aos3screen);
+    return jscreen->arosscreen;
   }
   else {
     JWLOG("ERROR: screen type unknown !?\n");
