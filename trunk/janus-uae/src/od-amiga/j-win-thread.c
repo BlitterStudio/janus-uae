@@ -17,6 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
  *
+ * $Id$
+ *
  ************************************************************************/
 
 #include "j.h"
@@ -313,7 +315,7 @@ static void aros_win_thread (void) {
 
   if(flags & WFLG_WBENCHWINDOW) {
     /* seems, as if WBench Windows have invalid maxw/maxh (=acth/actw).
-     * If have not found that anywhere, but for aos3 this seems to
+     * I did not find that anywhere, but for aos3 this seems to
      * be true. FIXME?
      */
     JWLOG("aros_win_thread[%lx]: this is a WFLG_WBENCHWINDOW\n");
