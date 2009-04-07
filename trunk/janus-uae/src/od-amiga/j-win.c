@@ -281,7 +281,10 @@ uae_u32 ad_job_report_uae_windows(ULONG *m68k_results) {
 
     if(need_resize) {
       JWLOG(" change window %lx\n",window);
-      win->delay=WIN_DEFAULT_DELAY; 
+      win->delay=WIN_DEFAULT_DELAY * 4;  /* delay is set to 0, if
+					  * IDCMP_CHANGE is received
+					  * and delay > WIN_DEFAULT_DELAY
+					  */
 
       /* You can detect that this operation has completed by receiving
        * the IDCMP_CHANGEWINDOW IDCMP message  .. TODO?*/

@@ -57,7 +57,6 @@
 #define JWLOG(...)     do { ; } while(0)
 #endif
 
-void handle_msg(struct Window *win, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, BOOL *done);
 WORD get_lo_word(ULONG *field);
 WORD get_hi_word(ULONG *field);
 

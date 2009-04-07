@@ -22,6 +22,7 @@
 #include "j.h"
 #include "memory.h"
 
+static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, BOOL *done);
 
 /* we don't know those values, but we always keep the last value here */
 static UWORD estimated_border_top=25;
@@ -29,7 +30,7 @@ static UWORD estimated_border_bottom=25;
 static UWORD estimated_border_left=25;
 static UWORD estimated_border_right=25;
 
-static void handle_msg(struct Window *win, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, BOOL *done) {
+static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, BOOL *done) {
 
   GSList *list_win;
 
@@ -40,6 +41,17 @@ static void handle_msg(struct Window *win, ULONG class, UWORD code, int dmx, int
     /* fake IDCMP_CLOSEWINDOW to original aos3 window!! TODO!! */
 	JWLOG("aros_win_thread[%lx]: IDCMP_CLOSEWINDOW received\n", thread);
 	break;
+
+    case IDCMP_CHANGEWINDOW:
+      /* ChangeWindowBox is not done at once, but deferred. You 
+       * can detect that the operation has completed by receiving 
+       * the IDCMP_CHANGEWINDOW IDCMP message
+       */
+      JWLOG("aros_win_thread[%lx]: IDCMP_CHANGEWINDOW: received\n", thread);
+      if(jwin->delay > WIN_DEFAULT_DELAY) {
+	jwin->delay=0;
+      }
+      break;
 
     case IDCMP_RAWKEY: {
 	int keycode = code & 127;
@@ -104,13 +116,16 @@ static void handle_msg(struct Window *win, ULONG class, UWORD code, int dmx, int
 	  inputdevice_release_all_keys ();
 	  reset_hotkeys ();
 	}
+#if 0
 	ObtainSemaphore(&sem_janus_window_list);
 	list_win=g_slist_find_custom(janus_windows,
                                (gconstpointer) win,
                                &aros_window_compare);
 	ReleaseSemaphore(&sem_janus_window_list);
 	janus_active_window=(JanusWin *) list_win->data;
-	JWLOG("janus_active_window=%lx\n",list_win->data);
+#endif 
+	janus_active_window=jwin;
+	JWLOG("janus_active_window=%lx\n", janus_active_window);
 	ReleaseSemaphore(&sem_janus_active_win);
 
 	break;
@@ -120,12 +135,15 @@ static void handle_msg(struct Window *win, ULONG class, UWORD code, int dmx, int
 	JanusWin *old;
 	sleep(1);
 	ObtainSemaphore(&sem_janus_active_win);
+#if 0
 	ObtainSemaphore(&sem_janus_window_list);
 	list_win=g_slist_find_custom(janus_windows,
                                (gconstpointer) win,
                                &aros_window_compare);
 	ReleaseSemaphore(&sem_janus_window_list);
 	old=(JanusWin *) list_win->data;
+#endif
+	old=jwin;
 	if(old == janus_active_window) {
 	  janus_active_window=NULL;
 	  JWLOG("janus_active_window=NULL\n");
@@ -248,17 +266,17 @@ static void aros_win_thread (void) {
   /* now let's hope, the aos3 window is not closed already..? */
 
   /* AROS and Aos3 use the same flags */
-  flags     =get_long(jwin->aos3win + 24); 
+  flags     =get_long_p(jwin->aos3win + 24); 
   JWLOG("aros_win_thread[%lx]: flags: %lx \n", thread, flags);
 
   /* wrong offset !?
    * idcmpflags=get_long(jwin->aos3win + 80);
    */
 
-  x=get_word(jwin->aos3win +  4);
-  y=get_word(jwin->aos3win +  6);
+  x=get_word((ULONG) jwin->aos3win +  4);
+  y=get_word((ULONG) jwin->aos3win +  6);
 
-  aos_title=get_long(jwin->aos3win + 32);
+  aos_title=get_long_p(jwin->aos3win + 32);
 
   //JWLOG("TITLE: aos_title=%lx\n",aos_title);
 
@@ -278,6 +296,7 @@ static void aros_win_thread (void) {
 			  IDCMP_MOUSEBUTTONS |
 			  IDCMP_MOUSEMOVE |
 			  IDCMP_ACTIVEWINDOW |
+			  IDCMP_CHANGEWINDOW |
 			  IDCMP_INACTIVEWINDOW;
 
   JWLOG("aros_win_thread[%lx]: idcmpflags: %lx \n", thread, idcmpflags);
@@ -286,20 +305,31 @@ static void aros_win_thread (void) {
   flags=flags & 0xFFFFFEFF;  /* remove refresh bits and backdrop */
   flags=flags | WFLG_SMART_REFRESH | WFLG_GIMMEZEROZERO | WFLG_ACTIVATE;
   
-  minw=get_word(jwin->aos3win + 16); /* CHECKME: need borders here, too? */
-  minh=get_word(jwin->aos3win + 18);
-  maxw=get_word(jwin->aos3win + 20);
-  maxh=get_word(jwin->aos3win + 22);
+  /* CHECKME: need borders here, too? */
+  minw=get_word((ULONG) jwin->aos3win + 16); 
+  minh=get_word((ULONG) jwin->aos3win + 18);
+  maxw=get_word((ULONG) jwin->aos3win + 20);
+  maxh=get_word((ULONG) jwin->aos3win + 22);
 
-  w=get_word(jwin->aos3win +  8);
-  h=get_word(jwin->aos3win + 10);
+  if(flags & WFLG_WBENCHWINDOW) {
+    /* seems, as if WBench Windows have invalid maxw/maxh (=acth/actw).
+     * If have not found that anywhere, but for aos3 this seems to
+     * be true. FIXME?
+     */
+    JWLOG("aros_win_thread[%lx]: this is a WFLG_WBENCHWINDOW\n");
+    maxw=0xF000;
+    maxh=0xF000;
+  }
 
-  bl=get_byte(jwin->aos3win + 54);
-  bt=get_byte(jwin->aos3win + 55);
-  br=get_byte(jwin->aos3win + 56);
-  bb=get_byte(jwin->aos3win + 57);
+  w=get_word((ULONG) jwin->aos3win +  8);
+  h=get_word((ULONG) jwin->aos3win + 10);
 
-  gadget=get_long(jwin->aos3win + 62);
+  bl=get_byte((ULONG) jwin->aos3win + 54);
+  bt=get_byte((ULONG) jwin->aos3win + 55);
+  br=get_byte((ULONG) jwin->aos3win + 56);
+  bb=get_byte((ULONG) jwin->aos3win + 57);
+
+  gadget=get_long_p(jwin->aos3win + 62);
   JWLOG("aros_win_thread[%lx]: ============= gadget =============\n",thread);
   JWLOG("aros_win_thread[%lx]: gadget window: %s\n",thread,title);
   JWLOG("aros_win_thread[%lx]: gadget borderleft: %d\n",thread,bl);
@@ -490,7 +520,7 @@ static void aros_win_thread (void) {
 
 	ReplyMsg ((struct Message*)msg);
 
-	handle_msg(aroswin, class, code, dmx, dmy, mx, my, qualifier, 
+	handle_msg(aroswin, jwin, class, code, dmx, dmy, mx, my, qualifier, 
 	           thread, &done);
       }
     }
