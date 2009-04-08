@@ -52,6 +52,8 @@
 #define AD_GET_JOB_NEW_WINDOW 11
 #define AD_GET_JOB_LIST_SCREENS 12
 
+#define J_MSG_CLOSE                    1
+
 extern ULONG (*calltrap)(ULONG __asm("d0"), 
                          ULONG __asm("d1"), 
 			 APTR  __asm("a0"));
@@ -60,6 +62,7 @@ extern ULONG (*calltrap)(ULONG __asm("d0"),
 BOOL init_sync_mouse();
 void free_sync_mouse();
 void sync_mouse();
+void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button);
 
 /* patch.c */
 void patch_functions();
@@ -74,6 +77,7 @@ void report_uae_windows();
 void report_host_windows();
 void sync_windows();
 void sync_active_window();
+void forward_messages();
 
 /* public_screen.c */
 char *public_screen_name(struct Screen *scr); 

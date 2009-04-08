@@ -128,37 +128,6 @@ int setup(struct Task *task, ULONG signal) {
   return result;
 }
 
-/*****************************************
- * check, if new IDCMP messages for 
- * amigaOS windows are waiting and send
- * them to the right message ports.
- *
- * NOT USED ATM!
- *****************************************/
-void forward_messages() {
-  ULONG *command_mem;
-  UBYTE done;
-
-  //printf("forward_messages()\n");
-
-  command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
-
-  done=0;
-  while(!done) {
-
-    calltrap (AD_GET_JOB, AD_GET_JOB_MESSAGES, command_mem);
-    if(!command_mem[0]) {
-      done=1;
-      //printf("forward_messages: nothing to do..\n");
-    }
-    else {
-      printf("got message, what to do now..?\n");
-    }
-  }
-
-  FreeVec(command_mem);
-}
-
 /***************************************
  * enable/disable uae main window
  ***************************************/
@@ -247,7 +216,7 @@ int main (int argc, char **argv) {
       report_host_windows();
       sync_mouse();
       sync_active_window();
-      //forward_messages();
+      forward_messages();
     }
     if(newsignals & SIGBREAKF_CTRL_C) {
       printf("got SIGBREAKF_CTRL_C..\n");
