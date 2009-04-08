@@ -4,7 +4,7 @@
 
 CC        = m68k-amigaos-gcc
 
-TARGETDIR = ./
+TARGETDIR = /home/oli/aros/gtk-mui/aros/m68k
 
 FLAGS     = -Wall
 CDEFS     =
@@ -14,7 +14,7 @@ LD_FLAGS  = -noixemul
 
 CFLAGS    = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
-OBJS      = janus-daemon.o sync-mouse.o patch.o sync-windows.o sync-screens.o public-screen.o
+OBJS      = janus-daemon.o sync-mouse.o patch.o sync-windows.o sync-screens.o public-screen.o messages.o
 
 all: $(OBJS) 
 	$(CC) $(LD_FLAGS) $(OBJS) -o $(TARGETDIR)/janus-daemon 
