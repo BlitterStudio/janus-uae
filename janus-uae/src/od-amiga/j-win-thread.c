@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
  *
- * $Id$
+ * $Id:$
  *
  ************************************************************************/
 
@@ -34,15 +34,28 @@ static UWORD estimated_border_right=25;
 
 static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, BOOL *done) {
 
-  GSList *list_win;
+  GSList   *list_win;
+  JanusMsg *jmsg;
 
   switch (class) {
       
     case IDCMP_CLOSEWINDOW:
-    /* TODO: NO!!!!!!!!!!!!!!!! */
-    /* fake IDCMP_CLOSEWINDOW to original aos3 window!! TODO!! */
-	JWLOG("aros_win_thread[%lx]: IDCMP_CLOSEWINDOW received\n", thread);
+      /* fake IDCMP_CLOSEWINDOW to original aos3 window */
+      JWLOG("aros_win_thread[%lx]: CLOSEWINDOW received for jwin %lx (%s)\n", 
+              thread, jwin, win->Title);
+
+      ObtainSemaphore(&janus_messages_access);
+      jmsg=AllocVec(sizeof(JanusMsg), MEMF_CLEAR);
+      if(!jmsg) {
+	JWLOG("ERROR: no memory (ignored message)\n");
 	break;
+      }
+      jmsg->jwin=jwin;
+      jmsg->type=J_MSG_CLOSE;
+      janus_messages=g_slist_append(janus_messages, jmsg);
+      ReleaseSemaphore(&janus_messages_access);
+
+      break;
 
     case IDCMP_CHANGEWINDOW:
       /* ChangeWindowBox is not done at once, but deferred. You 
