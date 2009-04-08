@@ -80,6 +80,8 @@ WORD get_hi_word(ULONG *field);
 #define AD_GET_JOB_NEW_WINDOW         11
 #define AD_GET_JOB_LIST_SCREENS       12
 
+#define J_MSG_CLOSE                    1
+
 extern GSList *janus_windows;  /* List of JanusWins  */
 extern GSList *janus_messages; /* List of JanusMsgs */
 
@@ -126,10 +128,9 @@ typedef struct {
 } JanusWin;
 
 typedef struct {
-  gpointer             aos3win;
-  gpointer             aos3msg;
-  struct Window       *aroswin;
-  struct IntuiMessage *arosmsg;
+  JanusWin      *jwin;
+  ULONG          type; /* J_MSG_..*/
+  BOOL           old;
 } JanusMsg;
 
 /* remove me */

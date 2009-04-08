@@ -169,7 +169,7 @@ gint aos3_screen_compare(gconstpointer jscreen, gconstpointer s) {
 WORD get_lo_word(ULONG *field) {
   ULONG l;
 
-  l=get_long(field);
+  l=get_long_p(field);
   l=l & 0xFFFF;
   return (WORD) l;
 }
@@ -177,7 +177,7 @@ WORD get_lo_word(ULONG *field) {
 WORD get_hi_word(ULONG *field) {
   ULONG l;
 
-  l=get_long(field);
+  l=get_long_p(field);
   l=l & 0xFFFF0000;
   l=l/0x10000;
   return (WORD) l;
@@ -198,8 +198,8 @@ static uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
 
   screen=IntuitionBase->FirstScreen;
 
-  put_long(m68k_results, screen->MouseX); 
-  put_long(m68k_results+1, screen->MouseY); 
+  put_long_p(m68k_results, screen->MouseX); 
+  put_long_p(m68k_results+1, screen->MouseY); 
 
   return TRUE;
 }
@@ -211,22 +211,36 @@ static uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
  * This is the aros-daemon calling us, to get his next
  * message. if we put a 0 in the first long of the results,
  * no messages are waiting.
+ *
+ * Only return one message per call, the janus-daemon
+ * will keep calling, as long as he gets messages
  **********************************************************/
 int wait=0;
 static uae_u32 ad_job_fetch_message(ULONG *m68k_results) {
   JanusMsg *j;
 
-  JWLOG("ad_job_fetch_message\n");
-
   ObtainSemaphore(&janus_messages_access);
 
+  /* check, if we already sent that messages */
   if(janus_messages) {
-    j=(JanusMsg *) g_slist_nth_data(janus_messages, 0);
+    j=(JanusMsg *) janus_messages->data;
+    if(j->old) {
+      janus_messages=g_slist_remove_link(janus_messages, janus_messages);
+      //janus_messages=g_list_remove(janus_messages, j);
+      FreeVec(j);
+    }
+  }
 
-    /* THIS IS NOT USED ATM, TODO !!*/
+  /* send new message and mark it old */
+  if(janus_messages) {
+    j=(JanusMsg *) janus_messages->data;
+    //j=(JanusMsg *) g_slist_nth_data(janus_messages, 0);
+    put_long((ULONG) (m68k_results    ), (ULONG) j->type);
+    put_long((ULONG) (m68k_results + 1), (ULONG) j->jwin->aos3win);
+    j->old=TRUE;
   }
   else {
-    put_long(m68k_results,0); /* nothing to do */
+    put_long_p(m68k_results,0); /* nothing to do */
   }
 
   ReleaseSemaphore(&janus_messages_access);
@@ -278,10 +292,10 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
       JWLOG("::::::::::::::AD_SETUP::::::::::::::::::::::::\n");
       JWLOG("AD__MAXMEM: %d\n", m68k_dreg(&context->regs, 1));
       JWLOG("param:      %lx\n",m68k_areg(&context->regs, 0));
-      JWLOG("Task:       %lx\n",get_long(param  ));
-      JWLOG("Signal:     %lx\n",get_long(param+4));
-      aos3_task=get_long(param);
-      aos3_task_signal=get_long(param+4);
+      JWLOG("Task:       %lx\n",get_long_p(param  ));
+      JWLOG("Signal:     %lx\n",get_long_p(param+4));
+      aos3_task=get_long_p(param);
+      aos3_task_signal=get_long_p(param+4);
 
       InitSemaphore(&sem_janus_window_list);
       InitSemaphore(&sem_janus_screen_list);
@@ -330,7 +344,7 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
     /* the aros_daemon wants its orders*/
     case AD_GET_JOB: {
       ULONG job=m68k_dreg(&context->regs, 1);
-      LONG *m68k_results=m68k_areg(&context->regs, 0);
+      LONG *m68k_results= m68k_areg(&context->regs, 0);
 
       //JWLOG("::::::::::::::AD_GET_JOB::::::::::::::::::::::::\n");
 
@@ -357,13 +371,8 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
        	  return ad_job_new_window((ULONG) m68k_results);
     	case AD_GET_JOB_LIST_SCREENS: 
        	  return ad_job_list_screens(m68k_results);
-
-
-
-#if 0
     	case AD_GET_JOB_MESSAGES: 
        	  return ad_job_fetch_message(m68k_results);
-#endif
 
 	default:
 	  JWLOG("ERROR!! aroshack_helper: unkown job: %d\n",m68k_dreg(&context->regs, 1));
