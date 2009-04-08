@@ -122,8 +122,7 @@ BOOL init_sync_mouse() {
 /* SetMouse is based on SetMouse (Freeware)
  * (C) 1994,1995, Ketil Hunn
  */
-static void SetMouse(struct Screen *screen, 
-                     WORD x, WORD y, UWORD button) {
+void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button) {
 
   NeoPix->iepp_Screen=(struct Screen *)screen;
   NeoPix->iepp_Position.X=x;
