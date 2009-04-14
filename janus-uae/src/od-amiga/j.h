@@ -186,6 +186,9 @@ gint aos3_screen_process_compare(gconstpointer jscreen, gconstpointer t);
 int aros_win_start_thread (JanusWin *win);
 int aros_screen_start_thread (JanusScreen *screen);
 
+/* menu */
+ULONG *clone_menu(JanusWin *jwin);
+
 /* assert */
 struct Window *assert_window (struct Window *search);
 
