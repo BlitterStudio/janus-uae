@@ -312,6 +312,7 @@ static void aros_win_thread (void) {
 			  IDCMP_MOUSEMOVE |
 			  IDCMP_ACTIVEWINDOW |
 			  IDCMP_CHANGEWINDOW |
+			  IDCMP_MENUPICK |
 			  IDCMP_INACTIVEWINDOW;
 
   JWLOG("aros_win_thread[%lx]: idcmpflags: %lx \n", thread, idcmpflags);
@@ -451,6 +452,7 @@ static void aros_win_thread (void) {
     jwin->aroswin =  OpenWindowTags(NULL,WA_Title, title,
       				    WA_Left, x - estimated_border_left,
       				    WA_Top, y - estimated_border_top,
+				    /* WA_InnerWidth ..!? */
       				    WA_Width, w - br - bl + 
 				              estimated_border_left +
 					      estimated_border_right +
@@ -469,6 +471,7 @@ static void aros_win_thread (void) {
 				    WA_Flags, flags,
 				    WA_IDCMP, idcmpflags,
 				    WA_PubScreen, jwin->jscreen->arosscreen,
+				    WA_NewLookMenus, TRUE,
                                     TAG_DONE);
   }
 
@@ -512,6 +515,8 @@ static void aros_win_thread (void) {
 
     done=TRUE;
   }
+
+  clone_menu(jwin);
 
   while(!done) {
 #if 0
