@@ -23,6 +23,16 @@
 #include <proto/gadtools.h>
 #include "j.h"
 
+void init_item(struct NewMenu m, BYTE type, ULONG *text) {
+
+  JWLOG("title: %s\n",text);
+
+  m.nm_Type=type;
+  m.nm_Label=text;
+
+  return m;
+}
+
 /********************************
  * clone_menu
  *
@@ -33,11 +43,17 @@ ULONG *clone_menu(JanusWin *jwin) {
   struct Window   *aroswin=jwin->aroswin;
   uaecptr          aos3win=jwin->aos3win;
   struct Library  *GadToolsBase = NULL;
-  struct NewMenu **newmenu;
+#warning Maximum amoun of menu items is set to 50 HARDCODED!!
+  struct NewMenu   newmenu[150];
   struct NewMenu  *m;
   struct Menu     *arosmenu;
   APTR             vi;
   uaecptr          aos3menustrip;
+  uaecptr          aos3item;
+  uaecptr          aos3sub;
+  uaecptr          aos3itemfill;
+  ULONG            i;
+  ULONG            nr_entries;
 
   JWLOG("started for jwin %lx\n", jwin);
 
@@ -53,8 +69,9 @@ ULONG *clone_menu(JanusWin *jwin) {
     return NULL;
   }
 
+/* TODO !!*/
   /*The first argument is a pointer to an array of NewMenu structures */
-  newmenu=AllocVec(5*sizeof(struct NewMenu *), MEMF_CLEAR);
+  //newmenu=AllocVec(50*sizeof(struct NewMenu), MEMF_CLEAR);
 
 #if 0
   m=AllocVec(sizeof(struct NewMenu), MEMF_CLEAR);
@@ -72,10 +89,6 @@ ULONG *clone_menu(JanusWin *jwin) {
   m->nm_Label=g_strdup("Item 1-2");
   newmenu[2]=m;
 
-/* not necessary */
-  m=AllocVec(sizeof(struct NewMenu), MEMF_CLEAR);
-  m->nm_Type=NM_END;
-  newmenu[3]=m;
 #endif
 
   vi = GetVisualInfoA(jwin->jscreen->arosscreen, NULL);
@@ -91,13 +104,54 @@ ULONG *clone_menu(JanusWin *jwin) {
   }
   JWLOG("aos3menustrip: %lx\n",aos3menustrip);
 
-  m=AllocVec(sizeof(struct NewMenu), MEMF_CLEAR);
-  m->nm_Type=NM_TITLE;
-  m->nm_Label=get_real_address(get_long(aos3menustrip+14));
-  JWLOG("adding menu %s\n",m->nm_Label);
-  newmenu[0]=m;
+  i=0;
+  while(aos3menustrip) {
+    //init_item(newmenu[i],NM_TITLE, get_real_address(get_long(aos3menustrip+14)));
+    newmenu[i].nm_Type=NM_TITLE;
+    newmenu[i].nm_Label=get_real_address(get_long(aos3menustrip+14));
+    newmenu[i].nm_CommKey=NULL;
+    newmenu[i].nm_Flags=0;
+    newmenu[i].nm_MutualExclude=NULL;
+    newmenu[i].nm_UserData=666;
 
-  arosmenu=CreateMenus(*newmenu, NULL);
+    i++;
+
+    aos3item=get_long_p(aos3menustrip + 18);
+    while(aos3item) {
+      aos3itemfill=get_long(aos3item+18); /* IntuiText */
+      if(aos3itemfill) { /* care for non intuitext stuff here ! */
+	//init_item(newmenu[i],NM_ITEM, get_real_address(get_long(aos3itemfill+12)));
+	newmenu[i].nm_Type =NM_ITEM;
+	newmenu[i].nm_Label=get_real_address(get_long(aos3itemfill+12));
+	//newmenu[i].nm_Flags=get_word(aos3item+12);
+	newmenu[i].nm_CommKey=NULL;
+	newmenu[i].nm_Flags=0;
+	newmenu[i].nm_MutualExclude=NULL;
+	newmenu[i].nm_UserData=666;
+	i++;
+      }
+      aos3item=get_long(aos3item); /* NextItem */
+    }
+
+    aos3menustrip=get_long(aos3menustrip); /* NextMenu */
+  }
+//  m=clone_item(NM_TITLE, get_real_address(get_long(aos3menustrip+14)));
+//  newmenu[0]=m;
+
+  //init_item(newmenu[i], NM_END, NULL);
+  newmenu[i].nm_Type=NM_END;
+  newmenu[i].nm_Label=NULL;
+
+  nr_entries=i;
+
+  i=0;
+  while(i < nr_entries) {
+    JWLOG("newmenu[%d]: %d (%s)\n",i,newmenu[i].nm_Type,newmenu[i].nm_Label);
+    i++;
+  }
+
+  /*The first argument is a pointer to an array of NewMenu structures */
+  arosmenu=CreateMenus(newmenu, NULL);
   if(!arosmenu) {
     JWLOG("failed to CreateMenus(%lx)\n",newmenu);
     return NULL;
