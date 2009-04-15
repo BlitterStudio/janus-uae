@@ -69,28 +69,6 @@ ULONG *clone_menu(JanusWin *jwin) {
     return NULL;
   }
 
-/* TODO !!*/
-  /*The first argument is a pointer to an array of NewMenu structures */
-  //newmenu=AllocVec(50*sizeof(struct NewMenu), MEMF_CLEAR);
-
-#if 0
-  m=AllocVec(sizeof(struct NewMenu), MEMF_CLEAR);
-  m->nm_Type=NM_TITLE;
-  m->nm_Label=g_strdup("Menu 1");
-  newmenu[0]=m;
-
-  m=AllocVec(sizeof(struct NewMenu), MEMF_CLEAR);
-  m->nm_Type=NM_ITEM;
-  m->nm_Label=g_strdup("Item 1-1");
-  newmenu[1]=m;
-
-  m=AllocVec(sizeof(struct NewMenu), MEMF_CLEAR);
-  m->nm_Type=NM_ITEM;
-  m->nm_Label=g_strdup("Item 1-2");
-  newmenu[2]=m;
-
-#endif
-
   vi = GetVisualInfoA(jwin->jscreen->arosscreen, NULL);
   if(!vi) {
     JWLOG("ERROR: no vi (you have to use that editor!\n");

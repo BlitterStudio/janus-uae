@@ -118,6 +118,7 @@ typedef struct {
   gpointer       aos3win; /* gpointer !? */
   struct Window *aroswin;
   JanusScreen   *jscreen; /* screens on which window is running */
+  void          *mempool; /* alloc everything here */
   struct Task   *task;
   char          *name;
   LONG           delay; /* if > 0, delay-- and leave it untouched */

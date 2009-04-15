@@ -45,7 +45,8 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
               thread, jwin, win->Title);
 
       ObtainSemaphore(&janus_messages_access);
-      jmsg=AllocVec(sizeof(JanusMsg), MEMF_CLEAR);
+      /* this gets freed in ad_job_fetch_message! */
+      jmsg=AllocVec(sizeof(JanusMsg), MEMF_CLEAR); 
       if(!jmsg) {
 	JWLOG("ERROR: no memory (ignored message)\n");
 	break;
@@ -565,8 +566,10 @@ EXIT:
   if(list_win) {
     if(list_win->data) {
       name_mem=((JanusWin *)list_win->data)->name;
-      JWLOG("aros_win_thread[%lx]: FreeVec list_win->data \n",thread);
-      FreeVec(list_win->data); 
+      /* is freed with th pool:
+       * JWLOG("aros_win_thread[%lx]: FreeVec list_win->data \n",thread);
+       * FreeVecPooled((JanusWin *)list_win->mempool, list_win->data); 
+       */
       list_win->data=NULL;
     }
     JWLOG("aros_win_thread[%lx]: g_slist_remove(%lx)\n",thread,list_win);
@@ -576,20 +579,24 @@ EXIT:
   }
 
   /* not nice to free our own name, but should not be a problem */
+#if 0
   if(name_mem) {
     JWLOG("aros_win_thread[%lx]: FreeVec() >%s<\n", thread,
 	    name_mem);
-    FreeVec(name_mem);
+    FreeVecPooled(jwin->mempool, name_mem);
   }
+#endif
 
   ReleaseSemaphore(&sem_janus_window_list);
+  DeletePool(jwin->mempool);
+  FreeVec(jwin);
   JWLOG("aros_win_thread[%lx]: dies..\n", thread);
 }
 
 int aros_win_start_thread (JanusWin *win) {
 
     JWLOG("aros_win_start_thread(%lx)\n",win);
-    win->name=AllocVec(8+strlen(TASK_PREFIX_NAME)+1,MEMF_CLEAR);
+    win->name=AllocVecPooled(win->mempool, 8+strlen(TASK_PREFIX_NAME)+1);
 
     sprintf(win->name,"%s%lx",TASK_PREFIX_NAME,win->aos3win);
 

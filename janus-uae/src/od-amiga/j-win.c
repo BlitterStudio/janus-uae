@@ -123,6 +123,8 @@ static void new_aos3window(ULONG aos3win) {
 
   jwin->aos3win=(gpointer) aos3win;
   jwin->jscreen=jscreen; 
+  jwin->mempool=CreatePool(MEMF_CLEAR|MEMF_SEM_PROTECTED, 
+                           0xC000, 0x8000); /* hmm..*/
   janus_windows=g_slist_append(janus_windows,jwin);
 
   ReleaseSemaphore(&sem_janus_window_list);
