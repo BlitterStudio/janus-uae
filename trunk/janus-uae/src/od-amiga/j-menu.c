@@ -33,6 +33,27 @@ void init_item(struct NewMenu m, BYTE type, ULONG *text) {
   return m;
 }
 
+WORD parse_flags(WORD aos3flags) {
+  WORD arosflags;
+
+  JWLOG("aos3flags: %x\n",aos3flags);
+
+  /* keep relevan flags */
+  aos3flags=aos3flags & (CHECKIT | ITEMTEXT | COMMSEQ |
+			 ITEMENABLED | CHECKED | HIGHNONE);
+
+  if(aos3flags & ITEMENABLED) {
+    aos3flags=aos3flags - ITEMENABLED;
+  }
+  else {
+    aos3flags=aos3flags | ITEMENABLED;
+  }
+
+  arosflags=aos3flags;
+  JWLOG("arosflags: %x\n",arosflags);
+  return arosflags;
+}
+
 /********************************
  * clone_menu
  *
@@ -93,17 +114,41 @@ void clone_menu(JanusWin *jwin) {
 
     aos3item=get_long_p(aos3menustrip + 18);
     while(aos3item) {
+      /* a BIG problem here are MENUBARs. If you create them, they
+       * are specified with 0xff as type. Once they are a real
+       * MenuItem, ItemFill points to am image of the menubar, which we
+       * can't detect (?). So we abuse HIGHNONE, as no "real" item
+       * usese this anyways (hopefully)
+       */
       aos3itemfill=get_long(aos3item+18); /* IntuiText */
-      if(aos3itemfill) { /* care for non intuitext stuff here ! */
-	//init_item(newmenu[i],NM_ITEM, get_real_address(get_long(aos3itemfill+12)));
+      if(aos3itemfill) { 
 	newmenu[i].nm_Type =NM_ITEM;
-	newmenu[i].nm_Label=get_real_address(get_long(aos3itemfill+12));
-	//newmenu[i].nm_Flags=get_word(aos3item+12);
-	newmenu[i].nm_CommKey=NULL;
-	newmenu[i].nm_Flags=0;
+	newmenu[i].nm_Flags=parse_flags(get_word(aos3item+12)); 
+
+	if((newmenu[i].nm_Flags & HIGHFLAGS)==HIGHNONE) {
+	  /* assume BAR */
+	  newmenu[i].nm_Label=NM_BARLABEL;
+	  JWLOG("newmenu[%d]: NM_BARLABEL\n",i);
+	}
+	else {
+	  newmenu[i].nm_Label=get_real_address(get_long(aos3itemfill+12));
+	  JWLOG("newmenu[%d].nm_Label: %s\n",i,newmenu[i].nm_Label);
+	}
+
+	if(newmenu[i].nm_Flags & COMMSEQ) {
+	  newmenu[i].nm_CommKey=get_real_address(aos3item+26);
+	  JWLOG("newmenu[%d].nm_CommKey: %c\n",i,newmenu[i].nm_CommKey[0]);
+	}
+	else {
+	  newmenu[i].nm_CommKey=NULL; /* if !NULL, AROS ignores !COMMSEQ ??*/
+	}
 	newmenu[i].nm_MutualExclude=NULL;
 	newmenu[i].nm_UserData=666;
 	i++;
+      }
+      else {
+	/* ignore */
+	JWLOG("TODO: !aos3itemfill <==================\n");
       }
       aos3item=get_long(aos3item); /* NextItem */
     }
@@ -119,11 +164,13 @@ void clone_menu(JanusWin *jwin) {
 
   nr_entries=i;
 
+#if 0
   i=0;
   while(i < nr_entries) {
     JWLOG("newmenu[%d]: %d (%s)\n",i,newmenu[i].nm_Type,newmenu[i].nm_Label);
     i++;
   }
+#endif
 
   /*The first argument is a pointer to an array of NewMenu structures */
   arosmenu=CreateMenus(newmenu, NULL);
