@@ -120,6 +120,10 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	if (code == MENUUP)     setmousebuttonstate (0, 1, 0);
 	break;
 
+    case IDCMP_MENUVERIFY:
+	clone_menu(jwin);
+	break;
+
     case IDCMP_ACTIVEWINDOW:
 	/* When window regains focus (presumably after losing focus at some
 	 * point) UAE needs to know any keys that have changed state in between.
@@ -314,6 +318,7 @@ static void aros_win_thread (void) {
 			  IDCMP_ACTIVEWINDOW |
 			  IDCMP_CHANGEWINDOW |
 			  IDCMP_MENUPICK |
+			  IDCMP_MENUVERIFY |
 			  IDCMP_INACTIVEWINDOW;
 
   JWLOG("aros_win_thread[%lx]: idcmpflags: %lx \n", thread, idcmpflags);
@@ -516,8 +521,6 @@ static void aros_win_thread (void) {
 
     done=TRUE;
   }
-
-  clone_menu(jwin);
 
   while(!done) {
 #if 0

@@ -39,11 +39,10 @@ void init_item(struct NewMenu m, BYTE type, ULONG *text) {
  * take the menu tree from aos3
  * and add it to aros window
  ********************************/
-ULONG *clone_menu(JanusWin *jwin) {
+void clone_menu(JanusWin *jwin) {
   struct Window   *aroswin=jwin->aroswin;
   uaecptr          aos3win=jwin->aos3win;
-  struct Library  *GadToolsBase = NULL;
-#warning Maximum amoun of menu items is set to 50 HARDCODED!!
+#warning Maximum amoun of menu items is set to 150 HARDCODED!!
   struct NewMenu   newmenu[150];
   struct NewMenu  *m;
   struct Menu     *arosmenu;
@@ -57,28 +56,26 @@ ULONG *clone_menu(JanusWin *jwin) {
 
   JWLOG("started for jwin %lx\n", jwin);
 
-  GadToolsBase = OpenLibrary( "gadtools.library", 37L );
-
   if(!aroswin || !aos3win) {
     JWLOG("aoswin or aos3win is NULL\n");
-    return NULL;
-  }
-
-  if(!GadToolsBase) {
-    JWLOG("GadToolsBase is NULL\n");
-    return NULL;
+    return;
   }
 
   vi = GetVisualInfoA(jwin->jscreen->arosscreen, NULL);
   if(!vi) {
     JWLOG("ERROR: no vi (you have to use that editor!\n");
-    return NULL;
+    return;
+  }
+
+  if(jwin->arosmenu) {
+    /* we still have an old menu strip, we want to get rid of it (necessary?) */
+    ClearMenuStrip(jwin->aroswin);
   }
 
   aos3menustrip=get_long_p(aos3win + 28);
   if(!aos3menustrip) {
     JWLOG("aos3 window %lx has no menustrip\n",aos3win);
-    return NULL;
+    return;
   }
   JWLOG("aos3menustrip: %lx\n",aos3menustrip);
 
@@ -132,17 +129,19 @@ ULONG *clone_menu(JanusWin *jwin) {
   arosmenu=CreateMenus(newmenu, NULL);
   if(!arosmenu) {
     JWLOG("failed to CreateMenus(%lx)\n",newmenu);
-    return NULL;
+    return;
   }
 
   if(!LayoutMenus(arosmenu, vi, GTMN_NewLookMenus, TRUE, TAG_DONE)) {
     JWLOG("LayoutMenus failed!\n");
-    return NULL;
+    return;
   }
 
   SetMenuStrip(aroswin, arosmenu);
 
-  return arosmenu;
+  jwin->arosmenu=arosmenu;
+
+  return;
 }
 
 
