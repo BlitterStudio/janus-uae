@@ -178,6 +178,7 @@ struct GfxBase          *GfxBase = NULL;
 struct Library          *LayersBase = NULL;
 struct Library          *AslBase = NULL;
 struct Library          *CyberGfxBase = NULL;
+struct Library          *GadToolsBase = NULL;
 
 struct AslIFace *IAsl;
 struct GraphicsIFace *IGraphics;
@@ -1440,7 +1441,6 @@ int graphics_setup (void)
 
     atexit (graphics_leave);
 
-
 #if !defined GTKMUI
     IntuitionBase = (void*) OpenLibrary ("intuition.library", 0L);
 #endif
@@ -1504,6 +1504,16 @@ int graphics_setup (void)
 #endif
     }
 #endif
+
+/* we should have an j-uae define .. */
+#if defined GTKMUI
+  GadToolsBase = OpenLibrary( "gadtools.library", 37L );
+  if(!GadToolsBase) {
+    write_log ("gadtools.library missing? Needed for j-uae menu support!\n");
+    return 0;
+  }
+#endif
+
 
     init_pointer ();
 
@@ -1842,6 +1852,11 @@ void graphics_leave (void)
 	CloseLibrary( (void*) AslBase);
 	AslBase = NULL;
     }
+    if (GadToolsBase) {
+	CloseLibrary( (void*) GadToolsBase);
+	GadToolsBase = NULL;
+    }
+
 #if !defined GTKMUI
     if (GfxBase) {
 	CloseLibrary ((void*)GfxBase);
@@ -2646,11 +2661,16 @@ static void un_set_screen_for_picasso(void) {
 
   AWTRACE("entered\n");
 
+  if(!W) {
+    AWTRACE("no W !? \n");
+    return;
+  }
+
   AWTRACE("  old window      : %d x %d\n",W->Width,W->Height);
   AWTRACE("  picasso_vidinfo : %d x %d\n",
-                  picasso_vidinfo.width,picasso_vidinfo.height);
+		  picasso_vidinfo.width,picasso_vidinfo.height);
   AWTRACE("  currprefs_win   : %d x %d\n",
-                  currprefs.gfx_width_win,currprefs.gfx_height_win);
+		  currprefs.gfx_width_win,currprefs.gfx_height_win);
 
   ChangeWindowBox(W, 
                   W->LeftEdge, W->TopEdge,
