@@ -121,6 +121,7 @@ typedef struct {
   void          *mempool; /* alloc everything here */
   struct Task   *task;
   char          *name;
+  struct Menu   *arosmenu;
   LONG           delay; /* if > 0, delay-- and leave it untouched */
   WORD           LeftEdge, TopEdge;
   WORD           Width, Height;
@@ -188,7 +189,7 @@ int aros_win_start_thread (JanusWin *win);
 int aros_screen_start_thread (JanusScreen *screen);
 
 /* menu */
-ULONG *clone_menu(JanusWin *jwin);
+void clone_menu(JanusWin *jwin);
 
 /* assert */
 struct Window *assert_window (struct Window *search);
