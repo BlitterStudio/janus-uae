@@ -28,6 +28,7 @@ static WORD   parse_flags(WORD aos3flags);
 static STRPTR parse_label(UWORD flags, uaecptr intuitextptr);
 static STRPTR parse_key(UWORD flags, uaecptr keytext);
 
+/* gadtools uses inverted flags as intuition */
 static WORD swap_enabled(WORD flags) {
 
   if(flags & ITEMENABLED) {
@@ -39,6 +40,7 @@ static WORD swap_enabled(WORD flags) {
   return flags;
 }
 
+/* clear all non gadtools flags out of intuition flags */
 static WORD parse_flags(WORD aos3flags) {
   WORD arosflags;
 
@@ -54,6 +56,15 @@ static WORD parse_flags(WORD aos3flags) {
   return arosflags;
 }
 
+/* return the label text pointer
+ * we uses the original aos3 strings, no need to copy them
+ *
+ * a BIG problem here are MENUBARs. If you create them, they
+ * are specified with 0xff as type. Once they are a real
+ * MenuItem, ItemFill points to am image of the menubar, which we
+ * can't detect (?). So we abuse HIGHNONE, as no "real" item
+ * usese this anyways (hopefully)
+ */
 static STRPTR parse_label(UWORD flags, uaecptr intuitextptr) {
 
   if((flags & HIGHFLAGS)==HIGHNONE) {
@@ -66,7 +77,7 @@ static STRPTR parse_label(UWORD flags, uaecptr intuitextptr) {
   return get_real_address(get_long(intuitextptr));
 }
 
-
+/* return command key or NULL*/
 static STRPTR parse_key(UWORD flags, uaecptr keytext) {
 
   if(flags & COMMSEQ) {
@@ -111,9 +122,7 @@ static ULONG count_items(uaecptr menu) {
 void clone_menu(JanusWin *jwin) {
   struct Window   *aroswin=jwin->aroswin;
   uaecptr          aos3win=(uaecptr) jwin->aos3win;
-#warning Maximum amoun of menu items is set to 150 HARDCODED!!
   struct NewMenu  *newmenu;
-  //struct NewMenu   newmenu[150];
   struct NewMenu  *m;
   struct Menu     *arosmenu;
   APTR             vi;
@@ -137,8 +146,10 @@ void clone_menu(JanusWin *jwin) {
     return;
   }
 
+  /* we still have an old menu strip, 
+   * we want to get rid of it (necessary?) 
+   */
   if(jwin->arosmenu) {
-    /* we still have an old menu strip, we want to get rid of it (necessary?) */
     ClearMenuStrip(jwin->aroswin);
   }
 
@@ -165,7 +176,7 @@ void clone_menu(JanusWin *jwin) {
     newmenu[i].nm_Type=NM_TITLE;
     newmenu[i].nm_Label=get_real_address(get_long(aos3menustrip+14));
     newmenu[i].nm_CommKey=NULL;
-    //newmenu[i].nm_Flags=swap_enabled(parse_flags(get_word(aos3menustrip+12))); 
+    /* Menu has other flags than MenuItem */
     if(get_word(aos3menustrip+12) & MENUENABLED) {
       newmenu[i].nm_Flags=0;
     }
@@ -174,18 +185,11 @@ void clone_menu(JanusWin *jwin) {
     }
     newmenu[i].nm_MutualExclude=0;
     newmenu[i].nm_UserData=NULL;
-
     i++;
 
     aos3item=get_long(aos3menustrip + 18);
     while(aos3item) {
       /*********** item ************/
-      /* a BIG problem here are MENUBARs. If you create them, they
-       * are specified with 0xff as type. Once they are a real
-       * MenuItem, ItemFill points to am image of the menubar, which we
-       * can't detect (?). So we abuse HIGHNONE, as no "real" item
-       * usese this anyways (hopefully)
-       */
       aos3itemfill=get_long(aos3item+18); /* IntuiText */
       if(aos3itemfill) { 
 	newmenu[i].nm_Type =NM_ITEM;
@@ -197,6 +201,7 @@ void clone_menu(JanusWin *jwin) {
 	newmenu[i].nm_MutualExclude=0;
 	newmenu[i].nm_UserData=NULL;
 	i++;
+
 	aos3sub=get_long(aos3item+28);
 	while(aos3sub) {
 	  /*********** subitem ************/
@@ -246,5 +251,4 @@ void clone_menu(JanusWin *jwin) {
 
   return;
 }
-
 
