@@ -6,4 +6,4 @@ libosdep_a_SOURCES = main.c memory.c support.c ami-disk.c blkdev-amiga.c j-dispa
 
 noinst_HEADERS = amiga-kludges.h memory.h hrtimer.h j.h
 
-dist_noinst_SCRIPTS = scc
+dist_noinst_SCRIPTS = 
