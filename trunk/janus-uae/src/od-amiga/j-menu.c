@@ -23,17 +23,11 @@
 #include <proto/gadtools.h>
 #include "j.h"
 
-void init_item(struct NewMenu m, BYTE type, ULONG *text) {
+static WORD parse_flags(WORD aos3flags);
+static STRPTR parse_label(UWORD flags, uaecptr intuitextptr);
+static STRPTR parse_key(UWORD flags, uaecptr keytext);
 
-  JWLOG("title: %s\n",text);
-
-  m.nm_Type=type;
-  m.nm_Label=text;
-
-  return m;
-}
-
-WORD parse_flags(WORD aos3flags) {
+static WORD parse_flags(WORD aos3flags) {
   WORD arosflags;
 
   JWLOG("aos3flags: %x\n",aos3flags);
@@ -54,6 +48,27 @@ WORD parse_flags(WORD aos3flags) {
   return arosflags;
 }
 
+static STRPTR parse_label(UWORD flags, uaecptr intuitextptr) {
+
+  if((flags & HIGHFLAGS)==HIGHNONE) {
+    /* assume BAR */
+    JWLOG("NM_BARLABEL\n");
+    return NM_BARLABEL;
+  }
+
+  JWLOG("nm_Label: %s\n",get_real_address(get_long(intuitextptr)));
+  return get_real_address(get_long(intuitextptr));
+}
+
+
+static STRPTR parse_key(UWORD flags, uaecptr keytext) {
+
+  if(flags & COMMSEQ) {
+    return get_real_address(keytext);
+  }
+  return NULL; /* if !NULL, AROS ignores !COMMSEQ ??*/
+}
+
 /********************************
  * clone_menu
  *
@@ -62,7 +77,7 @@ WORD parse_flags(WORD aos3flags) {
  ********************************/
 void clone_menu(JanusWin *jwin) {
   struct Window   *aroswin=jwin->aroswin;
-  uaecptr          aos3win=jwin->aos3win;
+  uaecptr          aos3win=(uaecptr) jwin->aos3win;
 #warning Maximum amoun of menu items is set to 150 HARDCODED!!
   struct NewMenu   newmenu[150];
   struct NewMenu  *m;
@@ -93,7 +108,7 @@ void clone_menu(JanusWin *jwin) {
     ClearMenuStrip(jwin->aroswin);
   }
 
-  aos3menustrip=get_long_p(aos3win + 28);
+  aos3menustrip=get_long(aos3win + 28);
   if(!aos3menustrip) {
     JWLOG("aos3 window %lx has no menustrip\n",aos3win);
     return;
@@ -102,18 +117,19 @@ void clone_menu(JanusWin *jwin) {
 
   i=0;
   while(aos3menustrip) {
-    //init_item(newmenu[i],NM_TITLE, get_real_address(get_long(aos3menustrip+14)));
+    /*********** Menu ************/
     newmenu[i].nm_Type=NM_TITLE;
     newmenu[i].nm_Label=get_real_address(get_long(aos3menustrip+14));
     newmenu[i].nm_CommKey=NULL;
-    newmenu[i].nm_Flags=0;
-    newmenu[i].nm_MutualExclude=NULL;
-    newmenu[i].nm_UserData=666;
+    newmenu[i].nm_Flags=parse_flags(get_word(aos3menustrip+12)); 
+    newmenu[i].nm_MutualExclude=0;
+    newmenu[i].nm_UserData=NULL;
 
     i++;
 
-    aos3item=get_long_p(aos3menustrip + 18);
+    aos3item=get_long(aos3menustrip + 18);
     while(aos3item) {
+      /*********** item ************/
       /* a BIG problem here are MENUBARs. If you create them, they
        * are specified with 0xff as type. Once they are a real
        * MenuItem, ItemFill points to am image of the menubar, which we
@@ -125,26 +141,27 @@ void clone_menu(JanusWin *jwin) {
 	newmenu[i].nm_Type =NM_ITEM;
 	newmenu[i].nm_Flags=parse_flags(get_word(aos3item+12)); 
 
-	if((newmenu[i].nm_Flags & HIGHFLAGS)==HIGHNONE) {
-	  /* assume BAR */
-	  newmenu[i].nm_Label=NM_BARLABEL;
-	  JWLOG("newmenu[%d]: NM_BARLABEL\n",i);
-	}
-	else {
-	  newmenu[i].nm_Label=get_real_address(get_long(aos3itemfill+12));
-	  JWLOG("newmenu[%d].nm_Label: %s\n",i,newmenu[i].nm_Label);
-	}
+	newmenu[i].nm_Label=parse_label(newmenu[i].nm_Flags, aos3itemfill+12);
 
-	if(newmenu[i].nm_Flags & COMMSEQ) {
-	  newmenu[i].nm_CommKey=get_real_address(aos3item+26);
-	  JWLOG("newmenu[%d].nm_CommKey: %c\n",i,newmenu[i].nm_CommKey[0]);
-	}
-	else {
-	  newmenu[i].nm_CommKey=NULL; /* if !NULL, AROS ignores !COMMSEQ ??*/
-	}
-	newmenu[i].nm_MutualExclude=NULL;
-	newmenu[i].nm_UserData=666;
+	newmenu[i].nm_CommKey=parse_key(newmenu[i].nm_Flags, aos3item+26);
+	newmenu[i].nm_MutualExclude=0;
+	newmenu[i].nm_UserData=NULL;
 	i++;
+	aos3sub=get_long(aos3item+28);
+	while(aos3sub) {
+	  /*********** subitem ************/
+	  aos3itemfill=get_long(aos3sub+18); /* IntuiText */
+	  if(aos3itemfill) {
+	    newmenu[i].nm_Type =NM_SUB;
+	    newmenu[i].nm_Flags=parse_flags(get_word(aos3sub+12)); 
+	    newmenu[i].nm_Label=parse_label(newmenu[i].nm_Flags, aos3itemfill+12);
+	    newmenu[i].nm_CommKey=parse_key(newmenu[i].nm_Flags, aos3sub+26);
+	    newmenu[i].nm_MutualExclude=0;
+	    newmenu[i].nm_UserData=NULL;
+	    i++;
+	  }
+	  aos3sub=get_long(aos3sub); /* Next */
+	}
       }
       else {
 	/* ignore */
@@ -155,10 +172,7 @@ void clone_menu(JanusWin *jwin) {
 
     aos3menustrip=get_long(aos3menustrip); /* NextMenu */
   }
-//  m=clone_item(NM_TITLE, get_real_address(get_long(aos3menustrip+14)));
-//  newmenu[0]=m;
 
-  //init_item(newmenu[i], NM_END, NULL);
   newmenu[i].nm_Type=NM_END;
   newmenu[i].nm_Label=NULL;
 
