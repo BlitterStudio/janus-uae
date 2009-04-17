@@ -23,9 +23,21 @@
 #include <proto/gadtools.h>
 #include "j.h"
 
-static WORD parse_flags(WORD aos3flags);
+static ULONG  count_items(uaecptr menu);
+static WORD   parse_flags(WORD aos3flags);
 static STRPTR parse_label(UWORD flags, uaecptr intuitextptr);
 static STRPTR parse_key(UWORD flags, uaecptr keytext);
+
+static WORD swap_enabled(WORD flags) {
+
+  if(flags & ITEMENABLED) {
+    flags=flags - ITEMENABLED;
+  }
+  else {
+    flags=flags | ITEMENABLED;
+  }
+  return flags;
+}
 
 static WORD parse_flags(WORD aos3flags) {
   WORD arosflags;
@@ -36,14 +48,8 @@ static WORD parse_flags(WORD aos3flags) {
   aos3flags=aos3flags & (CHECKIT | ITEMTEXT | COMMSEQ |
 			 ITEMENABLED | CHECKED | HIGHNONE);
 
-  if(aos3flags & ITEMENABLED) {
-    aos3flags=aos3flags - ITEMENABLED;
-  }
-  else {
-    aos3flags=aos3flags | ITEMENABLED;
-  }
+  arosflags=swap_enabled(aos3flags);
 
-  arosflags=aos3flags;
   JWLOG("arosflags: %x\n",arosflags);
   return arosflags;
 }
@@ -69,6 +75,33 @@ static STRPTR parse_key(UWORD flags, uaecptr keytext) {
   return NULL; /* if !NULL, AROS ignores !COMMSEQ ??*/
 }
 
+/* count required number of gadtools rows */
+static ULONG count_items(uaecptr menu) {
+  uaecptr item;
+  uaecptr sub;
+  ULONG i=0;
+
+  while(menu) {
+    i++;
+    item=get_long(menu + 18);
+    while(item) {
+      i++;
+      sub=get_long(item+28);
+      while(sub) {
+	i++;
+	sub=get_long(sub);
+      }
+      item=get_long(item);
+    }
+    menu=get_long(menu);
+  }
+
+  i++; /* end tag */
+
+  JWLOG("items counted: %d\n",i);
+  return i;
+}
+
 /********************************
  * clone_menu
  *
@@ -79,7 +112,8 @@ void clone_menu(JanusWin *jwin) {
   struct Window   *aroswin=jwin->aroswin;
   uaecptr          aos3win=(uaecptr) jwin->aos3win;
 #warning Maximum amoun of menu items is set to 150 HARDCODED!!
-  struct NewMenu   newmenu[150];
+  struct NewMenu  *newmenu;
+  //struct NewMenu   newmenu[150];
   struct NewMenu  *m;
   struct Menu     *arosmenu;
   APTR             vi;
@@ -115,13 +149,29 @@ void clone_menu(JanusWin *jwin) {
   }
   JWLOG("aos3menustrip: %lx\n",aos3menustrip);
 
+  nr_entries=count_items(aos3menustrip);
+
+  if(nr_entries != jwin->nr_menu_items) {
+    /* we need other mem */
+    FreeVecPooled(jwin->mempool, jwin->newmenu_mem);
+    jwin->newmenu_mem=AllocVecPooled(jwin->mempool, 
+                                     nr_entries * sizeof(struct Menu));
+  }
+  newmenu=jwin->newmenu_mem;
+
   i=0;
   while(aos3menustrip) {
     /*********** Menu ************/
     newmenu[i].nm_Type=NM_TITLE;
     newmenu[i].nm_Label=get_real_address(get_long(aos3menustrip+14));
     newmenu[i].nm_CommKey=NULL;
-    newmenu[i].nm_Flags=parse_flags(get_word(aos3menustrip+12)); 
+    //newmenu[i].nm_Flags=swap_enabled(parse_flags(get_word(aos3menustrip+12))); 
+    if(get_word(aos3menustrip+12) & MENUENABLED) {
+      newmenu[i].nm_Flags=0;
+    }
+    else {
+      newmenu[i].nm_Flags=MENUENABLED;
+    }
     newmenu[i].nm_MutualExclude=0;
     newmenu[i].nm_UserData=NULL;
 
@@ -177,14 +227,6 @@ void clone_menu(JanusWin *jwin) {
   newmenu[i].nm_Label=NULL;
 
   nr_entries=i;
-
-#if 0
-  i=0;
-  while(i < nr_entries) {
-    JWLOG("newmenu[%d]: %d (%s)\n",i,newmenu[i].nm_Type,newmenu[i].nm_Label);
-    i++;
-  }
-#endif
 
   /*The first argument is a pointer to an array of NewMenu structures */
   arosmenu=CreateMenus(newmenu, NULL);

@@ -122,6 +122,8 @@ typedef struct {
   struct Task   *task;
   char          *name;
   struct Menu   *arosmenu;
+  ULONG          nr_menu_items;
+  void          *newmenu_mem;
   LONG           delay; /* if > 0, delay-- and leave it untouched */
   WORD           LeftEdge, TopEdge;
   WORD           Width, Height;
