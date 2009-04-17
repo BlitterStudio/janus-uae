@@ -2281,6 +2281,7 @@ void o1i_clone_windows(/* hand over start/end koords of changed area?*/) {
   }
 }
 
+#if 0
 void o1i_clone_windows_task() {
 
   while(TRUE) {
@@ -2289,6 +2290,7 @@ void o1i_clone_windows_task() {
   }
 
 }
+#endif
 
 //static void o1i_Draw() {
 static void o1i_Display_Update(int start,int i) {
@@ -2305,7 +2307,11 @@ static void o1i_Display_Update(int start,int i) {
 
   //o1i_clone_windows();
   //clone_area(0, start, MAXWIDTHHEIGHT, i); /* should clip accordingly */
-  clone_area(0, 0, MAXWIDTHHEIGHT, MAXWIDTHHEIGHT); /* should clip accordingly */
+
+  if(!j_stop_window_update) {
+    /* should clip accordingly */
+    clone_area(0, 0, MAXWIDTHHEIGHT, MAXWIDTHHEIGHT); 
+  }
 
   if(!uae_main_window_closed) {
     WritePixelArray (
