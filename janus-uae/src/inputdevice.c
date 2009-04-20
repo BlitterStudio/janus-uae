@@ -100,13 +100,15 @@ static struct inputdevice_functions idev[3];
 
 static int sublevdir[2][MAX_INPUT_SUB_EVENT];
 
+#if 0
 struct uae_input_device2 {
     uae_u32 buttonmask;
     int states[MAX_INPUT_DEVICE_EVENTS / 2];
 };
+#endif
 
 static struct uae_input_device2 joysticks2[MAX_INPUT_DEVICES];
-static struct uae_input_device2 mice2[MAX_INPUT_DEVICES];
+struct uae_input_device2 mice2[MAX_INPUT_DEVICES];
 
 static uae_u8 mouse_settings_reset[MAX_INPUT_SETTINGS][MAX_INPUT_DEVICES];
 static uae_u8 joystick_settings_reset[MAX_INPUT_SETTINGS][MAX_INPUT_DEVICES];
@@ -137,7 +139,7 @@ int inputdevice_uaelib (const char *s, const char *parm)
 }
 
 static struct uae_input_device *joysticks;
-static struct uae_input_device *mice;
+struct uae_input_device *mice;
 static struct uae_input_device *keyboards;
 static struct uae_input_device_kbr_default *keyboard_default;
 
@@ -1347,7 +1349,7 @@ void inputdevice_reset (void)
     ievent_alive = 0;
 }
 
-static void setbuttonstateall (struct uae_input_device *id, struct uae_input_device2 *id2, int button, int state)
+void setbuttonstateall (struct uae_input_device *id, struct uae_input_device2 *id2, int button, int state)
 {
     int event, autofire, i;
     uae_u32 mask = 1 << button;
