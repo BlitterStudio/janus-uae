@@ -196,10 +196,23 @@ static uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
     return FALSE;
   }
 
-  screen=IntuitionBase->FirstScreen;
-
-  put_long_p(m68k_results, screen->MouseX); 
-  put_long_p(m68k_results+1, screen->MouseY); 
+  if(mice[0].enabled) {
+    screen=IntuitionBase->FirstScreen;
+  
+    put_long_p(m68k_results, screen->MouseX); 
+    put_long_p(m68k_results+1, screen->MouseY); 
+  }
+  else {
+    if(!menux && !menuy) {
+      return FALSE;
+    }
+    /* fake for menu selection */
+    put_long_p(m68k_results,   menux); 
+    put_long_p(m68k_results+1, menuy); 
+    /* clear again */
+    menux=0;
+    menuy=0;
+  }
 
   return TRUE;
 }

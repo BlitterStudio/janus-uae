@@ -98,6 +98,7 @@ extern struct SignalSemaphore sem_janus_active_win;
 /* main uae window active ? */
 extern BOOL uae_main_window_closed;
 
+extern WORD menux, menuy;
 
 #define WIN_DEFAULT_DELAY 50
 
@@ -146,6 +147,12 @@ extern JanusWin *janus_active_window;
 extern GSList *janus_windows;
 extern GSList *janus_screens;
 
+extern BOOL j_stop_window_update;
+
+/* borrowed from input.device */
+extern struct uae_input_device2 mice2[MAX_INPUT_DEVICES];
+extern struct uae_input_device *mice;
+
 uae_u32 REGPARAM2 aroshack_helper (TrapContext *context);
 
 int aros_daemon_runing(void);
@@ -192,6 +199,7 @@ int aros_screen_start_thread (JanusScreen *screen);
 
 /* menu */
 void clone_menu(JanusWin *jwin);
+void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub);
 
 /* assert */
 struct Window *assert_window (struct Window *search);
