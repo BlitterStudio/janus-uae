@@ -56,3 +56,7 @@ JanusWin *janus_active_window=NULL;
 
 BOOL uae_main_window_closed=FALSE;
 
+/* if you set this to true, jwindow contents won't get updated any more */
+BOOL j_stop_window_update=FALSE;
+
+WORD menux=0, menuy=0; /* fake mouse coords for menu selection */

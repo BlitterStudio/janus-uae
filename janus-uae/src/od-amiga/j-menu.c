@@ -252,3 +252,173 @@ void clone_menu(JanusWin *jwin) {
   return;
 }
 
+/******************************
+ * wait_menu_shown
+ *
+ * waits until the MIDRAWN flag
+ * indicates, that aos3 
+ * intuition finished showing
+ * our menu.
+ *
+ * Timeout after 2 sec.
+ ******************************/
+static BOOL wait_menu_shown(uaecptr menu_flags) {
+  ULONG i;
+  UWORD flags;
+
+  i=0;
+  while(i<20) {
+    flags=get_word(menu_flags);
+    if(flags & MIDRAWN) {
+      JWLOG("menu drawn (%d)\n",i);
+      return TRUE;
+    }
+    i++;
+    Delay(5);
+  }
+  JWLOG("menu not drawn !!\n");
+  return FALSE;
+}
+
+static BOOL wait_menuitem_shown(uaecptr menu_flags) {
+  ULONG i;
+  UWORD flags;
+
+  i=0;
+  while(i<20) {
+    flags=get_word(menu_flags);
+    if(flags & ISDRAWN) {
+      JWLOG("menu item drawn (%d)\n",i);
+      return TRUE;
+    }
+    i++;
+    Delay(5);
+  }
+  JWLOG("menu item not drawn !!\n");
+  return FALSE;
+}
+
+/* click_menu
+ *
+ * click on menu, item, subitem
+ *
+ * -1: don't use this level
+ *
+ * This is not what you would expect here. It is more Copperfield
+ * Magic than amigaOS programming. We disabled all gfx updates
+ * and locked out all mouse events from AROS. So now it is time
+ * for the illusion. As nobody can see us, we move the amigaOS
+ * mousepointer first to the menu, then to the item and if
+ * necessary to the subitem. And then, we simply release the
+ * right mouse button of the virtual uae mouse. voila ;).
+ *
+ * After that, we switch on mouse/updates again and nobody
+ * has noticed it (hopefully ;)). Perfect illusion, or David?
+ */
+void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
+  uaecptr          aos3win;
+  uaecptr          aos3screen;
+  uaecptr          aos3menustrip;
+  uaecptr          aos3item;
+  uaecptr          aos3sub;
+  WORD             x, y;
+  WORD             rx, ry;
+  int              i;
+
+  JWLOG("(%d, %d, %d)\n",menu, item, sub);
+
+  aos3win=jwin->aos3win;
+  if(!aos3win) {
+    return;
+  }
+
+  aos3menustrip=get_long(aos3win + 28);
+  if(!aos3menustrip) {
+    JWLOG("aos3 window %lx has no menustrip\n",aos3win);
+    return;
+  }
+
+  aos3screen=jwin->jscreen->aos3screen;
+
+  i=0;
+  rx=0;
+  ry=0;
+  while(aos3menustrip) {
+    /*********** Menu ************/
+    if(i==menu) {
+  //    rx=get_word(aos3menustrip+4);
+      JWLOG("menu left edge: %d\n",get_word(aos3menustrip+4));
+      JWLOG("menu width:     %d\n",get_word(aos3menustrip+8));
+      JWLOG("screen barh:    %d\n",get_byte(aos3screen + 30));
+
+      x=get_word(aos3menustrip+4) +    /* LeftEdge */
+	(get_word(aos3menustrip+8) /2);/* Width / 2 */
+      /* "Currently", any values supplied for TopEdge and 
+       * Height are ignored by Intuition, which uses instead 
+       * the top of the screen for the TopEdge and the
+       * height of the screen's title bar for the Height.
+       * (Libraries Manual)
+       */
+      y=get_byte(aos3screen + 30) / 2; /* BarHeight */
+      /* move to this menu */
+      JWLOG("menu xy: %d %d\n\n",x,y); /* ok */
+      menux=x;
+      menuy=y;
+      ry=ry+1;
+
+      wait_menu_shown(aos3menustrip + 12);
+
+      aos3item=get_long(aos3menustrip + 18);
+      i=0;
+      while((item!=-1) && aos3item) {
+	if(i==item) {
+	  JWLOG("menu item left edge: %d\n",get_word(aos3item+4));
+	  JWLOG("menu item width:     %d\n",get_word(aos3item+8));
+	  JWLOG("menu item top edge:  %d\n",get_word(aos3item+6));
+	  JWLOG("menu item height:    %d\n",get_word(aos3item+10));
+
+    	  x=get_word(aos3item+4) +    /* LeftEdge */
+    	    get_word(aos3item+8) /2 + /* Width / 2 */
+	    rx;                       /* The item LeftEdge is relative to the 
+				       * LeftEdge of the Menu*/
+       	  y=get_word(aos3item+6) +    /* TopEdge */
+    	    get_word(aos3item+10) /2 +/* Height / 2 */
+	    ry;
+	  rx=rx+get_word(aos3item+4);
+	  ry=ry+get_word(aos3item+6);
+       	  /* move to this item */
+	  JWLOG("menu item xy: %d %d\n\n",x,y);
+	  menux=x;
+	  menuy=y;
+
+	  wait_menuitem_shown(aos3item + 12);
+
+  	  aos3sub=get_long(aos3item+28);
+  	  while((sub!=-1) && aos3sub) {
+	    if(i==sub) {
+	      x=get_word(aos3sub+4) +    /* LeftEdge */
+		get_word(aos3sub+8) /2 + /* Width / 2 */
+		rx;
+	      y=get_word(aos3sub+6) +    /* TopEdge */
+		get_word(aos3sub+10) /2 +/* Height / 2 */
+		ry;
+	      /* move to this item */
+	      menux=x;
+	      menuy=y;
+	      JWLOG("menu subitem xy: %d %d\n",x,y);
+	    }
+
+	    i++;
+	    aos3sub=get_long(aos3sub); /* Next */
+	  }
+	}
+	i++;
+  	aos3item=get_long(aos3item); /* NextItem */
+      }
+    }
+
+    i++;
+    aos3menustrip=get_long(aos3menustrip); /* NextMenu */
+  }
+
+}

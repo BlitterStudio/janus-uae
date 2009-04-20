@@ -21,6 +21,11 @@
  *
  ************************************************************************/
 
+#include "sysconfig.h"
+#include "sysdeps.h"
+#include "options.h"
+
+#include "include/inputdevice.h"
 #include "j.h"
 #include "memory.h"
 
@@ -31,6 +36,12 @@ static UWORD estimated_border_top=25;
 static UWORD estimated_border_bottom=25;
 static UWORD estimated_border_left=25;
 static UWORD estimated_border_right=25;
+
+void setbuttonstateall (struct uae_input_device *id, struct uae_input_device2 *id2, int button, int state);
+
+static void my_setmousebuttonstate(int mouse, int button, int state) {
+  setbuttonstateall (&mice[mouse], &mice2[mouse], button, state);
+}
 
 static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, BOOL *done) {
 
@@ -121,7 +132,18 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	break;
 
     case IDCMP_MENUVERIFY:
+	menux=0;
+	menuy=0;
+	j_stop_window_update=TRUE;
+	mice[0].enabled=FALSE; /* disable mouse emulation */
+	my_setmousebuttonstate(0, 1, 1);
 	clone_menu(jwin);
+	break;
+
+    case IDCMP_MENUPICK:
+	j_stop_window_update=FALSE;
+	click_menu(jwin, 2, 7, 2);
+	//mice[0].enabled=TRUE; /* enable mouse emulation */
 	break;
 
     case IDCMP_ACTIVEWINDOW:
