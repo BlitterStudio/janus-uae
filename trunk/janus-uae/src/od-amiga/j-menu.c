@@ -298,6 +298,25 @@ static BOOL wait_menuitem_shown(uaecptr menu_flags) {
   return FALSE;
 }
 
+static BOOL wait_mouse_pos(JanusWin *jwin, WORD MouseX, WORD MouseY) {
+  ULONG i;
+  uaecptr scr;
+
+  scr=jwin->jscreen->aos3screen;
+  i=0;
+  while(i<20) {
+    if((get_word(scr+16) == MouseY) &&
+       (get_word(scr+18) == MouseX)) {
+      JWLOG("mouse on position (%d)\n",i);
+      return TRUE;
+    }
+    i++;
+    Delay(5);
+  }
+  JWLOG("mouse not moved !!\n");
+  return FALSE;
+}
+
 /* click_menu
  *
  * click on menu, item, subitem
@@ -366,7 +385,9 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
       menuy=y;
       ry=ry+1;
 
+      //wait_mouse_pos(jwin, menux, menuy);
       wait_menu_shown(aos3menustrip + 12);
+      /* menu drawn */
 
       aos3item=get_long(aos3menustrip + 18);
       j=0;
@@ -390,27 +411,31 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
 	  JWLOG("menu item xy: %d %d\n\n",x,y);
 	  menux=x;
 	  menuy=y;
+	  wait_mouse_pos(jwin, menux, menuy);
 
-	  wait_menuitem_shown(aos3item + 12);
+	  /* if we have a subitem, we need to wait until it opens */
+	  if(sub!=-1) {
+	    wait_menuitem_shown(aos3item + 12);
 
-  	  aos3sub=get_long(aos3item+28);
-	  l=0;
-  	  while((sub!=-1) && aos3sub) {
-	    if(l==sub) {
-	      x=get_word(aos3sub+4) +    /* LeftEdge */
-		get_word(aos3sub+8) /2 + /* Width / 2 */
-		rx;
-	      y=get_word(aos3sub+6) +    /* TopEdge */
-		get_word(aos3sub+10) /2 +/* Height / 2 */
-		ry;
-	      /* move to this item */
-	      menux=x;
-	      menuy=y;
-	      JWLOG("menu subitem xy: %d %d\n",x,y);
+	    aos3sub=get_long(aos3item+28);
+	    l=0;
+	    while(aos3sub) {
+	      if(l==sub) {
+		x=get_word(aos3sub+4) +    /* LeftEdge */
+		  get_word(aos3sub+8) /2 + /* Width / 2 */
+		  rx;
+		y=get_word(aos3sub+6) +    /* TopEdge */
+		  get_word(aos3sub+10) /2 +/* Height / 2 */
+		  ry;
+		/* move to this item */
+		menux=x;
+		menuy=y;
+		JWLOG("menu subitem xy: %d %d\n",x,y);
+	      }
+
+	      l++;
+	      aos3sub=get_long(aos3sub); /* Next */
 	    }
-
-	    l++;
-	    aos3sub=get_long(aos3sub); /* Next */
 	  }
 	}
 	j++;
@@ -420,7 +445,6 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
     i++;
     aos3menustrip=get_long(aos3menustrip); /* NextMenu */
   }
-
 }
 
 void process_menu(JanusWin *jwin, UWORD selection) {
@@ -441,6 +465,5 @@ void process_menu(JanusWin *jwin, UWORD selection) {
     sub=-1;
   }
 
-  click_menu(jwin, menu, item, sub);
-
+  click_menu(jwin, menu, item + 1, sub);
 }
