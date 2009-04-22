@@ -47,6 +47,7 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 
   GSList   *list_win;
   JanusMsg *jmsg;
+  UWORD selection;
 
   switch (class) {
       
@@ -136,14 +137,34 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	menuy=0;
 	j_stop_window_update=TRUE;
 	mice[0].enabled=FALSE; /* disable mouse emulation */
-	my_setmousebuttonstate(0, 1, 1);
+	my_setmousebuttonstate(0, 1, 1); /* MENUDOWN */
 	clone_menu(jwin);
 	break;
 
     case IDCMP_MENUPICK:
+	for(selection = code; selection != MENUNULL;
+	    selection = (ItemAddress(jwin->arosmenu, (LONG)selection))
+	                 ->NextSelect) {
+	  process_menu(jwin, selection);
+	}
+
+#if 0
+	sleep(4);
+	JWLOG("click_menu(jwin, 0, -1, -1);\n");
+	click_menu(jwin, 0, -1, -1);
+	sleep(3);
+	JWLOG("click_menu(jwin, 1, -1, -1);\n");
+	click_menu(jwin, 1, -1, -1);
+	sleep(3);
+	JWLOG("click_menu(jwin, 2, -1, -1);\n");
+	click_menu(jwin, 2, -1, -1);
+	sleep(3);
+	JWLOG("click_menu(jwin, 3, -1, -1);\n");
+	click_menu(jwin, 3, -1, -1);
+#endif
+	my_setmousebuttonstate(0, 1, 0); /* MENUUP */
+	mice[0].enabled=TRUE; /* enable mouse emulation */
 	j_stop_window_update=FALSE;
-	click_menu(jwin, 2, 7, 2);
-	//mice[0].enabled=TRUE; /* enable mouse emulation */
 	break;
 
     case IDCMP_ACTIVEWINDOW:

@@ -323,11 +323,11 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
   uaecptr          aos3sub;
   WORD             x, y;
   WORD             rx, ry;
-  int              i;
+  int              i,j,l;
 
   JWLOG("(%d, %d, %d)\n",menu, item, sub);
 
-  aos3win=jwin->aos3win;
+  aos3win=(uaecptr) jwin->aos3win;
   if(!aos3win) {
     return;
   }
@@ -338,7 +338,7 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
     return;
   }
 
-  aos3screen=jwin->jscreen->aos3screen;
+  aos3screen=(uaecptr) jwin->jscreen->aos3screen;
 
   i=0;
   rx=0;
@@ -369,9 +369,9 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
       wait_menu_shown(aos3menustrip + 12);
 
       aos3item=get_long(aos3menustrip + 18);
-      i=0;
+      j=0;
       while((item!=-1) && aos3item) {
-	if(i==item) {
+	if(j==item) {
 	  JWLOG("menu item left edge: %d\n",get_word(aos3item+4));
 	  JWLOG("menu item width:     %d\n",get_word(aos3item+8));
 	  JWLOG("menu item top edge:  %d\n",get_word(aos3item+6));
@@ -394,8 +394,9 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
 	  wait_menuitem_shown(aos3item + 12);
 
   	  aos3sub=get_long(aos3item+28);
+	  l=0;
   	  while((sub!=-1) && aos3sub) {
-	    if(i==sub) {
+	    if(l==sub) {
 	      x=get_word(aos3sub+4) +    /* LeftEdge */
 		get_word(aos3sub+8) /2 + /* Width / 2 */
 		rx;
@@ -408,17 +409,38 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
 	      JWLOG("menu subitem xy: %d %d\n",x,y);
 	    }
 
-	    i++;
+	    l++;
 	    aos3sub=get_long(aos3sub); /* Next */
 	  }
 	}
-	i++;
+	j++;
   	aos3item=get_long(aos3item); /* NextItem */
       }
     }
-
     i++;
     aos3menustrip=get_long(aos3menustrip); /* NextMenu */
   }
+
+}
+
+void process_menu(JanusWin *jwin, UWORD selection) {
+  WORD menu, item, sub;
+
+  menu=MENUNUM(selection);
+  item=ITEMNUM(selection);
+  sub =SUBNUM (selection);
+
+  JWLOG("menu %d, item %d, sub %d\n", menu, item , sub);
+
+  if(menu == NOMENU || item == NOITEM) {
+    /* nothing to do here */
+    return;
+  }
+
+  if(sub == NOSUB) {
+    sub=-1;
+  }
+
+  click_menu(jwin, menu, item, sub);
 
 }

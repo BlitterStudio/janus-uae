@@ -200,6 +200,7 @@ int aros_screen_start_thread (JanusScreen *screen);
 /* menu */
 void clone_menu(JanusWin *jwin);
 void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub);
+void process_menu(JanusWin *jwin, UWORD selection);
 
 /* assert */
 struct Window *assert_window (struct Window *search);
