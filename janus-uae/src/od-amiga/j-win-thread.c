@@ -149,21 +149,22 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	                 ->NextSelect) {
 	  process_menu(jwin, selection);
 	}
-
 #if 0
 	sleep(4);
-	JWLOG("click_menu(jwin, 0, -1, -1);\n");
-	click_menu(jwin, 0, -1, -1);
+	JWLOG("click_menu(jwin, 1, 0, -1);\n");
+	click_menu(jwin, 1, 0 , -1);
 	sleep(3);
-	JWLOG("click_menu(jwin, 1, -1, -1);\n");
-	click_menu(jwin, 1, -1, -1);
+	JWLOG("click_menu(jwin, 1, 1, -1);\n");
+	click_menu(jwin, 1, 1, -1);
 	sleep(3);
-	JWLOG("click_menu(jwin, 2, -1, -1);\n");
-	click_menu(jwin, 2, -1, -1);
+	JWLOG("click_menu(jwin, 1, 2, -1);\n");
+	click_menu(jwin, 1, 2, -1);
 	sleep(3);
-	JWLOG("click_menu(jwin, 3, -1, -1);\n");
-	click_menu(jwin, 3, -1, -1);
+	JWLOG("click_menu(jwin, 1, 2, -1);\n");
+	click_menu(jwin, 1, 2, -1);
+	sleep(3);
 #endif
+
 	my_setmousebuttonstate(0, 1, 0); /* MENUUP */
 	menux=0;
 	menuy=0;

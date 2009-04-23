@@ -298,7 +298,13 @@ static BOOL wait_menuitem_shown(uaecptr menu_flags) {
   return FALSE;
 }
 
-static BOOL wait_mouse_pos(JanusWin *jwin, WORD MouseX, WORD MouseY) {
+/*****************************************************************
+ * wait_menu_mouse_pos
+ *
+ * as the janusd can not move the mouse at once, we have to wait
+ * until the mouse is on position. Use Delay() to not busy wait.
+ *****************************************************************/
+static BOOL wait_menu_mouse_pos(JanusWin *jwin, WORD MouseX, WORD MouseY) {
   ULONG i;
   uaecptr scr;
 
@@ -383,9 +389,11 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
       JWLOG("menu xy: %d %d\n\n",x,y); /* ok */
       menux=x;
       menuy=y;
+      ry=get_byte(aos3screen + 30);
       ry=ry+1;
+      rx=get_word(aos3menustrip+4);
 
-      //wait_mouse_pos(jwin, menux, menuy);
+      wait_menu_mouse_pos(jwin, menux, menuy);
       wait_menu_shown(aos3menustrip + 12);
       /* menu drawn */
 
@@ -408,10 +416,10 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
 	  rx=rx+get_word(aos3item+4);
 	  ry=ry+get_word(aos3item+6);
        	  /* move to this item */
-	  JWLOG("menu item xy: %d %d\n\n",x,y);
+	  JWLOG("menu item xy: %d %d\n\n",x,y);  /* ok */
 	  menux=x;
 	  menuy=y;
-	  wait_mouse_pos(jwin, menux, menuy);
+	  wait_menu_mouse_pos(jwin, menux, menuy);
 
 	  /* if we have a subitem, we need to wait until it opens */
 	  if(sub!=-1) {
@@ -431,6 +439,7 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
 		menux=x;
 		menuy=y;
 		JWLOG("menu subitem xy: %d %d\n",x,y);
+		wait_menu_mouse_pos(jwin, menux, menuy);
 	      }
 
 	      l++;
@@ -465,5 +474,5 @@ void process_menu(JanusWin *jwin, UWORD selection) {
     sub=-1;
   }
 
-  click_menu(jwin, menu, item + 1, sub);
+  click_menu(jwin, menu, item, sub);
 }
