@@ -57,7 +57,7 @@ am_libosdep_a_OBJECTS = main.$(OBJEXT) memory.$(OBJEXT) \
 	support.$(OBJEXT) ami-disk.$(OBJEXT) blkdev-amiga.$(OBJEXT) \
 	j-dispatch.$(OBJEXT) j-screen.$(OBJEXT) j-win.$(OBJEXT) \
 	j-global.$(OBJEXT) j-screen-thread.$(OBJEXT) \
-	j-win-thread.$(OBJEXT) j-menu.$(OBJEXT)
+	j-win-thread.$(OBJEXT) j-menu.$(OBJEXT) j-debug.$(OBJEXT)
 libosdep_a_OBJECTS = $(am_libosdep_a_OBJECTS)
 SCRIPTS = $(dist_noinst_SCRIPTS)
 DEFAULT_INCLUDES = -I. -I$(top_builddir)/src@am__isrc@
@@ -226,7 +226,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 INCLUDES = -I$(top_srcdir)/src/include -I$(top_builddir)/src -I$(top_srcdir)/src -I$(top_srcdir)
 noinst_LIBRARIES = libosdep.a
-libosdep_a_SOURCES = main.c memory.c support.c ami-disk.c blkdev-amiga.c j-dispatch.c j-screen.c j-win.c j-global.c j-screen-thread.c j-win-thread.c j-menu.c
+libosdep_a_SOURCES = main.c memory.c support.c ami-disk.c blkdev-amiga.c j-dispatch.c j-screen.c j-win.c j-global.c j-screen-thread.c j-win-thread.c j-menu.c j-debug.c
 noinst_HEADERS = amiga-kludges.h memory.h hrtimer.h j.h
 dist_noinst_SCRIPTS = 
 all: all-am
