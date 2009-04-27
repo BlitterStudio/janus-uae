@@ -79,6 +79,7 @@ WORD get_hi_word(ULONG *field);
 #define AD_GET_JOB_ACTIVE_WINDOW      10
 #define AD_GET_JOB_NEW_WINDOW         11
 #define AD_GET_JOB_LIST_SCREENS       12
+#define AD_GET_JOB_DEBUG             999 
 
 #define J_MSG_CLOSE                    1
 
@@ -185,6 +186,7 @@ uae_u32 ad_job_report_uae_windows  (ULONG *m68k_results);
 uae_u32 ad_job_switch_uae_window   (ULONG *m68k_results);
 uae_u32 ad_job_sync_windows        (ULONG *m68k_results);
 uae_u32 ad_job_update_janus_windows(ULONG *m68k_results);
+uae_u32 ad_debug                   (ULONG *m68k_results);
 
 /* compare hooks */
 gint aos3_process_compare       (gconstpointer aos3win, gconstpointer t);

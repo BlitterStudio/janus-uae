@@ -366,6 +366,8 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
        	  return ad_job_update_janus_windows(m68k_results);
     	case AD_TEST: 
        	  return ad_test(m68k_results);
+    	case AD_GET_JOB_DEBUG: 
+       	  return ad_debug(m68k_results);
     	case AD_GET_JOB_SYNC_WINDOWS: 
        	  return ad_job_sync_windows(m68k_results);
     	case AD_GET_JOB_REPORT_UAE_WINDOWS: 
