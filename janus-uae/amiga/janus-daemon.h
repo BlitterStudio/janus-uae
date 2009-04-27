@@ -51,6 +51,7 @@
 #define AD_GET_JOB_ACTIVE_WINDOW 10
 #define AD_GET_JOB_NEW_WINDOW 11
 #define AD_GET_JOB_LIST_SCREENS 12
+#define AD_GET_JOB_DEBUG 999
 
 #define J_MSG_CLOSE                    1
 
@@ -81,5 +82,9 @@ void forward_messages();
 
 /* public_screen.c */
 char *public_screen_name(struct Screen *scr); 
+
+/* debug.c */
+void DebOut(const char *format, ...);
+
 
 #endif

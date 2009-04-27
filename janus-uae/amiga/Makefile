@@ -14,7 +14,7 @@ LD_FLAGS  = -noixemul
 
 CFLAGS    = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
-OBJS      = janus-daemon.o sync-mouse.o patch.o sync-windows.o sync-screens.o public-screen.o messages.o
+OBJS      = janus-daemon.o sync-mouse.o patch.o sync-windows.o sync-screens.o public-screen.o messages.o debug.o
 
 all: $(OBJS) 
 	$(CC) $(LD_FLAGS) $(OBJS) -o $(TARGETDIR)/janus-daemon 

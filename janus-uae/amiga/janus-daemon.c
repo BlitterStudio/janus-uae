@@ -167,13 +167,14 @@ int main (int argc, char **argv) {
   ULONG        *command_mem;;
   BOOL         done;
 
-  printf("aros-daemon...\n");
+  DebOut("started\n");
 
   if(!open_libs()) {
     exit(1);
   }
 
   if(!init_sync_mouse()) {
+    DebOut("ERROR: init_sync_mouse failed\n");
     printf("ERROR: init_sync_mouse failed\n");
     exit(1);
   }
@@ -185,6 +186,7 @@ int main (int argc, char **argv) {
   mysignal_bit=AllocSignal(-1);
   if(mysignal_bit == -1) {
     printf("no signal..!\n");
+    DebOut("no signal..!\n");
     exit(1);
   }
   mysignal=1L << mysignal_bit;
@@ -194,6 +196,7 @@ int main (int argc, char **argv) {
    *SetTaskPri(mytask, 126);
    */
 
+  DebOut("task: %d\n",mytask);
   setup(mytask,mysignal);
 
   patch_functions();
@@ -206,6 +209,8 @@ int main (int argc, char **argv) {
 		     */
 
   printf("running (CTRL-C to quit, CTRL-D to stop uae gfx update)..\n");
+
+  DebOut("running\n");
 
   done=FALSE;
   while(!done) {
@@ -229,6 +234,8 @@ int main (int argc, char **argv) {
 
   }
 
+  DebOut("trying to quit\n");
+
   /* enable uae window again */
   activate_uae_window(1);
 
@@ -242,6 +249,8 @@ int main (int argc, char **argv) {
   FreeSignal(mysignal_bit);
 
   free_sync_mouse();
+
+  DebOut("exit\n");
 
   exit (0);
 }
