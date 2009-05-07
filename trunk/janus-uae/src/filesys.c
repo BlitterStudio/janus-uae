@@ -50,7 +50,7 @@
 # include <proto/dos.h>
 #endif
 
-#define TRACING_ENABLED 0
+#define TRACING_ENABLED 1
 #if TRACING_ENABLED
 #define TRACE(x)	do { kprintf("FS %s",__func__);kprintf x; } while(0)
 #define DUMPLOCK(u,x)	dumplock(u,x)
@@ -1914,7 +1914,7 @@ get_time (time_t t, long* days, long* mins, long* ticks)
      * this difference if we can. This ain't easy to do in
      * a portable, thread-safe way.
      */
-#  if defined HAVE_LOCALTIME_R && defined HAVE_TIMEGM
+#  if defined HAVE_LOCALTIME_R && defined HAVE_TIMEGM 
     struct tm tm;
 
     /* Convert t to local time */
@@ -1959,8 +1959,11 @@ put_time (long days, long mins, long ticks)
      * we need a time in UTC, so we have to take account of
      * the difference if we can. This ain't easy to do in
      * a portable, thread-safe way.
+     *     *
+     * New AROS includes have gmtime_r defined (old ones had them commented out),
+     * so configure now finds them, even if they are not present?
      */
-#  if defined HAVE_GMTIME_R && defined HAVE_LOCALTIME_R
+#  if defined HAVE_GMTIME_R && defined HAVE_LOCALTIME_R && !defined __AROS__
     {
 	struct tm tm;
         struct tm now_tm;
