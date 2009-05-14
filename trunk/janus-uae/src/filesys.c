@@ -50,7 +50,7 @@
 # include <proto/dos.h>
 #endif
 
-#define TRACING_ENABLED 1
+#define TRACING_ENABLED 0
 #if TRACING_ENABLED
 #define TRACE(x)	do { kprintf("FS %s: ",__func__);kprintf x; } while(0)
 #define DUMPLOCK(u,x)	dumplock(u,x)

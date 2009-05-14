@@ -33,7 +33,7 @@
  * Offset 519, 81 bytes, comment
  */
 
-#define TRACING_ENABLED 1
+#define TRACING_ENABLED 0
 #if TRACING_ENABLED
 #define TRACE(x)	do { kprintf("FSDB %s: ",__func__);kprintf x; } while(0)
 #else
