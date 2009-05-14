@@ -21,6 +21,10 @@
 #include "scsidev.h"
 #include "fsdb.h"
 
+#ifdef __AROS__
+#include <dos/dos.h>
+#include <proto/dos.h>
+#endif
 /* The on-disk format is as follows:
  * Offset 0, 1 byte, valid
  * Offset 1, 4 bytes, mode
@@ -29,12 +33,13 @@
  * Offset 519, 81 bytes, comment
  */
 
-#define TRACING_ENABLED 0
+#define TRACING_ENABLED 1
 #if TRACING_ENABLED
-#define TRACE(x)	do { write_log x; } while(0)
+#define TRACE(x)	do { kprintf("FSDB %s: ",__func__);kprintf x; } while(0)
 #else
 #define TRACE(x)
 #endif
+
 
 char *nname_begin (char *nname)
 {
@@ -44,7 +49,7 @@ char *nname_begin (char *nname)
     return nname;
 }
 
-#if 1 //ndef _WIN32
+#ifndef __AROS__  //ndef _WIN32
 /* Find the name REL in directory DIRNAME.  If we find a file that
  * has exactly the same name, return REL.  If we find a file that
  * has the same name when compared case-insensitively, return a
@@ -68,6 +73,43 @@ char *fsdb_search_dir (const char *dirname, char *rel)
     }
     closedir (dir);
     return p;
+}
+#else
+
+/* readdir has issues on my machine..? o1i */
+
+char *fsdb_search_dir (const char *dirname, char *rel) {
+  char   *p    = NULL;
+  BPTR    lock = NULL;
+  BOOL    done = FALSE;
+  uae_u32 err;
+  struct FileInfoBlock fib;
+
+  TRACE(("(%s, %s)\n", dirname, rel));
+
+  lock=Lock(dirname, ACCESS_READ);
+  if(!lock) {
+    TRACE(("Lock on %s failed\n",dirname));
+    return NULL;
+  }
+
+  if(!Examine(lock, &fib)) {
+    TRACE(("Examine failed!?\n"));
+    UnLock(lock);
+    return NULL;
+  }
+
+  while( !p && ExNext(lock, &fib)) {
+    if (strcmp (fib.fib_FileName, rel) == 0)
+      p = rel;
+    else if (strcasecmp (fib.fib_FileName, rel) == 0)
+      p = my_strdup (fib.fib_FileName);
+  }
+
+  UnLock(lock);
+
+  TRACE(("return %s\n", p));
+  return p;
 }
 #endif
 

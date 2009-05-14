@@ -45,14 +45,14 @@
 #include "gui.h"
 #include "savestate.h"
 
-#ifdef TARGET_AMIGAOS
+#ifdef TARGET_AMIGAOS || defined __AROS__
 # include <dos/dos.h>
 # include <proto/dos.h>
 #endif
 
 #define TRACING_ENABLED 1
 #if TRACING_ENABLED
-#define TRACE(x)	do { kprintf("FS %s",__func__);kprintf x; } while(0)
+#define TRACE(x)	do { kprintf("FS %s: ",__func__);kprintf x; } while(0)
 #define DUMPLOCK(u,x)	dumplock(u,x)
 #else
 #define TRACE(x)
@@ -997,6 +997,9 @@ static char *get_nname (Unit *unit, a_inode *base, char *rel,
 			char **modified_rel)
 {
     char *found;
+    char *result;
+
+    TRACE(("(a_inode %lx, rel %s)\n", base, rel));
 
     aino_test (base);
 
@@ -1011,22 +1014,31 @@ static char *get_nname (Unit *unit, a_inode *base, char *rel,
      * program looks up "uae_xxx" (yes, it's contrived).  The filesystem
      * should not make the uae_xxx file visible to the Amiga side.  */
     if (fsdb_used_as_nname (base, rel))
-	return 0;
+	return NULL;
     /* A file called "." (or whatever else is invalid on this filesystem)
 	* does not exist, as far as the Amiga side is concerned.  */
     if (fsdb_name_invalid (rel))
-	return 0;
+	return NULL;
 
+    TRACE(("search..\n"));
     /* See if we have a file that has the same name as the aname we are
      * looking for.  */
     found = fsdb_search_dir (base->nname, rel);
-    if (found == 0)
-	return found;
-    if (found == rel)
-	return build_nname (base->nname, rel);
+    if (found == 0) {
+      TRACE(("found == 0\n"));
+      return NULL;
+    }
+
+    if (found == rel) {
+      result=build_nname (base->nname, rel);
+      TRACE(("return1: %s\n",result));
+      return result;
+    }
 
     *modified_rel = found;
-    return build_nname (base->nname, found);
+    result=build_nname (base->nname, found);
+    TRACE(("return2: %s\n",result));
+    return result;
 }
 
 static char *create_nname (Unit *unit, a_inode *base, char *rel)
@@ -1110,17 +1122,23 @@ static a_inode *new_child_aino (Unit *unit, a_inode *base, char *rel)
     char *nn;
     a_inode *aino;
 
-    TRACE(("new_child_aino %s, %s\n", base->aname, rel));
+    TRACE(("new_child_aino(base->aname: %s, rel: %s)\n", base->aname, rel));
 
     aino = fsdb_lookup_aino_aname (base, rel);
+    TRACE(("aino: %lx\n",aino));
+
     if (aino == 0) {
 	nn = get_nname (unit, base, rel, &modified_rel);
-	if (nn == 0)
-	    return 0;
+	if (nn == 0) {
+	  TRACE(("nn==0\n"));
+  	  return 0;
+	}
 
 	aino = (a_inode *) xcalloc (sizeof (a_inode), 1);
-	if (aino == 0)
-	    return 0;
+	if (aino == 0) {
+	  TRACE(("no memory!!\n"));
+      	  return 0;
+	}
 	aino->aname = modified_rel ? modified_rel : my_strdup (rel);
 	aino->nname = nn;
 
@@ -1128,8 +1146,9 @@ static a_inode *new_child_aino (Unit *unit, a_inode *base, char *rel)
 	aino->has_dbentry = 0;
 
 	if (!fsdb_fill_file_attrs (base, aino)) {
-	    xfree (aino);
-	    return 0;
+	  TRACE(("!fsdb_fill_file_attrs\n"));
+	  xfree (aino);
+	  return 0;
 	}
 	if (aino->dir)
 	    fsdb_clean_dir (aino);
@@ -1200,6 +1219,8 @@ static a_inode *lookup_child_aino_for_exnext (Unit *unit, a_inode *base, char *r
 {
     a_inode *c = base->child;
     int l0 = strlen (rel);
+
+    TRACE(("(base %lx, rel %s)\n", base, rel));
 
     aino_test (base);
     aino_test (c);
@@ -1538,26 +1559,30 @@ static Key *new_key (Unit *unit)
     return k;
 }
 
-static void
-dumplock (Unit *unit, uaecptr lock)
-{
-    a_inode *a;
-    TRACE(("LOCK: 0x%lx", lock));
-    if (!lock) {
-	TRACE(("\n"));
-	return;
-    }
-    TRACE(("{ next=0x%lx, mode=%ld, handler=0x%lx, volume=0x%lx, aino %lx ",
-	   get_long (lock) << 2, get_long (lock+8),
-	   get_long (lock+12), get_long (lock+16),
-	   get_long (lock + 4)));
-    a = lookup_aino (unit, get_long (lock + 4));
-    if (a == 0) {
-	TRACE(("not found!"));
-    } else {
-	TRACE(("%s", a->nname));
-    }
-    TRACE((" }\n"));
+static void dumplock (Unit *unit, uaecptr lock) {
+  a_inode *a;
+
+  if (!lock) {
+    TRACE(("lock is NULL !!\n"));
+    return;
+  }
+  else {
+    TRACE(("LOCK: 0x%lx\n", lock));
+  }
+
+  TRACE(("{\n"));
+  TRACE(("  next=0x%lx, mode=%ld, handler=0x%lx, volume=0x%lx, aino %lx \n",
+	 get_long (lock) << 2, get_long (lock+8),
+	 get_long (lock+12), get_long (lock+16),
+	 get_long (lock + 4)));
+  a = lookup_aino (unit, get_long (lock + 4));
+  if (a == 0) {
+    TRACE(("  not found!\n"));
+  } else {
+    TRACE(("  %s\n", a->nname));
+  }
+  TRACE((" }\n"));
+
 }
 
 static a_inode *find_aino (Unit *unit, uaecptr lock, const char *name, uae_u32 *err)
@@ -1580,7 +1605,11 @@ static a_inode *find_aino (Unit *unit, uaecptr lock, const char *name, uae_u32 *
     if (a) {
 	TRACE(("aino=\"%s\"\n", a->nname));
     }
+    else {
+	TRACE(("aino=NULL\n"));
+    }
     aino_test (a);
+
     return a;
 }
 
@@ -1588,6 +1617,8 @@ static uaecptr make_lock (Unit *unit, uae_u32 uniq, long mode)
 {
     /* allocate lock from the list kept by the assembly code */
     uaecptr lock;
+
+    TRACE(("(..)\n"));
 
     lock = get_long (unit->locklist);
     put_long (unit->locklist, get_long (lock));
@@ -1807,7 +1838,8 @@ action_lock (Unit *unit, dpacket packet)
 
     a = find_aino (unit, lock, bstr (unit, name), &err);
     if (err == 0 && (a->elock || (mode != SHARED_LOCK && a->shlock > 0))) {
-	err = ERROR_OBJECT_IN_USE;
+      TRACE(("ERROR_OBJECT_IN_USE\n"));
+      err = ERROR_OBJECT_IN_USE;
     }
     /* Lock() doesn't do access checks. */
     if (err != 0) {
@@ -1820,6 +1852,7 @@ action_lock (Unit *unit, dpacket packet)
     else
 	a->elock = 1;
     de_recycle_aino (unit, a);
+    
     PUT_PCK_RES1 (packet, make_lock (unit, a->uniq, mode) >> 2);
 }
 
@@ -1836,10 +1869,14 @@ static void action_free_lock (Unit *unit, dpacket packet)
 	PUT_PCK_RES2 (packet, ERROR_OBJECT_NOT_AROUND);
 	return;
     }
+
+    TRACE(("a->nname: %s\n",a->nname));
+
     if (a->elock)
 	a->elock = 0;
     else
 	a->shlock--;
+
     recycle_aino (unit, a);
     free_lock(unit, lock);
 
@@ -2193,27 +2230,40 @@ static void action_examine_object (Unit *unit, dpacket packet)
    leave the directory open on the host side until all ExNext()s have
    finished - they may never finish!  */
 
+#ifndef __AROS__
 static void populate_directory (Unit *unit, a_inode *base)
 {
     DIR *d = opendir (base->nname);
     a_inode *aino;
 
-    if (!d)
-	return;
-    for (aino = base->child; aino; aino = aino->sibling) {
-	base->locked_children++;
-	unit->total_locked_ainos++;
+    if (!d) {
+      TRACE(("opendir(%s) failed\n",base->nname));
+      return;
     }
-    TRACE(("Populating directory, child %p, locked_children %d\n",
-	   base->child, base->locked_children));
+
+    for (aino = base->child; aino; aino = aino->sibling) {
+      base->locked_children++;
+      unit->total_locked_ainos++;
+    }
+
+    TRACE(("Populating directory %s, child %p, locked_children %d\n",
+	    base->nname, base->child, base->locked_children));
     for (;;) {
 	struct dirent *de;
 	uae_u32 err;
+
+	TRACE(("  for(;;)\n"));
 
 	/* Find next file that belongs to the Amiga fs (skipping things
 	   like "..", "." etc.  */
 	do {
 	    de = my_readdir (d, &de_space);
+	    if(de) {
+	      TRACE(("    de=%lx (%s)\n", de, de->d_name));
+	    }
+	    else {
+	      TRACE(("    de=NULL\n")):
+	    }
 	} while (de && fsdb_name_invalid (de->d_name));
 	if (! de)
 	    break;
@@ -2221,8 +2271,73 @@ static void populate_directory (Unit *unit, a_inode *base)
 	   being ExNext()ed, and it will increment the locked counts.  */
 	aino = lookup_child_aino_for_exnext (unit, base, de->d_name, &err);
     }
+    
     closedir (d);
 }
+
+#else
+
+/* AROS own version 
+ *
+ * for some (unknown) reason, on one of my machines, the de->d_name above was rather
+ * weird and never valid. So I rewrote it to use the AROS API. o1i.
+ */
+static void populate_directory (Unit *unit, a_inode *base) {
+
+  BPTR    lock =NULL;
+  BOOL    done =FALSE;
+  uae_u32 err;
+  struct FileInfoBlock fib;
+
+    //DIR *d = opendir (base->nname);
+  a_inode *aino;
+
+  TRACE(("populate_directory(%s) AROS version\n",base->nname));
+
+  lock=Lock(base->nname, ACCESS_READ);
+
+  if (!lock) {
+    TRACE(("Lock(%s) failed\n",base->nname));
+    return;
+  }
+  TRACE(("locked %lx\n",lock));
+
+  if(!Examine(lock, &fib)) {
+    TRACE(("Examine failed!?\n"));
+    UnLock(lock);
+    return;
+  }
+  TRACE(("fib: %lx\n", fib));
+
+  for (aino = base->child; aino; aino = aino->sibling) {
+    base->locked_children++;
+    unit->total_locked_ainos++;
+  }
+
+  TRACE(("Populating directory %s, child %p, locked_children %d\n",
+	    base->nname, base->child, base->locked_children));
+
+  while(!done) {
+    if(ExNext(lock, &fib)) {
+      /* process found fib */
+      /* This calls init_child_aino, which will notice that the parent is
+	  being ExNext()ed, and it will increment the locked counts.  */
+      TRACE(("process %s\n",fib.fib_FileName));
+      aino = lookup_child_aino_for_exnext (unit, base, fib.fib_FileName, &err);
+    }
+    else {
+      done=TRUE;
+      if(IoErr() != ERROR_NO_MORE_ENTRIES) {
+	TRACE(("ERROR: %lx\n",IoErr()));
+      }
+    }
+  }
+
+  UnLock(lock);
+}
+#endif
+
+
 
 static void do_examine (Unit *unit, dpacket packet, ExamineKey *ek, uaecptr info)
 {
@@ -3612,6 +3727,13 @@ static int handle_packet (Unit *unit, dpacket pck)
 	write_log ("FILESYS: UNKNOWN PACKET %x\n", type);
 	return 0;
     }
+
+    if(GET_PCK_RES1(pck) != DOSFALSE) {
+      TRACE(("result: DOS TRUE (ok)\n"));
+    }
+    else {
+      TRACE(("result: ERROR %d -- DOSFALSE\n", GET_PCK_RES2(pck)));
+    }
     return 1;
 }
 
@@ -3670,6 +3792,9 @@ static uae_u32 REGPARAM2 filesys_handler (TrapContext *context)
     uaecptr message_addr = m68k_areg (&context->regs, 4);
     uae_u8 *pck;
     uae_u8 *msg;
+
+    TRACE(("entered\n"));
+
     if (! valid_address (packet_addr, 36) || ! valid_address (message_addr, 14)) {
 	write_log ("Bad address passed for packet.\n");
 	goto error2;
@@ -3710,10 +3835,11 @@ static uae_u32 REGPARAM2 filesys_handler (TrapContext *context)
 
     if (! handle_packet (unit, pck)) {
 	error:
+	TRACE(("ERROR: DOS_FALSE - ERROR_ACTION_NOT_KNOWN\n"));
 	PUT_PCK_RES1 (pck, DOS_FALSE);
 	PUT_PCK_RES2 (pck, ERROR_ACTION_NOT_KNOWN);
     }
-    TRACE(("reply: %8lx, %ld\n", GET_PCK_RES1 (pck), GET_PCK_RES2 (pck)));
+    TRACE(("reply: get_pck_res1 %8lx, get_pck_res2 %ld\n", GET_PCK_RES1 (pck), GET_PCK_RES2 (pck)));
 
     error2:
 
