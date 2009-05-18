@@ -24,6 +24,11 @@
 #include <dos/dostags.h>
 #include <proto/dos.h>
 
+//#include "sysconfig.h"
+//#include "sysdeps.h"
+//#include "options.h"
+
+//#include "inputdevice.h"
 #include "j.h"
 
 /* this is disabled! TODO! */

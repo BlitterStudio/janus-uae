@@ -44,6 +44,7 @@
 #include "picasso96.h"
 #include "traps.h"
 #include "uae_endian.h"
+#include "inputdevice.h"
 
 #include "threaddep/thread.h"
 
@@ -130,6 +131,7 @@ typedef struct {
   WORD           LeftEdge, TopEdge;
   WORD           Width, Height;
   WORD           plusx, plusy; /* increase visible size */
+  ULONG          secs, micros;  /* remember last menupick for DMRequests */
   BOOL           dead;
 } JanusWin;
 
