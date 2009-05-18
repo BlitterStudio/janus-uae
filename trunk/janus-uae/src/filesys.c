@@ -59,6 +59,15 @@
 #define DUMPLOCK(u,x)
 #endif
 
+/* try to get some snoopdos functionality */
+#define SNOOP_ENABLED 1
+#if SNOOP_ENABLED
+#define SNOOP(...)	kprintf("FSNOOP %s: ",__PRETTY_FUNCTION__);kprintf(__VA_ARGS__)
+#else
+#define SNOOP(...)
+#endif
+
+
 
 static void aino_test (a_inode *aino)
 {
@@ -1840,9 +1849,11 @@ action_lock (Unit *unit, dpacket packet)
     if (err == 0 && (a->elock || (mode != SHARED_LOCK && a->shlock > 0))) {
       TRACE(("ERROR_OBJECT_IN_USE\n"));
       err = ERROR_OBJECT_IN_USE;
+      SNOOP("lock(%s): FAILED (ERROR_OBJECT_IN_USE)\n", bstr (unit, name));
     }
     /* Lock() doesn't do access checks. */
     if (err != 0) {
+	SNOOP("lock(%s): FAILED (%d)\n", bstr (unit, name), err);
 	PUT_PCK_RES1 (packet, DOS_FALSE);
 	PUT_PCK_RES2 (packet, err);
 	return;
@@ -1853,6 +1864,7 @@ action_lock (Unit *unit, dpacket packet)
 	a->elock = 1;
     de_recycle_aino (unit, a);
     
+    SNOOP("lock(%s): ok\n", bstr (unit, name));
     PUT_PCK_RES1 (packet, make_lock (unit, a->uniq, mode) >> 2);
 }
 
@@ -1870,7 +1882,7 @@ static void action_free_lock (Unit *unit, dpacket packet)
 	return;
     }
 
-    TRACE(("a->nname: %s\n",a->nname));
+    SNOOP("free_lock(%s)\n",a->nname);
 
     if (a->elock)
 	a->elock = 0;
@@ -2428,6 +2440,7 @@ static void do_find (Unit *unit, dpacket packet, int mode, int create, int fallb
 	/* Whatever it is, we can't handle it. */
 	PUT_PCK_RES1 (packet, DOS_FALSE);
 	PUT_PCK_RES2 (packet, err);
+	SNOOP("action_find(%s) FAILED (%d)\n",bstr (unit, name), err);
 	return;
     }
     if (err == 0) {
@@ -2435,15 +2448,18 @@ static void do_find (Unit *unit, dpacket packet, int mode, int create, int fallb
 	if (aino->dir) {
 	    PUT_PCK_RES1 (packet, DOS_FALSE);
 	    PUT_PCK_RES2 (packet, ERROR_OBJECT_WRONG_TYPE);
+	    SNOOP("action_find(%s) FAILED (ERROR_OBJECT_WRONG_TYPE)\n",bstr (unit, name));
 	    return;
 	}
 	if (aino->elock || (create == 2 && aino->shlock > 0)) {
 	    PUT_PCK_RES1 (packet, DOS_FALSE);
 	    PUT_PCK_RES2 (packet, ERROR_OBJECT_IN_USE);
+	    SNOOP("action_find(%s) FAILED (ERROR_OBJECT_IN_USE)\n",bstr (unit, name));
 	    return;
 	}
 	if (create == 2 && (aino->amigaos_mode & A_FIBF_DELETE) != 0) {
 	    PUT_PCK_RES1 (packet, DOS_FALSE);
+	    SNOOP("action_find(%s) FAILED (ERROR_DELETE_PROTECTED)\n",bstr (unit, name));
 	    PUT_PCK_RES2 (packet, ERROR_DELETE_PROTECTED);
 	    return;
 	}
@@ -2458,6 +2474,7 @@ static void do_find (Unit *unit, dpacket packet, int mode, int create, int fallb
 	    if ((mode & A_FIBF_WRITE) != 0 && unit->ui.readonly) {
 		PUT_PCK_RES1 (packet, DOS_FALSE);
 		PUT_PCK_RES2 (packet, ERROR_DISK_WRITE_PROTECTED);
+		SNOOP("action_find(%s) FAILED (ERROR_DISK_WRITE_PROTECTED)\n",bstr (unit, name));
 		return;
 	    }
 	    if (((mode & aino->amigaos_mode) & A_FIBF_WRITE) != 0
@@ -2465,17 +2482,20 @@ static void do_find (Unit *unit, dpacket packet, int mode, int create, int fallb
 	    {
 		PUT_PCK_RES1 (packet, DOS_FALSE);
 		PUT_PCK_RES2 (packet, ERROR_WRITE_PROTECTED);
+		SNOOP("action_find(%s) FAILED (ERROR_WRITE_PROTECTED)\n",bstr (unit, name));
 		return;
 	    }
 	    if (((mode & aino->amigaos_mode) & A_FIBF_READ) != 0) {
 		PUT_PCK_RES1 (packet, DOS_FALSE);
 		PUT_PCK_RES2 (packet, ERROR_READ_PROTECTED);
+		SNOOP("action_find(%s) FAILED (ERROR_READ_PROTECTED)\n",bstr (unit, name));
 		return;
 	    }
 	}
     } else if (create == 0) {
 	PUT_PCK_RES1 (packet, DOS_FALSE);
 	PUT_PCK_RES2 (packet, err);
+	SNOOP("action_find(%s) FAILED b (%d)\n",bstr (unit, name), err);
 	return;
     } else {
 	/* Object does not exist. aino points to containing directory. */
@@ -2483,6 +2503,7 @@ static void do_find (Unit *unit, dpacket packet, int mode, int create, int fallb
 	if (aino == 0) {
 	    PUT_PCK_RES1 (packet, DOS_FALSE);
 	    PUT_PCK_RES2 (packet, ERROR_DISK_IS_FULL); /* best we can do */
+	    SNOOP("action_find(%s) FAILED (ERROR_DISK_IS_FULL)\n",bstr (unit, name));
 	    return;
 	}
 	aino_created = 1;
@@ -2503,6 +2524,7 @@ static void do_find (Unit *unit, dpacket packet, int mode, int create, int fallb
 	    delete_aino (unit, aino);
 	PUT_PCK_RES1 (packet, DOS_FALSE);
 	PUT_PCK_RES2 (packet, dos_errno ());
+	SNOOP("action_find(%s) FAILED c (%d)\n",bstr (unit, name), dos_errno());
 	return;
     }
 
@@ -2522,6 +2544,7 @@ static void do_find (Unit *unit, dpacket packet, int mode, int create, int fallb
     else
 	aino->shlock++;
     de_recycle_aino (unit, aino);
+    SNOOP("action_find(%s) ok\n",bstr (unit, name));
     PUT_PCK_RES1 (packet, DOS_TRUE);
 }
 
