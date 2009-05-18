@@ -21,15 +21,10 @@
  *
  ************************************************************************/
 
-#include "sysconfig.h"
-#include "sysdeps.h"
-#include "options.h"
-
-#include "include/inputdevice.h"
 #include "j.h"
 #include "memory.h"
 
-static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, BOOL *done);
+static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, ULONG secs, ULONG micros, BOOL *done);
 
 /* we don't know those values, but we always keep the last value here */
 static UWORD estimated_border_top=25;
@@ -43,7 +38,14 @@ static void my_setmousebuttonstate(int mouse, int button, int state) {
   setbuttonstateall (&mice[mouse], &mice2[mouse], button, state);
 }
 
-static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, BOOL *done) {
+/* we need to get a useable accurancy here */
+static ULONG olisecs(ULONG s, ULONG m) {
+
+  return s*100 + m/10000;
+
+}
+
+static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, ULONG secs, ULONG micros, BOOL *done) {
 
   GSList   *list_win;
   JanusMsg *jmsg;
@@ -144,26 +146,57 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 
     case IDCMP_MENUPICK:
 	JWLOG("IDCMP_MENUPICK\n");
-	for(selection = code; selection != MENUNULL;
-	    selection = (ItemAddress(jwin->arosmenu, (LONG)selection))
-	                 ->NextSelect) {
-	  process_menu(jwin, selection);
+
+	/* nothing selected, but this could mean, the user clicked twice very fast and
+	 * thus wanted to activate a DMRequest. So we remember/check the time of the last
+	 * click and replay it, if appropriate 
+	 */
+	if(code==MENUNULL) {
+	  if(jwin->micros) {
+	    JWLOG("MENUNULL difference: %d\n", olisecs(secs, micros) - olisecs(jwin->secs, jwin->micros));
+	    if(olisecs(secs, micros) - olisecs(jwin->secs, jwin->micros) < 100) {
+	      JWLOG("MENUNULL DOUBLE!!\n");
+	      /* we already had one MENUDOWN up in MENUVERIFY */
+	      setmousebuttonstate(0, 1, 0); /* MENUUP */
+	      //Delay(1000);
+	      setmousebuttonstate(0, 1, 1); /* MENUDOWN */
+	      /* and we'll have one MENUDOWN at the end */
+	    }
+	    jwin->micros=0;
+	    jwin->secs=0;
+	  }
+	  else {
+	    jwin->micros=micros;
+	    jwin->secs=secs;
+	  }
 	}
+	else {
+	  /* user selected something (reasonable) */
+
+	  jwin->micros=0; /* user picked sth, so forget about the last click */
+	  jwin->secs=0; 
+
+	  for(selection = code; selection != MENUNULL;
+	      selection = (ItemAddress(jwin->arosmenu, (LONG)selection))
+			   ->NextSelect) {
+	    process_menu(jwin, selection);
+	  }
 #if 0
-	sleep(4);
-	JWLOG("click_menu(jwin, 1, 0, -1);\n");
-	click_menu(jwin, 1, 0 , -1);
-	sleep(3);
-	JWLOG("click_menu(jwin, 1, 1, -1);\n");
-	click_menu(jwin, 1, 1, -1);
-	sleep(3);
-	JWLOG("click_menu(jwin, 1, 2, -1);\n");
-	click_menu(jwin, 1, 2, -1);
-	sleep(3);
-	JWLOG("click_menu(jwin, 1, 2, -1);\n");
-	click_menu(jwin, 1, 2, -1);
-	sleep(3);
+	  sleep(4);
+	  JWLOG("click_menu(jwin, 1, 0, -1);\n");
+	  click_menu(jwin, 1, 0 , -1);
+	  sleep(3);
+	  JWLOG("click_menu(jwin, 1, 1, -1);\n");
+	  click_menu(jwin, 1, 1, -1);
+	  sleep(3);
+	  JWLOG("click_menu(jwin, 1, 2, -1);\n");
+	  click_menu(jwin, 1, 2, -1);
+	  sleep(3);
+	  JWLOG("click_menu(jwin, 1, 2, -1);\n");
+	  click_menu(jwin, 1, 2, -1);
+	  sleep(3);
 #endif
+	}
 
 	my_setmousebuttonstate(0, 1, 0); /* MENUUP */
 	menux=0;
@@ -301,6 +334,7 @@ static void aros_win_thread (void) {
   UWORD           gadget_type;
   struct IntuiMessage *msg;
   int dmx, dmy, qualifier;
+  ULONG           secs, micros;
   BOOL            care=FALSE;
 
   /* There's a time to live .. */
@@ -558,7 +592,6 @@ static void aros_win_thread (void) {
   estimated_border_right=aroswin->BorderRight;
 
   /* handle IDCMP stuff */
-
   done=FALSE;
   JWLOG("IDCMP loop for window %lx\n",aroswin);
 
@@ -589,11 +622,13 @@ static void aros_win_thread (void) {
 	mx        = msg->IDCMPWindow->MouseX; // Absolute pointer coordinates
 	my        = msg->IDCMPWindow->MouseY; // relative to the window
 	qualifier = msg->Qualifier;
+	secs      = msg->Seconds;
+	micros    = msg->Micros;
 
 	ReplyMsg ((struct Message*)msg);
 
 	handle_msg(aroswin, jwin, class, code, dmx, dmy, mx, my, qualifier, 
-	           thread, &done);
+	           thread, secs, micros, &done);
       }
     }
     /* Ctrl-C */
