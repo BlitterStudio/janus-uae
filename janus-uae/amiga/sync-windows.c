@@ -30,6 +30,8 @@
 
 #include "janus-daemon.h"
 
+//#define DUMPWIN
+
 extern struct IntuitionBase* IntuitionBase;
 
 struct Window *old_MoveWindowInFront_Window,
@@ -96,6 +98,7 @@ void update_windows() {
 }
 
 
+#ifdef DUMPWIN
 /* debug helpers */
 void dump_host_windows(ULONG *window) {
   int i=0;
@@ -156,6 +159,7 @@ ULONG need_to_sort(ULONG *host_window, struct Layer *layer) {
 
   return need_to_sort(host_window+4, layer->back);
 }
+#endif
 
 
 /*****************************************
@@ -431,9 +435,10 @@ void sync_windows() {
   UnlockPubScreen(NULL,screen); /* TODO: is it safe already? */
 #endif
 
-
+#ifdef DUMPWIN
   dump_uae_windows(screen);
   dump_host_windows(command_mem);
+#endif
 
   /* get frontmost layer */
   layer=screen->FirstWindow->WLayer;
