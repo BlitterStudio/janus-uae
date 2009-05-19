@@ -69,6 +69,7 @@ void update_windows() {
   public_screen_node = (struct PubScreenNode *) public_screen_list->lh_Head;
   if(!public_screen_node) {
     printf("no public_screen_node!?\n"); /* TODO */
+    DebOut("no public_screen_node!?\n"); /* TODO */
     UnlockPubScreenList();
     return;
   }
@@ -96,13 +97,12 @@ void update_windows() {
 
 
 /* debug helpers */
-#if 0
 void dump_host_windows(ULONG *window) {
   int i=0;
 
-  printf("dump_host_windows\n");
+  DebOut("dump_host_windows\n");
   while(window[i] || i<5) {
-    printf("  %d: %lx\n",i,window[i]);
+    DebOut("  %d: %lx\n",i,window[i]);
     i++;
   }
 }
@@ -111,7 +111,7 @@ void dump_uae_windows(struct Screen *screen) {
   struct Layer *layer;
   int i=0;
 
-  printf("dump_uae_windows\n");
+  DebOut("dump_uae_windows\n");
 
   /* get frontmost layer */
   layer=screen->FirstWindow->WLayer;
@@ -124,11 +124,8 @@ void dump_uae_windows(struct Screen *screen) {
 
   while(layer) {
     if(layer->Window) {
-      printf("  %d: %lx\n",i,layer->Window);
+      DebOut("  %d: %lx\n", i, layer->Window, ((struct Window *)layer->Window)->Title);
       i++;
-    }
-    else {
-      printf("   : (NULL)\n");
     }
     layer = layer -> back;
   }
@@ -145,7 +142,7 @@ ULONG need_to_sort(ULONG *host_window, struct Layer *layer) {
   }
 
   if(host_window[0]) {
-    printf("need_to_sort: orphan host windows..\n");
+    DebOut("need_to_sort: orphan host windows..\n");
     return FALSE;
   }
 
@@ -159,7 +156,6 @@ ULONG need_to_sort(ULONG *host_window, struct Layer *layer) {
 
   return need_to_sort(host_window+4, layer->back);
 }
-#endif
 
 
 /*****************************************
@@ -196,6 +192,7 @@ void report_uae_windows() {
 
   if(!screen) {
     printf("report_uae_windows: no screen!?\n");
+    DebOut("ERROR: report_uae_windows: no screen!?\n");
     FreeVec(command_mem);
     return;
   }
@@ -270,10 +267,10 @@ void report_host_windows() {
   i=0;
   while(command_mem[i]) {
     win=(struct Window *)command_mem[i];
-    printf("resize window %lx (%s)\n",(ULONG) win,win->Title);
+    DebOut("resize window %lx (%s)\n",(ULONG) win,win->Title);
 
-    printf("  x/y: %d x %d\n",get_hi(command_mem[i+1]),get_lo(command_mem[i+1]));
-    printf("  w/h: %d x %d\n",get_hi(command_mem[i+2]),get_lo(command_mem[i+2]));
+    DebOut("  x/y: %d x %d\n",get_hi(command_mem[i+1]),get_lo(command_mem[i+1]));
+    DebOut("  w/h: %d x %d\n",get_hi(command_mem[i+2]),get_lo(command_mem[i+2]));
 
     //printf("  (long x/y: %lx)\n",command_mem[i+1]);
     //printf("  (long w/y: %lx)\n",command_mem[i+2]);
@@ -334,19 +331,19 @@ void report_host_windows() {
  *   Window =  window to re-position in front of another window
  *   BehindWindow =  window to re-position in front of
  *
- * As a MoveWindowInFront of does not move the window
+ * As MoveWindowInFrontOf does not move the window
  * at once and we might call my_MoveWindowInFrontOf for
  * one window more than once (multiple layers), we
  * just do a real MoveWindowInFront, if one of
  * the parameters is new to us.
  */
 
-static void my_MoveWindowInFrontOf(struct Window *Window, 
-                                   struct Window *BehindWindow) {
+static void my_MoveWindowInFrontOf(struct Window *window, 
+                                   struct Window *behindWindow) {
 
   //printf("my_MoveWindowInFrontOf enteren\n");
-  if(Window == old_MoveWindowInFront_Window &&
-     BehindWindow == old_MoveWindowInFront_BehindWindow &&
+  if(window == old_MoveWindowInFront_Window &&
+     behindWindow == old_MoveWindowInFront_BehindWindow &&
      old_MoveWindowInFront_Counter < 99) {
     /* nothing to do */
     old_MoveWindowInFront_Counter++;
@@ -355,19 +352,19 @@ static void my_MoveWindowInFrontOf(struct Window *Window,
   }
 
   if(old_MoveWindowInFront_Counter) {
-    printf("MoveWindowInFrontOf(%lx,%lx) ignored %d times\n", 
+    DebOut("MoveWindowInFrontOf(%lx,%lx) ignored %d times\n", 
            (ULONG) old_MoveWindowInFront_Window, 
 	   (ULONG) old_MoveWindowInFront_BehindWindow,
 	   (int) old_MoveWindowInFront_Counter); 
     old_MoveWindowInFront_Counter=0;
   }
 
-  old_MoveWindowInFront_Window=Window;
-  old_MoveWindowInFront_BehindWindow=BehindWindow;
+  old_MoveWindowInFront_Window=window;
+  old_MoveWindowInFront_BehindWindow=behindWindow;
   
-  printf("MoveWindowInFrontOf(%lx,%lx)\n", (ULONG) Window, 
-                                           (ULONG) BehindWindow); 
-  MoveWindowInFrontOf(Window,BehindWindow);
+  DebOut("MoveWindowInFrontOf(%lx - %s, %lx - %s)\n", (ULONG) window,       window->Title,
+                                                      (ULONG) behindWindow, behindWindow->Title); 
+  MoveWindowInFrontOf(window,behindWindow);
   //printf("my_MoveWindowInFrontOf left\n");
 }
 
@@ -377,6 +374,11 @@ static void my_MoveWindowInFrontOf(struct Window *Window,
  * sync window order (top to bottom)
  *
  * LockIBase was no good idea here.
+ *
+ * DMRequesters add a second layer with
+ * the same window linked, so we need
+ * to filter out double window pointer
+ * here. Otherwise we get flapping windows
  *****************************************/
 void sync_windows() {
   ULONG *command_mem;
@@ -409,6 +411,7 @@ void sync_windows() {
   if(!screen) {
     /* no screen !? */
     printf("ERROR: window %lx has no screen !?\n",(ULONG) win);
+    DebOut("ERROR: window %lx has no screen !?\n",(ULONG) win);
     FreeVec(command_mem);
     return;
   }
@@ -429,10 +432,8 @@ void sync_windows() {
 #endif
 
 
-#if 0
   dump_uae_windows(screen);
   dump_host_windows(command_mem);
-#endif
 
   /* get frontmost layer */
   layer=screen->FirstWindow->WLayer;
@@ -442,6 +443,7 @@ void sync_windows() {
 
   if(!layer) {
     printf("layer==NULL!?\n");
+    DebOut("ERROR: layer==NULL!?\n");
     FreeVec(command_mem);
     return;
   }
@@ -462,14 +464,17 @@ void sync_windows() {
     //printf("  while(i: %d,%lx,%lx)\n",i,layer->back,command_mem[i]);
     if(layer -> Window) { /* Layer has a window */
       if(command_mem[i] != (ULONG) layer->Window &&
-	 command_mem[i] &&
-	 layer->Window) {
+	 command_mem[i] /* && layer->Window */) {
 	/* move command_mem[i] in front of this layer */
 	my_MoveWindowInFrontOf((struct Window *)command_mem[i], 
 			       layer->Window);
 	done=TRUE;
       };
       i++;
+      while(layer->back && (layer->Window == layer->back->Window)) {
+	DebOut("layers with same window ignored (%lx %s)\n", layer->Window, ((struct Window *)layer->Window)->Title);
+	layer = layer -> back;
+      }
     }
     layer = layer -> back;
   }
