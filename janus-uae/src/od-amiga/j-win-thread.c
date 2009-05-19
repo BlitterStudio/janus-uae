@@ -154,7 +154,7 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	if(code==MENUNULL) {
 	  if(jwin->micros) {
 	    JWLOG("MENUNULL difference: %d\n", olisecs(secs, micros) - olisecs(jwin->secs, jwin->micros));
-	    if(olisecs(secs, micros) - olisecs(jwin->secs, jwin->micros) < 100) {
+	    if(olisecs(secs, micros) - olisecs(jwin->secs, jwin->micros) < 1500) {
 	      JWLOG("MENUNULL DOUBLE!!\n");
 	      /* we already had one MENUDOWN up in MENUVERIFY */
 	      setmousebuttonstate(0, 1, 0); /* MENUUP */
