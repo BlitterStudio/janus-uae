@@ -7,9 +7,9 @@ noinst_LIBRARIES = libguidep.a
 libguidep_a_SOURCES = gtkui.c util.c chooserwidget.c cputypepanel.c \
 		      cpuspeedpanel.c floppyfileentry.c led.c \
 		      chipsettypepanel.c chipsetspeedpanel.c \
-		      display.c
+		      display.c integration.c
 
 noinst_HEADERS = util.h chooserwidget.h cputypepanel.h cpuspeedpanel.h \
 		 floppyfileentry.h led.h chipsettypepanel.h \
-		 chipsetspeedpanel.h display.h
+		 chipsetspeedpanel.h display.h integration.h
 
