@@ -45,6 +45,7 @@
 #include "gui-gtk/chipsetspeedpanel.h"
 #include "gui-gtk/util.h"
 #include "gui-gtk/display.h"
+#include "gui-gtk/integration.h"
 
 //#define GUI_DEBUG 1
 #ifdef  GUI_DEBUG
@@ -72,7 +73,7 @@
 
 #if defined GTKMUI
 //#define MGTK_DEBUG 1
-#include "/home/oli/aros/gtk-mui/debug.h"
+//#include "/home/oli/aros/gtk-mui/debug.h"
 #endif
 
 void chipsize_changed (void);
@@ -146,6 +147,7 @@ static char dirdlg_devname[256], dirdlg_volname[256], dirdlg_path[256], floppydl
 
 
 static GtkWidget *jdisp_panel=NULL;
+static GtkWidget *jint_panel=NULL;
 
 enum hdlist_cols {
     HDLIST_DEVICE,
@@ -1273,7 +1275,7 @@ static void make_sound_widgets (GtkWidget *vbox)
 }
 
 /* TODO: check if this should be disabled..? */
-static void chipsize_changed (void) {
+void chipsize_changed (void) {
 
     int t = find_current_toggle (chipsize_widget, 5);
     changed_prefs.chipmem_size = 0x80000 << t;
@@ -2032,6 +2034,50 @@ static void make_display_widgets (GtkWidget *vbox) {
   gtk_container_add (GTK_CONTAINER (vbox), jdisp_panel);
 }
 
+static void make_integration_widgets (GtkWidget *vbox) {
+
+  jint_panel=jintegration_new();
+#if 0
+  gtk_signal_connect (GTK_OBJECT (jdisp_panel), "screen-changed",
+		      GTK_SIGNAL_FUNC (on_screen_changed),
+     		      NULL);
+  gtk_signal_connect (GTK_OBJECT (jdisp_panel), "window-changed",
+		      GTK_SIGNAL_FUNC (on_window_changed),
+     		      NULL);
+  gtk_signal_connect (GTK_OBJECT (jdisp_panel), "chipset-changed",
+		      GTK_SIGNAL_FUNC (on_chipset_changed),
+     		      NULL);
+  gtk_signal_connect (GTK_OBJECT (jdisp_panel), "linemode-changed",
+		      GTK_SIGNAL_FUNC (on_linemode_changed),
+     		      NULL);
+  gtk_signal_connect (GTK_OBJECT (jdisp_panel), "settings-changed",
+		      GTK_SIGNAL_FUNC (on_settings_changed),
+     		      NULL);
+  gtk_signal_connect (GTK_OBJECT (jdisp_panel), "centering-changed",
+		      GTK_SIGNAL_FUNC (on_centering_changed),
+     		      NULL);
+
+
+  /* our child, the chipsetspeed_panel */
+  gtk_signal_connect (GTK_OBJECT (chipsetspeed_panel), "framerate-changed",
+		      GTK_SIGNAL_FUNC (on_framerate_changed),
+     		      NULL);
+  gtk_signal_connect (GTK_OBJECT (chipsetspeed_panel), 
+                        "sprite-collisisons-changed",
+		      GTK_SIGNAL_FUNC (on_collision_level_changed),
+     		      NULL);
+  gtk_signal_connect (GTK_OBJECT (chipsetspeed_panel), 
+                        "immediate-blits-changed",
+		      GTK_SIGNAL_FUNC (on_immediate_blits_changed),
+     		      NULL);
+#endif
+
+
+  gtk_widget_show_all(jint_panel);
+
+  gtk_container_add (GTK_CONTAINER (vbox), jint_panel);
+}
+
 static void create_guidlg (void)
 {
     GtkWidget *window, *notebook;
@@ -2049,6 +2095,7 @@ static void create_guidlg (void)
 //	{ "Graphics",     make_gfx_widgets },
 	//{ "Chipset",      make_chipset_widgets },
 	{ "Display",      make_display_widgets },
+	{ "View",         make_integration_widgets },
 	{ "Sound",        make_sound_widgets },
 #ifdef JIT
  	{ "JIT",          make_comp_widgets },
@@ -2222,7 +2269,7 @@ static void *gtk_gui_thread (void *dummy)
     }
     //DebOut("exit\n");
     /* e-uae does not quit, if the GUI dies.
-     * j-uae does qit, as this might be a commodity signal not
+     * j-uae does quit, as this might be a commodity signal not
      * only for the GUI.
      */
     uae_quit();
