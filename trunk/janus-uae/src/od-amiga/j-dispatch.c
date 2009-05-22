@@ -31,6 +31,8 @@
 //#include "inputdevice.h"
 #include "j.h"
 
+BOOL init_done=FALSE;
+
 /* this is disabled! TODO! */
 struct Window *assert_window (struct Window *search) {
 
@@ -312,14 +314,20 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
       JWLOG("param:      %lx\n",m68k_areg(&context->regs, 0));
       JWLOG("Task:       %lx\n",get_long_p(param  ));
       JWLOG("Signal:     %lx\n",get_long_p(param+4));
-      aos3_task=get_long_p(param);
-      aos3_task_signal=get_long_p(param+4);
+      JWLOG("Stop:       %d\n",get_long_p(param+8));
 
-      InitSemaphore(&sem_janus_window_list);
-      InitSemaphore(&sem_janus_screen_list);
-      InitSemaphore(&aos3_thread_start);
-      InitSemaphore(&janus_messages_access);
-      InitSemaphore(&sem_janus_active_win);
+      if(!init_done) {
+	JWLOG("AD_SETUP called first time => InitSemaphore etc\n");
+	aos3_task=get_long_p(param);
+	aos3_task_signal=get_long_p(param+4);
+
+	InitSemaphore(&sem_janus_window_list);
+	InitSemaphore(&sem_janus_screen_list);
+	InitSemaphore(&aos3_thread_start);
+	InitSemaphore(&janus_messages_access);
+	InitSemaphore(&sem_janus_active_win);
+	init_done=TRUE;
+      }
 
       /* from now on (aos3_task && aos3_task_signal) the
        * aos3 aros-daemon is ready to take orders!

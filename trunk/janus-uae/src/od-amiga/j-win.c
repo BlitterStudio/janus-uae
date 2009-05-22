@@ -87,12 +87,17 @@ static void new_aos3window(ULONG aos3win) {
   }
 
   ObtainSemaphore(&sem_janus_screen_list);
+  JWLOG("ObtainSemaphore(&sem_janus_window_list)\n");
   ObtainSemaphore(&sem_janus_window_list);
 
   if(g_slist_find_custom(janus_windows, 
 			  (gconstpointer) aos3win,
 			  &aos3_window_compare)) {
     /* we already have this window */
+    JWLOG("we already have aos3 window %lx\n", aos3win);
+    JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
+    ReleaseSemaphore(&sem_janus_window_list);
+    ReleaseSemaphore(&sem_janus_screen_list);
     return;
   }
 
@@ -112,6 +117,7 @@ static void new_aos3window(ULONG aos3win) {
     JWLOG("\n\nERROR (FIXME): This window %lx -> screen %lx does not exist!!\n\n",aos3win,aos3screen);
     /* this must not happen !! */
     FreeVec(jwin);
+    JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
     ReleaseSemaphore(&sem_janus_window_list);
     ReleaseSemaphore(&sem_janus_screen_list);
     return;
@@ -127,6 +133,7 @@ static void new_aos3window(ULONG aos3win) {
                            0xC000, 0x8000); /* hmm..*/
   janus_windows=g_slist_append(janus_windows,jwin);
 
+  JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
   ReleaseSemaphore(&sem_janus_window_list);
   ReleaseSemaphore(&sem_janus_screen_list);
 
@@ -358,6 +365,7 @@ uae_u32 ad_job_report_host_windows(ULONG *m68k_results) {
   JWLOG("========== entered ========== \n");
   i=0;
 
+  JWLOG("ObtainSemaphore(sem_janus_window_list)\n");
   ObtainSemaphore(&sem_janus_window_list);
   list_win=janus_windows;
   while(list_win) {
@@ -451,6 +459,8 @@ uae_u32 ad_job_report_host_windows(ULONG *m68k_results) {
 NEXT:
     list_win=g_slist_next(list_win);
   }
+
+  JWLOG("ReleaseSemaphore(sem_janus_window_list)\n");
   ReleaseSemaphore(&sem_janus_window_list);
 
   JWLOG("ad_job_report_host_windows: left\n");
@@ -476,6 +486,7 @@ uae_u32 ad_job_mark_window_dead(ULONG aos_window) {
 
   JWLOG("ad_job_mark_window_dead(%lx)\n",aos_window);
 
+  JWLOG("ObtainSemaphore(&sem_janus_window_list)\n");
   ObtainSemaphore(&sem_janus_window_list);
 
   list_win=g_slist_find_custom(janus_windows,
@@ -501,6 +512,7 @@ uae_u32 ad_job_mark_window_dead(ULONG aos_window) {
     }
   }
 
+  JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
   ReleaseSemaphore(&sem_janus_window_list);
   return result;
 }
@@ -579,6 +591,7 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
     /* if layer belongs to one of our windows */
     //JWLOG("ad_job_sync_windows: layer %lx\n",layer);
     if(layer->Window) {
+      JWLOG("ObtainSemaphore(&sem_janus_window_list)\n");
       ObtainSemaphore(&sem_janus_window_list);
       list_win= g_slist_find_custom(janus_windows,
                                (gconstpointer) layer->Window,
@@ -596,6 +609,7 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
 	  i++;
 	}
       }
+      JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
       ReleaseSemaphore(&sem_janus_window_list);
     }
     layer=layer->back;
