@@ -19,6 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Janus-Daemon. If not, see <http://www.gnu.org/licenses/>.
  *
+ * $Id$
+ *
  ************************************************************************/
 
 #include <proto/exec.h>
@@ -74,12 +76,15 @@ APTR           old_OpenWindowTagList;
  * window is already in a0
  */
 __asm__("_my_CloseWindow_SetFunc:\n"
+	"cmp.l #1,_state\n"
+	"blt close_patch_disabled\n"
 	PUSHSTACK
 	"moveq #11,d0\n"
 	"moveq #7,d1\n"
 	"move.l _calltrap,a1\n"
 	"jsr (a1)\n"
 	POPSTACK
+	"close_patch_disabled:\n"
 	PUSHA3
 	"move.l _old_CloseWindow, a3\n"
 	"jsr (a3)\n"
@@ -110,9 +115,12 @@ __asm__("_my_OpenWindow_SetFunc:\n"
 	"move.l (a4),d4\n"
 	"clr.l (a4)\n"
 	*/
+	"cmp.l #1,_state\n"
+	"blt openwin_patch_disabled1\n"
 	PUSHFULLSTACK
 	"jsr _update_screens\n"
 	POPFULLSTACK
+	"openwin_patch_disabled1:\n"
 	PUSHA3
 	"move.l _old_OpenWindow,a3\n"
 	"jsr (a3)\n"
@@ -121,6 +129,8 @@ __asm__("_my_OpenWindow_SetFunc:\n"
 	"move.l d4,(a4)\n"
 	"movem.l (SP)+,d4/a4\n"
 	*/
+	"cmp.l #1,_state\n"
+	"blt openwin_patch_disabled2\n"
 	PUSHFULLSTACK
 	"move.l d0,a0\n"
 	"moveq #11,d0\n"
@@ -128,6 +138,7 @@ __asm__("_my_OpenWindow_SetFunc:\n"
 	"move.l _calltrap,a1\n"
 	"jsr (a1)\n"
 	POPFULLSTACK
+	"openwin_patch_disabled2:\n"
         "rts\n");
 
 #if 0
@@ -149,13 +160,18 @@ void my_OpenWindow(REG(a0, struct NewWindow *newwin),
 
 
 __asm__("_my_OpenWindowTagList_SetFunc:\n"
+	"cmp.l #1,_state\n"
+	"blt openwintag_patch_disabled1\n"
 	PUSHFULLSTACK
 	"jsr _update_screens\n"
 	POPFULLSTACK
+	"openwintag_patch_disabled1:\n"
 	PUSHA3
 	"move.l _old_OpenWindowTagList, a3\n"
 	"jsr (a3)\n"
 	POPA3
+	"cmp.l #1,_state\n"
+	"blt openwintag_patch_disabled2\n"
 	PUSHFULLSTACK
 	"move.l d0,a0\n"
 	"moveq #11,d0\n"
@@ -163,6 +179,7 @@ __asm__("_my_OpenWindowTagList_SetFunc:\n"
 	"move.l _calltrap,a1\n"
 	"jsr (a1)\n"
 	POPFULLSTACK
+	"openwintag_patch_disabled2:\n"
         "rts\n");
 
 #if 0

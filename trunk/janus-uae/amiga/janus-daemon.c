@@ -19,34 +19,17 @@
  * You should have received a copy of the GNU General Public License
  * along with Janus-Daemon. If not, see <http://www.gnu.org/licenses/>.
  *
+ * $Id$
+ *
  ************************************************************************/
 
 /*
  * first try to integrate UAE in AROS
- *
- * Copyright 2008 o1i
- *
- * we are unning as a high priority daemon to fetch the
- * commands the aos3 daemon runing on our host os sent
- * us and execute them. We also have to return the results.
- *
- * steps (TODO: outdated!!):
- *
- * 1. setup and register daemon in uae
- * 2. sleep until signal from uae (interrupt caused by uae)
- * 3. fetch command
- * 4. perform necessary syscalls etc.
- * 5. store results
- * 6. notify aos3 daemon, that we are done
- * 7. if another command is waiting, goto 3
- * 8. goto 2
- *
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 
-//#include <proto/exec.h>
 #include <exec/devices.h>
 #include <exec/interrupts.h>
 #include <exec/nodes.h>
@@ -65,7 +48,6 @@
 #include <clib/exec_protos.h>
 #include <clib/timer_protos.h>
 
-//#include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/timer.h>
 
@@ -73,7 +55,7 @@
 
 int __nocommandline = 0; /*???*/
 
-char verstag[] = "\0$VER: janus-daemon 0.2";
+char verstag[] = "\0$VER: janus-daemon 0.4";
 #if 0
 struct Window *old_MoveWindowInFront_Window,
               *old_MoveWindowInFront_BehindWindow;
@@ -82,6 +64,15 @@ ULONG          old_MoveWindowInFront_Counter;
 
 LONG          *cmdbuffer=NULL;
 
+/* state:
+ *  0 not yet initialized / sleep until we go to coherency
+ *  2 play the game
+ */
+ULONG state=0;
+
+BYTE         mysignal_bit;
+ULONG        mysignal;
+struct Task *mytask = NULL;
 
 /*
  * d0 is the function to be called (AD_*)
@@ -105,27 +96,32 @@ BOOL open_libs() {
  * register us!
  * as long as setup is not called, janus-uae behaves 
  * just like a normal uae
+ *
+ * if called with stop=0, we want to sleep
+ *
+ * if result is TRUE, we need to run (coherent mode)
+ * if result is FALSE, we need to sleep (classic)
  ****************************************************/
-int setup(struct Task *task, ULONG signal) {
-  ULONG  result;
+int setup(struct Task *task, ULONG signal, ULONG stop) {
   ULONG *command_mem;
 
-  printf("setup(%lx,%lx)\n",(ULONG) task,(ULONG) signal);
+  DebOut("setup(%lx,%lx,%d)\n",(ULONG) task, signal, stop);
 
   command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
 
-  printf("memory: %lx\n",(ULONG) command_mem);
+  DebOut("memory: %lx\n",(ULONG) command_mem);
 
   command_mem[0]=(ULONG) task;
   command_mem[4]=(ULONG) signal;
+  command_mem[8]=(ULONG) stop;
 
-  result = calltrap (AD_SETUP, AD__MAXMEM, command_mem);
+  state = calltrap (AD_SETUP, AD__MAXMEM, command_mem);
 
   FreeVec(command_mem);
 
-  printf("setup done(): result %d\n",(int) result);
+  DebOut("setup done(): result %d\n",(int) state);
 
-  return result;
+  return state;
 }
 
 /***************************************
@@ -156,16 +152,74 @@ void activate_uae_window(int status) {
   }
 }
 
+static void runme() {
+  ULONG        newsignals;
+  ULONG       *command_mem;;
+  BOOL         done;
+
+  DebOut("runme entered\n");
+
+#if 0
+  while(!setup(mytask, mysignal, 0)) {
+    DebOut("let's sleep ..\n");
+    sleep(10); /* somebody will wake us up anyways */
+  }
+#endif
+
+  DebOut("now we want to do something usefull ..\n");
+
+  update_screens(); /* report all open screens once, 
+                     * updates again a every openwindow patch
+		     * call
+		     */
+  DebOut("screens updated\n");
+
+  update_windows(); /* report all open windows once,
+                     * new windows will be handled by the patches
+		     */
+  DebOut("windows updated\n");
+
+  DebOut("running (CTRL-C to quit, CTRL-D to stop uae gfx update)..\n");
+
+  done=FALSE;
+  while(!done) {
+    newsignals=Wait(mysignal | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
+    if(newsignals & mysignal) {
+      sync_windows();
+      report_uae_windows();
+      report_host_windows();
+      sync_mouse();
+      sync_active_window();
+      forward_messages();
+    }
+    if(newsignals & SIGBREAKF_CTRL_C) {
+      DebOut("got SIGBREAKF_CTRL_C..\n");
+      done=TRUE;
+      setup(mytask, mysignal, 1); /* we are tired */
+    }
+    if(newsignals & SIGBREAKF_CTRL_D) {
+      DebOut("got SIGBREAKF_CTRL_D..\n");
+      switch_uae_window();
+    }
+
+  }
+
+  DebOut("try to sleep ..\n");
+
+  /* enable uae window again */
+  activate_uae_window(1);
+
+  /* cose all windows */
+  command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
+  calltrap (AD_GET_JOB, AD_GET_JOB_LIST_WINDOWS, command_mem);
+  FreeVec(command_mem);
+
+}
+
+
 /* error handling still sux (free resources TODO)*/
 
 int main (int argc, char **argv) {
-
-  struct Task *mytask = NULL;
-  BYTE         mysignal_bit;
-  ULONG        mysignal;
-  ULONG        newsignals;
-  ULONG        *command_mem;;
-  BOOL         done;
 
   DebOut("started\n");
 
@@ -192,62 +246,19 @@ int main (int argc, char **argv) {
   mysignal=1L << mysignal_bit;
 
   mytask=FindTask(NULL);
-  /* we want to be fast ?
-   *SetTaskPri(mytask, 126);
-   */
-
   DebOut("task: %d\n",mytask);
-  setup(mytask,mysignal);
+
+  setup(mytask, mysignal, 0); /* init everything for the patches */
 
   patch_functions();
-  update_screens(); /* report all open screens once, 
-                     * updates again a every openwindow patch
-		     * call
-		     */
-  update_windows(); /* report all open windows once,
-                     * new windows will be handled by the patches
-		     */
 
-  printf("running (CTRL-C to quit, CTRL-D to stop uae gfx update)..\n");
-
-  DebOut("running\n");
-
-  done=FALSE;
-  while(!done) {
-    newsignals=Wait(mysignal | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
-    if(newsignals & mysignal) {
-      sync_windows();
-      report_uae_windows();
-      report_host_windows();
-      sync_mouse();
-      sync_active_window();
-      forward_messages();
-    }
-    if(newsignals & SIGBREAKF_CTRL_C) {
-      printf("got SIGBREAKF_CTRL_C..\n");
-      done=TRUE;
-    }
-    if(newsignals & SIGBREAKF_CTRL_D) {
-      printf("got SIGBREAKF_CTRL_D..\n");
-      switch_uae_window();
-    }
-
+  while(1) {
+    runme(); /* as we patched the system, we will run (sleep) forever */
   }
 
-  DebOut("trying to quit\n");
-
-  /* enable uae window again */
-  activate_uae_window(1);
-
-  /* cose all windows */
-  command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
-  calltrap (AD_GET_JOB, AD_GET_JOB_LIST_WINDOWS, command_mem);
-  FreeVec(command_mem);
-
+  /* can't be reached.. */
   unpatch_functions();
-
   FreeSignal(mysignal_bit);
-
   free_sync_mouse();
 
   DebOut("exit\n");
