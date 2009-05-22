@@ -53,7 +53,7 @@
 
 #define JWTRACING_ENABLED 1
 #if JWTRACING_ENABLED
-#define JWLOG(...)   do { kprintf("JW: %s(): ",__func__);kprintf(__VA_ARGS__); } while(0)
+#define JWLOG(...)   do { kprintf("%s:%d  %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
 #define JWLOG(...)     do { ; } while(0)
 #endif

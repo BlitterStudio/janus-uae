@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
  *
- * $Id:$
+ * $Id$
  *
  ************************************************************************/
 
@@ -344,6 +344,7 @@ static void aros_win_thread (void) {
   /* I think, the sem would be better, but seems, as if we are running
    * into a deadlock sometimes..?
    */
+  JWLOG("ObtainSemaphore(&sem_janus_window_list);\n");
   ObtainSemaphore(&sem_janus_window_list);
   JWLOG("aros_win_thread[%lx]: obtained sem_janus_window_list sem \n",thread);
 
@@ -352,6 +353,7 @@ static void aros_win_thread (void) {
 			     	(gconstpointer) thread,
 			     	&aos3_process_compare);
 
+  JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
   ReleaseSemaphore(&sem_janus_window_list);
   JWLOG("aros_win_thread[%lx]: released sem_janus_window_list sem \n",thread);
 
@@ -641,6 +643,7 @@ static void aros_win_thread (void) {
   /* ... and a time to die. */
 
 EXIT:
+  JWLOG("ObtainSemaphore(&sem_janus_window_list)\n");
   ObtainSemaphore(&sem_janus_window_list);
 
   if(aroswin) {
@@ -673,6 +676,7 @@ EXIT:
   }
 #endif
 
+  JWLOG("ReleaseSemaphore(&sem_janus_window_list);\n");
   ReleaseSemaphore(&sem_janus_window_list);
   DeletePool(jwin->mempool);
   FreeVec(jwin);
