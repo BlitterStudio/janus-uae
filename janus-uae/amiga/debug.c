@@ -19,6 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Janus-Daemon. If not, see <http://www.gnu.org/licenses/>.
  *
+ * $Id$
+ *
  ************************************************************************/
 
 #include <exec/types.h>
@@ -34,6 +36,7 @@
  * write formatted string to AROS debug console
  ************************************************/
 void DebOut(const char *format, ...) {
+#ifdef DEBUG
   char *command_mem;
   va_list args;
 
@@ -46,6 +49,7 @@ void DebOut(const char *format, ...) {
   calltrap (AD_GET_JOB, AD_GET_JOB_DEBUG, (ULONG *) command_mem);
 
   FreeVec(command_mem);
+#endif
 }
 
 

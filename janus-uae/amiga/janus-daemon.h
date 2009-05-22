@@ -55,6 +55,8 @@
 
 #define J_MSG_CLOSE                    1
 
+extern ULONG state;
+
 extern ULONG (*calltrap)(ULONG __asm("d0"), 
                          ULONG __asm("d1"), 
 			 APTR  __asm("a0"));

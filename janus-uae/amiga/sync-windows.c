@@ -19,6 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Janus-Daemon. If not, see <http://www.gnu.org/licenses/>.
  *
+ * $Id$
+ *
  ************************************************************************/
 
 #include <exec/types.h>
@@ -55,7 +57,7 @@ BOOL init_sync_windows() {
  *
  * we just return a list of all windows on any
  * public screen. We are not interested in custom
- * screens here. The uae side can fidn out, on which
+ * screens here. The uae side can find out, on which
  * screen the window is.
  ****************************************************/
 void update_windows() {
@@ -82,7 +84,7 @@ void update_windows() {
   while (public_screen_node && public_screen_node->psn_Screen) {
     w=public_screen_node->psn_Screen->FirstWindow;
     while(w) {
-      //printf("add window #%d: %lx (screen %lx)\n",i,w,public_screen_node->psn_Screen);
+      DebOut("update_windows: add window #%d: %lx (screen %lx) %s\n",i,w,public_screen_node->psn_Screen,w->Title);
       command_mem[i++]=(ULONG) w;
       w=w->NextWindow;
     }
