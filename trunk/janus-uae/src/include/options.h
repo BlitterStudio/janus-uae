@@ -254,6 +254,9 @@ struct uae_prefs {
     struct uae_input_device joystick_settings[MAX_INPUT_SETTINGS + 1][MAX_INPUT_DEVICES];
     struct uae_input_device mouse_settings[MAX_INPUT_SETTINGS + 1][MAX_INPUT_DEVICES];
     struct uae_input_device keyboard_settings[MAX_INPUT_SETTINGS + 1][MAX_INPUT_DEVICES];
+
+    int jcoherence;
+    int jclipboard;
 };
 
 extern void save_options (FILE *, const struct uae_prefs *, int);

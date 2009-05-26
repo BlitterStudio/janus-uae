@@ -6,6 +6,11 @@
   *
   * Copyright 1998 Brian King, Bernd Schmidt
   * Copyright 2006 Richard Drummond
+  * Copyright 2009 Oliver Brunner
+  *
+  * GPL
+  *
+  * $Id$
   */
 
 #include "sysconfig.h"
@@ -30,6 +35,7 @@
 #define CONFIG_BLEN 2560
 
 #define GTKMUI
+#define JANUS
 
 static int config_newfilesystem;
 static struct strlist *temp_lines;
@@ -117,7 +123,11 @@ static const struct cfg_lines opttable[] =
     {"filesystem", "access,'Amiga volume-name':'host directory path' - where 'access' can be 'read-only' or 'read-write'" },
 #endif
 #ifdef CATWEASEL
-    {"catweasel_io","Catweasel board io base address" }
+    {"catweasel_io","Catweasel board io base address" },
+#endif
+#ifdef JANUS
+    {"jcoherence","Integrate os3 windows into host window environment"},
+    {"jclipboard","Transparent clipboard data exchange between host and aos3"}
 #endif
 };
 
@@ -578,6 +588,10 @@ void save_options (FILE *f, const struct uae_prefs *p, int type)
     write_inputdevice_config (p, f);
 
     /* Don't write gfxlib/gfx_test_speed options.  */
+#ifdef JANUS
+    cfgfile_write (f, "jcoherence=%s\n", p->jcoherence ? "true" : "false");
+    cfgfile_write (f, "jclipboard=%s\n", p->jclipboard ? "true" : "false");
+#endif
 }
 
 int cfgfile_yesno (const char *option, const char *value, const char *name, int *location)
@@ -1095,6 +1109,15 @@ static int cfgfile_parse_host (struct uae_prefs *p, char *option, char *value)
 	}
 	return 1;
     }
+
+    kprintf("================== jcoherence: %d\n",p->jcoherence);
+#ifdef JANUS
+    if(cfgfile_yesno (option, value, "jcoherence", &p->jcoherence) ||
+       cfgfile_yesno (option, value, "jclipboard", &p->jclipboard) ) {
+      return 1;
+    }
+    kprintf("================== jcoherence: %d\n",p->jcoherence);
+#endif
 
     return 0;
 }
