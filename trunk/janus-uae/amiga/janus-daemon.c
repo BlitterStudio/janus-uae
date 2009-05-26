@@ -117,6 +117,8 @@ int setup(struct Task *task, ULONG signal, ULONG stop) {
 
   state = calltrap (AD_SETUP, AD__MAXMEM, command_mem);
 
+  state=command_mem[8];
+
   FreeVec(command_mem);
 
   DebOut("setup done(): result %d\n",(int) state);
@@ -156,6 +158,8 @@ static void runme() {
   ULONG        newsignals;
   ULONG       *command_mem;;
   BOOL         done;
+  BOOL         init;
+  BOOL         set;
 
   DebOut("runme entered\n");
 
@@ -168,23 +172,31 @@ static void runme() {
 
   DebOut("now we want to do something usefull ..\n");
 
-  update_screens(); /* report all open screens once, 
-                     * updates again a every openwindow patch
-		     * call
-		     */
-  DebOut("screens updated\n");
-
-  update_windows(); /* report all open windows once,
-                     * new windows will be handled by the patches
-		     */
-  DebOut("windows updated\n");
-
-  DebOut("running (CTRL-C to quit, CTRL-D to stop uae gfx update)..\n");
+  DebOut("running (CTRL-C to go to normal mode, CTRL-D to rootless mode)..\n");
 
   done=FALSE;
+  init=FALSE;
   while(!done) {
     newsignals=Wait(mysignal | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
-    if(newsignals & mysignal) {
+    set=setup(mytask, mysignal, 0);
+    if(set && (newsignals & mysignal)) {
+      /* we are active */
+
+      if(!init) {
+	/* disabled -> enabled */
+	init=TRUE;
+	update_screens(); /* report all open screens once, 
+			   * updates again a every openwindow patch
+			   * call
+			   */
+	DebOut("screens updated\n");
+
+	update_windows(); /* report all open windows once,
+			   * new windows will be handled by the patches
+			   */
+	DebOut("windows updated\n");
+      }
+
       sync_windows();
       report_uae_windows();
       report_host_windows();
@@ -192,17 +204,39 @@ static void runme() {
       sync_active_window();
       forward_messages();
     }
-    if(newsignals & SIGBREAKF_CTRL_C) {
-      DebOut("got SIGBREAKF_CTRL_C..\n");
-      done=TRUE;
-      setup(mytask, mysignal, 1); /* we are tired */
-    }
-    if(newsignals & SIGBREAKF_CTRL_D) {
-      DebOut("got SIGBREAKF_CTRL_D..\n");
-      switch_uae_window();
+
+    if((newsignals & SIGBREAKF_CTRL_C) ||
+      (!set && (newsignals & mysignal))) {
+      DebOut("!set || got SIGBREAKF_CTRL_C..\n");
+      if(init) {
+	DebOut("tell uae, that we received a SIGBREAKF_CTRL_C\n");
+	init=FALSE;
+	/* cose all windows */
+      	command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
+	calltrap (AD_GET_JOB, AD_GET_JOB_LIST_WINDOWS, command_mem); /* this is a NOOP!!!*/
+	FreeVec(command_mem);
+	setup(mytask, mysignal, 1); /* we are tired */
+      }
+      else {
+	DebOut("we are already inactive\n");
+      }
     }
 
+    if(newsignals & SIGBREAKF_CTRL_D) {
+      DebOut("got SIGBREAKF_CTRL_D..\n");
+//      switch_uae_window();
+      if(!init) {
+	DebOut("tell uae, that we received a SIGBREAKF_CTRL_D\n");
+	setup(mytask, mysignal, 2); /* we are back again */
+      }
+      else {
+	DebOut("we are already active\n");
+      }
+
+    }
   }
+
+  /* never arrive here */
 
   DebOut("try to sleep ..\n");
 
@@ -246,7 +280,7 @@ int main (int argc, char **argv) {
   mysignal=1L << mysignal_bit;
 
   mytask=FindTask(NULL);
-  DebOut("task: %d\n",mytask);
+  DebOut("task: %lx\n",mytask);
 
   setup(mytask, mysignal, 0); /* init everything for the patches */
 

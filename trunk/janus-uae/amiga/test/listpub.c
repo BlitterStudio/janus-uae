@@ -5,7 +5,7 @@
  *
  * Public Domain.
  *
- * $Id:$
+ * $Id$
  */
 
 #include <stdio.h>
