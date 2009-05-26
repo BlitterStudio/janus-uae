@@ -1110,13 +1110,11 @@ static int cfgfile_parse_host (struct uae_prefs *p, char *option, char *value)
 	return 1;
     }
 
-    kprintf("================== jcoherence: %d\n",p->jcoherence);
 #ifdef JANUS
     if(cfgfile_yesno (option, value, "jcoherence", &p->jcoherence) ||
        cfgfile_yesno (option, value, "jclipboard", &p->jclipboard) ) {
       return 1;
     }
-    kprintf("================== jcoherence: %d\n",p->jcoherence);
 #endif
 
     return 0;
