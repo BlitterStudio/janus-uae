@@ -517,6 +517,9 @@ static void update_state (void)
     if(jdisp_panel) {
       g_signal_emit_by_name(jdisp_panel,"read-prefs",NULL);
     }
+    if(jint_panel) {
+      g_signal_emit_by_name(jint_panel, "read-prefs",NULL);
+    }
  
   //DebOut("done\n");
 }
