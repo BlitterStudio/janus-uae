@@ -297,6 +297,8 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
   struct BitMap *aos_bm;
   struct RastPort *rport;
   struct Task *clone_task;
+  GSList *list_win;
+  JanusWin       *win;
 
   service = m68k_dreg (&context->regs, 0);
 
@@ -308,16 +310,27 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
     /* the aros_daemon gets ready to serve */
     case AD_SETUP: {
       ULONG *param= (ULONG *) m68k_areg(&context->regs, 0);
+      ULONG want_to_die;
+      /* want_to_die:
+       *   0: ignore the value, do nothing, just fetch the prefs setting
+       *   1: daemon wants to quit
+       *   2: demon wants to run again
+       */
 
       JWLOG("::::::::::::::AD_SETUP::::::::::::::::::::::::\n");
       JWLOG("AD__MAXMEM: %d\n", m68k_dreg(&context->regs, 1));
       JWLOG("param:      %lx\n",m68k_areg(&context->regs, 0));
       JWLOG("Task:       %lx\n",get_long_p(param  ));
       JWLOG("Signal:     %lx\n",get_long_p(param+4));
-      JWLOG("Stop:       %d\n",get_long_p(param+8));
+      JWLOG("Stop:       %d\n", get_long_p(param+8));
 
       if(!init_done) {
 	JWLOG("AD_SETUP called first time => InitSemaphore etc\n");
+
+	/* from now on (aos3_task && aos3_task_signal) the
+	 * aos3 aros-daemon is ready to take orders!
+	 */
+
 	aos3_task=get_long_p(param);
 	aos3_task_signal=get_long_p(param+4);
 
@@ -329,26 +342,38 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
 	init_done=TRUE;
       }
 
-      /* from now on (aos3_task && aos3_task_signal) the
-       * aos3 aros-daemon is ready to take orders!
-       */
+      want_to_die=get_long_p(param+8);
+      JWLOG("want_to_die:%d\n",want_to_die);
 
-      /* setup clone window task */
-#if 0
-      clone_task = (struct Task *)
-	    myCreateNewProcTags ( NP_Output, Output (),
-				  NP_Input, Input (),
-				  NP_Name, (ULONG) "Janus Clone Task",
-				  NP_CloseOutput, FALSE,
-				  NP_CloseInput, FALSE,
-				  NP_StackSize, 4096,
-				  NP_Priority, 0,
-				  NP_Entry, (ULONG) o1i_clone_windows_task,
-				  TAG_DONE);
-#endif
+      if(want_to_die == 1) {
+	JWLOG("jdaemon tells us, he wants to die (received a SIG-C)\n");
+	changed_prefs.jcoherence=FALSE;
+	/* send CTRL-C to all tasks of the windows here!! */
+	ObtainSemaphore(&sem_janus_window_list);
+	list_win=janus_windows;
+	while(list_win) {
+	  win=(JanusWin *) list_win->data;
+	  JWLOG("send CLTR_C to task %lx\n",win->task);
+	  if(win->task) {
+	    Signal(win->task, SIGBREAKF_CTRL_C);
+	  }
+	  list_win=g_slist_next(list_win);
+	}
+	ReleaseSemaphore(&sem_janus_window_list);
+
+	/* update gui !! */
+      }
+
+      if(want_to_die == 2) {
+	JWLOG("jdaemon tells us, he wants to live again (received a SIG-D)\n");
+	changed_prefs.jcoherence=TRUE;
+	/* update gui !! */
+      }
 
 
-      return TRUE;
+      JWLOG("return %d\n", changed_prefs.jcoherence);
+      put_long_p(param+8, changed_prefs.jcoherence);
+      return changed_prefs.jcoherence;
       break;
     };
 
@@ -358,6 +383,8 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
        * aos3 aros-daemon is not ready any more to take orders!
        *
        * TODO: There might be race conditons here ? 
+       *
+       * not used ATM?
        */
 
       aos3_task=0;
