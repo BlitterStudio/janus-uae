@@ -655,7 +655,7 @@ EXIT:
   if(list_win) {
     if(list_win->data) {
       name_mem=((JanusWin *)list_win->data)->name;
-      /* is freed with th pool:
+      /* is freed with the pool:
        * JWLOG("aros_win_thread[%lx]: FreeVec list_win->data \n",thread);
        * FreeVecPooled((JanusWin *)list_win->mempool, list_win->data); 
        */
