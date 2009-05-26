@@ -282,6 +282,8 @@ ULONG get_long_p(ULONG *p) {
   return (ULONG) get_long((uaecptr) p);
 }
 
+void unlock_jgui(void);
+
 /**********************************************************
  * this stuff gets called from the aros_daemon after he
  * received a signal
@@ -297,8 +299,6 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
   struct BitMap *aos_bm;
   struct RastPort *rport;
   struct Task *clone_task;
-  GSList *list_win;
-  JanusWin       *win;
 
   service = m68k_dreg (&context->regs, 0);
 
@@ -340,6 +340,9 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
 	InitSemaphore(&janus_messages_access);
 	InitSemaphore(&sem_janus_active_win);
 	init_done=TRUE;
+
+	unlock_jgui();
+
       }
 
       want_to_die=get_long_p(param+8);
@@ -348,18 +351,7 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
       if(want_to_die == 1) {
 	JWLOG("jdaemon tells us, he wants to die (received a SIG-C)\n");
 	changed_prefs.jcoherence=FALSE;
-	/* send CTRL-C to all tasks of the windows here!! */
-	ObtainSemaphore(&sem_janus_window_list);
-	list_win=janus_windows;
-	while(list_win) {
-	  win=(JanusWin *) list_win->data;
-	  JWLOG("send CLTR_C to task %lx\n",win->task);
-	  if(win->task) {
-	    Signal(win->task, SIGBREAKF_CTRL_C);
-	  }
-	  list_win=g_slist_next(list_win);
-	}
-	ReleaseSemaphore(&sem_janus_window_list);
+	close_all_janus_windows();
 
 	/* update gui !! */
       }
