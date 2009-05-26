@@ -2069,42 +2069,19 @@ static void make_integration_widgets (GtkWidget *vbox) {
   gtk_signal_connect (GTK_OBJECT (jint_panel), "coherent-changed",
 		      GTK_SIGNAL_FUNC (on_coherent_changed),
      		      NULL);
-#if 0
-  gtk_signal_connect (GTK_OBJECT (jdisp_panel), "window-changed",
-		      GTK_SIGNAL_FUNC (on_window_changed),
-     		      NULL);
-  gtk_signal_connect (GTK_OBJECT (jdisp_panel), "chipset-changed",
-		      GTK_SIGNAL_FUNC (on_chipset_changed),
-     		      NULL);
-  gtk_signal_connect (GTK_OBJECT (jdisp_panel), "linemode-changed",
-		      GTK_SIGNAL_FUNC (on_linemode_changed),
-     		      NULL);
-  gtk_signal_connect (GTK_OBJECT (jdisp_panel), "settings-changed",
-		      GTK_SIGNAL_FUNC (on_settings_changed),
-     		      NULL);
-  gtk_signal_connect (GTK_OBJECT (jdisp_panel), "centering-changed",
-		      GTK_SIGNAL_FUNC (on_centering_changed),
-     		      NULL);
 
-
-  /* our child, the chipsetspeed_panel */
-  gtk_signal_connect (GTK_OBJECT (chipsetspeed_panel), "framerate-changed",
-		      GTK_SIGNAL_FUNC (on_framerate_changed),
-     		      NULL);
-  gtk_signal_connect (GTK_OBJECT (chipsetspeed_panel), 
-                        "sprite-collisisons-changed",
-		      GTK_SIGNAL_FUNC (on_collision_level_changed),
-     		      NULL);
-  gtk_signal_connect (GTK_OBJECT (chipsetspeed_panel), 
-                        "immediate-blits-changed",
-		      GTK_SIGNAL_FUNC (on_immediate_blits_changed),
-     		      NULL);
-#endif
-
-
+  /* it gets unlocked, as soon as the daemons start */
+  g_signal_emit_by_name(jint_panel,"lock-it",NULL);
   gtk_widget_show_all(jint_panel);
 
   gtk_container_add (GTK_CONTAINER (vbox), jint_panel);
+}
+
+/* this is called from j-dispatch 
+ * otherwise j-dispatch would need all gtk/glib includes
+ */
+void unlock_jgui() {
+    g_signal_emit_by_name(jint_panel,"unlock-it",NULL);
 }
 
 static void create_guidlg (void)
