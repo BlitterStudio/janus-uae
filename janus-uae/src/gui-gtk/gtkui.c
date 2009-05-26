@@ -12,6 +12,9 @@
  * binaries compiled against glibc
  *
  * So let's try this...
+ *
+ * $Id$
+ *
  */
 
 #include "sysconfig.h"
@@ -47,7 +50,7 @@
 #include "gui-gtk/display.h"
 #include "gui-gtk/integration.h"
 
-//#define GUI_DEBUG 1
+#define GUI_DEBUG 1
 #ifdef  GUI_DEBUG
 #define DEBUG_LOG(...) do { kprintf("GUI: %s(): ",__func__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -1235,6 +1238,28 @@ static void on_immediate_blits_changed (void)
     DEBUG_LOG("immediate_blits = %d\n", changed_prefs.immediate_blits);
 }
 
+extern ULONG aos3_task;
+void uae_Signal (uaecptr task, uae_u32 mask);
+
+static void on_coherent_changed (void)
+{
+    if(changed_prefs.jcoherence == JINTEGRATION (jint_panel)->coherence) {
+      DEBUG_LOG("jcoherence: nothing to do\n");
+      return;
+    }
+
+    DEBUG_LOG("old coherence = %d\n", changed_prefs.jcoherence);
+    changed_prefs.jcoherence = JINTEGRATION (jint_panel)->coherence;
+    DEBUG_LOG("new coherence = %d\n", changed_prefs.jcoherence);
+    if(aos3_task && !changed_prefs.jcoherence) {
+      DEBUG_LOG("call close_all_janus_windows\n");
+      close_all_janus_windows();
+    }
+
+    /* if changed to coherence, windows are opened automatically */
+}
+
+
 static void make_sound_widgets (GtkWidget *vbox)
 {
     GtkWidget *frame, *newbox;
@@ -2037,10 +2062,11 @@ static void make_display_widgets (GtkWidget *vbox) {
 static void make_integration_widgets (GtkWidget *vbox) {
 
   jint_panel=jintegration_new();
-#if 0
-  gtk_signal_connect (GTK_OBJECT (jdisp_panel), "screen-changed",
-		      GTK_SIGNAL_FUNC (on_screen_changed),
+
+  gtk_signal_connect (GTK_OBJECT (jint_panel), "coherent-changed",
+		      GTK_SIGNAL_FUNC (on_coherent_changed),
      		      NULL);
+#if 0
   gtk_signal_connect (GTK_OBJECT (jdisp_panel), "window-changed",
 		      GTK_SIGNAL_FUNC (on_window_changed),
      		      NULL);
