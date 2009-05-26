@@ -17,11 +17,6 @@
 #include "util.h"
 
 
-#if defined GTKMUI
-//#define MGTK_DEBUG 1
-#include "/home/oli/aros/gtk-mui/debug.h"
-#endif
-
 static void cputypepanel_init (CpuTypePanel *pathent);
 static void cputypepanel_class_init (CpuTypePanelClass *class);
 static void update_state (CpuTypePanel *ctpanel);

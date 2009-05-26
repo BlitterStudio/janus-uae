@@ -393,41 +393,19 @@ static void clipboard_changed(GtkWidget *me, jIntegration *j) {
 }
 
 static void coherence_changed(GtkWidget *me, jIntegration *j) {
-#if 0
-  ULONG i;
 
-  //printf("chipset_changed 1: j->chipset_mask=%d\n",j->chipset_mask);
+  kprintf("coherent-changed: j->coherence=%d\n",j->coherence);
 
-  i=0;
-  while(j->chipset_widget[i] && me!=j->chipset_widget[i]) {
-    i++;
+  if(j->coherence_widget[0] == me) {
+    /* classic */
+    j->coherence=FALSE;
+  }
+  else {
+    /* rootless */
+    j->coherence=TRUE;
   }
 
-  switch(i) {
-    case 0:
-      j->chipset_mask=0; /* OCS */
-      break;
-    case 1:
-      j->chipset_mask=CSMASK_ECS_AGNUS; 
-      break;
-    case 2:
-      j->chipset_mask=CSMASK_ECS_DENISE; 
-      break;
-    case 3:
-      j->chipset_mask=CSMASK_ECS_DENISE | CSMASK_ECS_AGNUS; 
-      break;
-    case 4:
-      j->chipset_mask=CSMASK_AGA | CSMASK_ECS_DENISE | CSMASK_ECS_AGNUS;
-      break;
-    default:
-      /* ERROR! */
-      printf("chipset_changed: unknown status %d !?\n",i);
-      return;
-  }
-  //printf("chipset_changed 2: j->chipset_mask=%d\n",j->chipset_mask);
-
-  g_signal_emit_by_name(j,"chipset-changed",j);
-#endif
+  g_signal_emit_by_name(j,"coherent-changed",j);
 }
 
 

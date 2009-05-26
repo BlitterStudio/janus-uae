@@ -1,9 +1,28 @@
-/*
+/************************************************************************ 
+ *
  * util.c
  *
  * Copyright 2003-2004 Richard Drummond
- */
-
+ * Copyright 2009      Oliver Brunner - aros<at>oliver-brunner.de
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-Daemon is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-Daemon is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * $Id$
+ *
+ ************************************************************************/
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -15,6 +34,9 @@
 #include "util.h"
 #include "chooserwidget.h"
 
+#ifdef __AROS__
+#define GTKMUI
+#endif
 /*
  * Some utility functions to make building a GTK+ GUI easier
  * and more compact, to hide differences between GTK1.x and GTK2.x
