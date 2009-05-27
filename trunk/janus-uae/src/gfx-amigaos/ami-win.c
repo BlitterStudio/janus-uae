@@ -1798,8 +1798,22 @@ int graphics_init (void)
 
 void graphics_leave (void)
 {
+  int i;
     AWTRACE("graphics_leave\n");
-    /* TODO: close clone windows */
+    /* stop cloning and close all clone windows */
+    changed_prefs.jcoherence=FALSE;
+    close_all_janus_windows();
+    i=0;
+    /* wait till list is empty (all windows are closed) */
+    while(janus_windows && i<5) {
+      i++;
+      AWTRACE("wait for windows to be closed (#%d)\n",i);
+      sleep(1);
+    }
+    if(janus_windows) {
+      write_log ("Janus: not all janus_windows could be closed\n");
+    }
+    
     closepseudodevices ();
     appw_exit ();
 
