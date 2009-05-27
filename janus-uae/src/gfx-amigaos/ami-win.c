@@ -21,6 +21,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
  *
+ * $Id$
+ *
  ************************************************************************/
 
 #include <gtk/gtk.h>
@@ -29,7 +31,6 @@
 
 #include "td-amigaos/thread.h"
 
-#include "od-amiga/j.h"
 
 /* sam: Argg!! Why did phase5 change the path to cybergraphics ? */
 //#define CGX_CGX_H <cybergraphics/cybergraphics.h>
@@ -49,17 +50,18 @@
 # endif
 #endif
 
-#define AWTRACING_ENABLED 0
+#define AWTRACING_ENABLED 1
 #if AWTRACING_ENABLED
-#define AWTRACE(...)	do { kprintf("AW: ");kprintf(__VA_ARGS__); } while(0)
+#define AWTRACE(...)	do { kprintf("AW %s: ",__func__);kprintf(__VA_ARGS__); } while(0)
 #else
-#define AWTRACE(...)     do { ; } while(0)
+#define AWTRACE(...)    do { ; } while(0)
 #endif
 
 #ifdef __AROS__
 #define GTKMUI
 #endif
 //#define DEBUG
+
 
 /****************************************************************************/
 
@@ -119,7 +121,6 @@
 #include "custom.h"
 #include "xwin.h"
 #include "drawing.h"
-#include "inputdevice.h"
 #include "keyboard.h"
 #include "keybuf.h"
 #include "gui.h"
@@ -130,6 +131,8 @@
 #define BitMap Picasso96BitMap  /* Argh! */
 #include "picasso96.h"
 #undef BitMap
+
+#include "od-amiga/j.h"
 
 /* uae includes are a mess..*/
 void uae_Signal(uaecptr task, uae_u32 mask);
@@ -1852,12 +1855,13 @@ void graphics_leave (void)
 	CloseLibrary( (void*) AslBase);
 	AslBase = NULL;
     }
+
+#if !defined GTKMUI
     if (GadToolsBase) {
 	CloseLibrary( (void*) GadToolsBase);
 	GadToolsBase = NULL;
     }
 
-#if !defined GTKMUI
     if (GfxBase) {
 	CloseLibrary ((void*)GfxBase);
 	GfxBase = NULL;
@@ -2476,7 +2480,7 @@ void handle_events(void) {
 			    show_pointer (W);
 		    }
 		}
-		break;
+      	      break;
 
 	    case IDCMP_MOUSEBUTTONS:
 		if (code == SELECTDOWN) setmousebuttonstate (0, 0, 1);
@@ -2485,7 +2489,7 @@ void handle_events(void) {
 		if (code == MIDDLEUP)   setmousebuttonstate (0, 2, 0);
 		if (code == MENUDOWN)   setmousebuttonstate (0, 1, 1);
 		if (code == MENUUP)     setmousebuttonstate (0, 1, 0);
-		break;
+      	      break;
 
 	    /* Those 2 could be of some use later. */
 	    case IDCMP_DISKINSERTED:
