@@ -204,166 +204,66 @@ static void jintegration_destroy(GtkObject *object) {
  * it is called through the signal "read-prefs"
  ***********************************************/
 static void read_prefs (jIntegration *j) {
-#if 0
-  gchar  *t;
-  GList *r;
-  ULONG   i;
 
-  /* OCS, ECS, AGA */
-  /* even if ocs is choosen in uaerc, it might end up as ECS Agnus, if
-   * too much chip ram for ocs is selected.
-   */
-
-  /* These are the masks that are ORed together in the chipset_mask option.
-   * If CSMASK_AGA is set, the ECS bits are guaranteed to be set as well.  
-   * #define CSMASK_ECS_AGNUS 1
-   * #define CSMASK_ECS_DENISE 2
-   * #define CSMASK_AGA 4
-   */
-
-  if(currprefs.chipset_mask==0) {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->chipset_widget[0]),TRUE);
-  }
-  else if(currprefs.chipset_mask == CSMASK_ECS_AGNUS) {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->chipset_widget[1]),TRUE);
-  }
-  else if(currprefs.chipset_mask == CSMASK_ECS_DENISE) {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->chipset_widget[2]),TRUE);
-  }
-  else if(currprefs.chipset_mask == (CSMASK_ECS_DENISE | CSMASK_ECS_AGNUS)) {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->chipset_widget[3]),TRUE);
-  }
-  else if(currprefs.chipset_mask == (CSMASK_AGA | 
-                                     CSMASK_ECS_DENISE | 
-				     CSMASK_ECS_AGNUS)) {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->chipset_widget[4]),TRUE);
+  if(currprefs.jcoherence) {
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->coherence_widget[1]),TRUE);
   }
   else {
-    /* ERROR! */
-    printf("read-prefs: unknown chipset %d !?\n",currprefs.chipset_mask);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->coherence_widget[0]),TRUE);
   }
-  j->chipset_mask=currprefs.chipset_mask;
 
-  /* PAL/NTSC */
-  if(currprefs.ntscmode ==TRUE) {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->pal_ntsc_widget[1]),TRUE);
+  if(currprefs.jclipboard) {
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->clipboard_widget[1]),TRUE);
   }
   else {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->pal_ntsc_widget[0]),TRUE);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->clipboard_widget[0]),TRUE);
   }
-  j->ntscmode=currprefs.ntscmode;
 
-  /* centering */
-  if(!currprefs.gfx_xcenter && !currprefs.gfx_ycenter) {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->centering_widget[0]),
-                                 TRUE);
-  }
-  else if(currprefs.gfx_xcenter && !currprefs.gfx_ycenter) {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->centering_widget[1]),
-                                 TRUE);
-  }
-  else if(!currprefs.gfx_xcenter && currprefs.gfx_ycenter) {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->centering_widget[2]),
-                                 TRUE);
-  }
-  else {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->centering_widget[3]),
-                                 TRUE);
-  }
-  j->gfx_xcenter=currprefs.gfx_xcenter;
-  j->gfx_ycenter=currprefs.gfx_ycenter;
-
-  /* line mode */
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(
-                                  j->linemode_widget[currprefs.gfx_linedbl]),
-			       TRUE);
-  j->gfx_linedbl=currprefs.gfx_linedbl;
-
-  /* settings */
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->settings_correctaspect), 
-                               currprefs.gfx_correct_aspect);
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->settings_lores), 
-                               currprefs.gfx_lores);
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->settings_fullscreen), 
-                               currprefs.gfx_afullscreen);
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->settings_fullscreen_rtg), 
-                               currprefs.gfx_pfullscreen);
-  j->gfx_correct_aspect  =currprefs.gfx_correct_aspect;
-  j->gfx_lores           =currprefs.gfx_lores;
-  j->gfx_fullscreen_p96  =currprefs.gfx_pfullscreen;
-  j->gfx_fullscreen_amiga=currprefs.gfx_afullscreen;
-
-  /* sprite collisions etc. */
-  chipsetspeedpanel_set_framerate      (CHIPSETSPEEDPANEL (chipsetspeed_panel),
-                                        currprefs.gfx_framerate);
-  chipsetspeedpanel_set_collision_level(CHIPSETSPEEDPANEL (chipsetspeed_panel),
-                                        currprefs.collision_level);
-  chipsetspeedpanel_set_immediate_blits(CHIPSETSPEEDPANEL (chipsetspeed_panel), 
-                                        currprefs.immediate_blits);
-
-  /* window width/height */
-  t=g_strdup_printf("%d",currprefs.gfx_width_win);
-  gtk_entry_set_text(GTK_ENTRY(j->screen_width), t);
-  g_free(t);
-  t=g_strdup_printf("%d",currprefs.gfx_height_win);
-  gtk_entry_set_text(GTK_ENTRY(j->screen_height), t);
-  g_free(t);
-
-  /* screen resolution
-   *  this is just a string compare, not nice, I know ;)
-   */
-  t=g_strdup_printf("%d x %d",currprefs.gfx_width_fs,currprefs.gfx_height_fs);
-  r=j->res_items;
-  i=0;
-  while(r && strcmp(t, r->data)) {
-    i++;
-    r=g_list_next(r);
-  }
-  //printf("read_prefs: j->chipset_mask %d\n",j->chipset_mask);
-  g_free(t);
-  gtk_list_select_item (GTK_LIST (GTK_COMBO (j->screen_resolutions)->list), i);
-
-#endif
 }
 
+extern ULONG aos3_task;
+extern ULONG aos3_clip_task;
+
+/* only unlock, if clipd/janusd are running 
+ * this is much too complex coded, but I don't care here
+ */
 static void change_lock (jIntegration *j, gboolean status) {
-#if 0
   int i;
+  gboolean jdrunning;
+  gboolean cdrunning;
 
-  gtk_widget_set_sensitive(j->screen_resolutions, status);
-  gtk_widget_set_sensitive(j->screen_width, status);
-  gtk_widget_set_sensitive(j->screen_height, status);
-  gtk_widget_set_sensitive(j->settings_correctaspect, status);
-  gtk_widget_set_sensitive(j->settings_lores, status);
-  gtk_widget_set_sensitive(j->settings_fullscreen, status);
-#if ENABLE_FULL_RTG_SETTINGS
-  gtk_widget_set_sensitive(j->settings_fullscreen_rtg, status);
-#endif
-  gtk_widget_set_sensitive(j->emuspeed, status);
+  if(aos3_task) {
+    jdrunning=TRUE;
+  }
+  else {
+    jdrunning=FALSE;
+  }
+
+  if(aos3_clip_task) {
+    cdrunning=TRUE;
+  }
+  else {
+    cdrunning=FALSE;
+  }
 
   i=0;
-  while(j->linemode_widget[i]) {
-    gtk_widget_set_sensitive(j->linemode_widget[i++], status);
-  }
-#if ENABLE_CENTERING
-  i=0;
-  while(j->centering_widget[i]) {
-    gtk_widget_set_sensitive(j->centering_widget[i++], status);
-  }
-#endif
-  i=0;
-  while(j->centering_widget[i]) {
-    gtk_widget_set_sensitive(j->centering_widget[i++], status);
+  while(j->coherence_widget[i]) {
+    if(jdrunning) {
+      gtk_widget_set_sensitive(j->coherence_widget[i++], status);
+    }
+    else {
+      gtk_widget_set_sensitive(j->coherence_widget[i++], FALSE);
+    }
   }
   i=0;
-  while(j->chipset_widget[i]) {
-    gtk_widget_set_sensitive(j->chipset_widget[i++], status);
+  while(j->clipboard_widget[i]) {
+    if(cdrunning) {
+      gtk_widget_set_sensitive(j->clipboard_widget[i++], status);
+    }
+    else {
+      gtk_widget_set_sensitive(j->clipboard_widget[i++], FALSE);
+    }
   }
-  i=0;
-  while(j->pal_ntsc_widget[i]) {
-    gtk_widget_set_sensitive(j->pal_ntsc_widget[i++], status);
-  }
-#endif
 }
 
 
@@ -393,8 +293,6 @@ static void clipboard_changed(GtkWidget *me, jIntegration *j) {
 }
 
 static void coherence_changed(GtkWidget *me, jIntegration *j) {
-
-  kprintf("coherent-changed: j->coherence=%d\n",j->coherence);
 
   if(j->coherence_widget[0] == me) {
     /* classic */
