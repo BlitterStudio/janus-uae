@@ -30,26 +30,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <devices/clipboard.h>
 #include <exec/devices.h>
 #include <exec/interrupts.h>
 #include <exec/nodes.h>
 #include <exec/io.h>
 #include <exec/memory.h>
+
+#if 0
 #include <proto/intuition.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/preferences.h>
-#include <devices/input.h>
-#include <devices/inputevent.h>
-#include <devices/timer.h>
 #include <hardware/intbits.h>
+#endif
 
 #include <clib/alib_protos.h>
 #include <clib/dos_protos.h>
 #include <clib/exec_protos.h>
+#if 0
 #include <clib/timer_protos.h>
 
 #include <proto/dos.h>
 #include <proto/timer.h>
+#endif
 
 #include "janus-daemon.h"
 #include "clip-daemon.h"
@@ -57,9 +60,14 @@
 char verstag[] = "\0$VER: clip-daemon 0.4";
 LONG          *cmdbuffer=NULL;
 
+BYTE         clip_signal_bit;
 BYTE         mysignal_bit;
+ULONG        clipsignal;
 ULONG        mysignal;
 struct Task *mytask = NULL;
+
+struct Hook ClipHook;
+struct ClipHookMsg ClipHookMsg = {0, CMD_UPDATE, 0};
 
 /*
  * d0 is the function to be called (AD_*)
@@ -72,11 +80,32 @@ ULONG (*calltrap)(ULONG __asm("d0"),
 		  APTR  __asm("a0")) = (APTR) AROSTRAPBASE;
 
 BOOL open_libs() {
+#if 0
    if (!(IntuitionBase=(struct IntuitionBase *) OpenLibrary("intuition.library",39))) {
      printf("unable to open intuition.library\n");
      return FALSE;
    }
+#endif
    return TRUE;
+}
+
+/****************************************************
+ * open clipboard unit 
+ ****************************************************/
+static struct IOClipReq *open_device(ULONG unit) {
+  struct MsgPort *mp;
+  struct IORequest *ior;
+
+  if (( mp = CreatePort(0L, 0L) )) {
+    if (( ior=(struct IORequest *) CreateExtIO(mp,sizeof(struct IOClipReq)) )) {
+        if (!(OpenDevice("clipboard.device", unit, ior, 0L))) {
+            return((struct IOClipReq *) ior);
+	}
+    DeleteExtIO(ior);
+    }
+  DeletePort(mp);
+  }
+  return(NULL);
 }
 
 /****************************************************
@@ -124,7 +153,7 @@ static void runme() {
   done=FALSE;
   init=FALSE;
   while(!done) {
-    newsignals=Wait(mysignal | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
+    newsignals=Wait(mysignal | clipsignal | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
     set=setup(mytask, mysignal, 0);
     if(set && (newsignals & mysignal)) {
       /* we are active */
@@ -203,12 +232,52 @@ static void runme() {
 
 }
 
+//REG(a0, struct NewWindow *newwin
+ULONG ClipChange (REG(a0, struct Hook *hook)) {
+
+  Signal(mytask, clipsignal);
+  return 0;
+}
+
 
 int main (int argc, char **argv) {
+  struct IOClipReq *ior;
 
   DebOut("started\n");
 
   if(!open_libs()) {
+    exit(1);
+  }
+
+  ior=open_device(0);
+  if(!ior) {
+    printf("ERROR: unable to init %s\n", CLIPDEV_NAME);
+    exit(1);
+  }
+
+  /* alloc clip change signal */
+  clip_signal_bit=AllocSignal(-1);
+  if(clip_signal_bit == -1) {
+    printf("no signal..!\n");
+    DebOut("no signal..!\n");
+    exit(1);
+  }
+  clipsignal=1L << clip_signal_bit;
+
+  /* init clipboard hook */
+  ClipHook.h_Entry = &ClipChange;
+  //ClipHook.h_SubEntry = (ULONG (*)()) __builtin_getreg (REG_A4);
+  ClipHook.h_SubEntry = NULL;
+  ClipHook.h_Data = &ClipHookMsg;
+
+  /* install clipboard changed hook */
+  ior->io_Command=CBD_CHANGEHOOK;
+  ior->io_Length =1;
+  ior->io_Data   =(APTR) &ClipHook;
+
+  if (DoIO ((struct IORequest *) ior)) {
+    printf(": Can't install clipboard hook\n");
+    /* TODO! */
     exit(1);
   }
 
