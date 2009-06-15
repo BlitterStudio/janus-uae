@@ -284,9 +284,119 @@ ULONG get_long_p(ULONG *p) {
 
 void unlock_jgui(void);
 
+/*********************************
+ * setup janusd
+ *********************************/
+uae_u32 jd_setup(TrapContext *context, ULONG *param) {
+    ULONG want_to_die;
+    /* want_to_die:
+     *   0: ignore the value, do nothing, just fetch the prefs setting
+     *   1: daemon wants to quit
+     *   2: demon wants to run again
+     */
+
+    JWLOG("jd_setup(.., task %lx, .., stop %d)\n",get_long_p(param),get_long_p(param+8));
+#if 0
+    JWLOG("::::::::::::::AD_SETUP::::::::::::::::::::::::\n");
+    JWLOG("AD__MAXMEM: %d\n", m68k_dreg(&context->regs, 1));
+    JWLOG("param:      %lx\n",m68k_areg(&context->regs, 0));
+    JWLOG("Task:       %lx\n",get_long_p(param  ));
+    JWLOG("Signal:     %lx\n",get_long_p(param+4));
+    JWLOG("Stop:       %d\n", get_long_p(param+8));
+#endif
+
+    if(!init_done) {
+      JWLOG("AD_SETUP called first time => InitSemaphore etc\n");
+
+      /* from now on (aos3_task && aos3_task_signal) the
+       * aos3 aros-daemon is ready to take orders!
+       */
+
+      aos3_task=get_long_p(param);
+      aos3_task_signal=get_long_p(param+4);
+
+      InitSemaphore(&sem_janus_window_list);
+      InitSemaphore(&sem_janus_screen_list);
+      InitSemaphore(&aos3_thread_start);
+      InitSemaphore(&janus_messages_access);
+      InitSemaphore(&sem_janus_active_win);
+      init_done=TRUE;
+
+      unlock_jgui();
+
+    }
+
+    want_to_die=get_long_p(param+8);
+
+    if(want_to_die == 1) {
+      JWLOG("jdaemon tells us, he wants to die (received a SIG-C)\n");
+      changed_prefs.jcoherence=FALSE;
+      close_all_janus_windows();
+
+      /* update gui !! */
+    }
+
+    if(want_to_die == 2) {
+      JWLOG("jdaemon tells us, he wants to live again (received a SIG-D)\n");
+      changed_prefs.jcoherence=TRUE;
+      /* update gui !! */
+    }
+
+    JWLOG("return %d\n", changed_prefs.jcoherence);
+    put_long_p(param+8, changed_prefs.jcoherence);
+    return changed_prefs.jcoherence;
+}
+
+/*********************************
+ * setup clipd
+ *********************************/
+uae_u32 cd_setup(TrapContext *context, ULONG *param) {
+    ULONG want_to_die;
+    /* want_to_die:
+     *   0: ignore the value, do nothing, just fetch the prefs setting
+     *   1: daemon wants to quit
+     *   2: demon wants to run again
+     */
+
+    JWLOG("cd_setup(.., task %lx, .., stop %d)\n",get_long_p(param),get_long_p(param+8));
+
+    if(!aos3_clip_task) {
+      JWLOG("AD_CLIP_SETUP called first time => Init..\n");
+
+      /* from now on (aos3_clip_task && aos3_clip_signal) the
+       * aos3 clipd is ready to take orders!
+       */
+
+      aos3_clip_task=get_long_p(param);
+      aos3_clip_signal=get_long_p(param+4);
+
+      unlock_jgui();
+    }
+
+    want_to_die=get_long_p(param+8);
+    JWLOG("want_to_die:%d\n",want_to_die);
+
+    if(want_to_die == 1) {
+      JWLOG("clipd tells us, he wants to die (received a SIG-C)\n");
+      changed_prefs.jclipboard=FALSE;
+
+      /* update gui !! */
+    }
+
+    if(want_to_die == 2) {
+      JWLOG("clipd tells us, he wants to live again (received a SIG-D)\n");
+      changed_prefs.jclipboard=TRUE;
+      /* update gui !! */
+    }
+
+
+    JWLOG("return %d\n", changed_prefs.jclipboard);
+    put_long_p(param+8, changed_prefs.jclipboard);
+    return changed_prefs.jclipboard;
+}
+
 /**********************************************************
- * this stuff gets called from the aros_daemon after he
- * received a signal
+ * this stuff gets called from janusd/clipd 
  **********************************************************/
 uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
 
@@ -307,82 +417,36 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
   //t=get_long(m68k_dreg (&context->regs, 1));
   
   switch(service) {
-    /* the aros_daemon gets ready to serve */
+
     case AD_SETUP: {
+      /* the janusd gets ready to serve */
       ULONG *param= (ULONG *) m68k_areg(&context->regs, 0);
-      ULONG want_to_die;
-      /* want_to_die:
-       *   0: ignore the value, do nothing, just fetch the prefs setting
-       *   1: daemon wants to quit
-       *   2: demon wants to run again
-       */
 
-      JWLOG("::::::::::::::AD_SETUP::::::::::::::::::::::::\n");
-      JWLOG("AD__MAXMEM: %d\n", m68k_dreg(&context->regs, 1));
-      JWLOG("param:      %lx\n",m68k_areg(&context->regs, 0));
-      JWLOG("Task:       %lx\n",get_long_p(param  ));
-      JWLOG("Signal:     %lx\n",get_long_p(param+4));
-      JWLOG("Stop:       %d\n", get_long_p(param+8));
+      return jd_setup(context, param);
+    };
 
-      if(!init_done) {
-	JWLOG("AD_SETUP called first time => InitSemaphore etc\n");
+    case AD_CLIP_SETUP: {
+      /* the clipd gets ready to serve */
+      ULONG *param= (ULONG *) m68k_areg(&context->regs, 0);
 
-	/* from now on (aos3_task && aos3_task_signal) the
-	 * aos3 aros-daemon is ready to take orders!
-	 */
-
-	aos3_task=get_long_p(param);
-	aos3_task_signal=get_long_p(param+4);
-
-	InitSemaphore(&sem_janus_window_list);
-	InitSemaphore(&sem_janus_screen_list);
-	InitSemaphore(&aos3_thread_start);
-	InitSemaphore(&janus_messages_access);
-	InitSemaphore(&sem_janus_active_win);
-	init_done=TRUE;
-
-	unlock_jgui();
-
-      }
-
-      want_to_die=get_long_p(param+8);
-      JWLOG("want_to_die:%d\n",want_to_die);
-
-      if(want_to_die == 1) {
-	JWLOG("jdaemon tells us, he wants to die (received a SIG-C)\n");
-	changed_prefs.jcoherence=FALSE;
-	close_all_janus_windows();
-
-	/* update gui !! */
-      }
-
-      if(want_to_die == 2) {
-	JWLOG("jdaemon tells us, he wants to live again (received a SIG-D)\n");
-	changed_prefs.jcoherence=TRUE;
-	/* update gui !! */
-      }
-
-
-      JWLOG("return %d\n", changed_prefs.jcoherence);
-      put_long_p(param+8, changed_prefs.jcoherence);
-      return changed_prefs.jcoherence;
-      break;
+      return cd_setup(context, param);
     };
 
     case AD_SHUTDOWN: {
 
-      /* from now on (!aos3_task && !aos3_task_signal) the
-       * aos3 aros-daemon is not ready any more to take orders!
-       *
-       * TODO: There might be race conditons here ? 
-       *
-       * not used ATM?
+      /* there is *no* way, to stop a daemon, as they
+       * patch the aos3 system and those patches are *not safe*
+       * to remove
        */
+      printf("ERROR: DO NOT USE AD_SHUTDOWN!!\n");
+      JWLOG ("ERROR: DO NOT USE AD_SHUTDOWN!!\n");
 
+/*
       aos3_task=0;
       aos3_task_signal=0;
+*/
 
-      return TRUE;
+      return FALSE;
       break;
     };
 
