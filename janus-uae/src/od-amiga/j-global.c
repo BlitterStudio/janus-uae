@@ -29,9 +29,21 @@
 #include "j.h"
 #include "threaddep/thread.h"
 
-/* we need that, to wake up the aos3 high pri daemon */
+/* we need that, to wake up the aos3 janusd */
 ULONG aos3_task=0;
 ULONG aos3_task_signal=0;
+
+/* we need that, to wake up the aos3 clipd */
+ULONG aos3_clip_task=0;
+ULONG aos3_clip_signal=0;
+
+/* clipboard status */
+BOOL  clipboard_amiga_changed=FALSE;
+BOOL  clipboard_aros_changed=FALSE;
+
+ULONG clipboard_amiga_updated=get_long( param);
+ULONG clipboard_amiga_data=get_long(param + 4);
+ULONG clipboard_amiga_size=get_long(param + 8);
 
 /* access the JanusWin list */
 struct SignalSemaphore sem_janus_window_list;

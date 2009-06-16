@@ -229,6 +229,10 @@ static void to_iff_text (TCHAR *pctxt)
 }
 
 static int clipboard_put_text (const TCHAR *txt);
+
+/* get text content from amiga clipboard content pointer and hand it over to
+ * clipboard_put_text
+ */
 static void from_iff_text (uaecptr ftxt, uae_u32 len)
 {
     uae_u8 *addr = NULL, *eaddr;
@@ -711,6 +715,9 @@ static void from_iff_ilbm (uaecptr ilbm, uae_u32 len)
 }
 #endif
 
+/* decide, if to call from_iff_text or from_iff_ilbm
+ * after that, either content should be in the host clipboard
+ */
 static void from_iff (uaecptr data, uae_u32 len)
 {
     uae_u8 *addr;
@@ -731,6 +738,7 @@ static void from_iff (uaecptr data, uae_u32 len)
 }
 
 #if 0
+/* read windows clipboard and hand it over to amiga side*/
 static void clipboard_read (HWND hwnd)
 {
     HGLOBAL hglb;
@@ -977,3 +985,177 @@ void clipboard_init (HWND hwnd)
     hdc = GetDC (chwnd);
 }
 #endif
+
+/*** new stuff follows here ***/
+
+static void from_iff_text (uaecptr ftxt, uae_u32 len)
+{
+    uae_u8 *addr = NULL, *eaddr;
+    char *txt = NULL;
+    int txtsize = 0;
+
+#if 0
+    {
+	FILE *f = fopen("c:\\d\\clipboard_a2p.005.dat", "rb");
+	if (f) {
+	    addr = xmalloc (10000);
+	    len = fread (addr, 1, 10000, f);
+	    fclose (f);
+	}
+    }
+#else
+    addr = get_real_address (ftxt);
+#endif
+    eaddr = addr + len;
+    if (memcmp ("FTXT", addr + 8, 4))
+	return;
+    addr += 12;
+    while (addr < eaddr) {
+        uae_u32 csize = (addr[4] << 24) | (addr[5] << 16) | (addr[6] << 8) | (addr[7] << 0);
+	if (addr + 8 + csize > eaddr)
+	    break;
+	if (!memcmp (addr, "CHRS", 4) && csize) {
+	    int prevsize = txtsize;
+	    txtsize += csize;
+	    txt = realloc (txt, txtsize + 1);
+	    memcpy (txt + prevsize, addr + 8, csize);
+	    txt[txtsize] = 0;
+	}
+	addr += 8 + csize + (csize & 1);
+	if (csize >= 1 && addr[-2] == 0x0d && addr[-1] == 0x0a && addr[0] == 0)
+	    addr++;
+	else if (csize >= 1 && addr[-1] == 0x0d && addr[0] == 0x0a)
+	    addr++;
+    }
+    if (txt == NULL) {
+        clipboard_put_text (L"");
+    } else {
+	TCHAR *pctxt = amigatopc (txt);
+	clipboard_put_text (pctxt);
+	xfree (pctxt);
+    }
+    xfree (txt);
+}
+
+/*******************************************************
+ * amiga_clipboard_from_iff_text
+ *
+ * return a pointer to the text or NULL
+ * if(!NULL) the caller has to free the returned
+ * memory with free();
+ *******************************************************/
+static char *amiga_clipboard_from_iff_text (uaecptr ftxt, uae_u32 len) {
+
+    uae_u8 *addr = NULL, *eaddr;
+    char *txt = NULL;
+    int txtsize = 0;
+
+    addr = get_real_address (ftxt);
+
+    eaddr = addr + len;
+
+    addr += 12; /* skip header */
+
+    while (addr < eaddr) {
+      uae_u32 csize = (addr[4] << 24) | (addr[5] << 16) | (addr[6] << 8) | (addr[7] << 0);
+
+      if (addr + 8 + csize > eaddr) {
+	break;
+      }
+
+      if (!memcmp (addr, "CHRS", 4) && csize) {
+	  int prevsize = txtsize;
+	  txtsize += csize;
+	  txt = realloc (txt, txtsize + 1);
+	  memcpy (txt + prevsize, addr + 8, csize);
+	  txt[txtsize] = 0;
+      }
+
+      addr += 8 + csize + (csize & 1);
+
+      if (csize >= 1 && addr[-2] == 0x0d && addr[-1] == 0x0a && addr[0] == 0) {
+	  addr++;
+      }
+      else if (csize >= 1 && addr[-1] == 0x0d && addr[0] == 0x0a) {
+	  addr++;
+      }
+    }
+
+    if (txt == NULL) {
+      txt=malloc(1);
+      txt[0]=(char) NULL;
+    }
+
+    DebOut("return >%s<\n",txt);
+
+    /* amigatopc(txt) ?? */
+
+    return txt;
+}
+
+/*******************************************************
+ * amiga_clipboard_get_txt
+ *
+ * return a pointer to the text or NULL
+ * the caller has to free the memory with free.
+ *******************************************************/
+static char *amiga_clipboard_get_txt (uaecptr data, uae_u32 len) {
+
+  uae_u8 *addr;
+
+  if (len < 18) {
+    return NULL;
+  }
+
+  if (!valid_address (data, len)) {
+    return NULL;
+  }
+
+  addr = get_real_address (data);
+
+  if (memcmp ("FORM", addr, 4)) {
+    return NULL;
+  }
+
+  if (!memcmp ("FTXT", addr + 8, 4)) {
+      return amiga_clipboard_from_iff_text (data, len);
+  }
+
+  return NULL;
+      /*
+  if (!memcmp ("ILBM", addr + 8, 4))
+      from_iff_ilbm (data, len);
+      */
+}
+
+
+/*******************************************************
+ * copy_clipboard_to_aros();
+ *******************************************************/
+void copy_clipboard_to_aros(void) {
+  char *content;
+
+  DebOut("entered\n");
+
+  if(!clipboard_amiga_changed) {
+    /* nothing to do for us */
+    DebOut("nothing to do\n");
+    return; 
+  }
+
+  /* TODO: get data and len .. */
+
+  /*amiga_clipboard_get_txt (uaecptr data, uae_u32 len); */
+  content=amiga_clipboard_get_txt(data, len);
+  if(content) {
+    DebOut("Put text >%s< to the AROS clipboard\n", content);
+  }
+
+  /* TODO: now care for pictures ..*/
+
+  /* we are in sync now */
+  clipboard_aros_changed =FALSE;
+  clipboard_amiga_changed=FALSE;
+}
+
+
