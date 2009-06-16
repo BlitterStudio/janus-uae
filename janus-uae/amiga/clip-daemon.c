@@ -69,6 +69,9 @@ struct Task *mytask = NULL;
 struct Hook ClipHook;
 struct ClipHookMsg ClipHookMsg = {0, CMD_UPDATE, 0};
 
+
+struct IOClipReq *ior;
+
 /*
  * d0 is the function to be called (AD_*)
  * d1 is the size of the memory supplied by a0
@@ -141,12 +144,64 @@ int setup(struct Task *task, ULONG signal, ULONG stop) {
   return state;
 }
 
+/**************************************************************
+ * report_clip
+ *
+ * send amigaOS clipboard data pointer and clipboard size 
+ * to UAE
+ **************************************************************/
+static void report_clip(UBYTE *data, ULONG size) {
+  ULONG *command_mem;
+  ULONG  state;
+
+  DebOut("report_clip(%lx,%d)\n", data, size);
+
+  command_mem=AllocVec(AD__MAXMEM, MEMF_CLEAR);
+
+  command_mem[0]=(ULONG) TRUE;
+  command_mem[4]=(ULONG) data;
+  command_mem[8]=(ULONG) size;
+//#TODO continue here..
+
+ // state = calltrap (JD_CLIP_REPORT, AD__MAXMEM, command_mem);
+
+  FreeVec(command_mem);
+
+  return;
+}
+
+/**************************************************************
+ * amiga_changed
+ *
+ * tell UAE, that the content of the amigaOS clipboard changed.
+ * So if the UAE windows loose the focus, we can copy the
+ * amigaOS content to the AROS clipboard
+ *
+ **************************************************************/
+static ULONG amiga_changed() {
+  ULONG *command_mem;
+  ULONG  res;
+
+  command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
+
+  command_mem[0]=(ULONG) TRUE;
+  calltrap (JD_AMIGA_CHANGED, AD__MAXMEM, command_mem);
+
+  res=command_mem[0];
+
+  FreeVec(command_mem);
+
+  DebOut("clipboard setup done(): result %d\n",(int) res);
+
+  return res;
+}
+
 static void runme() {
   ULONG        newsignals;
-  ULONG       *command_mem;;
   BOOL         done;
   BOOL         init;
   BOOL         set;
+  UBYTE       *data;
 
   DebOut("clipd running (CTRL-C to go to normal mode, CTRL-D to shared mode)..\n");
 
@@ -154,6 +209,7 @@ static void runme() {
   init=FALSE;
   while(!done) {
     newsignals=Wait(mysignal | clipsignal | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
+
     set=setup(mytask, mysignal, 0);
     if(set && (newsignals & mysignal)) {
       /* we are active */
@@ -174,6 +230,26 @@ static void runme() {
 	DebOut("windows updated\n");
 #endif
       }
+      DebOut("signal fron UAE received\n");
+      /* we got a signal, that we need to care for clipboard exchange.
+       * So we ask, if JD_AMIGA_CHANGED or JD_AROS_CHANGED happened. ?
+       * For now, we assume JD_AMIGA_CHANGED
+       */
+      /* get length of data */
+
+      if(data) {
+	FreeVec(data);
+	data=NULL;
+      }
+
+      ior->io_Command = CMD_READ;
+      ior->io_Data    = NULL;
+      ior->io_Length  = 0xFFFFFFFF;
+      DoIO( (struct IORequest *) ior);
+      DebOut("clipboard size: %d\n", ior->io_Actual);
+
+      data=(UBYTE *) AllocVec(ior->io_Actual, MEMF_CLEAR); /* freed on next call */
+      report_clip(data, ior->io_Actual);
 
 #if 0
       sync_windows();
@@ -185,16 +261,18 @@ static void runme() {
 #endif
     }
 
+    if(set && (newsignals & clipsignal)) {
+      DebOut("=========> Clipboard changed <=========== \n");
+      /* TEST Signal(mytask, mysignal); */
+
+    }
+
     if((newsignals & SIGBREAKF_CTRL_C) ||
       (!set && (newsignals & mysignal))) {
       DebOut("!set || got SIGBREAKF_CTRL_C..\n");
       if(init) {
 	DebOut("tell uae, that we received a SIGBREAKF_CTRL_C\n");
 	init=FALSE;
-	/* cose all windows */
-      	command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
-	calltrap (AD_GET_JOB, AD_GET_JOB_LIST_WINDOWS, command_mem); /* this is a NOOP!!!*/
-	FreeVec(command_mem);
 	setup(mytask, mysignal, 1); /* we are tired */
       }
       else {
@@ -232,16 +310,21 @@ static void runme() {
 
 }
 
-//REG(a0, struct NewWindow *newwin
+/***************************************************
+ * ClipChange Hook signals the main loop, that the
+ * clipboard content changed
+ ***************************************************/
 ULONG ClipChange (REG(a0, struct Hook *hook)) {
 
+  DebOut("Signal(%lx,%d\n",mytask,clipsignal);
+
   Signal(mytask, clipsignal);
+
   return 0;
 }
 
 
 int main (int argc, char **argv) {
-  struct IOClipReq *ior;
 
   DebOut("started\n");
 
