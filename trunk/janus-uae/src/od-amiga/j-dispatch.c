@@ -489,7 +489,28 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
 	  JWLOG("ERROR!! aroshack_helper: unkown job: %d\n",m68k_dreg(&context->regs, 1));
 	  return FALSE;
       }
-    }
+      case AD_CLIP_JOB: {
+	ULONG job=m68k_dreg(&context->regs, 1);
+	LONG *m68k_results= m68k_areg(&context->regs, 0);
+	switch(job) {
+	  case JD_AMIGA_CHANGED:
+	    /* remember clipboard change in amigaOS */
+	    clipboard_amiga_changed=get_long_p(param);
+	    put_long((ULONG) (m68k_results), (ULONG) TRUE);
+	    return TRUE;
+	  case JD_CLIP_REPORT:
+	    /* get pointer and size of amigaOS clipboard */
+	    clipboard_amiga_updated=get_long( param);
+	    clipboard_amiga_data=get_long(param + 4);
+	    clipboard_amiga_size=get_long(param + 8);
+	    return TRUE;
+  	  default:
+  	    JWLOG("ERROR!! CLIP_JOB: unkown job: %d\n",m68k_dreg(&context->regs, 1));
+  	    return FALSE;
+	}
+      }
+
+   }
 
     default:
       JWLOG("ERROR!! aroshack_helper: unkown service %d\n",service);

@@ -65,8 +65,10 @@ WORD get_hi_word(ULONG *field);
 #define SCREEN_TASK_PREFIX_NAME "AOS3 Screen "
 
 #define AD_SHUTDOWN    9
+
 #define AD_SETUP    10
 #define AD_GET_JOB  11
+
 #define AD_TEST                        0 
 #define AD_GET_JOB_WINDOWS             1
 #define AD_GET_JOB_LIST_WINDOWS        2
@@ -82,12 +84,19 @@ WORD get_hi_word(ULONG *field);
 #define AD_GET_JOB_LIST_SCREENS       12
 #define AD_GET_JOB_DEBUG             999 
 
+#define AD_CLIP_SETUP 15
+#define AD_CLIP_JOB 16
+#define AD_CLIP_TEST 0
+#define JD_AMIGA_CHANGED 1
+#define JD_AROS_CHANGED  2
+
+
 #define J_MSG_CLOSE                    1
 
 extern GSList *janus_windows;  /* List of JanusWins  */
 extern GSList *janus_messages; /* List of JanusMsgs */
 
-/* we need that, to wake up the aos3 high pri daemon */
+/* janusd */
 extern ULONG aos3_task;
 extern ULONG aos3_task_signal;
 extern struct SignalSemaphore aos3_sem;
@@ -96,6 +105,14 @@ extern struct SignalSemaphore sem_janus_screen_list;
 extern struct SignalSemaphore aos3_thread_start;
 extern struct SignalSemaphore janus_messages_access;
 extern struct SignalSemaphore sem_janus_active_win;
+
+/* clipd */
+extern ULONG aos3_clip_task;
+extern ULONG aos3_clip_signal;
+
+/* clipboard status */
+extern BOOL clipboard_amiga_changed=FALSE;
+extern BOOL clipboard_aros_changed=FALSE;
 
 /* main uae window active ? */
 extern BOOL uae_main_window_closed;
@@ -212,6 +229,8 @@ struct Window *assert_window (struct Window *search);
 /* casting helpers */
 void  put_long_p(ULONG *p, ULONG value);
 ULONG get_long_p(ULONG *p);
+
+void close_all_janus_windows(void);
 
 /* e-uae stuff */
 int match_hotkey_sequence(int key, int state);
