@@ -112,6 +112,27 @@ static struct IOClipReq *open_device(ULONG unit) {
 }
 
 /****************************************************
+ * cb_read_done
+ *
+ * tell clipboard.device, we are done
+ ****************************************************/
+void cb_read_done(struct IOClipReq *ior) {
+  char buffer[256];
+
+  ior->io_Command = CMD_READ;
+  ior->io_Data    = (STRPTR)buffer;
+  ior->io_Length  = 254;
+
+
+  /* falls through immediately if io_Actual == 0 */
+  while (ior->io_Actual) {
+    if (DoIO( (struct IORequest *) ior)) {
+      break;
+    }
+  }
+}
+
+/****************************************************
  * register us!
  * as long as setup is not called, janus-uae behaves 
  * just like a normal uae
@@ -233,6 +254,7 @@ static void runme() {
       DoIO( (struct IORequest *) ior);
       len=ior->io_Actual;
       DebOut("clipboard size: %d\n", len);
+      cb_read_done(ior);
 
       data=(UBYTE *) AllocVec(len+10, MEMF_CLEAR); /* freed on next call */
 
@@ -242,6 +264,7 @@ static void runme() {
       ior->io_Data    = data;
       ior->io_Length  = len+1;
       DoIO( (struct IORequest *) ior);
+      cb_read_done(ior);
  
       copy_clip_to_aros(data, len);
     }
@@ -297,7 +320,7 @@ static void runme() {
  * ClipChange Hook signals the main loop, that the
  * clipboard content changed
  ***************************************************/
-ULONG ClipChange (REG(a0, struct Hook *hook)) {
+ULONG ClipChange(struct Hook *c_hook, VOID *o, struct ClipHookMsg *msg) {
 
   DebOut("Signal(%lx,%d\n",mytask,clipsignal);
 
@@ -332,7 +355,6 @@ int main (int argc, char **argv) {
 
   /* init clipboard hook */
   ClipHook.h_Entry = &ClipChange;
-  //ClipHook.h_SubEntry = (ULONG (*)()) __builtin_getreg (REG_A4);
   ClipHook.h_SubEntry = NULL;
   ClipHook.h_Data = &ClipHookMsg;
 
@@ -347,18 +369,7 @@ int main (int argc, char **argv) {
     exit(1);
   }
 
-#if 0
-  if(!init_sync_mouse()) {
-    DebOut("ERROR: init_sync_mouse failed\n");
-    printf("ERROR: init_sync_mouse failed\n");
-    exit(1);
-  }
-
-  init_sync_windows(); /* never fails */
-  init_sync_screens(); /* never fails */
-#endif
-
-  /* try te get a signal */
+  /* try to get a signal */
   mysignal_bit=AllocSignal(-1);
   if(mysignal_bit == -1) {
     printf("no signal..!\n");
@@ -371,10 +382,6 @@ int main (int argc, char **argv) {
   DebOut("task: %lx\n",mytask);
 
   setup(mytask, mysignal, 0); /* init everything for the patches */
-
-#if 0
-  patch_functions();
-#endif
 
   while(1) {
     runme(); /* as we patched the system, we will run (sleep) forever */
