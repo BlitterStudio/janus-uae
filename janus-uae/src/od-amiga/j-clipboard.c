@@ -44,7 +44,7 @@ void uae_Signal(uaecptr task, uae_u32 mask);
 
 #define DEBOUT_ENABLED 1
 #if DEBOUT_ENABLED
-#define DebOut(...) do { kprintf("%s:%d  %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
+#define DebOut(...) do { kprintf("%s: %s():%d: ",__FILE__,__func__,__LINE__);kprintf(__VA_ARGS__); } while(0)
 #else
 #define DebOut(...) do { ; } while(0)
 #endif
@@ -1119,23 +1119,29 @@ static char *amiga_clipboard_get_txt (uaecptr data, uae_u32 len) {
 
   uae_u8 *addr;
 
+  DebOut("entered (data: %lx, len %d)\n", data, len);
+
   if (len < 18) {
+    DebOut("len too small! (<18)\n");
     return NULL;
   }
 
   if (!valid_address (data, len)) {
+    DebOut("invalid_address!!\n");
     return NULL;
   }
 
   addr = get_real_address (data);
 
   if (memcmp ("FORM", addr, 4)) {
+    DebOut("no FORM header at %lx (%s)\n", addr, addr);
     return NULL;
   }
 
   if (!memcmp ("FTXT", addr + 8, 4)) {
-      return amiga_clipboard_from_iff_text (data, len);
+    return amiga_clipboard_from_iff_text (data, len);
   }
+  DebOut("no FTXT header at %lx\n", addr+8);
 
   return NULL;
       /*
@@ -1149,7 +1155,6 @@ static char *amiga_clipboard_get_txt (uaecptr data, uae_u32 len) {
  * copy_clipboard_to_aros();
  *******************************************************/
 void copy_clipboard_to_aros(void) {
-  char *content;
 
   DebOut("entered\n");
 
@@ -1174,17 +1179,16 @@ void copy_clipboard_to_aros(void) {
 }
 
 void copy_clipboard_to_aros_real(uaecptr data, uae_u32 len) {
+  char *content;
 
-  DebOut("entered (data %lx, len %d\n", data, len);
+  DebOut("entered (data %lx, len %d)\n", data, len);
 
   /* TODO !! */
 
-#if 0
   content=amiga_clipboard_get_txt(data, len);
   if(content) {
     DebOut("Put text >%s< to the AROS clipboard\n", content);
   }
-#endif
 
   /* TODO: now care for pictures ..*/
 

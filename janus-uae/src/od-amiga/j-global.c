@@ -41,9 +41,11 @@ ULONG aos3_clip_signal=0;
 BOOL  clipboard_amiga_changed=FALSE;
 BOOL  clipboard_aros_changed=FALSE;
 
+/*
 ULONG clipboard_amiga_updated=get_long( param);
 ULONG clipboard_amiga_data=get_long(param + 4);
 ULONG clipboard_amiga_size=get_long(param + 8);
+*/
 
 /* access the JanusWin list */
 struct SignalSemaphore sem_janus_window_list;
