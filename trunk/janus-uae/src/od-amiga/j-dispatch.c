@@ -287,7 +287,7 @@ void unlock_jgui(void);
 /*********************************
  * setup janusd
  *********************************/
-uae_u32 jd_setup(TrapContext *context, ULONG *param) {
+static uae_u32 jd_setup(TrapContext *context, ULONG *param) {
     ULONG want_to_die;
     /* want_to_die:
      *   0: ignore the value, do nothing, just fetch the prefs setting
@@ -350,7 +350,7 @@ uae_u32 jd_setup(TrapContext *context, ULONG *param) {
 /*********************************
  * setup clipd
  *********************************/
-uae_u32 cd_setup(TrapContext *context, ULONG *param) {
+static uae_u32 cd_setup(TrapContext *context, ULONG *param) {
     ULONG want_to_die;
     /* want_to_die:
      *   0: ignore the value, do nothing, just fetch the prefs setting
@@ -453,7 +453,7 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
     /* the aros_daemon wants its orders*/
     case AD_GET_JOB: {
       ULONG job=m68k_dreg(&context->regs, 1);
-      LONG *m68k_results= m68k_areg(&context->regs, 0);
+      ULONG *m68k_results= (ULONG *) m68k_areg(&context->regs, 0);
 
       //JWLOG("::::::::::::::AD_GET_JOB::::::::::::::::::::::::\n");
 
@@ -491,18 +491,24 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
       }
       case AD_CLIP_JOB: {
 	ULONG job=m68k_dreg(&context->regs, 1);
-	LONG *m68k_results= m68k_areg(&context->regs, 0);
+	ULONG *m68k_results= (ULONG *) m68k_areg(&context->regs, 0);
 	switch(job) {
 	  case JD_AMIGA_CHANGED:
 	    /* remember clipboard change in amigaOS */
-	    clipboard_amiga_changed=get_long_p(param);
+	    clipboard_amiga_changed=get_long_p(m68k_results);
+	    JWLOG("JD_AMIGA_CHANGED: clipboard_amiga_changed %d\n", clipboard_amiga_changed);
 	    put_long((ULONG) (m68k_results), (ULONG) TRUE);
 	    return TRUE;
-	  case JD_CLIP_REPORT:
-	    /* get pointer and size of amigaOS clipboard */
+	  case JD_CLIP_COPY_TO_AROS:
+	    /* clipd told us to take the amigaOS clipboard and copy it to AROS clipboard */
+	    copy_clipboard_to_aros_real(get_long(m68k_results + 4), get_long(m68k_results + 8));
+
+	    /*
 	    clipboard_amiga_updated=get_long( param);
 	    clipboard_amiga_data=get_long(param + 4);
 	    clipboard_amiga_size=get_long(param + 8);
+	    */
+
 	    return TRUE;
   	  default:
   	    JWLOG("ERROR!! CLIP_JOB: unkown job: %d\n",m68k_dreg(&context->regs, 1));
