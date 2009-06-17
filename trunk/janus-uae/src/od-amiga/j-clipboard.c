@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
  *
- * This file is based on clipboard_win32, taken from winUAE-1.6.0.
- * Clipboard_win32 did not contain any further copyright/author 
- * information.
+ * This file is based on a few parts/ideas on clipboard_win32, taken 
+ * from winUAE-1.6.0. Clipboard_win32 did not contain any special
+ * copyright/author information.
  *
  * $Id$
  *
@@ -32,16 +32,24 @@
 #include <stdarg.h>
 
 #include "j-clipboard.h"
-#if 0
-#include "clipboard.h"
-#endif
 
 #include "threaddep/thread.h"
 #include "memory.h"
 #if 0
-#include "native2amiga_api.h"
+#include "native2amiga.h"
+#else
+void uae_Signal(uaecptr task, uae_u32 mask);
 #endif
 #include "j.h"
+
+#define DEBOUT_ENABLED 1
+#if DEBOUT_ENABLED
+#define DebOut(...) do { kprintf("%s:%d  %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
+#else
+#define DebOut(...) do { ; } while(0)
+#endif
+
+static void from_iff_text (uaecptr ftxt, uae_u32 len);
 
 int clipboard_debug;
 
@@ -75,10 +83,10 @@ static int clipboard_delayed_size;
 
 /* stuff winuae has: */
 
-char *au(char *in) {
+static char *au(char *in) {
   return in;
 }
-char *ua(char *in) {
+static char *ua(char *in) {
   return in;
 }
 
@@ -155,6 +163,7 @@ static int parsecsi (const uae_char *txt, int off, int len)
     return off;
 }
 
+#if 0
 static TCHAR *amigatopc (const uae_u8 *txt)
 {
     int i, j, cnt;
@@ -195,6 +204,7 @@ static TCHAR *amigatopc (const uae_u8 *txt)
     xfree (txt2);
     return s;
 }
+#endif
 
 
 static void to_iff_text (TCHAR *pctxt)
@@ -233,6 +243,7 @@ static int clipboard_put_text (const TCHAR *txt);
 /* get text content from amiga clipboard content pointer and hand it over to
  * clipboard_put_text
  */
+#if 0
 static void from_iff_text (uaecptr ftxt, uae_u32 len)
 {
     uae_u8 *addr = NULL, *eaddr;
@@ -281,6 +292,7 @@ static void from_iff_text (uaecptr ftxt, uae_u32 len)
     }
     xfree (txt);
 }
+#endif
 
    
 #if 0
@@ -718,6 +730,7 @@ static void from_iff_ilbm (uaecptr ilbm, uae_u32 len)
 /* decide, if to call from_iff_text or from_iff_ilbm
  * after that, either content should be in the host clipboard
  */
+#if 0
 static void from_iff (uaecptr data, uae_u32 len)
 {
     uae_u8 *addr;
@@ -736,6 +749,7 @@ static void from_iff (uaecptr data, uae_u32 len)
     if (!memcmp ("ILBM", addr + 8, 4))
 	from_iff_ilbm (data, len);
 }
+#endif
 
 #if 0
 /* read windows clipboard and hand it over to amiga side*/
@@ -891,6 +905,7 @@ uae_u32 amiga_clipboard_proc_start (void)
     return clipboard_data;
 }
 
+#if 0
 void amiga_clipboard_got_data (uaecptr data, uae_u32 size, uae_u32 actual)
 {
     uae_u8 *addr;
@@ -922,6 +937,7 @@ void amiga_clipboard_want_data (void)
     to_amiga = NULL;
     to_amiga_size = 0;
 }
+#endif
 
 #if 0
 void clipboard_active (HWND hwnd, int active)
@@ -943,7 +959,6 @@ void clipboard_active (HWND hwnd, int active)
 	clipboard_delayed_size = 0;
     }
 }
-#endif
 
 void clipboard_vsync (void)
 {
@@ -977,6 +992,7 @@ void clipboard_reset (void)
     ReleaseDC (chwnd, hdc);
 #endif
 }
+#endif
 
 #if 0
 void clipboard_init (HWND hwnd)
@@ -1143,13 +1159,32 @@ void copy_clipboard_to_aros(void) {
     return; 
   }
 
-  /* TODO: get data and len .. */
+  if(!aos3_clip_task || !aos3_clip_signal) {
+    DebOut("no clipd running\n");
+  }
 
-  /*amiga_clipboard_get_txt (uaecptr data, uae_u32 len); */
+  /* 
+   * just signal clipd and let him handle all the trouble 
+   * in the end, he will call copy_clipboard_to_aros_real
+   */ 
+
+  DebOut("send signal %d to clipd task %lx\n", aos3_clip_signal, aos3_clip_task);
+  uae_Signal (aos3_clip_task, aos3_clip_signal);
+
+}
+
+void copy_clipboard_to_aros_real(uaecptr data, uae_u32 len) {
+
+  DebOut("entered (data %lx, len %d\n", data, len);
+
+  /* TODO !! */
+
+#if 0
   content=amiga_clipboard_get_txt(data, len);
   if(content) {
     DebOut("Put text >%s< to the AROS clipboard\n", content);
   }
+#endif
 
   /* TODO: now care for pictures ..*/
 
