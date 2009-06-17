@@ -35,9 +35,13 @@
 #define REG(reg,arg) arg __asm(#reg)
 
 #define AD__MAXMEM 256
-#define AD_SHUTDOWN
+
+#define AD_SHUTDOWN 9
 #define AD_SETUP 10
 #define AD_GET_JOB  11
+#define AD_CLIP_SETUP 15
+#define AD_CLIP_JOB 16
+
 #define AD_TEST 0
 #define AD_GET_JOB_RESIZE 1
 #define AD_GET_JOB_LIST_WINDOWS 2
