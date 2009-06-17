@@ -21,14 +21,20 @@
  *
  ************************************************************************/
 
-#ifndef __JANUS_DAEMON_H_
-#define __JANUS_DAEMON_H_
+#ifndef __CLIP_DAEMON_H_
+#define __CLIP_DAEMON_H_
 
 #include <stdio.h>
 //#include <proto/intuition.h>
 //#include <proto/exec.h>
 #include <clib/intuition_protos.h>
 
+#define AD_CLIP_SETUP 15
+#define AD_CLIP_JOB 16
+#define AD_CLIP_TEST 0
+#define JD_AMIGA_CHANGED      1
+#define JD_AROS_CHANGED       2
+#define JD_CLIP_COPY_TO_AROS  3
 
 #define AROSTRAPBASE 0xF0FF90
 
@@ -41,5 +47,6 @@ extern ULONG (*calltrap)(ULONG __asm("d0"),
 /* debug.c */
 void DebOut(const char *format, ...);
 
+#define CLIPDEV_NAME "clipboard.device"
 
 #endif

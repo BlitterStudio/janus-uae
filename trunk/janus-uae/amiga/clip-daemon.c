@@ -148,11 +148,10 @@ int setup(struct Task *task, ULONG signal, ULONG stop) {
  * report_clip
  *
  * send amigaOS clipboard data pointer and clipboard size 
- * to UAE
+ * to UAE and invoke copy_clipboard_to_aros_real
  **************************************************************/
-static void report_clip(UBYTE *data, ULONG size) {
+static void copy_clip_to_aros(UBYTE *data, ULONG size) {
   ULONG *command_mem;
-  ULONG  state;
 
   DebOut("report_clip(%lx,%d)\n", data, size);
 
@@ -161,9 +160,8 @@ static void report_clip(UBYTE *data, ULONG size) {
   command_mem[0]=(ULONG) TRUE;
   command_mem[4]=(ULONG) data;
   command_mem[8]=(ULONG) size;
-//#TODO continue here..
 
- // state = calltrap (JD_CLIP_REPORT, AD__MAXMEM, command_mem);
+  calltrap (JD_CLIP_COPY_TO_AROS, AD__MAXMEM, command_mem);
 
   FreeVec(command_mem);
 
@@ -178,22 +176,17 @@ static void report_clip(UBYTE *data, ULONG size) {
  * amigaOS content to the AROS clipboard
  *
  **************************************************************/
-static ULONG amiga_changed() {
+static void amiga_changed() {
   ULONG *command_mem;
-  ULONG  res;
+
+  DebOut("Clipboard changed\n");
 
   command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
 
   command_mem[0]=(ULONG) TRUE;
   calltrap (JD_AMIGA_CHANGED, AD__MAXMEM, command_mem);
 
-  res=command_mem[0];
-
   FreeVec(command_mem);
-
-  DebOut("clipboard setup done(): result %d\n",(int) res);
-
-  return res;
 }
 
 static void runme() {
@@ -214,23 +207,12 @@ static void runme() {
     if(set && (newsignals & mysignal)) {
       /* we are active */
 
+      DebOut("signal fron UAE received\n");
+
       if(!init) {
 	/* disabled -> enabled */
 	init=TRUE;
-#if 0
-	update_screens(); /* report all open screens once, 
-			   * updates again a every openwindow patch
-			   * call
-			   */
-	DebOut("screens updated\n");
-
-	update_windows(); /* report all open windows once,
-			   * new windows will be handled by the patches
-			   */
-	DebOut("windows updated\n");
-#endif
       }
-      DebOut("signal fron UAE received\n");
       /* we got a signal, that we need to care for clipboard exchange.
        * So we ask, if JD_AMIGA_CHANGED or JD_AROS_CHANGED happened. ?
        * For now, we assume JD_AMIGA_CHANGED
@@ -249,22 +231,11 @@ static void runme() {
       DebOut("clipboard size: %d\n", ior->io_Actual);
 
       data=(UBYTE *) AllocVec(ior->io_Actual, MEMF_CLEAR); /* freed on next call */
-      report_clip(data, ior->io_Actual);
-
-#if 0
-      sync_windows();
-      report_uae_windows();
-      report_host_windows();
-      sync_mouse();
-      sync_active_window();
-      forward_messages();
-#endif
+      copy_clip_to_aros(data, ior->io_Actual);
     }
 
     if(set && (newsignals & clipsignal)) {
-      DebOut("=========> Clipboard changed <=========== \n");
-      /* TEST Signal(mytask, mysignal); */
-
+      amiga_changed();
     }
 
     if((newsignals & SIGBREAKF_CTRL_C) ||
