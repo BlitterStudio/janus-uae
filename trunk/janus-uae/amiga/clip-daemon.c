@@ -145,7 +145,7 @@ int setup(struct Task *task, ULONG signal, ULONG stop) {
 }
 
 /**************************************************************
- * report_clip
+ * copy_clip_to_aros
  *
  * send amigaOS clipboard data pointer and clipboard size 
  * to UAE and invoke copy_clipboard_to_aros_real
@@ -153,7 +153,7 @@ int setup(struct Task *task, ULONG signal, ULONG stop) {
 static void copy_clip_to_aros(UBYTE *data, ULONG size) {
   ULONG *command_mem;
 
-  DebOut("report_clip(%lx,%d)\n", data, size);
+  DebOut("copy_clip_to_aros(%lx,%d)\n", data, size);
 
   command_mem=AllocVec(AD__MAXMEM, MEMF_CLEAR);
 
@@ -161,7 +161,7 @@ static void copy_clip_to_aros(UBYTE *data, ULONG size) {
   command_mem[4]=(ULONG) data;
   command_mem[8]=(ULONG) size;
 
-  calltrap (JD_CLIP_COPY_TO_AROS, AD__MAXMEM, command_mem);
+  calltrap (AD_CLIP_JOB, JD_CLIP_COPY_TO_AROS, command_mem);
 
   FreeVec(command_mem);
 
@@ -179,12 +179,12 @@ static void copy_clip_to_aros(UBYTE *data, ULONG size) {
 static void amiga_changed() {
   ULONG *command_mem;
 
-  DebOut("Clipboard changed\n");
+  DebOut("clipboard changed\n");
 
   command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
 
   command_mem[0]=(ULONG) TRUE;
-  calltrap (JD_AMIGA_CHANGED, AD__MAXMEM, command_mem);
+  calltrap (AD_CLIP_JOB, JD_AMIGA_CHANGED, command_mem);
 
   FreeVec(command_mem);
 }
@@ -195,6 +195,7 @@ static void runme() {
   BOOL         init;
   BOOL         set;
   UBYTE       *data;
+  ULONG        len;
 
   DebOut("clipd running (CTRL-C to go to normal mode, CTRL-D to shared mode)..\n");
 
@@ -224,14 +225,25 @@ static void runme() {
 	data=NULL;
       }
 
+      ior->io_ClipID  = 0;
+      ior->io_Offset  = 0;
       ior->io_Command = CMD_READ;
       ior->io_Data    = NULL;
       ior->io_Length  = 0xFFFFFFFF;
       DoIO( (struct IORequest *) ior);
-      DebOut("clipboard size: %d\n", ior->io_Actual);
+      len=ior->io_Actual;
+      DebOut("clipboard size: %d\n", len);
 
-      data=(UBYTE *) AllocVec(ior->io_Actual, MEMF_CLEAR); /* freed on next call */
-      copy_clip_to_aros(data, ior->io_Actual);
+      data=(UBYTE *) AllocVec(len+10, MEMF_CLEAR); /* freed on next call */
+
+      ior->io_ClipID  = 0;
+      ior->io_Offset  = 0;
+      ior->io_Command = CMD_READ;
+      ior->io_Data    = data;
+      ior->io_Length  = len+1;
+      DoIO( (struct IORequest *) ior);
+ 
+      copy_clip_to_aros(data, len);
     }
 
     if(set && (newsignals & clipsignal)) {
