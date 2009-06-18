@@ -87,8 +87,9 @@ WORD get_hi_word(ULONG *field);
 #define AD_CLIP_SETUP 15
 #define AD_CLIP_JOB 16
 #define AD_CLIP_TEST 0
-#define JD_AMIGA_CHANGED 1
-#define JD_AROS_CHANGED  2
+#define JD_AMIGA_CHANGED     1
+#define JD_AROS_CHANGED      2
+#define JD_CLIP_COPY_TO_AROS 3
 
 
 #define J_MSG_CLOSE                    1
@@ -111,8 +112,10 @@ extern ULONG aos3_clip_task;
 extern ULONG aos3_clip_signal;
 
 /* clipboard status */
-extern BOOL clipboard_amiga_changed=FALSE;
-extern BOOL clipboard_aros_changed=FALSE;
+extern BOOL clipboard_amiga_changed;
+extern BOOL clipboard_aros_changed;
+
+void copy_clipboard_to_aros_real(uaecptr data, uae_u32 len);
 
 /* main uae window active ? */
 extern BOOL uae_main_window_closed;
