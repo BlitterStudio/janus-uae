@@ -618,3 +618,33 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
   //JWLOG("ad_job_sync_windows left\n");
   return TRUE;
 }
+
+/***********************************************************
+ * close_all_janus_windows()
+ *
+ * send a CTRL-C to all aros janus tasks, so that they
+ * close their window and free their resources.
+ ***********************************************************/
+void close_all_janus_windows() {
+  GSList   *list_win;
+  JanusWin *win;
+
+  if(!aos3_task) {
+    /* never registered, nothing to close */
+    return;
+  }
+
+  JWLOG("close_all_janus_windows\n");
+
+  ObtainSemaphore(&sem_janus_window_list);
+  list_win=janus_windows;
+  while(list_win) {
+    win=(JanusWin *) list_win->data;
+    JWLOG("  send CLTR_C to task %lx\n",win->task);
+    if(win->task) {
+      Signal(win->task, SIGBREAKF_CTRL_C);
+    }
+    list_win=g_slist_next(list_win);
+  }
+  ReleaseSemaphore(&sem_janus_window_list);
+}

@@ -30,6 +30,9 @@
 
 #include <stdlib.h>
 #include <stdarg.h>
+#include <devices/clipboard.h>
+#include <exec/devices.h>
+#include <exec/io.h>
 
 #include "j-clipboard.h"
 
@@ -48,6 +51,8 @@ void uae_Signal(uaecptr task, uae_u32 mask);
 #else
 #define DebOut(...) do { ; } while(0)
 #endif
+
+static struct IOClipReq *ior=NULL;
 
 static void from_iff_text (uaecptr ftxt, uae_u32 len);
 
@@ -77,6 +82,7 @@ static int clipactive;
 static int clipboard_change;
 static void *clipboard_delayed_data;
 static int clipboard_delayed_size;
+
 
 
 #define debugwrite(...) ;
@@ -1004,6 +1010,197 @@ void clipboard_init (HWND hwnd)
 
 /*** new stuff follows here ***/
 
+BOOL cb_write_long(struct IOClipReq *ior, long *ldata) {
+
+  ior->io_Data    = (STRPTR)ldata;
+  ior->io_Length  = 4L;
+  ior->io_Command = CMD_WRITE;
+  DoIO( (struct IORequest *) ior);
+
+  if (ior->io_Actual == 4) {
+    return( ior->io_Error ? FALSE : TRUE);
+  }
+
+  return(FALSE);
+}
+
+/****** cbio/CBOpen *************************************************
+*
+*   NAME
+*       CBOpen() -- Open the clipboard.device
+*
+*   SYNOPSIS
+*       ior = CBOpen(unit)
+*
+*       struct IOClipReq *CBOpen( ULONG )
+*
+*   FUNCTION
+*       Opens the clipboard.device.  A clipboard unit number
+*       must be passed in as an argument.  By default, the unit
+*       number should be 0 (currently valid unit numbers are
+*       0-255).
+*
+*   RESULTS
+*       A pointer to an initialized IOClipReq structure, or
+*       a NULL pointer if the function fails.
+*
+*********************************************************************/
+struct IOClipReq *CBOpen(ULONG unit) {
+  struct MsgPort *mp;
+  struct IORequest *ior;
+
+  if ((mp = CreatePort(0L,0L))) {
+    if ((ior=(struct IORequest *)CreateExtIO(mp,sizeof(struct IOClipReq)))) {
+      if (!(OpenDevice("clipboard.device",unit,ior,0L))) {
+	return((struct IOClipReq *)ior);
+      }
+      DeleteExtIO(ior);
+    }
+  DeletePort(mp);
+  }
+
+  DebOut("ERROR opening clipboard.device\n");
+  return(NULL);
+}
+
+/****** cbio/CBClose ************************************************
+*
+*   NAME
+*       CBClose() -- Close the clipboard.device
+*
+*   SYNOPSIS
+*       CBClose()
+*
+*       void CBClose()
+*
+*   FUNCTION
+*       Close the clipboard.device unit which was opened via
+*       CBOpen().
+*
+*********************************************************************/
+void CBClose(struct IOClipReq *ior) {
+  struct MsgPort *mp;
+
+  if(!ior) {
+    return;
+  }
+
+  mp = ior->io_Message.mn_ReplyPort;
+
+  CloseDevice((struct IORequest *)ior);
+  DeleteExtIO((struct IORequest *)ior);
+  DeletePort(mp);
+}
+
+
+/****** cbio/CBWriteFTXT *********************************************
+*
+*   NAME
+*       CBWriteFTXT() -- Write a string of text to the clipboard.device
+*
+*   SYNOPSIS
+*       success = CBWriteFTXT( ior, string)
+*
+*       int CBWriteFTXT(struct IOClipReq *, char *)
+*
+*   FUNCTION
+*       Write a NULL terminated string of text to the clipboard.
+*       The string will be written in simple FTXT format.
+*
+*       Note that this function pads odd length strings automatically
+*       to conform to the IFF standard.
+*
+*   RESULTS
+*       TRUE if the write succeeded, else FALSE.
+*
+*********************************************************************/
+int CBWriteFTXT(struct IOClipReq *ior, char *string) {
+
+  LONG temp, length, slen;
+  BOOL odd;
+  int success;
+
+  slen = strlen(string);
+  odd = (slen & 1);               /* pad byte flag */
+
+  length = (odd) ? slen+1 : slen;
+
+  /* initial set-up for Offset, Error, and ClipID */
+
+  ior->io_Offset = 0;
+  ior->io_Error  = 0;
+  ior->io_ClipID = 0;
+
+  /* Create the IFF header information */
+
+  cb_write_long(ior, (long *) "FORM");     /* "FORM"             */
+  length+=12L;                         /* + "[size]FTXTCHRS" */
+
+  temp = AROS_LONG2BE(length);
+  cb_write_long(ior, &temp);
+  cb_write_long(ior, (long *) "FTXT");     /* "FTXT"             */
+  cb_write_long(ior, (long *) "CHRS");     /* "CHRS"             */
+  temp = AROS_LONG2BE(slen);
+  cb_write_long(ior, &temp);
+
+  /* Write string */
+  ior->io_Data    = (STRPTR)string;
+  ior->io_Length  = slen;
+  ior->io_Command = CMD_WRITE;
+  DoIO( (struct IORequest *) ior);
+
+  /* Pad if needed */
+  if (odd) {
+    ior->io_Data   = (STRPTR)"";
+    ior->io_Length = 1L;
+    DoIO( (struct IORequest *) ior);
+  }
+
+  /* Tell the clipboard we are done writing */
+  ior->io_Command=CMD_UPDATE;
+  DoIO( (struct IORequest *) ior);
+
+  /* Check if io_Error was set by any of the preceding IO requests */
+  success = ior->io_Error ? FALSE : TRUE;
+
+  return(success);
+}
+
+int clipboard_write_raw(struct IOClipReq *ior, UBYTE *data, ULONG len) {
+  BOOL success;
+
+  DebOut("clipboard_write_raw(%lx, %lx, %d)\n", ior, data, len);
+
+  /* initial set-up for Offset, Error, and ClipID */
+  ior->io_Offset = 0;
+  ior->io_Error  = 0;
+  ior->io_ClipID = 0;
+
+  DebOut("write data ..\n");
+  /* Write data */
+  ior->io_Data    = data;
+  ior->io_Length  = len;
+  ior->io_Command = CMD_WRITE;
+  DoIO( (struct IORequest *) ior);
+
+  DebOut("update clipboard ..\n");
+  /* Tell the clipboard we are done writing */
+  ior->io_Command=CMD_UPDATE;
+  DoIO( (struct IORequest *) ior);
+
+  /* Check if io_Error was set by any of the preceding IO requests */
+  success = ior->io_Error ? FALSE : TRUE;
+
+  if(!success) {
+    DebOut("ERROR: %d\n",ior->io_Error);
+  }
+
+  return(success);
+}
+
+
+
+
 static void from_iff_text (uaecptr ftxt, uae_u32 len)
 {
     uae_u8 *addr = NULL, *eaddr;
@@ -1183,6 +1380,26 @@ void copy_clipboard_to_aros_real(uaecptr data, uae_u32 len) {
 
   DebOut("entered (data %lx, len %d)\n", data, len);
 
+  if (len < 18) {
+    DebOut("len too small! (<18)\n");
+    return NULL;
+  }
+
+  if (!valid_address (data, len)) {
+    DebOut("invalid_address!!\n");
+    return NULL;
+  }
+
+  if(!ior) {
+    ior=CBOpen(0);
+  }
+  clipboard_write_raw(ior, get_real_address(data), len);
+#if 0
+  CBClose(ior);
+  ior=NULL;
+#endif
+
+#if 0
   /* TODO !! */
 
   content=amiga_clipboard_get_txt(data, len);
@@ -1192,6 +1409,7 @@ void copy_clipboard_to_aros_real(uaecptr data, uae_u32 len) {
 
   /* TODO: now care for pictures ..*/
 
+#endif
   /* we are in sync now */
   clipboard_aros_changed =FALSE;
   clipboard_amiga_changed=FALSE;
