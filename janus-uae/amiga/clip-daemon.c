@@ -60,10 +60,18 @@
 char verstag[] = "\0$VER: clip-daemon 0.4";
 LONG          *cmdbuffer=NULL;
 
+/* signal sent by the clipboard hook (clipboard content changed) */
 BYTE         clip_signal_bit;
-BYTE         mysignal_bit;
 ULONG        clipsignal;
-ULONG        mysignal;
+
+/* signal sent by copy_clipboard_to_aros (copy amigaos content to aros) */
+BYTE         to_aros_signal_bit;
+ULONG        to_aros_signal;
+
+/* signal sent by copy_clipboard_to_amiga (copy amiga content to amigaos) */
+BYTE         to_amigaos_signal_bit;
+ULONG        to_amigaos_signal;
+
 struct Task *mytask = NULL;
 
 struct Hook ClipHook;
@@ -142,27 +150,76 @@ void cb_read_done(struct IOClipReq *ior) {
  * if result is TRUE, we need to run (share clipboard)
  * if result is FALSE, we need to sleep 
  ****************************************************/
-int setup(struct Task *task, ULONG signal, ULONG stop) {
+int setup(struct Task *task, ULONG to_aros_signal, ULONG to_amigaos_signal, ULONG stop) {
   ULONG *command_mem;
   ULONG  state;
 
-  DebOut("clipboard setup(%lx,%lx,%d)\n",(ULONG) task, signal, stop);
+  DebOut("clipboard setup(%lx,%lx,%lx,%d)\n",(ULONG) task, 
+                                         to_aros_signal, to_amigaos_signal, stop);
 
   command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
 
-  command_mem[0]=(ULONG) task;
-  command_mem[4]=(ULONG) signal;
-  command_mem[8]=(ULONG) stop;
+  command_mem[ 0]=(ULONG) task;
+  command_mem[ 4]=(ULONG) to_aros_signal;
+  command_mem[ 8]=(ULONG) to_amigaos_signal;
+  command_mem[12]=(ULONG) stop;
 
   state = calltrap (AD_CLIP_SETUP, AD__MAXMEM, command_mem);
 
-  state=command_mem[8];
+  state=command_mem[12];
 
   FreeVec(command_mem);
 
   DebOut("clipboard setup done(): result %d\n",(int) state);
 
   return state;
+}
+
+/**************************************************************
+ * get_aros_len()
+ *
+ * get the length of the AROS clipboard
+ **************************************************************/
+static ULONG get_aros_len() {
+  ULONG *command_mem;
+  ULONG  len;
+
+  DebOut("get_aros_len()\n");
+
+  command_mem=AllocVec(AD__MAXMEM, MEMF_CLEAR);
+
+  calltrap (AD_CLIP_JOB, JD_CLIP_GET_AROS_LEN, command_mem);
+
+  len=command_mem[0];
+
+  FreeVec(command_mem);
+
+  return len;
+}
+
+/**************************************************************
+ * copy_clip_from_aros(target buffer, len)
+ *
+ * copy amigaOS clipboard data to target buffer, which has
+ * a maximum size of len
+ **************************************************************/
+static void copy_clip_from_aros(UBYTE *data, ULONG size) {
+  ULONG *command_mem;
+
+  DebOut("copy_clip_from_aros(%lx,%d)\n", data, size);
+
+  command_mem=AllocVec(AD__MAXMEM, MEMF_CLEAR);
+
+  command_mem[0]=(ULONG) data;
+  command_mem[4]=(ULONG) size;
+
+  calltrap (AD_CLIP_JOB, JD_CLIP_COPY_FROM_AROS, command_mem);
+
+  FreeVec(command_mem);
+
+  DebOut("copy_clip_from_aros(%lx,%d) done\n", data, size);
+
+  return;
 }
 
 /**************************************************************
@@ -200,7 +257,7 @@ static void copy_clip_to_aros(UBYTE *data, ULONG size) {
 static void amiga_changed() {
   ULONG *command_mem;
 
-  DebOut("clipboard changed\n");
+  DebOut("clipboard_changed signal received\n");
 
   command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
 
@@ -215,71 +272,135 @@ static void runme() {
   BOOL         done;
   BOOL         init;
   BOOL         set;
+  BOOL         success;
   UBYTE       *data;
   ULONG        len;
 
   DebOut("clipd running (CTRL-C to go to normal mode, CTRL-D to shared mode)..\n");
 
+  data=NULL;
   done=FALSE;
   init=FALSE;
   while(!done) {
-    newsignals=Wait(mysignal | clipsignal | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
+    newsignals=Wait(to_aros_signal | to_amigaos_signal |
+                    clipsignal | 
+		    SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
 
-    set=setup(mytask, mysignal, 0);
-    if(set && (newsignals & mysignal)) {
-      /* we are active */
+    /* test if we are still active */
+    set=setup(mytask, to_aros_signal, to_amigaos_signal, 0);
+    DebOut("set:    %d\n" , set);
+    DebOut("signal: %lx\n", newsignals);
 
-      DebOut("signal fron UAE received\n");
+    if(set) {
 
-      if(!init) {
-	/* disabled -> enabled */
-	init=TRUE;
+      if(newsignals & to_aros_signal) {
+
+	/* we are active */
+	DebOut("to_aros_signal from UAE received\n");
+
+	if(!init) {
+	  /* disabled -> enabled */
+	  init=TRUE;
+	}
+	/* get length of data */
+
+	if(data) {
+	  DebOut("to_aros_signal old data: %lx\n",data);
+	  FreeVec(data);
+	  data=NULL;
+	}
+
+	DebOut("DoIO (%lx) ..\n",  ior);
+	ior->io_ClipID  = 0;
+	ior->io_Offset  = 0;
+	ior->io_Command = CMD_READ;
+	ior->io_Data    = NULL;
+	ior->io_Length  = 0xFFFFFFFF;
+	DoIO( (struct IORequest *) ior);
+	len=ior->io_Actual;
+	DebOut("clipboard size: %d\n", len);
+	cb_read_done(ior);
+
+	data=(UBYTE *) AllocVec(len+10, MEMF_CLEAR); /* freed on next call */
+	DebOut("to_aros_signal new data: %lx\n",data);
+
+	ior->io_ClipID  = 0;
+	ior->io_Offset  = 0;
+	ior->io_Command = CMD_READ;
+	ior->io_Data    = data;
+	ior->io_Length  = len+1;
+	DoIO( (struct IORequest *) ior);
+	cb_read_done(ior);
+   
+	copy_clip_to_aros(data, len);
       }
-      /* we got a signal, that we need to care for clipboard exchange.
-       * So we ask, if JD_AMIGA_CHANGED or JD_AROS_CHANGED happened. ?
-       * For now, we assume JD_AMIGA_CHANGED
-       */
-      /* get length of data */
 
-      if(data) {
-	FreeVec(data);
-	data=NULL;
+      if(newsignals & to_amigaos_signal) {
+
+	/* we are active */
+	DebOut("to_amigaos_signal from UAE received\n");
+
+	if(!init) {
+	  /* disabled -> enabled */
+	  init=TRUE;
+	}
+
+	len=get_aros_len();
+	if(len) {
+	  DebOut("len: %d\n", len);
+
+	  /* get length of data */
+	  if(data) {
+	    DebOut("to_amigaos_signal old data: %lx\n", data);
+	    FreeVec(data);
+	    data=NULL;
+	  }
+
+	  data=(UBYTE *) AllocVec(len+10, MEMF_CLEAR); /* freed on next call */
+	  DebOut("to_amigaos_signal new data: %lx\n", data);
+
+	  copy_clip_from_aros(data, len);
+
+	  /* initial set-up for Offset, Error, and ClipID */
+	  ior->io_Offset = 0;
+	  ior->io_Error  = 0;
+	  ior->io_ClipID = 0;
+
+	  DebOut("write data ..\n");
+	  /* Write data */
+	  ior->io_Data    = data;
+	  ior->io_Length  = len;
+	  ior->io_Command = CMD_WRITE;
+	  DoIO( (struct IORequest *) ior);
+
+	  DebOut("update clipboard ..\n");
+	  /* Tell the clipboard we are done writing */
+	  ior->io_Command=CMD_UPDATE;
+	  DoIO( (struct IORequest *) ior);
+
+	  /* Check if io_Error was set by any of the preceeding IO requests */
+	  success = ior->io_Error ? FALSE : TRUE;
+
+	  if(!success) {
+	    DebOut("ERROR: %d\n",ior->io_Error);
+	  }
+
+	}
       }
 
-      ior->io_ClipID  = 0;
-      ior->io_Offset  = 0;
-      ior->io_Command = CMD_READ;
-      ior->io_Data    = NULL;
-      ior->io_Length  = 0xFFFFFFFF;
-      DoIO( (struct IORequest *) ior);
-      len=ior->io_Actual;
-      DebOut("clipboard size: %d\n", len);
-      cb_read_done(ior);
-
-      data=(UBYTE *) AllocVec(len+10, MEMF_CLEAR); /* freed on next call */
-
-      ior->io_ClipID  = 0;
-      ior->io_Offset  = 0;
-      ior->io_Command = CMD_READ;
-      ior->io_Data    = data;
-      ior->io_Length  = len+1;
-      DoIO( (struct IORequest *) ior);
-      cb_read_done(ior);
- 
-      copy_clip_to_aros(data, len);
-    }
-
-    if(set && (newsignals & clipsignal)) {
-      amiga_changed();
+      if(newsignals & clipsignal) {
+	amiga_changed();
+      }
     }
 
     if((newsignals & SIGBREAKF_CTRL_C) ||
-      (!set && (newsignals & mysignal))) {
+      (!set && (newsignals & to_aros_signal))) {
       DebOut("!set || got SIGBREAKF_CTRL_C..\n");
       if(init) {
 	DebOut("tell uae, that we received a SIGBREAKF_CTRL_C\n");
 	init=FALSE;
-	setup(mytask, mysignal, 1); /* we are tired */
+	/* we are tired */
+	set=setup(mytask, to_aros_signal, to_amigaos_signal, 1);
       }
       else {
 	DebOut("we are already inactive\n");
@@ -291,7 +412,8 @@ static void runme() {
 //      switch_uae_window();
       if(!init) {
 	DebOut("tell uae, that we received a SIGBREAKF_CTRL_D\n");
-	setup(mytask, mysignal, 2); /* we are back again */
+	/* we are back again */
+	set=setup(mytask, to_aros_signal, to_amigaos_signal, 2);
       }
       else {
 	DebOut("we are already active\n");
@@ -364,24 +486,35 @@ int main (int argc, char **argv) {
   ior->io_Data   =(APTR) &ClipHook;
 
   if (DoIO ((struct IORequest *) ior)) {
-    printf(": Can't install clipboard hook\n");
+    printf("ERROR: Can't install clipboard hook\n");
+    DebOut("ERROR: Can't install clipboard hook\n");
     /* TODO! */
     exit(1);
   }
 
   /* try to get a signal */
-  mysignal_bit=AllocSignal(-1);
-  if(mysignal_bit == -1) {
+  to_aros_signal_bit=AllocSignal(-1);
+  if(to_aros_signal_bit == -1) {
     printf("no signal..!\n");
     DebOut("no signal..!\n");
     exit(1);
   }
-  mysignal=1L << mysignal_bit;
+  to_aros_signal=1L << to_aros_signal_bit;
+
+  /* try to get a signal */
+  to_amigaos_signal_bit=AllocSignal(-1);
+  if(to_amigaos_signal_bit == -1) {
+    printf("no signal..!\n");
+    DebOut("no signal..!\n");
+    exit(1);
+  }
+  to_amigaos_signal=1L << to_amigaos_signal_bit;
 
   mytask=FindTask(NULL);
   DebOut("task: %lx\n",mytask);
 
-  setup(mytask, mysignal, 0); /* init everything for the patches */
+  /* init everything for the patches */
+  setup(mytask, to_aros_signal, to_amigaos_signal, 0); 
 
   while(1) {
     runme(); /* as we patched the system, we will run (sleep) forever */
