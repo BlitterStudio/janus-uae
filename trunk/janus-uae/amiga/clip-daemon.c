@@ -181,8 +181,8 @@ int setup(struct Task *task, ULONG to_aros_signal, ULONG to_amigaos_signal, ULON
  * get the length of the AROS clipboard
  **************************************************************/
 static ULONG get_aros_len() {
-  ULONG *command_mem;
-  ULONG  len;
+  LONG  *command_mem;
+  LONG   len;
 
   DebOut("get_aros_len()\n");
 
@@ -246,6 +246,101 @@ static void copy_clip_to_aros(UBYTE *data, ULONG size) {
   return;
 }
 
+/***************************************************
+ * handle_to_aros_signal()
+ ***************************************************/
+static void handle_to_aros_signal() {
+  UBYTE       *data=NULL;
+  ULONG        len;
+
+  /* we are active */
+  DebOut("to_aros_signal from UAE received\n");
+
+  /* get length of data */
+
+  DebOut("DoIO (%lx) ..\n",  ior);
+  ior->io_ClipID  = 0;
+  ior->io_Offset  = 0;
+  ior->io_Command = CMD_READ;
+  ior->io_Data    = NULL;
+  ior->io_Length  = 0xFFFFFFFF;
+  DoIO( (struct IORequest *) ior);
+  len=ior->io_Actual;
+  DebOut("clipboard size: %d\n", len);
+  cb_read_done(ior);
+
+  data=(UBYTE *) AllocVec(len+10, MEMF_CLEAR); 
+  DebOut("to_aros_signal new data: %lx\n",data);
+
+  ior->io_ClipID  = 0;
+  ior->io_Offset  = 0;
+  ior->io_Command = CMD_READ;
+  ior->io_Data    = data;
+  ior->io_Length  = len+1;
+  DoIO( (struct IORequest *) ior);
+  cb_read_done(ior);
+
+  copy_clip_to_aros(data, len);
+
+  FreeVec(data);
+}
+
+/***************************************************
+ * handle_to_amigaos_signal()
+ ***************************************************/
+static void handle_to_amigaos_signal() {
+  BOOL         success;
+  UBYTE       *data;
+  LONG         len;
+
+  DebOut("to_amigaos_signal from UAE received\n");
+
+  /* get length of data */
+  len=get_aros_len();
+
+  if(len == -1) {
+    /* Bug in old aros clipboard.device */
+    printf("Please update your AROS clipboard.device!\n");
+    DebOut("ERROR: old AROS clipboard.device detected\n");
+    return;
+  }
+
+  if(len) {
+    DebOut("clipboard size: len=%d\n", len);
+
+    data=(UBYTE *) AllocVec(len+10, MEMF_CLEAR); /* freed on next call */
+
+    copy_clip_from_aros(data, len);
+
+    /* initial set-up for Offset, Error, and ClipID */
+    ior->io_Offset = 0;
+    ior->io_Error  = 0;
+    ior->io_ClipID = 0;
+
+    DebOut("write data to aros clipboard ..\n");
+    /* Write data */
+    ior->io_Data    = data;
+    ior->io_Length  = len;
+    ior->io_Command = CMD_WRITE;
+    DoIO( (struct IORequest *) ior);
+
+    DebOut("update aros clipboard ..\n");
+    /* Tell the clipboard we are done writing */
+    ior->io_Command=CMD_UPDATE;
+    DoIO( (struct IORequest *) ior);
+
+    /* Check if io_Error was set by any of the preceeding IO requests */
+    success = ior->io_Error ? FALSE : TRUE;
+
+    if(!success) {
+      DebOut("ERROR: %d\n",ior->io_Error);
+    }
+    if(data) {
+      FreeVec(data);
+    }
+  }
+}
+
 /**************************************************************
  * amiga_changed
  *
@@ -267,18 +362,15 @@ static void amiga_changed() {
   FreeVec(command_mem);
 }
 
+
 static void runme() {
   ULONG        newsignals;
   BOOL         done;
   BOOL         init;
   BOOL         set;
-  BOOL         success;
-  UBYTE       *data;
-  ULONG        len;
 
   DebOut("clipd running (CTRL-C to go to normal mode, CTRL-D to shared mode)..\n");
 
-  data=NULL;
   done=FALSE;
   init=FALSE;
   while(!done) {
@@ -295,97 +387,11 @@ static void runme() {
 
       if(newsignals & to_aros_signal) {
 
-	/* we are active */
-	DebOut("to_aros_signal from UAE received\n");
-
-	if(!init) {
-	  /* disabled -> enabled */
-	  init=TRUE;
-	}
-	/* get length of data */
-
-	if(data) {
-	  DebOut("to_aros_signal old data: %lx\n",data);
-	  FreeVec(data);
-	  data=NULL;
-	}
-
-	DebOut("DoIO (%lx) ..\n",  ior);
-	ior->io_ClipID  = 0;
-	ior->io_Offset  = 0;
-	ior->io_Command = CMD_READ;
-	ior->io_Data    = NULL;
-	ior->io_Length  = 0xFFFFFFFF;
-	DoIO( (struct IORequest *) ior);
-	len=ior->io_Actual;
-	DebOut("clipboard size: %d\n", len);
-	cb_read_done(ior);
-
-	data=(UBYTE *) AllocVec(len+10, MEMF_CLEAR); /* freed on next call */
-	DebOut("to_aros_signal new data: %lx\n",data);
-
-	ior->io_ClipID  = 0;
-	ior->io_Offset  = 0;
-	ior->io_Command = CMD_READ;
-	ior->io_Data    = data;
-	ior->io_Length  = len+1;
-	DoIO( (struct IORequest *) ior);
-	cb_read_done(ior);
-   
-	copy_clip_to_aros(data, len);
+	handle_to_aros_signal();
       }
 
       if(newsignals & to_amigaos_signal) {
-
-	/* we are active */
-	DebOut("to_amigaos_signal from UAE received\n");
-
-	if(!init) {
-	  /* disabled -> enabled */
-	  init=TRUE;
-	}
-
-	len=get_aros_len();
-	if(len) {
-	  DebOut("len: %d\n", len);
-
-	  /* get length of data */
-	  if(data) {
-	    DebOut("to_amigaos_signal old data: %lx\n", data);
-	    FreeVec(data);
-	    data=NULL;
-	  }
-
-	  data=(UBYTE *) AllocVec(len+10, MEMF_CLEAR); /* freed on next call */
-	  DebOut("to_amigaos_signal new data: %lx\n", data);
-
-	  copy_clip_from_aros(data, len);
-
-	  /* initial set-up for Offset, Error, and ClipID */
-	  ior->io_Offset = 0;
-	  ior->io_Error  = 0;
-	  ior->io_ClipID = 0;
-
-	  DebOut("write data ..\n");
-	  /* Write data */
-	  ior->io_Data    = data;
-	  ior->io_Length  = len;
-	  ior->io_Command = CMD_WRITE;
-	  DoIO( (struct IORequest *) ior);
-
-	  DebOut("update clipboard ..\n");
-	  /* Tell the clipboard we are done writing */
-	  ior->io_Command=CMD_UPDATE;
-	  DoIO( (struct IORequest *) ior);
-
-	  /* Check if io_Error was set by any of the preceeding IO requests */
-	  success = ior->io_Error ? FALSE : TRUE;
-
-	  if(!success) {
-	    DebOut("ERROR: %d\n",ior->io_Error);
-	  }
-
-	}
+	handle_to_amigaos_signal();
       }
 
       if(newsignals & clipsignal) {
@@ -396,46 +402,19 @@ static void runme() {
     if((newsignals & SIGBREAKF_CTRL_C) ||
       (!set && (newsignals & to_aros_signal))) {
       DebOut("!set || got SIGBREAKF_CTRL_C..\n");
-      if(init) {
-	DebOut("tell uae, that we received a SIGBREAKF_CTRL_C\n");
-	init=FALSE;
-	/* we are tired */
-	set=setup(mytask, to_aros_signal, to_amigaos_signal, 1);
-      }
-      else {
-	DebOut("we are already inactive\n");
-      }
+      /* we are tired */
+      set=setup(mytask, to_aros_signal, to_amigaos_signal, 1);
     }
 
     if(newsignals & SIGBREAKF_CTRL_D) {
       DebOut("got SIGBREAKF_CTRL_D..\n");
-//      switch_uae_window();
-      if(!init) {
-	DebOut("tell uae, that we received a SIGBREAKF_CTRL_D\n");
-	/* we are back again */
-	set=setup(mytask, to_aros_signal, to_amigaos_signal, 2);
-      }
-      else {
-	DebOut("we are already active\n");
-      }
-
+      /* tell uae, that we received a SIGBREAKF_CTRL_D */
+      set=setup(mytask, to_aros_signal, to_amigaos_signal, 2);
     }
   }
 
   /* never arrive here */
-
   DebOut("try to sleep ..\n");
-
-#if 0
-  /* enable uae window again */
-  activate_uae_window(1);
-
-  /* cose all windows */
-  command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
-  calltrap (AD_GET_JOB, AD_GET_JOB_LIST_WINDOWS, command_mem);
-  FreeVec(command_mem);
-#endif
-
 }
 
 /***************************************************
