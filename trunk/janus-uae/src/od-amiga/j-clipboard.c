@@ -53,6 +53,7 @@ void uae_Signal(uaecptr task, uae_u32 mask);
 #endif
 
 static struct IOClipReq *ior=NULL;
+static struct Hook ClipHook;
 
 /****** cbio/CBOpen *************************************************
 *
@@ -122,6 +123,41 @@ static void CBClose(struct IOClipReq *ior) {
   DeletePort(mp);
 }
 
+/********************************************************************
+ * clipboard_hook_install
+ ********************************************************************/
+static ULONG ClipChange(struct Hook *c_hook, VOID *o, struct ClipHookMsg *msg) {
+
+  DebOut("clipboard changed\n");
+
+  clipboard_aros_changed=TRUE;
+}
+
+void clipboard_hook_install() {
+
+  if(!ior) {
+    ior=CBOpen(0);
+  }
+
+  /* init clipboard hook */
+  ClipHook.h_Entry =   &ClipChange;
+  ClipHook.h_SubEntry = NULL;
+  ClipHook.h_Data =     NULL;
+
+  /* install clipboard changed hook */
+  ior->io_Command= CBD_CHANGEHOOK;
+  ior->io_Length = 1;
+  ior->io_Data   = (APTR) &ClipHook;
+
+  if (DoIO ((struct IORequest *) ior)) {
+    DebOut("ERROR: Can't install clipboard hook\n");
+  }
+
+  CBClose(ior);
+  ior=NULL;
+}
+
+
 /*********************************************************************
  * clipboard_write_raw
  *
@@ -144,6 +180,11 @@ static BOOL clipboard_write_raw(struct IOClipReq *ior, UBYTE *data, ULONG len) {
   ior->io_Command = CMD_WRITE;
   DoIO( (struct IORequest *) ior);
 
+  if(ior->io_Error) {
+    DebOut("ERROR: %d\n", ior->io_Error);
+    return FALSE;
+  }
+
   DebOut("update clipboard ..\n");
   /* Tell the clipboard we are done writing */
   ior->io_Command=CMD_UPDATE;
@@ -159,9 +200,29 @@ static BOOL clipboard_write_raw(struct IOClipReq *ior, UBYTE *data, ULONG len) {
   return(success);
 }
 
+/****************************************************
+ * cb_read_done
+ *
+ * tell clipboard.device, we are done
+ ****************************************************/
+void cb_read_done(struct IOClipReq *ior) {
+  char buffer[256];
 
+  DebOut("(%lx)\n",ior);
 
+  ior->io_Command = CMD_READ;
+  ior->io_Data    = (STRPTR)buffer;
+  ior->io_Length  = 254;
 
+  /* falls through immediately if io_Actual == 0 */
+  while (ior->io_Actual) {
+    if (DoIO( (struct IORequest *) ior)) {
+      break;
+    }
+  }
+}
+
+#if 0
 /*******************************************************
  * amiga_clipboard_from_iff_text
  *
@@ -258,6 +319,7 @@ static char *amiga_clipboard_get_txt (uaecptr data, uae_u32 len) {
       from_iff_ilbm (data, len);
       */
 }
+#endif
 
 
 /*******************************************************
@@ -282,7 +344,7 @@ void copy_clipboard_to_aros(void) {
    * in the end, he will call copy_clipboard_to_aros_real
    */ 
 
-  DebOut("send signal %d to clipd task %lx\n", aos3_clip_signal, aos3_clip_task);
+  DebOut("send signal %lx to clipd task %lx\n", aos3_clip_signal, aos3_clip_task);
   uae_Signal (aos3_clip_task, aos3_clip_signal);
 
 }
@@ -316,4 +378,96 @@ void copy_clipboard_to_aros_real(uaecptr data, uae_u32 len) {
   clipboard_amiga_changed=FALSE;
 }
 
+/*******************************************************
+ * copy_clipboard_to_amigaos();
+ *******************************************************/
+void copy_clipboard_to_amigaos(void) {
+
+  DebOut("entered\n");
+
+  if(!clipboard_aros_changed) {
+    /* nothing to do for us */
+    DebOut("nothing to do\n");
+    return; 
+  }
+
+  if(!aos3_clip_task || !aos3_clip_signal) {
+    DebOut("no clipd running\n");
+  }
+
+  /* 
+   * just signal clipd and let him handle all the trouble 
+   * in the end, he will call copy_clipboard_to_amigaos_real
+   */ 
+
+  DebOut("send signal %lx to clipd task %lx\n", aos3_clip_to_amigaos_signal, aos3_clip_task);
+  uae_Signal (aos3_clip_task, aos3_clip_to_amigaos_signal);
+
+}
+
+/*******************************************************
+ * aros_clipboard_len
+ *
+ * report back size of aros clipboard
+ *******************************************************/
+ULONG aros_clipboard_len() {
+  ULONG len;
+  struct IOClipReq *ior;
+
+  ior=CBOpen(0);
+  DebOut("ior: %lx\n", ior);
+
+  ior->io_ClipID  = 0;
+  ior->io_Offset  = 0;
+  ior->io_Command = CMD_READ;
+  ior->io_Data    = NULL;
+  ior->io_Length  = 0xFFFFFFFF;
+  DoIO( (struct IORequest *) ior);
+  len=ior->io_Actual;
+  DebOut("ior->io_Offset: %d\n", ior->io_Offset);
+  DebOut("ior->io_Actual: %d\n", ior->io_Actual);
+  DebOut("clipboard size: %d\n", len);
+
+  if(ior->io_Error) {
+    DebOut("ERROR: %d\n", ior->io_Error);
+    len=0;
+  }
+  cb_read_done(ior);
+
+  CBClose(ior);
+
+  return len;
+}
+
+/*******************************************************
+ * copy_clipboard_to_amigaos_real
+ *
+ * we need to copy our clipboard content into the
+ * m68kbuffer data (maximal length: len)
+ *******************************************************/
+void copy_clipboard_to_amigaos_real(uaecptr m68k_data, uae_u32 len) {
+  UBYTE *aros_data;
+  struct IOClipReq *ior;
+  
+  DebOut("copy_clipboard_to_amigaos_real(%lx, %d)\n", m68k_data, len);
+  ior=CBOpen(0);
+
+  aros_data=get_real_address(m68k_data);
+  DebOut("aros_data: %lx\n", aros_data);
+
+  ior->io_ClipID  = 0;
+  ior->io_Offset  = 0;
+  ior->io_Command = CMD_READ;
+  ior->io_Data    = aros_data;
+  /* maximum length. avoid overwrites, in case clipboard has changed: */
+  ior->io_Length  = len; 
+  DoIO( (struct IORequest *) ior);
+  cb_read_done(ior);
+
+  CBClose(ior);
+
+  /* we are in sync now (or will be soon at least) */
+  clipboard_aros_changed =FALSE;
+  clipboard_amiga_changed=FALSE;
+}
 
