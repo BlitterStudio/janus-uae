@@ -32,9 +32,12 @@
 #define AD_CLIP_SETUP 15
 #define AD_CLIP_JOB 16
 #define AD_CLIP_TEST 0
-#define JD_AMIGA_CHANGED      1
-#define JD_AROS_CHANGED       2
-#define JD_CLIP_COPY_TO_AROS  3
+#define JD_AMIGA_CHANGED       1
+#define JD_AROS_CHANGED        2
+#define JD_CLIP_COPY_TO_AROS   3
+#define JD_CLIP_GET_AROS_LEN   4
+#define JD_CLIP_COPY_FROM_AROS 5
+
 
 #define AROSTRAPBASE 0xF0FF90
 
