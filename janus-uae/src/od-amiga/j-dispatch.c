@@ -358,7 +358,7 @@ static uae_u32 cd_setup(TrapContext *context, ULONG *param) {
      *   2: demon wants to run again
      */
 
-    JWLOG("cd_setup(.., task %lx, .., stop %d)\n",get_long_p(param),get_long_p(param+8));
+    JWLOG("cd_setup(.., task %lx, .., stop %d)\n",get_long_p(param),get_long_p(param+12));
 
     if(!aos3_clip_task) {
       JWLOG("AD_CLIP_SETUP called first time => Init..\n");
@@ -369,11 +369,14 @@ static uae_u32 cd_setup(TrapContext *context, ULONG *param) {
 
       aos3_clip_task=get_long_p(param);
       aos3_clip_signal=get_long_p(param+4);
+      aos3_clip_to_amigaos_signal=get_long_p(param+8);
+
+      clipboard_hook_install();
 
       unlock_jgui();
     }
 
-    want_to_die=get_long_p(param+8);
+    want_to_die=get_long_p(param+12);
     JWLOG("want_to_die:%d\n",want_to_die);
 
     if(want_to_die == 1) {
@@ -389,9 +392,8 @@ static uae_u32 cd_setup(TrapContext *context, ULONG *param) {
       /* update gui !! */
     }
 
-
     JWLOG("return %d\n", changed_prefs.jclipboard);
-    put_long_p(param+8, changed_prefs.jclipboard);
+    put_long_p(param+12, changed_prefs.jclipboard);
     return changed_prefs.jclipboard;
 }
 
@@ -502,13 +504,13 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
 	  case JD_CLIP_COPY_TO_AROS:
 	    /* clipd told us to take the amigaOS clipboard and copy it to AROS clipboard */
 	    copy_clipboard_to_aros_real(get_long(m68k_results + 4), get_long(m68k_results + 8));
-
-	    /*
-	    clipboard_amiga_updated=get_long( param);
-	    clipboard_amiga_data=get_long(param + 4);
-	    clipboard_amiga_size=get_long(param + 8);
-	    */
-
+	    return TRUE;
+	  case JD_CLIP_GET_AROS_LEN:
+	    /* get clipboard len */
+	    put_long((ULONG) (m68k_results), aros_clipboard_len());
+	    return TRUE;
+	  case JD_CLIP_COPY_FROM_AROS:
+	    copy_clipboard_to_amigaos_real(get_long_p(m68k_results), get_long_p(m68k_results+4));
 	    return TRUE;
   	  default:
   	    JWLOG("ERROR!! CLIP_JOB: unkown job: %d\n",m68k_dreg(&context->regs, 1));
