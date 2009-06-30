@@ -216,6 +216,7 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	  inputdevice_acquire ();
 	  inputdevice_release_all_keys ();
 	  reset_hotkeys ();
+	  copy_clipboard_to_amigaos();
 	}
 #if 0
 	ObtainSemaphore(&sem_janus_window_list);
@@ -248,6 +249,7 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	if(old == janus_active_window) {
 	  janus_active_window=NULL;
 	  JWLOG("janus_active_window=NULL\n");
+	  copy_clipboard_to_aros();
 	  inputdevice_unacquire ();
 	}
 	ReleaseSemaphore(&sem_janus_active_win);
