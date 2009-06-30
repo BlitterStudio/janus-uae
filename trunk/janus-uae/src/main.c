@@ -609,7 +609,7 @@ static int do_preinit_machine (int argc, char **argv)
     machdep_init ();
 
     if (! audio_setup ()) {
-	write_log ("Sound driver unavailable: Sound output disabled\n");
+	write_log ("Sound driver unavailable (1): Sound output disabled\n");
 	currprefs.produce_sound = 0;
     }
     inputdevice_init ();
@@ -687,7 +687,11 @@ static int do_init_machine (void)
 #endif
 #endif
 	    if (sound_available && currprefs.produce_sound > 1 && ! audio_init ()) {
-		write_log ("Sound driver unavailable: Sound output disabled\n");
+		write_log ("Sound driver unavailable (2): Sound output disabled\n");
+		kprintf ("Sound driver unavailable (2): Sound output disabled\n");
+		kprintf("sound_available: %d\n",sound_available);
+		kprintf("currprefs.produce_sound: %d\n",currprefs.produce_sound);
+
 		currprefs.produce_sound = 0;
 	    }
 
@@ -764,16 +768,16 @@ static void do_reset_machine (int hardreset)
 static void do_run_machine (void)
 {
 #if defined (NATMEM_OFFSET) && defined( _WIN32 ) && !defined( NO_WIN32_EXCEPTION_HANDLER )
-    extern int EvalException ( LPEXCEPTION_POINTERS blah, int n_except );
+    extern int Evaluae_Exception ( LPEXCEPTION_POINTERS blah, int n_except );
     __try
 #endif
     {
 	m68k_go (1);
     }
 #if defined (NATMEM_OFFSET) && defined( _WIN32 ) && !defined( NO_WIN32_EXCEPTION_HANDLER )
-    __except( EvalException( GetExceptionInformation(), GetExceptionCode() ) )
+    __except( Evaluae_Exception( Getuae_ExceptionInformation(), Getuae_ExceptionCode() ) )
     {
-	// EvalException does the good stuff...
+	// Evaluae_Exception does the good stuff...
     }
 #endif
 }
@@ -810,6 +814,7 @@ static void do_exit_machine (void)
 #endif
 #ifdef FILESYS
     filesys_cleanup ();
+    hardfile_cleanup (); 
 #endif
 #ifdef SAVESTATE
     savestate_free ();
@@ -860,7 +865,10 @@ void real_main (int argc, char **argv)
 	want_gui = currprefs.start_gui;
 
 #if defined GTKMUI
-	//want_gui = 1; /*o1i use_gui hack */
+	/* we always open up the GUI, but with MUIA_Application_Iconified if !currprefs.start_gui
+	 * so the user can always switch it on with the help of Exchange
+	 */
+	want_gui = 1; 
 #endif
         if (restart_program == 2)
 	    want_gui = 0;
@@ -874,14 +882,21 @@ void real_main (int argc, char **argv)
 	    int err = gui_open ();
 
 	    if (err >= 0) {
+#if defined GTKMUI
+	      if(currprefs.start_gui) {
+#endif
+		/* wait for state button to be pressed */
 		do {
 		    gui_handle_events ();
 
 		    uae_msleep (10);
 
 		} while (!uae_state_change_pending ());
+#if defined GTKMUI
+	      }
+#endif
 	    } else if (err == - 1) {
-		kprintf("o1i: err == - 1 (restart_program=%d\n",restart_program);
+
 		if (restart_program == 3) {
 		    restart_program = 0;
 

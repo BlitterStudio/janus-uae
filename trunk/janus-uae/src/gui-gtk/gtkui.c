@@ -587,6 +587,11 @@ static int my_idle (void)
 		update_buttons (uae_get_state()); //FIXME
 	    }
 	    if (cmd == GUICMD_SHOW) {
+
+#if defined GTKMUI
+	      //gtk_mui_application_iconify(TRUE);
+#warning ==============> gtk_mui_application_iconify(TRUE); <========================
+#endif
 		gtk_widget_show (gui_window);
 #	    if GTK_MAJOR_VERSION >= 2
 		gtk_window_present (GTK_WINDOW (gui_window));
@@ -2084,8 +2089,8 @@ void unlock_jgui() {
     g_signal_emit_by_name(jint_panel,"unlock-it",NULL);
 }
 
-static void create_guidlg (void)
-{
+static void create_guidlg (void) {
+
     GtkWidget *window, *notebook;
     GtkWidget *buttonbox, *vbox, *hbox;
     GtkWidget *thing;
@@ -2101,7 +2106,7 @@ static void create_guidlg (void)
 //	{ "Graphics",     make_gfx_widgets },
 	//{ "Chipset",      make_chipset_widgets },
 	{ "Display",      make_display_widgets },
-	{ "View",         make_integration_widgets },
+	{ "Integration",  make_integration_widgets },
 	{ "Sound",        make_sound_widgets },
 #ifdef JIT
  	{ "JIT",          make_comp_widgets },
@@ -2215,6 +2220,14 @@ static void create_guidlg (void)
 
     gtk_timeout_add (1000, (GtkFunction)leds_callback, 0);
     //DebOut("end\n");
+    //
+#if defined GTKMUI
+    /* keep the GUI hidden, if !currprefs.start_gui 
+     * use Exchange to show it
+     */
+    DEBUG_LOG("create_guidlg: gtk_mui_application_iconify %d\n", !currprefs.start_gui);
+    gtk_mui_application_iconify(!currprefs.start_gui);
+#endif
 }
 
 /*
@@ -2246,7 +2259,6 @@ static void *gtk_gui_thread (void *dummy)
 #endif
 	gui_available = 1;
 	//DebOut("gui_available = 1\n");
-
 
 	/* Add callback to GTK+ mainloop to handle messages from UAE */
 	gtk_timeout_add (250, (GtkFunction)my_idle, 0);
@@ -2715,6 +2727,7 @@ int gui_open (void)
 	/* We have the technology and the will - so tell the GUI to
 	 * reveal itself */
 	//DebOut("GUICMD_SHOW\n");
+
 	DEBUG_LOG( " write_comm_pipe_int(GUICMD_SHOW)\n" );
 	write_comm_pipe_int (&to_gui_pipe, GUICMD_SHOW, 1);
     }
