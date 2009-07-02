@@ -135,13 +135,19 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	break;
 
     case IDCMP_MENUVERIFY:
-	JWLOG("IDCMP_MENUVERIFY\n");
-	menux=0;
-	menuy=0;
-	j_stop_window_update=TRUE;
-	mice[0].enabled=FALSE; /* disable mouse emulation */
-	my_setmousebuttonstate(0, 1, 1); /* MENUDOWN */
-	clone_menu(jwin);
+	if(IntuitionBase->ActiveWindow != win) {
+	  /* this seems to be a bug in aros, why are we getting those messages at all !? */
+	  JWLOG("WARNING: foreign IDCMP message IDCMP_MENUVERIFY received\n");
+	}
+	else {
+	  JWLOG("IDCMP_MENUVERIFY\n");
+	  menux=0;
+	  menuy=0;
+	  j_stop_window_update=TRUE;
+	  mice[0].enabled=FALSE; /* disable mouse emulation */
+	  my_setmousebuttonstate(0, 1, 1); /* MENUDOWN */
+	  clone_menu(jwin);
+	}
 	break;
 
     case IDCMP_MENUPICK:
@@ -211,11 +217,14 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	 * A simple fix is just to tell UAE that all keys have been released.
 	 * This avoids keys appearing to be "stuck" down.
 	 */
+
+	JWLOG("IDCMP_ACTIVEWINDOW(%lx, %s)\n", win, win->Title);
+	inputdevice_acquire ();
+	inputdevice_release_all_keys ();
+	reset_hotkeys ();
+
 	ObtainSemaphore(&sem_janus_active_win);
 	if(!janus_active_window) {
-	  inputdevice_acquire ();
-	  inputdevice_release_all_keys ();
-	  reset_hotkeys ();
 	  copy_clipboard_to_amigaos();
 	}
 #if 0
@@ -235,7 +244,11 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
     /* there might be a race.. ? */
     case IDCMP_INACTIVEWINDOW: {
 	JanusWin *old;
-	sleep(1);
+
+	JWLOG("IDCMP_INACTIVEWINDOW(%lx, %s)\n", win, win->Title);
+	inputdevice_unacquire ();
+
+	Delay(10);
 	ObtainSemaphore(&sem_janus_active_win);
 #if 0
 	ObtainSemaphore(&sem_janus_window_list);
@@ -250,7 +263,6 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	  janus_active_window=NULL;
 	  JWLOG("janus_active_window=NULL\n");
 	  copy_clipboard_to_aros();
-	  inputdevice_unacquire ();
 	}
 	ReleaseSemaphore(&sem_janus_active_win);
 	break;
