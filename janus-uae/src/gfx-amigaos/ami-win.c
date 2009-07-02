@@ -170,6 +170,10 @@ static char picasso_invalid_lines[1200];
 static int  picasso_invalid_start;
 static int  picasso_invalid_end;
 
+/* original values in case uae_main window is "hidden" */
+static WORD uae_main_window_Width, uae_main_window_Height;
+static WORD uae_main_window_Left,  uae_main_window_Top;
+
 /****************************************************************************/
 /*
  * prototypes & global vars
@@ -1176,32 +1180,65 @@ static int setup_publicscreen(void)
 	}
     }
 
+    if(currprefs.jcoherence) {
+      /*
+       * as it seems, that a lot of stuff depends on a uae main window existing (RastPort etc),
+       * we open one just for those variables to be valid. It is put into the right lower
+       * border of the screen and size 1x1
+       */
 
+      W = OpenWindowTags (NULL,
+			  WA_Title,        (ULONG)PACKAGE_NAME,
+			  WA_AutoAdjust,   TRUE,
+			  WA_Left,         S->Width,
+			  WA_Top,          S->Height,
+			  WA_Width,        1,
+			  WA_Height,       1,
+			  WA_PubScreen,    (ULONG)S,
+			  WA_Zoom,         (ULONG)ZoomArray,
+			  WA_IDCMP,        IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY
+					 | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW
+					 | IDCMP_MOUSEMOVE    | IDCMP_DELTAMOVE
+					 | IDCMP_CLOSEWINDOW  | IDCMP_REFRESHWINDOW
+					 | IDCMP_NEWSIZE      | IDCMP_INTUITICKS,
+			  WA_Flags,	 WFLG_DRAGBAR     | WFLG_DEPTHGADGET
+					 | WFLG_REPORTMOUSE | WFLG_RMBTRAP
+					 | WFLG_ACTIVATE    | WFLG_CLOSEGADGET
+					 | WFLG_SMART_REFRESH,
+			  TAG_DONE);
+      /* remember values */
+      uae_main_window_Left  =0;
+      uae_main_window_Top   =0;
+      uae_main_window_Width =gfxvidinfo.width;
+      uae_main_window_Height=gfxvidinfo.height;
 
-    W = OpenWindowTags (NULL,
-			WA_Title,        (ULONG)PACKAGE_NAME,
-			WA_AutoAdjust,   TRUE,
-			WA_InnerWidth,   gfxvidinfo.width,
-			WA_InnerHeight,  gfxvidinfo.height,
-#if 0
-			WA_Width,    1,
-			WA_Height,   1,
-#endif
+      uae_main_window_closed=TRUE;
+    }
+    else {
 
-			WA_PubScreen,    (ULONG)S,
-			WA_Zoom,         (ULONG)ZoomArray,
-			WA_IDCMP,        IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY
-				       | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW
-				       | IDCMP_MOUSEMOVE    | IDCMP_DELTAMOVE
-				       | IDCMP_CLOSEWINDOW  | IDCMP_REFRESHWINDOW
-				       | IDCMP_NEWSIZE      | IDCMP_INTUITICKS,
-			WA_Flags,	 WFLG_DRAGBAR     | WFLG_DEPTHGADGET
-				       | WFLG_REPORTMOUSE | WFLG_RMBTRAP
-				       | WFLG_ACTIVATE    | WFLG_CLOSEGADGET
-				       | WFLG_SMART_REFRESH,
-			TAG_DONE);
+      W = OpenWindowTags (NULL,
+			  WA_Title,        (ULONG)PACKAGE_NAME,
+			  WA_AutoAdjust,   TRUE,
+			  WA_InnerWidth,   gfxvidinfo.width,
+			  WA_InnerHeight,  gfxvidinfo.height,
+			  WA_PubScreen,    (ULONG)S,
+			  WA_Zoom,         (ULONG)ZoomArray,
+			  WA_IDCMP,        IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY
+					 | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW
+					 | IDCMP_MOUSEMOVE    | IDCMP_DELTAMOVE
+					 | IDCMP_CLOSEWINDOW  | IDCMP_REFRESHWINDOW
+					 | IDCMP_NEWSIZE      | IDCMP_INTUITICKS,
+			  WA_Flags,	 WFLG_DRAGBAR     | WFLG_DEPTHGADGET
+					 | WFLG_REPORTMOUSE | WFLG_RMBTRAP
+					 | WFLG_ACTIVATE    | WFLG_CLOSEGADGET
+					 | WFLG_SMART_REFRESH,
+			  TAG_DONE);
+      uae_main_window_closed=FALSE;
 
-    //uae_main_window_closed=TRUE;
+      gfxvidinfo.width  = (W->Width  - W->BorderRight - W->BorderLeft);   
+      gfxvidinfo.height = (W->Height - W->BorderTop   - W->BorderBottom); 
+
+    }
 
     UnlockPubScreen (NULL, S);
 
@@ -1216,8 +1253,6 @@ static int setup_publicscreen(void)
 
 AWTRACE("gfxvidinfo.width: %d\n", gfxvidinfo.width);
 AWTRACE("gfxvidinfo.height: %d\n",gfxvidinfo.height);
-    gfxvidinfo.width  = (W->Width  - W->BorderRight - W->BorderLeft);   /* ?? */
-    gfxvidinfo.height = (W->Height - W->BorderTop   - W->BorderBottom); /* ?? */
     XOffset = W->BorderLeft;
     YOffset = W->BorderTop;
 AWTRACE("gfxvidinfo.width: %d\n", gfxvidinfo.width);
