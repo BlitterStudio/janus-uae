@@ -237,7 +237,7 @@ static void ham_conv(UWORD *src, UBYTE *buf, UWORD len);
 static int  RPDepth(struct RastPort *RP);
 static int get_nearest_color(int r, int g, int b);
 
-static int get_BytesPerRow(struct Window *win, WORD width);
+static int get_BytesPerRow(struct Window *win);
 
 /****************************************************************************/
 
@@ -1176,11 +1176,18 @@ static int setup_publicscreen(void)
 	}
     }
 
+
+
     W = OpenWindowTags (NULL,
 			WA_Title,        (ULONG)PACKAGE_NAME,
 			WA_AutoAdjust,   TRUE,
 			WA_InnerWidth,   gfxvidinfo.width,
 			WA_InnerHeight,  gfxvidinfo.height,
+#if 0
+			WA_Width,    1,
+			WA_Height,   1,
+#endif
+
 			WA_PubScreen,    (ULONG)S,
 			WA_Zoom,         (ULONG)ZoomArray,
 			WA_IDCMP,        IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY
@@ -1194,7 +1201,10 @@ static int setup_publicscreen(void)
 				       | WFLG_SMART_REFRESH,
 			TAG_DONE);
 
+    //uae_main_window_closed=TRUE;
+
     UnlockPubScreen (NULL, S);
+
 
     if (!W) {
 	write_log ("Can't open window on public screen!\n");
@@ -1202,10 +1212,16 @@ static int setup_publicscreen(void)
 	return 0;
     }
 
-    gfxvidinfo.width  = (W->Width  - W->BorderRight - W->BorderLeft);
-    gfxvidinfo.height = (W->Height - W->BorderTop   - W->BorderBottom);
+    AWTRACE("openen uae window %lx\n",W);
+
+AWTRACE("gfxvidinfo.width: %d\n", gfxvidinfo.width);
+AWTRACE("gfxvidinfo.height: %d\n",gfxvidinfo.height);
+    gfxvidinfo.width  = (W->Width  - W->BorderRight - W->BorderLeft);   /* ?? */
+    gfxvidinfo.height = (W->Height - W->BorderTop   - W->BorderBottom); /* ?? */
     XOffset = W->BorderLeft;
     YOffset = W->BorderTop;
+AWTRACE("gfxvidinfo.width: %d\n", gfxvidinfo.width);
+AWTRACE("gfxvidinfo.height: %d\n",gfxvidinfo.height);
 
     RP = W->RPort;
 
@@ -1516,7 +1532,6 @@ int graphics_setup (void)
     return 0;
   }
 #endif
-
 
     init_pointer ();
 
@@ -1988,6 +2003,7 @@ BOOL clone_window_area(JanusWin *jwin,
   WORD winx, winy, winxend, winyend, areaxend, areayend;
   //UWORD width, height;
   WORD startx, starty, endx, endy; /* result */
+  WORD width;
   struct Window* win;
   ULONG aos3win;
 
@@ -2044,7 +2060,7 @@ BOOL clone_window_area(JanusWin *jwin,
   AWTRACE("clone_wia: WritePixelArray(x %3d y %3d  width %3d height %3d)\n",
            startx-winx,starty-winy,endx-startx,endy-starty);
 
-  /* tis can happen, if we only have a window top border and no
+  /* this can happen, if we only have a window top border and no
    * window body at all..?
    */
   if((endx-startx < 0) || (endy-starty < 0)) {
@@ -2052,12 +2068,18 @@ BOOL clone_window_area(JanusWin *jwin,
     return TRUE;
   }
 
+  if(!uae_main_window_closed) {
+    width= W->Width;
+  }
+  else {
+    width=picasso_vidinfo.width;
+  }
 
   WritePixelArray (
       picasso_memory, 
       startx, /* src x  */
       starty,  /* src y  */
-      get_BytesPerRow(W, W->Width),         /* srcmod */
+      get_BytesPerRow(W),         /* srcmod */
       win->RPort, 
       startx - winx, starty - winy,
       endx - startx + jwin->plusx,
@@ -2237,7 +2259,7 @@ static void clone_window(ULONG m68k_win, struct Window *aros_win,
       picasso_memory, 
       get_LeftEdge(m68k_win) + get_BorderLeft(m68k_win), /* src x  */
       real_start,  /* src y  */
-      get_BytesPerRow(W, W->Width),                      /* srcmod */
+      get_BytesPerRow(W),                      /* srcmod */
       /*native_window->RPort, */
       aros_win->RPort, 
       /* no WA_GimmeZeroZero
@@ -2333,7 +2355,7 @@ static void o1i_Display_Update(int start,int i) {
 
   if(!uae_main_window_closed) {
     WritePixelArray (
-	picasso_memory, 0, start, get_BytesPerRow(W, W->Width),
+	picasso_memory, 0, start, get_BytesPerRow(W),
 	W->RPort, 
 	W->BorderLeft, W->BorderTop + start,
 	W->Width - W->BorderLeft - W->BorderRight, 
@@ -2523,10 +2545,11 @@ void handle_events(void) {
 		inputdevice_acquire ();
 		inputdevice_release_all_keys ();
 		reset_hotkeys ();
-
+		copy_clipboard_to_amigaos();
 		break;
 
 	    case IDCMP_INACTIVEWINDOW:
+		copy_clipboard_to_aros();
 		inputdevice_unacquire ();
 		break;
 
@@ -2605,8 +2628,17 @@ static int get_BytesPerPix(struct Window *win) {
   return res;
 }
 
-static int get_BytesPerRow(struct Window *win, WORD width) {
+/* TODO ?? */
+static int get_BytesPerRow(struct Window *win) {
+  WORD width;
   //AWTRACE("get_BytesPerRow(%lx)=%d * %d = %d\n",win,width,get_BytesPerPix(win),width*get_BytesPerPix(win));
+
+  if(!uae_main_window_closed) {
+    width=W->Width;
+  }
+  else {
+    width=picasso_vidinfo.width;
+  }
 
   return width * get_BytesPerPix(win);
 }
@@ -2617,30 +2649,37 @@ static void set_screen_for_picasso(void) {
 
   AWTRACE("set_screen_for_picasso\n");
 
-  AWTRACE("  old window      : %d x %d\n",W->Width,W->Height);
-  AWTRACE("  resize window to: %d x %d\n",picasso_vidinfo.width,picasso_vidinfo.height);
+  if(!uae_main_window_closed) {
+    AWTRACE("  old window      : %d x %d\n",W->Width,W->Height);
+    AWTRACE("  resize window to: %d x %d\n",picasso_vidinfo.width,picasso_vidinfo.height);
 
-  AWTRACE("  W->BorderLeft:   %d\n",W->BorderLeft);
-  AWTRACE("  W->BorderRight:  %d\n",W->BorderRight);
-  AWTRACE("  W->BorderTop:    %d\n",W->BorderTop);
-  AWTRACE("  W->BorderBottom: %d\n",W->BorderBottom);
+    AWTRACE("  W->BorderLeft:   %d\n",W->BorderLeft);
+    AWTRACE("  W->BorderRight:  %d\n",W->BorderRight);
+    AWTRACE("  W->BorderTop:    %d\n",W->BorderTop);
+    AWTRACE("  W->BorderBottom: %d\n",W->BorderBottom);
 
-  AWTRACE("  gfx_fullscreen_picasso: %d\n",currprefs.gfx_pfullscreen);
-  AWTRACE("  S: %lx\n",S);
-  if(currprefs.gfx_pfullscreen || !S) {
-    /* center it */
-    AWTRACE("  S->Width x S->Height: %d x %d\n",S->Width,S->Height);
-    width =picasso_vidinfo.width;
-    height=picasso_vidinfo.height;
-    ChangeWindowBox(W, (S->Width  - picasso_vidinfo.width )/2,
-		       (S->Height - picasso_vidinfo.height)/2,
-                       width,
-                       height);
+    AWTRACE("  gfx_fullscreen_picasso: %d\n",currprefs.gfx_pfullscreen);
+    AWTRACE("  S: %lx\n",S);
+    if(currprefs.gfx_pfullscreen || !S) {
+      /* center it */
+      AWTRACE("  S->Width x S->Height: %d x %d\n",S->Width,S->Height);
+      width =picasso_vidinfo.width;
+      height=picasso_vidinfo.height;
+      ChangeWindowBox(W, (S->Width  - picasso_vidinfo.width )/2,
+			 (S->Height - picasso_vidinfo.height)/2,
+			 width,
+			 height);
+    }
+    else {
+      width =picasso_vidinfo.width  + W->BorderLeft + W->BorderRight;
+      height=picasso_vidinfo.height + W->BorderTop  + W->BorderBottom;
+      ChangeWindowBox(W, W->LeftEdge, W->TopEdge, width, height);
+    }
   }
   else {
-    width =picasso_vidinfo.width  + W->BorderLeft + W->BorderRight;
-    height=picasso_vidinfo.height + W->BorderTop  + W->BorderBottom;
-    ChangeWindowBox(W, W->LeftEdge, W->TopEdge, width, height);
+    AWTRACE("window is hidden\n");
+    width =picasso_vidinfo.width;
+    height=picasso_vidinfo.height;
   }
 
   /* error checks in ChangeWindowBox possible? 
@@ -2654,7 +2693,7 @@ static void set_screen_for_picasso(void) {
 
   picasso_vidinfo.extra_mem = 1;
 
-  picasso_vidinfo.rowbytes = get_BytesPerRow(W, width);
+  picasso_vidinfo.rowbytes = get_BytesPerRow(W);
   picasso_vidinfo.pixbytes = get_BytesPerPix(W);
 
   if(picasso_memory) {
@@ -2668,7 +2707,7 @@ static void set_screen_for_picasso(void) {
   picasso_invalid_start = picasso_vidinfo.height + 1;
   picasso_invalid_end   = -1;
 
-  AWTRACE("  actaul window size : %d x %d\n",W->Width,W->Height);
+  AWTRACE("  actual window size : %d x %d\n",W->Width,W->Height);
   AWTRACE("  new window size    : %d x %d\n",width,height);
   AWTRACE("  byte per row       : %d \n",picasso_vidinfo.rowbytes);
   AWTRACE("  byte per pix       : %d \n",picasso_vidinfo.pixbytes);
