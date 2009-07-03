@@ -135,9 +135,7 @@ static ULONG ClipChange(struct Hook *c_hook, VOID *o, struct ClipHookMsg *msg) {
 
 void clipboard_hook_install() {
 
-  if(!ior) {
-    ior=CBOpen(0);
-  }
+  ior=CBOpen(0);
 
   /* init clipboard hook */
   ClipHook.h_Entry =   &ClipChange;
@@ -364,15 +362,15 @@ void copy_clipboard_to_aros_real(uaecptr data, uae_u32 len) {
     return;
   }
 
-  if(!ior) {
-    ior=CBOpen(0);
-  }
+  ior=CBOpen(0);
 
   clipboard_write_raw(ior, get_real_address(data), len);
 
   CBClose(ior);
   ior=NULL;
 
+  DebOut("clipboard_aros_changed =FALSE\n");
+  DebOut("clipboard_amiga_changed=FALSE\n");
   /* we are in sync now */
   clipboard_aros_changed =FALSE;
   clipboard_amiga_changed=FALSE;
@@ -435,6 +433,7 @@ ULONG aros_clipboard_len() {
   cb_read_done(ior);
 
   CBClose(ior);
+  ior=NULL;
 
   return len;
 }
@@ -449,7 +448,7 @@ void copy_clipboard_to_amigaos_real(uaecptr m68k_data, uae_u32 len) {
   UBYTE *aros_data;
   struct IOClipReq *ior;
   
-  DebOut("copy_clipboard_to_amigaos_real(%lx, %d)\n", m68k_data, len);
+  DebOut("(%lx, %d)\n", m68k_data, len);
   ior=CBOpen(0);
 
   aros_data=get_real_address(m68k_data);
@@ -465,6 +464,7 @@ void copy_clipboard_to_amigaos_real(uaecptr m68k_data, uae_u32 len) {
   cb_read_done(ior);
 
   CBClose(ior);
+  ior=NULL;
 
   /* we are in sync now (or will be soon at least) */
   clipboard_aros_changed =FALSE;

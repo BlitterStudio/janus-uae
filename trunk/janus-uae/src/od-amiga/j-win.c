@@ -314,6 +314,9 @@ uae_u32 ad_job_report_uae_windows(ULONG *m68k_results) {
       JWLOG("  aroswin->Height  %3d (new raw)\n",window->Height -
                                              window->BorderTop -
 					     window->BorderBottom);
+      JWLOG("  win->LeftEdge: %d\n", win->LeftEdge);
+      JWLOG("  window->BorderLeft: %d\n", window->BorderLeft);
+      JWLOG("  win->LeftEdge - window->BorderLeft: %d\n", win->LeftEdge - window->BorderLeft);
 
 
 
@@ -517,7 +520,10 @@ uae_u32 ad_job_mark_window_dead(ULONG aos_window) {
   return result;
 }
 
+
 uae_u32 ad_job_switch_uae_window(ULONG *m68k_results) {
+
+  JWLOG("ad_job_switch_uae_window");
 
   if(!get_long_p(m68k_results)) { /* just xor status */
     if(uae_main_window_closed) {
@@ -648,3 +654,45 @@ void close_all_janus_windows() {
   }
   ReleaseSemaphore(&sem_janus_window_list);
 }
+
+/***********************************************************
+ * uae_main_window_close()
+ *
+ * - stop all writes to uae main window
+ * - close uae main window
+ ***********************************************************/
+void uae_main_window_close() {
+
+  JWLOG("uae_main_window_close");
+  
+  if(uae_main_window_closed) {
+    JWLOG("window is already closed\n");
+    return;
+  }
+
+  uae_main_window_closed=TRUE;
+
+  return;
+}
+
+/***********************************************************
+ * uae_main_window_open()
+ *
+ * - open uae main window again
+ * - enable all writes to uae main window again
+ ***********************************************************/
+void uae_main_window_open() {
+
+  JWLOG("uae_main_window_open");
+  
+  if(!uae_main_window_closed) {
+    JWLOG("window is already open\n");
+    return;
+  }
+
+  uae_main_window_closed=FALSE;
+
+  return;
+}
+
+

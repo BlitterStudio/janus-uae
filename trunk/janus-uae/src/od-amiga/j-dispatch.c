@@ -504,6 +504,7 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
 	  case JD_CLIP_COPY_TO_AROS:
 	    /* clipd told us to take the amigaOS clipboard and copy it to AROS clipboard */
 	    copy_clipboard_to_aros_real(get_long(m68k_results + 4), get_long(m68k_results + 8));
+	    JWLOG("copy_clipboard_to_aros_real returned\n");
 	    return TRUE;
 	  case JD_CLIP_GET_AROS_LEN:
 	    /* get clipboard len */
