@@ -593,12 +593,12 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
   /* no need for sem_janus_window_list semaphore access here ?? */
   i=0;
   last_window=NULL; /* a window maybe part of more than one layer */
+  JWLOG("ObtainSemaphore(&sem_janus_window_list)\n");
+  ObtainSemaphore(&sem_janus_window_list);
   while(layer) {
     /* if layer belongs to one of our windows */
     //JWLOG("ad_job_sync_windows: layer %lx\n",layer);
     if(layer->Window) {
-      JWLOG("ObtainSemaphore(&sem_janus_window_list)\n");
-      ObtainSemaphore(&sem_janus_window_list);
       list_win= g_slist_find_custom(janus_windows,
                                (gconstpointer) layer->Window,
                                &aros_window_compare);
@@ -615,11 +615,11 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
 	  i++;
 	}
       }
-      JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
-      ReleaseSemaphore(&sem_janus_window_list);
     }
     layer=layer->back;
   }
+  JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
+  ReleaseSemaphore(&sem_janus_window_list);
 
   //JWLOG("ad_job_sync_windows left\n");
   return TRUE;
