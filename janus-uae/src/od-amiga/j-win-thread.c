@@ -554,18 +554,24 @@ static void aros_win_thread (void) {
      * hopefully nobody has thicker borders  ..
      */
     jwin->aroswin =  OpenWindowTags(NULL,WA_Title, title,
-      				    WA_Left, x - estimated_border_left,
-      				    WA_Top, y - estimated_border_top,
+      				    WA_Left, x - estimated_border_left + bl, /* add 68k borderleft!!*/
+      				    WA_Top, y - estimated_border_top + bt,
 				    /* WA_InnerWidth ..!? */
+#if 0
       				    WA_Width, w - br - bl + 
 				              estimated_border_left +
 					      estimated_border_right +
 					      jwin->plusx,
 					      /* see below */
+#endif
+				    WA_InnerWidth, w - br - bl + jwin->plusx,
+#if 0
 				    WA_Height, h - bt - bb + 
 				              estimated_border_top +
 					      estimated_border_bottom +
 					      jwin->plusy,
+#endif
+				    WA_InnerHeight, h - bt - bb +jwin->plusy,
 				    WA_MinWidth, minw + jwin->plusx,
 				    WA_MinHeight, minh + jwin->plusy,
 				    WA_MaxWidth, maxw + jwin->plusx,
@@ -579,6 +585,10 @@ static void aros_win_thread (void) {
                                     TAG_DONE);
   }
 
+  JWLOG("opened window: %s\n", title);
+  JWLOG("  WA_Left: x %d - estimated_border_left %d = %d\n", x, estimated_border_left, x-estimated_border_left);
+
+
   aroswin=jwin->aroswin; /* shorter to read..*/
 
   JWLOG("aros_win_thread[%lx]: aroswin: %lx\n",thread, aroswin);
@@ -588,6 +598,7 @@ static void aros_win_thread (void) {
     goto EXIT;
   }
 
+#if 0
   /* resize now, as we need those damned windows borders added */
   ChangeWindowBox(aroswin,
                   x - aroswin->BorderLeft,
@@ -600,6 +611,7 @@ static void aros_win_thread (void) {
 		  aroswin->BorderTop +
 		  aroswin->BorderBottom +
 		  jwin->plusy);
+#endif
 
   /* remember for the next time */
   estimated_border_top=aroswin->BorderTop;
