@@ -17,6 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
  *
+ * $Id$
+ *
  ************************************************************************/
 
 #include "j.h"
@@ -43,6 +45,8 @@ uae_u32 ad_job_update_janus_windows(ULONG *m68k_results) {
   return TRUE;
 }
 
+/* not used ? */
+#if 0
 /**********************************************************
  * ad_job_update_janus_windows
  *
@@ -51,8 +55,8 @@ uae_u32 ad_job_update_janus_windows(ULONG *m68k_results) {
  ***********************************************************/
 
 /* input: array if aos3 windows, aos3window */
-static int is_in_results(LONG *m68k_results, gconstpointer w) {
-  int i=0;
+static int is_in_results(ULONG *m68k_results, gconstpointer w) {
+  ULONG i=0;
 
   while(get_long_p(m68k_results+i)) {
     if(get_long_p(m68k_results+i)==(ULONG) w) {
@@ -62,6 +66,7 @@ static int is_in_results(LONG *m68k_results, gconstpointer w) {
   }
   return FALSE;
 }
+#endif
 
 /********************************************************
  * new_aos3window(aos3 window pointer)
@@ -178,6 +183,65 @@ uae_u32 ad_job_new_window(ULONG aos3win) {
   // ?? ReleaseSemaphore(&sem_janus_active_win);
 
   return TRUE;
+}
+
+/***************************************************
+ * fix_orphan_windows
+ *
+ * we walk through our window list and see, if we
+ * have any windows left on AROS, which are not
+ * present in amigaOS any more. This can happen,
+ * as for example workbench does not call any
+ * close function for the workbench "About"
+ * requester (?). Whoever did this in amigaOS 3
+ * should be .. &§Q$ !!
+ *
+ * To kill an aros window, please have a look at
+ * ad_job_mark_window_dead, there you can see,
+ * what is necessary to kill a window. 
+ *
+ * m68k_results has an amigaOS3 window pointer at
+ * every 5th position, see 
+ * ad_job_report_host_windows
+ ***************************************************/
+static BOOL is_orphan_window(ULONG *m68k_results, ULONG win) {
+  ULONG i;
+
+  i=0;
+  while(get_long_p(m68k_results+i)) {
+    if(win == get_long_p(m68k_results+i)) {
+      return FALSE;
+    }
+    i=i+5;
+  }
+  return TRUE;
+}
+
+static void fix_orphan_windows(ULONG *m68k_results) {
+  struct Window  *aroswin;
+  JanusWin       *win;
+  ULONG           aos3win;
+  GSList         *list_win;
+
+  //JWLOG("ObtainSemaphore(sem_janus_window_list)\n");
+  ObtainSemaphore(&sem_janus_window_list);
+  list_win=janus_windows;
+  while(list_win) {
+    win=(JanusWin *) list_win->data;
+    aos3win=(ULONG) win->aos3win;
+    aroswin=win->aroswin;
+    if(is_orphan_window(m68k_results, aos3win)) {
+      JWLOG("  found orphan window: januswin %lx (aos3win %lx aroswin %lx)\n", list_win, aos3win, aroswin);
+      win->dead=TRUE;
+      if(win->task) {
+	Signal(win->task, SIGBREAKF_CTRL_C);
+      }
+    }
+    list_win=g_slist_next(list_win);
+  }
+
+  //JWLOG("ReleaseSemaphore(sem_janus_window_list)\n");
+  ReleaseSemaphore(&sem_janus_window_list);
 }
 
 /***************************************************
@@ -324,6 +388,8 @@ uae_u32 ad_job_report_uae_windows(ULONG *m68k_results) {
 NEXT:
     i=i+5;
   }
+
+  fix_orphan_windows(m68k_results);
 
   JWLOG("left\n");
   return TRUE;
@@ -655,6 +721,9 @@ void close_all_janus_windows() {
   ReleaseSemaphore(&sem_janus_window_list);
 }
 
+
+/* not used ATM ? */
+#if 0
 /***********************************************************
  * uae_main_window_close()
  *
@@ -694,5 +763,6 @@ void uae_main_window_open() {
 
   return;
 }
+#endif
 
 
