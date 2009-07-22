@@ -1151,7 +1151,68 @@ static int setup_customscreen (void)
     return 1;
 }
 
-/****************************************************************************/
+/****************************************************************************
+ * show_uae_main_window()
+ *
+ * If we go from rootless to normal mode, we close all rootless windows
+ * with close_all_janus_windows() and resize our main window with
+ * show_uae_main_window().
+ *
+ ****************************************************************************/
+void show_uae_main_window(void) {
+
+  if(!W) {
+    AWTRACE("ERROR: W == NULL ??\n");
+    return;
+  }
+
+  AWTRACE("resize window to:\n");
+  AWTRACE("   x,y: %d, %d\n", uae_main_window_Top, uae_main_window_Left);
+  AWTRACE("   w,h: %d, %d\n", uae_main_window_Width, uae_main_window_Height);
+  AWTRACE("\n");
+  AWTRACE("   gfxvidinfo.width: %d\n",gfxvidinfo.width);
+  AWTRACE("   gfxvidinfo.width+border: %d\n",gfxvidinfo.width+W->BorderLeft+W->BorderRight);
+  AWTRACE("   gfxvidinfo.height: %d\n",gfxvidinfo.height);
+  AWTRACE("   gfxvidinfo.height+border: %d\n",gfxvidinfo.height+W->BorderTop+W->BorderBottom);
+
+  ChangeWindowBox(W, uae_main_window_Top, uae_main_window_Left,
+		      uae_main_window_Width, uae_main_window_Height);
+
+  uae_main_window_closed=FALSE;
+}
+
+/****************************************************************************
+ * hide_uae_main_window()
+ *
+ * We move the main window to the lower right edge of our screen and
+ * resize it to 1x1. We still need this window, otherwise quite some
+ * access to non valid structures would happen.
+ ****************************************************************************/
+void hide_uae_main_window(void) {
+
+  if(!W) {
+    AWTRACE("ERROR: W == NULL ??\n");
+    return;
+  }
+
+  uae_main_window_Width  = W->Width;
+  uae_main_window_Height = W->Height;
+  uae_main_window_Top    = W->TopEdge;
+  uae_main_window_Left   = W->LeftEdge;
+
+  AWTRACE("remember:\n");
+  AWTRACE("   x,y: %d, %d\n", uae_main_window_Top, uae_main_window_Left);
+  AWTRACE("   w,h: %d, %d\n", uae_main_window_Width, uae_main_window_Height);
+  AWTRACE("\n");
+  AWTRACE("   gfxvidinfo.width: %d\n",gfxvidinfo.width);
+  AWTRACE("   gfxvidinfo.width+border: %d\n",gfxvidinfo.width+W->BorderLeft+W->BorderRight);
+  AWTRACE("   gfxvidinfo.height: %d\n",gfxvidinfo.height);
+  AWTRACE("   gfxvidinfo.height+border: %d\n",gfxvidinfo.height+W->BorderTop+W->BorderBottom);
+
+  ChangeWindowBox(W, S->Width-1, S->Height-1, 1, 1);
+
+  uae_main_window_closed=TRUE;
+}
 
 static int setup_publicscreen(void)
 {
@@ -1161,7 +1222,7 @@ static int setup_publicscreen(void)
 
     AWTRACE("entered (pubscreen >%s<)\n",currprefs.amiga_publicscreen);
 
-    S = LockPubScreen (pubscreen);
+    S = LockPubScreen ((UBYTE *) pubscreen);
     if (!S) {
 	gui_message ("Cannot open UAE window on public screen '%s'\n",
 		pubscreen ? pubscreen : "default");
@@ -1206,11 +1267,11 @@ static int setup_publicscreen(void)
 					 | WFLG_ACTIVATE    | WFLG_CLOSEGADGET
 					 | WFLG_SMART_REFRESH,
 			  TAG_DONE);
-      /* remember values */
-      uae_main_window_Left  =0;
-      uae_main_window_Top   =0;
-      uae_main_window_Width =gfxvidinfo.width;
-      uae_main_window_Height=gfxvidinfo.height;
+      /* remember values (not used)*/
+      uae_main_window_Left  =1;
+      uae_main_window_Top   =1;
+      uae_main_window_Width =gfxvidinfo.width  + W->BorderLeft + W->BorderRight;
+      uae_main_window_Height=gfxvidinfo.height + W->BorderTop  + W->BorderBottom;
 
       uae_main_window_closed=TRUE;
     }
@@ -1328,7 +1389,7 @@ static int setup_userscreen (void)
     AWTRACE("entered\n");
 
     if (!AslBase) {
-	AslBase = OpenLibrary ("asl.library", 36);
+	AslBase = OpenLibrary (AslName, 36);
 	if (!AslBase) {
 	    write_log ("Can't open asl.library v36.\n");
 	    return 0;
@@ -2450,6 +2511,7 @@ void handle_events(void) {
 
     #ifdef PICASSO96
     if(aos3_task && aos3_task_signal) {
+      AWTRACE("send signal to Wait of janusd\n");
       uae_Signal(aos3_task, aos3_task_signal);
     }
 
@@ -2663,17 +2725,25 @@ static int get_BytesPerPix(struct Window *win) {
   return res;
 }
 
-/* TODO ?? */
+/* get_BytesPerRow (TODO ??)
+ *
+ * some kind of magix, I still don't understand (o1i)
+ */
 static int get_BytesPerRow(struct Window *win) {
   WORD width;
-  //AWTRACE("get_BytesPerRow(%lx)=%d * %d = %d\n",win,width,get_BytesPerPix(win),width*get_BytesPerPix(win));
 
+#if 0
   if(!uae_main_window_closed) {
     width=W->Width;
+    AWTRACE("1: %d * %d = %d\n",width,get_BytesPerPix(win),width*get_BytesPerPix(win));
   }
   else {
+#endif
     width=picasso_vidinfo.width;
+#if 0
+    AWTRACE("2: %d * %d = %d\n",picasso_vidinfo.width,get_BytesPerPix(win),picasso_vidinfo.width*get_BytesPerPix(win));
   }
+#endif
 
   return width * get_BytesPerPix(win);
 }
