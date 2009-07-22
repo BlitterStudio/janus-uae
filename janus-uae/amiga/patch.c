@@ -32,7 +32,7 @@ extern struct IntuitionBase* IntuitionBase;
  * patch_functions
  *
  * Although I tried to avoid patching the OS, I
- * have to patch the folowing:
+ * have to patch the following:
  *
  * - CloseWindow
  *   If a window is closed, the clonewindow
@@ -48,11 +48,21 @@ extern struct IntuitionBase* IntuitionBase;
  *   screen list, in case the window should be
  *   opened on a public screen, which not yet
  *   exists as an AROS public screen.
+ *
+ * - OpenScreen
+ *   If it is a custom screen, we want
+ *   to open up an according screen
+ *   on AROS. If it is a public
+ *   screen, we can care for that,
+ *   if a window opens on the
+ *   screen.
  */
 
 APTR           old_CloseWindow;
 APTR           old_OpenWindow;
 APTR           old_OpenWindowTagList;
+APTR           old_OpenScreen;
+APTR           old_OpenScreenTagList;
 
 #define PUSHFULLSTACK "movem.l d0-d7/a0-a6,-(SP)\n"
 #define POPFULLSTACK  "movem.l (SP)+,d0-d7/a0-a6\n"
@@ -63,7 +73,7 @@ APTR           old_OpenWindowTagList;
 #define PUSHD3        "move.l d3,-(SP)\n"
 #define POPD3         "move.l (SP)+,d3\n"
 
-/*
+/*********************************************************************************
  * _my_CloseWindow_SetFunc
  *
  * done in assembler, as C-Source always at least destroys the
@@ -74,7 +84,7 @@ APTR           old_OpenWindowTagList;
  * AD_GET_JOB  11 (d0)
  * AD_GET_JOB_MARK_WINDOW_DEAD 7 (d1)
  * window is already in a0
- */
+ *********************************************************************************/
 __asm__("_my_CloseWindow_SetFunc:\n"
 	"cmp.l #1,_state\n"
 	"blt close_patch_disabled\n"
@@ -91,12 +101,7 @@ __asm__("_my_CloseWindow_SetFunc:\n"
 	POPA3
         "rts\n");
 
-#if 0
-void clear_size_gadget(REG(a0, struct NewWindow *newwin)) {
-  printf("clear_size_gadget(%lx)\n",newwin);
-}
-#endif
-/*
+/*********************************************************************************
  * _my_OpenWindow_SetFunc
  *
  * done in assembler, as C-Source always at least destroys the
@@ -107,7 +112,7 @@ void clear_size_gadget(REG(a0, struct NewWindow *newwin)) {
  * AD_GET_JOB  11 (d0)
  * AD_GET_JOB_NEW_WINDOW 11 (d1)
  * new window in a0
- */
+ *********************************************************************************/
 __asm__("_my_OpenWindow_SetFunc:\n"
 /*
 	"movem.l d4/a4,-(SP)\n"
@@ -141,24 +146,9 @@ __asm__("_my_OpenWindow_SetFunc:\n"
 	"openwin_patch_disabled2:\n"
         "rts\n");
 
-#if 0
-void my_OpenWindow(REG(a0, struct NewWindow *newwin),
-                          REG(a6, APTR ibase)) {
-
-  struct Window *win;
-  register unsigned long _res __asm("d0");
-  struct Window * (*real_OpenWindow)(REG(a0, struct NewWindow *),
-                                     REG(a6, APTR ibase))=old_OpenWindow;
-
-  printf("Open window (%lx)..\n",newwin);
-  win=real_OpenWindow(newwin, ibase);
-  printf("Open window (%lx): %lx\n",newwin,win);
-
-  _res=(unsigned long) win;
-}
-#endif
-
-
+/*********************************************************************************
+ * _my_OpenWindowTagList_SetFunc
+ *********************************************************************************/
 __asm__("_my_OpenWindowTagList_SetFunc:\n"
 	"cmp.l #1,_state\n"
 	"blt openwintag_patch_disabled1\n"
@@ -182,34 +172,75 @@ __asm__("_my_OpenWindowTagList_SetFunc:\n"
 	"openwintag_patch_disabled2:\n"
         "rts\n");
 
-#if 0
-static void my_OpenWindowTagList(REG(a0, struct NewWindow *newwin),
-                                 REG(a1, ULONG *tags),
-                           REG(a2, ULONG a2),
-                           REG(a3, ULONG a3),
-                           REG(a4, ULONG a4),
-                           REG(a5, ULONG a5),
-                           REG(d2, ULONG d2),
-                           REG(d3, ULONG d3),
-                           REG(d4, ULONG d4),
-                           REG(d5, ULONG d5),
-                           REG(d6, ULONG d6),
-                           REG(d7, ULONG d7),
-                                 REG(a6, APTR ibase)) {
+/*********************************************************************************
+ * _my_OpenScreen_SetFunc
+ *
+ * We need to care for new custom screens. Public screens are handled, as soon
+ * as the first window is opened on them.
+ * AD_GET_JOB_OPEN_CUSTOM_SCREEN has to check, if it is really a custom
+ * screen. We could do that here, but there are not many OpenScreens
+ * at all, so performance is no issue.
+ *
+ * for calltrap:
+ * AD_GET_JOB  11                   (d0)
+ * AD_GET_JOB_OPEN_CUSTOM_SCREEN 13 (d1)
+ * new screen                       (a0)
+ *********************************************************************************/
+__asm__("_my_OpenScreen_SetFunc:\n"
+	/* call original function */
+	PUSHA3
+	"move.l _old_OpenScreen,a3\n"
+	"jsr (a3)\n"
+	POPA3
+	/* check, if we are disabled */
+/*	"cmp.l #1,_state\n"
+	"blt openscreen_patch_disabled\n"
+	*/
+	PUSHFULLSTACK
+	"move.l d0,a0\n"
+	"moveq #11,d0\n"
+	"moveq #13,d1\n"
+	"move.l _calltrap,a1\n"
+	"jsr (a1)\n"
+	POPFULLSTACK
+	"openscreen_patch_disabled:\n"
+        "rts\n");
 
-  struct Window *win;
-  struct Window * (*real_OpenWindowTagList)(REG(a0, struct NewWindow *),
-                                     REG(a1, ULONG *tags),
-                                     REG(a6, APTR ibase))=old_OpenWindowTagList;
-  register unsigned long _res __asm("d0");
+/*********************************************************************************
+ * _my_OpenScreenTagList_SetFunc
+ *
+ * We need to care for new custom screens. Public screens are handled, as soon
+ * as the first window is opened on them.
+ * AD_GET_JOB_OPEN_CUSTOM_SCREEN has to check, if it is really a custom
+ * screen. We could do that here, but there are not many OpenScreens
+ * at all, so performance is no issue.
+ *
+ * for calltrap:
+ * AD_GET_JOB  11                   (d0)
+ * AD_GET_JOB_OPEN_CUSTOM_SCREEN 13 (d1)
+ * new screen                       (a0)
+ *********************************************************************************/
+__asm__("_my_OpenScreenTagList_SetFunc:\n"
+	/* call original function */
+	PUSHA3
+	"move.l _old_OpenScreenTagList,a3\n"
+	"jsr (a3)\n"
+	POPA3
+	/* check, if we are disabled */
+/*	"cmp.l #1,_state\n"
+	"blt openscreen_patch_disabled\n"
+	*/
+	PUSHFULLSTACK
+	"move.l d0,a0\n"
+	"moveq #11,d0\n"
+	"moveq #13,d1\n"
+	"move.l _calltrap,a1\n"
+	"jsr (a1)\n"
+	POPFULLSTACK
+	"openscreentaglist_patch_disabled:\n"
+        "rts\n");
 
-  printf("OpenWindowTagList (%lx)..\n",(ULONG) newwin);
-  win=real_OpenWindowTagList(newwin, tags, ibase);
-  printf("OpenWindowTagList (%lx): %lx\n",(ULONG) newwin,(ULONG) win);
 
-  _res=(unsigned long) win;
-}
-#endif
 
 /*
  * assembler functions need to be delcared or used, before
@@ -218,6 +249,8 @@ static void my_OpenWindowTagList(REG(a0, struct NewWindow *newwin),
 void my_CloseWindow_SetFunc();
 void my_OpenWindow_SetFunc();
 void my_OpenWindowTagList_SetFunc();
+void my_OpenScreen_SetFunc();
+void my_OpenScreenTagList_SetFunc();
 
 /* According to Ralph Babel: ".. as
  * of 2.0, SetFunction() calls Forbid()/Permit() 
@@ -225,6 +258,8 @@ void my_OpenWindowTagList_SetFunc();
  * cache itself."
  */
 void patch_functions() {
+
+  ENTER
 
   old_CloseWindow=SetFunction((struct Library *)IntuitionBase, 
                               -72, 
@@ -237,10 +272,24 @@ void patch_functions() {
   old_OpenWindowTagList=SetFunction((struct Library *)IntuitionBase, 
                               -606, 
 			      (APTR) my_OpenWindowTagList_SetFunc);
+
+  old_OpenScreen=SetFunction((struct Library *)IntuitionBase, 
+                              -198, 
+			      (APTR) my_OpenScreen_SetFunc);
+
+  old_OpenScreenTagList=SetFunction((struct Library *)IntuitionBase, 
+                              -612, 
+			      (APTR) my_OpenScreenTagList_SetFunc);
+
+
+  LEAVE
 }
 
 /* TODO: unsafe! */
 void unpatch_functions() {
+
+  ENTER
+
   SetFunction((struct Library *)IntuitionBase,
                               -72,
 			      old_CloseWindow);
@@ -252,5 +301,7 @@ void unpatch_functions() {
 		//             else done = TRUE;
 		//                 Permit(); 
 #endif
+
+  LEAVE
 }
 
