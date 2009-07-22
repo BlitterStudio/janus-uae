@@ -58,6 +58,17 @@
 #define JWLOG(...)     do { ; } while(0)
 #endif
 
+//#define JW_ENTER_ENABLED 1
+#if JW_ENTER_ENABLED
+#define ENTER  kprintf("%s %s(): entered\n",__FILE__,__func__);
+#define LEAVE  kprintf("%s %s(): left at line %d\n",__FILE__,__func__,__LINE__);
+#else
+#define ENTER
+#define LEAVE
+#endif
+
+
+
 WORD get_lo_word(ULONG *field);
 WORD get_hi_word(ULONG *field);
 
@@ -82,6 +93,7 @@ WORD get_hi_word(ULONG *field);
 #define AD_GET_JOB_ACTIVE_WINDOW      10
 #define AD_GET_JOB_NEW_WINDOW         11
 #define AD_GET_JOB_LIST_SCREENS       12
+#define AD_GET_JOB_OPEN_CUSTOM_SCREEN 13
 #define AD_GET_JOB_DEBUG             999 
 
 #define AD_CLIP_SETUP 15
@@ -216,6 +228,7 @@ uae_u32 ad_job_report_uae_windows  (ULONG *m68k_results);
 uae_u32 ad_job_switch_uae_window   (ULONG *m68k_results);
 uae_u32 ad_job_sync_windows        (ULONG *m68k_results);
 uae_u32 ad_job_update_janus_windows(ULONG *m68k_results);
+uae_u32 ad_job_open_custom_screen  (ULONG *m68k_results);
 uae_u32 ad_debug                   (ULONG *m68k_results);
 
 /* compare hooks */
