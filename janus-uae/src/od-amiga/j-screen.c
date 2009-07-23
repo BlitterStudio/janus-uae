@@ -4,7 +4,7 @@
  *
  * This file is part of Janus-UAE.
  *
- * Janus-Daemon is free software: you can redistribute it and/or modify
+ * Janus-UAE is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -38,12 +38,12 @@ static struct Screen *new_aros_pub_screen(JanusScreen *jscreen,
   ULONG err;
   struct Screen *arosscr;
   const UBYTE preferred_depth[] = {24, 32, 16, 15, 8};
-  struct screen *pub;
+  struct Screen *pub;
 
   JWLOG("screen public name: >%s<\n",jscreen->pubname);
 
   /* search for already open screen by name */
-  pub=LockPubScreen(jscreen->pubname);
+  pub=(struct Screen *) LockPubScreen(jscreen->pubname);
   if(pub) {
     JWLOG("screen %s already exists\n",jscreen->pubname);
     UnlockPubScreen(NULL, pub);
@@ -181,7 +181,6 @@ static struct Screen *new_aros_screen(JanusScreen *jscreen) {
  * - link wanderer <-> wb screen
  * - open a new screen for every other aos3 screen
  **********************************************************/
-
 uae_u32 ad_job_list_screens(ULONG *m68k_results) {
   uae_u32 win;
   ULONG   i;
@@ -206,11 +205,11 @@ uae_u32 ad_job_list_screens(ULONG *m68k_results) {
 
       if(get_long((uaecptr) m68k_results+i+4)) {
 	public_screen_name=get_real_address(get_long((uaecptr) m68k_results+i+8));
+	JWLOG("pubname: >%s<\n",public_screen_name);
       }
       else {
 	public_screen_name=NULL;
       }
-      JWLOG("pubname: >%s<\n",public_screen_name);
 
       /* TODO: Check here, if a screen with that name already exists
        * and use that screen instead of creating a new one? 
@@ -237,6 +236,202 @@ uae_u32 ad_job_list_screens(ULONG *m68k_results) {
   ReleaseSemaphore(&sem_janus_screen_list);
 
   JWLOG("ad_job_list_screens() done\n");
+
+  return TRUE;
+}
+
+/**********************************************************
+ * ad_job_open_custom_screen
+ *
+ * we get a screen sctructure in a0 here
+ *
+ * In *this* case, the argument is already a screen
+ * pointer, no pointer to parameter data.
+ **********************************************************/
+uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
+  GSList *list_screen;
+  JanusScreen *jscreen;
+  UWORD flags;
+  UWORD width;
+  UWORD depth;
+  UWORD height;
+  ULONG mode;
+  ULONG newwidth;
+  ULONG newheight;
+  const UBYTE preferred_depth[] = {8, 15, 16, 24, 32, 0};
+  ULONG i;
+  ULONG error;
+
+  currprefs.gfx_width_win=
+  graphics_init();
+
+  static struct NewWindow NewWindowStructure = {
+	0, 0, 800, 600, 0, 1,
+	IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY | IDCMP_DISKINSERTED | IDCMP_DISKREMOVED
+		| IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW | IDCMP_MOUSEMOVE
+		| IDCMP_DELTAMOVE,
+	WFLG_SMART_REFRESH | WFLG_BACKDROP | WFLG_RMBTRAP | WFLG_NOCAREREFRESH
+	 | WFLG_BORDERLESS | WFLG_ACTIVATE | WFLG_REPORTMOUSE,
+	NULL, NULL, NULL, NULL, NULL, 5, 5, 800, 600,
+	CUSTOMSCREEN
+  };
+
+  JWLOG("entered, aos3screen: %lx\n", aos3screen);
+
+  flags=get_word(aos3screen+20);
+  flags=flags & 0xF;
+  if(flags!=0xF) {
+    JWLOG("  no custom screen, do nothing\n");
+    return TRUE;
+  }
+
+  /* check, if we already have that screen, as OpenScreen might call OpenScreenTags ..!! */
+  ObtainSemaphore(&sem_janus_screen_list);
+  list_screen= g_slist_find_custom(janus_screens,
+	  (gconstpointer) aos3screen,
+	  &aos3_screen_compare);
+
+  if(list_screen) {
+    JWLOG(" screen %lx already in janus_screens list\n",aos3screen);
+    ReleaseSemaphore(&sem_janus_screen_list);
+    return TRUE;
+  }
+
+  jscreen=(JanusScreen *) AllocVec(sizeof(JanusScreen),MEMF_CLEAR);
+  JWLOG("append aos3screen %lx as %lx\n", aos3screen, jscreen);
+  jscreen->aos3screen=aos3screen;
+
+  width =get_word(aos3screen+12);
+  height=get_word(aos3screen+14);
+  JWLOG("w: %d h: %d\n", width, height);
+
+#if 0
+  currprefs.gfx_width_win=width;
+  currprefs.gfx_height = height;
+  currprefs.amiga_screen_type=0 /*UAESCREENTYPE_CUSTOM*/;
+
+  uae_main_window_closed=FALSE;
+  j_stop_window_update=TRUE;
+  gfx_set_picasso_state(0);
+  graphics_init();
+  gfx_set_picasso_state(0);
+  jscreen->arosscreen=S;
+
+  JWLOG("new aros custom screen: %lx (%d x %d)\n",jscreen->arosscreen, jscreen->arosscreen->Width, 
+                                                                       jscreen->arosscreen->Height);
+  janus_screens=g_slist_append(janus_screens,jscreen);
+
+
+  ReleaseSemaphore(&sem_janus_screen_list);
+#endif
+
+#warning remove me <======================================================================
+  width=720;
+  height=568;
+  JWLOG("w: %d h: %d\n", width, height);
+#warning remove me <======================================================================
+ 
+  currprefs.gfx_width_win=width;
+  currprefs.gfx_height = height;
+  currprefs.amiga_screen_type=0 /*UAESCREENTYPE_CUSTOM*/;
+
+  /* this would be the right approach, but getting this pointer stuff
+   * working in 68k adress space is a pain. 
+   * screen->vp->RasInfo->BitMap->Depth ... */
+
+  /* open a screen, which matches best */
+  i=0;
+  mode=INVALID_ID;
+  newwidth =width;
+  newheight=height;
+  while(mode==(ULONG) INVALID_ID && preferred_depth[i]) {
+    mode=find_rtg_mode(&newwidth, &newheight, preferred_depth[i]);
+    i++;
+  }
+
+  if(mode == (ULONG) INVALID_ID) {
+    FreeVec(jscreen);
+    JWLOG("ERROR: could not find modeid !?!!\n");
+    ReleaseSemaphore(&sem_janus_screen_list);
+    return FALSE;
+  }
+
+  JWLOG("found modeid: %lx\n", mode);
+  JWLOG("found w: %d h: %d\n", newwidth, newheight);
+
+
+  /* If the screen is larger than requested, centre UAE's display */
+  XOffset=0;
+  YOffset=0;
+  if (newwidth > (ULONG)width) {
+    XOffset = (newwidth - width) / 2;
+  }
+  if (newheight > (ULONG) height) {
+    YOffset = (newheight - height) / 2;
+  }
+  JWLOG("XOffset, YOffset: %d, %d\n", XOffset, YOffset);
+
+  jscreen->arosscreen=OpenScreenTags(NULL,
+                                     SA_Width,     newwidth,
+				     SA_Height,    newheight,
+				     SA_Depth,     depth,
+				     SA_DisplayID, mode,
+				     SA_Behind,    FALSE,
+				     SA_ShowTitle, FALSE,
+				     SA_Quiet,     TRUE,
+				     SA_ErrorCode, (ULONG)&error,
+				     TAG_DONE);
+
+  if(!jscreen->arosscreen) {
+    JWLOG("ERROR: could not open screen !? (Error: %ld\n",error);
+    gui_message ("Cannot open custom screen (Error: %ld)\n", error);
+    FreeVec(jscreen);
+    ReleaseSemaphore(&sem_janus_screen_list);
+    return FALSE;
+  }
+
+  JWLOG("new aros custom screen: %lx (%d x %d)\n",jscreen->arosscreen, jscreen->arosscreen->Width, 
+                                                                       jscreen->arosscreen->Height);
+  janus_screens=g_slist_append(janus_screens,jscreen);
+
+  gfxvidinfo.height     =height;
+  gfxvidinfo.width      =width;
+  //currprefs.gfx_linedbl =0;
+  //currprefs.gfx_lores   =1;
+ 
+  S  = jscreen->arosscreen;
+  CM = jscreen->arosscreen->ViewPort.ColorMap;
+  RP = &jscreen->arosscreen->RastPort;
+
+//  NewWindowStructure.Width  = jscreen->arosscreen->Width;
+//  NewWindowStructure.Height = jscreen->arosscreen->Height;
+  NewWindowStructure.Width  = newwidth;
+  NewWindowStructure.Height = newheight;
+  NewWindowStructure.Screen = jscreen->arosscreen;
+
+  W = (void*)OpenWindow (&NewWindowStructure);
+  if (!W) {
+    gui_message ("Cannot open window on new custom screen !?");
+    CloseScreen(jscreen->arosscreen);
+    FreeVec(jscreen);
+    ReleaseSemaphore(&sem_janus_screen_list);
+    return FALSE;
+  }
+
+  ReleaseSemaphore(&sem_janus_screen_list);
+
+  JWLOG("new aros window on custom screen: %lx (%d x %d)\n", W, W->Width, W->Height);
+
+  /* TODO !!*/
+  uae_main_window_closed=FALSE;
+  j_stop_window_update=TRUE;
+
+  gfx_set_picasso_state(0);
+  reset_drawing();
+  init_row_map();
+  init_aspect_maps();
+  notice_screen_contents_lost();
+  hide_pointer (W);
 
   return TRUE;
 }

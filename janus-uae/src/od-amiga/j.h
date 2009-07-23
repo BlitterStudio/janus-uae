@@ -196,6 +196,13 @@ extern BOOL j_stop_window_update;
 extern struct uae_input_device2 mice2[MAX_INPUT_DEVICES];
 extern struct uae_input_device *mice;
 
+/* borrowed from ami-win.c */
+extern struct RastPort  *RP;
+extern struct Screen    *S;
+extern struct Window    *W;
+extern struct ColorMap  *CM;
+extern int    XOffset,YOffset;
+
 uae_u32 REGPARAM2 aroshack_helper (TrapContext *context);
 
 int aros_daemon_runing(void);
@@ -228,7 +235,7 @@ uae_u32 ad_job_report_uae_windows  (ULONG *m68k_results);
 uae_u32 ad_job_switch_uae_window   (ULONG *m68k_results);
 uae_u32 ad_job_sync_windows        (ULONG *m68k_results);
 uae_u32 ad_job_update_janus_windows(ULONG *m68k_results);
-uae_u32 ad_job_open_custom_screen  (ULONG *m68k_results);
+uae_u32 ad_job_open_custom_screen  (ULONG aos3screen);
 uae_u32 ad_debug                   (ULONG *m68k_results);
 
 /* compare hooks */
@@ -265,6 +272,7 @@ void inputdevice_release_all_keys(void);
 void reset_hotkeys(void);
 void inputdevice_unacquire(void);
 ULONG find_rtg_mode (ULONG *width, ULONG *height, ULONG depth);
+void hide_pointer (struct Window *w);
 
 STATIC_INLINE uae_u32 get_byte(uaecptr addr);
 
