@@ -4,7 +4,7 @@
  *
  * This file is part of Janus-UAE.
  *
- * Janus-Daemon is free software: you can redistribute it and/or modify
+ * Janus-UAE is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -16,6 +16,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * $Id$
  *
  ************************************************************************/
 
@@ -356,7 +358,7 @@ int aros_screen_start_thread (JanusScreen *screen) {
 
     screen->name=AllocVec(8+strlen(SCREEN_TASK_PREFIX_NAME)+1,MEMF_CLEAR);
 
-    sprintf(screen->name,"%s%lx",TASK_PREFIX_NAME,screen->aos3screen);
+    sprintf(screen->name,"%s%lx",SCREEN_TASK_PREFIX_NAME,screen->aos3screen);
 
     ObtainSemaphore(&aos3_thread_start);
     screen->task = (struct Task *)
