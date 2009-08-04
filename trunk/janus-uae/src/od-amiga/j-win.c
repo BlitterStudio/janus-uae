@@ -4,12 +4,12 @@
  *
  * This file is part of Janus-UAE.
  *
- * Janus-Daemon is free software: you can redistribute it and/or modify
+ * Janus-UAE is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Janus-Daemon is distributed in the hope that it will be useful,
+ * Janus-UAE is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -36,11 +36,15 @@ static void new_aos3window(ULONG aos3win);
 uae_u32 ad_job_update_janus_windows(ULONG *m68k_results) {
   ULONG i;
 
+  ENTER
+
   i=0;
   while(get_long_p(m68k_results+i)) {
     new_aos3window(get_long_p(m68k_results+i));
     i++;
   }
+
+  LEAVE
 
   return TRUE;
 }
@@ -84,15 +88,18 @@ static void new_aos3window(ULONG aos3win) {
   ULONG        aos3screen;
   GSList      *list_screen;
 
+  ENTER
+
   JWLOG("new_aos3window(%lx)\n",aos3win);
 
   if(!aos3win) {
     /* OpenWindow failed !? */
+    LEAVE
     return;
   }
 
   ObtainSemaphore(&sem_janus_screen_list);
-  JWLOG("ObtainSemaphore(&sem_janus_window_list)\n");
+  //JWLOG("ObtainSemaphore(&sem_janus_window_list)\n");
   ObtainSemaphore(&sem_janus_window_list);
 
   if(g_slist_find_custom(janus_windows, 
@@ -100,9 +107,10 @@ static void new_aos3window(ULONG aos3win) {
 			  &aos3_window_compare)) {
     /* we already have this window */
     JWLOG("we already have aos3 window %lx\n", aos3win);
-    JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
+    //JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
     ReleaseSemaphore(&sem_janus_window_list);
     ReleaseSemaphore(&sem_janus_screen_list);
+    LEAVE
     return;
   }
 
@@ -122,9 +130,10 @@ static void new_aos3window(ULONG aos3win) {
     JWLOG("\n\nERROR (FIXME): This window %lx -> screen %lx does not exist!!\n\n",aos3win,aos3screen);
     /* this must not happen !! */
     FreeVec(jwin);
-    JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
+    //JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
     ReleaseSemaphore(&sem_janus_window_list);
     ReleaseSemaphore(&sem_janus_screen_list);
+    LEAVE
     return;
   }
 
@@ -138,11 +147,13 @@ static void new_aos3window(ULONG aos3win) {
                            0xC000, 0x8000); /* hmm..*/
   janus_windows=g_slist_append(janus_windows,jwin);
 
-  JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
+  //JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
   ReleaseSemaphore(&sem_janus_window_list);
   ReleaseSemaphore(&sem_janus_screen_list);
 
   aros_win_start_thread(jwin);
+
+  LEAVE
 }
 /**********************************************************
  * ad_job_active_window
@@ -151,6 +162,8 @@ static void new_aos3window(ULONG aos3win) {
  **********************************************************/
 uae_u32 ad_job_active_window(ULONG *m68k_results) {
   uae_u32 win;
+
+  ENTER
 
   ObtainSemaphore(&sem_janus_active_win);
 
@@ -162,6 +175,8 @@ uae_u32 ad_job_active_window(ULONG *m68k_results) {
   }
 
   ReleaseSemaphore(&sem_janus_active_win);
+
+  LEAVE
 
   return win;
 }
@@ -176,11 +191,15 @@ uae_u32 ad_job_active_window(ULONG *m68k_results) {
 uae_u32 ad_job_new_window(ULONG aos3win) {
   uae_u32 win;
 
+  ENTER
+
   JWLOG("ad_job_new_window(aos3win %lx)\n",aos3win);
 
   // ?? ObtainSemaphore(&sem_janus_active_win);
   new_aos3window(aos3win);
   // ?? ReleaseSemaphore(&sem_janus_active_win);
+
+  LEAVE
 
   return TRUE;
 }
@@ -207,6 +226,8 @@ uae_u32 ad_job_new_window(ULONG aos3win) {
 static BOOL is_orphan_window(ULONG *m68k_results, ULONG win) {
   ULONG i;
 
+  //ENTER
+
   i=0;
   while(get_long_p(m68k_results+i)) {
     if(win == get_long_p(m68k_results+i)) {
@@ -214,6 +235,8 @@ static BOOL is_orphan_window(ULONG *m68k_results, ULONG win) {
     }
     i=i+5;
   }
+
+  //LEAVE
   return TRUE;
 }
 
@@ -223,6 +246,8 @@ static void fix_orphan_windows(ULONG *m68k_results) {
   ULONG           aos3win;
   GSList         *list_win;
 
+  ENTER
+
   //JWLOG("ObtainSemaphore(sem_janus_window_list)\n");
   ObtainSemaphore(&sem_janus_window_list);
   list_win=janus_windows;
@@ -230,7 +255,7 @@ static void fix_orphan_windows(ULONG *m68k_results) {
     win=(JanusWin *) list_win->data;
     aos3win=(ULONG) win->aos3win;
     aroswin=win->aroswin;
-    if(is_orphan_window(m68k_results, aos3win)) {
+    if(is_orphan_window(m68k_results, aos3win) && !win->dead) {
       JWLOG("  found orphan window: januswin %lx (aos3win %lx aroswin %lx)\n", list_win, aos3win, aroswin);
       win->dead=TRUE;
       if(win->task) {
@@ -242,6 +267,7 @@ static void fix_orphan_windows(ULONG *m68k_results) {
 
   //JWLOG("ReleaseSemaphore(sem_janus_window_list)\n");
   ReleaseSemaphore(&sem_janus_window_list);
+  LEAVE
 }
 
 /***************************************************
@@ -270,6 +296,8 @@ uae_u32 ad_job_report_uae_windows(ULONG *m68k_results) {
   UWORD          raw_w, raw_h;
   UWORD          raw_x, raw_y;
 
+  ENTER
+
   /* resize/move windows according to the supplied data:
    *
    * command mem fields (LONG):
@@ -281,7 +309,6 @@ uae_u32 ad_job_report_uae_windows(ULONG *m68k_results) {
    * 5: next window starts here
    */
 
-  JWLOG("++++++++++++++ entered ++++++++++++++\n");
   i=0;
   while(get_long_p(m68k_results+i)) {
     aos3win=(ULONG) get_long_p(m68k_results+i);
@@ -389,9 +416,11 @@ NEXT:
     i=i+5;
   }
 
+
   fix_orphan_windows(m68k_results);
 
-  JWLOG("left\n");
+  LEAVE
+
   return TRUE;
 }
 
@@ -421,6 +450,8 @@ uae_u32 ad_job_report_host_windows(ULONG *m68k_results) {
   UWORD          raw_w, raw_h;
   BOOL           need_resize;
 
+  ENTER
+
   /* 
    * command mem fields (LONG):
    * 0: window pointer (LONG)
@@ -431,10 +462,9 @@ uae_u32 ad_job_report_host_windows(ULONG *m68k_results) {
    * 5: next window starts here
    */
 
-  JWLOG("========== entered ========== \n");
   i=0;
 
-  JWLOG("ObtainSemaphore(sem_janus_window_list)\n");
+  //JWLOG("ObtainSemaphore(sem_janus_window_list)\n");
   ObtainSemaphore(&sem_janus_window_list);
   list_win=janus_windows;
   while(list_win) {
@@ -452,7 +482,7 @@ uae_u32 ad_job_report_host_windows(ULONG *m68k_results) {
 
     need_resize=FALSE;
 
-    JWLOG("check window %lx (%s)\n",window,window->Title);
+    JWLOG("check aros window %lx (%s)\n", window, window->Title);
 
     /* check if we have been moved */
     if((window->LeftEdge + window->BorderLeft != win->LeftEdge) ||
@@ -529,10 +559,11 @@ NEXT:
     list_win=g_slist_next(list_win);
   }
 
-  JWLOG("ReleaseSemaphore(sem_janus_window_list)\n");
+  //JWLOG("ReleaseSemaphore(sem_janus_window_list)\n");
   ReleaseSemaphore(&sem_janus_window_list);
 
-  JWLOG("ad_job_report_host_windows: left\n");
+  LEAVE
+
   return TRUE;
 }
 
@@ -553,24 +584,32 @@ uae_u32 ad_job_mark_window_dead(ULONG aos_window) {
   JanusWin      *jwin;
   uae_u32        result=TRUE;
 
+  ENTER
+
   JWLOG("ad_job_mark_window_dead(%lx)\n",aos_window);
 
-  JWLOG("ObtainSemaphore(&sem_janus_window_list)\n");
+  //JWLOG("ObtainSemaphore(&sem_janus_window_list)\n");
   ObtainSemaphore(&sem_janus_window_list);
 
   list_win=g_slist_find_custom(janus_windows,
                                (gconstpointer) aos_window,
                                &aos3_window_compare);
   if(!list_win) {
-    JWLOG("WARNING: ad_job_mark_window_dead could not find window %lx\n",
+    JWLOG("WARNING: ad_job_mark_window_dead could not find aos3 window %lx\n",
             aos_window);
-    result=FALSE;
+    /* this is ok, orphan window check might have killed it already */
+    result=TRUE;
   }
   else {
     jwin=(JanusWin *) list_win->data;
     if(jwin) {
       jwin->dead=TRUE;
-      JWLOG("ad_job_mark_window_dead(%lx)\n",aos_window);
+      if(jwin->aroswin) {
+	JWLOG("ad_job_mark_window_dead(%lx) (%s)\n", aos_window, jwin->aroswin->Title);
+      }
+      else {
+	JWLOG("ad_job_mark_window_dead(%lx)\n", aos_window);
+      }
       if(jwin->task) {
 	Signal(jwin->task, SIGBREAKF_CTRL_C);
       }
@@ -581,15 +620,18 @@ uae_u32 ad_job_mark_window_dead(ULONG aos_window) {
     }
   }
 
-  JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
+  //JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
   ReleaseSemaphore(&sem_janus_window_list);
+
+  LEAVE
+
   return result;
 }
 
 
 uae_u32 ad_job_switch_uae_window(ULONG *m68k_results) {
 
-  JWLOG("ad_job_switch_uae_window");
+  ENTER
 
   if(!get_long_p(m68k_results)) { /* just xor status */
     if(uae_main_window_closed) {
@@ -610,6 +652,8 @@ uae_u32 ad_job_switch_uae_window(ULONG *m68k_results) {
     }
   }
 
+  LEAVE
+
   return TRUE;
 }
 
@@ -629,16 +673,20 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
   JanusWin      *win;
   ULONG          i;
 
+  ENTER
+
   screen=IntuitionBase->FirstScreen;
 
   if(!screen) {
     JWLOG("ad_job_sync_windows: screen==NULL !?!\n");
+    LEAVE
     return FALSE;
   }
 
   /* there might be a screen without window */
   if(!screen->FirstWindow) {
     JWLOG("screen %lx has no window\n",screen);
+    LEAVE
     return FALSE;
   }
 
@@ -651,6 +699,7 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
 
   if(!layer) {
     JWLOG("ad_job_sync_windows: layer==NULL!?\n");
+    LEAVE
     return FALSE;
   }
 
@@ -659,7 +708,7 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
   /* no need for sem_janus_window_list semaphore access here ?? */
   i=0;
   last_window=NULL; /* a window maybe part of more than one layer */
-  JWLOG("ObtainSemaphore(&sem_janus_window_list)\n");
+  //JWLOG("ObtainSemaphore(&sem_janus_window_list)\n");
   ObtainSemaphore(&sem_janus_window_list);
   while(layer) {
     /* if layer belongs to one of our windows */
@@ -684,10 +733,11 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
     }
     layer=layer->back;
   }
-  JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
+  //JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
   ReleaseSemaphore(&sem_janus_window_list);
 
-  //JWLOG("ad_job_sync_windows left\n");
+  LEAVE
+
   return TRUE;
 }
 
@@ -701,8 +751,11 @@ void close_all_janus_windows() {
   GSList   *list_win;
   JanusWin *win;
 
+  ENTER
+
   if(!aos3_task) {
     /* never registered, nothing to close */
+    LEAVE
     return;
   }
 
@@ -719,6 +772,7 @@ void close_all_janus_windows() {
     list_win=g_slist_next(list_win);
   }
   ReleaseSemaphore(&sem_janus_window_list);
+  LEAVE
 }
 
 

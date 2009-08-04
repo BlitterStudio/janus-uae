@@ -21,8 +21,156 @@
  *
  ************************************************************************/
 
+#include "sysconfig.h"
+#include "sysdeps.h"
+#include "td-amigaos/thread.h"
+#include "hotkeys.h"
+
 #include "j.h"
 #include "memory.h"
+
+
+/***********************************************************
+ * event handler for custom screen windows
+ *
+ * based on handle_events in gfx-amigaos/ami-win.c
+ ***********************************************************/  
+
+static void handle_custom_events_W(struct Window *W) {
+
+  struct IntuiMessage *msg;
+  int dmx, dmy, mx, my, class, code, qualifier;
+  BOOL done;
+
+  JWLOG("W: %lx\n", W);
+
+ /* this function is called at each frame, so: */
+  //++frame_num;       /* increase frame counter */
+#if 0
+  save_frame();      /* possibly save frame    */
+#endif
+
+  /* necessary !? */
+  if(aos3_task && aos3_task_signal) {
+    JWLOG("send signal to Wait of janusd (%lx)\n", aos3_task);
+    uae_Signal(aos3_task, aos3_task_signal);
+  }
+
+  /* necessary !? */
+  gui_handle_events();
+
+  done=FALSE;
+  while(!done) {
+    while ((msg = (struct IntuiMessage*) GetMsg (W->UserPort))) {
+	class     = msg->Class;
+	code      = msg->Code;
+	dmx       = msg->MouseX;
+	dmy       = msg->MouseY;
+	mx        = msg->IDCMPWindow->MouseX; // Absolute pointer coordinates
+	my        = msg->IDCMPWindow->MouseY; // relative to the window
+	qualifier = msg->Qualifier;
+
+	ReplyMsg ((struct Message*)msg); 
+
+	JWLOG("W: %lx (%s)\n",W, W->Title);
+
+	switch (class) {
+
+	    case IDCMP_REFRESHWINDOW:
+#if 0
+	    /* chunk2planar is slow so we define use_delta_buffer for all modes
+	     * bitdepth <= 8: use_delta_buffer is 1
+	     */
+		if (use_delta_buffer) {
+		    /* hack: this forces refresh */
+		    uae_u8 *ptr = oldpixbuf;
+		    int i, len = gfxvidinfo.width;
+		    len *= gfxvidinfo.pixbytes;
+		    for (i=0; i < currprefs.gfx_height_win; ++i) {
+			ptr[00000] ^= 255;
+			ptr[len-1] ^= 255;
+			ptr += gfxvidinfo.rowbytes;
+		    }
+		}
+#endif
+		BeginRefresh (W);
+		flush_block (0, currprefs.gfx_height_win - 1);
+		EndRefresh (W, TRUE);
+		break;
+
+	    case IDCMP_RAWKEY: {
+		int keycode = code & 127;
+		int state   = code & 128 ? 0 : 1;
+		int ievent;
+
+		if ((qualifier & IEQUALIFIER_REPEAT) == 0) {
+		    /* We just want key up/down events - not repeats */
+		    if ((ievent = match_hotkey_sequence (keycode, state)))
+			handle_hotkey_event (ievent, state);
+		    else
+			inputdevice_do_keyboard (keycode, state);
+		}
+		break;
+	     }
+
+	    case IDCMP_MOUSEMOVE:
+		setmousestate (0, 0, dmx, 0);
+		setmousestate (0, 1, dmy, 0);
+
+#if 0
+		if (usepub) {
+		    POINTER_STATE new_state = get_pointer_state (W, mx, my);
+		    if (new_state != pointer_state) {
+			pointer_state = new_state;
+			if (pointer_state == INSIDE_WINDOW)
+			    hide_pointer (W);
+			else
+			    show_pointer (W);
+		    }
+		}
+#endif
+      	      break;
+
+	    case IDCMP_MOUSEBUTTONS:
+		if (code == SELECTDOWN) setmousebuttonstate (0, 0, 1);
+		if (code == SELECTUP)   setmousebuttonstate (0, 0, 0);
+		if (code == MIDDLEDOWN) setmousebuttonstate (0, 2, 1);
+		if (code == MIDDLEUP)   setmousebuttonstate (0, 2, 0);
+		if (code == MENUDOWN)   setmousebuttonstate (0, 1, 1);
+		if (code == MENUUP)     setmousebuttonstate (0, 1, 0);
+      	      break;
+
+	    case IDCMP_ACTIVEWINDOW:
+		/* When window regains focus (presumably after losing focus at some
+		 * point) UAE needs to know any keys that have changed state in between.
+		 * A simple fix is just to tell UAE that all keys have been released.
+		 * This avoids keys appearing to be "stuck" down.
+		 */
+		JWLOG("IDCMP_ACTIVEWINDOW\n");
+		inputdevice_acquire ();
+		inputdevice_release_all_keys ();
+		reset_hotkeys ();
+		copy_clipboard_to_amigaos();
+		break;
+
+	    case IDCMP_INACTIVEWINDOW:
+		JWLOG("IDCMP_INACTIVEWINDOW\n");
+		JWLOG("IntuitionBase->ActiveWindow: %lx (%s)\n",IntuitionBase->ActiveWindow, IntuitionBase->ActiveWindow->Title);
+		copy_clipboard_to_aros();
+		inputdevice_unacquire ();
+		break;
+
+	    default:
+		write_log ("Unknown event class: %x\n", class);
+		JWLOG("Unknown event class: %x\n", class);
+		break;
+        }
+    }
+  }
+
+  /* necessary !? */
+  appw_events();
+}
 
 /***********************************************************
  * every AOS3 custom screen gets its own process
@@ -67,10 +215,11 @@ static void aros_custom_screen_thread (void) {
   if(!aroswin) {
     JWLOG("aros_scr_thread[%lx]: ERROR: screen %lx has no window !!\n",thread, jscr->arosscreen);
   }
+  JWLOG("aros_scr_thread[%lx]: aroswin: %lx\n", aroswin);
 
   done=FALSE;
   while(!done) {
-    handle_events_W(aroswin);
+    handle_custom_events_W(aroswin);
     //done=TRUE;
     JWLOG("aros_scr_thread[%lx]: handle_events_W returned\n", thread);
   }

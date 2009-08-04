@@ -72,8 +72,9 @@
 WORD get_lo_word(ULONG *field);
 WORD get_hi_word(ULONG *field);
 
-#define TASK_PREFIX_NAME        "AOS3 Window "
-#define SCREEN_TASK_PREFIX_NAME "AOS3 Screen "
+#define TASK_PREFIX_NAME               "AOS3 Window "
+#define SCREEN_TASK_PREFIX_NAME        "AOS3 Screen "
+#define CUSTOM_SCREEN_TASK_PREFIX_NAME "AOS3 Custom Screen "
 
 #define AD_SHUTDOWN    9
 
@@ -246,8 +247,9 @@ gint aos3_screen_compare        (gconstpointer jscreen, gconstpointer s);
 gint aos3_screen_process_compare(gconstpointer jscreen, gconstpointer t);
 
 /* threads */
-int aros_win_start_thread (JanusWin *win);
-int aros_screen_start_thread (JanusScreen *screen);
+int aros_win_start_thread           (JanusWin *win);
+int aros_screen_start_thread        (JanusScreen *screen);
+int aros_custom_screen_start_thread (JanusScreen *screen);
 
 /* menu */
 void clone_menu(JanusWin *jwin);
@@ -275,5 +277,8 @@ ULONG find_rtg_mode (ULONG *width, ULONG *height, ULONG depth);
 void hide_pointer (struct Window *w);
 
 STATIC_INLINE uae_u32 get_byte(uaecptr addr);
+
+/* ami-win.c */
+void handle_events_W(struct Window *W);
 
 #endif
