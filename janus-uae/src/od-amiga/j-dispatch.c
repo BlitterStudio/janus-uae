@@ -295,7 +295,7 @@ static uae_u32 jd_setup(TrapContext *context, ULONG *param) {
      *   2: demon wants to run again
      */
 
-    JWLOG("jd_setup(.., task %lx, .., stop %d)\n",get_long_p(param),get_long_p(param+8));
+    //JWLOG("jd_setup(.., task %lx, .., stop %d)\n",get_long_p(param),get_long_p(param+8));
 #if 0
     JWLOG("::::::::::::::AD_SETUP::::::::::::::::::::::::\n");
     JWLOG("AD__MAXMEM: %d\n", m68k_dreg(&context->regs, 1));
@@ -342,7 +342,7 @@ static uae_u32 jd_setup(TrapContext *context, ULONG *param) {
       /* update gui !! */
     }
 
-    JWLOG("return %d\n", changed_prefs.jcoherence);
+    //JWLOG("return %d\n", changed_prefs.jcoherence);
     put_long_p(param+8, changed_prefs.jcoherence);
     return changed_prefs.jcoherence;
 }
@@ -486,6 +486,8 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
        	  return ad_job_list_screens(m68k_results);
     	case AD_GET_JOB_MESSAGES: 
        	  return ad_job_fetch_message(m68k_results);
+    	case AD_GET_JOB_OPEN_CUSTOM_SCREEN: 
+       	  return ad_job_open_custom_screen(m68k_results);
 
 	default:
 	  JWLOG("ERROR!! aroshack_helper: unkown job: %d\n",m68k_dreg(&context->regs, 1));

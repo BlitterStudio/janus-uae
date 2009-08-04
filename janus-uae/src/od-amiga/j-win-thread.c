@@ -101,8 +101,10 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	break;
      }
 
-#if 0
     case IDCMP_MOUSEMOVE:
+	JWLOG("WARNING: IDCMP_MOUSEMOVE *not* handled\n");
+	break;
+#if 0
 	/* dmx and dmy are relative to our window */
 	//setmousestate (0, 0, dmx, 0);
 	//setmousestate (0, 1, dmy, 0);
@@ -412,7 +414,7 @@ static void aros_win_thread (void) {
                           IDCMP_CLOSEWINDOW | 
 			  IDCMP_RAWKEY |
 			  IDCMP_MOUSEBUTTONS |
-			  IDCMP_MOUSEMOVE |
+			  //IDCMP_MOUSEMOVE |
 			  IDCMP_ACTIVEWINDOW |
 			  IDCMP_CHANGEWINDOW |
 			  IDCMP_MENUPICK |

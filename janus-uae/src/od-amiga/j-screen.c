@@ -243,10 +243,12 @@ uae_u32 ad_job_list_screens(ULONG *m68k_results) {
 /**********************************************************
  * ad_job_open_custom_screen
  *
- * we get a screen sctructure in a0 here
+ * we get a screen structure in a0 here
  *
  * In *this* case, the argument is already a screen
  * pointer, no pointer to parameter data.
+ *
+ * It seems, we need an own thread here, too.
  **********************************************************/
 uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
   GSList *list_screen;
@@ -261,22 +263,22 @@ uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
   const UBYTE preferred_depth[] = {8, 15, 16, 24, 32, 0};
   ULONG i;
   ULONG error;
-
-  currprefs.gfx_width_win=
-  graphics_init();
-
   static struct NewWindow NewWindowStructure = {
 	0, 0, 800, 600, 0, 1,
-	IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY | IDCMP_DISKINSERTED | IDCMP_DISKREMOVED
-		| IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW | IDCMP_MOUSEMOVE
-		| IDCMP_DELTAMOVE,
+	IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY /*| IDCMP_DISKINSERTED | IDCMP_DISKREMOVED*/
+		| IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW | IDCMP_MOUSEMOVE |
+		IDCMP_REFRESHWINDOW,
 	WFLG_SMART_REFRESH | WFLG_BACKDROP | WFLG_RMBTRAP | WFLG_NOCAREREFRESH
 	 | WFLG_BORDERLESS | WFLG_ACTIVATE | WFLG_REPORTMOUSE,
 	NULL, NULL, NULL, NULL, NULL, 5, 5, 800, 600,
 	CUSTOMSCREEN
   };
 
-  JWLOG("entered, aos3screen: %lx\n", aos3screen);
+  JWLOG("entered\n");
+
+  currprefs.gfx_width_win= graphics_init();
+
+  JWLOG("aos3screen: %lx\n", aos3screen);
 
   flags=get_word(aos3screen+20);
   flags=flags & 0xF;
@@ -392,6 +394,7 @@ uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
 
   JWLOG("new aros custom screen: %lx (%d x %d)\n",jscreen->arosscreen, jscreen->arosscreen->Width, 
                                                                        jscreen->arosscreen->Height);
+#warning TODO Semaphore !?
   janus_screens=g_slist_append(janus_screens,jscreen);
 
   gfxvidinfo.height     =height;
@@ -431,7 +434,13 @@ uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
   init_row_map();
   init_aspect_maps();
   notice_screen_contents_lost();
+  inputdevice_acquire ();
+  inputdevice_release_all_keys ();
+  reset_hotkeys ();
   hide_pointer (W);
+
+  JWLOG("W: %lx (%s)\n", W, W->Title);
+  aros_custom_screen_start_thread(jscreen);
 
   return TRUE;
 }

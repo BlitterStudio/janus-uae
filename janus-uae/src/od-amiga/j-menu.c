@@ -260,7 +260,7 @@ void clone_menu(JanusWin *jwin) {
  * intuition finished showing
  * our menu.
  *
- * Timeout after 2 sec.
+ * Timeout, if it did not open
  ******************************/
 static BOOL wait_menu_shown(uaecptr menu_flags) {
   ULONG i;
@@ -394,7 +394,11 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
       rx=get_word(aos3menustrip+4);
 
       wait_menu_mouse_pos(jwin, menux, menuy);
-      wait_menu_shown(aos3menustrip + 12);
+      if(!wait_menu_shown(aos3menustrip + 12)) {
+	JWLOG("menu not shown, do nothing\n");
+	return;
+      } 
+
       /* menu drawn */
 
       aos3item=get_long(aos3menustrip + 18);
@@ -423,7 +427,10 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
 
 	  /* if we have a subitem, we need to wait until it opens */
 	  if(sub!=-1) {
-	    wait_menuitem_shown(aos3item + 12);
+	    if(!wait_menuitem_shown(aos3item + 12)) {
+	      JWLOG("subitem not shown, ABORTED\n");
+	      return;
+	    };
 
 	    aos3sub=get_long(aos3item+28);
 	    l=0;
