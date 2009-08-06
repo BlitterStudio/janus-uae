@@ -24,6 +24,7 @@
  ************************************************************************/
 
 #include <proto/exec.h>
+#include <proto/utility.h>
 #include "janus-daemon.h"
 
 extern struct IntuitionBase* IntuitionBase;
@@ -172,6 +173,59 @@ __asm__("_my_OpenWindowTagList_SetFunc:\n"
 	"openwintag_patch_disabled2:\n"
         "rts\n");
 
+
+struct TagItem       mytags[2]={ { SA_Draggable, FALSE}, { TAG_MORE, NULL}};
+
+/*********************************************************************************
+ * remove screen tagging parameter, AROS has no screen dragging ;)
+ *
+ * ATTENTION: - restore tag pointer afterwards!! TODO
+ *            - only patch, if active (?)
+ *********************************************************************************/
+void remove_dragging(struct NewScreen *newscreen __asm("a0")) {
+  struct TagItem      *tags;
+  struct TagItem      *tstate;
+  struct TagItem      *tag;
+
+  DebOut("entered remove_dragging\n");
+  DebOut("newscreen: %lx\n", newscreen);
+  DebOut(" name: %s\n",newscreen->DefaultTitle);
+  DebOut(" type: %x\n",newscreen->Type);
+  if((newscreen->Type & SCREENTYPE) != CUSTOMSCREEN) {
+    DebOut(" no custom screen\n");
+    return;
+  }
+
+  if(! (newscreen->Type & NS_EXTENDED)) {
+    /* allocvec a new ExtNewScreen structure! */
+    DebOut(" not extended! TODO\n");
+    return;
+  }
+
+  DebOut(" custom screen with Extension\n");
+
+  tags=((struct ExtNewScreen *) newscreen)->Extension; 
+  DebOut(" Tags at: %lx\n", tags);
+
+  tstate=tags;
+  while((tag = NextTagItem(&tstate))) {
+    DebOut("  TAG    : %08lx = %08lx\n", tag->ti_Tag - 0x80000020, tag->ti_Data); /* - SA_Dummy */
+  }
+
+  mytags[1].ti_Data=(ULONG) ((struct ExtNewScreen *) newscreen)->Extension;
+  ((struct ExtNewScreen *) newscreen)->Extension=mytags;
+
+  DebOut("after the patch:\n");
+  tags=((struct ExtNewScreen *) newscreen)->Extension; 
+  DebOut(" Tags at: %lx\n", tags);
+
+  tstate=tags;
+  while((tag = NextTagItem(&tstate))) {
+    DebOut("  TAG    : %08lx = %08lx\n", tag->ti_Tag - 0x80000020, tag->ti_Data); /* - SA_Dummy */
+  }
+
+  return;
+}
 /*********************************************************************************
  * _my_OpenScreen_SetFunc
  *
@@ -186,16 +240,19 @@ __asm__("_my_OpenWindowTagList_SetFunc:\n"
  * AD_GET_JOB_OPEN_CUSTOM_SCREEN 13 (d1)
  * new screen                       (a0)
  *********************************************************************************/
+
 __asm__("_my_OpenScreen_SetFunc:\n"
+	PUSHFULLSTACK
+	"jsr _remove_dragging\n"
+	POPFULLSTACK
 	/* call original function */
 	PUSHA3
 	"move.l _old_OpenScreen,a3\n"
 	"jsr (a3)\n"
 	POPA3
 	/* check, if we are disabled */
-/*	"cmp.l #1,_state\n"
+	"cmp.l #1,_state\n"
 	"blt openscreen_patch_disabled\n"
-	*/
 	PUSHFULLSTACK
 	"move.l d0,a0\n"
 	"moveq #11,d0\n"
@@ -227,9 +284,8 @@ __asm__("_my_OpenScreenTagList_SetFunc:\n"
 	"jsr (a3)\n"
 	POPA3
 	/* check, if we are disabled */
-/*	"cmp.l #1,_state\n"
-	"blt openscreen_patch_disabled\n"
-	*/
+	"cmp.l #1,_state\n"
+	"blt openscreentags_patch_disabled\n"
 	PUSHFULLSTACK
 	"move.l d0,a0\n"
 	"moveq #11,d0\n"
@@ -237,9 +293,8 @@ __asm__("_my_OpenScreenTagList_SetFunc:\n"
 	"move.l _calltrap,a1\n"
 	"jsr (a1)\n"
 	POPFULLSTACK
-	"openscreentaglist_patch_disabled:\n"
+	"openscreentags_patch_disabled:\n"
         "rts\n");
-
 
 
 /*
