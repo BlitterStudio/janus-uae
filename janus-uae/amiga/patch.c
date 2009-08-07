@@ -73,6 +73,9 @@ APTR           old_OpenScreenTagList;
 #define POPA3         "move.l (SP)+,a3\n"
 #define PUSHD3        "move.l d3,-(SP)\n"
 #define POPD3         "move.l (SP)+,d3\n"
+#define PUSHA0        "move.l a0,-(SP)\n"
+#define POPA0         "move.l (SP)+,a0\n"
+
 
 /*********************************************************************************
  * _my_CloseWindow_SetFunc
@@ -174,18 +177,23 @@ __asm__("_my_OpenWindowTagList_SetFunc:\n"
         "rts\n");
 
 
-struct TagItem       mytags[2]={ { SA_Draggable, FALSE}, { TAG_MORE, NULL}};
+struct TagItem       mytags_linked[2]={ { SA_Draggable, FALSE}, { TAG_MORE, NULL}};
+struct TagItem       mytags[2]={ { SA_Draggable, FALSE}, { TAG_DONE, TAG_DONE}};
+struct ExtNewScreen  nodrag_newscreen;
+struct TagItem       taglist_mytags_linked[2]={ { SA_Draggable, FALSE}, { TAG_MORE, NULL}};
+struct TagItem       taglist_mytags[2]={ { SA_Draggable, FALSE}, { TAG_DONE, TAG_DONE}};
+
 
 /*********************************************************************************
- * remove screen tagging parameter, AROS has no screen dragging ;)
+ * remove_dragging
  *
- * ATTENTION: - restore tag pointer afterwards!! TODO
- *            - only patch, if active (?)
+ * set SA_Draggable to FALSE, AROS has no screen dragging ;)
  *********************************************************************************/
-void remove_dragging(struct NewScreen *newscreen __asm("a0")) {
+ULONG remove_dragging (struct NewScreen *newscreen __asm("a0")) {
   struct TagItem      *tags;
   struct TagItem      *tstate;
   struct TagItem      *tag;
+  ULONG result;
 
   DebOut("entered remove_dragging\n");
   DebOut("newscreen: %lx\n", newscreen);
@@ -193,30 +201,44 @@ void remove_dragging(struct NewScreen *newscreen __asm("a0")) {
   DebOut(" type: %x\n",newscreen->Type);
   if((newscreen->Type & SCREENTYPE) != CUSTOMSCREEN) {
     DebOut(" no custom screen\n");
-    return;
+    /* return; */
   }
 
   if(! (newscreen->Type & NS_EXTENDED)) {
     /* allocvec a new ExtNewScreen structure! */
-    DebOut(" not extended! TODO\n");
-    return;
+    DebOut(" not extended\n");
+    CopyMem( newscreen, &nodrag_newscreen, sizeof(struct NewScreen));
+    nodrag_newscreen.Extension=NULL;
+    nodrag_newscreen.Type = nodrag_newscreen.Type | NS_EXTENDED;
+  }
+  else {
+    DebOut(" extended\n");
+    CopyMem( newscreen, &nodrag_newscreen, sizeof(struct ExtNewScreen));
   }
 
-  DebOut(" custom screen with Extension\n");
+  /* now we have a NS_EXTENDED nodrag_newscreen */
 
-  tags=((struct ExtNewScreen *) newscreen)->Extension; 
-  DebOut(" Tags at: %lx\n", tags);
+  DebOut(" new screen with Extension: %lx\n");
+
+  tags=nodrag_newscreen.Extension; 
+  DebOut(" Tags: %lx\n", tags);
 
   tstate=tags;
   while((tag = NextTagItem(&tstate))) {
     DebOut("  TAG    : %08lx = %08lx\n", tag->ti_Tag - 0x80000020, tag->ti_Data); /* - SA_Dummy */
   }
 
-  mytags[1].ti_Data=(ULONG) ((struct ExtNewScreen *) newscreen)->Extension;
-  ((struct ExtNewScreen *) newscreen)->Extension=mytags;
+  if(tags) {
+    DebOut(" we have tags\n"); /* TODO: care, if Draggable was set to TRUE ? who would do that..? */
+    mytags_linked[1].ti_Data=(ULONG) nodrag_newscreen.Extension;
+    nodrag_newscreen.Extension=mytags_linked;
+  }
+  else {
+    nodrag_newscreen.Extension=mytags;
+  }
 
   DebOut("after the patch:\n");
-  tags=((struct ExtNewScreen *) newscreen)->Extension; 
+  tags=nodrag_newscreen.Extension;
   DebOut(" Tags at: %lx\n", tags);
 
   tstate=tags;
@@ -224,8 +246,35 @@ void remove_dragging(struct NewScreen *newscreen __asm("a0")) {
     DebOut("  TAG    : %08lx = %08lx\n", tag->ti_Tag - 0x80000020, tag->ti_Data); /* - SA_Dummy */
   }
 
-  return;
+  result=(ULONG) &nodrag_newscreen;
+
+  return result;
 }
+
+/* 
+ * use taglist_mytags_linked here and not mytags_linked, as OpenScreen might call
+ * OpenScreenTagList.. and so we would cause wrong links 
+ */
+ULONG remove_dragging_TagList (struct TagItem *original_tags __asm("a1")) {
+  struct TagItem      *tstate;
+  struct TagItem      *tag;
+
+  DebOut("entered remove_dragging_TagList\n");
+
+  tstate=original_tags;
+  while((tag = NextTagItem(&tstate))) {
+    DebOut("  TAG    : %08lx = %08lx\n", tag->ti_Tag - 0x80000020, tag->ti_Data); /* - SA_Dummy */
+  }
+
+  if(!original_tags) {
+    return (ULONG) taglist_mytags;
+  }
+
+  taglist_mytags_linked[1].ti_Data=(ULONG) original_tags;
+  return (ULONG) taglist_mytags_linked;
+}
+
+
 /*********************************************************************************
  * _my_OpenScreen_SetFunc
  *
@@ -235,21 +284,29 @@ void remove_dragging(struct NewScreen *newscreen __asm("a0")) {
  * screen. We could do that here, but there are not many OpenScreens
  * at all, so performance is no issue.
  *
+ * We don't watn draggable screens, as we run into trouble with updates of
+ * the background, if for example behind the amigaOS screen a native
+ * aros screen should be visible. So we create a new NewScreen struct
+ * and patch it so that it has SA_Draggable=FALSE. The original
+ * sctruct stays intact (including the Taglist).
+ *
  * for calltrap:
  * AD_GET_JOB  11                   (d0)
  * AD_GET_JOB_OPEN_CUSTOM_SCREEN 13 (d1)
  * new screen                       (a0)
  *********************************************************************************/
-
 __asm__("_my_OpenScreen_SetFunc:\n"
-	PUSHFULLSTACK
-	"jsr _remove_dragging\n"
-	POPFULLSTACK
+        PUSHA0
+        "movem.l d1-d7/a1-a6,-(SP)\n"
+	"jsr _remove_dragging\n"      /* we get back a new struct Screen here in D0*/
+        "movem.l (SP)+,d1-d7/a1-a6\n"
 	/* call original function */
 	PUSHA3
+	"move.l d0,a0\n"
 	"move.l _old_OpenScreen,a3\n"
 	"jsr (a3)\n"
 	POPA3
+	POPA0                        /* restore original struct Screen */
 	/* check, if we are disabled */
 	"cmp.l #1,_state\n"
 	"blt openscreen_patch_disabled\n"
@@ -278,6 +335,12 @@ __asm__("_my_OpenScreen_SetFunc:\n"
  * new screen                       (a0)
  *********************************************************************************/
 __asm__("_my_OpenScreenTagList_SetFunc:\n"
+        "move.l  a0,-(SP)\n"             /* backup struct NewScreen   */
+        "movem.l d0-d7/a2-a6,-(SP)\n"    /* backup everything but A1  */
+	"jsr _remove_dragging_TagList\n"
+	"move.l d0, a1\n"                /* new TagList               */
+        "movem.l (SP)+,d0-d7/a2-a6\n"    /* restore everything but A1 */
+        "move.l  (SP)+,a0\n"             /* restore struct NewScreen  */
 	/* call original function */
 	PUSHA3
 	"move.l _old_OpenScreenTagList,a3\n"
@@ -295,7 +358,6 @@ __asm__("_my_OpenScreenTagList_SetFunc:\n"
 	POPFULLSTACK
 	"openscreentags_patch_disabled:\n"
         "rts\n");
-
 
 /*
  * assembler functions need to be delcared or used, before
