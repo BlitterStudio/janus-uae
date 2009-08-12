@@ -68,6 +68,7 @@ static void handle_msg(struct Window *win, ULONG class, UWORD code, int dmx, int
 	//setmousestate (0, 0, dmx, 0);
 	//setmousestate (0, 1, dmy, 0);
 	/* mouse nr, axis, value, absolute */
+	JWLOG("IDCMP_MOUSEMOVE\n");
 	setmousestate(0, 0, win->MouseX + win->LeftEdge, 1);
 	setmousestate(0, 1, win->MouseY + win->TopEdge, 1);
 #endif

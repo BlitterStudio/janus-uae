@@ -71,6 +71,9 @@ JanusWin *janus_active_window=NULL;
 
 BOOL uae_main_window_closed=FALSE;
 
+/* one of our cloned custom screens should get all input etc */
+JanusScreen *custom_screen_active=NULL;
+
 /* if you set this to true, jwindow contents won't get updated any more */
 BOOL j_stop_window_update=FALSE;
 
