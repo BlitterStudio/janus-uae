@@ -203,6 +203,12 @@ static uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
     return FALSE;
   }
 
+#if 0
+  if(custom_screen_active) {
+    return FALSE;
+  }
+#endif
+
   if(mice[0].enabled) {
     screen=IntuitionBase->FirstScreen;
   
@@ -488,6 +494,8 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
        	  return ad_job_fetch_message(m68k_results);
     	case AD_GET_JOB_OPEN_CUSTOM_SCREEN: 
        	  return ad_job_open_custom_screen(m68k_results);
+    	case AD_GET_JOB_CLOSE_SCREEN: 
+       	  return ad_job_close_screen(m68k_results);
 
 	default:
 	  JWLOG("ERROR!! aroshack_helper: unkown job: %d\n",m68k_dreg(&context->regs, 1));

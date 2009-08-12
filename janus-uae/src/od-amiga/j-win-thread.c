@@ -383,283 +383,296 @@ static void aros_win_thread (void) {
   JWLOG("aros_win_thread[%lx]: win->aos3win: %lx\n",thread,
                                                               jwin->aos3win);
 
-  /* now let's hope, the aos3 window is not closed already..? */
+  if(!jwin->custom) {
+    /* now let's hope, the aos3 window is not closed already..? */
 
-  /* AROS and Aos3 use the same flags */
-  flags     =get_long_p(jwin->aos3win + 24); 
-  JWLOG("aros_win_thread[%lx]: flags: %lx \n", thread, flags);
+    /* AROS and Aos3 use the same flags */
+    flags     =get_long_p(jwin->aos3win + 24); 
+    JWLOG("aros_win_thread[%lx]: flags: %lx \n", thread, flags);
 
-  /* wrong offset !?
-   * idcmpflags=get_long(jwin->aos3win + 80);
-   */
-
-  x=get_word((ULONG) jwin->aos3win +  4);
-  y=get_word((ULONG) jwin->aos3win +  6);
-
-  aos_title=get_long_p(jwin->aos3win + 32);
-
-  //JWLOG("TITLE: aos_title=%lx\n",aos_title);
-
-  c='X';
-  for(i=0;i<255 && c;i++) {
-    c=get_byte(aos_title + i);
-    //JWLOG("TITLE: %d: %c\n",i,c);
-    title[i]=c;
-  }
-  title[i]=(char) 0;
-  JWLOG("aros_win_thread[%lx]: title: >%s<\n",thread,title);
-
-  /* idcmp flags we always need: */
-  idcmpflags= IDCMP_NEWSIZE | 
-                          IDCMP_CLOSEWINDOW | 
-			  IDCMP_RAWKEY |
-			  IDCMP_MOUSEBUTTONS |
-			  //IDCMP_MOUSEMOVE |
-			  IDCMP_ACTIVEWINDOW |
-			  IDCMP_CHANGEWINDOW |
-			  IDCMP_MENUPICK |
-			  IDCMP_MENUVERIFY |
-			  IDCMP_INACTIVEWINDOW;
-
-  JWLOG("aros_win_thread[%lx]: idcmpflags: %lx \n", thread, idcmpflags);
-
-  /* we are always WFLG_SMART_REFRESH and never BACKDROP! */
-  flags=flags & 0xFFFFFEFF;  /* remove refresh bits and backdrop */
-  flags=flags | WFLG_SMART_REFRESH | WFLG_GIMMEZEROZERO | WFLG_ACTIVATE;
-  
-  /* CHECKME: need borders here, too? */
-  minw=get_word((ULONG) jwin->aos3win + 16); 
-  minh=get_word((ULONG) jwin->aos3win + 18);
-  maxw=get_word((ULONG) jwin->aos3win + 20);
-  maxh=get_word((ULONG) jwin->aos3win + 22);
-
-  if(flags & WFLG_WBENCHWINDOW) {
-    /* seems, as if WBench Windows have invalid maxw/maxh (=acth/actw).
-     * I did not find that anywhere, but for aos3 this seems to
-     * be true. FIXME?
+    /* wrong offset !?
+     * idcmpflags=get_long(jwin->aos3win + 80);
      */
-    JWLOG("aros_win_thread[%lx]: this is a WFLG_WBENCHWINDOW\n");
-    maxw=0xF000;
-    maxh=0xF000;
-  }
 
-  w=get_word((ULONG) jwin->aos3win +  8);
-  h=get_word((ULONG) jwin->aos3win + 10);
+    x=get_word((ULONG) jwin->aos3win +  4);
+    y=get_word((ULONG) jwin->aos3win +  6);
 
-  bl=get_byte((ULONG) jwin->aos3win + 54);
-  bt=get_byte((ULONG) jwin->aos3win + 55);
-  br=get_byte((ULONG) jwin->aos3win + 56);
-  bb=get_byte((ULONG) jwin->aos3win + 57);
+    aos_title=get_long_p(jwin->aos3win + 32);
 
-  gadget=get_long_p(jwin->aos3win + 62);
-  JWLOG("aros_win_thread[%lx]: ============= gadget =============\n",thread);
-  JWLOG("aros_win_thread[%lx]: gadget window: %s\n",thread,title);
-  JWLOG("aros_win_thread[%lx]: gadget borderleft: %d\n",thread,bl);
-  JWLOG("aros_win_thread[%lx]: gadget borderright: %d\n",thread,br);
-  JWLOG("aros_win_thread[%lx]: gadget bordertop: %d\n",thread,bt);
-  JWLOG("aros_win_thread[%lx]: gadget borderbottom: %d\n",thread,bb);
-  while(gadget) {
-    care=FALSE; /* we need to care for that gadget in respect to plusx/y */
+    //JWLOG("TITLE: aos_title=%lx\n",aos_title);
 
-    JWLOG("aros_win_thread[%lx]: gadget: === %lx ===\n",thread, gadget);
-    JWLOG("aros_win_thread[%lx]: gadget: x y: %d x %d\n",thread, 
-             get_word(gadget + 4), get_word(gadget +  6));
-    JWLOG("aros_win_thread[%lx]: gadget: w h: %d x %d\n",thread, 
-             get_word(gadget + 8), get_word(gadget + 10));
-
-    gadget_flags=get_word(gadget + 12);
-    //JWLOG("aros_win_thread[%lx]: gadget: flags %x\n",thread, 
-                                                           //gadget_flags);
-    if(gadget_flags & 0x0010) {
-      JWLOG("aros_win_thread[%lx]: gadget: GACT_RIGHTBORDER\n",thread);
-      care=TRUE;
+    c='X';
+    for(i=0;i<255 && c;i++) {
+      c=get_byte(aos_title + i);
+      //JWLOG("TITLE: %d: %c\n",i,c);
+      title[i]=c;
     }
-    if(gadget_flags & 0x0020) {
-      JWLOG("aros_win_thread[%lx]: gadget: GACT_LEFTBORDER\n",thread);
-      /* care=TRUE !? */;
-    }
-    if(gadget_flags & 0x0040) {
-      JWLOG("aros_win_thread[%lx]: gadget: GACT_TOPBORDER\n",thread);
-      /* care=TRUE !? */;
-    }
-    if(gadget_flags & 0x0080) {
-      JWLOG("aros_win_thread[%lx]: gadget: GACT_BOTTOMBORDER\n",thread);
-      care=TRUE;
+    title[i]=(char) 0;
+    JWLOG("aros_win_thread[%lx]: title: >%s<\n",thread,title);
+
+    /* idcmp flags we always need: */
+    idcmpflags= IDCMP_NEWSIZE | 
+			    IDCMP_CLOSEWINDOW | 
+			    IDCMP_RAWKEY |
+			    IDCMP_MOUSEBUTTONS |
+			    //IDCMP_MOUSEMOVE |
+			    IDCMP_ACTIVEWINDOW |
+			    IDCMP_CHANGEWINDOW |
+			    IDCMP_MENUPICK |
+			    IDCMP_MENUVERIFY |
+			    IDCMP_INACTIVEWINDOW;
+
+    JWLOG("aros_win_thread[%lx]: idcmpflags: %lx \n", thread, idcmpflags);
+
+    /* we are always WFLG_SMART_REFRESH and never BACKDROP! */
+    flags=flags & 0xFFFFFEFF;  /* remove refresh bits and backdrop */
+    flags=flags | WFLG_SMART_REFRESH | WFLG_GIMMEZEROZERO | WFLG_ACTIVATE;
+    
+    /* CHECKME: need borders here, too? */
+    minw=get_word((ULONG) jwin->aos3win + 16); 
+    minh=get_word((ULONG) jwin->aos3win + 18);
+    maxw=get_word((ULONG) jwin->aos3win + 20);
+    maxh=get_word((ULONG) jwin->aos3win + 22);
+
+    if(flags & WFLG_WBENCHWINDOW) {
+      /* seems, as if WBench Windows have invalid maxw/maxh (=acth/actw).
+       * I did not find that anywhere, but for aos3 this seems to
+       * be true. FIXME?
+       */
+      JWLOG("aros_win_thread[%lx]: this is a WFLG_WBENCHWINDOW\n");
+      maxw=0xF000;
+      maxh=0xF000;
     }
 
-    gadget_type =get_word(gadget + 16); 
-    //JWLOG("aros_win_thread[%lx]: gadget: type %x\n",thread, gadget_type);
+    w=get_word((ULONG) jwin->aos3win +  8);
+    h=get_word((ULONG) jwin->aos3win + 10);
 
-    if(gadget_type & 0x8000) {
-      JWLOG("aros_win_thread[%lx]: gadget: GTYP_SYSGADGET\n",thread);
+    bl=get_byte((ULONG) jwin->aos3win + 54);
+    bt=get_byte((ULONG) jwin->aos3win + 55);
+    br=get_byte((ULONG) jwin->aos3win + 56);
+    bb=get_byte((ULONG) jwin->aos3win + 57);
+
+    gadget=get_long_p(jwin->aos3win + 62);
+    JWLOG("aros_win_thread[%lx]: ============= gadget =============\n",thread);
+    JWLOG("aros_win_thread[%lx]: gadget window: %s\n",thread,title);
+    JWLOG("aros_win_thread[%lx]: gadget borderleft: %d\n",thread,bl);
+    JWLOG("aros_win_thread[%lx]: gadget borderright: %d\n",thread,br);
+    JWLOG("aros_win_thread[%lx]: gadget bordertop: %d\n",thread,bt);
+    JWLOG("aros_win_thread[%lx]: gadget borderbottom: %d\n",thread,bb);
+    while(gadget) {
+      care=FALSE; /* we need to care for that gadget in respect to plusx/y */
+
+      JWLOG("aros_win_thread[%lx]: gadget: === %lx ===\n",thread, gadget);
+      JWLOG("aros_win_thread[%lx]: gadget: x y: %d x %d\n",thread, 
+	       get_word(gadget + 4), get_word(gadget +  6));
+      JWLOG("aros_win_thread[%lx]: gadget: w h: %d x %d\n",thread, 
+	       get_word(gadget + 8), get_word(gadget + 10));
+
+      gadget_flags=get_word(gadget + 12);
+      //JWLOG("aros_win_thread[%lx]: gadget: flags %x\n",thread, 
+							     //gadget_flags);
+      if(gadget_flags & 0x0010) {
+	JWLOG("aros_win_thread[%lx]: gadget: GACT_RIGHTBORDER\n",thread);
+	care=TRUE;
+      }
+      if(gadget_flags & 0x0020) {
+	JWLOG("aros_win_thread[%lx]: gadget: GACT_LEFTBORDER\n",thread);
+	/* care=TRUE !? */;
+      }
+      if(gadget_flags & 0x0040) {
+	JWLOG("aros_win_thread[%lx]: gadget: GACT_TOPBORDER\n",thread);
+	/* care=TRUE !? */;
+      }
+      if(gadget_flags & 0x0080) {
+	JWLOG("aros_win_thread[%lx]: gadget: GACT_BOTTOMBORDER\n",thread);
+	care=TRUE;
+      }
+
+      gadget_type =get_word(gadget + 16); 
+      //JWLOG("aros_win_thread[%lx]: gadget: type %x\n",thread, gadget_type);
+
+      if(gadget_type & 0x8000) {
+	JWLOG("aros_win_thread[%lx]: gadget: GTYP_SYSGADGET\n",thread);
+      }
+      if(gadget_type & 0x0005) {
+	JWLOG("aros_win_thread[%lx]: gadget: GTYP_CUSTOMGADGET\n",thread);
+      }
+      else {
+	JWLOG("aros_win_thread[%lx]: gadget: UNKNOW TYPE: %d\n",thread,gadget_type);
+      }
+
+      if(gadget_type & 0x0010) {
+	JWLOG("aros_win_thread[%lx]: gadget: GTYP_SIZING\n",thread);
+	care=FALSE;
+      }
+      if(gadget_type & 0x0020) {
+	JWLOG("aros_win_thread[%lx]: gadget: GTYP_WDRAGGING\n",thread);
+	care=FALSE;
+      }
+      if(gadget_type & 0x0040) {
+	JWLOG("aros_win_thread[%lx]: gadget: GTYP_WDEPTH\n",thread);
+	care=FALSE;
+      }
+      if(gadget_type & 0x0060) {
+	JWLOG("aros_win_thread[%lx]: gadget: GTYP_WZOOM\n",thread);
+	care=FALSE;
+      }
+      if(gadget_type & 0x0080) {
+	JWLOG("aros_win_thread[%lx]: gadget: GTYP_CLOSE\n",thread);
+	care=FALSE;
+      }
+      if(care) {
+	JWLOG("aros_win_thread[%lx]: gadget: ==> ! CARE ! <==\n",thread);
+      }
+      else {
+	JWLOG("aros_win_thread[%lx]: gadget: ==> NOT CARE <==\n",thread);
+      }
+
+      gadget=get_long(gadget); /* NextGadget */
     }
-    if(gadget_type & 0x0005) {
-      JWLOG("aros_win_thread[%lx]: gadget: GTYP_CUSTOMGADGET\n",thread);
+
+    /* for some reason (?), there are some gadgets in small borders, which
+     * we should better ignore here ..*/
+    /* TODO: gadgets in the top/left border !? */
+    if(care && br>5) {
+      jwin->plusx=br;
     }
     else {
-      JWLOG("aros_win_thread[%lx]: gadget: UNKNOW TYPE: %d\n",thread,gadget_type);
+      jwin->plusx=0;
     }
 
-    if(gadget_type & 0x0010) {
-      JWLOG("aros_win_thread[%lx]: gadget: GTYP_SIZING\n",thread);
-      care=FALSE;
-    }
-    if(gadget_type & 0x0020) {
-      JWLOG("aros_win_thread[%lx]: gadget: GTYP_WDRAGGING\n",thread);
-      care=FALSE;
-    }
-    if(gadget_type & 0x0040) {
-      JWLOG("aros_win_thread[%lx]: gadget: GTYP_WDEPTH\n",thread);
-      care=FALSE;
-    }
-    if(gadget_type & 0x0060) {
-      JWLOG("aros_win_thread[%lx]: gadget: GTYP_WZOOM\n",thread);
-      care=FALSE;
-    }
-    if(gadget_type & 0x0080) {
-      JWLOG("aros_win_thread[%lx]: gadget: GTYP_CLOSE\n",thread);
-      care=FALSE;
-    }
-    if(care) {
-      JWLOG("aros_win_thread[%lx]: gadget: ==> ! CARE ! <==\n",thread);
+    if(care && bb>5) {
+      jwin->plusy=bb;
     }
     else {
-      JWLOG("aros_win_thread[%lx]: gadget: ==> NOT CARE <==\n",thread);
+      jwin->plusy=0;
     }
 
-    gadget=get_long(gadget); /* NextGadget */
-  }
+    JWLOG("jwin: %lx\n",jwin);
+    JWLOG("jwin->jscreen: %lx\n",jwin->jscreen);
+    JWLOG("jwin->jscreen->arosscreen: %lx\n",jwin->jscreen->arosscreen);
 
-  /* for some reason (?), there are some gadgets in small borders, which
-   * we should better ignore here ..*/
-  /* TODO: gadgets in the top/left border !? */
-  if(care && br>5) {
-    jwin->plusx=br;
-  }
-  else {
-    jwin->plusx=0;
-  }
+    if(jwin->jscreen->arosscreen) {
+      /* now we need to open up the window .. 
+       * hopefully nobody has thicker borders  ..
+       */
+      jwin->aroswin =  OpenWindowTags(NULL,WA_Title, title,
+				      WA_Left, x - estimated_border_left + bl, /* add 68k borderleft!!*/
+				      WA_Top, y - estimated_border_top + bt,
+				      /* WA_InnerWidth ..!? */
+#if 0
+				      WA_Width, w - br - bl + 
+						estimated_border_left +
+						estimated_border_right +
+						jwin->plusx,
+						/* see below */
+#endif
+				      WA_InnerWidth, w - br - bl + jwin->plusx,
+#if 0
+				      WA_Height, h - bt - bb + 
+						estimated_border_top +
+						estimated_border_bottom +
+						jwin->plusy,
+#endif
+				      WA_InnerHeight, h - bt - bb +jwin->plusy,
+				      WA_MinWidth, minw + jwin->plusx,
+				      WA_MinHeight, minh + jwin->plusy,
+				      WA_MaxWidth, maxw + jwin->plusx,
+				      WA_MaxHeight, maxh + jwin->plusy,
+				      WA_SmartRefresh, TRUE,
+				      WA_GimmeZeroZero, TRUE,
+				      WA_Flags, flags,
+				      WA_IDCMP, idcmpflags,
+				      WA_PubScreen, jwin->jscreen->arosscreen,
+				      WA_NewLookMenus, TRUE,
+				      TAG_DONE);
+    }
 
-  if(care && bb>5) {
-    jwin->plusy=bb;
-  }
-  else {
-    jwin->plusy=0;
-  }
+    JWLOG("opened window: %s\n", title);
+    JWLOG("  WA_Left: x %d - estimated_border_left %d = %d\n", x, estimated_border_left, x-estimated_border_left);
 
-  JWLOG("jwin: %lx\n",jwin);
-  JWLOG("jwin->jscreen: %lx\n",jwin->jscreen);
-  JWLOG("jwin->jscreen->arosscreen: %lx\n",jwin->jscreen->arosscreen);
 
-  if(jwin->jscreen->arosscreen) {
-    /* now we need to open up the window .. 
-     * hopefully nobody has thicker borders  ..
+    aroswin=jwin->aroswin; /* shorter to read..*/
+
+    JWLOG("aros_win_thread[%lx]: aroswin: %lx\n",thread, aroswin);
+
+    if(!aroswin) {
+      JWLOG("aros_win_thread[%lx]: ERROR: OpenWindow FAILED!\n",thread);
+      goto EXIT;
+    }
+
+#if 0
+    /* resize now, as we need those damned windows borders added */
+    ChangeWindowBox(aroswin,
+		    x - aroswin->BorderLeft,
+		    y - aroswin->BorderTop,
+		    w - br - bl + 
+		    aroswin->BorderLeft + 
+		    aroswin->BorderRight +
+		    jwin->plusx,
+		    h - bt - bb +
+		    aroswin->BorderTop +
+		    aroswin->BorderBottom +
+		    jwin->plusy);
+#endif
+
+    /* remember for the next time */
+    estimated_border_top=aroswin->BorderTop;
+    estimated_border_bottom=aroswin->BorderBottom;
+    estimated_border_left=aroswin->BorderLeft;
+    estimated_border_right=aroswin->BorderRight;
+
+    /* handle IDCMP stuff */
+    done=FALSE;
+    JWLOG("IDCMP loop for window %lx\n",aroswin);
+
+    /* should not happen.. */
+    if(!aroswin->UserPort) {
+      JWLOG("aros_win_thread[%lx]: ERROR: win %lx has no UserPort !?!\n",
+	      thread,aroswin);
+
+      done=TRUE;
+    }
+  } /* endif !win->custom
+     * yes, I know, so long if's are evil
      */
-    jwin->aroswin =  OpenWindowTags(NULL,WA_Title, title,
-      				    WA_Left, x - estimated_border_left + bl, /* add 68k borderleft!!*/
-      				    WA_Top, y - estimated_border_top + bt,
-				    /* WA_InnerWidth ..!? */
-#if 0
-      				    WA_Width, w - br - bl + 
-				              estimated_border_left +
-					      estimated_border_right +
-					      jwin->plusx,
-					      /* see below */
-#endif
-				    WA_InnerWidth, w - br - bl + jwin->plusx,
-#if 0
-				    WA_Height, h - bt - bb + 
-				              estimated_border_top +
-					      estimated_border_bottom +
-					      jwin->plusy,
-#endif
-				    WA_InnerHeight, h - bt - bb +jwin->plusy,
-				    WA_MinWidth, minw + jwin->plusx,
-				    WA_MinHeight, minh + jwin->plusy,
-				    WA_MaxWidth, maxw + jwin->plusx,
-				    WA_MaxHeight, maxh + jwin->plusy,
-				    WA_SmartRefresh, TRUE,
-				    WA_GimmeZeroZero, TRUE,
-				    WA_Flags, flags,
-				    WA_IDCMP, idcmpflags,
-				    WA_PubScreen, jwin->jscreen->arosscreen,
-				    WA_NewLookMenus, TRUE,
-                                    TAG_DONE);
-  }
-
-  JWLOG("opened window: %s\n", title);
-  JWLOG("  WA_Left: x %d - estimated_border_left %d = %d\n", x, estimated_border_left, x-estimated_border_left);
-
-
-  aroswin=jwin->aroswin; /* shorter to read..*/
-
-  JWLOG("aros_win_thread[%lx]: aroswin: %lx\n",thread, aroswin);
-
-  if(!aroswin) {
-    JWLOG("aros_win_thread[%lx]: ERROR: OpenWindow FAILED!\n",thread);
-    goto EXIT;
-  }
-
-#if 0
-  /* resize now, as we need those damned windows borders added */
-  ChangeWindowBox(aroswin,
-                  x - aroswin->BorderLeft,
-		  y - aroswin->BorderTop,
-                  w - br - bl + 
-		  aroswin->BorderLeft + 
-		  aroswin->BorderRight +
-		  jwin->plusx,
-		  h - bt - bb +
-		  aroswin->BorderTop +
-		  aroswin->BorderBottom +
-		  jwin->plusy);
-#endif
-
-  /* remember for the next time */
-  estimated_border_top=aroswin->BorderTop;
-  estimated_border_bottom=aroswin->BorderBottom;
-  estimated_border_left=aroswin->BorderLeft;
-  estimated_border_right=aroswin->BorderRight;
-
-  /* handle IDCMP stuff */
-  done=FALSE;
-  JWLOG("IDCMP loop for window %lx\n",aroswin);
-
-  /* should not happen.. */
-  if(!aroswin->UserPort) {
-    JWLOG("aros_win_thread[%lx]: ERROR: win %lx has no UserPort !?!\n",
-            thread,aroswin);
-
-    done=TRUE;
+  else {
+    JWLOG("aros_win_thread[%lx]: we are a custom win thread!\n", thread);
   }
 
   while(!done) {
 #if 0
     sleep(100);
 #endif
-    signals = Wait(1L << aroswin->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
+    if(!jwin->custom) {
+      signals = Wait(1L << aroswin->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
 
     /* message */
-    if (signals & (1L << aroswin->UserPort->mp_SigBit)) {
-      while (NULL != 
-	     (msg = (struct IntuiMessage *)GetMsg(aroswin->UserPort))) {
-	//JWLOG("IDCMP msg for window %lx\n",aroswin);
+      if (signals & (1L << aroswin->UserPort->mp_SigBit)) {
+	while (NULL != 
+	       (msg = (struct IntuiMessage *)GetMsg(aroswin->UserPort))) {
+	  //JWLOG("IDCMP msg for window %lx\n",aroswin);
 
-	class     = msg->Class;
-	code      = msg->Code;
-	dmx       = msg->MouseX;
-	dmy       = msg->MouseY;
-	mx        = msg->IDCMPWindow->MouseX; // Absolute pointer coordinates
-	my        = msg->IDCMPWindow->MouseY; // relative to the window
-	qualifier = msg->Qualifier;
-	secs      = msg->Seconds;
-	micros    = msg->Micros;
+	  class     = msg->Class;
+	  code      = msg->Code;
+	  dmx       = msg->MouseX;
+	  dmy       = msg->MouseY;
+	  mx        = msg->IDCMPWindow->MouseX; // Absolute pointer coordinates
+	  my        = msg->IDCMPWindow->MouseY; // relative to the window
+	  qualifier = msg->Qualifier;
+	  secs      = msg->Seconds;
+	  micros    = msg->Micros;
 
-	ReplyMsg ((struct Message*)msg);
+	  ReplyMsg ((struct Message*)msg);
 
-	handle_msg(aroswin, jwin, class, code, dmx, dmy, mx, my, qualifier, 
-	           thread, secs, micros, &done);
+	  handle_msg(aroswin, jwin, class, code, dmx, dmy, mx, my, qualifier, 
+		     thread, secs, micros, &done);
+	}
       }
+    }
+    else {
+      /* custom */
+      signals = Wait(SIGBREAKF_CTRL_C);
     }
     /* Ctrl-C */
     if(signals & SIGBREAKF_CTRL_C) {

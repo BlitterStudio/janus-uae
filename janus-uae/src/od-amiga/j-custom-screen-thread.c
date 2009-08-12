@@ -36,20 +36,16 @@
  * based on handle_events in gfx-amigaos/ami-win.c
  ***********************************************************/  
 
-static void handle_custom_events_W(struct Window *W) {
+static void handle_custom_events_W(struct Window *aroswin, struct Process *thread) {
 
   struct IntuiMessage *msg;
-  int dmx, dmy, mx, my, class, code, qualifier;
-  BOOL done;
+  int                  dmx, dmy, mx, my, class, code, qualifier;
+  ULONG                signals;
+  BOOL                 done;
 
-  JWLOG("W: %lx\n", W);
+  JWLOG("aroswin: %lx\n", aroswin);
 
- /* this function is called at each frame, so: */
-  //++frame_num;       /* increase frame counter */
 #if 0
-  save_frame();      /* possibly save frame    */
-#endif
-
   /* necessary !? */
   if(aos3_task && aos3_task_signal) {
     JWLOG("send signal to Wait of janusd (%lx)\n", aos3_task);
@@ -58,10 +54,23 @@ static void handle_custom_events_W(struct Window *W) {
 
   /* necessary !? */
   gui_handle_events();
+#endif
 
   done=FALSE;
   while(!done) {
-    while ((msg = (struct IntuiMessage*) GetMsg (W->UserPort))) {
+    JWLOG("aros_cscr_thread[%lx]: wait for signal\n", thread);
+    //signals = Wait(1L << aroswin->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
+    signals = Wait(SIGBREAKF_CTRL_C);
+    JWLOG("aros_cscr_thread[%lx]: signal reveived\n", thread);
+
+    if(signals & SIGBREAKF_CTRL_C) {
+      JWLOG("aros_cscr_thread[%lx]: SIGBREAKF_CTRL_C received\n", thread);
+      done=TRUE;
+      break;
+    }
+#if 0
+
+    while ((msg = (struct IntuiMessage*) GetMsg (aroswin->UserPort))) {
 	class     = msg->Class;
 	code      = msg->Code;
 	dmx       = msg->MouseX;
@@ -71,8 +80,6 @@ static void handle_custom_events_W(struct Window *W) {
 	qualifier = msg->Qualifier;
 
 	ReplyMsg ((struct Message*)msg); 
-
-	JWLOG("W: %lx (%s)\n",W, W->Title);
 
 	switch (class) {
 
@@ -93,9 +100,9 @@ static void handle_custom_events_W(struct Window *W) {
 		    }
 		}
 #endif
-		BeginRefresh (W);
+		BeginRefresh (aroswin);
 		flush_block (0, currprefs.gfx_height_win - 1);
-		EndRefresh (W, TRUE);
+		EndRefresh (aroswin, TRUE);
 		break;
 
 	    case IDCMP_RAWKEY: {
@@ -166,6 +173,7 @@ static void handle_custom_events_W(struct Window *W) {
 		break;
         }
     }
+#endif
   }
 
   /* necessary !? */
@@ -213,21 +221,18 @@ static void aros_custom_screen_thread (void) {
   /* our custom screen has only one window */
   aroswin=jscr->arosscreen->FirstWindow;
   if(!aroswin) {
-    JWLOG("aros_scr_thread[%lx]: ERROR: screen %lx has no window !!\n",thread, jscr->arosscreen);
+    JWLOG("aros_cscr_thread[%lx]: ERROR: screen %lx has no window !!\n",thread, jscr->arosscreen);
   }
-  JWLOG("aros_scr_thread[%lx]: aroswin: %lx\n", aroswin);
+  JWLOG("aros_cscr_thread[%lx]: aroswin: %lx\n", thread, aroswin);
 
-  done=FALSE;
-  while(!done) {
-    handle_custom_events_W(aroswin);
-    //done=TRUE;
-    JWLOG("aros_scr_thread[%lx]: handle_events_W returned\n", thread);
-  }
+  handle_custom_events_W(aroswin, thread);
+
+  JWLOG("aros_cscr_thread[%lx]: handle_custom_events_W returned\n", thread);
 
   /* ... and a time to die. */
 
 EXIT:
-  JWLOG("aros_scr_thread[%lx]: EXIT\n");
+  JWLOG("aros_cscr_thread[%lx]: EXIT\n");
   done=TRUE;  /* need something, if debug is off.. */
 #if 0
   ObtainSemaphore(&sem_janus_window_list);

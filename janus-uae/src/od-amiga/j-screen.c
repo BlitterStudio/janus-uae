@@ -22,6 +22,25 @@
 #include "j.h"
 
 /************************************************************************
+ * aos3screen_is_custom
+ ************************************************************************/
+BOOL aos3screen_is_custom(uaecptr aos3screen) {
+  UWORD          flags;
+
+  JWLOG("screen: %lx\n",aos3screen);
+
+  flags=get_word(aos3screen+20);
+  flags=flags & 0xF;
+  if(flags!=0xF) {
+    JWLOG("  screen %lx is no custom screen\n", aos3screen);
+    return FALSE;
+  }
+  JWLOG("  screen %lx is a custom screen\n", aos3screen);
+  return TRUE;
+}
+
+
+/************************************************************************
  * new_aros_pub_screen for an aos3screen
  *
  * check if there is already a pubscreen with this name
@@ -253,7 +272,6 @@ uae_u32 ad_job_list_screens(ULONG *m68k_results) {
 uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
   GSList *list_screen;
   JanusScreen *jscreen;
-  UWORD flags;
   UWORD width;
   UWORD depth;
   UWORD height;
@@ -266,7 +284,7 @@ uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
   static struct NewWindow NewWindowStructure = {
 	0, 0, 800, 600, 0, 1,
 	IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY /*| IDCMP_DISKINSERTED | IDCMP_DISKREMOVED*/
-		| IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW | IDCMP_MOUSEMOVE |
+		| IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW | IDCMP_MOUSEMOVE | IDCMP_DELTAMOVE |
 		IDCMP_REFRESHWINDOW,
 	WFLG_SMART_REFRESH | WFLG_BACKDROP | WFLG_RMBTRAP | WFLG_NOCAREREFRESH
 	 | WFLG_BORDERLESS | WFLG_ACTIVATE | WFLG_REPORTMOUSE,
@@ -280,9 +298,7 @@ uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
 
   JWLOG("aos3screen: %lx\n", aos3screen);
 
-  flags=get_word(aos3screen+20);
-  flags=flags & 0xF;
-  if(flags!=0xF) {
+  if(!aos3screen_is_custom(aos3screen)) {
     JWLOG("  no custom screen, do nothing\n");
     return TRUE;
   }
@@ -362,7 +378,7 @@ uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
   JWLOG("found w: %d h: %d\n", newwidth, newheight);
 
 
-  /* If the screen is larger than requested, centre UAE's display */
+  /* If the screen is larger than requested, center UAE's display */
   XOffset=0;
   YOffset=0;
   if (newwidth > (ULONG)width) {
@@ -428,6 +444,7 @@ uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
   /* TODO !!*/
   uae_main_window_closed=FALSE;
   j_stop_window_update=TRUE;
+  custom_screen_active=jscreen;
 
   gfx_set_picasso_state(0);
   reset_drawing();
@@ -445,3 +462,56 @@ uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
   return TRUE;
 }
 
+uae_u32 ad_job_close_screen(ULONG aos3screen) {
+  GSList        *list_screen;
+  JanusScreen   *jscreen;
+  struct Screen *arosscreen;
+
+  JWLOG("screen: %lx\n",aos3screen);
+
+  if(!aos3screen_is_custom(aos3screen)) {
+    JWLOG("  no custom screen, do nothing\n");
+  }
+
+  ObtainSemaphore(&sem_janus_screen_list);
+  list_screen= g_slist_find_custom(janus_screens,
+	  (gconstpointer) aos3screen,
+	  &aos3_screen_compare);
+
+  if(list_screen) {
+    JWLOG(" screen %lx not found in janus_screens list\n",aos3screen);
+    ReleaseSemaphore(&sem_janus_screen_list);
+    return TRUE;
+  }
+
+  jscreen=(JanusScreen *) list_screen->data;
+
+  if(!jscreen->arosscreen) {
+    JWLOG(" jscreen %lx has no arosscreen !?\n",aos3screen);
+    ReleaseSemaphore(&sem_janus_screen_list);
+    return FALSE;
+  }
+
+  arosscreen=jscreen->arosscreen;
+
+  if(!CloseScreen(arosscreen)) {
+    JWLOG("ERROR: could not close aros screen %lx !!\n", arosscreen);
+    ReleaseSemaphore(&sem_janus_screen_list);
+    return FALSE;
+  }
+
+  JWLOG(" aros screen %lx closed\n",arosscreen);
+
+  jscreen->arosscreen=NULL;
+
+  /* Removes the node from the list and frees it. */
+  janus_screens=g_slist_delete_link(janus_screens, list_screen);
+
+  FreeVec(jscreen);
+
+  ReleaseSemaphore(&sem_janus_screen_list);
+  JWLOG(" ressources deallocated\n");
+
+  return TRUE;
+
+}

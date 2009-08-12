@@ -95,6 +95,7 @@ WORD get_hi_word(ULONG *field);
 #define AD_GET_JOB_NEW_WINDOW         11
 #define AD_GET_JOB_LIST_SCREENS       12
 #define AD_GET_JOB_OPEN_CUSTOM_SCREEN 13
+#define AD_GET_JOB_CLOSE_SCREEN       14
 #define AD_GET_JOB_DEBUG             999 
 
 #define AD_CLIP_SETUP 15
@@ -138,6 +139,9 @@ void copy_clipboard_to_amigaos       (void);
 void copy_clipboard_to_amigaos_real  (uaecptr data, uae_u32 len);
 ULONG aros_clipboard_len             (void);
 
+/* test, if a aos3screen is a custom screen */
+BOOL aos3screen_is_custom            (uaecptr aos3screen);
+
 /* main uae window active ? */
 extern BOOL uae_main_window_closed;
 
@@ -160,7 +164,7 @@ typedef struct {
 
 typedef struct {
   gpointer       aos3win; /* gpointer !? */
-  struct Window *aroswin;
+  struct Window *aroswin; /* corresponding native aros win */
   JanusScreen   *jscreen; /* screens on which window is running */
   void          *mempool; /* alloc everything here */
   struct Task   *task;
@@ -168,12 +172,13 @@ typedef struct {
   struct Menu   *arosmenu;
   ULONG          nr_menu_items;
   void          *newmenu_mem;
-  LONG           delay; /* if > 0, delay-- and leave it untouched */
+  LONG           delay;         /* if > 0, delay-- and leave it untouched */
   WORD           LeftEdge, TopEdge;
   WORD           Width, Height;
-  WORD           plusx, plusy; /* increase visible size */
+  WORD           plusx, plusy;  /* increase visible size */
   ULONG          secs, micros;  /* remember last menupick for DMRequests */
   BOOL           dead;
+  BOOL           custom;        /* window is on a custom screen */
 } JanusWin;
 
 typedef struct {
@@ -181,6 +186,9 @@ typedef struct {
   ULONG          type; /* J_MSG_..*/
   BOOL           old;
 } JanusMsg;
+
+/* one of our custom screens is active */
+extern JanusScreen *custom_screen_active;
 
 /* remove me */
 extern struct Window *native_window;

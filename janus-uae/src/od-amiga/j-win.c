@@ -114,11 +114,6 @@ static void new_aos3window(ULONG aos3win) {
     return;
   }
 
-  /* new jwin */
-  jwin=(JanusWin *) AllocVec(sizeof(JanusWin),MEMF_CLEAR);
-  JWLOG("aos3window %lx as jwin %lx\n",
-	   aos3win,
-	   jwin);
 
   aos3screen=get_long(aos3win+46);
   JWLOG("search for aos3screen %lx\n",aos3screen);
@@ -129,7 +124,6 @@ static void new_aos3window(ULONG aos3win) {
   if(!list_screen) {
     JWLOG("\n\nERROR (FIXME): This window %lx -> screen %lx does not exist!!\n\n",aos3win,aos3screen);
     /* this must not happen !! */
-    FreeVec(jwin);
     //JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
     ReleaseSemaphore(&sem_janus_window_list);
     ReleaseSemaphore(&sem_janus_screen_list);
@@ -139,6 +133,12 @@ static void new_aos3window(ULONG aos3win) {
 
   jscreen=(JanusScreen *) list_screen->data;
 
+  /* new jwin */
+  jwin=(JanusWin *) AllocVec(sizeof(JanusWin),MEMF_CLEAR);
+  JWLOG("aos3window %lx as jwin %lx\n",
+	   aos3win,
+	   jwin);
+
   JWLOG("jwin %lx is on jscreen %lx\n",jwin,jscreen);
 
   jwin->aos3win=(gpointer) aos3win;
@@ -146,6 +146,11 @@ static void new_aos3window(ULONG aos3win) {
   jwin->mempool=CreatePool(MEMF_CLEAR|MEMF_SEM_PROTECTED, 
                            0xC000, 0x8000); /* hmm..*/
   janus_windows=g_slist_append(janus_windows,jwin);
+
+  if(aos3screen_is_custom(jscreen->aos3screen)) {
+    jwin->custom=TRUE;
+    JWLOG("aos3window %lx is on a custom aos3 screen (%lx)\n", jwin->aos3win, jscreen->aos3screen);
+  }
 
   //JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
   ReleaseSemaphore(&sem_janus_window_list);
@@ -335,6 +340,11 @@ uae_u32 ad_job_report_uae_windows(ULONG *m68k_results) {
     }
 
     JWLOG("check window %lx (%s)\n", window, window->Title);
+
+    if(win->custom) {
+      JWLOG("aos3window %lx is on a custom screen\n", aos3win);
+      goto NEXT;
+    }
 
     if(win->delay > 0) {
       win->delay--;
@@ -723,7 +733,7 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
 	if(win->aos3win != last_window) {
 	  last_window=win->aos3win;
 	  //JWLOG("ad_job_sync_windows: win %lx added at %d\n",win->aos3win,i*4);
-	  if(!win->dead) { /* hmmm..?*/
+	  if(!win->custom && !win->dead) { /* hmmm..?*/
 	    /* put_long cares for *4 ? */
 	    put_long_p(m68k_results+i, (ULONG) win->aos3win); 
 	  }
