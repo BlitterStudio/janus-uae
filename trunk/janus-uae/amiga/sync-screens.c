@@ -43,6 +43,8 @@ BOOL init_sync_screens() {
   old_MoveWindowInFront_BehindWindow=NULL;
   old_MoveWindowInFront_Counter=0;
 #endif
+  ENTER
+  LEAVE
 
   return TRUE;
 }
@@ -50,11 +52,16 @@ BOOL init_sync_screens() {
 
 void screen_test() {
   ULONG *command_mem;
+
+  ENTER
+
   command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
 
   calltrap (AD_GET_JOB, AD_TEST, command_mem);
 
   FreeVec(command_mem);
+
+  LEAVE
 }
 
 /****************************************************
@@ -73,6 +80,8 @@ void update_screens() {
   ULONG i;
   struct Screen *screen;
 
+  ENTER
+
   DebOut("update_screens()\n");
 
   command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
@@ -86,6 +95,7 @@ void update_screens() {
   if(!screen) {
     printf("ERROR: no screen!?\n"); /* TODO */
     DebOut("ERROR: no screen!?\n"); /* TODO */
+    LEAVE
     return;
   }
 
@@ -103,5 +113,6 @@ void update_screens() {
   FreeVec(command_mem);
 
   DebOut("update_screens() done\n");
+  LEAVE
 }
 

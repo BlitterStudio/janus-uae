@@ -66,6 +66,8 @@ BOOL sync_mouse_device_open=FALSE;
 
 void free_sync_mouse() {
 
+  ENTER
+
   if(InputIO) {
     if(sync_mouse_device_open) {
       CloseDevice((struct IORequest *)InputIO);
@@ -89,9 +91,13 @@ void free_sync_mouse() {
     DeleteMsgPort(InputMP);
     InputMP=NULL;
   }
+
+  LEAVE
 }
 
 BOOL init_sync_mouse() {
+
+  ENTER
 
   InputMP=CreateMsgPort();
   if(InputMP) {
@@ -105,6 +111,7 @@ BOOL init_sync_mouse() {
 	      (struct IORequest *)InputIO, NULL)) {
              /* Zero if successful, else an error code is returned. */
 	     sync_mouse_device_open=TRUE;
+	     LEAVE
 	     return TRUE;
 	  }
 	}
@@ -118,6 +125,8 @@ BOOL init_sync_mouse() {
 
   free_sync_mouse();
 
+  LEAVE
+
   return FALSE;
 }
 
@@ -125,6 +134,8 @@ BOOL init_sync_mouse() {
  * (C) 1994,1995, Ketil Hunn
  */
 void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button) {
+
+  ENTER
 
   NeoPix->iepp_Screen=(struct Screen *)screen;
   NeoPix->iepp_Position.X=x;
@@ -153,6 +164,8 @@ void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button) {
     FakeEvent->ie_Code=button|IECODE_UP_PREFIX;
     DoIO((struct IORequest *)InputIO);
   }
+
+  LEAVE
 }
 
 /***************************************
@@ -162,7 +175,10 @@ void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button) {
 
 void sync_mouse() {
   ULONG result;
+  UWORD flags;
   struct Screen *screen;
+
+  ENTER
 
   /*screen=(struct Screen *) LockPubScreen(NULL);*/
   screen=IntuitionBase->FirstScreen;
@@ -171,6 +187,12 @@ void sync_mouse() {
     return;
   }
   /*  UnlockPubScreen(NULL,screen); */
+
+  /* customs screens are *not* synced here */
+  flags=screen->Flags & 0x000F;
+  if(flags == CUSTOMSCREEN) {
+    return;
+  }
 
   if(!mousebuffer) {
     mousebuffer=AllocVec(16,MEMF_CLEAR);
@@ -185,5 +207,7 @@ void sync_mouse() {
     }
     //printf("mouse x %d y %d\n",mousebuffer[0],mousebuffer[1]);
   }
+
+  LEAVE
 }
 
