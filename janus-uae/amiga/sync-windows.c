@@ -44,9 +44,14 @@ ULONG          old_MoveWindowInFront_Counter;
  * generate an error here, check it there!
  */
 BOOL init_sync_windows() {
+
+  ENTER
+
   old_MoveWindowInFront_Window=NULL;
   old_MoveWindowInFront_BehindWindow=NULL;
   old_MoveWindowInFront_Counter=0;
+
+  LEAVE
 
   return TRUE;
 }
@@ -67,7 +72,7 @@ void update_windows() {
   struct List          *public_screen_list;
   struct PubScreenNode *public_screen_node;
 
-  //printf("update_windows()\n");
+  ENTER
  
   public_screen_list = (struct List *) LockPubScreenList();
   public_screen_node = (struct PubScreenNode *) public_screen_list->lh_Head;
@@ -75,6 +80,7 @@ void update_windows() {
     printf("no public_screen_node!?\n"); /* TODO */
     DebOut("no public_screen_node!?\n"); /* TODO */
     UnlockPubScreenList();
+    LEAVE
     return;
   }
 
@@ -97,6 +103,7 @@ void update_windows() {
   calltrap (AD_GET_JOB, AD_GET_JOB_LIST_WINDOWS, command_mem);
   FreeVec(command_mem);
 
+  ENTER
 }
 
 
@@ -105,17 +112,22 @@ void update_windows() {
 void dump_host_windows(ULONG *window) {
   int i=0;
 
+  ENTER
+
   DebOut("dump_host_windows\n");
   while(window[i] || i<5) {
     DebOut("  %d: %lx\n",i,window[i]);
     i++;
   }
+
+  LEAVE
 }
 
 void dump_uae_windows(struct Screen *screen) {
   struct Layer *layer;
   int i=0;
 
+  ENTER
   DebOut("dump_uae_windows\n");
 
   /* get frontmost layer */
@@ -124,8 +136,10 @@ void dump_uae_windows(struct Screen *screen) {
     layer=layer->front;
   }
 
-  if(!layer) 
+  if(!layer) {
+    LEAVE
     return;
+  }
 
   while(layer) {
     if(layer->Window) {
@@ -134,9 +148,13 @@ void dump_uae_windows(struct Screen *screen) {
     }
     layer = layer -> back;
   }
+
+  LEAVE
 }
 
 ULONG need_to_sort(ULONG *host_window, struct Layer *layer) {
+
+  ENTER
 
   if(!host_window[0] && !layer) {
     return FALSE;
@@ -159,6 +177,7 @@ ULONG need_to_sort(ULONG *host_window, struct Layer *layer) {
     return TRUE;
   }
 
+  LEAVE
   return need_to_sort(host_window+4, layer->back);
 }
 #endif
@@ -189,8 +208,11 @@ void report_uae_windows() {
   ULONG         *command_mem;
   ULONG          i;
 
+  ENTER
+
   command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
   if(!command_mem) {
+    LEAVE
     return;
   }
 
@@ -200,6 +222,7 @@ void report_uae_windows() {
     printf("report_uae_windows: no screen!?\n");
     DebOut("ERROR: report_uae_windows: no screen!?\n");
     FreeVec(command_mem);
+    LEAVE
     return;
   }
 
@@ -231,6 +254,8 @@ void report_uae_windows() {
   calltrap (AD_GET_JOB, AD_GET_JOB_REPORT_UAE_WINDOWS, command_mem);
 
   FreeVec(command_mem);
+
+  LEAVE
 }
 
 
@@ -263,8 +288,11 @@ void report_host_windows() {
   ULONG         *command_mem;
   ULONG          i;
 
+  ENTER
+
   command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
   if(!command_mem) {
+    LEAVE
     return;
   }
 
@@ -329,7 +357,7 @@ void report_host_windows() {
   }
 #endif
 
-
+  LEAVE
   FreeVec(command_mem);
 }
 
@@ -347,6 +375,7 @@ void report_host_windows() {
 static void my_MoveWindowInFrontOf(struct Window *window, 
                                    struct Window *behindWindow) {
 
+  ENTER
   //printf("my_MoveWindowInFrontOf enteren\n");
   if(window == old_MoveWindowInFront_Window &&
      behindWindow == old_MoveWindowInFront_BehindWindow &&
@@ -354,6 +383,7 @@ static void my_MoveWindowInFrontOf(struct Window *window,
     /* nothing to do */
     old_MoveWindowInFront_Counter++;
     //printf("my_MoveWindowInFrontOf left here\n");
+    LEAVE
     return;
   }
 
@@ -371,7 +401,8 @@ static void my_MoveWindowInFrontOf(struct Window *window,
   DebOut("MoveWindowInFrontOf(%lx - %s, %lx - %s)\n", (ULONG) window,       window->Title,
                                                       (ULONG) behindWindow, behindWindow->Title); 
   MoveWindowInFrontOf(window,behindWindow);
-  //printf("my_MoveWindowInFrontOf left\n");
+
+  LEAVE
 }
 
 /*****************************************
@@ -394,11 +425,11 @@ void sync_windows() {
   ULONG  i=0;
   ULONG  done;
 
-  //printf("sync_windows\n");
-
+  ENTER
 
   command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
   if(!command_mem) {
+    LEAVE
     return;
   }
 
@@ -408,6 +439,7 @@ void sync_windows() {
   if(!command_mem[0]) {
     /* no window, might be.. */
     FreeVec(command_mem);
+    LEAVE
     return;
   }
 
@@ -419,6 +451,7 @@ void sync_windows() {
     printf("ERROR: window %lx has no screen !?\n",(ULONG) win);
     DebOut("ERROR: window %lx has no screen !?\n",(ULONG) win);
     FreeVec(command_mem);
+    LEAVE
     return;
   }
 
@@ -452,6 +485,7 @@ void sync_windows() {
     printf("layer==NULL!?\n");
     DebOut("ERROR: layer==NULL!?\n");
     FreeVec(command_mem);
+    LEAVE
     return;
   }
 
@@ -487,13 +521,18 @@ void sync_windows() {
   }
 
   FreeVec(command_mem);
+  LEAVE
 }
 
 void sync_active_window() {
   struct Window *win;
+
+  ENTER
+
   win=(struct Window *) calltrap (AD_GET_JOB, 
                                   AD_GET_JOB_ACTIVE_WINDOW, NULL);
 
   ActivateWindow(win);
+  LEAVE
 }
 

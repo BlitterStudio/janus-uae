@@ -36,6 +36,7 @@
 #include <exec/io.h>
 #include <exec/memory.h>
 #include <proto/intuition.h>
+#include <proto/utility.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/preferences.h>
 #include <devices/input.h>
@@ -85,10 +86,19 @@ ULONG (*calltrap)(ULONG __asm("d0"),
 		  APTR  __asm("a0")) = (APTR) AROSTRAPBASE;
 
 BOOL open_libs() {
+  ENTER
    if (!(IntuitionBase=(struct IntuitionBase *) OpenLibrary("intuition.library",39))) {
      printf("unable to open intuition.library\n");
+     LEAVE
      return FALSE;
    }
+   if (!(UtilityBase=(struct UtilityBase *) OpenLibrary("utility.library",39))) {
+     printf("unable to open utility.library\n");
+     LEAVE
+     return FALSE;
+   }
+
+   LEAVE
    return TRUE;
 }
 
@@ -105,11 +115,13 @@ BOOL open_libs() {
 int setup(struct Task *task, ULONG signal, ULONG stop) {
   ULONG *command_mem;
 
-  DebOut("setup(%lx,%lx,%d)\n",(ULONG) task, signal, stop);
+  ENTER
+
+  DebOut("janusd: setup(%lx,%lx,%d)\n",(ULONG) task, signal, stop);
 
   command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
 
-  DebOut("memory: %lx\n",(ULONG) command_mem);
+  //DebOut("janusd: memory: %lx\n",(ULONG) command_mem);
 
   command_mem[0]=(ULONG) task;
   command_mem[4]=(ULONG) signal;
@@ -121,7 +133,9 @@ int setup(struct Task *task, ULONG signal, ULONG stop) {
 
   FreeVec(command_mem);
 
-  DebOut("setup done(): result %d\n",(int) state);
+  DebOut("janusd: setup done(): result %d\n",(int) state);
+
+  LEAVE
 
   return state;
 }
@@ -131,6 +145,10 @@ int setup(struct Task *task, ULONG signal, ULONG stop) {
  ***************************************/
 void switch_uae_window() {
 
+  ENTER;
+
+  DebOut("janusd: switch_uae_window entered");
+
   if(!cmdbuffer) {
     cmdbuffer=AllocVec(16,MEMF_CLEAR);
   }
@@ -139,9 +157,13 @@ void switch_uae_window() {
     cmdbuffer[0]=0;
     calltrap (AD_GET_JOB, AD_GET_JOB_SWITCH_UAE_WINDOW, cmdbuffer);
   }
+
+  LEAVE
 }
 
 void activate_uae_window(int status) {
+
+  ENTER
 
   if(!cmdbuffer) {
     cmdbuffer=AllocVec(16,MEMF_CLEAR);
@@ -152,6 +174,8 @@ void activate_uae_window(int status) {
     cmdbuffer[1]=status;
     calltrap (AD_GET_JOB, AD_GET_JOB_SWITCH_UAE_WINDOW, cmdbuffer);
   }
+
+  LEAVE
 }
 
 static void runme() {
@@ -161,22 +185,24 @@ static void runme() {
   BOOL         init;
   BOOL         set;
 
-  DebOut("runme entered\n");
+  DebOut("janusd: runme entered\n");
+  ENTER
 
 #if 0
   while(!setup(mytask, mysignal, 0)) {
-    DebOut("let's sleep ..\n");
+    DebOut("janusd: let's sleep ..\n");
     sleep(10); /* somebody will wake us up anyways */
   }
 #endif
 
-  DebOut("now we want to do something usefull ..\n");
+  DebOut("janusd: now we want to do something usefull ..\n");
 
-  DebOut("running (CTRL-C to go to normal mode, CTRL-D to rootless mode)..\n");
+  DebOut("janusd: running (CTRL-C to go to normal mode, CTRL-D to rootless mode)..\n");
 
   done=FALSE;
   init=FALSE;
   while(!done) {
+    DebOut("janusd: Wait() ..\n");
     newsignals=Wait(mysignal | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
     set=setup(mytask, mysignal, 0);
     if(set && (newsignals & mysignal)) {
@@ -189,12 +215,12 @@ static void runme() {
 			   * updates again a every openwindow patch
 			   * call
 			   */
-	DebOut("screens updated\n");
+	DebOut("janusd: screens updated\n");
 
 	update_windows(); /* report all open windows once,
 			   * new windows will be handled by the patches
 			   */
-	DebOut("windows updated\n");
+	DebOut("janusd: windows updated\n");
       }
 
       sync_windows();
@@ -207,9 +233,9 @@ static void runme() {
 
     if((newsignals & SIGBREAKF_CTRL_C) ||
       (!set && (newsignals & mysignal))) {
-      DebOut("!set || got SIGBREAKF_CTRL_C..\n");
+      DebOut("janusd: !set || got SIGBREAKF_CTRL_C..\n");
       if(init) {
-	DebOut("tell uae, that we received a SIGBREAKF_CTRL_C\n");
+	DebOut("janusd: tell uae, that we received a SIGBREAKF_CTRL_C\n");
 	init=FALSE;
 	/* cose all windows */
       	command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
@@ -218,19 +244,19 @@ static void runme() {
 	setup(mytask, mysignal, 1); /* we are tired */
       }
       else {
-	DebOut("we are already inactive\n");
+	DebOut("janusd: we are already inactive\n");
       }
     }
 
     if(newsignals & SIGBREAKF_CTRL_D) {
-      DebOut("got SIGBREAKF_CTRL_D..\n");
+      DebOut("janusd: got SIGBREAKF_CTRL_D..\n");
 //      switch_uae_window();
       if(!init) {
-	DebOut("tell uae, that we received a SIGBREAKF_CTRL_D\n");
+	DebOut("janusd: tell uae, that we received a SIGBREAKF_CTRL_D\n");
 	setup(mytask, mysignal, 2); /* we are back again */
       }
       else {
-	DebOut("we are already active\n");
+	DebOut("janusd: we are already active\n");
       }
 
     }
@@ -238,7 +264,8 @@ static void runme() {
 
   /* never arrive here */
 
-  DebOut("try to sleep ..\n");
+
+  DebOut("janusd: try to sleep ..\n");
 
   /* enable uae window again */
   activate_uae_window(1);
@@ -248,6 +275,7 @@ static void runme() {
   calltrap (AD_GET_JOB, AD_GET_JOB_LIST_WINDOWS, command_mem);
   FreeVec(command_mem);
 
+  LEAVE
 }
 
 
@@ -255,15 +283,17 @@ static void runme() {
 
 int main (int argc, char **argv) {
 
-  DebOut("started\n");
+  ENTER
+  DebOut("janusd: started\n");
 
   if(!open_libs()) {
     exit(1);
   }
 
   if(!init_sync_mouse()) {
-    DebOut("ERROR: init_sync_mouse failed\n");
+    DebOut("janusd: ERROR: init_sync_mouse failed\n");
     printf("ERROR: init_sync_mouse failed\n");
+    LEAVE
     exit(1);
   }
 
@@ -274,13 +304,16 @@ int main (int argc, char **argv) {
   mysignal_bit=AllocSignal(-1);
   if(mysignal_bit == -1) {
     printf("no signal..!\n");
-    DebOut("no signal..!\n");
+    DebOut("janusd: no signal..!\n");
+    LEAVE
     exit(1);
   }
   mysignal=1L << mysignal_bit;
 
   mytask=FindTask(NULL);
-  DebOut("task: %lx\n",mytask);
+  DebOut("janusd: task: %lx\n",mytask);
+
+  SetTaskPri(mytask, 55);
 
   setup(mytask, mysignal, 0); /* init everything for the patches */
 
@@ -295,7 +328,9 @@ int main (int argc, char **argv) {
   FreeSignal(mysignal_bit);
   free_sync_mouse();
 
-  DebOut("exit\n");
+  DebOut("janusd: exit\n");
+
+  LEAVE
 
   exit (0);
 }

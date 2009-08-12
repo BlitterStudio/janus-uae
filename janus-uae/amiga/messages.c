@@ -106,10 +106,14 @@ void closewin(struct Window *w) {
   UWORD  m;
   struct Screen *screen;
 
+  ENTER
+
   screen=IntuitionBase->FirstScreen;
   m=w->BorderTop / 2; /* middle of close gadget */
 
   SetMouse(screen, w->LeftEdge + m, w->TopEdge + m, IECODE_LBUTTON);
+
+  LEAVE
 
   /* next sync sets the mouse back to the right coordinates */
 }
@@ -125,7 +129,7 @@ void forward_messages() {
   ULONG  type;
   struct window *w;
 
-  //printf("forward_messages()\n");
+  ENTER
 
   command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
 
@@ -152,5 +156,7 @@ void forward_messages() {
   }
 
   FreeVec(command_mem);
+
+  LEAVE
 }
 

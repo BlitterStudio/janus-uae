@@ -92,5 +92,19 @@ char *public_screen_name(struct Screen *scr);
 /* debug.c */
 void DebOut(const char *format, ...);
 
+#if 0
+#define ENTER DebOut("janusd: %s:%s entered\n",__FILE__,__func__);
+#define LEAVE DebOut("janusd: %s:%s left in line %d\n",__FILE__,__func__,__LINE__);
+
+#define C_ENTER DebOut("clipd: %s:%s entered\n",__FILE__,__func__);
+#define C_LEAVE DebOut("clipd: %s:%s left in line %d\n",__FILE__,__func__,__LINE__);
+#else
+#define ENTER
+#define LEAVE
+#define C_ENTER
+#define C_LEAVE
+#endif
+
+
 
 #endif

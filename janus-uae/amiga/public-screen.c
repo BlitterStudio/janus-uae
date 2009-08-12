@@ -42,6 +42,8 @@ char *public_screen_name(struct Screen *scr) {
   struct List          *public_screen_list;
   struct PubScreenNode *public_screen_node;
 
+  ENTER
+
   public_screen_list = (struct List *) LockPubScreenList();
 
   public_screen_node = (struct PubScreenNode *) public_screen_list->lh_Head;
@@ -58,6 +60,7 @@ char *public_screen_name(struct Screen *scr) {
   }
 
   UnlockPubScreenList();
+  LEAVE
   return NULL;
 }
 

@@ -57,11 +57,15 @@ extern struct IntuitionBase* IntuitionBase;
  *   screen, we can care for that,
  *   if a window opens on the
  *   screen.
+ *
+ * - CloseScreen
+ *   We need it for custom screens
  */
 
 APTR           old_CloseWindow;
 APTR           old_OpenWindow;
 APTR           old_OpenWindowTagList;
+APTR           old_CloseScreen;
 APTR           old_OpenScreen;
 APTR           old_OpenScreenTagList;
 
@@ -359,6 +363,34 @@ __asm__("_my_OpenScreenTagList_SetFunc:\n"
 	"openscreentags_patch_disabled:\n"
         "rts\n");
 
+/*********************************************************************************
+ * _my_CloseScreen_SetFunc
+ *
+ * done in assembler, as C-Source always at least destroys the
+ * a5 register for the local variable stack frame. But library
+ * functions may only trash d0, d1, a0 and a1.
+ *
+ * for calltrap:
+ * AD_GET_JOB  11 (d0)
+ * AD_GET_JOB_CLOSE_SCREEN 14 (d1)
+ * screen is already in a0
+ *********************************************************************************/
+__asm__("_my_CloseScreen_SetFunc:\n"
+	"cmp.l #1,_state\n"
+	"blt close_screen_patch_disabled\n"
+	PUSHSTACK
+	"moveq #11,d0\n"
+	"moveq #14,d1\n"
+	"move.l _calltrap,a1\n"
+	"jsr (a1)\n"
+	POPSTACK
+	"close_screen_patch_disabled:\n"
+	PUSHA3
+	"move.l _old_CloseScreen, a3\n"
+	"jsr (a3)\n"
+	POPA3
+
+        "rts\n");
 /*
  * assembler functions need to be delcared or used, before
  * you can reference them (?).
@@ -368,6 +400,7 @@ void my_OpenWindow_SetFunc();
 void my_OpenWindowTagList_SetFunc();
 void my_OpenScreen_SetFunc();
 void my_OpenScreenTagList_SetFunc();
+void my_CloseScreen_SetFunc();
 
 /* According to Ralph Babel: ".. as
  * of 2.0, SetFunction() calls Forbid()/Permit() 
@@ -389,6 +422,10 @@ void patch_functions() {
   old_OpenWindowTagList=SetFunction((struct Library *)IntuitionBase, 
                               -606, 
 			      (APTR) my_OpenWindowTagList_SetFunc);
+
+  old_CloseScreen=SetFunction((struct Library *)IntuitionBase, 
+                              -66, 
+			      (APTR) my_CloseScreen_SetFunc);
 
   old_OpenScreen=SetFunction((struct Library *)IntuitionBase, 
                               -198, 
