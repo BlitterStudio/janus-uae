@@ -52,7 +52,7 @@
 
 #define AWTRACING_ENABLED 1
 #if AWTRACING_ENABLED
-#define AWTRACE(...)	do { kprintf("AW %s: ",__func__);kprintf(__VA_ARGS__); } while(0)
+#define AWTRACE(...)	do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
 #define AWTRACE(...)    do { ; } while(0)
 #endif
@@ -196,9 +196,9 @@ struct CyberGfxIFace *ICyberGfx;
 unsigned long            frame_num; /* for arexx */
 
 static UBYTE            *Line;
-static struct RastPort  *RP;
-static struct Screen    *S;
-static struct Window    *W;
+struct RastPort  *RP;
+struct Screen    *S;
+struct Window    *W;
 static struct RastPort  *TempRPort;
 static struct BitMap    *BitMap;
 #ifdef USE_CYBERGFX
@@ -208,8 +208,8 @@ static uae_u8 *CybBuffer;
 static struct BitMap    *CybBitMap;
 # endif
 #endif
-static struct ColorMap  *CM;
-static int              XOffset,YOffset;
+struct ColorMap  *CM;
+int              XOffset,YOffset;
 
 static int os39;        /* kick 39 present */
 static int usepub;      /* use public screen */
@@ -877,7 +877,7 @@ static void free_pointer (void)
 /*
  * Hide mouse pointer for window
  */
-static void hide_pointer (struct Window *w)
+void hide_pointer (struct Window *w)
 {
     SetWindowPointer (w, WA_Pointer, (ULONG)blank_pointer, TAG_DONE);
 }
@@ -2464,33 +2464,44 @@ static void o1i_Display_Update(int start,int i) {
 int aros_daemon_runing() {
   return (aos3_task && aos3_task_signal);
 }
-/*******************************************
- * The idea is, to scan the list of
- * aos3 windows and open an aros window
- * for every window found.
+
+/* 
+ * in e-uae handle_events always handle the events of the main uae
+ * window. j-uae has quite some windows more ;).
  *
- * Also launch a task for each aros window
- * to take the events of the window and
- * snd it forward to the original aos3 
- * window.
- *
- * If this works? We'll see..
- ********************************************/
-
-#if 0
-static void o1i_Display_Update(int start,int i) {
-  /* don't care for start and i*/
-
- 
-  o1i_Draw();
-
-}
-#endif
-
+ * if we have integrated windows, this is no problem at all. But
+ * for custom screens, we need to call the according handle_custom_events_W.
+ */
 void handle_events(void) {
+  AWTRACE("handle_events: dispatcher\n", W);
+
+  if(custom_screen_active==NULL) {
+    AWTRACE("custom_screen_active==NULL\n");
+    handle_events_W(W);
+
+  }
+  else {
+    /* custom screens only have one window */
+    AWTRACE("custom screen %lx, window %lx\n", 
+             custom_screen_active->arosscreen, 
+             custom_screen_active->arosscreen->FirstWindow);
+    handle_events_W(custom_screen_active->arosscreen->FirstWindow);
+  }
+}
+
+/***************************************************
+ * handle_events_W
+ *
+ * works with a local W, so it can be called
+ * for a window on our own custom screen, for 
+ * example
+ ***************************************************/
+void handle_events_W(struct Window *W) {
 
     struct IntuiMessage *msg;
     int dmx, dmy, mx, my, class, code, qualifier;
+
+    AWTRACE("W: %lx\n", W);
 
    /* this function is called at each frame, so: */
     ++frame_num;       /* increase frame counter */
@@ -2511,12 +2522,11 @@ void handle_events(void) {
 
     #ifdef PICASSO96
     if(aos3_task && aos3_task_signal) {
-      AWTRACE("send signal to Wait of janusd\n");
+      AWTRACE("send signal to Wait of janusd (%lx)\n", aos3_task);
       uae_Signal(aos3_task, aos3_task_signal);
     }
 
-    if (screen_is_picasso)
-    {
+    if (screen_is_picasso) {
         int i;
 
 	//AWTRACE("handle_events->screen_is_picasso\n");
@@ -2557,6 +2567,8 @@ void handle_events(void) {
 	qualifier = msg->Qualifier;
 
 	ReplyMsg ((struct Message*)msg);
+
+	AWTRACE("W: %lx (%s)\n",W, W->Title);
 
 	switch (class) {
 	    case IDCMP_NEWSIZE:
@@ -2639,6 +2651,7 @@ void handle_events(void) {
 		 * A simple fix is just to tell UAE that all keys have been released.
 		 * This avoids keys appearing to be "stuck" down.
 		 */
+		AWTRACE("IDCMP_ACTIVEWINDOW(%lx)\n", W);
 		inputdevice_acquire ();
 		inputdevice_release_all_keys ();
 		reset_hotkeys ();
@@ -2646,6 +2659,8 @@ void handle_events(void) {
 		break;
 
 	    case IDCMP_INACTIVEWINDOW:
+		AWTRACE("IDCMP_INACTIVEWINDOW\n");
+		AWTRACE("IntuitionBase->ActiveWindow: %lx (%s)\n",IntuitionBase->ActiveWindow, IntuitionBase->ActiveWindow->Title);
 		copy_clipboard_to_aros();
 		inputdevice_unacquire ();
 		break;
@@ -2665,6 +2680,7 @@ void handle_events(void) {
 
 	    default:
 		write_log ("Unknown event class: %x\n", class);
+		AWTRACE("Unknown event class: %x\n", class);
 		break;
         }
     }
@@ -2823,8 +2839,12 @@ static void set_screen_for_picasso(void) {
 
 /* un_set_screen_for_picasso
  *
- * seems to be not necessary for us (?)
- * */
+ * If we are running rootless, this will not work as expected, as
+ * we have no usefull W (this is with size 1x1 hidden and
+ * does not get updated etc.
+ *
+ * So we need some magic here obviously.
+ */
 static void un_set_screen_for_picasso(void) {
 
   AWTRACE("entered\n");
@@ -2834,26 +2854,32 @@ static void un_set_screen_for_picasso(void) {
     return;
   }
 
-  AWTRACE("  old window      : %d x %d\n",W->Width,W->Height);
-  AWTRACE("  picasso_vidinfo : %d x %d\n",
-		  picasso_vidinfo.width,picasso_vidinfo.height);
-  AWTRACE("  currprefs_win   : %d x %d\n",
-		  currprefs.gfx_width_win,currprefs.gfx_height_win);
+  if(!uae_main_window_closed) {
+    AWTRACE("  old window      : %d x %d\n",W->Width,W->Height);
+    AWTRACE("  picasso_vidinfo : %d x %d\n",
+		    picasso_vidinfo.width,picasso_vidinfo.height);
+    AWTRACE("  currprefs_win   : %d x %d\n",
+		    currprefs.gfx_width_win,currprefs.gfx_height_win);
+    ChangeWindowBox(W, 
+		    W->LeftEdge, W->TopEdge,
+		    currprefs.gfx_width_win  + W->BorderLeft + W->BorderRight,
+		    currprefs.gfx_height_win + W->BorderTop  + W->BorderBottom);
 
-  ChangeWindowBox(W, 
-                  W->LeftEdge, W->TopEdge,
-		  currprefs.gfx_width_win  + W->BorderLeft + W->BorderRight,
-		  currprefs.gfx_height_win + W->BorderTop  + W->BorderBottom);
-
-#if 0
-  /* this causes a FreeMem guru? */
-  if(gfxvidinfo.bufmem) {
-    AWTRACE("un_set_screen_for_picasso: FreeVec(%lx)\n",gfxvidinfo.bufmem);
-    FreeVec(gfxvidinfo.bufmem);
-    /* too big ..? */
-    gfxvidinfo.bufmem=AllocVec(W->Width * W->Height * get_BytesPerPix(W), MEMF_CLEAR);
+  #if 0
+    /* this causes a FreeMem guru? */
+    if(gfxvidinfo.bufmem) {
+      AWTRACE("un_set_screen_for_picasso: FreeVec(%lx)\n",gfxvidinfo.bufmem);
+      FreeVec(gfxvidinfo.bufmem);
+      /* too big ..? */
+      gfxvidinfo.bufmem=AllocVec(W->Width * W->Height * get_BytesPerPix(W), MEMF_CLEAR);
+    }
+    #endif
   }
-  #endif
+  else {
+    AWTRACE(" we are rootless and we need a non-Picasso96 screen!??\n");
+    AWTRACE("PRAY!!\n");
+    AWTRACE("DIE !?!\n");
+  }
 }
 
 void gfx_set_picasso_state (int on)
