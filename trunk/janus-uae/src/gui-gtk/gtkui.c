@@ -93,18 +93,41 @@ static GtkWidget *pause_uae_widget;
 static GtkWidget *reset_uae_widget;
 static GtkWidget *debug_uae_widget;
 
-extern GtkWidget *chipsize_widget[5];
-static GtkWidget *bogosize_widget[4];
+extern GtkWidget *chipsize_widget[6];
+static const char *chiplabels[] = {
+  "512 KB", "1 MB", "2 MB", "4 MB", "8 MB", NULL
+};
+
+static GtkWidget *bogosize_widget[5];
+static const char *bogolabels[] = {
+  "None", "512 KB", "1 MB", "1.8 MB", NULL
+};
+
 extern GtkWidget *fastsize_widget[5];
-static GtkWidget *z3size_widget[10];
+static const char *fastlabels[] = {
+  "None", "1 MB", "2 MB", "4 MB", "8 MB", NULL
+};
+
+static GtkWidget *z3size_widget[12];
+static const char *z3labels[] = {
+  "None", "1 MB", "2 MB", "4 MB", "8 MB",
+  "16 MB", "32 MB", "64 MB", "128 MB", "256 MB",
+  NULL
+};
+
 #ifdef PICASSO96
-static GtkWidget *p96size_widget[7];
+static GtkWidget *p96size_widget[9];
 #endif
+static const char *p96labels[] = {
+  "None", "1 MB", "2 MB", "4 MB", "8 MB", "16 MB", "32 MB", NULL
+};
+
 static GtkWidget *rom_text_widget, *key_text_widget;
 static GtkWidget *rom_change_widget, *key_change_widget;
 
-static GtkWidget *floppy_widget[4];
-static char *new_disk_string[4];
+static GtkWidget *floppy_widget[5]; /* df0, df1, df2 ,df3, NULL */
+
+static char *new_disk_string[4]; /* ? */
 
 static GtkWidget *power_led;
 
@@ -116,7 +139,16 @@ extern GtkWidget *chipsetspeed_panel;
 static GtkWidget *hdpanel;
 static GtkWidget *memorypanel;
 
-static GtkWidget *sound_widget[4], *sound_bits_widget[2], *sound_freq_widget[3], *sound_ch_widget[3];
+static GtkWidget *sound_widget[6];
+static const char *soundlabels1[] = { "None", "No output", "Normal", "Accurate", NULL };
+
+static GtkWidget *sound_bits_widget[3];
+static const char *soundlabels2[] = { "8 bit", "16 bit", NULL };
+
+static GtkWidget *sound_ch_widget[4];
+static const char *soundlabels3[] = { "Mono", "Stereo", "Mixed", NULL };
+
+//static GtkWidget *sound_freq_widget[3]; /* not used */
 
 #ifdef JIT
 static GtkWidget *jit_page;
@@ -125,17 +157,33 @@ static GtkWidget *compbyte_widget[4], *compword_widget[4], *complong_widget[4];
 static GtkWidget *compaddr_widget[4];
 #endif
 static GtkWidget *compnf_widget[2];
-static GtkWidget *compfpu_widget[2], *comp_hardflush_widget[2];
-static GtkWidget *comp_constjump_widget[2];
+static GtkWidget *compfpu_widget[3], *comp_hardflush_widget[2];
+static GtkWidget *comp_constjump_widget[3];
 static GtkAdjustment *cachesize_adj;
 #endif
 
 #ifdef XARCADE
-# define JOY_WIDGET_COUNT 9
+# define JOY_WIDGET_COUNT 10
 #else
-# define JOY_WIDGET_COUNT 7
+# define JOY_WIDGET_COUNT 8
 #endif
 static GtkWidget *joy_widget[2][JOY_WIDGET_COUNT];
+static const char *joylabels[] = {
+    "None",
+    "Joystick 0",
+    "Joystick 1",
+    "Mouse",
+    "Numeric pad",
+    "Cursor keys/Right Ctrl or Alt",
+    "T/F/H/B/Left Alt",
+#ifdef XARCADE
+    "X-Arcade Left",
+    "X-Arcade Right",
+#endif
+    NULL
+};
+
+
 
 static unsigned int prevledstate;
 
@@ -229,6 +277,10 @@ static void do_message_box (const gchar *title, const gchar *message, gboolean m
 static void handle_message_box_request (smp_comm_pipe *msg_pipe);
 static GtkWidget *make_message_box (const gchar *title, const gchar *message, int modal, uae_sem_t *sem);
 void on_message_box_quit (GtkWidget *w, gpointer user_data);
+
+int find_current_toggle (GtkWidget **widgets, int count);
+GtkWidget *make_radio_group_box_param (const char *title, const char **labels, GtkWidget **saveptr, int horiz, void (*sigfunc) (void), GtkWidget *parameter);
+GtkWidget *make_radio_group_box (const char *title, const char **labels, GtkWidget **saveptr, int horiz, void (*sigfunc) (void));
 
 
 static void set_mem32_widgets_state (void)
@@ -417,7 +469,7 @@ static void set_joy_state (void)
 	j0t %= 7;
     }
 
-    for (i = 0; i < JOY_WIDGET_COUNT; i++) {
+    for (i = 0; i < (JOY_WIDGET_COUNT-1); i++) {
 	if (i == 1 && joy_count == 0) continue;
 	if (i == 2 && joy_count <= 1) continue;
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (joy_widget[0][i]), j0t == i);
@@ -662,14 +714,22 @@ static int leds_callback (void)
     return 1;
 }
 
-int find_current_toggle (GtkWidget **widgets, int count)
-{
-    int i;
-    for (i = 0; i < count; i++)
-	if (GTK_TOGGLE_BUTTON (*widgets++)->active)
-	    return i;
-    DEBUG_LOG ("GTKUI: Can't happen!\n");
-    return -1;
+int find_current_toggle (GtkWidget **widgets, int count) {
+  int i;
+  for (i = 0; i < count; i++) {
+    if(!*widgets) {
+      /* this must not happen! */
+      kprintf("ERROR: find_current_toggle hit NULL pointer at element %d!\n",i);
+      //exit(1);
+      return -1;
+    }
+    if (GTK_TOGGLE_BUTTON (*widgets)->active) {
+      return i;
+    }
+    *widgets++;
+  }
+  DEBUG_LOG ("GTKUI: Can't happen!\n");
+  return -1;
 }
 
 static void joy_changed (void)
@@ -1003,24 +1063,43 @@ static GtkWidget *add_labelled_widget_centered (const char *str, GtkWidget *thin
     return w;
 }
 
-static int make_radio_group_param (const char **labels, GtkWidget *tobox,
+/*************************************************************
+ * make_radio_group_param
+ *
+ * build radio group, maximum count entries. If count < 0,
+ * build as many entries, as there are labels
+ *************************************************************/
+static int make_radio_group_param (const char **label, GtkWidget *tobox,
 			      GtkWidget **saveptr, gint t1, gint t2,
 			      void (*sigfunc) (void), int count, GSList *group,
-			      GtkWidget *parameter)
-{
-    int t = 0;
+			      GtkWidget *parameter) {
 
-    while (*labels && (count == -1 || count-- > 0)) {
-	GtkWidget *thing = gtk_radio_button_new_with_label (group, *labels++);
-	group = gtk_radio_button_group (GTK_RADIO_BUTTON (thing));
+  int        t = 0;
+  GtkWidget *thing;
 
-	*saveptr++ = thing;
-	gtk_widget_show (thing);
-	gtk_box_pack_start (GTK_BOX (tobox), thing, t1, t2, 0);
-	gtk_signal_connect (GTK_OBJECT (thing), "clicked", (GtkSignalFunc) sigfunc, parameter);
-	t++;
-    }
-    return t;
+  if(count < 0) {
+    count=10000; /* max */
+  }
+
+  while (label[t] && (t < count)) {
+
+    thing = gtk_radio_button_new_with_label (group, label[t]);
+    group = gtk_radio_button_group (GTK_RADIO_BUTTON (thing));
+
+    //kprintf("                        widget[%d](%lx):=%lx\n",t,&saveptr[t],thing);
+
+    saveptr[t] = thing;
+    gtk_widget_show (thing);
+    gtk_box_pack_start (GTK_BOX (tobox), thing, t1, t2, 0);
+    gtk_signal_connect (GTK_OBJECT (thing), "clicked", (GtkSignalFunc) sigfunc, parameter);
+    t++;
+  }
+  if(saveptr[t] != NULL) {
+    kprintf("make_radio_group_param: old widget[%d](%lx):=%lx\n",t,&saveptr[t],saveptr[t]);
+    kprintf("ERROR: saveptr[%d] is NOT NULL!\n",t);
+  }
+  saveptr[t] = NULL; /* NULL terminate the list! */
+  return t;
 }
 
 static int make_radio_group (const char **labels, GtkWidget *tobox,
@@ -1039,6 +1118,7 @@ GtkWidget *make_radio_group_box_param (const char *title, const char **labels,
     GtkWidget *frame, *newbox;
 
     frame = gtk_frame_new (title);
+    //kprintf("==> %s\n",title);
     newbox = (horiz ? gtk_hbox_new : gtk_vbox_new) (FALSE, 4);
     gtk_widget_show (newbox);
     gtk_container_set_border_width (GTK_CONTAINER (newbox), 4);
@@ -1134,6 +1214,7 @@ static void make_floppy_disks (GtkWidget *vbox)
 	gtk_widget_show (floppy_widget[i]);
 	gtk_signal_connect (GTK_OBJECT (floppy_widget[i]), "disc-changed", (GtkSignalFunc) disc_changed, GINT_TO_POINTER (i));
     }
+    floppy_widget[4]=NULL;
 
     add_empty_vbox (vbox);
 }
@@ -1249,6 +1330,10 @@ static void on_immediate_blits_changed (void)
 extern ULONG aos3_task;
 void uae_Signal (uaecptr task, uae_u32 mask);
 
+void show_uae_main_window(void);
+void hide_uae_main_window(void);
+void close_all_janus_windows(void);
+
 static void on_coherent_changed (void)
 {
     if(changed_prefs.jcoherence == JINTEGRATION (jint_panel)->coherence) {
@@ -1262,6 +1347,10 @@ static void on_coherent_changed (void)
     if(aos3_task && !changed_prefs.jcoherence) {
       DEBUG_LOG("call close_all_janus_windows\n");
       close_all_janus_windows();
+      show_uae_main_window();
+    }
+    else {
+      hide_uae_main_window();
     }
 
     /* if changed to coherence, windows are opened automatically */
@@ -1273,16 +1362,6 @@ static void make_sound_widgets (GtkWidget *vbox)
     GtkWidget *frame, *newbox;
     int i;
     GtkWidget *hbox;
-    static const char *soundlabels1[] = {
-	"None", "No output", "Normal", "Accurate",
-	NULL
-    }, *soundlabels2[] = {
-	"8 bit", "16 bit",
-	NULL
-    }, *soundlabels3[] = {
-	"Mono", "Stereo", "Mixed",
-	NULL
-    };
 
     add_empty_vbox (vbox);
 
@@ -1324,24 +1403,6 @@ static void make_mem_widgets (GtkWidget *vbox)
 {
     GtkWidget *hbox = gtk_hbox_new (FALSE, 10);
     GtkWidget *label, *frame;
-
-    static const char *chiplabels[] = {
-	"512 KB", "1 MB", "2 MB", "4 MB", "8 MB", NULL
-    };
-    static const char *bogolabels[] = {
-	"None", "512 KB", "1 MB", "1.8 MB", NULL
-    };
-    static const char *fastlabels[] = {
-	"None", "1 MB", "2 MB", "4 MB", "8 MB", NULL
-    };
-    static const char *z3labels[] = {
-	"None", "1 MB", "2 MB", "4 MB", "8 MB",
-	"16 MB", "32 MB", "64 MB", "128 MB", "256 MB",
-	NULL
-    };
-    static const char *p96labels[] = {
-	"None", "1 MB", "2 MB", "4 MB", "8 MB", "16 MB", "32 MB", NULL
-    };
 
     add_empty_vbox (vbox);
 
@@ -1494,21 +1555,6 @@ static void make_joy_widgets (GtkWidget *dvbox)
     int i;
     int joy_count = inputdevice_get_device_total (IDTYPE_JOYSTICK);
     GtkWidget *hbox = gtk_hbox_new (FALSE, 10);
-
-    static const char *joylabels[] = {
-	"None",
-	"Joystick 0",
-	"Joystick 1",
-	"Mouse",
-	"Numeric pad",
-	"Cursor keys/Right Ctrl or Alt",
-	"T/F/H/B/Left Alt",
-#ifdef XARCADE
-	"X-Arcade Left",
-	"X-Arcade Right",
-#endif
-	NULL
-    };
 
     add_empty_vbox (dvbox);
     gtk_widget_show (hbox);
@@ -1830,6 +1876,7 @@ static void hdunselect (GtkWidget *widget, gint row, gint column, GdkEventButton
 static GtkWidget *make_buttons (const char *label, GtkWidget *box, void (*sigfunc) (void), GtkWidget *(*create)(const char *label))
 {
     GtkWidget *thing = create (label);
+
     gtk_widget_show (thing);
     gtk_signal_connect (GTK_OBJECT (thing), "clicked", (GtkSignalFunc) sigfunc, NULL);
     gtk_box_pack_start (GTK_BOX (box), thing, TRUE, TRUE, 0);
@@ -2082,6 +2129,7 @@ static void make_integration_widgets (GtkWidget *vbox) {
   gtk_container_add (GTK_CONTAINER (vbox), jint_panel);
 }
 
+void unlock_jgui(void);
 /* this is called from j-dispatch 
  * otherwise j-dispatch would need all gtk/glib includes
  */
@@ -2172,6 +2220,7 @@ static void create_guidlg (void) {
 #ifdef DEBUGGER
 //FIXME    debug_uae_widget = make_button  ("Debug", buttonbox, on_debug_clicked);
 #endif
+
     reset_uae_widget = make_button  ("Reset", buttonbox, on_reset_clicked);
     make_button ("Quit", buttonbox, on_quit_clicked);
 
@@ -2207,6 +2256,7 @@ static void create_guidlg (void) {
 	gtk_widget_show (thing);
 
 	pages[i].createfunc (thing);
+
 	/* gtk_mui_list_child_tree(thing);*/
 	gtk_notebook_append_page (GTK_NOTEBOOK (notebook), thing, gtk_label_new (pages[i].title));
     }
