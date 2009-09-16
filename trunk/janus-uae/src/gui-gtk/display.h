@@ -36,10 +36,10 @@ struct _jDisplay {
   GtkWidget *emuspeed;
 
   /* radio widget arrays */
-  GtkWidget *linemode_widget[3];
-  GtkWidget *centering_widget[4];
-  GtkWidget *chipset_widget[5];
-  GtkWidget *pal_ntsc_widget[2];
+  GtkWidget *linemode_widget [4];
+  GtkWidget *centering_widget[5];
+  GtkWidget *chipset_widget  [6];
+  GtkWidget *pal_ntsc_widget [3];
 
   /*** PUBLIC ***/
 
