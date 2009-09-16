@@ -6,6 +6,7 @@
  * Copyright 1997, 1998 Bernd Schmidt
  * Copyright 1998 Michael Krause
  * Copyright 2003-2007 Richard Drummond
+ * Copyright 2009 Oliver Brunner
  *
  * The Tk GUI doesn't work.
  * The X Forms Library isn't available as source, and there aren't any
@@ -93,34 +94,23 @@ static GtkWidget *pause_uae_widget;
 static GtkWidget *reset_uae_widget;
 static GtkWidget *debug_uae_widget;
 
-extern GtkWidget *chipsize_widget[6];
-static const char *chiplabels[] = {
-  "512 KB", "1 MB", "2 MB", "4 MB", "8 MB", NULL
-};
+extern GtkWidget  *chipsize_widget[6];
+static const char *chiplabels[] = { "512 KB", "1 MB", "2 MB", "4 MB", "8 MB", NULL };
 
-static GtkWidget *bogosize_widget[5];
-static const char *bogolabels[] = {
-  "None", "512 KB", "1 MB", "1.8 MB", NULL
-};
+static GtkWidget  *bogosize_widget[5];
+static const char *bogolabels[] = { "None", "512 KB", "1 MB", "1.8 MB", NULL };
 
-extern GtkWidget *fastsize_widget[5];
-static const char *fastlabels[] = {
-  "None", "1 MB", "2 MB", "4 MB", "8 MB", NULL
-};
+extern GtkWidget  *fastsize_widget[5];
+static const char *fastlabels[] = { "None", "1 MB", "2 MB", "4 MB", "8 MB", NULL };
 
-static GtkWidget *z3size_widget[12];
-static const char *z3labels[] = {
-  "None", "1 MB", "2 MB", "4 MB", "8 MB",
-  "16 MB", "32 MB", "64 MB", "128 MB", "256 MB",
-  NULL
-};
+static GtkWidget  *z3size_widget[12];
+static const char *z3labels[] = { "None", "1 MB", "2 MB", "4 MB", "8 MB",
+				  "16 MB", "32 MB", "64 MB", "128 MB", "256 MB", NULL };
 
 #ifdef PICASSO96
-static GtkWidget *p96size_widget[9];
+static GtkWidget  *p96size_widget[9];
+static const char *p96labels[] = { "None", "1 MB", "2 MB", "4 MB", "8 MB", "16 MB", "32 MB", NULL };
 #endif
-static const char *p96labels[] = {
-  "None", "1 MB", "2 MB", "4 MB", "8 MB", "16 MB", "32 MB", NULL
-};
 
 static GtkWidget *rom_text_widget, *key_text_widget;
 static GtkWidget *rom_change_widget, *key_change_widget;
@@ -139,13 +129,13 @@ extern GtkWidget *chipsetspeed_panel;
 static GtkWidget *hdpanel;
 static GtkWidget *memorypanel;
 
-static GtkWidget *sound_widget[6];
+static GtkWidget  *sound_widget[6];
 static const char *soundlabels1[] = { "None", "No output", "Normal", "Accurate", NULL };
 
-static GtkWidget *sound_bits_widget[3];
+static GtkWidget  *sound_bits_widget[3];
 static const char *soundlabels2[] = { "8 bit", "16 bit", NULL };
 
-static GtkWidget *sound_ch_widget[4];
+static GtkWidget  *sound_ch_widget[4];
 static const char *soundlabels3[] = { "Mono", "Stereo", "Mixed", NULL };
 
 //static GtkWidget *sound_freq_widget[3]; /* not used */
