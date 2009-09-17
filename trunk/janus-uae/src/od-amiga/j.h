@@ -245,6 +245,7 @@ uae_u32 ad_job_switch_uae_window   (ULONG *m68k_results);
 uae_u32 ad_job_sync_windows        (ULONG *m68k_results);
 uae_u32 ad_job_update_janus_windows(ULONG *m68k_results);
 uae_u32 ad_job_open_custom_screen  (ULONG aos3screen);
+uae_u32 ad_job_get_mouse           (ULONG *m68k_results);
 uae_u32 ad_debug                   (ULONG *m68k_results);
 
 /* compare hooks */

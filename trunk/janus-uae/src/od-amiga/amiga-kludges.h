@@ -76,7 +76,7 @@
 #define ddfstop my_ddfstop
 #define ddfstrt my_ddfstrt
 #define diwstop my_diwstop
-#define diwstrt my_diwstrt
+//#define diwstrt my_diwstrt
 #define dmacon my_dmacon
 #define dmaconr my_dmaconr
 #define dskbytr my_dskbytr
