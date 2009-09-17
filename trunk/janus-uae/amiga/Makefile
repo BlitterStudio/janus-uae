@@ -29,7 +29,7 @@ COBJS      = clip-daemon.o debug.o
 all: janusd clipd
 
 janusd: $(JOBJS) 
-	$(CC) $(LD_FLAGS) $(JOBJS) -o janusd 
+	$(CC) $(LD_FLAGS) $(JOBJS) -o janusd -lauto #-lc -lamiga -lauto
 	cp janusd $(TARGETDIR)
  
 clipd:  $(COBJS) 

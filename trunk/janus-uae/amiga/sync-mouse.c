@@ -45,13 +45,32 @@
 #include <devices/inputevent.h>
 #include <devices/timer.h>
 #include <hardware/intbits.h>
+#include <cybergraphx/cybergraphics.h>
 
 #include <clib/alib_protos.h>
 #include <clib/dos_protos.h>
 #include <clib/exec_protos.h>
 #include <clib/timer_protos.h>
+#include <clib/graphics_protos.h>
 
 #include "janus-daemon.h"
+
+/* cybergfx proto stuff, I could not find gcc includes anywhere..
+ * we need only IsCyberModeID, so this should be sufficient
+ */
+extern struct Library *CyberGfxBase;
+
+#ifndef CLIB_INTUITION_PROTOS_H
+#define CLIB_INTUITION_PROTOS_H
+#endif
+
+#ifndef __INLINE_MACROS_H
+#include <inline/macros.h>
+#endif
+
+#define IsCyberModeID(modeID) \
+	 LP1(0x36, BOOL, IsCyberModeID, ULONG, modeID, d0, \
+	 , CyberGfxBase)
 
 extern struct IntuitionBase* IntuitionBase;
 
@@ -172,10 +191,16 @@ void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button) {
  * we check the aros mouse coords and
  * place ours accordingly
  ***************************************/
+struct Screen *old_screen=NULL;
+BOOL           is_p96    =FALSE;
 
 void sync_mouse() {
   ULONG result;
+  ULONG modeID;
+#if 0
   UWORD flags;
+#endif
+  WORD  x,y;
   struct Screen *screen;
 
   ENTER
@@ -188,25 +213,68 @@ void sync_mouse() {
   }
   /*  UnlockPubScreen(NULL,screen); */
 
+#if 0
   /* customs screens are *not* synced here */
   flags=screen->Flags & 0x000F;
   if(flags == CUSTOMSCREEN) {
     return;
   }
+#endif
 
   if(!mousebuffer) {
     mousebuffer=AllocVec(16,MEMF_CLEAR);
   }
 
+  if(CyberGfxBase) {  /* no CyberGfxBase, is_p96 is always FALSE */
+    DebOut("CyberGfxBase found\n");
+    if(old_screen != screen) {
+      DebOut("old_screen != screen\n");
+      modeID=GetVPModeID(&(screen->ViewPort));
+      DebOut("modeID=%lx\n", modeID);
+      if(modeID != INVALID_ID) {
+	is_p96=IsCyberModeID(modeID);
+	DebOut("is_p96: %d\n", is_p96);
+      }
+      old_screen=screen;
+    }
+  }
+  else {
+    DebOut("CyberGfxBase *NOT* found\n");
+  }
+
+  mousebuffer[0]=is_p96;
+
   result = calltrap (AD_GET_JOB, AD_GET_JOB_GET_MOUSE, mousebuffer);
 
-  if(result) {
-    if(screen->MouseX != mousebuffer[0] ||
-       screen->MouseY != mousebuffer[1]) {
-      SetMouse(screen, (WORD) mousebuffer[0], (WORD) mousebuffer[1],0);
-    }
-    //printf("mouse x %d y %d\n",mousebuffer[0],mousebuffer[1]);
+  if(!result) {
+    LEAVE
+    return;
   }
+
+  x=(WORD) mousebuffer[0];
+  y=(WORD) mousebuffer[1];
+
+  if(!is_p96) {
+    modeID=screen->ViewPort.Modes;
+
+    if(modeID & SUPERHIRES) {
+      x=x*2;
+      DebOut("==>SUPER_KEY\n");
+    }
+    else if(modeID & HIRES) {
+      DebOut("==>HIRES_KEY\n");
+    }
+    else { 
+      DebOut("==>LORES_KEY\n");
+      x=x/2;
+      y=y/2;
+    }
+  }
+
+  if(screen->MouseX != x || screen->MouseY != y) {
+    SetMouse(screen, x, y, 0);
+  }
+    //printf("mouse x %d y %d\n",mousebuffer[0],mousebuffer[1]);
 
   LEAVE
 }

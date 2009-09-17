@@ -37,6 +37,7 @@
 #include <exec/memory.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
+#include <proto/graphics.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/preferences.h>
 #include <devices/input.h>
@@ -75,6 +76,8 @@ BYTE         mysignal_bit;
 ULONG        mysignal;
 struct Task *mytask = NULL;
 
+struct Library *CyberGfxBase;
+
 /*
  * d0 is the function to be called (AD_*)
  * d1 is the size of the memory supplied by a0
@@ -97,6 +100,9 @@ BOOL open_libs() {
      LEAVE
      return FALSE;
    }
+
+   CyberGfxBase=OpenLibrary("cybergraphics.library", 0);
+   DebOut("CyberGfxBase: %lx\n",CyberGfxBase);
 
    LEAVE
    return TRUE;
@@ -185,15 +191,63 @@ static void runme() {
   BOOL         init;
   BOOL         set;
 
-  DebOut("janusd: runme entered\n");
-  ENTER
-
-#if 0
+  #if 0
   while(!setup(mytask, mysignal, 0)) {
     DebOut("janusd: let's sleep ..\n");
     sleep(10); /* somebody will wake us up anyways */
   }
 #endif
+
+#if 0
+  /*============*/
+  ULONG *commandmem;
+  ULONG modeID;
+  struct Screen *screen;
+  WORD x,y;
+
+  DebOut("FOO: startme\n");
+
+
+done=FALSE;
+  while(!done) {
+    DebOut("FOO: calltrap..\n");
+    commandmem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
+    calltrap (AD_GET_JOB, AD_TEST, commandmem);
+
+    DebOut("FOO: janus-daemon:      %3d,%3d\n", commandmem[0], commandmem[1]);
+    DebOut("FOO: amigaos screen dx  %3d\n",IntuitionBase->FirstScreen->ViewPort.RasInfo->RxOffset);
+    screen=IntuitionBase->FirstScreen;
+    if(screen) {
+      modeID=screen->ViewPort.Modes;
+
+      x=(WORD) commandmem[0];
+      y=(WORD) commandmem[1];
+
+      if(modeID & SUPERHIRES) {
+	x=x*2;
+	DebOut("==>SUPER_KEY\n");
+      }
+      else if(modeID & HIRES) {
+	DebOut("==>HIRES_KEY\n");
+      }
+      else { 
+	DebOut("==>LORES_KEY\n");
+	x=x/2;
+	y=y/2;
+      }
+
+      SetMouse(screen, x, y, 0);
+    }
+    FreeVec(commandmem);
+
+    sleep(1);
+  }
+
+  /*============*/
+#endif
+  DebOut("janusd: runme entered\n");
+
+  ENTER
 
   DebOut("janusd: now we want to do something usefull ..\n");
 
@@ -205,30 +259,32 @@ static void runme() {
     DebOut("janusd: Wait() ..\n");
     newsignals=Wait(mysignal | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
     set=setup(mytask, mysignal, 0);
-    if(set && (newsignals & mysignal)) {
-      /* we are active */
+    if(newsignals & mysignal) {
+      if(set) {
+	/* we are active */
 
-      if(!init) {
-	/* disabled -> enabled */
-	init=TRUE;
-	update_screens(); /* report all open screens once, 
-			   * updates again a every openwindow patch
-			   * call
-			   */
-	DebOut("janusd: screens updated\n");
+	if(!init) {
+	  /* disabled -> enabled */
+	  init=TRUE;
+	  update_screens(); /* report all open screens once, 
+			     * updates again a every openwindow patch
+			     * call
+			     */
+	  DebOut("janusd: screens updated\n");
 
-	update_windows(); /* report all open windows once,
-			   * new windows will be handled by the patches
-			   */
-	DebOut("janusd: windows updated\n");
+	  update_windows(); /* report all open windows once,
+			     * new windows will be handled by the patches
+			     */
+	  DebOut("janusd: windows updated\n");
+	}
+
+	sync_windows();
+	report_uae_windows();
+	report_host_windows();
+	sync_active_window();
+	forward_messages();
       }
-
-      sync_windows();
-      report_uae_windows();
-      report_host_windows();
       sync_mouse();
-      sync_active_window();
-      forward_messages();
     }
 
     if((newsignals & SIGBREAKF_CTRL_C) ||
