@@ -139,6 +139,7 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
     case IDCMP_MENUVERIFY:
 	if(IntuitionBase->ActiveWindow != win) {
 	  /* this seems to be a bug in aros, why are we getting those messages at all !? */
+	  /* no, it is a feature. Any window on a screen gets those.. C=.. */
 	  JWLOG("WARNING: foreign IDCMP message IDCMP_MENUVERIFY received\n");
 	}
 	else {
