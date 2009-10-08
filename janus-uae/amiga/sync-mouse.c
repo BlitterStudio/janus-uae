@@ -74,7 +74,7 @@ extern struct Library *CyberGfxBase;
 
 extern struct IntuitionBase* IntuitionBase;
 
-LONG *mousebuffer=NULL;
+ULONG *mousebuffer=NULL;
 
 struct MsgPort        *InputMP;
 struct InputEvent     *FakeEvent;
@@ -221,9 +221,9 @@ void sync_mouse() {
   }
 #endif
 
-  if(!mousebuffer) {
-    mousebuffer=AllocVec(16,MEMF_CLEAR);
-  }
+  //if(!mousebuffer) {
+    mousebuffer=AllocVec(AD__MAXMEM, MEMF_CLEAR);
+  //}
 
   if(CyberGfxBase) {  /* no CyberGfxBase, is_p96 is always FALSE */
     DebOut("CyberGfxBase found\n");
@@ -254,6 +254,10 @@ void sync_mouse() {
   x=(WORD) mousebuffer[0];
   y=(WORD) mousebuffer[1];
 
+  FreeVec(mousebuffer);
+
+  DebOut("AD_GET_JOB_GET_MOUSE result: %d, %d\n",x,y);
+
   if(!is_p96) {
     modeID=screen->ViewPort.Modes;
 
@@ -272,7 +276,11 @@ void sync_mouse() {
   }
 
   if(screen->MouseX != x || screen->MouseY != y) {
+    DebOut("set mouse to: %d, %d\n",x,y);
     SetMouse(screen, x, y, 0);
+  }
+  else {
+    DebOut("mouse already at: %d, %d\n",x,y);
   }
     //printf("mouse x %d y %d\n",mousebuffer[0],mousebuffer[1]);
 
