@@ -39,6 +39,10 @@ extern int thisframe_y_adjust;
  *
  * SuperHires/LowRes scaling is done in the native part.
  *
+ * TODO: This works only with OSCAN_TEXT screens,
+ *       OSCAN_STANDARD, OSCAN_MAX and OSCAN_VIDEO would require
+ *       special handling(?)
+ *
  ***********************************************************************/
 #define BIT(n) (1<<n)
 
@@ -120,14 +124,19 @@ static uae_u32 nonP96(struct Screen *screen, ULONG *m68k_results) {
   
   JWLOG("FOO: ------------------------------\n");
   /* AROS mouse y coord to amigaOS y coord */
-  JWLOG("FOO: arosy:                       %4d\n", arosy);
-  JWLOG("FOO: native2amiga_line_map[%3d]:  %4d\n", arosy, native2amiga_line_map[arosy]);
-  JWLOG("FOO: thisframe_y_adjust:          %4d\n", thisframe_y_adjust);
-  JWLOG("FOO: minfirstline:               -%4d\n", minfirstline);
-  JWLOG("FOO: (const)                     -%4d\n", 44);
-  JWLOG("FOO:                             -----\n");
-  y=-44 + coord_native_to_amiga_y(arosy) << 1;
-  JWLOG("FOO:                              %4d\n", y);
+  //JWLOG("FOO: native2amiga_line_map[%3d]:  %4d\n", arosy, native2amiga_line_map[arosy]);
+  //JWLOG("FOO: thisframe_y_adjust:          %4d\n", thisframe_y_adjust);
+  //JWLOG("FOO: minfirstline:               -%4d\n", minfirstline);
+  JWLOG("FOO: arosy:                          %4d\n", arosy);
+  JWLOG("FOO: coord_native_to_amiga_y(arosy): %4d\n", coord_native_to_amiga_y(arosy));
+  JWLOG("FOO: (const)                        -%4d\n", 44);
+  JWLOG("FOO:                                -----\n");
+  y=44 + coord_native_to_amiga_y(arosy);
+  JWLOG("FOO:                                 %4d\n", y);
+  JWLOG("FOO:                                -----\n");
+  JWLOG("FOO:                                   *2  \n");
+  y=y*2;
+  JWLOG("FOO:                                 %4d\n", y);
   y=y-YOffset;
   JWLOG("FOO: YOffset:                    -%4d\n", YOffset);
   JWLOG("FOO:                             -----\n");
@@ -154,7 +163,7 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
 
   /* only return mouse movement, if one of our windows is active.
    * as we do not access the result, no Semaphore access is
-   * necessary. save semaphore access.
+   * necessary, so save semaphore access here.
    *
    * if we are not coherent, we need to move the mouse nevertheless
    */
