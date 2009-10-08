@@ -221,9 +221,9 @@ void sync_mouse() {
   }
 #endif
 
-  //if(!mousebuffer) {
-    mousebuffer=AllocVec(AD__MAXMEM, MEMF_CLEAR);
-  //}
+  if(!mousebuffer) {
+    mousebuffer=AllocVec(AD__MAXMEM, MEMF_CLEAR); /* never free'ed */
+  }
 
   if(CyberGfxBase) {  /* no CyberGfxBase, is_p96 is always FALSE */
     DebOut("CyberGfxBase found\n");
@@ -254,8 +254,6 @@ void sync_mouse() {
   x=(WORD) mousebuffer[0];
   y=(WORD) mousebuffer[1];
 
-  FreeVec(mousebuffer);
-
   DebOut("AD_GET_JOB_GET_MOUSE result: %d, %d\n",x,y);
 
   if(!is_p96) {
@@ -271,6 +269,11 @@ void sync_mouse() {
     else { 
       DebOut("==>LORES_KEY\n");
       x=x/2;
+  //    y=y/2;
+    }
+    /* lores */
+    if(! (modeID & LACE) ) {
+      DebOut("==>no INTERLACE\n");
       y=y/2;
     }
   }
