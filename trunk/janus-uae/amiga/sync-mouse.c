@@ -191,17 +191,15 @@ void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button) {
  * we check the aros mouse coords and
  * place ours accordingly
  ***************************************/
-struct Screen *old_screen=NULL;
-BOOL           is_p96    =FALSE;
-
 void sync_mouse() {
-  ULONG result;
-  ULONG modeID;
-#if 0
-  UWORD flags;
-#endif
-  WORD  x,y;
   struct Screen *screen;
+  ULONG          result;
+  ULONG          modeID;
+  BOOL           is_p96=FALSE;
+  WORD           x,y;
+#if 0
+  UWORD          flags;
+#endif
 
   ENTER
 
@@ -225,20 +223,22 @@ void sync_mouse() {
     mousebuffer=AllocVec(AD__MAXMEM, MEMF_CLEAR); /* never free'ed */
   }
 
+  /* do it for every update, as a screen might change the resolution.. */
   if(CyberGfxBase) {  /* no CyberGfxBase, is_p96 is always FALSE */
     DebOut("CyberGfxBase found\n");
-    if(old_screen != screen) {
-      DebOut("old_screen != screen\n");
-      modeID=GetVPModeID(&(screen->ViewPort));
-      DebOut("modeID=%lx\n", modeID);
-      if(modeID != INVALID_ID) {
-	is_p96=IsCyberModeID(modeID);
-	DebOut("is_p96: %d\n", is_p96);
-      }
-      old_screen=screen;
+    modeID=GetVPModeID(&(screen->ViewPort));
+    /*
+    DebOut("modeID=%lx\n", modeID);
+    */
+    if(modeID != INVALID_ID) {
+      is_p96=IsCyberModeID(modeID);
+      /*
+      DebOut("is_p96: %d\n", is_p96);
+      */
     }
   }
   else {
+    /* is_p96 stays FALSE */
     DebOut("CyberGfxBase *NOT* found\n");
   }
 
