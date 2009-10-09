@@ -122,7 +122,7 @@ static uae_u32 nonP96(struct Screen *screen, ULONG *m68k_results) {
   put_long_p(m68k_results, x); 
   //put_long_p(m68k_results, screen->MouseX); 
   
-  JWLOG("FOO: ------------------------------\n");
+  JWLOG("FOO: ------------------------------------\n");
   /* AROS mouse y coord to amigaOS y coord */
   //JWLOG("FOO: native2amiga_line_map[%3d]:  %4d\n", arosy, native2amiga_line_map[arosy]);
   //JWLOG("FOO: thisframe_y_adjust:          %4d\n", thisframe_y_adjust);
@@ -131,16 +131,17 @@ static uae_u32 nonP96(struct Screen *screen, ULONG *m68k_results) {
   JWLOG("FOO: coord_native_to_amiga_y(arosy): %4d\n", coord_native_to_amiga_y(arosy));
   JWLOG("FOO: (const)                        -%4d\n", 44);
   JWLOG("FOO:                                -----\n");
-  y=44 + coord_native_to_amiga_y(arosy);
+  y=coord_native_to_amiga_y(arosy) - 44;
   JWLOG("FOO:                                 %4d\n", y);
   JWLOG("FOO:                                -----\n");
   JWLOG("FOO:                                   *2  \n");
+  JWLOG("FOO:                                -----\n");
   y=y*2;
   JWLOG("FOO:                                 %4d\n", y);
   y=y-YOffset;
-  JWLOG("FOO: YOffset:                    -%4d\n", YOffset);
-  JWLOG("FOO:                             -----\n");
-  JWLOG("FOO: res:                         %4d\n", y);
+  JWLOG("FOO: YOffset:                       -%4d\n", YOffset);
+  JWLOG("FOO:                                -----\n");
+  JWLOG("FOO: res:                            %4d\n", y);
 
   put_long_p(m68k_results+1, y); 
   //put_long_p(m68k_results+1, screen->MouseY); 
@@ -192,9 +193,12 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
 
   JWLOG("P96 screen \n");
   if(mice[0].enabled) {
+    JWLOG("screen->x,y: %d,%d\n", screen->MouseX, screen->MouseY);
+    JWLOG("W->x,y: %d,%d\n", W->LeftEdge, W->TopEdge);
+    JWLOG("border->x,y: %d,%d\n", W->BorderLeft, W->BorderTop);
   
-    put_long_p(m68k_results, screen->MouseX); 
-    put_long_p(m68k_results+1, screen->MouseY); 
+    put_long_p(m68k_results,   screen->MouseX - W->LeftEdge - W->BorderLeft); 
+    put_long_p(m68k_results+1, screen->MouseY - W->TopEdge  - W->BorderTop ); 
   }
   else {
     if(!menux && !menuy) {
