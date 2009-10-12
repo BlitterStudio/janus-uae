@@ -162,6 +162,8 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
     return TRUE;
   }
 
+  JWLOG("changed_prefs.jmouse %d, aos3_task %lx\n", changed_prefs.jmouse, aos3_task);
+
   /* only return mouse movement, if one of our windows is active.
    * as we do not access the result, no Semaphore access is
    * necessary, so save semaphore access here.
@@ -169,6 +171,13 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
    * if we are not coherent, we need to move the mouse nevertheless
    */
   if(!janus_active_window && changed_prefs.jcoherence) {
+    JWLOG("false 1\n");
+    return FALSE;
+  }
+
+  /* in this case, classic uae mouse mode is enabled */
+  if((!changed_prefs.jmouse) || (aos3_task==NULL)) {
+    JWLOG("false 2\n");
     return FALSE;
   }
 
@@ -186,6 +195,7 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
     }
   }
 #endif
+
   if(get_long_p(m68k_results) == 0) {
     JWLOG("no P96 screen \n");
     return nonP96(screen, m68k_results);
