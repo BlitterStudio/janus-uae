@@ -2612,6 +2612,8 @@ void handle_events_W(struct Window *W) {
 	     }
 
 	    case IDCMP_MOUSEMOVE:
+	      /* classic mouse move, if either option is disabled or janusd is not (yet) running */
+	      if( (!changed_prefs.jmouse) || (aos3_task==NULL) ) {
 		setmousestate (0, 0, dmx, 0);
 		setmousestate (0, 1, dmy, 0);
 
@@ -2625,6 +2627,7 @@ void handle_events_W(struct Window *W) {
 			    show_pointer (W);
 		    }
 		}
+	      }
       	      break;
 
 	    case IDCMP_MOUSEBUTTONS:
