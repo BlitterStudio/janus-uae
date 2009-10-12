@@ -257,6 +257,7 @@ struct uae_prefs {
 
     int jcoherence;
     int jclipboard;
+    int jmouse;
 };
 
 extern void save_options (FILE *, const struct uae_prefs *, int);
