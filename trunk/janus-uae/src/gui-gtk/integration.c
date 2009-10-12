@@ -68,20 +68,10 @@
 #define ENABLE_CENTERING 0
 #define ENABLE_FULL_RTG_SETTINGS 0
 
-enum {
-  COHERENT_CHANGE_SIGNAL,
-  CLIPBOARD_CHANGE_SIGNAL,
-  J_D_SIGNAL,
-  READ_PREFS,
-  LOCK_IT,
-  UNLOCK_IT,
-  LAST_SIGNAL
-};
-
-static guint jintegration_signals[LAST_SIGNAL];
 
 static const char *coherence_labels[]={"Classic UAE", "Full integration", NULL};
 static const char *clipboard_labels[]={"Separate Clipboards", "Share Clipboard Contents", NULL};
+static const char *mouse_labels[]=    {"Classic UAE (no mouse sync)", "Sync Mouse Pointers", NULL};
 
 GtkWidget *make_radio_group_box_param (const char *title, const char **labels,
 					GtkWidget **saveptr, int horiz,
@@ -97,12 +87,26 @@ static void unlock_it                 (jIntegration *j);
 static void lock_it                   (jIntegration *j);
 static void coherent_changed          (GtkWidget *me, jIntegration *j);
 static void clipboard_changed         (GtkWidget *me, jIntegration *j);
+static void mouse_changed             (GtkWidget *me, jIntegration *j);
 
 static void make_integration_widgets  (GtkWidget *vbox);
 static void jintegration_class_init   (jIntegrationClass *class);
 static void jintegration_init         (jIntegration      *display);
 
 static jIntegrationClass *parent_class= NULL;
+
+enum {
+  COHERENT_CHANGE_SIGNAL,
+  CLIPBOARD_CHANGE_SIGNAL,
+  J_D_SIGNAL,
+  LOCK_IT,
+  UNLOCK_IT,
+  READ_PREFS,
+  MOUSE_CHANGE_SIGNAL,
+  LAST_SIGNAL
+};
+
+static guint jintegration_signals[LAST_SIGNAL];
 
 static void jintegration_class_init (jIntegrationClass *class) {
   GtkWidgetClass *widget_class;
@@ -123,6 +127,7 @@ static void jintegration_class_init (jIntegrationClass *class) {
 				"lock-it",
 				"unlock-it",
 				"read-prefs",
+				"mouse-changed",
 				(void*)0);
 }
 
@@ -219,6 +224,13 @@ static void read_prefs (jIntegration *j) {
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->clipboard_widget[0]),TRUE);
   }
 
+  if(currprefs.jmouse) {
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->mouse_widget[1]),TRUE);
+  }
+  else {
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->mouse_widget[0]),TRUE);
+  }
+
 }
 
 extern ULONG aos3_task;
@@ -246,24 +258,13 @@ static void change_lock (jIntegration *j, gboolean status) {
     cdrunning=FALSE;
   }
 
-  i=0;
-  while(j->coherence_widget[i]) {
-    if(jdrunning) {
-      gtk_widget_set_sensitive(j->coherence_widget[i++], status);
-    }
-    else {
-      gtk_widget_set_sensitive(j->coherence_widget[i++], FALSE);
-    }
-  }
-  i=0;
-  while(j->clipboard_widget[i]) {
-    if(cdrunning) {
-      gtk_widget_set_sensitive(j->clipboard_widget[i++], status);
-    }
-    else {
-      gtk_widget_set_sensitive(j->clipboard_widget[i++], FALSE);
-    }
-  }
+  /* Enable special functions only, if the deamons are running.
+   * You can always disable special functions, in case something 
+   * does not work at startup already.
+   */
+  gtk_widget_set_sensitive(j->mouse_widget[1],     jdrunning);
+  gtk_widget_set_sensitive(j->clipboard_widget[1], cdrunning);
+  gtk_widget_set_sensitive(j->coherence_widget[1], jdrunning);
 }
 
 
@@ -292,6 +293,20 @@ static void unlock_it (jIntegration *j) {
 static void clipboard_changed(GtkWidget *me, jIntegration *j) {
 }
 
+static void mouse_changed(GtkWidget *me, jIntegration *j) {
+
+  if(j->mouse_widget[0] == me) {
+    /* classic */
+    j->mouse=FALSE;
+  }
+  else {
+    /* sync mouse pointers */
+    j->mouse=TRUE;
+  }
+
+  g_signal_emit_by_name(j,"mouse-changed",j);
+}
+
 static void coherence_changed(GtkWidget *me, jIntegration *j) {
 
   if(j->coherence_widget[0] == me) {
@@ -314,20 +329,21 @@ static void make_integration_widgets (GtkWidget *vbox) {
   GtkWidget *table;
   GtkWidget *frame_coherent;
   GtkWidget *frame_clipboard;
+  GtkWidget *frame_mouse;
 
   if(!GTK_IS_HBOX(vbox)) {
     printf("ERROR: integration.c: !GTK_IS_HBOX(%lx)\n",vbox);
     kprintf("ERROR: integration.c: !GTK_IS_HBOX(%lx)\n",vbox);
   }
 
-  table=gtk_table_new(1,2,FALSE);
+  table=gtk_table_new(1,3,FALSE);
 
-  frame_coherent = make_radio_group_box_param ("Coherency", 
-                                        coherence_labels, 
-					j->coherence_widget, 
-					0, (void *) coherence_changed,
+  frame_mouse = make_radio_group_box_param ("Mouse", 
+                                        mouse_labels, 
+					j->mouse_widget, 
+					0, (void *) mouse_changed,
 					GTK_WIDGET(j));
-  gtk_table_attach_defaults(GTK_TABLE(table), frame_coherent, 0,1,0,1);
+  gtk_table_attach_defaults(GTK_TABLE(table), frame_mouse,  0, 1, 0, 1);
 
   frame_clipboard = make_radio_group_box_param ("Clipboard", 
                                         clipboard_labels, 
@@ -336,6 +352,12 @@ static void make_integration_widgets (GtkWidget *vbox) {
 					GTK_WIDGET(j));
   gtk_table_attach_defaults(GTK_TABLE(table), frame_clipboard,  0, 1, 1, 2);
 
+  frame_coherent = make_radio_group_box_param ("Coherency", 
+                                        coherence_labels, 
+					j->coherence_widget, 
+					0, (void *) coherence_changed,
+					GTK_WIDGET(j));
+  gtk_table_attach_defaults(GTK_TABLE(table), frame_coherent, 0, 1, 2, 3);
 
 
 #if 0

@@ -1324,27 +1324,53 @@ void show_uae_main_window(void);
 void hide_uae_main_window(void);
 void close_all_janus_windows(void);
 
-static void on_coherent_changed (void)
-{
-    if(changed_prefs.jcoherence == JINTEGRATION (jint_panel)->coherence) {
-      DEBUG_LOG("jcoherence: nothing to do\n");
-      return;
-    }
+static void on_coherent_changed (void) {
 
-    DEBUG_LOG("old coherence = %d\n", changed_prefs.jcoherence);
-    changed_prefs.jcoherence = JINTEGRATION (jint_panel)->coherence;
-    DEBUG_LOG("new coherence = %d\n", changed_prefs.jcoherence);
-    if(aos3_task && !changed_prefs.jcoherence) {
-      DEBUG_LOG("call close_all_janus_windows\n");
-      close_all_janus_windows();
-      show_uae_main_window();
-    }
-    else {
-      hide_uae_main_window();
-    }
+  if(changed_prefs.jcoherence == JINTEGRATION (jint_panel)->coherence) {
+    DEBUG_LOG("jcoherence: nothing to do\n");
+    return;
+  }
 
-    /* if changed to coherence, windows are opened automatically */
+  DEBUG_LOG("old coherence = %d\n", changed_prefs.jcoherence);
+  changed_prefs.jcoherence = JINTEGRATION (jint_panel)->coherence;
+  DEBUG_LOG("new coherence = %d\n", changed_prefs.jcoherence);
+  if(aos3_task && !changed_prefs.jcoherence) {
+    DEBUG_LOG("call close_all_janus_windows\n");
+    close_all_janus_windows();
+    show_uae_main_window();
+  }
+  else {
+    hide_uae_main_window();
+  }
+
+  /* if changed to coherence, windows are opened automatically */
 }
+
+static void on_mouse_changed (void) {
+
+  if(changed_prefs.jmouse == JINTEGRATION (jint_panel)->mouse) {
+    DEBUG_LOG("jmouse: nothing to do\n");
+    return;
+  }
+
+  DEBUG_LOG("old mouse = %d\n", changed_prefs.jmouse);
+  changed_prefs.jmouse = JINTEGRATION (jint_panel)->mouse;
+  DEBUG_LOG("new mouse = %d\n", changed_prefs.jmouse);
+}
+
+static void on_clipboard_changed (void) {
+
+  if(changed_prefs.jclipboard == JINTEGRATION (jint_panel)->clipboard) {
+    DEBUG_LOG("jclip: nothing to do\n");
+    return;
+  }
+
+  DEBUG_LOG("old mouse = %d\n", changed_prefs.jclipboard);
+  changed_prefs.jclipboard = JINTEGRATION (jint_panel)->clipboard;
+  DEBUG_LOG("new mouse = %d\n", changed_prefs.jclipboard);
+}
+
+
 
 
 static void make_sound_widgets (GtkWidget *vbox)
@@ -2112,10 +2138,19 @@ static void make_integration_widgets (GtkWidget *vbox) {
 		      GTK_SIGNAL_FUNC (on_coherent_changed),
      		      NULL);
 
+  gtk_signal_connect (GTK_OBJECT (jint_panel), "mouse-changed",
+		      GTK_SIGNAL_FUNC (on_mouse_changed),
+     		      NULL);
+
+  gtk_signal_connect (GTK_OBJECT (jint_panel), "clipboard-changed",
+		      GTK_SIGNAL_FUNC (on_clipboard_changed),
+     		      NULL);
+
+
   /* it gets unlocked, as soon as the daemons start */
   g_signal_emit_by_name(jint_panel,"lock-it",NULL);
-  gtk_widget_show_all(jint_panel);
 
+  gtk_widget_show_all(jint_panel);
   gtk_container_add (GTK_CONTAINER (vbox), jint_panel);
 }
 

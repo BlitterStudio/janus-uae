@@ -48,11 +48,14 @@ struct _jIntegration {
   /*** PRIVATE ***/
 
   /* radio widget arrays */
-  GtkWidget *coherence_widget[2];
+  GtkWidget *mouse_widget[2];
   GtkWidget *clipboard_widget[2];
+  GtkWidget *coherence_widget[2];
 
   /*** PUBLIC ***/
   gboolean coherence;
+  gboolean mouse;
+  gboolean clipboard;
 };
 
 struct _jIntegrationClass {
