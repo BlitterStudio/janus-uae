@@ -127,7 +127,8 @@ static const struct cfg_lines opttable[] =
 #endif
 #ifdef JANUS
     {"jcoherence","Integrate os3 windows into host window environment"},
-    {"jclipboard","Transparent clipboard data exchange between host and aos3"}
+    {"jclipboard","Transparent clipboard data exchange between host and aos3"},
+    {"jmouse",    "Mouse sync between aros host and aos3"}
 #endif
 };
 
