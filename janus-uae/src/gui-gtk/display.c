@@ -376,7 +376,9 @@ static void change_lock (jDisplay *j, gboolean status) {
   gtk_widget_set_sensitive(j->emuspeed, status);
 
   i=0;
+  /* this can crash !? */
   while(j->linemode_widget[i]) {
+    kprintf("display.c: j->linemode_widget[%d]=%lx\n",i,j->linemode_widget[i]);
     gtk_widget_set_sensitive(j->linemode_widget[i++], status);
   }
 #if ENABLE_CENTERING
@@ -789,6 +791,8 @@ static void make_display_widgets (GtkWidget *vbox) {
   gtk_table_attach_defaults(GTK_TABLE(table), frame_chipset,   1, 2, 2, 4);
 
   /* PAL/NTSC */
+  /*  GLib-GObject-CRITICAL **: 
+   *  g_signal_connect_closure_by_id: assertion `signal_id > 0' failed !? */
   frame_pal_ntsc = make_radio_group_box_param ("Norm", 
                                         pal_ntsc_labels, 
 					j->pal_ntsc_widget, 
