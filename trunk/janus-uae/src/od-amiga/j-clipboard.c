@@ -4,12 +4,12 @@
  *
  * This file is part of Janus-UAE.
  *
- * Janus-Daemon is free software: you can redistribute it and/or modify
+ * Janus-UAE is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Janus-Daemon is distributed in the hope that it will be useful,
+ * Janus-UAE is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -45,7 +45,7 @@ void uae_Signal(uaecptr task, uae_u32 mask);
 #endif
 #include "j.h"
 
-//#define DEBOUT_ENABLED 1
+#define DEBOUT_ENABLED 1
 #if DEBOUT_ENABLED
 #define DebOut(...) do { kprintf("%s: %s():%d: ",__FILE__,__func__,__LINE__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -220,106 +220,6 @@ void cb_read_done(struct IOClipReq *ior) {
   }
 }
 
-#if 0
-/*******************************************************
- * amiga_clipboard_from_iff_text
- *
- * return a pointer to the text or NULL
- * if(!NULL) the caller has to free the returned
- * memory with free();
- *******************************************************/
-static char *amiga_clipboard_from_iff_text (uaecptr ftxt, uae_u32 len) {
-
-    uae_u8 *addr = NULL, *eaddr;
-    char *txt = NULL;
-    int txtsize = 0;
-
-    addr = get_real_address (ftxt);
-
-    eaddr = addr + len;
-
-    addr += 12; /* skip header */
-
-    while (addr < eaddr) {
-      uae_u32 csize = (addr[4] << 24) | (addr[5] << 16) | (addr[6] << 8) | (addr[7] << 0);
-
-      if (addr + 8 + csize > eaddr) {
-	break;
-      }
-
-      if (!memcmp (addr, "CHRS", 4) && csize) {
-	  int prevsize = txtsize;
-	  txtsize += csize;
-	  txt = realloc (txt, txtsize + 1);
-	  memcpy (txt + prevsize, addr + 8, csize);
-	  txt[txtsize] = 0;
-      }
-
-      addr += 8 + csize + (csize & 1);
-
-      if (csize >= 1 && addr[-2] == 0x0d && addr[-1] == 0x0a && addr[0] == 0) {
-	  addr++;
-      }
-      else if (csize >= 1 && addr[-1] == 0x0d && addr[0] == 0x0a) {
-	  addr++;
-      }
-    }
-
-    if (txt == NULL) {
-      txt=malloc(1);
-      txt[0]=(char) NULL;
-    }
-
-    DebOut("return >%s<\n",txt);
-
-    /* amigatopc(txt) ?? */
-
-    return txt;
-}
-
-/*******************************************************
- * amiga_clipboard_get_txt
- *
- * return a pointer to the text or NULL
- * the caller has to free the memory with free.
- *******************************************************/
-static char *amiga_clipboard_get_txt (uaecptr data, uae_u32 len) {
-
-  uae_u8 *addr;
-
-  DebOut("entered (data: %lx, len %d)\n", data, len);
-
-  if (len < 18) {
-    DebOut("len too small! (<18)\n");
-    return NULL;
-  }
-
-  if (!valid_address (data, len)) {
-    DebOut("invalid_address!!\n");
-    return NULL;
-  }
-
-  addr = get_real_address (data);
-
-  if (memcmp ("FORM", addr, 4)) {
-    DebOut("no FORM header at %lx (%s)\n", addr, addr);
-    return NULL;
-  }
-
-  if (!memcmp ("FTXT", addr + 8, 4)) {
-    return amiga_clipboard_from_iff_text (data, len);
-  }
-  DebOut("no FTXT header at %lx\n", addr+8);
-
-  return NULL;
-      /*
-  if (!memcmp ("ILBM", addr + 8, 4))
-      from_iff_ilbm (data, len);
-      */
-}
-#endif
-
-
 /*******************************************************
  * copy_clipboard_to_aros();
  *******************************************************/
@@ -333,8 +233,8 @@ void copy_clipboard_to_aros(void) {
     return; 
   }
 
-  if(!aos3_clip_task || !aos3_clip_signal) {
-    DebOut("no clipd running\n");
+  if(!aos3_clip_task || !aos3_clip_signal || !changed_prefs.jclipboard) {
+    DebOut("clipd not running / active\n");
   }
 
   /* 
@@ -389,8 +289,8 @@ void copy_clipboard_to_amigaos(void) {
     return; 
   }
 
-  if(!aos3_clip_task || !aos3_clip_signal) {
-    DebOut("no clipd running\n");
+  if(!aos3_clip_task || !aos3_clip_signal || !changed_prefs.jclipboard) {
+    DebOut("clipd not running / enabled\n");
   }
 
   /* 

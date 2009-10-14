@@ -30,6 +30,32 @@ extern int diwstrt, diwhigh;
 extern int *native2amiga_line_map;
 extern int thisframe_y_adjust;
 
+static LONG lasty=0;
+
+/* invalidate(last mouse position) 
+ *
+ * mark the area from y to y+30 (last position of mouse pointer)
+ * as dirty, so in the next frame, the image of the old
+ * mouse pointer gets deleted. Otherwise you could get
+ * a trail of mousepointers. Not always, so this seems
+ * to be a bug somewhere, but I am not willing to hunt it
+ * down ;). This fixes it.
+ */
+static void invalidate(LONG y) {
+
+  JWLOG("invalidate(%d)\n",y);
+
+
+  if(y<0) {
+    return;
+  }
+
+  if(lasty != y) {
+    DX_Invalidate(lasty, lasty+30); /* prefs can set a 26 pixel high pointer ..? */
+    lasty=y;
+  }
+}
+
 /***********************************************************************
  * nonP96
  *
@@ -146,12 +172,15 @@ static uae_u32 nonP96(struct Screen *screen, ULONG *m68k_results) {
   put_long_p(m68k_results+1, y); 
   //put_long_p(m68k_results+1, screen->MouseY); 
 
+  invalidate(y);
   return TRUE;
 }
+
 
 uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
   struct Screen *screen;
   ULONG modeID;
+  LONG x,y;
 
   //JWLOG("ad_job_get_mouse\n");
 
@@ -162,8 +191,6 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
     return TRUE;
   }
 
-  JWLOG("changed_prefs.jmouse %d, aos3_task %lx\n", changed_prefs.jmouse, aos3_task);
-
   /* only return mouse movement, if one of our windows is active.
    * as we do not access the result, no Semaphore access is
    * necessary, so save semaphore access here.
@@ -171,13 +198,11 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
    * if we are not coherent, we need to move the mouse nevertheless
    */
   if(!janus_active_window && changed_prefs.jcoherence) {
-    JWLOG("false 1\n");
     return FALSE;
   }
 
   /* in this case, classic uae mouse mode is enabled */
-  if((!changed_prefs.jmouse) || (aos3_task==NULL)) {
-    JWLOG("false 2\n");
+  if((!uae_main_window_closed) && ((!changed_prefs.jmouse) || (aos3_task==NULL))) {
     return FALSE;
   }
 
@@ -206,9 +231,26 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
     JWLOG("screen->x,y: %d,%d\n", screen->MouseX, screen->MouseY);
     JWLOG("W->x,y: %d,%d\n", W->LeftEdge, W->TopEdge);
     JWLOG("border->x,y: %d,%d\n", W->BorderLeft, W->BorderTop);
-  
-    put_long_p(m68k_results,   screen->MouseX - W->LeftEdge - W->BorderLeft); 
-    put_long_p(m68k_results+1, screen->MouseY - W->TopEdge  - W->BorderTop ); 
+
+    x=screen->MouseX;
+    y=screen->MouseY;
+
+    if(!uae_main_window_closed) {
+      x=x - W->LeftEdge - W->BorderLeft;
+      y=y - W->TopEdge  - W->BorderTop;
+    }
+
+    if(x<0) {
+      x=0;
+    }
+    if(y<0) {
+      y=0;
+    }
+
+    invalidate(y);
+ 
+    put_long_p(m68k_results,   x);
+    put_long_p(m68k_results+1, y);
   }
   else {
     if(!menux && !menuy) {
