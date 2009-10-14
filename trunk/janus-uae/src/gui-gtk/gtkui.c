@@ -1358,20 +1358,26 @@ static void on_mouse_changed (void) {
   DEBUG_LOG("new mouse = %d\n", changed_prefs.jmouse);
 }
 
+extern BOOL clipboard_aros_changed;
+void copy_clipboard_to_amigaos(void);
+
 static void on_clipboard_changed (void) {
 
   if(changed_prefs.jclipboard == JINTEGRATION (jint_panel)->clipboard) {
-    DEBUG_LOG("jclip: nothing to do\n");
+    DEBUG_LOG("jcliboard: nothing to do\n");
     return;
   }
 
-  DEBUG_LOG("old mouse = %d\n", changed_prefs.jclipboard);
+  DEBUG_LOG("old clipboard = %d\n", changed_prefs.jclipboard);
   changed_prefs.jclipboard = JINTEGRATION (jint_panel)->clipboard;
-  DEBUG_LOG("new mouse = %d\n", changed_prefs.jclipboard);
+  DEBUG_LOG("new clipboard = %d\n", changed_prefs.jclipboard);
+
+  /* manually sync clipboards, AROS clipboard wins */
+  if(changed_prefs.jclipboard) {
+    clipboard_aros_changed=TRUE;
+    copy_clipboard_to_amigaos();
+  }
 }
-
-
-
 
 static void make_sound_widgets (GtkWidget *vbox)
 {

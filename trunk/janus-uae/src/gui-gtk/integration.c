@@ -57,7 +57,7 @@
 #include "picasso96.h"
 #include "version.h"
 
-#include "displaypanel.h"
+//#include "displaypanel.h"
 #include "chooserwidget.h"
 #include "util.h"
 #include "chipsetspeedpanel.h"
@@ -291,6 +291,18 @@ static void unlock_it (jIntegration *j) {
 /* second parameter is always NULL */
 
 static void clipboard_changed(GtkWidget *me, jIntegration *j) {
+
+  if(j->clipboard_widget[0] == me) {
+    /* classic */
+    j->clipboard=FALSE;
+  }
+  else {
+    /* sync clipboards */
+    j->clipboard=TRUE;
+  }
+
+  g_signal_emit_by_name(j,"clipboard-changed",j);
+
 }
 
 static void mouse_changed(GtkWidget *me, jIntegration *j) {
