@@ -590,14 +590,26 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
 	switch(job) {
 	  case JD_AMIGA_CHANGED:
 	    /* remember clipboard change in amigaOS */
-	    clipboard_amiga_changed=get_long_p(m68k_results);
-	    JWLOG("JD_AMIGA_CHANGED: clipboard_amiga_changed %d\n", clipboard_amiga_changed);
-	    put_long((ULONG) (m68k_results), (ULONG) TRUE);
+	    if(changed_prefs.jclipboard) {
+	      clipboard_amiga_changed=get_long_p(m68k_results);
+	      JWLOG("JD_AMIGA_CHANGED: clipboard_amiga_changed %d\n", clipboard_amiga_changed);
+	      put_long((ULONG) (m68k_results), (ULONG) TRUE);
+	    }
+	    else {
+	      /* disabled */
+	      JWLOG("JD_CLIP_COPY_TO_AROS: clipboard disabled\n");
+	      put_long((ULONG) (m68k_results), (ULONG) FALSE);
+	    }
 	    return TRUE;
 	  case JD_CLIP_COPY_TO_AROS:
-	    /* clipd told us to take the amigaOS clipboard and copy it to AROS clipboard */
-	    copy_clipboard_to_aros_real(get_long(m68k_results + 4), get_long(m68k_results + 8));
-	    JWLOG("copy_clipboard_to_aros_real returned\n");
+	    if(changed_prefs.jclipboard) {
+	      /* clipd told us to take the amigaOS clipboard and copy it to AROS clipboard */
+	      copy_clipboard_to_aros_real(get_long(m68k_results + 4), get_long(m68k_results + 8));
+	      JWLOG("copy_clipboard_to_aros_real returned\n");
+	    }
+	    else {
+	      JWLOG("JD_CLIP_COPY_TO_AROS: clipboard disabled\n");
+	    }
 	    return TRUE;
 	  case JD_CLIP_GET_AROS_LEN:
 	    /* get clipboard len */
