@@ -50,7 +50,7 @@
 # endif
 #endif
 
-#define AWTRACING_ENABLED 1
+#define AWTRACING_ENABLED 0
 #if AWTRACING_ENABLED
 #define AWTRACE(...)	do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -2613,7 +2613,8 @@ void handle_events_W(struct Window *W) {
 
 	    case IDCMP_MOUSEMOVE:
 	      /* classic mouse move, if either option is disabled or janusd is not (yet) running */
-	      if( (!changed_prefs.jmouse) || (aos3_task==NULL) ) {
+	      if( ((!changed_prefs.jmouse) || (aos3_task==NULL) ) && (!uae_main_window_closed)) {
+		AWTRACE("classic mouse move enabled\n");
 		setmousestate (0, 0, dmx, 0);
 		setmousestate (0, 1, dmy, 0);
 
@@ -2627,6 +2628,9 @@ void handle_events_W(struct Window *W) {
 			    show_pointer (W);
 		    }
 		}
+	      }
+	      else {
+		AWTRACE("classic mouse move disabled ((%d || %d) && %d)\n", (!changed_prefs.jmouse), (aos3_task==NULL), (!uae_main_window_closed));
 	      }
       	      break;
 
@@ -2948,6 +2952,8 @@ void DX_SetPalette (int start, int count)
   AWTRACE("DX_SetPalette\n");
 }
 
+/* TODO: sync this with picasso96.c !! */
+
 int DX_FillResolutions (uae_u16 *ppixel_format)
 {
     int count = 0;
@@ -2961,6 +2967,7 @@ int DX_FillResolutions (uae_u16 *ppixel_format)
         int width, height;
     } modes [] =
     {
+#if 0
         { 320,  200 },
 	{ 320,  240 },
 	{ 320,  256 },
@@ -2972,6 +2979,64 @@ int DX_FillResolutions (uae_u16 *ppixel_format)
 	{ 640,  512 },
 	{ 800,  600 },
 	{ 1024, 768 }
+#endif
+    {  320, 200 },
+    {  320, 240 },
+    {  640, 400 },
+    {  640, 480 },
+    {  800, 600 },
+    { 1024, 768 },
+    { 1152, 864 },
+    { 1280,1024 },
+    { 1600,1280 },
+
+    /* new modes */
+ 
+    {  704, 480 },
+    {  704, 576 },
+    {  720, 480 },
+    {  720, 576 },
+    {  768, 483 },
+    {  768, 576 },
+    {  800, 480 },
+    {  848, 480 },
+    {  854, 480 },
+    {  948, 576 },
+    { 1024, 576 },
+    { 1152, 768 },
+    { 1152, 864 },
+    { 1280, 720 },
+    { 1280, 768 },
+    { 1280, 800 },
+    { 1280, 854 },
+    { 1280, 960 },
+    { 1366, 768 },
+    { 1440, 900 },
+    { 1440, 960 },
+    { 1600,1200 },
+    { 1680,1050 },
+    { 1920,1080 },
+    { 1920,1200 },
+    { 2048,1152 },
+    { 2048,1536 },
+    { 2560,1600 },
+    { 2560,2048 },
+    {  400, 300 },
+    {  512, 384 },
+    {  640, 432 },
+    { 1360, 768 },
+    { 1360,1024 },
+    { 1400,1050 },
+    { 1792,1344 },
+    { 1800,1440 },
+    { 1856,1392 },
+    { 1920,1440 },
+    {  480, 360 },
+    {  640, 350 },
+    { 1600, 900 },
+    {  960, 600 },
+    { 1088, 612 }
+
     };
 
     screen=LockPubScreen(NULL);
