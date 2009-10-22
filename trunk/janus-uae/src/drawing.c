@@ -6,6 +6,8 @@
   * Copyright 1995-2000 Bernd Schmidt
   * Copyright 1995 Alessandro Bissacco
   * Copyright 2000,2001 Toni Wilen
+  *
+  * $Id$
   */
 
 /* There are a couple of concepts of "coordinates" in this file.
@@ -45,6 +47,10 @@
 # include "compemu.h"
 #endif
 #include "savestate.h"
+
+#ifdef __AROS__
+#include "od-amiga/j.h"
+#endif
 
 int lores_factor, lores_shift;
 
@@ -122,7 +128,7 @@ static uae_u32 ham_linebuf[MAX_PIXELS_PER_LINE * 2];
 
 uae_u8 *xlinebuffer;
 
-static int *amiga2aspect_line_map, *native2amiga_line_map;
+/*static*/ int *amiga2aspect_line_map, *native2amiga_line_map;
 static uae_u8 *row_map[MAX_VIDHEIGHT + 1];
 static int max_drawn_amiga_line;
 
@@ -144,14 +150,14 @@ static char linestate[(MAXVPOS + 1) * 2 + 1];
 uae_u8 line_data[(MAXVPOS + 1) * 2][MAX_PLANES * MAX_WORDS_PER_LINE * 2];
 
 /* Centering variables.  */
-static int min_diwstart, max_diwstop;
+/*static*/ int min_diwstart, max_diwstop;
 /* The visible window: VISIBLE_LEFT_BORDER contains the left border of the visible
    area, VISIBLE_RIGHT_BORDER the right border.  These are in window coordinates.  */
-static int visible_left_border, visible_right_border;
-static int linetoscr_x_adjust_bytes;
-static int thisframe_y_adjust;
-static int thisframe_y_adjust_real, max_ypos_thisframe, min_ypos_for_screen;
-static int extra_y_adjust;
+/*static*/ int visible_left_border, visible_right_border;
+/*static*/ int linetoscr_x_adjust_bytes;
+/*static*/ int thisframe_y_adjust;
+/*static*/ int thisframe_y_adjust_real, max_ypos_thisframe, min_ypos_for_screen;
+/*static*/ int extra_y_adjust;
 int thisframe_first_drawn_line, thisframe_last_drawn_line;
 
 /* A frame counter that forces a redraw after at least one skipped frame in
@@ -190,14 +196,37 @@ STATIC_INLINE void count_frame (void)
 
 int coord_native_to_amiga_x (int x)
 {
+  int res;
+//  kprintf("FOO: coord_native_to_amiga_x(%d)\n",x);
     x += visible_left_border;
     x <<= (1 - lores_shift);
-    return x + 2 * DISPLAY_LEFT_SHIFT - 2 * DIW_DDF_OFFSET;
+    res=x + 2 * DISPLAY_LEFT_SHIFT - 2 * DIW_DDF_OFFSET;
+//  kprintf("FOO: res: %d\n",res);
+    return res;
 }
 
-int coord_native_to_amiga_y (int y)
-{
-    return native2amiga_line_map[y] + thisframe_y_adjust - minfirstline;
+/*********************************************
+ * coord_native_to_amiga_y
+ *
+ * is also used in od-amiga/j-mouse.c
+ *
+ *********************************************/
+int coord_native_to_amiga_y (int y) {
+  int res;
+
+  kprintf("coord_native_to_amiga_y(%d)\n",y);
+
+  /* better clip it here! */
+  if(y > gfxvidinfo.height) {
+    y=gfxvidinfo.height - 1; /* last row */
+  }
+  if(y<0) {
+    y=0;
+  }
+  kprintf("coord_native_to_amiga_y() => %d\n",y);
+  res=native2amiga_line_map[y] + thisframe_y_adjust - minfirstline;
+
+  return res;
 }
 
 STATIC_INLINE int res_shift_from_window (int x)
@@ -1028,7 +1057,7 @@ void init_row_map (void)
 	row_map[i] = gfxvidinfo.bufmem + j;
 }
 
-static void init_aspect_maps (void)
+void init_aspect_maps (void)
 {
     int i, maxl;
     double native_lines_per_amiga_line;
@@ -1563,6 +1592,14 @@ static void center_image (void)
     if (prev_x_adjust != visible_left_border || prev_y_adjust != thisframe_y_adjust)
 	frame_redraw_necessary |= interlace_seen && currprefs.gfx_linedbl ? 2 : 1;
 
+  JWLOG("CMOUSE: visible_left_border: %d\n",visible_left_border);
+  JWLOG("CMOUSE: visible_right_border: %d\n",visible_right_border);
+  JWLOG("CMOUSE: thisframe_y_adjust: %d\n",thisframe_y_adjust);
+  JWLOG("CMOUSE: thisframe_y_adjust_real: %d\n",thisframe_y_adjust_real);
+  JWLOG("CMOUSE: extra_y_adjust: %d\n",extra_y_adjust);
+  JWLOG("CMOUSE: visible_right_border: %d\n",visible_right_border);
+  JWLOG("CMOUSE: =================================================\n");
+
     max_diwstop = 0;
     min_diwstart = 10000;
 }
@@ -1809,9 +1846,25 @@ static void draw_status_line (int line)
     }
 }
 
-void finish_drawing_frame (void)
-{
-    int i;
+/**************************************************
+ * finish_drawing_frame
+ *
+ * seems to draw the content of the frame to the
+ * uae window
+ *
+ * So if we are in rootless mode, we don't draw
+ * anything here.
+ **************************************************/
+void finish_drawing_frame (void) {
+
+  int i;
+
+/* GTKMUI.. */
+#ifdef __AROS__
+  if(uae_main_window_closed) {
+    return;
+  }
+#endif
 
     if (! lockscr ()) {
 	notice_screen_contents_lost ();
