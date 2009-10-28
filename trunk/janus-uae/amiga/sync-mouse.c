@@ -349,8 +349,14 @@ void no_p96_fix_viewoffset(struct Screen *screen, WORD *x, WORD *y) {
   DebOut("no_96: screen->View.DxOffset: %d\n", view->DxOffset);
   DebOut("no_96: screen->View.DyOffset: %d\n", view->DyOffset);
 
-  *x=*x - view->DxOffset + 86; /* 86 is just a wild guess..? */
+#if 0
   *y=*y + view->DyOffset - 77;
+#endif
+
+  *x=*x - ((view->DxOffset -108)*2); /* 108? why, I don't know ;) */
+
+  *y=*y + view->DyOffset - 77;
+
 
   DebOut("no_p96_fix_viewoffset: x,y: %d, %d\n",*x,*y);
 }
@@ -423,10 +429,11 @@ void sync_mouse() {
   DebOut("AD_GET_JOB_GET_MOUSE result: %d, %d\n",x,y);
 
   if(!is_p96) {
+    DebOut("no_p96 =============================\n");
 
-    no_p96_fix_overscan  (screen, &x, &y);
-    no_p96_fix_resolution(screen, &x, &y);
     no_p96_fix_viewoffset(screen, &x, &y);
+    //no_p96_fix_overscan  (screen, &x, &y);
+    //no_p96_fix_resolution(screen, &x, &y);
 
     DebOut("no_96: x,y: %d, %d (after div)\n",x,y);
 
