@@ -230,36 +230,129 @@ void foo(void) {
 }
 #endif
 
-void no_p96(struct Screen *screen, WORD *x, WORD *y) {
-  ULONG                 modeID;
-  struct View          *view;
-  WORD                  dx, dy;
+#if 0
+  struct DimensionInfo  dimension_info;
+  DisplayInfoHandle     display_info_handle;
 
-  DebOut("-- no_96 --\n");
-  DebOut("no_96: x,y: %d, %d\n",*x,*y);
+    //modeID=screen->ViewPort.Modes;
 
-  //DebOut("no_96: screen->ViewPort: %lx\n", screen->ViewPort);
+    DebOut("modeID: %lx\n", modeID);
+    x=x - screen->ViewPort.DxOffset; /* DxOffset is a negative value for overscan */
+    y=y - screen->ViewPort.DyOffset; /* DxOffset is a negative value for overscan */
+    DebOut("DOffsets: %d, %d\n",screen->ViewPort.DxOffset, screen->ViewPort.DyOffset);
+
+    //display_info_handle=FindDisplayInfo(modeID);
+    /* DTAG_DIMS: (DimensionInfo) - default dimensions and overscan info.*/
+
+    result=GetDisplayInfoData(display_info_handle, (UBYTE *) &dimension_info, 
+                          sizeof(struct DimensionInfo), 
+                          DTAG_DIMS, modeID);
+      /* if zero, no information for ID was available */
+
+
+    if(result) {
+      /* find out, how much bigger our screen is, compared to TextOverscan */
+      overscan_x= ( screen->Width - 
+                    ( dimension_info.TxtOScan.MaxX - 
+		      dimension_info.TxtOScan.MinX + 1
+		    ) 
+		  ) /2;
+      overscan_y= ( screen->Height - 
+                    ( dimension_info.TxtOScan.MaxY - 
+		      dimension_info.TxtOScan.MinY + 1
+		    ) 
+		  ) /2;
+      DebOut("dimension_info screen: %d x %d  \n",screen->Width, screen->Height);
+      DebOut("dimension_info.TxtOScan.MinX: %d\n",dimension_info.TxtOScan.MinX);
+      DebOut("dimension_info.TxtOScan.MaxX: %d\n",dimension_info.TxtOScan.MaxX);
+      DebOut("dimension_info.TxtOScan.MinY: %d\n",dimension_info.TxtOScan.MinY);
+      DebOut("dimension_info.TxtOScan.MaxY: %d\n",dimension_info.TxtOScan.MaxY);
+      DebOut("dimension_info overscan_x: %d\n",overscan_x);
+      DebOut("dimension_info overscan_y: %d\n",overscan_y);
+      DebOut("dimension_info\n");
+    }
+    else {
+      DebOut("dimension_info: ERROR in getting one (result=0)!?\n");
+    }
+
+    x=x+overscan_x;
+    y=y+overscan_x;
+#endif
+/**********************************************************
+ * no_p96_overscan
+ *
+ * add overscan offsets to mouse x,y coordinates
+ *
+ * only for non Picasso 96 screens
+ **********************************************************/
+void no_p96_fix_overscan(struct Screen *screen, WORD *x, WORD *y) {
+
+  DebOut("no_p96_fix_overscan(%d, %d)\n", *x, *y);
+
   DebOut("no_96: screen->ViewPort.DxOffset: %d\n", screen->ViewPort.DxOffset);
   DebOut("no_96: screen->ViewPort.DyOffset: %d\n", screen->ViewPort.DyOffset);
 
   *x=*x - screen->ViewPort.DxOffset; /* DxOffset is a negative value for overscan */
   *y=*y - screen->ViewPort.DyOffset; /* DxOffset is a negative value for overscan */
 
-  //DebOut("no_96: x,y: %d, %d\n",*x,*y);
+  DebOut("no_p96_fix_overscan: x,y: %d, %d\n",*x,*y);
+}
+
+/**********************************************************
+ * no_p96_fix_resolution
+ *
+ * scale for diferrent resolutions (lores, hires, interlace)
+ *
+ * only for non Picasso 96 screens
+ **********************************************************/
+void no_p96_fix_resolution(struct Screen *screen, WORD *x, WORD *y) {
+
+  ULONG modeID;
+
+  DebOut("no_p96_fix_resolution(%d, %d)\n", *x, *y);
+  
+  modeID=GetVPModeID(&(screen->ViewPort));
+
+  if(modeID == INVALID_ID) {
+    DebOut("no_p96_fix_resolution WARNING: modeID == INVALID_ID\n");
+    return;
+  }
+
+  if(modeID & SUPERHIRES) {
+    *x=*x * 2;
+    DebOut("==>SUPER_KEY\n");
+  }
+  else if(modeID & HIRES) {
+    DebOut("==>HIRES_KEY\n");
+  }
+  else { 
+    DebOut("==>LORES_KEY\n");
+    *x=*x / 2;
+//    y=y/2;
+  }
+  /* lores */
+  if(! (modeID & LACE) ) {
+    DebOut("==>no INTERLACE\n");
+    *y=*y / 2;
+  }
+
+  DebOut("no_p96_fix_resolution: x,y: %d, %d\n",*x,*y);
+}
+
+void no_p96_fix_viewoffset(struct Screen *screen, WORD *x, WORD *y) {
+  struct View          *view;
+
+  DebOut("no_p96_fix_viewoffset(%d, %d)\n", *x, *y);
 
   view=ViewAddress();
-  //DebOut("no_96: screen->View: %lx\n", view);
+
   DebOut("no_96: screen->View.DxOffset: %d\n", view->DxOffset);
   DebOut("no_96: screen->View.DyOffset: %d\n", view->DyOffset);
 
   *x=*x - view->DxOffset + 86; /* 86 is just a wild guess..? */
   *y=*y + view->DyOffset - 77;
 
-  //dx=(- screen->ViewPort.DxOffset - view->DxOffset + 129) /2 ;
-  //dy=- screen->ViewPort.DyOffset + view->DyOffset - 44;
-
-  DebOut("no_96: x,y: %d, %d\n",*x,*y);
-
+  DebOut("no_p96_fix_viewoffset: x,y: %d, %d\n",*x,*y);
 }
 
 /***************************************
@@ -272,23 +365,17 @@ void sync_mouse() {
   ULONG                 modeID;
   BOOL                  is_p96=FALSE;
   WORD                  x,y;
-  WORD                  overscan_x=0;
-  WORD                  overscan_y=0;
-  struct DimensionInfo  dimension_info;
-  DisplayInfoHandle     display_info_handle;
 #if 0
   UWORD          flags;
 #endif
 
   ENTER
 
-  /*screen=(struct Screen *) LockPubScreen(NULL);*/
   screen=IntuitionBase->FirstScreen;
   if(!screen) {
     printf("sync_mouse: screen==NULL?!\n");
     return;
   }
-  /*  UnlockPubScreen(NULL,screen); */
 
 #if 0
   /* customs screens are *not* synced here */
@@ -337,77 +424,13 @@ void sync_mouse() {
 
   if(!is_p96) {
 
-
-    modeID=GetVPModeID(&(screen->ViewPort));
-#if 0
-    //modeID=screen->ViewPort.Modes;
-
-    DebOut("modeID: %lx\n", modeID);
-    x=x - screen->ViewPort.DxOffset; /* DxOffset is a negative value for overscan */
-    y=y - screen->ViewPort.DyOffset; /* DxOffset is a negative value for overscan */
-    DebOut("DOffsets: %d, %d\n",screen->ViewPort.DxOffset, screen->ViewPort.DyOffset);
-
-    //display_info_handle=FindDisplayInfo(modeID);
-    /* DTAG_DIMS: (DimensionInfo) - default dimensions and overscan info.*/
-
-    result=GetDisplayInfoData(display_info_handle, (UBYTE *) &dimension_info, 
-                          sizeof(struct DimensionInfo), 
-                          DTAG_DIMS, modeID);
-      /* if zero, no information for ID was available */
-
-
-    if(result) {
-      /* find out, how much bigger our screen is, compared to TextOverscan */
-      overscan_x= ( screen->Width - 
-                    ( dimension_info.TxtOScan.MaxX - 
-		      dimension_info.TxtOScan.MinX + 1
-		    ) 
-		  ) /2;
-      overscan_y= ( screen->Height - 
-                    ( dimension_info.TxtOScan.MaxY - 
-		      dimension_info.TxtOScan.MinY + 1
-		    ) 
-		  ) /2;
-      DebOut("dimension_info screen: %d x %d  \n",screen->Width, screen->Height);
-      DebOut("dimension_info.TxtOScan.MinX: %d\n",dimension_info.TxtOScan.MinX);
-      DebOut("dimension_info.TxtOScan.MaxX: %d\n",dimension_info.TxtOScan.MaxX);
-      DebOut("dimension_info.TxtOScan.MinY: %d\n",dimension_info.TxtOScan.MinY);
-      DebOut("dimension_info.TxtOScan.MaxY: %d\n",dimension_info.TxtOScan.MaxY);
-      DebOut("dimension_info overscan_x: %d\n",overscan_x);
-      DebOut("dimension_info overscan_y: %d\n",overscan_y);
-      DebOut("dimension_info\n");
-    }
-    else {
-      DebOut("dimension_info: ERROR in getting one (result=0)!?\n");
-    }
-
-    x=x+overscan_x;
-    y=y+overscan_x;
-#endif
-    no_p96(screen, &x, &y);
-
-    if(modeID & SUPERHIRES) {
-      x=x*2;
-      DebOut("==>SUPER_KEY\n");
-    }
-    else if(modeID & HIRES) {
-      DebOut("==>HIRES_KEY\n");
-    }
-    else { 
-      DebOut("==>LORES_KEY\n");
-      x=x/2;
-  //    y=y/2;
-    }
-    /* lores */
-    if(! (modeID & LACE) ) {
-      DebOut("==>no INTERLACE\n");
-      y=y/2;
-    }
+    no_p96_fix_overscan  (screen, &x, &y);
+    no_p96_fix_resolution(screen, &x, &y);
+    no_p96_fix_viewoffset(screen, &x, &y);
 
     DebOut("no_96: x,y: %d, %d (after div)\n",x,y);
 
   }
-
 
   if(screen->MouseX != x || screen->MouseY != y) {
     DebOut("set mouse to: %d, %d\n",x,y);
