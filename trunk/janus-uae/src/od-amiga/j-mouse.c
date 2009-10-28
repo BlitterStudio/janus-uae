@@ -30,7 +30,7 @@ extern int diwstrt, diwhigh;
 extern int *native2amiga_line_map;
 extern int thisframe_y_adjust;
 
-static LONG lasty=0;
+LONG invalidate_lasty=0;
 
 /* invalidate(last mouse position) 
  *
@@ -50,9 +50,10 @@ static void invalidate(LONG y) {
     return;
   }
 
-  if(lasty != y) {
-    DX_Invalidate(lasty, lasty+30); /* prefs can set a 26 pixel high pointer ..? */
-    lasty=y;
+  if(invalidate_lasty != y) {
+    /* prefs can set a 26 pixel high pointer ..? */
+    DX_Invalidate(invalidate_lasty, invalidate_lasty+30); 
+    invalidate_lasty=y;
   }
 }
 
@@ -81,8 +82,12 @@ static uae_u32 nonP96(struct Screen *screen, ULONG *m68k_results) {
   JWLOG("entered\n");
 
   /* W->BorderLeft and W->BorderTop are already part of XOffset and YOffset */
-  arosx=screen->MouseX - W->LeftEdge; 
+  arosx=screen->MouseX - W->LeftEdge - W->BorderLeft; 
   arosy=screen->MouseY - W->TopEdge;
+  put_long_p(m68k_results, arosx); 
+#if 0
+
+  JWLOG("coord_native_to_amiga_x(%d): %d\n", arosx, coord_native_to_amiga_x(arosx));
 
   /* AROS mouse x coord to amigaOS x coord */
 
@@ -112,7 +117,7 @@ static uae_u32 nonP96(struct Screen *screen, ULONG *m68k_results) {
    * to the right 1/4 of the display (H8=1).
    */
 
-  diwx=diwstrt  & 0xFF; /* Bits 0-7 */
+  diwx=diwstrt  & 0xFF; /* Bits 0-7 */  /* this is flickering n interlace modes ..? */
   JWLOG("FOO: diwx:     %x\n", diwx);
   diwhx=diwhigh & BIT(5); /* H8 bit is nr 5 */
   JWLOG("FOO: diwhx:    %x\n", diwhx);
@@ -146,6 +151,7 @@ static uae_u32 nonP96(struct Screen *screen, ULONG *m68k_results) {
    */
 
   put_long_p(m68k_results, x); 
+#endif
   //put_long_p(m68k_results, screen->MouseX); 
   
   JWLOG("FOO: ------------------------------------\n");
@@ -221,10 +227,12 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
   }
 #endif
 
+#if 0
   if(get_long_p(m68k_results) == 0) {
     JWLOG("no P96 screen \n");
     return nonP96(screen, m68k_results);
   }
+#endif
 
   JWLOG("P96 screen \n");
   if(mice[0].enabled) {
