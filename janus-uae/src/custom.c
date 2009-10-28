@@ -54,7 +54,6 @@
 #include "disk.h"
 #include "blitter.h"
 #include "xwin.h"
-#include "inputdevice.h"
 #include "audio.h"
 #include "keybuf.h"
 #include "serial.h"
@@ -218,7 +217,7 @@ int bpl_off[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 static struct color_entry current_colors;
 static unsigned int bplcon0, bplcon1, bplcon2, bplcon3, bplcon4;
-static unsigned int diwstrt, diwstop, diwhigh;
+/*static*/ unsigned int diwstrt, diwstop, diwhigh;
 static int diwhigh_written;
 static unsigned int ddfstrt, ddfstop, ddfstrt_old_hpos, ddfstrt_old_vpos;
 static unsigned int ddf_change;

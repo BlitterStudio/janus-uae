@@ -1911,7 +1911,7 @@ static int in_handler=0;
 static uae_u8 *veccode;
 
 # ifdef _WIN32
-int EvalException ( LPEXCEPTION_POINTERS blah, int n_except )
+int Evaluae_Exception ( LPEXCEPTION_POINTERS blah, int n_except )
 {
     PEXCEPTION_RECORD pExceptRecord = NULL;
     PCONTEXT          pContext = NULL;
@@ -1927,7 +1927,7 @@ int EvalException ( LPEXCEPTION_POINTERS blah, int n_except )
     if( n_except != STATUS_ACCESS_VIOLATION || !canbang)
         return EXCEPTION_CONTINUE_SEARCH;
 
-    pExceptRecord = blah->ExceptionRecord;
+    pExceptRecord = blah->uae_ExceptionRecord;
     pContext = blah->ContextRecord;
 
     if( pContext )
@@ -1936,7 +1936,7 @@ int EvalException ( LPEXCEPTION_POINTERS blah, int n_except )
     }
     if( pExceptRecord )
     {
-	addr = (uae_u32)(pExceptRecord->ExceptionInformation[1]);
+	addr = (uae_u32)(pExceptRecord->uae_ExceptionInformation[1]);
     }
 #ifdef JIT_DEBUG
     write_log ("JIT: fault address is 0x%x at 0x%x\n", addr, i);

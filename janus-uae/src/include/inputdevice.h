@@ -34,6 +34,11 @@ struct uae_input_device_kbr_default {
     int event;
 };
 
+struct uae_input_device2 {
+    uae_u32 buttonmask;
+    int states[MAX_INPUT_DEVICE_EVENTS / 2];
+};
+
 #define IDEV_WIDGET_NONE 0
 #define IDEV_WIDGET_BUTTON 1
 #define IDEV_WIDGET_AXIS 2

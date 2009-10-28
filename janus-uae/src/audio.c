@@ -36,6 +36,10 @@
 //#define DEBUG_AUDIO
 #define DEBUG_CHANNEL_MASK 15
 
+#ifdef __AROS__
+#define HAVE_8BIT_AUDIO_SUPPORT 1
+#endif
+
 int audio_channel_mask = 15;
 
 static int debugchannel (unsigned int ch)

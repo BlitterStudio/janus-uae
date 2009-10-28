@@ -722,7 +722,7 @@ void ftrapcc_opp (uae_u32 opcode, struct regstruct *regs, uaecptr oldpc)
 	op_illg (opcode, regs);
     }
     if (cc)
-	Exception (7, regs, oldpc - 2);
+	uae_Exception (7, regs, oldpc - 2);
 }
 
 void fbcc_opp (uae_u32 opcode, struct regstruct *regs, uaecptr pc, uae_u32 extra)

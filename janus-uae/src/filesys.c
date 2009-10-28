@@ -60,7 +60,7 @@
 #endif
 
 /* try to get some snoopdos functionality */
-#define SNOOP_ENABLED 1
+//#define SNOOP_ENABLED 1
 #if SNOOP_ENABLED
 #define SNOOP(...)	kprintf("FSNOOP %s: ",__PRETTY_FUNCTION__);kprintf(__VA_ARGS__)
 #else

@@ -51,7 +51,7 @@
 #include "gui-gtk/display.h"
 #include "gui-gtk/integration.h"
 
-#define GUI_DEBUG 1
+//#define GUI_DEBUG 1
 #ifdef  GUI_DEBUG
 #define DEBUG_LOG(...) do { kprintf("GUI: %s(): ",__func__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -67,7 +67,7 @@
 #endif
 
 
-#define P96TRACING_ENABLED 1
+//#define P96TRACING_ENABLED 1
 #if P96TRACING_ENABLED
 #define P96TRACE(x)	do { kprintf x; } while(0)
 #else

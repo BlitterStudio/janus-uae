@@ -592,6 +592,7 @@ void save_options (FILE *f, const struct uae_prefs *p, int type)
 #ifdef JANUS
     cfgfile_write (f, "jcoherence=%s\n", p->jcoherence ? "true" : "false");
     cfgfile_write (f, "jclipboard=%s\n", p->jclipboard ? "true" : "false");
+    cfgfile_write (f, "jmouse=%s\n",     p->jmouse ? "true" : "false");
 #endif
 }
 
@@ -1113,6 +1114,7 @@ static int cfgfile_parse_host (struct uae_prefs *p, char *option, char *value)
 
 #ifdef JANUS
     if(cfgfile_yesno (option, value, "jcoherence", &p->jcoherence) ||
+       cfgfile_yesno (option, value, "jmouse",     &p->jmouse) || 
        cfgfile_yesno (option, value, "jclipboard", &p->jclipboard) ) {
       return 1;
     }

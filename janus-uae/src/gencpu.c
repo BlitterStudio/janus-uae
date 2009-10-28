@@ -1164,14 +1164,14 @@ static void gen_opcode (unsigned long int opcode)
 
 	/* fall through */
     case 2: /* priviledged */
-	printf ("if (!regs->s) { Exception (8, regs, 0); goto %s; }\n", endlabelstr);
+	printf ("if (!regs->s) { uae_Exception (8, regs, 0); goto %s; }\n", endlabelstr);
 	need_endlabel = 1;
 	start_brace ();
 	break;
     case 3: /* privileged if size == word */
 	if (curi->size == sz_byte)
 	    break;
-	printf ("if (!regs->s) { Exception (8, regs, 0); goto %s; }\n", endlabelstr);
+	printf ("if (!regs->s) { uae_Exception (8, regs, 0); goto %s; }\n", endlabelstr);
 	need_endlabel = 1;
 	start_brace ();
 	break;
@@ -1618,7 +1618,7 @@ static void gen_opcode (unsigned long int opcode)
     case i_TRAP:
 	genamode (curi->smode, "srcreg", curi->size, "src", 1, 0, 0);
 	sync_m68k_pc ();
-	printf ("\tException (src + 32, regs, 0);\n");
+	printf ("\tuae_Exception (src + 32, regs, 0);\n");
 	did_prefetch = 1;
 	m68k_pc_offset = 0;
 	break;
@@ -1673,7 +1673,7 @@ static void gen_opcode (unsigned long int opcode)
 	    printf ("\telse if ((format & 0xF000) == 0x9000) { m68k_areg (regs, 7) += 12; break; }\n");
 	    printf ("\telse if ((format & 0xF000) == 0xa000) { m68k_areg (regs, 7) += 24; break; }\n");
 	    printf ("\telse if ((format & 0xF000) == 0xb000) { m68k_areg (regs, 7) += 84; break; }\n");
-	    printf ("\telse { Exception (14, regs, 0); goto %s; }\n", endlabelstr);
+	    printf ("\telse { uae_Exception (14, regs, 0); goto %s; }\n", endlabelstr);
 	    printf ("\tregs->sr = newsr; MakeFromSR (regs);\n}\n");
 	    pop_braces (old_brace_level);
 	    printf ("\tregs->sr = newsr; MakeFromSR (regs);\n");
@@ -1726,7 +1726,7 @@ static void gen_opcode (unsigned long int opcode)
     case i_TRAPV:
 	sync_m68k_pc ();
 	printf ("\tif (GET_VFLG (&regs->ccrflags)) {\n");
-	printf ("\t\tException (7, regs, m68k_getpc (regs));\n");
+	printf ("\t\tuae_Exception (7, regs, m68k_getpc (regs));\n");
 	printf ("\t\tgoto %s;\n", endlabelstr);
 	printf ("\t}\n");
 	fill_prefetch_next ();
@@ -1934,7 +1934,7 @@ static void gen_opcode (unsigned long int opcode)
 	    printf("\t\tif (dst < 0) SET_NFLG (&regs->ccrflags, 1);\n");
 	}
 	printf ("\t\tm68k_incpc (regs, %d);\n", m68k_pc_offset);
-	printf ("\t\tException (5, regs, oldpc);\n");
+	printf ("\t\tuae_Exception (5, regs, oldpc);\n");
 	printf ("\t\tgoto %s;\n", endlabelstr);
 	printf ("\t} else {\n");
 	printf ("\t\tuae_u32 newv = (uae_u32)dst / (uae_u32)(uae_u16)src;\n");
@@ -1978,7 +1978,7 @@ static void gen_opcode (unsigned long int opcode)
 	    printf("\t\tSET_ZFLG (&regs->ccrflags, 1);\n");
 	}
 	printf ("\t\tm68k_incpc (regs, %d);\n", m68k_pc_offset);
-	printf ("\t\tException (5, regs, oldpc);\n");
+	printf ("\t\tuae_Exception (5, regs, oldpc);\n");
 	printf ("\t\tgoto %s;\n", endlabelstr);
 	printf ("\t} else {\n");
 	printf ("\t\tuae_s32 newv = (uae_s32)dst / (uae_s32)(uae_s16)src;\n");
@@ -2054,11 +2054,11 @@ static void gen_opcode (unsigned long int opcode)
 	fill_prefetch_next ();
 	printf ("\tif ((uae_s32)dst < 0) {\n");
 	printf ("\t\tSET_NFLG (&regs->ccrflags, 1);\n");
-	printf ("\t\tException (6, regs, oldpc);\n");
+	printf ("\t\tuae_Exception (6, regs, oldpc);\n");
 	printf ("\t\tgoto %s;\n", endlabelstr);
 	printf ("\t} else if (dst > src) {\n");
 	printf ("\t\tSET_NFLG (&regs->ccrflags, 0);\n");
-	printf ("\t\tException (6, regs, oldpc);\n");
+	printf ("\t\tuae_Exception (6, regs, oldpc);\n");
 	printf ("\t\tgoto %s;\n", endlabelstr);
 	printf ("\t}\n");
 	need_endlabel = 1;
@@ -2086,7 +2086,7 @@ static void gen_opcode (unsigned long int opcode)
 	}
 	printf ("\tSET_ZFLG (&regs->ccrflags, (upper == reg || lower == reg) ? 1 : 0);\n");
 	printf ("\tSET_CFLG_ALWAYS (&regs->ccrflags, lower <= upper ? ((reg < lower || reg > upper) ? 1 : 0) : ((reg > upper || reg < lower) ? 1 : 0));\n");
-	printf ("\tif ((extra & 0x800) && GET_CFLG (&regs->ccrflags)) { Exception (6, regs, oldpc); goto %s; }\n}\n", endlabelstr);
+	printf ("\tif ((extra & 0x800) && GET_CFLG (&regs->ccrflags)) { uae_Exception (6, regs, oldpc); goto %s; }\n}\n", endlabelstr);
 	need_endlabel = 1;
 	break;
 
@@ -2618,7 +2618,7 @@ static void gen_opcode (unsigned long int opcode)
 	if (curi->smode != am_unknown && curi->smode != am_illg)
 	    genamode (curi->smode, "srcreg", curi->size, "dummy", 1, 0, 0);
 	fill_prefetch_0 ();
-	printf ("\tif (cctrue (&regs->ccrflags, %d)) { Exception (7, regs, m68k_getpc (regs)); goto %s; }\n", curi->cc, endlabelstr);
+	printf ("\tif (cctrue (&regs->ccrflags, %d)) { uae_Exception (7, regs, m68k_getpc (regs)); goto %s; }\n", curi->cc, endlabelstr);
 	need_endlabel = 1;
 	break;
     case i_DIVL:
