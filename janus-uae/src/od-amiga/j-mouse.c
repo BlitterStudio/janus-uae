@@ -64,11 +64,9 @@ static void invalidate(LONG y) {
  *
  * This is a wild guess on some parts, sorry.
  *
- * SuperHires/LowRes scaling is done in the native part.
- *
- * TODO: This works only with OSCAN_TEXT screens,
- *       OSCAN_STANDARD, OSCAN_MAX and OSCAN_VIDEO would require
- *       special handling(?)
+ * A lot is also done in the native part in sync-mouse.c, x coords
+ * are completely done 68k native, we better move y coords there, too.
+ * (TODO)
  *
  ***********************************************************************/
 #define BIT(n) (1<<n)
@@ -81,78 +79,12 @@ static uae_u32 nonP96(struct Screen *screen, ULONG *m68k_results) {
 
   JWLOG("entered\n");
 
-  /* W->BorderLeft and W->BorderTop are already part of XOffset and YOffset */
+  /* x calculation is done on the m68k side in sync-mouse.c */
   arosx=screen->MouseX - W->LeftEdge - W->BorderLeft; 
-  arosy=screen->MouseY - W->TopEdge;
   put_long_p(m68k_results, arosx); 
-#if 0
 
-  JWLOG("coord_native_to_amiga_x(%d): %d\n", arosx, coord_native_to_amiga_x(arosx));
-
-  /* AROS mouse x coord to amigaOS x coord */
-
-  //JWLOG("FOO: 0xdff08E: %x\n", diwstrt);
-
-  /* from the Hardware Reference Manual:
-   *
-   * Register Address  Write   Paula         Function
-   * -------- -------  -----   -------       --------
-   * DIWHIGH    1E4      W     A,D( E ) Display window -  upper bits for start, stop
-   * DIWSTOP    090      W       A      Display window stop (lower right vertical-horizontal position)
-   * DIWSTRT    08E      W       A      Display window start (upper left vertical-horizontal position)
-   * 
-   * These registers control display window size and position
-   * by locating the upper left and lower right corners.
-   * 
-   * BIT# 15,14,13,12,11,10,09,08,07,06,05,04,03,02,01,00
-   * -----------------------------------------------
-   * USE  V7 V6 V5 V4 V3 V2 V1 V0 H7 H6 H5 H4 H3 H2 H1 H0
-   * 
-   * DIWSTRT is vertically restricted to the upper 2/3
-   * of the display (V8=0) and horizontally restricted to
-   * the left 3/4 of the display (H8=0).
-   * 
-   * DIWSTOP is vertically restricted to the lower 1/2
-   * of the display (V8=/=V7) and horizontally restricted
-   * to the right 1/4 of the display (H8=1).
-   */
-
-  diwx=diwstrt  & 0xFF; /* Bits 0-7 */  /* this is flickering n interlace modes ..? */
-  JWLOG("FOO: diwx:     %x\n", diwx);
-  diwhx=diwhigh & BIT(5); /* H8 bit is nr 5 */
-  JWLOG("FOO: diwhx:    %x\n", diwhx);
-  dx=diwx+diwhx;
-
-  JWLOG("FOO: arosx:        %4d\n", arosx);
-  JWLOG("FOO: dx offset:    %4d\n", -(dx/2));
-  x=arosx - (dx/2);
-
-  JWLOG("FOO:               ----\n");
-  JWLOG("FOO: arosx-dx:     %4d\n", x);
-
-#if 0
-  x=x + 0x40; /* DISPLAY_LEFT_SHIFT */
-  JWLOG("FOO:      +0x40:   %4d\n", 0x40);
-  JWLOG("FOO:               ----\n");
-  JWLOG("FOO x:             %4d\n", x);
-#endif
-
-  x=x + (9*2) + 2; /* 2*DIW_DDF_OFFSET + HBLANK_OFFSET(=4) !? */
-  JWLOG("FOO:    +2+9*2:    %4d\n", 22);
-  JWLOG("FOO:               ----\n");
-  JWLOG("FOO: x:           %4d\n", x);
-  JWLOG("FOO: XOffset:    -%4d\n", XOffset);
-  JWLOG("FOO:               ----\n");
-  x=x - XOffset;
-  JWLOG("FOO x:            %4d\n", x);
-
-  /* for superhires: *2, for lores screens: /2 
-   * native part does this (janusd) 
-   */
-
-  put_long_p(m68k_results, x); 
-#endif
-  //put_long_p(m68k_results, screen->MouseX); 
+  /* W->BorderTop is already part of YOffset */
+  arosy=screen->MouseY - W->TopEdge;
   
   JWLOG("FOO: ------------------------------------\n");
   /* AROS mouse y coord to amigaOS y coord */
@@ -176,7 +108,6 @@ static uae_u32 nonP96(struct Screen *screen, ULONG *m68k_results) {
   JWLOG("FOO: res:                            %4d\n", y);
 
   put_long_p(m68k_results+1, y); 
-  //put_long_p(m68k_results+1, screen->MouseY); 
 
   invalidate(y);
   return TRUE;
