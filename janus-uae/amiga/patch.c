@@ -203,6 +203,7 @@ ULONG remove_dragging (struct NewScreen *newscreen __asm("a0")) {
   DebOut("newscreen: %lx\n", newscreen);
   DebOut(" name: %s\n",newscreen->DefaultTitle);
   DebOut(" type: %x\n",newscreen->Type);
+
   if((newscreen->Type & SCREENTYPE) != CUSTOMSCREEN) {
     DebOut(" no custom screen\n");
     /* return; */
@@ -301,12 +302,15 @@ ULONG remove_dragging_TagList (struct TagItem *original_tags __asm("a1")) {
  *********************************************************************************/
 __asm__("_my_OpenScreen_SetFunc:\n"
         PUSHA0
+	"cmp.l #1,_patch_draggable\n"
+	"bne no_patch_draggable\n"
         "movem.l d1-d7/a1-a6,-(SP)\n"
 	"jsr _remove_dragging\n"      /* we get back a new struct Screen here in D0*/
         "movem.l (SP)+,d1-d7/a1-a6\n"
 	/* call original function */
-	PUSHA3
 	"move.l d0,a0\n"
+	"no_patch_draggable:\n"
+	PUSHA3
 	"move.l _old_OpenScreen,a3\n"
 	"jsr (a3)\n"
 	POPA3

@@ -29,6 +29,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
 
 #include <exec/devices.h>
 #include <exec/interrupts.h>
@@ -71,6 +72,9 @@ LONG          *cmdbuffer=NULL;
  *  2 play the game
  */
 ULONG state=0;
+
+/* enable/disable screen dragging in amigaOS */
+ULONG patch_draggable=1;
 
 BYTE         mysignal_bit;
 ULONG        mysignal;
@@ -340,7 +344,7 @@ done=FALSE;
 int main (int argc, char **argv) {
 
   ENTER
-  DebOut("janusd: started\n");
+  DebOut("janusd: started (%d)\n",argc);
 
   if(!open_libs()) {
     exit(1);
