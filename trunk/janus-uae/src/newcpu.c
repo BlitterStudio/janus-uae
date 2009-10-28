@@ -714,7 +714,7 @@ static void exception_debug (int nr)
 #ifdef DEBUGGER
     if (!exception_debugging)
 	return;
-    console_out ("Exception %d, PC=%08x\n", nr, m68k_getpc (&regs));
+    console_out ("uae_Exception %d, PC=%08x\n", nr, m68k_getpc (&regs));
 #endif
 }
 
@@ -722,7 +722,7 @@ static void exception_debug (int nr)
 
 /* cycle-exact exception handler, 68000 only */
 
-STATIC_INLINE void Exception_ce (int nr, struct regstruct *regs, uaecptr oldpc)
+STATIC_INLINE void uae_Exception_ce (int nr, struct regstruct *regs, uaecptr oldpc)
 {
     uae_u32 currpc = m68k_getpc (regs), newpc;
     int c;
@@ -807,7 +807,7 @@ STATIC_INLINE void Exception_ce (int nr, struct regstruct *regs, uaecptr oldpc)
 	put_word_ce (m68k_areg (regs, 7) + 0,  mode);
 	put_word_ce (m68k_areg (regs, 7) + 2,  last_fault_for_exception_3 >> 16);
 #if 0
-	write_log ("Exception %d at %08x -> %08x!\n", nr, currpc, get_long (4 * nr));
+	write_log ("uae_Exception %d at %08x -> %08x!\n", nr, currpc, get_long (4 * nr));
 #endif
 	goto kludge_me_do;
     }
@@ -832,7 +832,7 @@ kludge_me_do:
 }
 #endif
 
-STATIC_INLINE void Exception_normal (int nr, struct regstruct *regs, uaecptr oldpc)
+STATIC_INLINE void uae_Exception_normal (int nr, struct regstruct *regs, uaecptr oldpc)
 {
     uae_u32 currpc = m68k_getpc (regs), newpc;
     int sv = regs->s;
@@ -899,7 +899,7 @@ STATIC_INLINE void Exception_normal (int nr, struct regstruct *regs, uaecptr old
 		put_word (m68k_areg (regs, 7), 0xb000 + nr * 4);
 	    }
 #if 0
-	    write_log ("Exception %d (%08x) at %08x -> %08x!\n", nr, oldpc, currpc, get_long (regs->vbr + 4*nr));
+	    write_log ("uae_Exception %d (%08x) at %08x -> %08x!\n", nr, oldpc, currpc, get_long (regs->vbr + 4*nr));
 #endif
 	} else if (nr ==5 || nr == 6 || nr == 7 || nr == 9) {
 	    m68k_areg (regs, 7) -= 4;
@@ -933,7 +933,7 @@ STATIC_INLINE void Exception_normal (int nr, struct regstruct *regs, uaecptr old
 	put_word (m68k_areg (regs, 7) + 8,  regs->sr);
 	put_long (m68k_areg (regs, 7) + 10, last_addr_for_exception_3);
 #if 0
-	write_log ("Exception %d (%08x) at %08x -> %08x!\n", nr, oldpc, currpc, get_long (regs->vbr + 4*nr));
+	write_log ("uae_Exception %d (%08x) at %08x -> %08x!\n", nr, oldpc, currpc, get_long (regs->vbr + 4*nr));
 #endif
 	goto kludge_me_do;
     }
@@ -956,7 +956,7 @@ kludge_me_do:
     trace_exception (regs, nr);
 }
 
-void REGPARAM2 Exception (int nr, struct regstruct *regs, uaecptr oldpc)
+void REGPARAM2 uae_Exception (int nr, struct regstruct *regs, uaecptr oldpc)
 {
 #if 0
     if (1 || nr < 24)
@@ -965,10 +965,10 @@ void REGPARAM2 Exception (int nr, struct regstruct *regs, uaecptr oldpc)
 #endif
 #ifdef CPUEMU_6
     if (currprefs.cpu_cycle_exact && currprefs.cpu_level == 0)
-	Exception_ce (nr, regs, oldpc);
+	uae_Exception_ce (nr, regs, oldpc);
     else
 #endif
-	Exception_normal (nr, regs, oldpc);
+	uae_Exception_normal (nr, regs, oldpc);
 }
 
 STATIC_INLINE void service_interrupt (unsigned int level, struct regstruct *regs)
@@ -978,7 +978,7 @@ STATIC_INLINE void service_interrupt (unsigned int level, struct regstruct *regs
 	regs->stopped = 0;
 	unset_special (regs, SPCFLAG_STOP);
 
-	Exception (level + 24, regs, 0);
+	uae_Exception (level + 24, regs, 0);
 
 	regs->intmask = level;
     }
@@ -1142,7 +1142,7 @@ void m68k_divl (uae_u32 opcode, uae_u32 src, uae_u16 extra, uaecptr oldpc)
 {
 #if defined(uae_s64)
     if (src == 0) {
-	Exception (5, &regs, oldpc);
+	uae_Exception (5, &regs, oldpc);
 	return;
     }
     if (extra & 0x800) {
@@ -1197,7 +1197,7 @@ void m68k_divl (uae_u32 opcode, uae_u32 src, uae_u16 extra, uaecptr oldpc)
     }
 #else
     if (src == 0) {
-	Exception (5, &regs, oldpc);
+	uae_Exception (5, &regs, oldpc);
 	return;
     }
     if (extra & 0x800) {
@@ -1472,7 +1472,7 @@ unsigned long REGPARAM2 op_illg (uae_u32 opcode, struct regstruct *regs)
  	    write_log ("B-Trap %04x at %08x (%p)\n", opcode, m68k_getpc (regs) + m68kpc_offset, regs->pc_p);
 	    warned++;
 	}
-	Exception (0xB, regs, 0);
+	uae_Exception (0xB, regs, 0);
 	return 4;
     }
     if ((opcode & 0xF000) == 0xA000) {
@@ -1482,7 +1482,7 @@ unsigned long REGPARAM2 op_illg (uae_u32 opcode, struct regstruct *regs)
 	    m68k_handle_trap (opcode & 0xFFF, regs);
 	}
 #endif
-	Exception (0xA, regs, 0);
+	uae_Exception (0xA, regs, 0);
 	return 4;
     }
     if (warned < 20) {
@@ -1490,7 +1490,7 @@ unsigned long REGPARAM2 op_illg (uae_u32 opcode, struct regstruct *regs)
 	warned++;
     }
 
-    Exception (4, regs, 0);
+    uae_Exception (4, regs, 0);
     return 4;
 }
 
@@ -1676,10 +1676,10 @@ STATIC_INLINE int do_specialties (int cycles, struct regstruct *regs)
     }
 
     if (regs->spcflags & SPCFLAG_DOTRACE)
-	Exception (9, regs, last_trace_ad);
+	uae_Exception (9, regs, last_trace_ad);
     if (regs->spcflags & SPCFLAG_TRAP) {
 	unset_special (regs, SPCFLAG_TRAP);
-	Exception (3, regs, 0);
+	uae_Exception (3, regs, 0);
     }
 
     if (regs->spcflags & SPCFLAG_STOP)
@@ -1967,7 +1967,7 @@ static void exception2_handle (uaecptr addr, uaecptr fault)
     last_fault_for_exception_3 = fault;
     last_writeaccess_for_exception_3 = 0;
     last_instructionaccess_for_exception_3 = 0;
-    Exception (2, &regs, addr);
+    uae_Exception (2, &regs, addr);
 }
 
 void m68k_go (int may_quit)
@@ -2365,7 +2365,7 @@ static void exception3f (uae_u32 opcode, uaecptr addr, uaecptr fault, int writea
     last_op_for_exception_3 = opcode;
     last_writeaccess_for_exception_3 = writeaccess;
     last_instructionaccess_for_exception_3 = instructionaccess;
-    Exception (3, &regs, fault);
+    uae_Exception (3, &regs, fault);
 }
 
 void exception3 (uae_u32 opcode, uaecptr addr, uaecptr fault)

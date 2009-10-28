@@ -55,7 +55,7 @@
 #include "picasso96.h"
 #include "version.h"
 
-#include "displaypanel.h"
+//#include "displaypanel.h"
 #include "chooserwidget.h"
 #include "util.h"
 #include "chipsetspeedpanel.h"
@@ -378,7 +378,6 @@ static void change_lock (jDisplay *j, gboolean status) {
   i=0;
   /* this can crash !? */
   while(j->linemode_widget[i]) {
-    kprintf("display.c: j->linemode_widget[%d]=%lx\n",i,j->linemode_widget[i]);
     gtk_widget_set_sensitive(j->linemode_widget[i++], status);
   }
 #if ENABLE_CENTERING

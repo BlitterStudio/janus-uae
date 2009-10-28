@@ -177,6 +177,7 @@ void close_sound (void)
 
 int init_sound (void)
 {
+  kprintf("init_sound entered\n");
     in_callback = 0;
     closing_sound = 0;
 
@@ -184,6 +185,8 @@ int init_sound (void)
     write_comm_pipe_int (&to_sound_pipe, 0, 1);
     uae_sem_wait (&sound_init_sem);
     SDL_PauseAudio (0);
+
+  kprintf("init_sound left (have_sound: %d)\n",have_sound);
 
     return have_sound;
 }

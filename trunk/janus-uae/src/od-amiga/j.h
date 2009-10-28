@@ -51,14 +51,14 @@
 #include <gtk/gtk.h>
 #include "uae.h"
 
-#define JWTRACING_ENABLED 1
+#define JWTRACING_ENABLED 0
 #if JWTRACING_ENABLED
 #define JWLOG(...)   do { kprintf("%s:%d  %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
 #define JWLOG(...)     do { ; } while(0)
 #endif
 
-//#define JW_ENTER_ENABLED 1
+#define JW_ENTER_ENABLED 0
 #if JW_ENTER_ENABLED
 #define ENTER  kprintf("%s %s(): entered\n",__FILE__,__func__);
 #define LEAVE  kprintf("%s %s(): left at line %d\n",__FILE__,__func__,__LINE__);

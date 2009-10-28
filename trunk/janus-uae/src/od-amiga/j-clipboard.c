@@ -45,7 +45,7 @@ void uae_Signal(uaecptr task, uae_u32 mask);
 #endif
 #include "j.h"
 
-#define DEBOUT_ENABLED 1
+#define DEBOUT_ENABLED 0
 #if DEBOUT_ENABLED
 #define DebOut(...) do { kprintf("%s: %s():%d: ",__FILE__,__func__,__LINE__);kprintf(__VA_ARGS__); } while(0)
 #else

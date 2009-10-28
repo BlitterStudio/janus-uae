@@ -245,14 +245,14 @@ STATIC_INLINE void m68k_setstopped (struct regstruct *regs, int stop)
 extern uae_u32 get_disp_ea_020 (struct regstruct *regs, uae_u32 base, uae_u32 dp) REGPARAM;
 extern uae_u32 get_disp_ea_000 (struct regstruct *regs, uae_u32 base, uae_u32 dp) REGPARAM;
 
-/* Hack to stop conflict with AROS Exception function */
+/* Hack to stop conflict with AROS uae_Exception function */
 #ifdef __AROS__
-# undef Exception
+# undef uae_Exception
 #endif
 
 extern void MakeSR (struct regstruct *regs) REGPARAM;
 extern void MakeFromSR (struct regstruct *regs) REGPARAM;
-extern void Exception (int, struct regstruct *regs, uaecptr) REGPARAM;
+extern void uae_Exception (int, struct regstruct *regs, uaecptr) REGPARAM;
 extern void Interrupt (unsigned int level);
 extern void dump_counts (void);
 extern int m68k_move2c (int, uae_u32 *);

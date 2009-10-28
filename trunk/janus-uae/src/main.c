@@ -951,6 +951,7 @@ void real_main (int argc, char **argv)
 		     */
 		    do {
 			gui_handle_events ();
+
 			handle_events ();
 
 			/* Manually pump input device */
