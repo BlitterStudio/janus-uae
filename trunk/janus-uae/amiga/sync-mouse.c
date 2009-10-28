@@ -187,103 +187,14 @@ void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button) {
   LEAVE
 }
 
-#if 0
-#define PREFS_SIZE 102
-/* test for winuae mouse sync results */
-void foo(void) {
-  struct Screen      *firstscreen;
-  ULONG               modeID;
-  struct Preferences *prefs;
-  BYTE                xoffset, yoffset;
-  UWORD              *bla;
-
-  firstscreen=IntuitionBase->FirstScreen;
-  if(!firstscreen) {
-    printf("sync_mouse: screen==NULL?!\n");
-    return;
-  }
-
-  modeID=GetVPModeID(&(firstscreen->ViewPort));
-  if(modeID == INVALID_ID) {
-    return;
-  }
-
-  prefs=(struct Preferences *) AllocVec(PREFS_SIZE+1, MEMF_CLEAR);
-
-  prefs=GetPrefs(prefs, PREFS_SIZE);
-
-  /*  move.w 100(a0),d4 ? */
-  xoffset=prefs->ViewXOffset;
-  yoffset=prefs->ViewYOffset;
-
-  DebOut("winuae: xoffset: %d\n", xoffset);
-  DebOut("winuae: yoffset: %d\n", yoffset);
-
-  bla=prefs;
-  DebOut("winuae: bla: %x\n", bla[100]);
-
-/* for overscan: -52, -10 .. !*/
-  DebOut("winuae: ViewPort->Dx: %d\n", firstscreen->ViewPort.DxOffset);
-  DebOut("winuae: ViewPort->Dy: %d\n", firstscreen->ViewPort.DyOffset);
-
-
-}
-#endif
-
-#if 0
-  struct DimensionInfo  dimension_info;
-  DisplayInfoHandle     display_info_handle;
-
-    //modeID=screen->ViewPort.Modes;
-
-    DebOut("modeID: %lx\n", modeID);
-    x=x - screen->ViewPort.DxOffset; /* DxOffset is a negative value for overscan */
-    y=y - screen->ViewPort.DyOffset; /* DxOffset is a negative value for overscan */
-    DebOut("DOffsets: %d, %d\n",screen->ViewPort.DxOffset, screen->ViewPort.DyOffset);
-
-    //display_info_handle=FindDisplayInfo(modeID);
-    /* DTAG_DIMS: (DimensionInfo) - default dimensions and overscan info.*/
-
-    result=GetDisplayInfoData(display_info_handle, (UBYTE *) &dimension_info, 
-                          sizeof(struct DimensionInfo), 
-                          DTAG_DIMS, modeID);
-      /* if zero, no information for ID was available */
-
-
-    if(result) {
-      /* find out, how much bigger our screen is, compared to TextOverscan */
-      overscan_x= ( screen->Width - 
-                    ( dimension_info.TxtOScan.MaxX - 
-		      dimension_info.TxtOScan.MinX + 1
-		    ) 
-		  ) /2;
-      overscan_y= ( screen->Height - 
-                    ( dimension_info.TxtOScan.MaxY - 
-		      dimension_info.TxtOScan.MinY + 1
-		    ) 
-		  ) /2;
-      DebOut("dimension_info screen: %d x %d  \n",screen->Width, screen->Height);
-      DebOut("dimension_info.TxtOScan.MinX: %d\n",dimension_info.TxtOScan.MinX);
-      DebOut("dimension_info.TxtOScan.MaxX: %d\n",dimension_info.TxtOScan.MaxX);
-      DebOut("dimension_info.TxtOScan.MinY: %d\n",dimension_info.TxtOScan.MinY);
-      DebOut("dimension_info.TxtOScan.MaxY: %d\n",dimension_info.TxtOScan.MaxY);
-      DebOut("dimension_info overscan_x: %d\n",overscan_x);
-      DebOut("dimension_info overscan_y: %d\n",overscan_y);
-      DebOut("dimension_info\n");
-    }
-    else {
-      DebOut("dimension_info: ERROR in getting one (result=0)!?\n");
-    }
-
-    x=x+overscan_x;
-    y=y+overscan_x;
-#endif
 /**********************************************************
  * no_p96_overscan
  *
  * add overscan offsets to mouse x,y coordinates
  *
  * only for non Picasso 96 screens
+ *
+ * The ViewPort is relative to the view.
  **********************************************************/
 void no_p96_fix_overscan(struct Screen *screen, WORD *x, WORD *y) {
 
@@ -339,6 +250,14 @@ void no_p96_fix_resolution(struct Screen *screen, WORD *x, WORD *y) {
   DebOut("no_p96_fix_resolution: x,y: %d, %d\n",*x,*y);
 }
 
+/**********************************************************
+ * no_p96_fix_viewoffset
+ *
+ * The view is the offset you specify in the "Edit
+ * graphics" of the overscan prefs. It defines the
+ * 0,0 point in distance to the upper left monitor
+ * corner. Those are always lores points (?).
+ **********************************************************/
 void no_p96_fix_viewoffset(struct Screen *screen, WORD *x, WORD *y) {
   struct View          *view;
 
@@ -349,13 +268,9 @@ void no_p96_fix_viewoffset(struct Screen *screen, WORD *x, WORD *y) {
   DebOut("no_96: screen->View.DxOffset: %d\n", view->DxOffset);
   DebOut("no_96: screen->View.DyOffset: %d\n", view->DyOffset);
 
-#if 0
-  *y=*y + view->DyOffset - 77;
-#endif
-
   *x=*x - ((view->DxOffset -108)*2); /* 108? why, I don't know ;) */
 
-  *y=*y + view->DyOffset - 77; /* TODO */
+  *y=*y + view->DyOffset - 77; /* TODO (?) */
 
 
   DebOut("no_p96_fix_viewoffset: x,y: %d, %d\n",*x,*y);
@@ -446,7 +361,6 @@ void sync_mouse() {
   else {
     DebOut("mouse already at: %d, %d\n",x,y);
   }
-    //printf("mouse x %d y %d\n",mousebuffer[0],mousebuffer[1]);
 
   LEAVE
 }
