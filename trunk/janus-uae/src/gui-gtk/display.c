@@ -423,64 +423,24 @@ static void unlock_it (jDisplay *j) {
 /* create possible AROS resolutions for full screen mode */
 static GList *create_resolutions(void) {
 
-    int count = 0;
-    struct Screen *screen;
-    ULONG j;
     GList *result=NULL;
     gchar *item;
+    ULONG id;
+    APTR  handle;
+    struct DimensionInfo  dim;
 
-    static struct
-    {
-        int width, height;
-    } modes [] =
-    {
-        { 320,  200 },
-	{ 320,  240 },
-	{ 320,  256 },
-	{ 640,  200 },
-	{ 640,  240 },
-	{ 640,  256 },
-	{ 640,  400 },
-	{ 640,  480 },
-	{ 640,  512 },
-	{ 800,  600 },
-	{ 1024, 768 }
-    };
+    id=INVALID_ID;
+    while ((id=NextDisplayInfo(id)) != INVALID_ID) {
+      if ((handle = FindDisplayInfo(id))) {
 
-    screen=LockPubScreen(NULL);
+	if (GetDisplayInfoData(handle, (UBYTE *)&dim, sizeof(struct DimensionInfo), DTAG_DIMS, 0)) {
 
-    if(!screen) {
-      write_log("ERROR: no public screen available !?\n");
-      return NULL;
+	  item=g_strdup_printf("%d x %d", dim.Nominal.MaxX-dim.Nominal.MinX+1, dim.Nominal.MaxY-dim.Nominal.MinY+1);
+  	  result=g_list_append(result,item);
+	}
+      }
     }
 
-    int bpx  = GetCyberMapAttr(screen->RastPort.BitMap, CYBRMATTR_BPPIX);
-
-    int maxw = screen->Width;
-    int maxh = screen->Height;
-
-    for (j = 0; (j < (sizeof(modes)/sizeof(modes[0]))) && (j < MAX_PICASSO_MODES); j++)
-    {
-        static const int bpx2format[] = {0, RGBFF_CHUNKY, RGBFF_R5G6B5PC, 0, RGBFF_B8G8R8A8};
-
-	if (modes[j].width > maxw || modes[j].height > maxh)
-	    continue;
-
-	/* TODO: free those items!! */
-	item=g_strdup_printf("%d x %d",modes[j].width,modes[j].height);
-	result=g_list_append(result,item);
-
-#if 0
-	DisplayModes[count].res.width  = modes[j].width;
-        DisplayModes[count].res.height = modes[j].height;
-        DisplayModes[count].depth      = bpx;
-        DisplayModes[count].refresh    = 75;
-#endif
-
-        count++;
-    }
-
-    UnlockPubScreen(NULL,screen);
     return result;
 }
 
