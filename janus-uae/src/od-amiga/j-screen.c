@@ -21,6 +21,10 @@
 
 #include "j.h"
 
+extern UBYTE            *Line;
+extern struct RastPort  *TempRPort;
+extern struct BitMap    *BitMap;
+
 /************************************************************************
  * aos3screen_is_custom
  ************************************************************************/
@@ -443,6 +447,10 @@ uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
 
   /* TODO !!*/
   uae_main_window_closed=FALSE;
+
+  reset_drawing(); /* this will bring a custon screen, with keyboard working */
+
+#if 0
   j_stop_window_update=TRUE;
   custom_screen_active=jscreen;
 
@@ -455,9 +463,19 @@ uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
   inputdevice_release_all_keys ();
   reset_hotkeys ();
   hide_pointer (W);
+#endif
 
   JWLOG("W: %lx (%s)\n", W, W->Title);
   aros_custom_screen_start_thread(jscreen);
+
+  JWLOG("Line: %lx\n", Line);
+  JWLOG("BitMap: %lx\n", BitMap);
+  JWLOG("TempRPort: %lx\n", TempRPort);
+
+  if(!Line || !BitMap || !TempRPort) {
+    JWLOG("ERROR ERROR ERROR ERROR: NULL pointer in Line/BitMap/TempRPort!!\n");
+    return FALSE; /* ? */
+  }
 
   return TRUE;
 }

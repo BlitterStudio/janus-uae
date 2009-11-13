@@ -51,7 +51,7 @@
 #include <gtk/gtk.h>
 #include "uae.h"
 
-#define JWTRACING_ENABLED 0
+#define JWTRACING_ENABLED 1
 #if JWTRACING_ENABLED
 #define JWLOG(...)   do { kprintf("%s:%d  %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -186,6 +186,14 @@ typedef struct {
   ULONG          type; /* J_MSG_..*/
   BOOL           old;
 } JanusMsg;
+
+/* Values for amiga_screen_type */
+enum {
+  UAESCREENTYPE_CUSTOM,
+  UAESCREENTYPE_PUBLIC,
+  UAESCREENTYPE_ASK,
+  UAESCREENTYPE_LAST
+};
 
 /* one of our custom screens is active */
 extern JanusScreen *custom_screen_active;

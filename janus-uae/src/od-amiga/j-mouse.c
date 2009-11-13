@@ -72,6 +72,8 @@ static void invalidate(LONG y) {
 #define BIT(n) (1<<n)
 
 static uae_u32 nonP96(struct Screen *screen, ULONG *m68k_results) {
+
+  /* NOT USED ANY MORE !! */
   LONG x,y;
   LONG arosx, arosy;
   WORD  diwx, diwy, diwhx;
@@ -81,7 +83,10 @@ static uae_u32 nonP96(struct Screen *screen, ULONG *m68k_results) {
 
   /* x calculation is done on the m68k side in sync-mouse.c */
   arosx=screen->MouseX - W->LeftEdge - W->BorderLeft; 
+  //arosx=screen->MouseX - W->LeftEdge - XOffset;
   put_long_p(m68k_results, arosx); 
+
+  JWLOG("XOffset: %d  W->BorderLeft: %d\n", XOffset, W->BorderLeft);
 
   /* W->BorderTop is already part of YOffset */
   arosy=screen->MouseY - W->TopEdge;
@@ -113,11 +118,14 @@ static uae_u32 nonP96(struct Screen *screen, ULONG *m68k_results) {
   return TRUE;
 }
 
+extern int visible_left_border;
 
 uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
   struct Screen *screen;
   ULONG modeID;
   LONG x,y;
+  BOOL is_p96;
+  //LONG left=0;
 
   //JWLOG("ad_job_get_mouse\n");
 
@@ -165,11 +173,15 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
   }
 #endif
 
-  JWLOG("P96 screen \n");
+  is_p96=get_long_p(m68k_results);
+  JWLOG("mouse: is_p96: %d \n", is_p96);
+
   if(mice[0].enabled) {
-    JWLOG("screen->x,y: %d,%d\n", screen->MouseX, screen->MouseY);
-    JWLOG("W->x,y: %d,%d\n", W->LeftEdge, W->TopEdge);
-    JWLOG("border->x,y: %d,%d\n", W->BorderLeft, W->BorderTop);
+    JWLOG("mouse: screen->x,y: %d,%d\n", screen->MouseX, screen->MouseY);
+    JWLOG("mouse: W->x,y: %d,%d\n", W->LeftEdge, W->TopEdge);
+    JWLOG("mouse: border->x,y: %d,%d\n", W->BorderLeft, W->BorderTop);
+    JWLOG("mouse: XOffset: %d\n", XOffset);
+    JWLOG("mouse: visible_left_border: %d\n", visible_left_border);
 
     x=screen->MouseX;
     y=screen->MouseY;
@@ -178,6 +190,13 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
       x=x - W->LeftEdge - W->BorderLeft;
       y=y - W->TopEdge  - W->BorderTop;
     }
+
+#if 0
+    if(is_p96 == 0) {
+      JWLOG("mouse: add visible_left_border: %d\n", visible_left_border);
+      left=visible_left_border; /* for center image, bigger window  etc. */
+    }
+#endif
 
     if(x<0) {
       x=0;
@@ -190,6 +209,16 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
  
     put_long_p(m68k_results,   x);
     put_long_p(m68k_results+1, y);
+    put_long_p(m68k_results+2, currprefs.gfx_xcenter); /* center_mode */
+    put_long_p(m68k_results+3, currprefs.gfx_ycenter); /* center_mode */
+    put_long_p(m68k_results+4, gfxvidinfo.width);      /* width of aros display */
+    put_long_p(m68k_results+5, gfxvidinfo.height);     /* height of aros display*/
+    put_long_p(m68k_results+6, XOffset);               /* XOffset */
+    put_long_p(m68k_results+7, YOffset);               /* YOffset */
+    JWLOG("mouse: currprefs.gfx_xcenter: %d\n", currprefs.gfx_xcenter);
+    JWLOG("mouse: currprefs.gfx_ycenter: %d\n", currprefs.gfx_ycenter);
+    JWLOG("mouse: gfxvidinfo.width: %d\n", gfxvidinfo.width);
+    JWLOG("mouse: gfxvidinfo.height: %d\n", gfxvidinfo.height);
   }
   else {
     if(!menux && !menuy) {
