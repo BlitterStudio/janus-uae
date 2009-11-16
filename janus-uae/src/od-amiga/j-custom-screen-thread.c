@@ -21,6 +21,9 @@
  *
  ************************************************************************/
 
+#include <intuition/intuition.h>
+#include <clib/intuition_protos.h>
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include "td-amigaos/thread.h"
@@ -36,31 +39,44 @@
  * based on handle_events in gfx-amigaos/ami-win.c
  ***********************************************************/  
 
-static void handle_custom_events_W(struct Window *aroswin, struct Process *thread) {
+static void handle_custom_events_W(struct Screen *screen, struct Process *thread) {
 
-  struct IntuiMessage *msg;
-  int                  dmx, dmy, mx, my, class, code, qualifier;
-  ULONG                signals;
-  BOOL                 done;
+  ULONG                       signals;
+  ULONG                       notify_signal;
+  BOOL                        done;
+  struct MsgPort             *port;
+  struct ScreenNotifyMessage *msg;
+  IPTR                        notify;
 
-  JWLOG("aroswin: %lx\n", aroswin);
+  JWLOG("screen: %lx\n", screen);
 
-#if 0
-  /* necessary !? */
-  if(aos3_task && aos3_task_signal) {
-    JWLOG("send signal to Wait of janusd (%lx)\n", aos3_task);
-    uae_Signal(aos3_task, aos3_task_signal);
+  port=CreateMsgPort();
+
+  if(!port) {
+    JWLOG("ERROR: no port!\n", port);
+    return;
   }
 
-  /* necessary !? */
-  gui_handle_events();
-#endif
+  notify=StartScreenNotifyTags(SNA_MsgPort,  port,
+			    SNA_UserData, screen,
+			    SNA_SigTask,  thread,
+			    SNA_Notify,   SNOTIFY_SCREENDEPTH /*| SNOTIFY_WAIT_REPLY*/,
+			    TAG_END); 
+
+
+
+  if(!notify) {
+    JWLOG("ERROR: unable to StartScreenNotifyTagList!\n");
+    return;
+  }
+
+  notify_signal=1L << port->mp_SigBit;
 
   done=FALSE;
   while(!done) {
     JWLOG("aros_cscr_thread[%lx]: wait for signal\n", thread);
-    //signals = Wait(1L << aroswin->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
-    signals = Wait(SIGBREAKF_CTRL_C);
+
+    signals = Wait(notify_signal | SIGBREAKF_CTRL_C);
     JWLOG("aros_cscr_thread[%lx]: signal reveived\n", thread);
 
     if(signals & SIGBREAKF_CTRL_C) {
@@ -68,9 +84,12 @@ static void handle_custom_events_W(struct Window *aroswin, struct Process *threa
       done=TRUE;
       break;
     }
-#if 0
 
-    while ((msg = (struct IntuiMessage*) GetMsg (aroswin->UserPort))) {
+    if(signals & notify_signal) {
+
+      while ((msg = (struct ScreenNotifyMessage *) GetMsg (port))) {
+	JWLOG("SCREEN MESSAGE RECEIVED!!\n");
+#if 0
 	class     = msg->Class;
 	code      = msg->Code;
 	dmx       = msg->MouseX;
@@ -79,105 +98,31 @@ static void handle_custom_events_W(struct Window *aroswin, struct Process *threa
 	my        = msg->IDCMPWindow->MouseY; // relative to the window
 	qualifier = msg->Qualifier;
 
+#endif
 	ReplyMsg ((struct Message*)msg); 
 
+#if 0
 	switch (class) {
 
 	    case IDCMP_REFRESHWINDOW:
-#if 0
-	    /* chunk2planar is slow so we define use_delta_buffer for all modes
-	     * bitdepth <= 8: use_delta_buffer is 1
-	     */
-		if (use_delta_buffer) {
-		    /* hack: this forces refresh */
-		    uae_u8 *ptr = oldpixbuf;
-		    int i, len = gfxvidinfo.width;
-		    len *= gfxvidinfo.pixbytes;
-		    for (i=0; i < currprefs.gfx_height_win; ++i) {
-			ptr[00000] ^= 255;
-			ptr[len-1] ^= 255;
-			ptr += gfxvidinfo.rowbytes;
-		    }
-		}
+	}
 #endif
-		BeginRefresh (aroswin);
-		flush_block (0, currprefs.gfx_height_win - 1);
-		EndRefresh (aroswin, TRUE);
-		break;
-
-	    case IDCMP_RAWKEY: {
-		int keycode = code & 127;
-		int state   = code & 128 ? 0 : 1;
-		int ievent;
-
-		if ((qualifier & IEQUALIFIER_REPEAT) == 0) {
-		    /* We just want key up/down events - not repeats */
-		    if ((ievent = match_hotkey_sequence (keycode, state)))
-			handle_hotkey_event (ievent, state);
-		    else
-			inputdevice_do_keyboard (keycode, state);
-		}
-		break;
-	     }
-
-	    case IDCMP_MOUSEMOVE:
-		setmousestate (0, 0, dmx, 0);
-		setmousestate (0, 1, dmy, 0);
-
-#if 0
-		if (usepub) {
-		    POINTER_STATE new_state = get_pointer_state (W, mx, my);
-		    if (new_state != pointer_state) {
-			pointer_state = new_state;
-			if (pointer_state == INSIDE_WINDOW)
-			    hide_pointer (W);
-			else
-			    show_pointer (W);
-		    }
-		}
-#endif
-      	      break;
-
-	    case IDCMP_MOUSEBUTTONS:
-		if (code == SELECTDOWN) setmousebuttonstate (0, 0, 1);
-		if (code == SELECTUP)   setmousebuttonstate (0, 0, 0);
-		if (code == MIDDLEDOWN) setmousebuttonstate (0, 2, 1);
-		if (code == MIDDLEUP)   setmousebuttonstate (0, 2, 0);
-		if (code == MENUDOWN)   setmousebuttonstate (0, 1, 1);
-		if (code == MENUUP)     setmousebuttonstate (0, 1, 0);
-      	      break;
-
-	    case IDCMP_ACTIVEWINDOW:
-		/* When window regains focus (presumably after losing focus at some
-		 * point) UAE needs to know any keys that have changed state in between.
-		 * A simple fix is just to tell UAE that all keys have been released.
-		 * This avoids keys appearing to be "stuck" down.
-		 */
-		JWLOG("IDCMP_ACTIVEWINDOW\n");
-		inputdevice_acquire ();
-		inputdevice_release_all_keys ();
-		reset_hotkeys ();
-		copy_clipboard_to_amigaos();
-		break;
-
-	    case IDCMP_INACTIVEWINDOW:
-		JWLOG("IDCMP_INACTIVEWINDOW\n");
-		JWLOG("IntuitionBase->ActiveWindow: %lx (%s)\n",IntuitionBase->ActiveWindow, IntuitionBase->ActiveWindow->Title);
-		copy_clipboard_to_aros();
-		inputdevice_unacquire ();
-		break;
-
-	    default:
-		write_log ("Unknown event class: %x\n", class);
-		JWLOG("Unknown event class: %x\n", class);
-		break;
-        }
+      }
     }
-#endif
   }
 
+  while(!EndScreenNotify(notify)) {
+    /* might be in use */
+    sleep(1);
+  }
+  notify=NULL;
+
+  DeleteMsgPort(port);
+  port=NULL;
+
+
   /* necessary !? */
-  appw_events();
+  //appw_events();
 }
 
 /***********************************************************
@@ -196,13 +141,13 @@ static void aros_custom_screen_thread (void) {
 
   JWLOG("aros_cscr_thread[%lx]: thread running \n",thread);
 
+  /* search for ourself */
   ObtainSemaphore(&sem_janus_screen_list);
   list_screen=g_slist_find_custom(janus_screens, 
 	 		     	  (gconstpointer) thread,
 			     	  &aos3_screen_process_compare);
 
   ReleaseSemaphore(&sem_janus_screen_list);
-  JWLOG("aros_cscr_thread[%lx]: released sem_janus_window_list sem \n",thread);
 
   if(!list_screen) {
     JWLOG("aros_cscr_thread[%lx]: ERROR: screen of this thread not found in screen list !?\n",thread);
@@ -225,7 +170,7 @@ static void aros_custom_screen_thread (void) {
   }
   JWLOG("aros_cscr_thread[%lx]: aroswin: %lx\n", thread, aroswin);
 
-  handle_custom_events_W(aroswin, thread);
+  handle_custom_events_W(jscr->arosscreen, thread);
 
   JWLOG("aros_cscr_thread[%lx]: handle_custom_events_W returned\n", thread);
 
