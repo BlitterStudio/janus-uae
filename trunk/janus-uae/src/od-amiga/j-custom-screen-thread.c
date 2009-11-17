@@ -45,13 +45,17 @@ static void handle_msg(JanusScreen *jscreen,
   /* SDEPTH_TOFRONT/BACK is handled analog to IDCMP_ACTIVEWINDOW/INACTIVE */
   switch(code) {
     case SDEPTH_TOFRONT: 
+      /* TODO !!*/
+      uae_main_window_closed=FALSE;
+
+      reset_drawing(); /* this will bring a custom screen, with keyboard working */
+
       JWLOG("aros_cscr_thread[%lx]: wait for sem_janus_active_custom_screen\n", thread);
       ObtainSemaphore(&sem_janus_active_custom_screen);
-
       janus_active_screen=jscreen;
       JWLOG("aros_cscr_thread[%lx]: we (jscreen %lx) are active front screen now\n", thread, janus_active_screen);
-
       ReleaseSemaphore(&sem_janus_active_custom_screen);
+
 
       ActivateWindow(jscreen->arosscreen->FirstWindow);
 
@@ -66,6 +70,8 @@ static void handle_msg(JanusScreen *jscreen,
       /* no other janus custom screen claimed to be active */
       if(janus_active_screen == jscreen) {
 	janus_active_screen=NULL;
+	uae_main_window_closed=TRUE;
+	reset_drawing();
 	JWLOG("aros_cscr_thread[%lx]: we (jscreen %lx) are not active any more\n", thread, janus_active_screen);
       }
 
@@ -74,7 +80,6 @@ static void handle_msg(JanusScreen *jscreen,
 
   }
 }
-
 
 void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int qualifier, struct Process *thread) ;
 
