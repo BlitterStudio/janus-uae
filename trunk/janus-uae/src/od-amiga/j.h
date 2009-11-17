@@ -122,6 +122,7 @@ extern struct SignalSemaphore sem_janus_screen_list;
 extern struct SignalSemaphore aos3_thread_start;
 extern struct SignalSemaphore janus_messages_access;
 extern struct SignalSemaphore sem_janus_active_win;
+extern struct SignalSemaphore sem_janus_active_custom_screen;
 
 /* clipd */
 extern ULONG aos3_clip_task;
@@ -196,7 +197,7 @@ enum {
 };
 
 /* one of our custom screens is active */
-extern JanusScreen *custom_screen_active;
+extern JanusScreen *janus_active_screen;
 
 /* remove me */
 extern struct Window *native_window;
@@ -292,6 +293,7 @@ void reset_hotkeys(void);
 void inputdevice_unacquire(void);
 ULONG find_rtg_mode (ULONG *width, ULONG *height, ULONG depth);
 void hide_pointer (struct Window *w);
+void reset_drawing(void);
 
 STATIC_INLINE uae_u32 get_byte(uaecptr addr);
 

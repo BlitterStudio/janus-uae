@@ -63,6 +63,9 @@ struct SignalSemaphore sem_janus_active_win;
 /* protect aos3_messages list */
 struct SignalSemaphore janus_messages_access;
 
+/* protect janus_active_custom_screen */
+struct SignalSemaphore sem_janus_active_custom_screen;
+
 GSList *janus_windows =NULL;
 GSList *janus_screens =NULL;
 GSList *janus_messages=NULL;
@@ -72,7 +75,7 @@ JanusWin *janus_active_window=NULL;
 BOOL uae_main_window_closed=FALSE;
 
 /* one of our cloned custom screens should get all input etc */
-JanusScreen *custom_screen_active=NULL;
+JanusScreen *janus_active_screen=NULL;
 
 /* if you set this to true, jwindow contents won't get updated any more */
 BOOL j_stop_window_update=FALSE;
