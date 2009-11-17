@@ -52,6 +52,9 @@ static void handle_msg(JanusScreen *jscreen,
       JWLOG("aros_cscr_thread[%lx]: we (jscreen %lx) are active front screen now\n", thread, janus_active_screen);
 
       ReleaseSemaphore(&sem_janus_active_custom_screen);
+
+      ActivateWindow(jscreen->arosscreen->FirstWindow);
+
       break;
 
     case SDEPTH_TOBACK: 
@@ -72,6 +75,9 @@ static void handle_msg(JanusScreen *jscreen,
   }
 }
 
+
+void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int qualifier, struct Process *thread) ;
+
 /***********************************************************
  * event handler for custom screen
  ***********************************************************/  
@@ -80,12 +86,18 @@ static void handle_custom_events_S(JanusScreen *jscreen, struct Process *thread)
   struct Screen              *screen;
   ULONG                       signals;
   ULONG                       notify_signal;
+  ULONG                       window_signal;
   BOOL                        done;
   struct MsgPort             *port;
-  struct ScreenNotifyMessage *msg;
+  JanusWin                    dummywin;
   IPTR                        notify;
-  ULONG                       class, code, object, userdata;
 
+  struct ScreenNotifyMessage *notify_msg;
+  ULONG                       notify_class, notify_code, notify_object, notify_userdata;
+
+  struct IntuiMessage        *intui_msg;
+  UWORD                       intui_code, intui_qualifier;
+  ULONG                       intui_class;
 
   screen=jscreen->arosscreen;
   JWLOG("screen: %lx\n", screen);
@@ -109,12 +121,13 @@ static void handle_custom_events_S(JanusScreen *jscreen, struct Process *thread)
   }
 
   notify_signal=1L << port->mp_SigBit;
+  window_signal=1L << jscreen->arosscreen->FirstWindow->UserPort->mp_SigBit;
 
   done=FALSE;
   while(!done) {
     JWLOG("aros_cscr_thread[%lx]: wait for signal\n", thread);
 
-    signals = Wait(notify_signal | SIGBREAKF_CTRL_C);
+    signals = Wait(notify_signal | window_signal | SIGBREAKF_CTRL_C);
     JWLOG("aros_cscr_thread[%lx]: signal reveived\n", thread);
 
     if(signals & SIGBREAKF_CTRL_C) {
@@ -123,27 +136,46 @@ static void handle_custom_events_S(JanusScreen *jscreen, struct Process *thread)
       break;
     }
 
-    if(signals & notify_signal) {
+    /* notify */
+    if(!done && (signals & notify_signal)) {
 
-      while ((msg = (struct ScreenNotifyMessage *) GetMsg (port))) {
-	class     = msg->snm_Class;
-	code      = msg->snm_Code;
-	object    = msg->snm_Object;
-	userdata  = msg->snm_UserData;
+      while((notify_msg = (struct ScreenNotifyMessage *) GetMsg (port))) {
+	notify_class     = notify_msg->snm_Class;
+	notify_code      = notify_msg->snm_Code;
+	notify_object    = notify_msg->snm_Object;
+	notify_userdata  = notify_msg->snm_UserData;
 
-	ReplyMsg ((struct Message*)msg); 
+	ReplyMsg ((struct Message*) notify_msg); 
 
-	if(object == (ULONG) screen) {
+	if(notify_object == (ULONG) screen) {
 	  /* this message is for us */
-	  switch (class) {
+	  switch (notify_class) {
 	      case SNOTIFY_SCREENDEPTH:
-	    	handle_msg(jscreen, class, code, userdata, thread);
+	    	handle_msg(jscreen, notify_class, notify_code, notify_userdata, thread);
   	      break;
   	  }
 	}
       }
     }
-  }
+
+    /* window IDCMP */
+    if((!done) && (signals & window_signal)) {
+      JWLOG("signals & window_signal ..\n");
+
+      while(intui_msg = (struct IntuiMessage *) GetMsg (jscreen->arosscreen->FirstWindow->UserPort)) {
+	intui_class     = intui_msg->Class;
+	intui_code      = intui_msg->Code;
+       	intui_qualifier = intui_msg->Qualifier;
+
+	JWLOG("send IntuiMsg to handle_input..\n");
+
+	handle_input(NULL, &dummywin, intui_class, intui_code, intui_qualifier, thread);
+
+	ReplyMsg ((struct Message*) intui_msg); 
+      }
+    }
+
+  } /* while(done) */
 
   while(!EndScreenNotify(notify)) {
     /* might be in use */
@@ -281,6 +313,12 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
     jscreen->arosscreen=NULL;
     return NULL;
   }
+
+  ObtainSemaphore(&sem_janus_active_custom_screen);
+  janus_active_screen=jscreen;
+  JWLOG("aros_cscr_thread[%lx]: we (jscreen %lx) are open and active now\n", thread, janus_active_screen);
+  ReleaseSemaphore(&sem_janus_active_custom_screen);
+
 
   JWLOG("new aros window on custom screen: %lx (%d x %d)\n", W, W->Width, W->Height);
 
