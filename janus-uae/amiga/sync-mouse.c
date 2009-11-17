@@ -251,6 +251,75 @@ void no_p96_fix_resolution(struct Screen *screen, WORD *x, WORD *y) {
 }
 
 /**********************************************************
+ * no_p96_fix_left
+ *
+ * should correct the centering etc. inside the AROS UAE
+ * main window / screen.
+ **********************************************************/
+void no_p96_fix_left(struct Screen *screen, WORD *x, WORD *y, LONG left) {
+
+  DebOut("no_p96_fix_left(%d, %d, left %d)\n", *x, *y, left);
+
+//  *x=*x + ( 2 * 108); /* 108? why, I don't know ;) */
+  *x=*x + ( 2 * (left+2)); 
+}
+
+void no_p96_fix_center(struct Screen *screen, 
+                       WORD *x, WORD *y, 
+		       ULONG gfx_xcenter, ULONG gfx_ycenter, 
+                       ULONG aros_width,  ULONG aros_height,
+		       LONG XOffset,      LONG YOffset) {
+
+#if 0
+  ULONG width, height;
+  ULONG modeID;
+#endif
+
+  DebOut("no_p96_fix_center(%d, %d, %d, %d, %d, %d)\n", *x, *y, 
+                                                        gfx_xcenter, gfx_ycenter,
+							aros_width,  aros_height);
+
+#if 0
+  modeID=GetVPModeID(&(screen->ViewPort));
+
+  if(modeID == INVALID_ID) {
+    DebOut("no_p96_fix_center WARNING: modeID == INVALID_ID\n");
+    return;
+  }
+
+  if(modeID & SUPERHIRES) {
+    width= screen->Width /2;
+  }
+  else if(modeID & HIRES) {
+    width= screen->Width;
+  }
+  else { 
+    width= screen->Width *2;
+  }
+  /* lores */
+#if 0
+  if(! (modeID & LACE) ) {
+    DebOut("==>no INTERLACE\n");
+    *y=*y / 2;
+  }
+#endif
+
+
+  DebOut("aros_width %d - width %d = %d\n", aros_width, width, 
+                                            aros_width - width);
+
+  *x= *x - ((aros_width - width) / 2); /* center */
+
+  *x= *x + 256;
+#endif
+
+  *x=*x-XOffset;
+  *y=*y-YOffset;
+
+}
+
+
+/**********************************************************
  * no_p96_fix_viewoffset
  *
  * The view is the offset you specify in the "Edit
@@ -268,10 +337,8 @@ void no_p96_fix_viewoffset(struct Screen *screen, WORD *x, WORD *y) {
   DebOut("no_96: screen->View.DxOffset: %d\n", view->DxOffset);
   DebOut("no_96: screen->View.DyOffset: %d\n", view->DyOffset);
 
-  *x=*x - ((view->DxOffset -108)*2); /* 108? why, I don't know ;) */
-
-  *y=*y + view->DyOffset - 77; /* TODO (?) */
-
+  *x=*x - (2 * (view->DxOffset - 107)); /* 107? why? I really don't know ;) */
+  *y=*y - (2 * (view->DyOffset - 27));  /* 27 ..? */
 
   DebOut("no_p96_fix_viewoffset: x,y: %d, %d\n",*x,*y);
 }
@@ -286,6 +353,9 @@ void sync_mouse() {
   ULONG                 modeID;
   BOOL                  is_p96=FALSE;
   WORD                  x,y;
+  ULONG                 aros_width,   aros_height;
+  ULONG                 gfx_xcenter,  gfx_ycenter;
+  LONG                  aros_xoffset, aros_yoffset;
 #if 0
   UWORD          flags;
 #endif
@@ -327,9 +397,11 @@ void sync_mouse() {
   else {
     /* is_p96 stays FALSE */
     DebOut("CyberGfxBase *NOT* found\n");
+    is_p96=FALSE;
   }
 
   mousebuffer[0]=is_p96;
+  DebOut("is_p96: %d\n",is_p96);
 
   result = calltrap (AD_GET_JOB, AD_GET_JOB_GET_MOUSE, mousebuffer);
 
@@ -341,11 +413,22 @@ void sync_mouse() {
   x=(WORD) mousebuffer[0];
   y=(WORD) mousebuffer[1];
 
-  DebOut("AD_GET_JOB_GET_MOUSE result: %d, %d\n",x,y);
+  DebOut("AD_GET_JOB_GET_MOUSE result: %d, %d)\n", x, y);
 
   if(!is_p96) {
     DebOut("no_p96 =============================\n");
 
+    gfx_xcenter =(ULONG) mousebuffer[2];
+    gfx_ycenter =(ULONG) mousebuffer[3];
+    aros_width  =(ULONG) mousebuffer[4];
+    aros_height =(ULONG) mousebuffer[5];
+    aros_xoffset=(LONG)  mousebuffer[6];
+    aros_yoffset=(LONG)  mousebuffer[7];
+
+    no_p96_fix_center    (screen, &x, &y, 
+                          gfx_xcenter, gfx_ycenter, 
+			  aros_width,  aros_height,
+			  aros_xoffset, aros_yoffset);
     no_p96_fix_viewoffset(screen, &x, &y);
     no_p96_fix_resolution(screen, &x, &y);
     no_p96_fix_overscan  (screen, &x, &y);

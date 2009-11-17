@@ -65,6 +65,30 @@ void screen_test() {
 }
 
 /****************************************************
+ * update_top_screen()
+ *
+ * ask, which aos3 screen is the top screen in AROS
+ * land. Then we bring it to the top, too.
+ ****************************************************/
+void update_top_screen() {
+  struct Screen *screen;
+  ULONG foo[2];
+
+  ENTER
+
+  DebOut("update_top_screen()\n");
+
+  screen=(struct Screen *) calltrap (AD_GET_JOB, AD_GET_JOB_TOP_SCREEN, foo);
+
+  if(screen && (screen != IntuitionBase->FirstScreen)) {
+    DebOut("Bring screen %lx to front\n", screen);
+    ScreenToFront(screen);
+  }
+
+  LEAVE
+}
+
+/****************************************************
  * update the screen list, so that new aros screens
  * and are created for new amigaOS windows
  *
