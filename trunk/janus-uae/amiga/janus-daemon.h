@@ -55,6 +55,9 @@
 #define AD_GET_JOB_ACTIVE_WINDOW 10
 #define AD_GET_JOB_NEW_WINDOW 11
 #define AD_GET_JOB_LIST_SCREENS 12
+#define AD_GET_JOB_OPEN_CUSTOM_SCREEN 13 /* not used ATM */
+#define AD_GET_JOB_CLOSE_SCREEN       14 /* not used ATM */
+#define AD_GET_JOB_TOP_SCREEN 15
 #define AD_GET_JOB_DEBUG 999
 
 #define J_MSG_CLOSE                    1
@@ -66,26 +69,27 @@ extern ULONG (*calltrap)(ULONG __asm("d0"),
 			 APTR  __asm("a0"));
 
 /* sync-mouse.c */
-BOOL init_sync_mouse();
-void free_sync_mouse();
-void sync_mouse();
+BOOL init_sync_mouse(void);
+void free_sync_mouse(void);
+void sync_mouse(void);
 void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button);
 
 /* patch.c */
 extern ULONG patch_draggable;
-void patch_functions();
-void unpatch_functions();
+void patch_functions(void);
+void unpatch_functions(void);
 
 /* sync-windows.c */
-BOOL init_sync_windows();
-void update_windows();
-BOOL init_sync_screens();
-void update_screens();
-void report_uae_windows();
-void report_host_windows();
-void sync_windows();
-void sync_active_window();
-void forward_messages();
+BOOL init_sync_windows(void);
+void update_windows(void);
+BOOL init_sync_screens(void);
+void update_screens(void);
+void report_uae_windows(void);
+void report_host_windows(void);
+void sync_windows(void);
+void sync_active_window(void);
+void forward_messages(void);
+void update_top_screen(void);
 
 /* public_screen.c */
 char *public_screen_name(struct Screen *scr); 

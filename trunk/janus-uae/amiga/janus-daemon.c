@@ -74,7 +74,7 @@ LONG          *cmdbuffer=NULL;
 ULONG state=0;
 
 /* enable/disable screen dragging in amigaOS */
-ULONG patch_draggable=1;
+ULONG patch_draggable=0;
 
 BYTE         mysignal_bit;
 ULONG        mysignal;
@@ -282,6 +282,7 @@ done=FALSE;
 	  DebOut("janusd: windows updated\n");
 	}
 
+	update_top_screen();
 	sync_windows();
 	report_uae_windows();
 	report_host_windows();
