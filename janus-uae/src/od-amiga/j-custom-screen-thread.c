@@ -22,6 +22,7 @@
  ************************************************************************/
 
 #include <intuition/intuition.h>
+#include <intuition/screens.h>
 #include <clib/intuition_protos.h>
 
 #include "sysconfig.h"
@@ -33,20 +34,60 @@
 #include "memory.h"
 
 /***********************************************************
- * event handler for custom screen windows
- *
- * based on handle_events in gfx-amigaos/ami-win.c
+ * handle ScreenNotifyMessages
+ ***********************************************************/
+static void handle_msg(JanusScreen *jscreen, 
+                       ULONG class, ULONG code, ULONG userdata,
+		       struct Process *thread) {
+
+  JWLOG("aros_cscr_thread[%lx]: class %d, code %d, userdata %lx\n", thread, class, code, userdata);
+
+  /* SDEPTH_TOFRONT/BACK is handled analog to IDCMP_ACTIVEWINDOW/INACTIVE */
+  switch(code) {
+    case SDEPTH_TOFRONT: 
+      JWLOG("aros_cscr_thread[%lx]: wait for sem_janus_active_custom_screen\n", thread);
+      ObtainSemaphore(&sem_janus_active_custom_screen);
+
+      janus_active_screen=jscreen;
+      JWLOG("aros_cscr_thread[%lx]: we (jscreen %lx) are active front screen now\n", thread, janus_active_screen);
+
+      ReleaseSemaphore(&sem_janus_active_custom_screen);
+      break;
+
+    case SDEPTH_TOBACK: 
+      JWLOG("aros_cscr_thread[%lx]: wait for sem_janus_active_custom_screen\n", thread);
+
+      Delay(10);
+      ObtainSemaphore(&sem_janus_active_custom_screen);
+
+      /* no other janus custom screen claimed to be active */
+      if(janus_active_screen == jscreen) {
+	janus_active_screen=NULL;
+	JWLOG("aros_cscr_thread[%lx]: we (jscreen %lx) are not active any more\n", thread, janus_active_screen);
+      }
+
+      ReleaseSemaphore(&sem_janus_active_custom_screen);
+      break;
+
+  }
+}
+
+/***********************************************************
+ * event handler for custom screen
  ***********************************************************/  
+static void handle_custom_events_S(JanusScreen *jscreen, struct Process *thread) {
 
-static void handle_custom_events_W(struct Screen *screen, struct Process *thread) {
-
+  struct Screen              *screen;
   ULONG                       signals;
   ULONG                       notify_signal;
   BOOL                        done;
   struct MsgPort             *port;
   struct ScreenNotifyMessage *msg;
   IPTR                        notify;
+  ULONG                       class, code, object, userdata;
 
+
+  screen=jscreen->arosscreen;
   JWLOG("screen: %lx\n", screen);
 
   port=CreateMsgPort();
@@ -85,25 +126,21 @@ static void handle_custom_events_W(struct Screen *screen, struct Process *thread
     if(signals & notify_signal) {
 
       while ((msg = (struct ScreenNotifyMessage *) GetMsg (port))) {
-	JWLOG("SCREEN MESSAGE RECEIVED!!\n");
-#if 0
-	class     = msg->Class;
-	code      = msg->Code;
-	dmx       = msg->MouseX;
-	dmy       = msg->MouseY;
-	mx        = msg->IDCMPWindow->MouseX; // Absolute pointer coordinates
-	my        = msg->IDCMPWindow->MouseY; // relative to the window
-	qualifier = msg->Qualifier;
+	class     = msg->snm_Class;
+	code      = msg->snm_Code;
+	object    = msg->snm_Object;
+	userdata  = msg->snm_UserData;
 
-#endif
 	ReplyMsg ((struct Message*)msg); 
 
-#if 0
-	switch (class) {
-
-	    case IDCMP_REFRESHWINDOW:
+	if(object == (ULONG) screen) {
+	  /* this message is for us */
+	  switch (class) {
+	      case SNOTIFY_SCREENDEPTH:
+	    	handle_msg(jscreen, class, code, userdata, thread);
+  	      break;
+  	  }
 	}
-#endif
       }
     }
   }
@@ -319,7 +356,7 @@ static void aros_custom_screen_thread (void) {
     goto EXIT;
   }
 
-  handle_custom_events_W(jscr->arosscreen, thread);
+  handle_custom_events_S(jscr, thread);
 
   JWLOG("aros_cscr_thread[%lx]: exit clean..\n", thread);
 
