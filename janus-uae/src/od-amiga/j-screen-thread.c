@@ -313,44 +313,45 @@ static void aros_screen_thread (void) {
       JWLOG("aros_scr_thread[%lx]: SIGBREAKF_CTRL_C received\n", thread);
       //done=TRUE;
     }
+    /* WARNING: TODO only die, if there is no other window left */
   }
 
   /* ... and a time to die. */
 
 EXIT:
-  FreeSignal(signal);
-#if 0
-  ObtainSemaphore(&sem_janus_window_list);
+  JWLOG("aros_scr_thread[%lx]: EXIT\n",thread);
 
-  if(aroswin) {
-    JWLOG("aros_scr_thread[%lx]: close window %lx\n",thread,aroswin);
-    CloseWindow(aroswin);
-    jwin->aroswin=NULL;
+  ObtainSemaphore(&sem_janus_screen_list);
+
+  if(jscr->arosscreen) {
+    JWLOG("aros_scr_thread[%lx]: close aros screen %lx\n",thread, jscr->arosscreen);
+    CloseScreen(jscr->arosscreen);
+    jscr->arosscreen=NULL;
   }
 
-  if(list_win) {
-    if(list_win->data) {
-      name_mem=((JanusWin *)list_win->data)->name;
-      JWLOG("aros_scr_thread[%lx]: FreeVec list_win->data \n",thread);
-      FreeVec(list_win->data); 
-      list_win->data=NULL;
-    }
-    JWLOG("aros_scr_thread[%lx]: g_slist_remove(%lx)\n",thread,list_win);
-    //g_slist_remove(list_win); 
-    janus_windows=g_slist_delete_link(janus_windows, list_win);
-    list_win=NULL;
+  if(jscr->name) {
+    FreeVec(jscr->name);
+    jscr->name=NULL;
   }
 
-  /* not nice to free our own name, but should not be a problem */
-  if(name_mem) {
-    JWLOG("aros_scr_thread[%lx]: FreeVec() >%s<\n", thread,
-	    name_mem);
-    FreeVec(name_mem);
+  if(signal) {
+    FreeSignal(signal);
   }
 
-  ReleaseSemaphore(&sem_janus_window_list);
+  if(list_screen) {
+    JWLOG("aros_scr_thread[%lx]: remove %lx from janus_screens\n",thread, list_screen);
+    janus_screens=g_slist_delete_link(janus_screens, list_screen);
+    list_screen=NULL;
+  }
+
+  if(jscr) {
+    JWLOG("aros_scr_thread[%lx]: FreeVec(%lx)\n",thread, jscr);
+    FreeVec(jscr);
+  }
+
+  ReleaseSemaphore(&sem_janus_screen_list);
+
   JWLOG("aros_scr_thread[%lx]: dies..\n", thread);
-#endif
 }
 
 int aros_screen_start_thread (JanusScreen *screen) {

@@ -94,8 +94,9 @@ WORD get_hi_word(ULONG *field);
 #define AD_GET_JOB_ACTIVE_WINDOW      10
 #define AD_GET_JOB_NEW_WINDOW         11
 #define AD_GET_JOB_LIST_SCREENS       12
-#define AD_GET_JOB_OPEN_CUSTOM_SCREEN 13
-#define AD_GET_JOB_CLOSE_SCREEN       14
+#define AD_GET_JOB_OPEN_CUSTOM_SCREEN 13 /* not used ATM */
+#define AD_GET_JOB_CLOSE_SCREEN       14 /* not used ATM */
+#define AD_GET_JOB_TOP_SCREEN         15
 #define AD_GET_JOB_DEBUG             999 
 
 #define AD_CLIP_SETUP 15

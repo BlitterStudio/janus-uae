@@ -580,6 +580,9 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
        	  return ad_job_open_custom_screen(m68k_results);
     	case AD_GET_JOB_CLOSE_SCREEN: 
        	  return ad_job_close_screen(m68k_results);
+    	case AD_GET_JOB_TOP_SCREEN: 
+       	  return ad_job_top_screen(m68k_results);
+
 
 	default:
 	  JWLOG("ERROR!! aroshack_helper: unkown job: %d\n",m68k_dreg(&context->regs, 1));

@@ -143,11 +143,14 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
    * if we are not coherent, we need to move the mouse nevertheless
    */
   if(!janus_active_window && changed_prefs.jcoherence) {
+    JWLOG("no active window / changed_prefs.jcoherence\n");
     return FALSE;
   }
 
   /* in this case, classic uae mouse mode is enabled */
   if((!uae_main_window_closed) && ((!changed_prefs.jmouse) || (aos3_task==NULL))) {
+    JWLOG("((!uae_main_window_closed %d) && (!changed_prefs.jmouse %d)) || aos3_task %lx => do nothing\n", 
+          uae_main_window_closed, changed_prefs.jmouse, aos3_task);
     return FALSE;
   }
 

@@ -43,6 +43,24 @@ BOOL aos3screen_is_custom(uaecptr aos3screen) {
   return TRUE;
 }
 
+/************************************************************************
+ * new_aros_cust_screen for an aos3screen
+ *
+ * open new aros screen for aos3 screen
+ ************************************************************************/
+static void new_aros_cust_screen(JanusScreen *jscreen, uaecptr aos3screen) {
+
+  struct Screen *arosscr;
+
+  JWLOG("aos3screen: %lx\n", aos3screen);
+
+  jscreen->arosscreen=-1;
+
+  aros_custom_screen_start_thread(jscreen); /* fills jscreen->arosscreen */
+
+  return;
+}
+
 
 /************************************************************************
  * new_aros_pub_screen for an aos3screen
@@ -53,14 +71,6 @@ BOOL aos3screen_is_custom(uaecptr aos3screen) {
  ************************************************************************/
 static struct Screen *new_aros_pub_screen(JanusScreen *jscreen, 
                                           uaecptr aos3screen) {
-  ULONG width;
-  ULONG height;
-  ULONG depth;
-  LONG mode  = INVALID_ID;
-  ULONG i;
-  ULONG err;
-  struct Screen *arosscr;
-  const UBYTE preferred_depth[] = {24, 32, 16, 15, 8};
   struct Screen *pub;
 
   JWLOG("screen public name: >%s<\n",jscreen->pubname);
@@ -73,58 +83,34 @@ static struct Screen *new_aros_pub_screen(JanusScreen *jscreen,
     return pub;
   }
 
+  jscreen->arosscreen=-1;
+
   aros_screen_start_thread(jscreen);
+
+  /* wait until thread was started and it had a chance to open the screen.
+   * If the tread fails, it sets the screen to NULL
+   */
+  while(jscreen->arosscreen == -1) {
+    Delay(10);
+  }
 
   return jscreen->arosscreen;
 
-#if 0
-  /* we need a new screen */
-  width =get_word(aos3screen+12);
-  height=get_word(aos3screen+14);
-  depth =jscreen->depth;
-
-  JWLOG("we want %dx%d in %d bit\n",width,height,depth);
-
-  mode=find_rtg_mode(&width, &height, depth);
-  JWLOG("screen mode with depth %d: %lx\n",depth,mode);
-
-  if(mode == INVALID_ID) {
-    JWLOG("try different depth:\n");
-    i=0;
-    while( (i<sizeof(preferred_depth)) && (mode==INVALID_ID)) {
-      depth = preferred_depth[i];
-      mode = find_rtg_mode (&width, &height, depth);
-      i++;
-    }
-    JWLOG("screen mode with depth %d: %lx\n",depth,mode);
-  }
-
-  if(mode==INVALID_ID) {
-    JWLOG("ERROR: unable to find a screen mode !?\n");
-    return NULL;
-  }
-
-  arosscr=OpenScreenTags(NULL,
-		     SA_Type, PUBLICSCREEN,
-		     SA_DisplayID, mode,
-		     SA_Width, width, /* necessary ? */
-		     SA_Height, height,
-		     SA_Title, get_real_address(get_long(aos3screen+26)),
-		     SA_PubName, jscreen->pubname,
-#if 0
-		     SA_PubTask, jscreen->task,
-		     SA_SA_PubSig, jscreen->signal,
-#endif
-		     SA_ErrorCode, &err,
-		     TAG_DONE);
-
-  jscreen->ownscreen=TRUE; /* TODO we have to close this one, how..? */
-
-  return arosscr;
-#endif
 }
 
-static struct Screen *new_aros_screen(JanusScreen *jscreen) {
+/************************************************************************
+ * new_aros_screen(jscreen)
+ *
+ * fill in jscreen->arosscreen with an already existing poblic screen
+ * or a newly opened public/custom screen.
+ *
+ * It uses new_aros_pub_screen / new_aros_cust_screen, which have to
+ * call the thread creating modules then.
+ *
+ * If it can't create a new screen, it has to ensure, that jscreen
+ * gets removed/freed from the list again!
+ ************************************************************************/
+static void new_aros_screen(JanusScreen *jscreen) {
   struct Screen *arosscr=NULL;
   UWORD flags;
   UWORD screentype;
@@ -139,7 +125,7 @@ static struct Screen *new_aros_screen(JanusScreen *jscreen) {
 
   if(!jscreen || !jscreen->aos3screen) {
     JWLOG("ERROR: new_aros_screen problem!!\n");
-    return NULL;
+    goto EXIT;
   }
 
   aos3screen=(uaecptr) jscreen->aos3screen;
@@ -158,12 +144,16 @@ static struct Screen *new_aros_screen(JanusScreen *jscreen) {
 
   /********************* Custom Screen **************************/
   if(screentype==CUSTOMSCREEN) { /* 0xf */
+
     jscreen->ownscreen=TRUE;
     JWLOG("screen %lx is CUSTOMSCREEN\n",aos3screen);
-    JWLOG("ERROR: CUSTOMSCREEN IS NOT YET SUPPORTED !!!!\n");
+    new_aros_cust_screen(jscreen, aos3screen);
+    return;
+
   }
   /******************* Workbench Screen *************************/
   else if(screentype==WBENCHSCREEN) { /* 0x1 */
+
     JWLOG("screen %lx is WBENCHSCREEN\n",aos3screen);
     /* we just return our wanderer screen here.
      * TODO: What happens, if wanderer is *not* running?
@@ -175,26 +165,31 @@ static struct Screen *new_aros_screen(JanusScreen *jscreen) {
 	UnlockIBase(lock);
 	jscreen->ownscreen=FALSE;
 	JWLOG("return aros WBENCHSCREEN %lx\n",arosscr);
-	return arosscr;
+	jscreen->arosscreen=arosscr;
+	return;
       }
       arosscr=arosscr->NextScreen;
     }
     UnlockIBase(lock);
     JWLOG("ERROR: wanderer is not running!?\n");
-    return NULL;
+    goto EXIT;
+
   }
   /********************* Public Screen **************************/
   else if(screentype==PUBLICSCREEN) {
+
     JWLOG("screen %lx is PUBLICSCREEN\n",aos3screen);
     //arosscr=new_aros_pub_screen(jscreen, aos3screen);
     new_aros_pub_screen(jscreen, aos3screen);
-    return jscreen->arosscreen;
+    return;
+
   }
-  else {
-    JWLOG("ERROR: screen type unknown !?\n");
-  }
-  JWLOG("new screen: %lx\n",arosscr);
-  return arosscr;
+
+  JWLOG("ERROR: screen type unknown !?\n");
+
+EXIT:
+  JWLOG("ERROR ERROR: cleanup here / delete jscreen!!");
+  return;
 }
 
 /**********************************************************
@@ -240,19 +235,14 @@ uae_u32 ad_job_list_screens(ULONG *m68k_results) {
 
       jscreen=(JanusScreen *) AllocVec(sizeof(JanusScreen),MEMF_CLEAR);
       JWLOG("append aos3screen %lx as %lx\n", aos3screen, jscreen);
+      /* jscreen has to be FreeVec'ed by the screen task */
 
       jscreen->aos3screen=aos3screen;
       jscreen->depth=get_long((uaecptr) m68k_results+i+4);
       jscreen->pubname=public_screen_name; /* ?? good idea ?? */
-      jscreen->arosscreen=new_aros_screen(jscreen);
-      if(jscreen->arosscreen) {
-	JWLOG("new aros screen: %lx\n",jscreen->arosscreen);
-	janus_screens=g_slist_append(janus_screens,jscreen);
-      }
-      else {
-	JWLOG("ERROR: new_aros_screen failed!\n");
-	FreeVec(jscreen);
-      }
+      /* append it, if new_aros_screen, it has to cleanup itself !*/
+      janus_screens=g_slist_append(janus_screens,jscreen);
+      new_aros_screen(jscreen);
     }
     i=i+12; /* we get *3* ULONGs: screen pointer, depth and pubname */
   }
@@ -298,7 +288,11 @@ uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
 
   JWLOG("entered\n");
 
-  currprefs.gfx_width_win= graphics_init();
+#warning TODO enable this, so that it just calls start_thread.. <==============================================
+  return TRUE;
+
+
+/* ?? */  currprefs.gfx_width_win= graphics_init();
 
   JWLOG("aos3screen: %lx\n", aos3screen);
 
@@ -319,9 +313,11 @@ uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
     return TRUE;
   }
 
+
   jscreen=(JanusScreen *) AllocVec(sizeof(JanusScreen),MEMF_CLEAR);
   JWLOG("append aos3screen %lx as %lx\n", aos3screen, jscreen);
   jscreen->aos3screen=aos3screen;
+
 
   width =get_word(aos3screen+12);
   height=get_word(aos3screen+14);
@@ -394,6 +390,8 @@ uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
   JWLOG("XOffset, YOffset: %d, %d\n", XOffset, YOffset);
 
   jscreen->arosscreen=OpenScreenTags(NULL,
+                                     //SA_Type,      PUBLICSCREEN,
+				     //SA_PubName,   "FOO",
                                      SA_Width,     newwidth,
 				     SA_Height,    newheight,
 				     SA_Depth,     depth,
@@ -533,3 +531,31 @@ uae_u32 ad_job_close_screen(ULONG aos3screen) {
   return TRUE;
 
 }
+
+/**********************************************************
+ * ad_job_top_screen
+ *
+ * return aos3 screen, which should be on top or
+ * NULL, if current AROS screen has no sibling
+ **********************************************************/
+uae_u32 ad_job_top_screen(ULONG *m68k_results) {
+  uae_u32 screen;
+
+  ENTER
+
+  ObtainSemaphore(&sem_janus_active_custom_screen);
+
+  if(!janus_active_screen) {
+    screen=0;
+  }
+  else {
+    screen=(uae_u32) janus_active_screen->aos3screen;
+  }
+
+  ReleaseSemaphore(&sem_janus_active_custom_screen);
+
+  LEAVE
+
+  return screen;
+}
+
