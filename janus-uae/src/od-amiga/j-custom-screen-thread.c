@@ -32,7 +32,6 @@
 #include "j.h"
 #include "memory.h"
 
-
 /***********************************************************
  * event handler for custom screen windows
  *
@@ -62,8 +61,6 @@ static void handle_custom_events_W(struct Screen *screen, struct Process *thread
 			    SNA_SigTask,  thread,
 			    SNA_Notify,   SNOTIFY_SCREENDEPTH /*| SNOTIFY_WAIT_REPLY*/,
 			    TAG_END); 
-
-
 
   if(!notify) {
     JWLOG("ERROR: unable to StartScreenNotifyTagList!\n");
@@ -115,14 +112,173 @@ static void handle_custom_events_W(struct Screen *screen, struct Process *thread
     /* might be in use */
     sleep(1);
   }
-  notify=NULL;
+  notify=(IPTR) NULL;
 
   DeleteMsgPort(port);
   port=NULL;
 
-
   /* necessary !? */
   //appw_events();
+}
+
+/************************************************************************
+ * new_aros_custom_screen for an aos3screen
+ *
+ * open new one
+ ************************************************************************/
+static struct Screen *new_aros_custom_screen(JanusScreen *jscreen, 
+                                             uaecptr aos3screen,
+				  	     struct Process *thread) {
+  UWORD depth;
+  ULONG mode;
+  UWORD width, height;
+  ULONG newwidth, newheight;
+  const UBYTE preferred_depth[] = {8, 15, 16, 24, 32, 0};
+  ULONG i;
+  ULONG error;
+  static struct NewWindow NewWindowStructure = {
+	0, 0, 800, 600, 0, 1,
+	IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY /*| IDCMP_DISKINSERTED | IDCMP_DISKREMOVED*/
+		| IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW | IDCMP_MOUSEMOVE | IDCMP_DELTAMOVE |
+		IDCMP_REFRESHWINDOW,
+	WFLG_SMART_REFRESH | WFLG_BACKDROP | WFLG_RMBTRAP | WFLG_NOCAREREFRESH
+	 | WFLG_BORDERLESS | WFLG_ACTIVATE | WFLG_REPORTMOUSE,
+	NULL, NULL, NULL, NULL, NULL, 5, 5, 800, 600,
+	CUSTOMSCREEN
+  };
+
+
+  JWLOG("entered(jscreen %lx, aos3screen %lx)\n", jscreen, aos3screen);
+
+  width =get_word(aos3screen+12);
+  height=get_word(aos3screen+14);
+  JWLOG("w: %d h: %d\n", width, height);
+
+#warning remove me <======================================================================
+  width=720;
+  height=568;
+  JWLOG("w: %d h: %d\n", width, height);
+#warning remove me <======================================================================
+ 
+  currprefs.gfx_width_win=width;
+  currprefs.gfx_height = height;
+  currprefs.amiga_screen_type=0 /*UAESCREENTYPE_CUSTOM*/;
+
+  /* this would be the right approach, but getting this pointer stuff
+   * working in 68k adress space is a pain. 
+   * screen->vp->RasInfo->BitMap->Depth ... */
+
+  /* open a screen, which matches best */
+  i=0;
+  mode=INVALID_ID;
+  newwidth =width;
+  newheight=height;
+  while(mode==(ULONG) INVALID_ID && preferred_depth[i]) {
+    mode=find_rtg_mode(&newwidth, &newheight, preferred_depth[i]);
+    depth=preferred_depth[i];
+    i++;
+  }
+
+  if(mode == (ULONG) INVALID_ID) {
+    JWLOG("ERROR: could not find modeid !?!!\n");
+    return NULL;
+  }
+
+  JWLOG("found modeid: %lx\n", mode);
+  JWLOG("found w: %d h: %d\n", newwidth, newheight);
+
+  /* If the screen is larger than requested, center UAE's display */
+  XOffset=0;
+  YOffset=0;
+  if (newwidth > (ULONG)width) {
+    XOffset = (newwidth - width) / 2;
+  }
+  if (newheight > (ULONG) height) {
+    YOffset = (newheight - height) / 2;
+  }
+  JWLOG("XOffset, YOffset: %d, %d\n", XOffset, YOffset);
+
+  /* TODO set depth! */
+  jscreen->arosscreen=OpenScreenTags(NULL,
+                                     //SA_Type,      PUBLICSCREEN,
+				     //SA_PubName,   "FOO",
+                                     SA_Width,     newwidth,
+				     SA_Height,    newheight,
+				     SA_Depth,     depth,
+				     SA_DisplayID, mode,
+				     SA_Behind,    FALSE,
+				     SA_ShowTitle, FALSE,
+				     SA_Quiet,     TRUE,
+				     SA_ErrorCode, (ULONG)&error,
+				     TAG_DONE);
+
+  if(!jscreen->arosscreen) {
+    JWLOG("ERROR: could not open screen !? (Error: %ld\n",error);
+    gui_message ("Cannot open custom screen (Error: %ld)\n", error);
+    return NULL;
+  }
+
+  JWLOG("new aros custom screen: %lx (%d x %d)\n",jscreen->arosscreen, 
+                                                  jscreen->arosscreen->Width, 
+                                                  jscreen->arosscreen->Height);
+
+  gfxvidinfo.height     =height;
+  gfxvidinfo.width      =width;
+  //currprefs.gfx_linedbl =0;
+  //currprefs.gfx_lores   =1;
+ 
+  S  = jscreen->arosscreen;
+  CM = jscreen->arosscreen->ViewPort.ColorMap;
+  RP = &jscreen->arosscreen->RastPort;
+
+//  NewWindowStructure.Width  = jscreen->arosscreen->Width;
+//  NewWindowStructure.Height = jscreen->arosscreen->Height;
+  NewWindowStructure.Width  = newwidth;
+  NewWindowStructure.Height = newheight;
+  NewWindowStructure.Screen = jscreen->arosscreen;
+
+  W = (void*)OpenWindow (&NewWindowStructure);
+  if (!W) {
+    gui_message ("Cannot open window on new custom screen !?");
+    CloseScreen(jscreen->arosscreen);
+    jscreen->arosscreen=NULL;
+    return NULL;
+  }
+
+  JWLOG("new aros window on custom screen: %lx (%d x %d)\n", W, W->Width, W->Height);
+
+  /* TODO !!*/
+  uae_main_window_closed=FALSE;
+
+  reset_drawing(); /* this will bring a custon screen, with keyboard working */
+
+#if 0
+  j_stop_window_update=TRUE;
+  custom_screen_active=jscreen;
+
+  gfx_set_picasso_state(0);
+  reset_drawing();
+  init_row_map();
+  init_aspect_maps();
+  notice_screen_contents_lost();
+  inputdevice_acquire ();
+  inputdevice_release_all_keys ();
+  reset_hotkeys ();
+  hide_pointer (W);
+#endif
+
+#if 0
+  JWLOG("Line: %lx\n", Line);
+  JWLOG("BitMap: %lx\n", BitMap);
+  JWLOG("TempRPort: %lx\n", TempRPort);
+
+  if(!Line || !BitMap || !TempRPort) {
+    JWLOG("ERROR ERROR ERROR ERROR: NULL pointer in Line/BitMap/TempRPort!!\n");
+    return FALSE; /* ? */
+  }
+#endif
+
+  return jscreen->arosscreen;
 }
 
 /***********************************************************
@@ -133,9 +289,6 @@ static void aros_custom_screen_thread (void) {
   struct Process *thread = (struct Process *) FindTask (NULL);
   GSList         *list_screen=NULL;
   JanusScreen    *jscr=NULL;
-  BOOL            done;
-  ULONG           s;
-  struct Window  *aroswin;
 
   /* There's a time to live .. */
 
@@ -155,62 +308,59 @@ static void aros_custom_screen_thread (void) {
   }
 
   jscr=(JanusScreen *) list_screen->data;
+
   JWLOG("aros_scr_thread[%lx]: win: %lx \n",thread,jscr);
 
-  JWLOG("aros_cscr_thread[%lx]: jscr->arosscreen: %lx\n", thread, jscr->arosscreen);
-  if(!jscr->arosscreen) {
-    JWLOG("aros_scr_thread[%lx]: ERROR: screen has to be already opened !!\n",thread);
-    goto EXIT; 
-  }
 
-  /* our custom screen has only one window */
-  aroswin=jscr->arosscreen->FirstWindow;
-  if(!aroswin) {
-    JWLOG("aros_cscr_thread[%lx]: ERROR: screen %lx has no window !!\n",thread, jscr->arosscreen);
+  /* open a new screen for us*/
+  jscr->arosscreen=new_aros_custom_screen(jscr, (uaecptr) jscr->aos3screen, thread);
+
+  if(!jscr->arosscreen) {
+    goto EXIT;
   }
-  JWLOG("aros_cscr_thread[%lx]: aroswin: %lx\n", thread, aroswin);
 
   handle_custom_events_W(jscr->arosscreen, thread);
 
-  JWLOG("aros_cscr_thread[%lx]: handle_custom_events_W returned\n", thread);
+  JWLOG("aros_cscr_thread[%lx]: exit clean..\n", thread);
 
   /* ... and a time to die. */
 
 EXIT:
-  JWLOG("aros_cscr_thread[%lx]: EXIT\n");
-  done=TRUE;  /* need something, if debug is off.. */
-#if 0
-  ObtainSemaphore(&sem_janus_window_list);
+  JWLOG("aros_cscr_thread[%lx]: EXIT\n",thread);
 
-  if(aroswin) {
-    JWLOG("aros_scr_thread[%lx]: close window %lx\n",thread,aroswin);
-    CloseWindow(aroswin);
-    jwin->aroswin=NULL;
+  ObtainSemaphore(&sem_janus_screen_list);
+
+  if(jscr->arosscreen->FirstWindow) {
+    /* our custom screen has only one window */
+    JWLOG("aros_cscr_thread[%lx]: close aros window %lx\n",thread, jscr->arosscreen->FirstWindow);
+    CloseWindow(jscr->arosscreen->FirstWindow);
   }
 
-  if(list_win) {
-    if(list_win->data) {
-      name_mem=((JanusWin *)list_win->data)->name;
-      JWLOG("aros_scr_thread[%lx]: FreeVec list_win->data \n",thread);
-      FreeVec(list_win->data); 
-      list_win->data=NULL;
-    }
-    JWLOG("aros_scr_thread[%lx]: g_slist_remove(%lx)\n",thread,list_win);
-    //g_slist_remove(list_win); 
-    janus_windows=g_slist_delete_link(janus_windows, list_win);
-    list_win=NULL;
+  if(jscr->arosscreen) {
+    JWLOG("aros_cscr_thread[%lx]: close aros screen %lx\n",thread, jscr->arosscreen);
+    CloseScreen(jscr->arosscreen);
+    jscr->arosscreen=NULL;
   }
 
-  /* not nice to free our own name, but should not be a problem */
-  if(name_mem) {
-    JWLOG("aros_scr_thread[%lx]: FreeVec() >%s<\n", thread,
-	    name_mem);
-    FreeVec(name_mem);
+  if(jscr->name) {
+    FreeVec(jscr->name);
+    jscr->name=NULL;
   }
 
-  ReleaseSemaphore(&sem_janus_window_list);
-  JWLOG("aros_scr_thread[%lx]: dies..\n", thread);
-#endif
+  if(list_screen) {
+    JWLOG("aros_cscr_thread[%lx]: remove %lx from janus_screens\n",thread, list_screen);
+    janus_screens=g_slist_delete_link(janus_screens, list_screen);
+    list_screen=NULL;
+  }
+
+  if(jscr) {
+    JWLOG("aros_cscr_thread[%lx]: FreeVec(%lx)\n",thread, jscr);
+    FreeVec(jscr);
+  }
+
+  ReleaseSemaphore(&sem_janus_screen_list);
+
+  JWLOG("aros_cscr_thread[%lx]: dies..\n", thread);
 }
 
 int aros_custom_screen_start_thread (JanusScreen *screen) {
