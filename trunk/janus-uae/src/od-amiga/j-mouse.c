@@ -142,8 +142,9 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
    *
    * if we are not coherent, we need to move the mouse nevertheless
    */
-  if(!janus_active_window && changed_prefs.jcoherence) {
-    JWLOG("no active window / changed_prefs.jcoherence\n");
+  if(!janus_active_window && !janus_active_screen && changed_prefs.jcoherence) {
+    JWLOG("no active window (%lx) / no janus_active_screen (%lx) / changed_prefs.jcoherence (%d)\n",
+           janus_active_window, janus_active_screen);
     return FALSE;
   }
 

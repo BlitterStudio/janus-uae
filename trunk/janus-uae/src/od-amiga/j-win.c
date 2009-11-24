@@ -98,6 +98,14 @@ static void new_aos3window(ULONG aos3win) {
     return;
   }
 
+  aos3screen=get_long(aos3win+46);
+  if(aos3screen_is_custom(aos3screen)) {
+    /* we do not care about windows on custom screens! */
+    JWLOG("aos3window %lx is on a custom aos3 screen (%lx), so we do nothing\n", aos3win, aos3screen);
+    LEAVE
+    return;
+  }
+
   ObtainSemaphore(&sem_janus_screen_list);
   //JWLOG("ObtainSemaphore(&sem_janus_window_list)\n");
   ObtainSemaphore(&sem_janus_window_list);
@@ -114,8 +122,6 @@ static void new_aos3window(ULONG aos3win) {
     return;
   }
 
-
-  aos3screen=get_long(aos3win+46);
   JWLOG("search for aos3screen %lx\n",aos3screen);
   list_screen=g_slist_find_custom(janus_screens, 
 	   		          (gconstpointer) aos3screen,
@@ -146,11 +152,6 @@ static void new_aos3window(ULONG aos3win) {
   jwin->mempool=CreatePool(MEMF_CLEAR|MEMF_SEM_PROTECTED, 
                            0xC000, 0x8000); /* hmm..*/
   janus_windows=g_slist_append(janus_windows,jwin);
-
-  if(aos3screen_is_custom(jscreen->aos3screen)) {
-    jwin->custom=TRUE;
-    JWLOG("aos3window %lx is on a custom aos3 screen (%lx)\n", jwin->aos3win, jscreen->aos3screen);
-  }
 
   //JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
   ReleaseSemaphore(&sem_janus_window_list);

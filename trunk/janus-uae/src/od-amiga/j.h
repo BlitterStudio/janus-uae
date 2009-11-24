@@ -149,6 +149,11 @@ extern BOOL uae_main_window_closed;
 
 extern WORD menux, menuy;
 
+extern struct Window   *original_W;
+extern struct Screen   *original_S;
+extern struct ColorMap *original_CM;
+extern struct RastPort *original_RP;
+
 #define WIN_DEFAULT_DELAY 50
 
 #define MAXWIDTHHEIGHT 0x7777

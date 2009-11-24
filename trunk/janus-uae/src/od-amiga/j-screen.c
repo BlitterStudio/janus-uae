@@ -494,8 +494,8 @@ uae_u32 ad_job_close_screen(ULONG aos3screen) {
 	  (gconstpointer) aos3screen,
 	  &aos3_screen_compare);
 
-  if(list_screen) {
-    JWLOG(" screen %lx not found in janus_screens list\n",aos3screen);
+  if(!list_screen) {
+    JWLOG(" screen %lx not found in janus_screens list\n", aos3screen);
     ReleaseSemaphore(&sem_janus_screen_list);
     return TRUE;
   }
@@ -503,33 +503,22 @@ uae_u32 ad_job_close_screen(ULONG aos3screen) {
   jscreen=(JanusScreen *) list_screen->data;
 
   if(!jscreen->arosscreen) {
-    JWLOG(" jscreen %lx has no arosscreen !?\n",aos3screen);
+    JWLOG(" jscreen %lx has no arosscreen !?\n", jscreen);
     ReleaseSemaphore(&sem_janus_screen_list);
     return FALSE;
   }
 
-  arosscreen=jscreen->arosscreen;
-
-  if(!CloseScreen(arosscreen)) {
-    JWLOG("ERROR: could not close aros screen %lx !!\n", arosscreen);
+  if(!jscreen->task) {
+    JWLOG(" ERROR: jscreen %lx has no task !?\n", jscreen);
     ReleaseSemaphore(&sem_janus_screen_list);
     return FALSE;
   }
 
-  JWLOG(" aros screen %lx closed\n",arosscreen);
-
-  jscreen->arosscreen=NULL;
-
-  /* Removes the node from the list and frees it. */
-  janus_screens=g_slist_delete_link(janus_screens, list_screen);
-
-  FreeVec(jscreen);
+  JWLOG("send SIGBREAKF_CTRL_C to task %lx of jscreen %lx \n", jscreen->task, jscreen);
+  Signal(jscreen->task, SIGBREAKF_CTRL_C);
 
   ReleaseSemaphore(&sem_janus_screen_list);
-  JWLOG(" ressources deallocated\n");
-
   return TRUE;
-
 }
 
 /**********************************************************

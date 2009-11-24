@@ -165,32 +165,37 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
       break;
       
     case IDCMP_CLOSEWINDOW:
-      /* fake IDCMP_CLOSEWINDOW to original aos3 window */
-      JWLOG("aros_win_thread[%lx]: CLOSEWINDOW received for jwin %lx (%s)\n", 
-              thread, jwin, win->Title);
+      if(!jwin->custom) {
+	/* fake IDCMP_CLOSEWINDOW to original aos3 window */
+	JWLOG("aros_win_thread[%lx]: CLOSEWINDOW received for jwin %lx (%s)\n", 
+		thread, jwin, win->Title);
 
-      ObtainSemaphore(&janus_messages_access);
-      /* this gets freed in ad_job_fetch_message! */
-      jmsg=AllocVec(sizeof(JanusMsg), MEMF_CLEAR); 
-      if(!jmsg) {
-	JWLOG("ERROR: no memory (ignored message)\n");
-	break;
+	ObtainSemaphore(&janus_messages_access);
+	/* this gets freed in ad_job_fetch_message! */
+	jmsg=AllocVec(sizeof(JanusMsg), MEMF_CLEAR); 
+	if(!jmsg) {
+	  JWLOG("ERROR: no memory (ignored message)\n");
+	  break;
+	}
+	jmsg->jwin=jwin;
+	jmsg->type=J_MSG_CLOSE;
+	janus_messages=g_slist_append(janus_messages, jmsg);
+	ReleaseSemaphore(&janus_messages_access);
+
       }
-      jmsg->jwin=jwin;
-      jmsg->type=J_MSG_CLOSE;
-      janus_messages=g_slist_append(janus_messages, jmsg);
-      ReleaseSemaphore(&janus_messages_access);
-
       break;
 
     case IDCMP_CHANGEWINDOW:
-      /* ChangeWindowBox is not done at once, but deferred. You 
-       * can detect that the operation has completed by receiving 
-       * the IDCMP_CHANGEWINDOW IDCMP message
-       */
-      JWLOG("aros_win_thread[%lx]: IDCMP_CHANGEWINDOW: received\n", thread);
-      if(jwin->delay > WIN_DEFAULT_DELAY) {
-	jwin->delay=0;
+      if(!jwin->custom) {
+
+	/* ChangeWindowBox is not done at once, but deferred. You 
+	 * can detect that the operation has completed by receiving 
+	 * the IDCMP_CHANGEWINDOW IDCMP message
+	 */
+	JWLOG("aros_win_thread[%lx]: IDCMP_CHANGEWINDOW: received\n", thread);
+	if(jwin->delay > WIN_DEFAULT_DELAY) {
+	  jwin->delay=0;
+	}
       }
       break;
 
@@ -221,6 +226,7 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 #endif
 
     case IDCMP_MENUVERIFY:
+      if(!jwin->custom) {
 	if(IntuitionBase->ActiveWindow != win) {
 	  /* this seems to be a bug in aros, why are we getting those messages at all !? */
 	  /* no, it is a feature. Any window on a screen gets those.. C=.. */
@@ -235,9 +241,11 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	  my_setmousebuttonstate(0, 1, 1); /* MENUDOWN */
 	  clone_menu(jwin);
 	}
-	break;
+      }
+      break;
 
     case IDCMP_MENUPICK:
+      if(!jwin->custom) {
 	JWLOG("IDCMP_MENUPICK\n");
 
 	/* nothing selected, but this could mean, the user clicked twice very fast and
@@ -296,7 +304,8 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	menuy=0;
 	mice[0].enabled=TRUE; /* enable mouse emulation */
 	j_stop_window_update=FALSE;
-	break;
+      }
+      break;
 
 #if 0
     case IDCMP_DISKINSERTED:
@@ -665,13 +674,17 @@ static void aros_win_thread (void) {
      */
   else {
     JWLOG("aros_win_thread[%lx]: we are a custom win thread!\n", thread);
+    /* we have to have a window already! */
+    if(!jwin->aroswin) {
+      JWLOG("ERROR!!! custom screen should already have a window opened for us in %lx!\n", jwin);
+      goto EXIT; /* this is really bad.. */
+    }
   }
 
   while(!done) {
 #if 0
     sleep(100);
 #endif
-    if(!jwin->custom) {
       signals = Wait(1L << aroswin->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
 
     /* message */
@@ -697,16 +710,11 @@ static void aros_win_thread (void) {
 	}
       }
     }
-    else {
-      /* custom */
-      signals = Wait(SIGBREAKF_CTRL_C);
-    }
     /* Ctrl-C */
     if(signals & SIGBREAKF_CTRL_C) {
       JWLOG("aros_win_thread[%lx]: SIGBREAKF_CTRL_C received\n", thread);
       done=TRUE;
     }
-  }
 
   /* ... and a time to die. */
 

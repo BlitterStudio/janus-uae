@@ -42,6 +42,12 @@ ULONG aos3_clip_to_amigaos_signal=0;
 BOOL  clipboard_amiga_changed=FALSE;
 BOOL  clipboard_aros_changed=FALSE;
 
+/* remember original uae window pointer */
+struct Window   *original_W;
+struct Screen   *original_S;
+struct ColorMap *original_CM;
+struct RastPort *original_RP;
+
 /*
 ULONG clipboard_amiga_updated=get_long( param);
 ULONG clipboard_amiga_data=get_long(param + 4);
