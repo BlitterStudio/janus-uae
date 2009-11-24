@@ -246,6 +246,18 @@ static BOOL is_orphan_window(ULONG *m68k_results, ULONG win) {
   return TRUE;
 }
 
+/*******************************************************
+ * fix_orphan_windows
+ *
+ * we try to close all left over windows here.
+ * some requesters (workbench about..) do not use
+ * CloseWindow at all, so we need to manually
+ * clean up from time to time.
+ *
+ * Special case here are aros windows on custom 
+ * screens, they have no aos3window and must not
+ * be closed ever here.
+ *******************************************************/
 static void fix_orphan_windows(ULONG *m68k_results) {
   struct Window  *aroswin;
   JanusWin       *win;
@@ -261,10 +273,11 @@ static void fix_orphan_windows(ULONG *m68k_results) {
     win=(JanusWin *) list_win->data;
     aos3win=(ULONG) win->aos3win;
     aroswin=win->aroswin;
-    if(is_orphan_window(m68k_results, aos3win) && !win->dead) {
+    if(aos3win && is_orphan_window(m68k_results, aos3win) && !win->dead) {
       JWLOG("  found orphan window: januswin %lx (aos3win %lx aroswin %lx)\n", list_win, aos3win, aroswin);
       win->dead=TRUE;
       if(win->task) {
+	JWLOG("send Signal(%lx, SIGBREAKF_CTRL_C)\n", win->task);
 	Signal(win->task, SIGBREAKF_CTRL_C);
       }
     }

@@ -658,65 +658,65 @@ static void aros_win_thread (void) {
     estimated_border_left=aroswin->BorderLeft;
     estimated_border_right=aroswin->BorderRight;
 
-    /* handle IDCMP stuff */
-    done=FALSE;
-    JWLOG("IDCMP loop for window %lx\n",aroswin);
-
-    /* should not happen.. */
-    if(!aroswin->UserPort) {
-      JWLOG("aros_win_thread[%lx]: ERROR: win %lx has no UserPort !?!\n",
-	      thread,aroswin);
-
-      done=TRUE;
-    }
   } /* endif !win->custom
      * yes, I know, so long if's are evil
      */
   else {
-    JWLOG("aros_win_thread[%lx]: we are a custom win thread!\n", thread);
+    JWLOG("aros_win_thread[%lx]: we are a custom win thread, jwin->aroswin => %lx!\n", thread, jwin->aroswin);
     /* we have to have a window already! */
     if(!jwin->aroswin) {
       JWLOG("ERROR!!! custom screen should already have a window opened for us in %lx!\n", jwin);
       goto EXIT; /* this is really bad.. */
     }
+    aroswin=jwin->aroswin;
   }
 
+  done=FALSE;
+  if(!aroswin->UserPort) {
+    /* should not happen.. */
+    JWLOG("aros_win_thread[%lx]: ERROR: win %lx has no UserPort !?!\n", thread,aroswin);
+    done=TRUE;
+  }
+
+  /* handle IDCMP stuff */
+  JWLOG("IDCMP loop for window %lx\n",aroswin);
+
   while(!done) {
-#if 0
-    sleep(100);
-#endif
-      signals = Wait(1L << aroswin->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
 
-    /* message */
-      if (signals & (1L << aroswin->UserPort->mp_SigBit)) {
-	while (NULL != 
-	       (msg = (struct IntuiMessage *)GetMsg(aroswin->UserPort))) {
-	  //JWLOG("IDCMP msg for window %lx\n",aroswin);
+    /* wait either for a CTRL_C or a window signal */
+    signals = Wait(1L << aroswin->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
 
-	  class     = msg->Class;
-	  code      = msg->Code;
-	  dmx       = msg->MouseX;
-	  dmy       = msg->MouseY;
-	  mx        = msg->IDCMPWindow->MouseX; // Absolute pointer coordinates
-	  my        = msg->IDCMPWindow->MouseY; // relative to the window
-	  qualifier = msg->Qualifier;
-	  secs      = msg->Seconds;
-	  micros    = msg->Micros;
+    if (signals & (1L << aroswin->UserPort->mp_SigBit)) {
+      /* message */
+      while (NULL != 
+	     (msg = (struct IntuiMessage *)GetMsg(aroswin->UserPort))) {
+	//JWLOG("IDCMP msg for window %lx\n",aroswin);
 
-	  ReplyMsg ((struct Message*)msg);
+	class     = msg->Class;
+	code      = msg->Code;
+	dmx       = msg->MouseX;
+	dmy       = msg->MouseY;
+	mx        = msg->IDCMPWindow->MouseX; // Absolute pointer coordinates
+	my        = msg->IDCMPWindow->MouseY; // relative to the window
+	qualifier = msg->Qualifier;
+	secs      = msg->Seconds;
+	micros    = msg->Micros;
 
-	  handle_msg(aroswin, jwin, class, code, dmx, dmy, mx, my, qualifier, 
-		     thread, secs, micros, &done);
-	}
+	ReplyMsg ((struct Message*)msg);
+
+	handle_msg(aroswin, jwin, class, code, dmx, dmy, mx, my, qualifier, 
+		   thread, secs, micros, &done);
       }
     }
-    /* Ctrl-C */
     if(signals & SIGBREAKF_CTRL_C) {
+      /* Ctrl-C */
       JWLOG("aros_win_thread[%lx]: SIGBREAKF_CTRL_C received\n", thread);
       done=TRUE;
     }
+  }
 
   /* ... and a time to die. */
+  JWLOG("aros_win_thread[%lx]: time to die!\n");
 
 EXIT:
   JWLOG("ObtainSemaphore(&sem_janus_window_list)\n");
