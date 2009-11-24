@@ -163,8 +163,10 @@ static void handle_custom_events_S(JanusScreen *jscreen, struct Process *thread)
       }
     }
 
+#if 0
     /* window IDCMP */
     if((!done) && (signals & window_signal)) {
+      
       JWLOG("signals & window_signal ..\n");
 
       while(intui_msg = (struct IntuiMessage *) GetMsg (jscreen->arosscreen->FirstWindow->UserPort)) {
@@ -179,6 +181,7 @@ static void handle_custom_events_S(JanusScreen *jscreen, struct Process *thread)
 	ReplyMsg ((struct Message*) intui_msg); 
       }
     }
+#endif
 
   } /* while(done) */
 
@@ -203,6 +206,7 @@ static void handle_custom_events_S(JanusScreen *jscreen, struct Process *thread)
 static struct Screen *new_aros_custom_screen(JanusScreen *jscreen, 
                                              uaecptr aos3screen,
 				  	     struct Process *thread) {
+  JanusWin *jwin;
   UWORD depth;
   ULONG mode;
   UWORD width, height;
@@ -220,7 +224,6 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
 	NULL, NULL, NULL, NULL, NULL, 5, 5, 800, 600,
 	CUSTOMSCREEN
   };
-
 
   JWLOG("entered(jscreen %lx, aos3screen %lx)\n", jscreen, aos3screen);
 
@@ -319,13 +322,47 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
     return NULL;
   }
 
+  JWLOG("new aros window on custom screen: %lx (%d x %d)\n", W, W->Width, W->Height);
+
+  /* add the new window to the janus_window list as a custom window 
+   * custom windows have to have their ->aroswin set already!
+   *
+   * then start a thread for it
+   */
+  ObtainSemaphore(&sem_janus_screen_list);
+  ObtainSemaphore(&sem_janus_window_list);
+
+  jwin=(JanusWin *) AllocVec(sizeof(JanusWin),MEMF_CLEAR);
+  JWLOG("new jwin %lx for janus custom screen %lx\n", jwin, jscreen);
+  if(!jwin) {
+    CloseScreen(jscreen->arosscreen);
+    CloseWindow(W);
+    ReleaseSemaphore(&sem_janus_window_list);
+    ReleaseSemaphore(&sem_janus_screen_list);
+    gui_message ("out of memory !?");
+    return NULL;
+  }
+
+  jwin->custom =TRUE;
+  jwin->aroswin=W;
+  jwin->jscreen=jscreen;
+  jwin->aos3win=NULL;
+  jwin->mempool=CreatePool(MEMF_CLEAR|MEMF_SEM_PROTECTED, 0xC000, 0x8000);
+  janus_windows=g_slist_append(janus_windows,jwin);
+
+  JWLOG("appended jwin %lx to janus_windows\n", jwin);
+
+  ReleaseSemaphore(&sem_janus_window_list);
+  ReleaseSemaphore(&sem_janus_screen_list);
+
+  aros_win_start_thread(jwin);
+
+  /* set our screen active */
   ObtainSemaphore(&sem_janus_active_custom_screen);
   janus_active_screen=jscreen;
   JWLOG("aros_cscr_thread[%lx]: we (jscreen %lx) are open and active now\n", thread, janus_active_screen);
   ReleaseSemaphore(&sem_janus_active_custom_screen);
 
-
-  JWLOG("new aros window on custom screen: %lx (%d x %d)\n", W, W->Width, W->Height);
 
   /* TODO !!*/
   uae_main_window_closed=FALSE;
@@ -410,9 +447,27 @@ EXIT:
 
   ObtainSemaphore(&sem_janus_screen_list);
 
+  JWLOG("aros_cscr_thread[%lx]: restore S to %lx, W to %lx, CM to %lx and RP to %lx\n",thread,
+                                original_S, original_W, original_CM, original_RP);
+  S= original_S;
+  W= original_W;
+  CM=original_CM;
+  RP=original_RP;
+
+  ObtainSemaphore(&sem_janus_active_custom_screen);
+  if(janus_active_screen == jscr) {
+    janus_active_screen=NULL;
+    JWLOG("aros_cscr_thread[%lx]: set janus_active_screen=NULL\n", thread);
+  }
+  else {
+    JWLOG("aros_cscr_thread[%lx]: another jscr (%lx) is already janus_active_screen\n", thread, janus_active_screen);
+  }
+  ReleaseSemaphore(&sem_janus_active_custom_screen);
+
   if(jscr->arosscreen->FirstWindow) {
     /* our custom screen has only one window */
     JWLOG("aros_cscr_thread[%lx]: close aros window %lx\n",thread, jscr->arosscreen->FirstWindow);
+    /* restore pointer to original window, there still might be a race condition here ? */
     CloseWindow(jscr->arosscreen->FirstWindow);
   }
 

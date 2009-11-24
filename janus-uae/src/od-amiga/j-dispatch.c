@@ -192,48 +192,6 @@ WORD get_hi_word(ULONG *field) {
   return (WORD) l;
 }
 
-#if 0
-static uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
-  struct Screen *screen;
-
-  //JWLOG("ad_job_get_mouse\n");
-
-  /* only return mouse movement, if one of our windows is active.
-   * as we do not access the result, no Semaphore access is
-   * necessary. save semaphore access.
-   */
-  if(!janus_active_window) {
-    return FALSE;
-  }
-
-#if 0
-  if(custom_screen_active) {
-    return FALSE;
-  }
-#endif
-
-  if(mice[0].enabled) {
-    screen=IntuitionBase->FirstScreen;
-  
-    put_long_p(m68k_results, screen->MouseX); 
-    put_long_p(m68k_results+1, screen->MouseY); 
-  }
-  else {
-    if(!menux && !menuy) {
-      return FALSE;
-    }
-    /* fake for menu selection */
-    put_long_p(m68k_results,   menux); 
-    put_long_p(m68k_results+1, menuy); 
-    /* clear again */
-    menux=0;
-    menuy=0;
-  }
-
-  return TRUE;
-}
-#endif
-
 /**********************************************************
  * ad_job_fetch_message
  *
@@ -285,80 +243,8 @@ extern int *native2amiga_line_map;
 extern int thisframe_y_adjust;
 
 static uae_u32 ad_test(ULONG *m68k_results) {
-#if 0
-  struct Screen *screen;
-  LONG x,y;
-  LONG arosx, arosy;
-  WORD  diwx, diwy, diwhx;
-  WORD  dx;
-#endif
 
   JWLOG("\nAD_TEST AD_TEST AD_TEST\n\n");
-#if 0
-  JWLOG("FOO: ==============================\n");
-
-  screen=IntuitionBase->FirstScreen;
-  if(!screen) {
-    JWLOG("aros FOO: no screen..\n");
-    return TRUE;
-  }
-
-  /* W->BorderLeft and W->BorderTop are already part of XOffset and YOffset */
-  arosx=screen->MouseX - W->LeftEdge; 
-  arosy=screen->MouseY - W->TopEdge;
-
-  /* AROS mouse x coord to amigaOS x coord */
-
-  //JWLOG("FOO: 0xdff08E: %x\n", diwstrt);
-  diwx=diwstrt & 0xb11111111;
-  //JWLOG("FOO: diwx:     %x\n", diwx);
-  diwhx=diwhigh & 0xb100000; /* H8 bit is nr 5 */
-  //JWLOG("FOO: diwhx:    %x\n", diwhx);
-  dx=diwx+diwhx;
-
-  JWLOG("FOO: arosx:        %4d\n", arosx);
-  JWLOG("FOO: dx offset:    %4d\n", -(dx/2));
-  x=arosx - (dx/2);
-
-  JWLOG("FOO:               ----\n");
-  JWLOG("FOO: arosx-dx:     %4d\n", x);
-  x=x + 0x40; /* DISPLAY_LEFT_SHIFT */
-  JWLOG("FOO:      +0x40:   %4d\n", 0x40);
-  JWLOG("FOO:               ----\n");
-  JWLOG("FOO x:             %4d\n", x);
-
-  x=x + (9*2) + 2; /* 2*DIW_DDF_OFFSET + HBLANK_OFFSET(=4) !? */
-  JWLOG("FOO:    +2+9*2:    %4d\n", 22);
-  JWLOG("FOO:               ----\n");
-  JWLOG("FOO: x:           %4d\n", x);
-  JWLOG("FOO: XOffset:    -%4d\n", XOffset);
-  JWLOG("FOO:               ----\n");
-  x=x - XOffset;
-  JWLOG("FOO x:            %4d\n", x);
-
-  /* for superhires: *2, for lores screens: /2 */
-
-  put_long(m68k_results, x); 
-  //put_long_p(m68k_results, screen->MouseX); 
-  
-  JWLOG("FOO: ------------------------------\n");
-  /* AROS mouse y coord to amigaOS y coord */
-  JWLOG("FOO: arosy:                       %4d\n", arosy);
-  JWLOG("FOO: native2amiga_line_map[%3d]:  %4d\n", arosy, native2amiga_line_map[arosy]);
-  JWLOG("FOO: thisframe_y_adjust:          %4d\n", thisframe_y_adjust);
-  JWLOG("FOO: minfirstline:               -%4d\n", minfirstline);
-  JWLOG("FOO: minfirstline:               -  44\n");
-  JWLOG("FOO:                             -----\n");
-  y=-44 + coord_native_to_amiga_y(arosy) << 1;
-  JWLOG("FOO:                              %4d\n", y);
-  y=y-YOffset;
-  JWLOG("FOO: YOffset:                    -%4d\n", YOffset);
-  JWLOG("FOO:                             -----\n");
-  JWLOG("FOO: res:                         %4d\n", y);
-
-  put_long(m68k_results+1, y); 
-  //put_long_p(m68k_results+1, screen->MouseY); 
-#endif
 
   return TRUE;
 }

@@ -30,6 +30,7 @@
 #include "sysdeps.h"
 
 #include "td-amigaos/thread.h"
+#include "od-amiga/j.h"
 
 
 /* sam: Argg!! Why did phase5 change the path to cybergraphics ? */
@@ -50,7 +51,7 @@
 # endif
 #endif
 
-#define AWTRACING_ENABLED 0
+#define AWTRACING_ENABLED 1
 #if AWTRACING_ENABLED
 #define AWTRACE(...)	do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -157,14 +158,6 @@ extern xcolnr xcolors[4096];
 
 static uae_u8 *oldpixbuf;
 
-/* Values for amiga_screen_type */
-enum {
-    UAESCREENTYPE_CUSTOM,
-    UAESCREENTYPE_PUBLIC,
-    UAESCREENTYPE_ASK,
-    UAESCREENTYPE_LAST
-};
-
 static int  screen_is_picasso;
 static char picasso_invalid_lines[1200];
 static int  picasso_invalid_start;
@@ -195,12 +188,12 @@ struct CyberGfxIFace *ICyberGfx;
 
 unsigned long            frame_num; /* for arexx */
 
-static UBYTE            *Line;
+/*static*/ UBYTE            *Line;
 struct RastPort  *RP;
 struct Screen    *S;
 struct Window    *W;
-static struct RastPort  *TempRPort;
-static struct BitMap    *BitMap;
+/*static*/ struct RastPort  *TempRPort;
+/*static*/ struct BitMap    *BitMap;
 #ifdef USE_CYBERGFX
 # ifdef USE_CYBERGFX_V41
 static uae_u8 *CybBuffer;
@@ -478,6 +471,10 @@ static void flush_line_cgx_v41 (struct vidbuf_description *gfxinfo, int line_no)
 
 static void flush_block_cgx_v41 (struct vidbuf_description *gfxinfo, int first_line, int last_line)
 {
+  if(!RP) {
+    kprintf("%s: ERROR!! no RP here!\n", __FILE__);
+    /* die ..*/
+  }
     WritePixelArray (CybBuffer,
 		     0 , first_line,
 		     gfxinfo->rowbytes,
@@ -1131,8 +1128,13 @@ static int setup_customscreen (void)
     AWTRACE("screen: %lx (%d x %d)\n",screen,screen->Width,screen->Height);
 
     S  = screen;
+    original_S=S;
+
     CM = screen->ViewPort.ColorMap;
+    original_CM=CM;
+
     RP = &screen->RastPort;
+    original_RP=RP;
 
     NewWindowStructure.Width  = screen->Width;
     NewWindowStructure.Height = screen->Height;
@@ -1143,6 +1145,7 @@ static int setup_customscreen (void)
 	AWTRACE ("Cannot open UAE window on custom screen.\n");
 	return 0;
     }
+    original_W=W;
 
     hide_pointer (W);
 
@@ -1228,11 +1231,13 @@ static int setup_publicscreen(void)
 		pubscreen ? pubscreen : "default");
 	return 0;
     }
+    original_S=S;
 
     ZoomArray[2] = 128;
     ZoomArray[3] = S->BarHeight + 1;
 
     CM = S->ViewPort.ColorMap;
+    original_CM=CM;
 
     if ((S->ViewPort.Modes & (HIRES | LACE)) == HIRES) {
 	if (gfxvidinfo.height + S->BarHeight + 1 >= S->Height) {
@@ -1274,6 +1279,9 @@ static int setup_publicscreen(void)
       uae_main_window_Height=gfxvidinfo.height + W->BorderTop  + W->BorderBottom;
 
       uae_main_window_closed=TRUE;
+
+      original_W=W;
+
     }
     else {
 
@@ -1299,6 +1307,7 @@ static int setup_publicscreen(void)
       gfxvidinfo.width  = (W->Width  - W->BorderRight - W->BorderLeft);   
       gfxvidinfo.height = (W->Height - W->BorderTop   - W->BorderBottom); 
 
+      original_W=W;
     }
 
     UnlockPubScreen (NULL, S);
@@ -1307,6 +1316,7 @@ static int setup_publicscreen(void)
     if (!W) {
 	write_log ("Can't open window on public screen!\n");
 	CM = NULL;
+	original_CM=NULL;
 	return 0;
     }
 
@@ -1320,6 +1330,7 @@ AWTRACE("gfxvidinfo.width: %d\n", gfxvidinfo.width);
 AWTRACE("gfxvidinfo.height: %d\n",gfxvidinfo.height);
 
     RP = W->RPort;
+    original_RP=W->RPort;
 
     appw_init (W);
 
@@ -1496,8 +1507,10 @@ static int setup_userscreen (void)
 	gui_message ("Unable to open the requested screen.\n");
 	return 0;
     }
+    original_S=S;
 
     CM           =  S->ViewPort.ColorMap;
+    original_CM  = CM;
     is_halfbrite = (S->ViewPort.Modes & EXTRA_HALFBRITE);
     is_ham       = (S->ViewPort.Modes & HAM);
 
@@ -1527,8 +1540,14 @@ static int setup_userscreen (void)
 	S  = NULL;
 	RP = NULL;
 	CM = NULL;
+	original_CM=NULL;
+	original_S =NULL;
+	original_CM=NULL;
+	original_RP=NULL;
 	return 0;
     }
+
+    original_W=W;
 
     hide_pointer (W);
 
@@ -1955,14 +1974,16 @@ void graphics_leave (void)
 	FreeVec (Line);
 	Line = NULL;
     }
-    if (CM) {
+    if (CM && (CM == original_CM)) {
 	ReleaseColors();
 	CM = NULL;
+	original_CM=NULL;
     }
-    if (W) {
+    if (W && (W == original_W)) {
 	restore_prWindowPtr ();
 	CloseWindow (W);
 	W = NULL;
+	original_W=W;
     }
 
     free_pointer ();
@@ -1975,6 +1996,7 @@ void graphics_leave (void)
 	    while (!CloseScreen (S));
 	}
 	S = NULL;
+	original_S=NULL;
     }
     if (AslBase) {
 	CloseLibrary( (void*) AslBase);
@@ -2475,7 +2497,7 @@ int aros_daemon_runing() {
 void handle_events(void) {
   AWTRACE("handle_events: dispatcher\n", W);
 
-  if(custom_screen_active==NULL) {
+  if(janus_active_screen==NULL) {
     AWTRACE("custom_screen_active==NULL\n");
     handle_events_W(W);
 
@@ -2483,9 +2505,10 @@ void handle_events(void) {
   else {
     /* custom screens only have one window */
     AWTRACE("custom screen %lx, window %lx\n", 
-             custom_screen_active->arosscreen, 
-             custom_screen_active->arosscreen->FirstWindow);
-    handle_events_W(custom_screen_active->arosscreen->FirstWindow);
+             janus_active_screen->arosscreen, 
+             janus_active_screen->arosscreen->FirstWindow);
+    handle_events_W(janus_active_screen->arosscreen->FirstWindow);
+    AWTRACE("do nothing, custom screen thread will handle us\n");
   }
 }
 
@@ -2520,12 +2543,12 @@ void handle_events_W(struct Window *W) {
     }
 #endif
 
-    #ifdef PICASSO96
     if(aos3_task && aos3_task_signal) {
       AWTRACE("send signal to Wait of janusd (%lx)\n", aos3_task);
       uae_Signal(aos3_task, aos3_task_signal);
     }
 
+    #ifdef PICASSO96
     if (screen_is_picasso) {
         int i;
 
