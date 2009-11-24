@@ -85,9 +85,9 @@ gint aos3_window_compare(gconstpointer aos3win, gconstpointer w) {
   return 1; /* don't care for sorting here */
 }
 
-gint aros_window_compare(gconstpointer aos3win, gconstpointer w) {
+gint aros_window_compare(gconstpointer jwin, gconstpointer aroswin) {
 
-  if(((JanusWin *)aos3win)->aroswin == w) {
+  if(((JanusWin *)jwin)->aroswin == aroswin) {
     return 0;
   }
   return 1; /* don't care for sorting here */

@@ -113,6 +113,7 @@ static void handle_custom_events_S(JanusScreen *jscreen, struct Process *thread)
     JWLOG("ERROR: no port!\n", port);
     return;
   }
+  JWLOG("port: %lx\n", port);
 
   notify=StartScreenNotifyTags(SNA_MsgPort,  port,
 			    SNA_UserData, screen,
@@ -124,10 +125,15 @@ static void handle_custom_events_S(JanusScreen *jscreen, struct Process *thread)
     JWLOG("ERROR: unable to StartScreenNotifyTagList!\n");
     return;
   }
+  JWLOG("notify: %lx\n", notify);
 
   notify_signal=1L << port->mp_SigBit;
+  JWLOG("notify_signal: %d\n", notify_signal);
+  JWLOG("jscreen->arosscreen: %lx\n", jscreen->arosscreen);
+  JWLOG("jscreen->arosscreen->FirstWindow: %lx\n", jscreen->arosscreen->FirstWindow);
   window_signal=1L << jscreen->arosscreen->FirstWindow->UserPort->mp_SigBit;
 
+  JWLOG("while..\n");
   done=FALSE;
   while(!done) {
     JWLOG("aros_cscr_thread[%lx]: wait for signal\n", thread);
@@ -202,6 +208,9 @@ static void handle_custom_events_S(JanusScreen *jscreen, struct Process *thread)
  * new_aros_custom_screen for an aos3screen
  *
  * open new one
+ *
+ * This function must not return, until both screen and window are
+ * opened. Wait for screen and window task to complete init
  ************************************************************************/
 static struct Screen *new_aros_custom_screen(JanusScreen *jscreen, 
                                              uaecptr aos3screen,
@@ -214,6 +223,7 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
   const UBYTE preferred_depth[] = {8, 15, 16, 24, 32, 0};
   ULONG i;
   ULONG error;
+  ULONG maxdelay;
   static struct NewWindow NewWindowStructure = {
 	0, 0, 800, 600, 0, 1,
 	IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY /*| IDCMP_DISKINSERTED | IDCMP_DISKREMOVED*/
@@ -357,6 +367,16 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
 
   aros_win_start_thread(jwin);
 
+  /* we need to wait, until our window is open! */
+  maxdelay=100;
+  while(!jscreen->arosscreen->FirstWindow && maxdelay--) {
+    Delay(5);
+  }
+
+  if(!maxdelay) {
+    JWLOG("WARNING: could not wait until window is open..!!\n");
+  }
+
   /* set our screen active */
   ObtainSemaphore(&sem_janus_active_custom_screen);
   janus_active_screen=jscreen;
@@ -406,6 +426,9 @@ static void aros_custom_screen_thread (void) {
   struct Process *thread = (struct Process *) FindTask (NULL);
   GSList         *list_screen=NULL;
   JanusScreen    *jscr=NULL;
+  GSList         *list_win=NULL;
+  JanusScreen    *jwin=NULL;
+  BOOL            closed;
 
   /* There's a time to live .. */
 
@@ -425,7 +448,6 @@ static void aros_custom_screen_thread (void) {
   }
 
   jscr=(JanusScreen *) list_screen->data;
-
   JWLOG("aros_scr_thread[%lx]: win: %lx \n",thread,jscr);
 
 
@@ -465,10 +487,41 @@ EXIT:
   ReleaseSemaphore(&sem_janus_active_custom_screen);
 
   if(jscr->arosscreen->FirstWindow) {
-    /* our custom screen has only one window */
-    JWLOG("aros_cscr_thread[%lx]: close aros window %lx\n",thread, jscr->arosscreen->FirstWindow);
+
+    /* our custom screen has only one window, so signal the task to close it */
+    ObtainSemaphore(&sem_janus_window_list);
+    list_win= g_slist_find_custom(janus_windows, 
+                                         (gconstpointer) jscr->arosscreen->FirstWindow,
+					 &aros_window_compare);
+    if(list_win) {
+      jwin=(JanusWin *) list_win->data;
+      JWLOG("Signal jwin %lx task %lx SIGBREAKF_CTRL_C..\n", jwin, jwin->task);
+      Signal(jwin->task, SIGBREAKF_CTRL_C);
+    }
+    else {
+      JWLOG("ERROR! could not find aros window %lx in janus_windows !!?\n", jscr->arosscreen->FirstWindow);
+    }
+    ReleaseSemaphore(&sem_janus_window_list);
+
+    /* wait until it is closed */
+    closed=FALSE;
+    while(!closed) {
+      ObtainSemaphore(&sem_janus_window_list);
+      list_win= g_slist_find_custom(janus_windows, 
+                                         (gconstpointer) jscr->arosscreen->FirstWindow,
+					 &aros_window_compare);
+      ReleaseSemaphore(&sem_janus_window_list);
+      if(!list_win) {
+	closed=TRUE;
+      }
+      else {
+	JWLOG("wait until window task is dead\n");
+	Delay(10); /* do not busy wait */
+      }
+    }
+
+    JWLOG("aros_cscr_thread[%lx]: closed aros window %lx\n",thread, jscr->arosscreen->FirstWindow);
     /* restore pointer to original window, there still might be a race condition here ? */
-    CloseWindow(jscr->arosscreen->FirstWindow);
   }
 
   if(jscr->arosscreen) {

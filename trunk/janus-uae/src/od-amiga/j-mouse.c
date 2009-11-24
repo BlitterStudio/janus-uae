@@ -179,18 +179,22 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
 
   is_p96=get_long_p(m68k_results);
   JWLOG("mouse: is_p96: %d \n", is_p96);
+  JWLOG("mouse: W: %lx \n", W);
+  JWLOG("mouse: IntuitionBase->FirstScreen->FirstWindow: %lx \n", IntuitionBase->FirstScreen->FirstWindow);
 
   if(mice[0].enabled) {
     JWLOG("mouse: screen->x,y: %d,%d\n", screen->MouseX, screen->MouseY);
-    JWLOG("mouse: W->x,y: %d,%d\n", W->LeftEdge, W->TopEdge);
-    JWLOG("mouse: border->x,y: %d,%d\n", W->BorderLeft, W->BorderTop);
     JWLOG("mouse: XOffset: %d\n", XOffset);
     JWLOG("mouse: visible_left_border: %d\n", visible_left_border);
 
     x=screen->MouseX;
     y=screen->MouseY;
 
-    if(!uae_main_window_closed) {
+    /* W must not be NULL .. */
+    JWLOG("mouse: uae_main_window_closed: %d\n", uae_main_window_closed);
+    if(!uae_main_window_closed && W) {
+      JWLOG("mouse: W->x,y: %d,%d\n", W->LeftEdge, W->TopEdge);
+      JWLOG("mouse: border->x,y: %d,%d\n", W->BorderLeft, W->BorderTop);
       x=x - W->LeftEdge - W->BorderLeft;
       y=y - W->TopEdge  - W->BorderTop;
     }
