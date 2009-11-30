@@ -392,7 +392,7 @@ static void aros_custom_screen_thread (void) {
   GSList         *list_screen=NULL;
   JanusScreen    *jscr=NULL;
   GSList         *list_win=NULL;
-  JanusScreen    *jwin=NULL;
+  JanusWin       *jwin=NULL;
   BOOL            closed;
 
   /* There's a time to live .. */

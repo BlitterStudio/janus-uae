@@ -696,8 +696,8 @@ static void aros_win_thread (void) {
 
     /* patch UAE globals, so that UAE thinks, we are his real output window */
 
-    gfxvidinfo.height=jwin->jscreen->arosscreen->Height;
-    gfxvidinfo.width =jwin->jscreen->arosscreen->Width;
+    //gfxvidinfo.height=jwin->jscreen->arosscreen->Height;
+    //gfxvidinfo.width =jwin->jscreen->arosscreen->Width;
 
     S  = jwin->jscreen->arosscreen;
     CM = jwin->jscreen->arosscreen->ViewPort.ColorMap;
