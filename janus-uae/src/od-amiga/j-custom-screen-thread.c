@@ -224,16 +224,6 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
   ULONG i;
   ULONG error;
   ULONG maxdelay;
-  static struct NewWindow NewWindowStructure = {
-	0, 0, 800, 600, 0, 1,
-	IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY /*| IDCMP_DISKINSERTED | IDCMP_DISKREMOVED*/
-		| IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW | IDCMP_MOUSEMOVE | IDCMP_DELTAMOVE |
-		IDCMP_REFRESHWINDOW,
-	WFLG_SMART_REFRESH | WFLG_BACKDROP | WFLG_RMBTRAP | WFLG_NOCAREREFRESH
-	 | WFLG_BORDERLESS | WFLG_ACTIVATE | WFLG_REPORTMOUSE,
-	NULL, NULL, NULL, NULL, NULL, 5, 5, 800, 600,
-	CUSTOMSCREEN
-  };
 
   JWLOG("entered(jscreen %lx, aos3screen %lx)\n", jscreen, aos3screen);
 
@@ -309,33 +299,7 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
                                                   jscreen->arosscreen->Width, 
                                                   jscreen->arosscreen->Height);
 
-  gfxvidinfo.height     =height;
-  gfxvidinfo.width      =width;
-  //currprefs.gfx_linedbl =0;
-  //currprefs.gfx_lores   =1;
- 
-  S  = jscreen->arosscreen;
-  CM = jscreen->arosscreen->ViewPort.ColorMap;
-  RP = &jscreen->arosscreen->RastPort;
-
-//  NewWindowStructure.Width  = jscreen->arosscreen->Width;
-//  NewWindowStructure.Height = jscreen->arosscreen->Height;
-  NewWindowStructure.Width  = newwidth;
-  NewWindowStructure.Height = newheight;
-  NewWindowStructure.Screen = jscreen->arosscreen;
-
-  W = (void*)OpenWindow (&NewWindowStructure);
-  if (!W) {
-    gui_message ("Cannot open window on new custom screen !?");
-    CloseScreen(jscreen->arosscreen);
-    jscreen->arosscreen=NULL;
-    return NULL;
-  }
-
-  JWLOG("new aros window on custom screen: %lx (%d x %d)\n", W, W->Width, W->Height);
-
   /* add the new window to the janus_window list as a custom window 
-   * custom windows have to have their ->aroswin set already!
    *
    * then start a thread for it
    */
@@ -346,7 +310,6 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
   JWLOG("new jwin %lx for janus custom screen %lx\n", jwin, jscreen);
   if(!jwin) {
     CloseScreen(jscreen->arosscreen);
-    CloseWindow(W);
     ReleaseSemaphore(&sem_janus_window_list);
     ReleaseSemaphore(&sem_janus_screen_list);
     gui_message ("out of memory !?");
@@ -354,7 +317,7 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
   }
 
   jwin->custom =TRUE;
-  jwin->aroswin=W;
+  jwin->aroswin=NULL;
   jwin->jscreen=jscreen;
   jwin->aos3win=NULL;
   jwin->mempool=CreatePool(MEMF_CLEAR|MEMF_SEM_PROTECTED, 0xC000, 0x8000);
@@ -370,6 +333,8 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
   /* we need to wait, until our window is open! */
   maxdelay=100;
   while(!jscreen->arosscreen->FirstWindow && maxdelay--) {
+    JWLOG("aros_cscr_thread[%lx]: wait until window is open (%d tries left ..)\n", 
+          thread, maxdelay);
     Delay(5);
   }
 

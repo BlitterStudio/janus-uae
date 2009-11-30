@@ -54,9 +54,12 @@ static ULONG olisecs(ULONG s, ULONG m) {
  * jwin, you have to supply a dummy jwin, which does not need to be
  * part of the window list. win is NULL, so TAKE CARE of such conditions!
  **************************************************************************/
-void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int qualifier, struct Process *thread) {
+static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int qualifier, struct Process *thread);
+static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int qualifier, struct Process *thread) {
 
   UWORD selection;
+
+  JWLOG("aros_win_thread[%lx]: handle_input(jwin %lx  win %lx)\n", thread, jwin, win);
 
   switch (class) {
       
@@ -662,14 +665,48 @@ static void aros_win_thread (void) {
      * yes, I know, so long if's are evil
      */
   else {
-    JWLOG("aros_win_thread[%lx]: we are a custom win thread, jwin->aroswin => %lx!\n", thread, jwin->aroswin);
-    /* we have to have a window already! */
+
+    JWLOG("aros_win_thread[%lx]: open window on custom screen %lx\n", thread, jwin->jscreen->arosscreen);
+
+    jwin->aroswin =  OpenWindowTags(NULL,
+				      WA_CustomScreen, jwin->jscreen->arosscreen,
+                                      WA_Title,  NULL,
+				      WA_Left,   0,
+				      WA_Top,    0,
+				      WA_Width,  jwin->jscreen->arosscreen->Width,
+				      WA_Height, jwin->jscreen->arosscreen->Height,
+				      WA_SmartRefresh,  TRUE,
+				      WA_Backdrop,      TRUE,
+				      WA_Borderless,    TRUE,
+				      WA_RMBTrap,       TRUE,
+				      WA_NoCareRefresh, TRUE,
+				      WA_ReportMouse,   TRUE,
+				      WA_IDCMP, IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY         |
+				                IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW | 
+						IDCMP_MOUSEMOVE    | IDCMP_DELTAMOVE      |
+					 	IDCMP_REFRESHWINDOW,
+				      TAG_DONE);
+
+    JWLOG("aros_win_thread[%lx]: new aros window %lx\n", thread, jwin->aroswin);
+
     if(!jwin->aroswin) {
-      JWLOG("ERROR!!! custom screen should already have a window opened for us in %lx!\n", jwin);
-      goto EXIT; /* this is really bad.. */
+      JWLOG("ERROR: unable to open window!!!\n");
+      goto EXIT;
     }
-    aroswin=jwin->aroswin;
+
+    /* patch UAE globals, so that UAE thinks, we are his real output window */
+
+    gfxvidinfo.height=jwin->jscreen->arosscreen->Height;
+    gfxvidinfo.width =jwin->jscreen->arosscreen->Width;
+
+    S  = jwin->jscreen->arosscreen;
+    CM = jwin->jscreen->arosscreen->ViewPort.ColorMap;
+    RP = &jwin->jscreen->arosscreen->RastPort;
+    W  = jwin->aroswin;
+
   }
+
+  aroswin=jwin->aroswin;
 
   done=FALSE;
   if(!aroswin->UserPort) {
@@ -679,17 +716,22 @@ static void aros_win_thread (void) {
   }
 
   /* handle IDCMP stuff */
+  JWLOG("aros_win_thread[%lx]: jwin->task: %lx\n", thread, jwin->task);
+  JWLOG("aros_win_thread[%lx]: UserPort: %lx\n", thread, aroswin->UserPort);
   JWLOG("IDCMP loop for window %lx\n",aroswin);
 
   while(!done) {
 
     /* wait either for a CTRL_C or a window signal */
+    JWLOG("Wait(%lx)\n",1L << aroswin->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
     signals = Wait(1L << aroswin->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
+    JWLOG("signals: %lx\n", signals);
 
     if (signals & (1L << aroswin->UserPort->mp_SigBit)) {
-      /* message */
-      while (NULL != 
-	     (msg = (struct IntuiMessage *)GetMsg(aroswin->UserPort))) {
+      JWLOG("aros_win_thread[%lx]: aroswin->UserPort->mp_SigBit received\n", thread);
+      JWLOG("GetMsg(aroswin %lx ->UserPort %lx)\n", aroswin, aroswin->UserPort);
+
+      while ((msg = (struct IntuiMessage *) GetMsg(aroswin->UserPort))) {
 	//JWLOG("IDCMP msg for window %lx\n",aroswin);
 
 	class     = msg->Class;
@@ -703,6 +745,13 @@ static void aros_win_thread (void) {
 	micros    = msg->Micros;
 
 	ReplyMsg ((struct Message*)msg);
+
+	if(jwin->task != thread) {
+	  JWLOG("YYY thread %lx != jwin->task %lx\n", thread, jwin->task);
+	}
+	else {
+	  JWLOG("YYX thread %lx == jwin->task %lx\n", thread, jwin->task);
+	}
 
 	handle_msg(aroswin, jwin, class, code, dmx, dmy, mx, my, qualifier, 
 		   thread, secs, micros, &done);
