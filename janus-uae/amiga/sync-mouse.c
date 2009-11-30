@@ -382,7 +382,6 @@ void sync_mouse() {
 
   /* do it for every update, as a screen might change the resolution.. */
   if(CyberGfxBase) {  /* no CyberGfxBase, is_p96 is always FALSE */
-    DebOut("CyberGfxBase found\n");
     modeID=GetVPModeID(&(screen->ViewPort));
     /*
     DebOut("modeID=%lx\n", modeID);
@@ -396,7 +395,6 @@ void sync_mouse() {
   }
   else {
     /* is_p96 stays FALSE */
-    DebOut("CyberGfxBase *NOT* found\n");
     is_p96=FALSE;
   }
 

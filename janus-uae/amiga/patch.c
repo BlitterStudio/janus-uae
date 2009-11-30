@@ -289,11 +289,15 @@ ULONG remove_dragging_TagList (struct TagItem *original_tags __asm("a1")) {
  * screen. We could do that here, but there are not many OpenScreens
  * at all, so performance is no issue.
  *
- * We don't watn draggable screens, as we run into trouble with updates of
+ * We don't want draggable screens, as we run into trouble with updates of
  * the background, if for example behind the amigaOS screen a native
  * aros screen should be visible. So we create a new NewScreen struct
  * and patch it so that it has SA_Draggable=FALSE. The original
- * sctruct stays intact (including the Taglist).
+ * struct stays intact (including the Taglist).
+ *
+ * We might need to define exceptions from that, as stuff like
+ * Brilliance, which uses two screens at the same time, will
+ * stop to work otherwise. This is a TODO!
  *
  * for calltrap:
  * AD_GET_JOB  11                   (d0)
