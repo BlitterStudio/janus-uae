@@ -304,6 +304,6 @@ void reset_drawing(void);
 STATIC_INLINE uae_u32 get_byte(uaecptr addr);
 
 /* ami-win.c */
-void handle_events_W(struct Window *W);
+void handle_events_W(struct Window *W, BOOL customscreen);
 
 #endif

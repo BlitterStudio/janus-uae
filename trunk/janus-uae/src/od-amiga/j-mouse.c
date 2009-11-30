@@ -178,14 +178,12 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
 #endif
 
   is_p96=get_long_p(m68k_results);
-  JWLOG("mouse: is_p96: %d \n", is_p96);
-  JWLOG("mouse: W: %lx \n", W);
-  JWLOG("mouse: IntuitionBase->FirstScreen->FirstWindow: %lx \n", IntuitionBase->FirstScreen->FirstWindow);
+  JWLOG("mouse: is_p96: %d W: %lx IntuiBase->FirstScr->FirstWin %lx\n", 
+                is_p96, W, IntuitionBase->FirstScreen->FirstWindow);
 
   if(mice[0].enabled) {
     JWLOG("mouse: screen->x,y: %d,%d\n", screen->MouseX, screen->MouseY);
-    JWLOG("mouse: XOffset: %d\n", XOffset);
-    JWLOG("mouse: visible_left_border: %d\n", visible_left_border);
+    JWLOG("mouse: XOffset: %d visible_left_border: %d\n", XOffset, visible_left_border);
 
     x=screen->MouseX;
     y=screen->MouseY;
@@ -223,10 +221,8 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
     put_long_p(m68k_results+5, gfxvidinfo.height);     /* height of aros display*/
     put_long_p(m68k_results+6, XOffset);               /* XOffset */
     put_long_p(m68k_results+7, YOffset);               /* YOffset */
-    JWLOG("mouse: currprefs.gfx_xcenter: %d\n", currprefs.gfx_xcenter);
-    JWLOG("mouse: currprefs.gfx_ycenter: %d\n", currprefs.gfx_ycenter);
-    JWLOG("mouse: gfxvidinfo.width: %d\n", gfxvidinfo.width);
-    JWLOG("mouse: gfxvidinfo.height: %d\n", gfxvidinfo.height);
+    JWLOG("mouse: currprefs.gfx_x/ycenter: %d %d\n", currprefs.gfx_xcenter, currprefs.gfx_ycenter);
+    JWLOG("mouse: gfxvidinfo.width/height: %d %d\n", gfxvidinfo.width, gfxvidinfo.height);
   }
   else {
     if(!menux && !menuy) {
