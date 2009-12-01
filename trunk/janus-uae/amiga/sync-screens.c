@@ -29,6 +29,7 @@
 #include <intuition/intuitionbase.h>
 
 #include <proto/exec.h>
+#include <proto/graphics.h>
 
 #include "janus-daemon.h"
 
@@ -88,21 +89,26 @@ void update_top_screen() {
   LEAVE
 }
 
-/****************************************************
+/***********************************************************************
  * update the screen list, so that new aros screens
  * and are created for new amigaOS windows
  *
  * we send the following via AD_GET_JOB_LIST_SCREENS:
- *  screen pointer, depth, screen public name
- *  screen pointer, depth, screen public name
+ *  screen pointer, depth, screen public name, max_overscan_width/height
+ *  screen pointer, depth, screen public name, max_overscan_width/height
  *  ...
  *
  * if there is no public name, NULL is sent.
- ****************************************************/
+ * if it is a custom screen, max_overscan_width/height must be set.
+ ***********************************************************************/
 void update_screens() {
   ULONG *command_mem;
-  ULONG i;
-  struct Screen *screen;
+  ULONG  i;
+  UWORD  maxwidth, maxheight;
+  struct Screen   *screen;
+  struct Rectangle rect;
+  UWORD flags;
+  ULONG display_id;
 
   ENTER
 
@@ -123,12 +129,36 @@ void update_screens() {
     return;
   }
 
+
   i=0;
   while(screen) {
-    DebOut("add screen #%d: %lx (%s)\n",i,screen,screen->Title);
+    DebOut("screen #%d: %lx (%s)\n",i,screen,screen->Title);
+
+    flags=screen->Flags & 0x000F;
+    if(flags == CUSTOMSCREEN) {
+      display_id=GetVPModeID(&screen->ViewPort);
+      if(!(display_id==INVALID_ID) && !QueryOverscan(display_id, &rect, OSCAN_VIDEO)) {
+	maxwidth =720;
+	maxheight=568;
+	DebOut("ERROR. QueryOverscan for ID %lx failed, assuming default values 720x568\n",
+		display_id);
+      }
+      else {
+	maxwidth =rect.MaxX-rect.MinX;
+	maxheight=rect.MaxY-rect.MinY;
+      }
+
+      DebOut("  -> oscan_video: %d x %d\n", maxwidth, maxheight);
+    }
+    else {
+      DebOut("  -> no custom screen\n");
+    }
+
     command_mem[i++]=(ULONG) screen;
     command_mem[i++]=(ULONG) screen->RastPort.BitMap->Depth;
     command_mem[i++]=(ULONG) public_screen_name(screen);
+    command_mem[i++]=(ULONG) maxwidth;
+    command_mem[i++]=(ULONG) maxheight;
     screen=screen->NextScreen;
   }
 
