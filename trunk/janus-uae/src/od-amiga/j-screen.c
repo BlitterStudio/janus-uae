@@ -238,13 +238,18 @@ uae_u32 ad_job_list_screens(ULONG *m68k_results) {
       /* jscreen has to be FreeVec'ed by the screen task */
 
       jscreen->aos3screen=aos3screen;
-      jscreen->depth=get_long((uaecptr) m68k_results+i+4);
-      jscreen->pubname=public_screen_name; /* ?? good idea ?? */
-      /* append it, if new_aros_screen, it has to cleanup itself !*/
+      jscreen->depth     =get_long((uaecptr) m68k_results+i+4);
+      jscreen->pubname   =public_screen_name;                   /* ?? good idea ?? */
+      jscreen->maxwidth  =(UWORD)  get_long((uaecptr) m68k_results+i+12);
+      jscreen->maxheight =(UWORD)  get_long((uaecptr) m68k_results+i+16);
+
+      JWLOG("maxwidth/maxheight: %d, %d\n", jscreen->maxwidth, jscreen->maxheight);
+
+      /* append it, if new_aros_screen fails, it has to cleanup itself !*/
       janus_screens=g_slist_append(janus_screens,jscreen);
       new_aros_screen(jscreen);
     }
-    i=i+12; /* we get *3* ULONGs: screen pointer, depth and pubname */
+    i=i+20; /* we get *5* ULONGs: screen pointer, depth and pubname */
   }
   ReleaseSemaphore(&sem_janus_screen_list);
 

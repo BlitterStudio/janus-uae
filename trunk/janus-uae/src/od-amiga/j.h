@@ -163,9 +163,11 @@ typedef struct {
   struct Screen       *arosscreen;
   char                *title;
   char                *pubname;
-  char                *name; /* name of process */
+  char                *name;    /* name of process */
   struct Task         *task;
   ULONG                depth;
+  UWORD                maxwidth;  /* maximal overscan width  */
+  UWORD                maxheight; /* maximal overscan height */
   BOOL                 ownscreen;
 } JanusScreen;
 
