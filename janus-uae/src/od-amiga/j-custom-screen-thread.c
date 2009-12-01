@@ -91,7 +91,6 @@ static void handle_custom_events_S(JanusScreen *jscreen, struct Process *thread)
   struct Screen              *screen;
   ULONG                       signals;
   ULONG                       notify_signal;
-  ULONG                       window_signal;
   BOOL                        done;
   struct MsgPort             *port;
   JanusWin                    dummywin;
@@ -125,20 +124,16 @@ static void handle_custom_events_S(JanusScreen *jscreen, struct Process *thread)
     JWLOG("ERROR: unable to StartScreenNotifyTagList!\n");
     return;
   }
-  JWLOG("notify: %lx\n", notify);
 
   notify_signal=1L << port->mp_SigBit;
-  JWLOG("notify_signal: %d\n", notify_signal);
-  JWLOG("jscreen->arosscreen: %lx\n", jscreen->arosscreen);
-  JWLOG("jscreen->arosscreen->FirstWindow: %lx\n", jscreen->arosscreen->FirstWindow);
-  window_signal=1L << jscreen->arosscreen->FirstWindow->UserPort->mp_SigBit;
 
-  JWLOG("while..\n");
+  JWLOG("jscreen->arosscreen: %lx\n", jscreen->arosscreen);
+
   done=FALSE;
   while(!done) {
     JWLOG("aros_cscr_thread[%lx]: wait for signal\n", thread);
 
-    signals = Wait(notify_signal | window_signal | SIGBREAKF_CTRL_C);
+    signals = Wait(notify_signal | SIGBREAKF_CTRL_C);
     JWLOG("aros_cscr_thread[%lx]: signal reveived\n", thread);
 
     if(signals & SIGBREAKF_CTRL_C) {
@@ -168,26 +163,6 @@ static void handle_custom_events_S(JanusScreen *jscreen, struct Process *thread)
 	}
       }
     }
-
-#if 0
-    /* window IDCMP */
-    if((!done) && (signals & window_signal)) {
-      
-      JWLOG("signals & window_signal ..\n");
-
-      while(intui_msg = (struct IntuiMessage *) GetMsg (jscreen->arosscreen->FirstWindow->UserPort)) {
-	intui_class     = intui_msg->Class;
-	intui_code      = intui_msg->Code;
-       	intui_qualifier = intui_msg->Qualifier;
-
-	JWLOG("send IntuiMsg to handle_input..\n");
-
-	handle_input(NULL, &dummywin, intui_class, intui_code, intui_qualifier, thread);
-
-	ReplyMsg ((struct Message*) intui_msg); 
-      }
-    }
-#endif
 
   } /* while(done) */
 
@@ -227,18 +202,18 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
 
   JWLOG("entered(jscreen %lx, aos3screen %lx)\n", jscreen, aos3screen);
 
-  width =get_word(aos3screen+12);
-  height=get_word(aos3screen+14);
-  JWLOG("w: %d h: %d\n", width, height);
+#if 0
+  //width=720;
+  //height=568;
+  //JWLOG("w: %d h: %d\n", width, height);
+#endif
+  width =jscreen->maxwidth;
+  height=jscreen->maxheight;
 
-#warning remove me <======================================================================
-  width=720;
-  height=568;
   JWLOG("w: %d h: %d\n", width, height);
-#warning remove me <======================================================================
  
   currprefs.gfx_width_win=width;
-  currprefs.gfx_height = height;
+  currprefs.gfx_height =  height;
   currprefs.amiga_screen_type=0 /*UAESCREENTYPE_CUSTOM*/;
 
   /* this would be the right approach, but getting this pointer stuff
@@ -246,6 +221,7 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
    * screen->vp->RasInfo->BitMap->Depth ... */
 
   /* open a screen, which matches best */
+  /* TODO: care for lores etc here, too! */
   i=0;
   mode=INVALID_ID;
   newwidth =width;
@@ -267,7 +243,7 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
   /* If the screen is larger than requested, center UAE's display */
   XOffset=0;
   YOffset=0;
-  if (newwidth > (ULONG)width) {
+  if (newwidth > (ULONG) width) {
     XOffset = (newwidth - width) / 2;
   }
   if (newheight > (ULONG) height) {
@@ -485,8 +461,7 @@ EXIT:
       }
     }
 
-    JWLOG("aros_cscr_thread[%lx]: closed aros window %lx\n",thread, jscr->arosscreen->FirstWindow);
-    /* restore pointer to original window, there still might be a race condition here ? */
+    JWLOG("aros_cscr_thread[%lx]: window of screen %lx is closed\n",thread, jscr->arosscreen);
   }
 
   if(jscr->arosscreen) {
