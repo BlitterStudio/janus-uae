@@ -2499,7 +2499,7 @@ void handle_events(void) {
 
   if(janus_active_screen==NULL) {
     AWTRACE("custom_screen_active==NULL\n");
-    handle_events_W(W);
+    handle_events_W(W, FALSE);
 
   }
   else {
@@ -2507,7 +2507,7 @@ void handle_events(void) {
     AWTRACE("custom screen %lx, window %lx\n", 
              janus_active_screen->arosscreen, 
              janus_active_screen->arosscreen->FirstWindow);
-    handle_events_W(janus_active_screen->arosscreen->FirstWindow);
+    handle_events_W(janus_active_screen->arosscreen->FirstWindow, TRUE);
     AWTRACE("do nothing, custom screen thread will handle us\n");
   }
 }
@@ -2519,12 +2519,23 @@ void handle_events(void) {
  * for a window on our own custom screen, for 
  * example
  ***************************************************/
-void handle_events_W(struct Window *W) {
+void handle_events_W(struct Window *W, BOOL customscreen) {
 
     struct IntuiMessage *msg;
     int dmx, dmy, mx, my, class, code, qualifier;
 
+    gui_handle_events();
+
+    if(aos3_task && aos3_task_signal) {
+      AWTRACE("send signal to Wait of janusd (%lx)\n", aos3_task);
+      uae_Signal(aos3_task, aos3_task_signal);
+    }
+
     AWTRACE("W: %lx\n", W);
+    if(!W) {
+      AWTRACE("Warning: W is NULL!\n", W);
+      return;
+    }
 
    /* this function is called at each frame, so: */
     ++frame_num;       /* increase frame counter */
@@ -2542,11 +2553,6 @@ void handle_events_W(struct Window *W) {
 	activate_debugger ();
     }
 #endif
-
-    if(aos3_task && aos3_task_signal) {
-      AWTRACE("send signal to Wait of janusd (%lx)\n", aos3_task);
-      uae_Signal(aos3_task, aos3_task_signal);
-    }
 
     #ifdef PICASSO96
     if (screen_is_picasso) {
@@ -2579,8 +2585,13 @@ void handle_events_W(struct Window *W) {
     }
     #endif
 
-    gui_handle_events();
-    while ((msg = (struct IntuiMessage*) GetMsg (W->UserPort))) {
+    if(customscreen) {
+      JWLOG("custom screen, don't do GetMsg(W %lx ->UserPort %lx)\n", W, W->UserPort);
+    }
+    else {
+      JWLOG("GetMsg(W->UserPort %lx)\n", W->UserPort);
+
+      while ((msg = (struct IntuiMessage*) GetMsg(W->UserPort))) {
 	class     = msg->Class;
 	code      = msg->Code;
 	dmx       = msg->MouseX;
@@ -2592,6 +2603,7 @@ void handle_events_W(struct Window *W) {
 	ReplyMsg ((struct Message*)msg);
 
 	AWTRACE("W: %lx (%s)\n",W, W->Title);
+	JWLOG("ami-win.c: handle_input(win %lx)\n", W);
 
 	switch (class) {
 	    case IDCMP_NEWSIZE:
@@ -2713,6 +2725,7 @@ void handle_events_W(struct Window *W) {
 		AWTRACE("Unknown event class: %x\n", class);
 		break;
         }
+      }
     }
 
     appw_events();
