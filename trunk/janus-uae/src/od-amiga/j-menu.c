@@ -142,7 +142,7 @@ void clone_menu(JanusWin *jwin) {
 
   vi = GetVisualInfoA(jwin->jscreen->arosscreen, NULL);
   if(!vi) {
-    JWLOG("ERROR: no vi (you have to use that editor!\n");
+    JWLOG("ERROR: no vi (you have to use that editor!)\n");
     return;
   }
 

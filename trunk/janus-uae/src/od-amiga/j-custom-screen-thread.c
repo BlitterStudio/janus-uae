@@ -202,6 +202,9 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
 
   JWLOG("entered(jscreen %lx, aos3screen %lx)\n", jscreen, aos3screen);
 
+  /* hide all dirty effects.. */
+  j_stop_window_update=TRUE;
+
 #if 0
   //width=720;
   //height=568;
@@ -268,6 +271,7 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
   if(!jscreen->arosscreen) {
     JWLOG("ERROR: could not open screen !? (Error: %ld\n",error);
     gui_message ("Cannot open custom screen (Error: %ld)\n", error);
+    j_stop_window_update=FALSE;
     return NULL;
   }
 
@@ -289,6 +293,7 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
     ReleaseSemaphore(&sem_janus_window_list);
     ReleaseSemaphore(&sem_janus_screen_list);
     gui_message ("out of memory !?");
+    j_stop_window_update=FALSE;
     return NULL;
   }
 
@@ -324,38 +329,17 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
   JWLOG("aros_cscr_thread[%lx]: we (jscreen %lx) are open and active now\n", thread, janus_active_screen);
   ReleaseSemaphore(&sem_janus_active_custom_screen);
 
-
   /* TODO !!*/
+  /* this delay avoids drawings of wrong screen contents around the real amigaos screen
+   * contents. Not nice, but works so far.
+   */
+  Delay(10);
+
   uae_main_window_closed=FALSE;
 
-  reset_drawing(); /* this will bring a custon screen, with keyboard working */
+  reset_drawing(); /* flush full screen, so that any potential gfx glitches are gone */
 
-#if 0
-  j_stop_window_update=TRUE;
-  custom_screen_active=jscreen;
-
-  gfx_set_picasso_state(0);
-  reset_drawing();
-  init_row_map();
-  init_aspect_maps();
-  notice_screen_contents_lost();
-  inputdevice_acquire ();
-  inputdevice_release_all_keys ();
-  reset_hotkeys ();
-  hide_pointer (W);
-#endif
-
-#if 0
-  JWLOG("Line: %lx\n", Line);
-  JWLOG("BitMap: %lx\n", BitMap);
-  JWLOG("TempRPort: %lx\n", TempRPort);
-
-  if(!Line || !BitMap || !TempRPort) {
-    JWLOG("ERROR ERROR ERROR ERROR: NULL pointer in Line/BitMap/TempRPort!!\n");
-    return FALSE; /* ? */
-  }
-#endif
-
+  j_stop_window_update=FALSE;
   return jscreen->arosscreen;
 }
 
@@ -485,6 +469,8 @@ EXIT:
     JWLOG("aros_cscr_thread[%lx]: FreeVec(%lx)\n",thread, jscr);
     FreeVec(jscr);
   }
+
+  uae_main_window_closed=TRUE;
 
   ReleaseSemaphore(&sem_janus_screen_list);
 
