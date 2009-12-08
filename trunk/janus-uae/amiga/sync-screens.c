@@ -89,6 +89,36 @@ void update_top_screen() {
   LEAVE
 }
 
+static void screen_fix_resolution(ULONG modeID, WORD *x, WORD *y) {
+
+  DebOut("screen_fix_resolution(%d, %d)\n", *x, *y);
+  
+  if(modeID == INVALID_ID) {
+    DebOut("screen_fix_resolution WARNING: modeID == INVALID_ID\n");
+    return;
+  }
+
+  if(modeID & SUPERHIRES) {
+    *x=*x / 2;
+    DebOut("==>SUPER_KEY\n");
+  }
+  else if(modeID & HIRES) {
+    DebOut("==>HIRES_KEY\n");
+  }
+  else { 
+    DebOut("==>LORES_KEY\n");
+    *x=*x * 2;
+  }
+  /* lores */
+  if(! (modeID & LACE) ) {
+    DebOut("==>no INTERLACE\n");
+    *y=*y * 2;
+  }
+
+  DebOut("screen_fix_resolution: x,y: %d, %d\n",*x,*y);
+}
+
+
 /***********************************************************************
  * update the screen list, so that new aros screens
  * and are created for new amigaOS windows
@@ -146,6 +176,7 @@ void update_screens() {
       else {
 	maxwidth =rect.MaxX-rect.MinX;
 	maxheight=rect.MaxY-rect.MinY;
+	screen_fix_resolution(display_id, &maxwidth, &maxheight);
       }
 
       DebOut("  -> oscan_video: %d x %d\n", maxwidth, maxheight);
@@ -153,6 +184,7 @@ void update_screens() {
     else {
       DebOut("  -> no custom screen\n");
     }
+
 
     command_mem[i++]=(ULONG) screen;
     command_mem[i++]=(ULONG) screen->RastPort.BitMap->Depth;
