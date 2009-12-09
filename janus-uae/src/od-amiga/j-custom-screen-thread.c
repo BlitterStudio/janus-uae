@@ -36,32 +36,66 @@
 /***********************************************************
  * handle ScreenNotifyMessages
  ***********************************************************/
+
 static void handle_msg(JanusScreen *jscreen, 
-                       ULONG class, ULONG code, ULONG userdata,
+                       ULONG notify_class, ULONG notify_code, ULONG notify_screen,
 		       struct Process *thread) {
 
-  JWLOG("aros_cscr_thread[%lx]: class %d, code %d, userdata %lx\n", thread, class, code, userdata);
+  BOOL tofront;
+  ULONG i;
+
+  JWLOG("aros_cscr_thread[%lx]: notify_userdata %lx, notify_class %lx, notify_code %lx\n", thread, notify_screen, notify_class, notify_code);
+  JWLOG("aros_cscr_thread[%lx]: notify_userdata %lx jscreen->arosscreen %lx\n", thread, notify_screen, jscreen->arosscreen);
+
+  if((jscreen->arosscreen == notify_screen) && (notify_code & SDEPTH_TOFRONT)) {
+    tofront=TRUE;
+    JWLOG("XX1: SDEPTH_TOFRONT\n");
+  }
+  if((jscreen->arosscreen == notify_screen) && (notify_code & SDEPTH_TOBACK)) {
+    tofront=FALSE;
+    JWLOG("XX1: SDEPTH_TOBACK\n");
+  }
+  if((jscreen->arosscreen != notify_screen) && (notify_code & SDEPTH_TOBACK)) {
+    /* wait until the old screen is not the first screen any more */
+    i=10;
+    while((IntuitionBase->FirstScreen == notify_screen) && i--) {
+      Delay(2);
+    }
+    /* we have to check, if we are the first now */
+    if(IntuitionBase->FirstScreen == jscreen->arosscreen) {
+      tofront=TRUE;
+      JWLOG("XX2: SDEPTH_TOFRONT\n");
+    }
+    else {
+      /* another one became front screen, so we don't care */
+      return;
+    }
+  }
+  if((jscreen->arosscreen != notify_screen) && (notify_code & SDEPTH_TOFRONT)) {
+    tofront=FALSE;
+    JWLOG("XX3: SDEPTH_TOBACK\n");
+  }
 
   /* SDEPTH_TOFRONT/BACK is handled analog to IDCMP_ACTIVEWINDOW/INACTIVE */
-  switch(code) {
-    case SDEPTH_TOFRONT: 
-      /* TODO !!*/
-      uae_main_window_closed=FALSE;
-
-      reset_drawing(); /* this will bring a custom screen, with keyboard working */
-
+  switch(tofront) {
+    case TRUE:
+      JWLOG("aros_cscr_thread[%lx]: SDEPTH_TOFRONT\n", thread);
       JWLOG("aros_cscr_thread[%lx]: wait for sem_janus_active_custom_screen\n", thread);
       ObtainSemaphore(&sem_janus_active_custom_screen);
       janus_active_screen=jscreen;
       JWLOG("aros_cscr_thread[%lx]: we (jscreen %lx) are active front screen now\n", thread, janus_active_screen);
       ReleaseSemaphore(&sem_janus_active_custom_screen);
 
+      //ActivateWindow(jscreen->arosscreen->FirstWindow); /* might not be necessary */
 
-      ActivateWindow(jscreen->arosscreen->FirstWindow);
+      /* TODO !!*/
+      uae_main_window_closed=FALSE;
 
+      reset_drawing(); /* this will bring a custom screen, with keyboard working */
       break;
 
-    case SDEPTH_TOBACK: 
+    case FALSE:
+      JWLOG("aros_cscr_thread[%lx]: SDEPTH_TOBACK\n", thread);
       JWLOG("aros_cscr_thread[%lx]: wait for sem_janus_active_custom_screen\n", thread);
 
       Delay(10);
@@ -77,8 +111,8 @@ static void handle_msg(JanusScreen *jscreen,
 
       ReleaseSemaphore(&sem_janus_active_custom_screen);
       break;
-
   }
+
 }
 
 void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int qualifier, struct Process *thread) ;
@@ -140,10 +174,9 @@ static void handle_custom_events_S(JanusScreen *jscreen, struct Process *thread)
       JWLOG("aros_cscr_thread[%lx]: SIGBREAKF_CTRL_C received\n", thread);
       done=TRUE;
       break;
-    }
-
-    /* notify */
+    } else 
     if(!done && (signals & notify_signal)) {
+      JWLOG("aros_cscr_thread[%lx]: notify_signal received\n", thread);
 
       while((notify_msg = (struct ScreenNotifyMessage *) GetMsg (port))) {
 	notify_class     = notify_msg->snm_Class;
@@ -153,14 +186,23 @@ static void handle_custom_events_S(JanusScreen *jscreen, struct Process *thread)
 
 	ReplyMsg ((struct Message*) notify_msg); 
 
-	if(notify_object == (ULONG) screen) {
+	JWLOG("aros_cscr_thread[%lx]: notify_class %lx (SNOTIFY_SCREENDEPTH %lx)\n", thread,
+	       notify_class, SNOTIFY_SCREENDEPTH);
+	JWLOG("aros_cscr_thread[%lx]: notify_object %lx screen %lx jscreen->arosscreen: %lx\n", thread,
+	       notify_object, screen, jscreen->arosscreen);
+
+//	if(notify_object == (ULONG) screen) {
+//	  JWLOG("aros_cscr_thread[%lx]: own notify_object %lx\n", thread, notify_object);
 	  /* this message is for us */
 	  switch (notify_class) {
 	      case SNOTIFY_SCREENDEPTH:
-	    	handle_msg(jscreen, notify_class, notify_code, notify_userdata, thread);
+	    	handle_msg(jscreen, notify_class, notify_code, notify_object, thread);
   	      break;
   	  }
-	}
+//	}
+//	else {
+//	  JWLOG("aros_cscr_thread[%lx]: foreign notify_object %lx\n", thread, notify_object);
+//	}
       }
     }
 
