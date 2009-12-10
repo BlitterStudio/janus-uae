@@ -35,45 +35,57 @@
 
 /***********************************************************
  * handle ScreenNotifyMessages
+ *
+ * AROS does not send a SDEPTH_TOFRONT/SDEPTH_TOBACK to our
+ * screen always. If our screen get to front with a 
+ * ScreenToFront call, then we get a message. If another
+ * screen gets a ScreenToFront, we *don't* get a 
+ * SDEPTH_TOBACK. And vice versa.
+ *
+ * So we try to catch a correct tofront with all
+ * eventual possibilities..
  ***********************************************************/
-
 static void handle_msg(JanusScreen *jscreen, 
                        ULONG notify_class, ULONG notify_code, ULONG notify_screen,
 		       struct Process *thread) {
 
-  BOOL tofront;
+  BOOL tofront=FALSE;
   ULONG i;
 
-  JWLOG("aros_cscr_thread[%lx]: notify_userdata %lx, notify_class %lx, notify_code %lx\n", thread, notify_screen, notify_class, notify_code);
-  JWLOG("aros_cscr_thread[%lx]: notify_userdata %lx jscreen->arosscreen %lx\n", thread, notify_screen, jscreen->arosscreen);
+  JWLOG("aros_cscr_thread[%lx]: notify_screen %lx, notify_class %lx, notify_code %lx\n", thread, notify_screen, notify_class, notify_code);
 
-  if((jscreen->arosscreen == notify_screen) && (notify_code & SDEPTH_TOFRONT)) {
+  if((jscreen->arosscreen == (struct Screen *) notify_screen) && (notify_code & SDEPTH_TOFRONT)) {
     tofront=TRUE;
-    JWLOG("XX1: SDEPTH_TOFRONT\n");
+    JWLOG("aros_cscr_thread[%lx]: SDEPTH_TOFRONT for our screen %lx\n", thread, notify_screen);
   }
-  if((jscreen->arosscreen == notify_screen) && (notify_code & SDEPTH_TOBACK)) {
+  if((jscreen->arosscreen == (struct Screen *) notify_screen) && (notify_code & SDEPTH_TOBACK)) {
     tofront=FALSE;
-    JWLOG("XX1: SDEPTH_TOBACK\n");
+    JWLOG("aros_cscr_thread[%lx]: SDEPTH_TOBACK for our screen\n");
   }
-  if((jscreen->arosscreen != notify_screen) && (notify_code & SDEPTH_TOBACK)) {
+  if((jscreen->arosscreen != (struct Screen *) notify_screen) && (notify_code & SDEPTH_TOBACK)) {
     /* wait until the old screen is not the first screen any more */
     i=10;
-    while((IntuitionBase->FirstScreen == notify_screen) && i--) {
+    while((IntuitionBase->FirstScreen == (struct Screen *) notify_screen) && i--) {
       Delay(2);
     }
     /* we have to check, if we are the first now */
     if(IntuitionBase->FirstScreen == jscreen->arosscreen) {
       tofront=TRUE;
-      JWLOG("XX2: SDEPTH_TOFRONT\n");
+      JWLOG("aros_cscr_thread[%lx]: SDEPTH_TOBACK to foreign screen, but we are first now\n");
     }
     else {
       /* another one became front screen, so we don't care */
+      JWLOG("aros_cscr_thread[%lx]: SDEPTH_TOBACK to foreign screen, but we still are not first\n");
       return;
     }
   }
-  if((jscreen->arosscreen != notify_screen) && (notify_code & SDEPTH_TOFRONT)) {
+  if((jscreen->arosscreen != (struct Screen *) notify_screen) && (notify_code & SDEPTH_TOFRONT)) {
+    JWLOG("aros_cscr_thread[%lx]: SDEPTH_TOFRONT to foreign screen, but we were not first\n");
+    if(janus_active_screen != janus_active_screen) {
+      return;
+    }
     tofront=FALSE;
-    JWLOG("XX3: SDEPTH_TOBACK\n");
+    JWLOG("aros_cscr_thread[%lx]: SDEPTH_TOFRONT to foreign screen, so we are going back\n");
   }
 
   /* SDEPTH_TOFRONT/BACK is handled analog to IDCMP_ACTIVEWINDOW/INACTIVE */
