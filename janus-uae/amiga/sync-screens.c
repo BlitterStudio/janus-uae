@@ -70,6 +70,9 @@ void screen_test() {
  *
  * ask, which aos3 screen is the top screen in AROS
  * land. Then we bring it to the top, too.
+ *
+ * AD_GET_JOB_TOP_SCREEN returns NULL, if the first
+ * AROS screen is a pure native AROS screen.
  ****************************************************/
 void update_top_screen() {
   struct Screen *screen;
@@ -77,12 +80,15 @@ void update_top_screen() {
 
   ENTER
 
-  DebOut("update_top_screen()\n");
-
   screen=(struct Screen *) calltrap (AD_GET_JOB, AD_GET_JOB_TOP_SCREEN, foo);
 
   if(screen && (screen != IntuitionBase->FirstScreen)) {
-    DebOut("Bring screen %lx to front\n", screen);
+    if(screen->Title) {
+      DebOut("update_top_screen(): bring screen %lx to front (%s)\n",screen,screen->Title);
+    }
+    else {
+      DebOut("update_top_screen(): bring screen %lx to front\n", screen);
+    }
     ScreenToFront(screen);
   }
 
