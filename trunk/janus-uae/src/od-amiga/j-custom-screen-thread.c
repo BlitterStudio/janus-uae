@@ -96,6 +96,12 @@ static void handle_msg(JanusScreen *jscreen,
       ObtainSemaphore(&sem_janus_active_custom_screen);
       janus_active_screen=jscreen;
       JWLOG("aros_cscr_thread[%lx]: we (jscreen %lx) are active front screen now\n", thread, janus_active_screen);
+
+      S  = jscreen->arosscreen;
+      CM = jscreen->arosscreen->ViewPort.ColorMap;
+      RP = &jscreen->arosscreen->RastPort;
+      W  = jscreen->arosscreen->FirstWindow;
+
       ReleaseSemaphore(&sem_janus_active_custom_screen);
 
       //ActivateWindow(jscreen->arosscreen->FirstWindow); /* might not be necessary */
@@ -448,21 +454,22 @@ EXIT:
 
   ObtainSemaphore(&sem_janus_screen_list);
 
-  JWLOG("aros_cscr_thread[%lx]: restore S to %lx, W to %lx, CM to %lx and RP to %lx\n",thread,
-                                original_S, original_W, original_CM, original_RP);
-  S= original_S;
-  W= original_W;
-  CM=original_CM;
-  RP=original_RP;
-
   ObtainSemaphore(&sem_janus_active_custom_screen);
   if(janus_active_screen == jscr) {
+    JWLOG("aros_cscr_thread[%lx]: restore S to %lx, W to %lx, CM to %lx and RP to %lx\n",thread,
+				  original_S, original_W, original_CM, original_RP);
+    S= original_S;
+    W= original_W;
+    CM=original_CM;
+    RP=original_RP;
+
     janus_active_screen=NULL;
     JWLOG("aros_cscr_thread[%lx]: set janus_active_screen=NULL\n", thread);
   }
   else {
     JWLOG("aros_cscr_thread[%lx]: another jscr (%lx) is already janus_active_screen\n", thread, janus_active_screen);
   }
+
   ReleaseSemaphore(&sem_janus_active_custom_screen);
 
   if(jscr->arosscreen->FirstWindow) {
