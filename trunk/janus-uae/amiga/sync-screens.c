@@ -71,14 +71,18 @@ void screen_test() {
  * ask, which aos3 screen is the top screen in AROS
  * land. Then we bring it to the top, too.
  *
+ * also report our top screen to AROS
+ *
  * AD_GET_JOB_TOP_SCREEN returns NULL, if the first
  * AROS screen is a pure native AROS screen.
  ****************************************************/
 void update_top_screen() {
   struct Screen *screen;
-  ULONG foo[2];
+  ULONG foo[10];
 
   ENTER
+
+  foo[0]=(ULONG) IntuitionBase->FirstScreen;
 
   screen=(struct Screen *) calltrap (AD_GET_JOB, AD_GET_JOB_TOP_SCREEN, foo);
 
