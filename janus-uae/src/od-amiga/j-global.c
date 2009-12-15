@@ -42,6 +42,9 @@ ULONG aos3_clip_to_amigaos_signal=0;
 BOOL  clipboard_amiga_changed=FALSE;
 BOOL  clipboard_aros_changed=FALSE;
 
+/* aos3 first screen */
+ULONG aos3_first_screen=0;
+
 /* remember original uae window pointer */
 struct Window   *original_W;
 struct Screen   *original_S;
@@ -79,6 +82,9 @@ GSList *janus_messages=NULL;
 JanusWin *janus_active_window=NULL;
 
 BOOL uae_main_window_closed=FALSE;
+
+/* disable *all* output to native aros window(s) */
+BOOL uae_no_display_update=FALSE;
 
 /* one of our cloned custom screens should get all input etc */
 JanusScreen *janus_active_screen=NULL;

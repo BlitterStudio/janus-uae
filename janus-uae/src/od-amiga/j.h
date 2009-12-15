@@ -134,6 +134,9 @@ extern ULONG aos3_clip_to_amigaos_signal;
 extern BOOL clipboard_amiga_changed;
 extern BOOL clipboard_aros_changed;
 
+/* amigaos top screen */
+extern ULONG aos3_first_screen;
+
 void clipboard_hook_install          (void);
 void copy_clipboard_to_aros          (void);
 void copy_clipboard_to_aros_real     (uaecptr data, uae_u32 len);
@@ -267,6 +270,8 @@ uae_u32 ad_job_update_janus_windows(ULONG *m68k_results);
 uae_u32 ad_job_open_custom_screen  (ULONG aos3screen);
 uae_u32 ad_job_get_mouse           (ULONG *m68k_results);
 uae_u32 ad_debug                   (ULONG *m68k_results);
+uae_u32 ad_job_top_screen          (ULONG *m68k_results);
+uae_u32 ad_job_close_screen        (ULONG aos3screen);
 
 /* compare hooks */
 gint aos3_process_compare       (gconstpointer aos3win, gconstpointer t);

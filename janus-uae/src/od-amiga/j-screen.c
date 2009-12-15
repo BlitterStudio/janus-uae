@@ -54,7 +54,7 @@ static void new_aros_cust_screen(JanusScreen *jscreen, uaecptr aos3screen) {
 
   JWLOG("aos3screen: %lx\n", aos3screen);
 
-  jscreen->arosscreen=-1;
+  jscreen->arosscreen= (struct Screen *) -1;
 
   aros_custom_screen_start_thread(jscreen); /* fills jscreen->arosscreen */
 
@@ -83,14 +83,14 @@ static struct Screen *new_aros_pub_screen(JanusScreen *jscreen,
     return pub;
   }
 
-  jscreen->arosscreen=-1;
+  jscreen->arosscreen= (struct Screen *) -1;
 
   aros_screen_start_thread(jscreen);
 
   /* wait until thread was started and it had a chance to open the screen.
    * If the tread fails, it sets the screen to NULL
    */
-  while(jscreen->arosscreen == -1) {
+  while((LONG) jscreen->arosscreen ==  -1) {
     Delay(10);
   }
 
@@ -223,7 +223,7 @@ uae_u32 ad_job_list_screens(ULONG *m68k_results) {
       JWLOG(" screen %lx not found in janus_screens list\n",aos3screen);
 
       if(get_long((uaecptr) m68k_results+i+4)) {
-	public_screen_name=get_real_address(get_long((uaecptr) m68k_results+i+8));
+	public_screen_name=(char *) get_real_address(get_long((uaecptr) m68k_results+i+8));
 	JWLOG("pubname: >%s<\n",public_screen_name);
       }
       else {
@@ -238,7 +238,7 @@ uae_u32 ad_job_list_screens(ULONG *m68k_results) {
       JWLOG("append aos3screen %lx as %lx\n", aos3screen, jscreen);
       /* jscreen has to be FreeVec'ed by the screen task */
 
-      jscreen->aos3screen=aos3screen;
+      jscreen->aos3screen=(gpointer) aos3screen;
       jscreen->depth     =get_long((uaecptr) m68k_results+i+4);
       jscreen->pubname   =public_screen_name;                   /* ?? good idea ?? */
       jscreen->maxwidth  =(UWORD)  get_long((uaecptr) m68k_results+i+12);
@@ -270,6 +270,12 @@ uae_u32 ad_job_list_screens(ULONG *m68k_results) {
  * It seems, we need an own thread here, too.
  **********************************************************/
 uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
+
+  JWLOG("new aros screen: %lx (but we let sync screen handle it.\n", aos3screen);
+
+  return TRUE;
+
+#if 0
   GSList *list_screen;
   JanusScreen *jscreen;
   UWORD width;
@@ -293,10 +299,6 @@ uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
   };
 
   JWLOG("entered\n");
-
-#warning TODO enable this, so that it just calls start_thread.. <==============================================
-  return TRUE;
-
 
 /* ?? */  currprefs.gfx_width_win= graphics_init();
 
@@ -482,6 +484,7 @@ uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
   }
 
   return TRUE;
+#endif
 }
 
 uae_u32 ad_job_close_screen(ULONG aos3screen) {
@@ -541,7 +544,7 @@ uae_u32 ad_job_top_screen(ULONG *m68k_results) {
   ENTER
 
   /* need to remember first screen for j-custom-screen-thread.c/handle_msg */
-  aos3_first_screen=get_long(m68k_results);
+  aos3_first_screen=get_long_p(m68k_results);
 
   ObtainSemaphore(&sem_janus_active_custom_screen);
 
