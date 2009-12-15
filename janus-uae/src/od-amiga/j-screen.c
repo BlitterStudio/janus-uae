@@ -210,6 +210,7 @@ uae_u32 ad_job_list_screens(ULONG *m68k_results) {
   JWLOG("ad_job_list_screens()\n");
 
   ObtainSemaphore(&sem_janus_screen_list);
+
   i=0;
   while((aos3screen=get_long((uaecptr) m68k_results+i))) {
     JWLOG(" aos3screen: %lx\n",aos3screen);
@@ -531,11 +532,16 @@ uae_u32 ad_job_close_screen(ULONG aos3screen) {
  *
  * return aos3 screen, which should be on top or
  * NULL, if current AROS screen has no sibling
+ *
+ * gets curent aos3 top screen as parameter
  **********************************************************/
 uae_u32 ad_job_top_screen(ULONG *m68k_results) {
   uae_u32 screen;
 
   ENTER
+
+  /* need to remember first screen for j-custom-screen-thread.c/handle_msg */
+  aos3_first_screen=get_long(m68k_results);
 
   ObtainSemaphore(&sem_janus_active_custom_screen);
 
