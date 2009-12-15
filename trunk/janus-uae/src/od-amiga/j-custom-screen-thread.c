@@ -52,6 +52,8 @@ static void handle_msg(JanusScreen *jscreen,
   BOOL tofront=FALSE;
   ULONG i;
 
+  uae_no_display_update=TRUE;
+
   JWLOG("aros_cscr_thread[%lx]: notify_screen %lx, notify_class %lx, notify_code %lx\n", thread, notify_screen, notify_class, notify_code);
 
   if((jscreen->arosscreen == (struct Screen *) notify_screen) && (notify_code & SDEPTH_TOFRONT)) {
@@ -76,17 +78,22 @@ static void handle_msg(JanusScreen *jscreen,
     else {
       /* another one became front screen, so we don't care */
       JWLOG("aros_cscr_thread[%lx]: SDEPTH_TOBACK to foreign screen, but we still are not first\n");
+      uae_no_display_update=FALSE;
+      reset_drawing();
       return;
     }
   }
   if((jscreen->arosscreen != (struct Screen *) notify_screen) && (notify_code & SDEPTH_TOFRONT)) {
     JWLOG("aros_cscr_thread[%lx]: SDEPTH_TOFRONT to foreign screen, but we were not first\n");
     if(janus_active_screen != janus_active_screen) {
+      uae_no_display_update=FALSE;
+      reset_drawing();
       return;
     }
     tofront=FALSE;
     JWLOG("aros_cscr_thread[%lx]: SDEPTH_TOFRONT to foreign screen, so we are going back\n");
   }
+
 
   /* SDEPTH_TOFRONT/BACK is handled analog to IDCMP_ACTIVEWINDOW/INACTIVE */
   switch(tofront) {
@@ -105,11 +112,21 @@ static void handle_msg(JanusScreen *jscreen,
       ReleaseSemaphore(&sem_janus_active_custom_screen);
 
       //ActivateWindow(jscreen->arosscreen->FirstWindow); /* might not be necessary */
+      i=20;
+      while((aos3_first_screen != jscreen->aos3screen) && i--) {
+	Delay(5);
+	JWLOG("waiting for aos3_first_screen %lx == jscreen->aos3screen %lx (#%d)\n", aos3_first_screen, 
+	                                                                              jscreen->aos3screen, i);
+      }
+
+      if(!i) {
+	JWLOG("WARNING: unable to wait for aos3 %lx screen to be the first %lx\n", jscreen->aos3screen, 
+	                                                                           aos3_first_screen);
+      }
 
       /* TODO !!*/
       uae_main_window_closed=FALSE;
 
-      reset_drawing(); /* this will bring a custom screen, with keyboard working */
       break;
 
     case FALSE:
@@ -123,13 +140,15 @@ static void handle_msg(JanusScreen *jscreen,
       if(janus_active_screen == jscreen) {
 	janus_active_screen=NULL;
 	uae_main_window_closed=TRUE;
-	reset_drawing();
 	JWLOG("aros_cscr_thread[%lx]: we (jscreen %lx) are not active any more\n", thread, janus_active_screen);
       }
 
       ReleaseSemaphore(&sem_janus_active_custom_screen);
       break;
   }
+
+  uae_no_display_update=FALSE;
+  reset_drawing();
 
 }
 
@@ -263,7 +282,7 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
   JWLOG("entered(jscreen %lx, aos3screen %lx)\n", jscreen, aos3screen);
 
   /* hide all dirty effects.. */
-  j_stop_window_update=TRUE;
+  uae_no_display_update=TRUE;
 
 #if 0
   //width=720;
@@ -297,6 +316,7 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
 
   if(mode == (ULONG) INVALID_ID) {
     JWLOG("ERROR: could not find modeid !?!!\n");
+    uae_no_display_update=FALSE;
     return NULL;
   }
 
@@ -331,7 +351,7 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
   if(!jscreen->arosscreen) {
     JWLOG("ERROR: could not open screen !? (Error: %ld\n",error);
     gui_message ("Cannot open custom screen (Error: %ld)\n", error);
-    j_stop_window_update=FALSE;
+    uae_no_display_update=FALSE;
     return NULL;
   }
 
@@ -353,7 +373,7 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
     ReleaseSemaphore(&sem_janus_window_list);
     ReleaseSemaphore(&sem_janus_screen_list);
     gui_message ("out of memory !?");
-    j_stop_window_update=FALSE;
+    uae_no_display_update=FALSE;
     return NULL;
   }
 
@@ -395,11 +415,13 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
    */
   Delay(10);
 
+  /* now update display again */
   uae_main_window_closed=FALSE;
+  uae_no_display_update=FALSE;
 
   reset_drawing(); /* flush full screen, so that any potential gfx glitches are gone */
 
-  j_stop_window_update=FALSE;
+  //j_stop_window_update=FALSE;
   return jscreen->arosscreen;
 }
 
