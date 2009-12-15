@@ -147,6 +147,9 @@ BOOL aos3screen_is_custom            (uaecptr aos3screen);
 /* main uae window active ? */
 extern BOOL uae_main_window_closed;
 
+/* disable *all* output to native aros window(s) */
+extern BOOL uae_no_display_update;
+
 extern WORD menux, menuy;
 
 extern struct Window   *original_W;
@@ -290,6 +293,7 @@ void  put_long_p(ULONG *p, ULONG value);
 ULONG get_long_p(ULONG *p);
 
 void close_all_janus_windows(void);
+void close_all_janus_screens(void);
 
 /* e-uae stuff */
 int match_hotkey_sequence(int key, int state);
@@ -307,5 +311,7 @@ STATIC_INLINE uae_u32 get_byte(uaecptr addr);
 
 /* ami-win.c */
 void handle_events_W(struct Window *W, BOOL customscreen);
+void show_uae_main_window(void);
+void hide_uae_main_window(void);
 
 #endif

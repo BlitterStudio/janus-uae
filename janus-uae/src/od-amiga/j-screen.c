@@ -553,3 +553,46 @@ uae_u32 ad_job_top_screen(ULONG *m68k_results) {
   return screen;
 }
 
+
+/***********************************************************
+ * close_all_janus_screens()
+ *
+ * send a CTRL-C to all aros janus tasks, so that they
+ * close their screen and free their resources.
+ ***********************************************************/
+void close_all_janus_screens() {
+  GSList      *list_screen;
+  JanusScreen *jscreen;
+
+  ENTER
+
+  if(!aos3_task) {
+    /* never registered, nothing to close */
+    LEAVE
+    return;
+  }
+
+  JWLOG("close_all_janus_screens\n");
+
+  ObtainSemaphore(&sem_janus_screen_list);
+  list_screen=janus_screens;
+  while(list_screen) {
+    jscreen=(JanusScreen *) list_screen->data;
+    JWLOG("  send CLTR_C to task %lx\n",jscreen->task);
+    if(jscreen->task) {
+      Signal(jscreen->task, SIGBREAKF_CTRL_C);
+      list_screen=g_slist_next(list_screen);
+    }
+    else {
+      JWLOG("  -> remove %lx from janus_screens, as it has no own thread\n", list_screen);
+      janus_screens=g_slist_delete_link(janus_screens, list_screen);
+      FreeVec(jscreen);
+
+      /* continue with new list */
+      list_screen=janus_screens;
+    }
+  }
+  ReleaseSemaphore(&sem_janus_screen_list);
+  LEAVE
+}
+
