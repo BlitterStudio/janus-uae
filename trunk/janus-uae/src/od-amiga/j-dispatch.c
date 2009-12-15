@@ -308,6 +308,7 @@ static uae_u32 jd_setup(TrapContext *context, ULONG *param) {
       JWLOG("jdaemon tells us, he wants to die (received a SIG-C)\n");
       changed_prefs.jcoherence=FALSE;
       close_all_janus_windows();
+      close_all_janus_screens();
 
       /* update gui !! */
     }
