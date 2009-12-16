@@ -68,6 +68,7 @@ APTR           old_OpenWindowTagList;
 APTR           old_CloseScreen;
 APTR           old_OpenScreen;
 APTR           old_OpenScreenTagList;
+APTR           old_ScreenDepth;
 
 #define PUSHFULLSTACK "movem.l d0-d7/a0-a6,-(SP)\n"
 #define POPFULLSTACK  "movem.l (SP)+,d0-d7/a0-a6\n"
@@ -399,8 +400,54 @@ __asm__("_my_CloseScreen_SetFunc:\n"
 	POPA3
 
         "rts\n");
+
+/*********************************************************************************
+ * _my_ScreenDepth_SetFunc
+ *
+ * done in assembler, as C-Source always at least destroys the
+ * a5 register for the local variable stack frame. But library
+ * functions may only trash d0, d1, a0 and a1.
+ *
+ * We won't let the screen depth change here. We call uae, let
+ * it change the AROS screen for us and then wait, until
+ * janusd changes the screen itself (with A1 == 666).
+ *
+ * For the moment, we only patch SDEPTH_TOBACK, but I am
+ * unsure, if this is the right thing to do.
+ *
+ * for calltrap:
+ * AD_GET_JOB  11 (d0)
+ * AD_GET_JOB_SCREEN_DEPTH 16 (d1)
+ * screen is already in a0
+ * send flags in d3, as d0 is used for AD_GET_JOB
+ *********************************************************************************/
+__asm__("_my_ScreenDepth_SetFunc:\n"
+	"cmp.l #1,_state\n"
+	"blt call_old_ScreenDepth\n"
+	"cmp.l #666, a1\n"
+	"beq call_old_ScreenDepth\n"
+	"cmp.l #1, d0\n"
+	"bne call_old_ScreenDepth\n"
+	PUSHSTACK
+	"move.l d0,d3\n"
+	"moveq #11,d0\n"
+	"moveq #16,d1\n"
+	"move.l _calltrap,a1\n"
+	"jsr (a1)\n"
+	POPSTACK
+        "rts\n"
+	"call_old_ScreenDepth:\n"
+	PUSHA3
+	"sub.l a1, a1\n"
+	"move.l _old_ScreenDepth, a3\n"
+	"jsr (a3)\n"
+	POPA3
+	"rts\n"
+	);
+
+
 /*
- * assembler functions need to be delcared or used, before
+ * assembler functions need to be declared or used, before
  * you can reference them (?).
  */
 void my_CloseWindow_SetFunc();
@@ -409,6 +456,7 @@ void my_OpenWindowTagList_SetFunc();
 void my_OpenScreen_SetFunc();
 void my_OpenScreenTagList_SetFunc();
 void my_CloseScreen_SetFunc();
+void my_ScreenDepth_SetFunc();
 
 /* According to Ralph Babel: ".. as
  * of 2.0, SetFunction() calls Forbid()/Permit() 
@@ -442,6 +490,10 @@ void patch_functions() {
   old_OpenScreenTagList=SetFunction((struct Library *)IntuitionBase, 
                               -612, 
 			      (APTR) my_OpenScreenTagList_SetFunc);
+
+  old_ScreenDepth=SetFunction((struct Library *)IntuitionBase, 
+                              -786, 
+			      (APTR) my_ScreenDepth_SetFunc);
 
 
   LEAVE

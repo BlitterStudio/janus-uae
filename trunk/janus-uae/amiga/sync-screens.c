@@ -93,7 +93,12 @@ void update_top_screen() {
     else {
       DebOut("update_top_screen(): bring screen %lx to front\n", screen);
     }
-    ScreenToFront(screen);
+    /* ScreenToFront(screen);
+     *
+     * as we have patched ScreenDepth, we need to call it differently! 
+     * 666 in a1 skips patch, nice that C= already added such a parameter
+     * for us ;) ! */
+    ScreenDepth(screen, SDEPTH_TOFRONT, 666);
   }
 
   LEAVE
