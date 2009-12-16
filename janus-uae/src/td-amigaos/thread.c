@@ -1,10 +1,28 @@
- /*
-  * E-UAE - The portable Amiga Emulator
-  *
-  * Thread and semaphore support using AmigaOS processes
-  *
-  * Copyright 2003-2005 Richard Drummond
-  */
+/************************************************************************ 
+ *
+ * Copyright 2003-2005 Richard Drummond
+ * Copyright 2009 Oliver Brunner - aros<at>oliver-brunner.de
+ *
+ * Thread and semaphore support using AmigaOS processes
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-UAE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-UAE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * $Id$
+ *
+ ************************************************************************/
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -279,7 +297,7 @@ static int start_proxy_thread (void)
     struct Process *p;
 
     if (replyport) {
-	p = myCreateNewProcTags (NP_Name,	(ULONG) "E-UAE semaphore proxy",
+	p = myCreateNewProcTags (NP_Name,	(ULONG) "j-uae semaphore proxy",
 				 NP_Priority,		10,
 				 NP_StackSize,		2048,
 				 NP_Entry,	(ULONG) proxy_thread_main,
