@@ -97,6 +97,7 @@ WORD get_hi_word(ULONG *field);
 #define AD_GET_JOB_OPEN_CUSTOM_SCREEN 13 /* not used ATM */
 #define AD_GET_JOB_CLOSE_SCREEN       14 /* not used ATM */
 #define AD_GET_JOB_TOP_SCREEN         15
+#define AD_GET_JOB_SCREEN_DEPTH       16
 #define AD_GET_JOB_DEBUG             999 
 
 #define AD_CLIP_SETUP 15
@@ -272,6 +273,8 @@ uae_u32 ad_job_get_mouse           (ULONG *m68k_results);
 uae_u32 ad_debug                   (ULONG *m68k_results);
 uae_u32 ad_job_top_screen          (ULONG *m68k_results);
 uae_u32 ad_job_close_screen        (ULONG aos3screen);
+uae_u32 ad_job_screen_depth        (ULONG aos3screen, ULONG flags);
+
 
 /* compare hooks */
 gint aos3_process_compare       (gconstpointer aos3win, gconstpointer t);

@@ -143,6 +143,7 @@ static void handle_msg(JanusScreen *jscreen,
 	JWLOG("aros_cscr_thread[%lx]: we (jscreen %lx) are not active any more\n", thread, janus_active_screen);
       }
 
+      JWLOG("aros_cscr_thread[%lx]: release sem_janus_active_custom_screen\n", thread);
       ReleaseSemaphore(&sem_janus_active_custom_screen);
       break;
   }

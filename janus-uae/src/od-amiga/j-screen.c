@@ -562,6 +562,53 @@ uae_u32 ad_job_top_screen(ULONG *m68k_results) {
   return screen;
 }
 
+/***********************************************************
+ * ad_job_screen_depth
+ *
+ * gets called from patched amigaOS ScreenDepth.
+ * amigaOS ScreenDepth is *disabled*, so we are the only
+ * one, who can act now.
+ *
+ * We switch our AROS screens accordingly if necessary,
+ * and hope, that the janusd will then switch the 
+ * amigaOS screen correctly.
+ ***********************************************************/
+uae_u32 ad_job_screen_depth (ULONG aos3screen, ULONG flags) {
+
+  ENTER
+
+  JWLOG("ad_job_screen_depth(%lx (%s), %lx)\n", aos3screen, get_real_address(get_long(aos3screen+26)), flags);
+
+  if(flags == SDEPTH_TOBACK) {
+    /* check if we have a jscreen at the top here */
+    ObtainSemaphore(&sem_janus_active_custom_screen);
+    if(janus_active_screen) {
+      if((ULONG) janus_active_screen->aos3screen == aos3screen) {
+	JWLOG("our aros screen %lx needs to go back!\n", janus_active_screen->arosscreen);
+	ReleaseSemaphore(&sem_janus_active_custom_screen);
+
+	/* as we already released the Semaphore (deadlock avoiding), better try IntuitionBase->FirstScreen,
+	 * worst thing happening here is wrong screen to be pushed back. I can live with that.
+	 */
+	ScreenDepth(IntuitionBase->FirstScreen, SDEPTH_TOBACK, NULL);
+	LEAVE 
+	return TRUE;
+      }
+    }
+    else {
+      JWLOG("on AROS we have no visible amigaOS screen, so we ignore the call\n");
+    }
+
+    ReleaseSemaphore(&sem_janus_active_custom_screen);
+    LEAVE
+    return TRUE;
+  }
+
+  JWLOG("WARNING: SDEPTH_TOFRONT/SDEPTH_INFAMILY not handled at the moment (ignored)\n");
+  LEAVE
+  return TRUE;
+}
+
 
 /***********************************************************
  * close_all_janus_screens()
