@@ -652,3 +652,32 @@ void close_all_janus_screens() {
   LEAVE
 }
 
+/***********************************************************
+ * close_all_janus_screens_wait()
+ *
+ * send a CTRL-C to all aros janus tasks, so that they
+ * close their screen and free their resources.
+ * wait until all are dead
+ ***********************************************************/
+void close_all_janus_screens_wait() {
+  unsigned int i;
+
+  ENTER
+
+  close_all_janus_screens();
+  i=0;
+  /* wait till list is empty (all windows are closed) */
+  while(janus_screens && i<(5*CLOSE_WAIT_SECS)) {
+    i++;
+    JWLOG("wait for screens to be closed (#%d)\n",i);
+    Delay(10);
+  }
+
+  if(janus_screens) {
+    write_log ("Janus: not all janus_screens could be closed\n");
+  }
+
+  LEAVE
+  return;
+}
+

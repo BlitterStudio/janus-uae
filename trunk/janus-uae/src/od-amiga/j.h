@@ -165,6 +165,9 @@ extern struct RastPort *original_RP;
 
 #define MAXWIDTHHEIGHT 0x7777
 
+/* time to wait until all windows/screens are closed */
+#define CLOSE_WAIT_SECS 2
+
 typedef struct {
   gpointer             aos3screen;
   struct Screen       *arosscreen;
@@ -301,7 +304,9 @@ void  put_long_p(ULONG *p, ULONG value);
 ULONG get_long_p(ULONG *p);
 
 void close_all_janus_windows(void);
+void close_all_janus_windows_wait(void);
 void close_all_janus_screens(void);
+void close_all_janus_screens_wait(void);
 
 /* e-uae stuff */
 int match_hotkey_sequence(int key, int state);
