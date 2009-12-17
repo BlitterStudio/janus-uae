@@ -478,7 +478,7 @@ EXIT:
   ObtainSemaphore(&sem_janus_screen_list);
 
   ObtainSemaphore(&sem_janus_active_custom_screen);
-  if(janus_active_screen == jscr) {
+  if(!janus_active_screen || (janus_active_screen == jscr)) {
     JWLOG("aros_cscr_thread[%lx]: restore S to %lx, W to %lx, CM to %lx and RP to %lx\n",thread,
 				  original_S, original_W, original_CM, original_RP);
     S= original_S;

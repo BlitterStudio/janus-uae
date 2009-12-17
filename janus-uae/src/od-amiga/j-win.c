@@ -799,6 +799,42 @@ void close_all_janus_windows() {
   LEAVE
 }
 
+/***********************************************************
+ * close_all_janus_windows_wait()
+ *
+ * send a CTRL-C to all aros janus tasks, so that they
+ * close their window and free their resources.
+ * wait until all windows are closed
+ ***********************************************************/
+#define CLOSE_WAIT_SECS 2
+
+void close_all_janus_windows_wait() {
+  unsigned int i;
+
+  ENTER
+
+  if(!aos3_task) {
+    /* never registered, nothing to close */
+    LEAVE
+    return;
+  }
+
+  close_all_janus_windows();
+
+  i=0;
+  /* wait till list is empty (all windows are closed) */
+  while(janus_windows && i<(5*CLOSE_WAIT_SECS)) {
+    i++;
+    JWLOG("wait for windows to be closed (#%d)\n",i);
+    Delay(10);
+  }
+  if(janus_windows) {
+    write_log ("Janus: not all janus_windows could be closed\n");
+  }
+
+  LEAVE
+  return;
+}
 
 /* not used ATM ? */
 #if 0
