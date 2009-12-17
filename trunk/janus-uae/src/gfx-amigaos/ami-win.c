@@ -318,6 +318,10 @@ STATIC_INLINE void flush_line_planar_nodither (struct vidbuf_description *gfxinf
     uae_u8 *newp = gfxinfo->bufmem + yoffset;
     uae_u8 *oldp = oldpixbuf + yoffset;
 
+    if(uae_no_display_update) {
+      return;
+    }
+
     /* Find first pixel changed on this line */
     while (*newp++ == *oldp++) {
 	if (!--len)
@@ -366,6 +370,10 @@ STATIC_INLINE void flush_line_planar_dither (struct vidbuf_description *gfxinfo,
     uae_u16 *newp = (uae_u16 *)(gfxinfo->bufmem + yoffset);
     uae_u16 *oldp = (uae_u16 *)(oldpixbuf + yoffset);
 
+    if(uae_no_display_update) {
+      return;
+    }
+
     /* Find first pixel changed on this line */
     while (*newp++ == *oldp++) {
 	if (!--len)
@@ -409,8 +417,10 @@ STATIC_INLINE void flush_line_ham (struct vidbuf_description *gfxinfo, int line_
     int     len = gfxinfo->width;
     uae_u8 *src = gfxinfo->bufmem + (line_no * gfxinfo->rowbytes);
 
-    ham_conv ((void*) src, Line, len);
-    WritePixelLine8 (RP, 0, line_no, len, Line, TempRPort);
+    if(!uae_no_display_update) {
+      ham_conv ((void*) src, Line, len);
+      WritePixelLine8 (RP, 0, line_no, len, Line, TempRPort);
+    }
 
     return;
 }
@@ -427,7 +437,8 @@ static void flush_block_ham (struct vidbuf_description *gfxinfo, int first_line,
 # ifndef USE_CYBERGFX_V41
 static void flush_line_cgx (struct vidbuf_description *gfxinfo, int line_no)
 {
-    BltBitMapRastPort (CybBitMap,
+    if(!uae_no_display_update) {
+      BltBitMapRastPort (CybBitMap,
 		       0, line_no,
 		       RP,
 		       XOffset,
@@ -435,11 +446,13 @@ static void flush_line_cgx (struct vidbuf_description *gfxinfo, int line_no)
 		       gfxinfo->width,
 		       1,
 		       0xc0);
+    }
 }
 
 static void flush_block_cgx (struct vidbuf_description *gfxinfo, int first_line, int last_line)
 {
-    BltBitMapRastPort (CybBitMap,
+    if(!uae_no_display_update) {
+      BltBitMapRastPort (CybBitMap,
 		       0, first_line,
 		       RP,
 		       XOffset,
@@ -447,10 +460,14 @@ static void flush_block_cgx (struct vidbuf_description *gfxinfo, int first_line,
 		       gfxinfo->width,
 		       last_line - first_line + 1,
 		       0xc0);
+    }
 }
 # else
 static void flush_line_cgx_v41 (struct vidbuf_description *gfxinfo, int line_no)
 {
+  if(uae_no_display_update) {
+    return;
+  }
   /* DONE! this for cloned windows!! */
     WritePixelArray (CybBuffer,
 		     0 , line_no,
@@ -475,6 +492,10 @@ static void flush_block_cgx_v41 (struct vidbuf_description *gfxinfo, int first_l
     kprintf("%s: ERROR!! no RP here!\n", __FILE__);
     /* die ..*/
   }
+  if(uae_no_display_update) {
+    return;
+  }
+
     WritePixelArray (CybBuffer,
 		     0 , first_line,
 		     gfxinfo->rowbytes,
@@ -500,7 +521,7 @@ static void flush_block_cgx_v41 (struct vidbuf_description *gfxinfo, int first_l
 
 static void flush_clear_screen_gfxlib (struct vidbuf_description *gfxinfo)
 {
-    if (RP) {
+    if (RP && !uae_no_display_update) {
 #ifdef USE_CYBERGFX
       /* DONE */
 	if (use_cyb) {
@@ -1182,6 +1203,9 @@ void show_uae_main_window(void) {
 		      uae_main_window_Width, uae_main_window_Height);
 
   uae_main_window_closed=FALSE;
+
+  reset_drawing();
+
 }
 
 /****************************************************************************
@@ -1932,6 +1956,7 @@ void graphics_leave (void)
     AWTRACE("graphics_leave\n");
     /* stop cloning and close all clone windows */
     changed_prefs.jcoherence=FALSE;
+#if 0
     close_all_janus_windows();
     i=0;
     /* wait till list is empty (all windows are closed) */
@@ -1943,7 +1968,24 @@ void graphics_leave (void)
     if(janus_windows) {
       write_log ("Janus: not all janus_windows could be closed\n");
     }
+#endif
+    close_all_janus_windows_wait();
     
+#if 0
+    close_all_janus_screens();
+    i=0;
+    /* wait till list is empty (all windows are closed) */
+    while(janus_screens && i<5) {
+      i++;
+      AWTRACE("wait for screens to be closed (#%d)\n",i);
+      sleep(1);
+    }
+    if(janus_screens) {
+      write_log ("Janus: not all janus_screens could be closed\n");
+    }
+#endif
+    close_all_janus_screens_wait();
+ 
     closepseudodevices ();
     appw_exit ();
 
@@ -2125,6 +2167,10 @@ BOOL clone_window_area(JanusWin *jwin,
   struct Window* win;
   ULONG aos3win;
 
+  if(uae_no_display_update) {
+    return TRUE;
+  }
+
   win=jwin->aroswin;
   aos3win=(ULONG) jwin->aos3win;
 
@@ -2204,32 +2250,6 @@ BOOL clone_window_area(JanusWin *jwin,
       endy - starty + jwin->plusy,
       RECTFMT_RAW
   );
-  /* olioli*/
-#if 0
-  real_start=get_TopEdge(m68k_win)  + get_BorderTop(m68k_win);
-  real_start_dest=0;
-  real_lines=aros_win->Height;
-
-  WritePixelArray (
-      picasso_memory, 
-      get_LeftEdge(m68k_win) + get_BorderLeft(m68k_win), /* src x  */
-      real_start,  /* src y  */
-      get_BytesPerRow(W),                                /* srcmod */
-      /*native_window->RPort, */
-      aros_win->RPort, 
-      /* no WA_GimmeZeroZero
-      aros_win->BorderLeft, aros_win->BorderTop,
-      aros_win->Width  - aros_win->BorderLeft,
-      aros_win->Height - aros_win->BorderTop,
-      */
-      0, real_start_dest,
-      aros_win->Width,
-      real_lines,
-      RECTFMT_RAW
-  );
-#endif
-
-
 
   return TRUE;
 }
@@ -2373,23 +2393,25 @@ static void clone_window(ULONG m68k_win, struct Window *aros_win,
   real_start_dest=0;
   real_lines=aros_win->Height;
 
-  WritePixelArray (
-      picasso_memory, 
-      get_LeftEdge(m68k_win) + get_BorderLeft(m68k_win), /* src x  */
-      real_start,  /* src y  */
-      get_BytesPerRow(W),                      /* srcmod */
-      /*native_window->RPort, */
-      aros_win->RPort, 
-      /* no WA_GimmeZeroZero
-      aros_win->BorderLeft, aros_win->BorderTop,
-      aros_win->Width  - aros_win->BorderLeft,
-      aros_win->Height - aros_win->BorderTop,
-      */
-      0, real_start_dest,
-      aros_win->Width,
-      real_lines,
-      RECTFMT_RAW
-  );
+  if(!uae_no_display_update) {
+    WritePixelArray (
+	picasso_memory, 
+	get_LeftEdge(m68k_win) + get_BorderLeft(m68k_win), /* src x  */
+	real_start,  /* src y  */
+	get_BytesPerRow(W),                      /* srcmod */
+	/*native_window->RPort, */
+	aros_win->RPort, 
+	/* no WA_GimmeZeroZero
+	aros_win->BorderLeft, aros_win->BorderTop,
+	aros_win->Width  - aros_win->BorderLeft,
+	aros_win->Height - aros_win->BorderTop,
+	*/
+	0, real_start_dest,
+	aros_win->Width,
+	real_lines,
+	RECTFMT_RAW
+    );
+  }
 
 }
 
@@ -2452,6 +2474,10 @@ void o1i_clone_windows_task() {
 
 //static void o1i_Draw() {
 static void o1i_Display_Update(int start,int i) {
+
+  if(uae_no_display_update) {
+    return;
+  }
 
   if(!picasso_memory) {
     AWTRACE("ERROR: no picasso_memory!?\n");
@@ -2591,7 +2617,7 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
     else {
       JWLOG("GetMsg(W->UserPort %lx)\n", W->UserPort);
 
-      while ((msg = (struct IntuiMessage*) GetMsg(W->UserPort))) {
+      while (!uae_main_window_closed && (msg = (struct IntuiMessage*) GetMsg(W->UserPort))) {
 	class     = msg->Class;
 	code      = msg->Code;
 	dmx       = msg->MouseX;
@@ -2648,7 +2674,7 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
 
 	    case IDCMP_MOUSEMOVE:
 	      /* classic mouse move, if either option is disabled or janusd is not (yet) running */
-	      if( ((!changed_prefs.jmouse) || (aos3_task==NULL) ) && (!uae_main_window_closed)) {
+	      if( ((!changed_prefs.jmouse) || (!aos3_task) ) && (!uae_main_window_closed)) {
 		AWTRACE("classic mouse move enabled\n");
 		setmousestate (0, 0, dmx, 0);
 		setmousestate (0, 1, dmy, 0);
@@ -2665,7 +2691,7 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
 		}
 	      }
 	      else {
-		AWTRACE("classic mouse move disabled ((%d || %d) && %d)\n", (!changed_prefs.jmouse), (aos3_task==NULL), (!uae_main_window_closed));
+		AWTRACE("classic mouse move disabled ((%d || %d) && %d)\n", (!changed_prefs.jmouse), (!aos3_task), (!uae_main_window_closed));
 	      }
       	      break;
 
@@ -2773,6 +2799,12 @@ static int get_BytesPerPix(struct Window *win) {
   }
 
   scr=win->WScreen;
+
+  if(!scr) {
+    AWTRACE("\nERROR: win->WScreen is NULL\n");
+    kprintf("\nERROR: win->WScreen is NULL\n");
+    return 0;
+  }
 
   if(!GetCyberMapAttr(scr->RastPort.BitMap, CYBRMATTR_ISCYBERGFX)) {
     AWTRACE("\nERROR: !CYBRMATTR_ISCYBERGFX\n");
