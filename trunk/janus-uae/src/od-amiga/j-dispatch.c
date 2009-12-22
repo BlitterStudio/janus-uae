@@ -374,6 +374,55 @@ static uae_u32 cd_setup(TrapContext *context, ULONG *param) {
     return changed_prefs.jclipboard;
 }
 
+/*********************************
+ * setup launchd
+ *********************************/
+static uae_u32 ld_setup(TrapContext *context, ULONG *param) {
+    ULONG want_to_die;
+    /* want_to_die:
+     *   0: ignore the value, do nothing, just fetch the prefs setting
+     *   1: daemon wants to quit
+     *   2: demon wants to run again
+     */
+
+    JWLOG("ld_setup(.., task %lx, .., stop %d)\n",get_long_p(param),get_long_p(param+12));
+
+    if(!aos3_launch_task) {
+      JWLOG("AD_LAUNCH_SETUP called first time => Init..\n");
+
+      /* from now on (aos3_launch_task && aos3_launch_signal) the
+       * aos3 launchd is ready to take orders!
+       */
+
+      aos3_launch_task=get_long_p(param);
+      aos3_launch_signal=get_long_p(param+4);
+
+      unlock_jgui();
+    }
+
+    want_to_die=get_long_p(param+12);
+    JWLOG("want_to_die:%d\n",want_to_die);
+
+    if(want_to_die == 1) {
+      JWLOG("launchd tells us, he wants to die (received a SIG-C)\n");
+      //TODO changed_prefs.jclipboard=FALSE;
+
+      /* update gui !! */
+    }
+
+    if(want_to_die == 2) {
+      JWLOG("clipd tells us, he wants to live again (received a SIG-D)\n");
+      //TODO changed_prefs.jclipboard=TRUE;
+      /* update gui !! */
+    }
+
+    JWLOG("return %d\n", changed_prefs.jclipboard);
+    put_long_p(param+12, changed_prefs.jclipboard);
+    // TODO
+    return changed_prefs.jclipboard;
+}
+
+
 /**********************************************************
  * this stuff gets called from janusd/clipd 
  **********************************************************/
@@ -409,6 +458,13 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
       ULONG *param= (ULONG *) m68k_areg(&context->regs, 0);
 
       return cd_setup(context, param);
+    };
+
+    case AD_LAUNCH_SETUP: {
+      /* the launchd gets ready to serve */
+      ULONG *param= (ULONG *) m68k_areg(&context->regs, 0);
+
+      return ld_setup(context, param);
     };
 
     case AD_SHUTDOWN: {

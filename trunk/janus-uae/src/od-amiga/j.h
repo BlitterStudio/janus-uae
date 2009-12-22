@@ -109,6 +109,9 @@ WORD get_hi_word(ULONG *field);
 #define JD_CLIP_GET_AROS_LEN   4
 #define JD_CLIP_COPY_FROM_AROS 5
 
+#define AD_LAUNCH_SETUP    20
+#define AD_LAUNCH_JOB      21
+#define AD_LAUNCH_TEST      0
 
 #define J_MSG_CLOSE                    1
 
@@ -134,6 +137,10 @@ extern ULONG aos3_clip_to_amigaos_signal;
 /* clipboard status */
 extern BOOL clipboard_amiga_changed;
 extern BOOL clipboard_aros_changed;
+
+/* launchd */
+extern ULONG aos3_launch_task;
+extern ULONG aos3_launch_signal;
 
 /* amigaos top screen */
 extern ULONG aos3_first_screen;

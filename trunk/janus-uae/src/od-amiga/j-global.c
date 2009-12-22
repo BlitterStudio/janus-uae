@@ -38,6 +38,10 @@ ULONG aos3_clip_task=0;
 ULONG aos3_clip_signal=0;
 ULONG aos3_clip_to_amigaos_signal=0;
 
+/* we need that, to wake up the aos3 launchd */
+ULONG aos3_launch_task=0;
+ULONG aos3_launch_signal=0;
+
 /* clipboard status */
 BOOL  clipboard_amiga_changed=FALSE;
 BOOL  clipboard_aros_changed=FALSE;
