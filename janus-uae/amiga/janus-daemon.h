@@ -41,6 +41,8 @@
 #define AD_GET_JOB  11
 #define AD_CLIP_SETUP 15
 #define AD_CLIP_JOB 16
+#define AD_LAUNCH_SETUP    20
+#define AD_LAUNCH_JOB      21
 
 #define AD_TEST 0
 #define AD_GET_JOB_RESIZE 1
