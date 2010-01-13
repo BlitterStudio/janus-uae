@@ -39,6 +39,7 @@ ULONG aos3_clip_signal=0;
 ULONG aos3_clip_to_amigaos_signal=0;
 
 /* we need that, to wake up the aos3 launchd */
+ULONG aros_launch_task=0;
 ULONG aos3_launch_task=0;
 ULONG aos3_launch_signal=0;
 
