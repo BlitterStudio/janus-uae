@@ -1,10 +1,28 @@
-/*
- * E-UAE - The portable Amiga emulator
+/************************************************************************ 
  *
  * Copyright 2004-2006 Richard Drummond
+ * Copyright 2009      Oliver Brunner - aros<at>oliver-brunner.de
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-UAE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-UAE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * $Id$
  *
  * Start-up and support functions for Amiga target
- */
+ *
+ ************************************************************************/
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -13,6 +31,7 @@
 #include "uae.h"
 #include "xwin.h"
 #include "debug.h"
+#include "j.h"
 
 #include "signal.h"
 
@@ -90,9 +109,10 @@ int main (int argc, char *argv[])
     fromWB = argc == 0;
 
     if (fromWB)
-	set_logfile ("T:E-UAE.log");
+	set_logfile ("T:J-UAE.log");
 
     init_libs ();
+    aros_launch_start_thread();
 
 #ifdef USE_SDL
     init_sdl ();
