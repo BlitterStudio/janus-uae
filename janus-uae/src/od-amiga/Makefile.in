@@ -59,7 +59,7 @@ am_libosdep_a_OBJECTS = main.$(OBJEXT) memory.$(OBJEXT) \
 	j-global.$(OBJEXT) j-screen-thread.$(OBJEXT) \
 	j-custom-screen-thread.$(OBJEXT) j-win-thread.$(OBJEXT) \
 	j-menu.$(OBJEXT) j-clipboard.$(OBJEXT) j-mouse.$(OBJEXT) \
-	j-debug.$(OBJEXT)
+	j-debug.$(OBJEXT) j-launch-thread.$(OBJEXT)
 libosdep_a_OBJECTS = $(am_libosdep_a_OBJECTS)
 SCRIPTS = $(dist_noinst_SCRIPTS)
 DEFAULT_INCLUDES = -I. -I$(top_builddir)/src@am__isrc@
@@ -228,7 +228,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 INCLUDES = -I$(top_srcdir)/src/include -I$(top_builddir)/src -I$(top_srcdir)/src -I$(top_srcdir)
 noinst_LIBRARIES = libosdep.a
-libosdep_a_SOURCES = main.c memory.c support.c ami-disk.c blkdev-amiga.c j-dispatch.c j-screen.c j-win.c j-global.c j-screen-thread.c j-custom-screen-thread.c j-win-thread.c j-menu.c j-clipboard.c j-mouse.c j-debug.c 
+libosdep_a_SOURCES = main.c memory.c support.c ami-disk.c blkdev-amiga.c j-dispatch.c j-screen.c j-win.c j-global.c j-screen-thread.c j-custom-screen-thread.c j-win-thread.c j-menu.c j-clipboard.c j-mouse.c j-debug.c j-launch-thread.c
 noinst_HEADERS = amiga-kludges.h memory.h hrtimer.h j.h
 dist_noinst_SCRIPTS = 
 all: all-am
@@ -285,6 +285,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/j-debug.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/j-dispatch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/j-global.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/j-launch-thread.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/j-menu.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/j-mouse.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/j-screen-thread.Po@am__quote@

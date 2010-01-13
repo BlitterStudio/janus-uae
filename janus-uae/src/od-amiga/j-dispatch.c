@@ -103,48 +103,6 @@ gint aos3_screen_compare(gconstpointer jscreen, gconstpointer s) {
   return 1; /* don't care for sorting here */
 }
 
-
-/* we should definately split it up more .. */
-
-
-#if 0
-	  case IDCMP_NEWSIZE: {
-	    JanusMsg *j;
-
-	    JWLOG("aros_win_thread[%lx]: IDCMP_NEWSIZE: win %lx: %dx%d\n",
-	                                              thread,
-	                                              aroswin,
-	                                              aroswin->Width,
-	                                              aroswin->Height);
-	    j=(JanusMsg *) AllocVec(sizeof(JanusMsg),MEMF_CLEAR);
-	    if(!j) {
-	      JWLOG("aros_win_thread[%lx]: ERROR: AllocVec return NULL \n",
-	                                              thread);
-	      break;
-	    }
-
-	    /* init j */
-	    j->aroswin=aroswin;
-	    j->aos3win=win->aos3win;
-	    j->arosmsg=(struct IntuiMessage *) AllocVec(sizeof(struct IntuiMessage),MEMF_CLEAR);
-	    memcpy(j->arosmsg, msg, sizeof(struct IntuiMessage));
-
-	    /* add j to the queue */
-	    ObtainSemaphore(&janus_messages_access);
-	    janus_messages=g_slist_append(janus_messages, j);
-	    ReleaseSemaphore(&janus_messages_access);
-
-	    break;
-	  }
-	}
-	ReplyMsg((struct Message *)msg);
-      }
-#endif
-
-
-
-//APTR m68k_win;
-
 #define GET_JOB_RESULTSIZE 32*4
 
 /*********************************************************

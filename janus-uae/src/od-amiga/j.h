@@ -139,6 +139,8 @@ extern BOOL clipboard_amiga_changed;
 extern BOOL clipboard_aros_changed;
 
 /* launchd */
+#define LAUNCH_PORT_NAME "J-UAE Execute"
+extern ULONG aros_launch_task;
 extern ULONG aos3_launch_task;
 extern ULONG aos3_launch_signal;
 
