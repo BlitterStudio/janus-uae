@@ -21,9 +21,149 @@
  *
  ************************************************************************/
 
+#include <utility/utility.h>
+#include <proto/utility.h>
 #include "j.h"
 #include "memory.h"
+#include "include/filesys.h"
 
+struct JUAE_Launch_Message {
+  struct Message ExecMessage;
+  STRPTR ln_Name;
+};
+
+/* from filesys.c */
+#define DEVNAMES_PER_HDF 32
+typedef struct {
+    char *devname; /* device name, e.g. UAE0: */
+    uaecptr devname_amiga;
+    uaecptr startup;
+    char *volname; /* volume name, e.g. CDROM, WORK, etc. */
+    char *rootdir; /* root unix directory */
+    int readonly; /* disallow write access? */
+    int bootpri; /* boot priority */
+    int devno;
+
+    struct hardfiledata hf;
+
+    /* Threading stuff */
+    smp_comm_pipe *volatile unit_pipe, *volatile back_pipe;
+    uae_thread_id tid;
+    struct _unit *self;
+    /* Reset handling */
+    volatile uae_sem_t reset_sync_sem;
+    volatile int reset_state;
+
+    /* RDB stuff */
+    uaecptr rdb_devname_amiga[DEVNAMES_PER_HDF];
+    int rdb_lowcyl;
+    int rdb_highcyl;
+    int rdb_cylblocks;
+    uae_u8 *rdb_filesysstore;
+    int rdb_filesyssize;
+    char *filesysdir;
+
+} UnitInfo;
+
+
+struct uaedev_mount_info {
+    int num_units;
+    UnitInfo ui[MAX_FILESYSTEM_UNITS];
+};
+
+/***********************************************************
+ * check_and_convert_path
+ *
+ * We check, if aros_exe_full_path is within
+ * - our aros_device_mounted and
+ * - our aros_path_mounted.
+ *
+ * If this is the case, substitute 
+ * "aros_device_mounted:aros_path_mounted" with
+ * "aos_mount_point" and return the result.
+ *
+ * The caller has to FreeVec the result!
+ ***********************************************************/
+char *check_and_convert_path(char *aros_exe_full_path, 
+                             char *aos_mount_point, 
+			     char *aros_device_mounted, 
+			     char *aros_path_mounted) {
+
+  char *aros_exe_path;
+  char *aos_file;
+  char *result;
+
+  JWLOG("entered(%s, %s, %s, %s)\n", aros_exe_full_path, aos_mount_point, aros_device_mounted, aros_path_mounted);
+  
+  if(Strnicmp(aros_exe_full_path, aros_device_mounted, strlen(aros_device_mounted))) {
+    JWLOG("Strnicmp(%s, %s) failed!\n", aros_exe_full_path, aros_device_mounted);
+    return NULL;  /* aros_exe_full_path is not within this mounted path */
+  }
+
+  if(aros_exe_full_path[strlen(aros_device_mounted)] != ':') {
+    JWLOG("no : at %d: >%c<\n", strlen(aros_device_mounted), aros_exe_full_path[strlen(aros_device_mounted)]);
+    return NULL;
+  }
+
+  /* path without device name */
+  aros_exe_path=aros_exe_full_path + strlen(aros_device_mounted) + 1;
+  JWLOG("aros_exe_path: >%s<\n", aros_exe_path);
+
+  if(Strnicmp(aros_exe_path, aros_path_mounted, strlen(aros_path_mounted))) {
+    JWLOG("Strnicmp 2(%s, %s) failed!\n", aros_exe_path, aros_path_mounted);
+    return NULL;
+  }
+
+  if(aros_exe_path[strlen(aros_path_mounted)] != '/') {
+    JWLOG("no / at %d: >%c<\n", strlen(aros_path_mounted), aros_exe_path[strlen(aros_path_mounted)]);
+    return NULL;
+  }
+
+  aos_file=aros_exe_path + strlen(aros_path_mounted) + 1;
+  JWLOG("aos_file: >%s<\n", aos_file);
+
+  JWLOG("result: >%s:%s<\n", aos_mount_point, aos_file);
+
+  result=(char *) AllocVec(strlen(aos_mount_point)+strlen(aos_file)+2, MEMF_ANY);
+  sprintf(result, "%s:%s", aos_mount_point, aos_file);
+
+  return result;
+}
+
+extern struct uaedev_mount_info current_mountinfo;
+
+/***********************************************************
+ * aros_path_to_amigaos(aros_path)
+ *
+ * tries to map the aros file with full path to an 
+ * amigaos native file with full path.
+ *
+ * return NULL, if the aros_path is not mounted at
+ * any point in amigaos.
+ ***********************************************************/
+static char *aros_path_to_amigaos(char *aros_path) {
+
+  char           *result;
+  UnitInfo *uip = options_mountinfo.ui;
+  LONG      i;
+  char     *str;
+  char     *aos_path;
+
+  JWLOG("entered (%s)\n", aros_path);
+
+  aos_path=NULL;
+  for(i=0; (i < options_mountinfo.num_units) && (aos_path==NULL); i++) {
+    str = cfgfile_subst_path (prefs_get_attr ("hardfile_path"), "$(FILE_PATH)", uip[i].rootdir);
+    JWLOG("uip[%d].devname: %s\n", i, uip[i].devname);
+    JWLOG("uip[%d].volname: %s\n", i, uip[i].volname);
+    JWLOG("uip[%d].str: %s\n", i, str);
+    aos_path=check_and_convert_path(aros_path, uip[i].devname, uip[i].volname, str);
+    JWLOG("RESULT: %s\n", aos_path);
+    xfree(str);
+  }
+
+  return NULL;
+}
 
 /***********************************************************
  * This is the process, which watches the Execute
@@ -35,6 +175,7 @@ static void aros_launch_thread (void) {
   BOOL            done   = FALSE;
   ULONG           s;
   struct MsgPort *port   = NULL;
+  struct JUAE_Launch_Message *msg;
 
   /* There's a time to live .. */
 
@@ -66,15 +207,18 @@ static void aros_launch_thread (void) {
 
 
   while(!done) {
-    s=Wait(SIGBREAKF_CTRL_C);
-    done=TRUE;
 
-    /* Ctrl-C */
-    if(s & SIGBREAKF_CTRL_C) {
-      JWLOG("aros_launch_thread[%lx]: SIGBREAKF_CTRL_C received\n", thread);
-      //done=TRUE;
+    WaitPort(port);
+    JWLOG("aros_launch_thread[%lx]: WaitPort done\n",thread);
+    while( (msg = (struct JUAE_Launch_Message *) GetMsg(port)) ) {
+      JWLOG("msg %lx received!\n");
+      JWLOG("msg->ln_Name: >%s< \n", msg->ln_Name);
+      aros_path_to_amigaos(msg->ln_Name);
+      //fsdb_search_dir(I//
+      /* we need to free it ourselves */
     }
   }
+    
 
   /* ... and a time to die. */
 
