@@ -91,12 +91,13 @@ BOOL open_libs() {
 
 /****************************************************
  * register us!
+ *
  * as long as setup is not called, janus-uae behaves 
  * just like a normal uae
  *
  * if called with stop=0, we want to sleep
  *
- * if result is TRUE, we need to run (share clipboard)
+ * if result is TRUE, we need to run 
  * if result is FALSE, we need to sleep 
  ****************************************************/
 int setup(struct Task *task, ULONG launch_signal, ULONG stop) {
@@ -114,7 +115,7 @@ int setup(struct Task *task, ULONG launch_signal, ULONG stop) {
   command_mem[ 8]=(ULONG) 0;
   command_mem[12]=(ULONG) stop;
 
-  state = calltrap (AD_CLIP_SETUP, AD__MAXMEM, command_mem);
+  state = calltrap (AD_LAUNCH_SETUP, AD__MAXMEM, command_mem);
 
   state=command_mem[12];
 
@@ -127,7 +128,54 @@ int setup(struct Task *task, ULONG launch_signal, ULONG stop) {
   return state;
 }
 
-static void runme() {
+static LONG start_it(char *path, char *filename) {
+  LONG rc;
+
+  DebOut("launchd: start_it(%s, %s)\n", path, filename);
+
+  rc = WBStartTags(WBStart_DirectoryName, (ULONG) path,
+                   WBStart_Name,          (ULONG) filename,
+		   TAG_DONE);
+
+  if(rc != RETURN_OK) {
+    DebOut("launchd: unable to start it: rc=%d\n", rc);
+  }
+  return rc;
+}
+
+
+static void handle_launch_signal(void) {
+  ULONG *command_mem;
+  char  *command_string;
+  char  *path;
+  char  *filename;
+
+  C_ENTER
+
+  DebOut("launchd: handle_launch_signal()\n");
+
+  command_mem=AllocVec(4096, MEMF_CLEAR);
+  if(!command_mem) {
+    C_LEAVE
+    return;
+  }
+
+  calltrap (AD_LAUNCH_JOB, LD_GET_JOB, command_mem);
+
+  if(command_mem[0]==0) {
+    DebOut("launchd: no commands waiting for us!?\n");
+  }
+
+  command_string=(char *) command_mem;
+  path          =command_string + command_mem[1];
+  filename      =command_string + command_mem[2];
+
+  start_it(path, filename);
+
+  C_LEAVE
+}
+
+static void runme(void) {
   ULONG        newsignals;
   BOOL         done;
   BOOL         init;
@@ -136,6 +184,8 @@ static void runme() {
   C_ENTER
   DebOut("launchd: launchd running (CTRL-C to go to normal mode, CTRL-D to disabled mode)..\n");
 
+  setup(mytask, launchsignal, 0);
+
   done=FALSE;
   init=FALSE;
   while(!done) {
@@ -143,13 +193,13 @@ static void runme() {
 
     /* test if we are still active */
     //TODO set=setup(mytask, to_aros_signal, to_amigaos_signal, 0);
-    DebOut("clipd: set %d, signal %d\n", set, newsignals);
+    DebOut("launchd: set %d, signal %d\n", set, newsignals);
 
     if(set) {
 
       if(newsignals & launchsignal) {
 	DebOut("launchd: launchsignal from UAE received\n");
-	//TODO handle_to_aros_signal();
+	handle_launch_signal();
       }
     }
 
@@ -168,28 +218,15 @@ static void runme() {
   }
 
   /* never arrive here */
-  DebOut("clipd: try to sleep ..\n");
+  DebOut("launchd: try to sleep ..\n");
   C_LEAVE
-}
-
-LONG start_it(char *path, char *filename) {
-  LONG rc;
-
-  rc = WBStartTags(WBStart_DirectoryName, (ULONG) path,
-                   WBStart_Name,          (ULONG) filename,
-		   TAG_DONE);
-
-  if(rc != RETURN_OK) {
-    DebOut("launchd: unable to start it: rc=%d\n", rc);
-  }
-  return rc;
 }
 
 int main (int argc, char **argv) {
 
   C_ENTER
 
-  DebOut("clipd: started\n");
+  DebOut("launchd: started\n");
 
   if(!open_libs()) {
     C_LEAVE
