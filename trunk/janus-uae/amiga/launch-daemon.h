@@ -19,6 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Janus-Daemon. If not, see <http://www.gnu.org/licenses/>.
  *
+ * $Id$
+ *
  ************************************************************************/
 
 #ifndef __LAUNCH_DAEMON_H_
@@ -26,7 +28,9 @@
 
 #define AD_LAUNCH_SETUP    20
 #define AD_LAUNCH_JOB      21
-#define AD_LAUNCH_TEST      0
+
+#define LD_TEST             0
+#define LD_GET_JOB          1
 
 #define AROSTRAPBASE 0xF0FF90
 
