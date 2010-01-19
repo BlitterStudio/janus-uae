@@ -111,7 +111,8 @@ WORD get_hi_word(ULONG *field);
 
 #define AD_LAUNCH_SETUP    20
 #define AD_LAUNCH_JOB      21
-#define AD_LAUNCH_TEST      0
+#define LD_TEST             0
+#define LD_GET_JOB          1
 
 #define J_MSG_CLOSE                    1
 
@@ -124,6 +125,7 @@ extern ULONG aos3_task_signal;
 extern struct SignalSemaphore aos3_sem;
 extern struct SignalSemaphore sem_janus_window_list;
 extern struct SignalSemaphore sem_janus_screen_list;
+extern struct SignalSemaphore sem_janus_launch_list;
 extern struct SignalSemaphore aos3_thread_start;
 extern struct SignalSemaphore janus_messages_access;
 extern struct SignalSemaphore sem_janus_active_win;
@@ -140,9 +142,10 @@ extern BOOL clipboard_aros_changed;
 
 /* launchd */
 #define LAUNCH_PORT_NAME "J-UAE Execute"
-extern ULONG aros_launch_task;
-extern ULONG aos3_launch_task;
-extern ULONG aos3_launch_signal;
+extern ULONG   aros_launch_task;
+extern ULONG   aos3_launch_task;
+extern ULONG   aos3_launch_signal;
+extern GSList *janus_launch; 
 
 /* amigaos top screen */
 extern ULONG aos3_first_screen;
@@ -214,6 +217,10 @@ typedef struct {
   ULONG          type; /* J_MSG_..*/
   BOOL           old;
 } JanusMsg;
+
+typedef struct {
+  char      *amiga_path;
+} JanusLaunch;
 
 /* Values for amiga_screen_type */
 enum {
@@ -287,6 +294,7 @@ uae_u32 ad_job_top_screen          (ULONG *m68k_results);
 uae_u32 ad_job_close_screen        (ULONG aos3screen);
 uae_u32 ad_job_screen_depth        (ULONG aos3screen, ULONG flags);
 
+uae_u32 ld_job_get                 (ULONG *m68k_results);
 
 /* compare hooks */
 gint aos3_process_compare       (gconstpointer aos3win, gconstpointer t);

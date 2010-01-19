@@ -153,16 +153,14 @@ static char *aros_path_to_amigaos(char *aros_path) {
 
   aos_path=NULL;
   for(i=0; (i < options_mountinfo.num_units) && (aos_path==NULL); i++) {
+
     str = cfgfile_subst_path (prefs_get_attr ("hardfile_path"), "$(FILE_PATH)", uip[i].rootdir);
-    JWLOG("uip[%d].devname: %s\n", i, uip[i].devname);
-    JWLOG("uip[%d].volname: %s\n", i, uip[i].volname);
-    JWLOG("uip[%d].str: %s\n", i, str);
     aos_path=check_and_convert_path(aros_path, uip[i].devname, uip[i].volname, str);
-    JWLOG("RESULT: %s\n", aos_path);
     xfree(str);
   }
 
-  return NULL;
+  JWLOG("RESULT: %s\n", aos_path);
+  return aos_path;
 }
 
 /***********************************************************
@@ -176,6 +174,8 @@ static void aros_launch_thread (void) {
   ULONG           s;
   struct MsgPort *port   = NULL;
   struct JUAE_Launch_Message *msg;
+  char           *amiga_exe;
+  JanusLaunch    *jlaunch;
 
   /* There's a time to live .. */
 
@@ -213,9 +213,32 @@ static void aros_launch_thread (void) {
     while( (msg = (struct JUAE_Launch_Message *) GetMsg(port)) ) {
       JWLOG("msg %lx received!\n");
       JWLOG("msg->ln_Name: >%s< \n", msg->ln_Name);
-      aros_path_to_amigaos(msg->ln_Name);
-      //fsdb_search_dir(I//
-      /* we need to free it ourselves */
+      amiga_exe=aros_path_to_amigaos(msg->ln_Name);
+
+      if(amiga_exe) {
+	if(aos3_launch_task) {
+	  /* store it for the launchd to fetch and execute */
+	  ObtainSemaphore(&sem_janus_launch_list);
+	  jlaunch=(struct JanusLaunch *) AllocVec(sizeof(JanusLaunch),MEMF_CLEAR);
+	  if(jlaunch) {
+	    jlaunch->amiga_path=amiga_exe;
+	    janus_launch=g_slist_append(janus_launch,jlaunch);
+	  }
+  
+	  ReleaseSemaphore(&sem_janus_launch_list);
+	  uae_Signal(aos3_launch_task, aos3_launch_signal);
+	}
+	else {
+	  /* TODO: show a warning, that launchd is not running! */
+	  JWLOG("TODO: show a warning, that launchd is not running!\n");
+	}
+      }
+      else {
+	JWLOG("TODO: show a requester, that volume is not mounted!\n");
+	/* TODO: show a requester, that volume is not mounted! */
+      }
+
+      /* TODO: we need to free the message etc ourselves */
     }
   }
     

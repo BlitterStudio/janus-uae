@@ -68,6 +68,9 @@ struct SignalSemaphore sem_janus_window_list;
 /* access the JanusScreen list */
 struct SignalSemaphore sem_janus_screen_list;
 
+/* access launch list */
+struct SignalSemaphore sem_janus_launch_list;
+
 /* wait until thread is allowed to start */
 struct SignalSemaphore aos3_thread_start;
 
@@ -83,6 +86,7 @@ struct SignalSemaphore sem_janus_active_custom_screen;
 GSList *janus_windows =NULL;
 GSList *janus_screens =NULL;
 GSList *janus_messages=NULL;
+GSList *janus_launch  =NULL;
 
 JanusWin *janus_active_window=NULL;
 
