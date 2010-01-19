@@ -352,6 +352,8 @@ static uae_u32 ld_setup(TrapContext *context, ULONG *param) {
        * aos3 launchd is ready to take orders!
        */
 
+      InitSemaphore(&sem_janus_launch_list);
+
       aos3_launch_task=get_long_p(param);
       aos3_launch_signal=get_long_p(param+4);
 
@@ -379,7 +381,6 @@ static uae_u32 ld_setup(TrapContext *context, ULONG *param) {
     // TODO
     return changed_prefs.jclipboard;
 }
-
 
 /**********************************************************
  * this stuff gets called from janusd/clipd 
@@ -529,7 +530,18 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
   	    return FALSE;
 	}
       }
-
+      case AD_LAUNCH_JOB: {
+	ULONG job=m68k_dreg(&context->regs, 1);
+	ULONG *m68k_results= (ULONG *) m68k_areg(&context->regs, 0);
+	switch(job) {
+	  case LD_GET_JOB:
+	    return ld_job_get(m68k_results);
+	    break;
+  	  default:
+  	    JWLOG("ERROR!! LAUCH_JOB: unkown job: %d\n",m68k_dreg(&context->regs, 1));
+  	    return FALSE;
+	}
+      }
    }
 
     default:
