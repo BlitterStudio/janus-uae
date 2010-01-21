@@ -29,6 +29,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <devices/clipboard.h>
 #include <exec/devices.h>
@@ -36,6 +37,7 @@
 #include <exec/nodes.h>
 #include <exec/io.h>
 #include <exec/memory.h>
+#include <workbench/startup.h>
 
 #if 0
 #include <intuition/intuitionbase.h>
@@ -144,17 +146,142 @@ static LONG start_it(char *path, char *filename) {
 }
 
 
+/*
+struct WBArg {
+  BPTR  wa_Lock; => a lock descriptor 
+  BYTE *wa_Name; => a string relative to that lock 
+};
+*/
+
+
+static BYTE *str_dup_pool(void *pool, char *in) {
+  char *result;
+
+  DebOut("launchd: str_dup_pool(.., %s)\n", in);
+
+  result=(char *) AllocPooled(pool, strlen(in)+1);
+  strcpy(result, in);
+
+  return (BYTE *) result;
+}
+
+static char *get_filename(char *in) {
+  char *sep;
+
+  DebOut("get_filename(%s)\n", in);
+
+  sep=PathPart(in);
+
+  DebOut("launchd: filename: %s\n", sep+1);
+
+  return sep+1;
+}
+
+/* WARNING: this destroys in !!*/
+static char *get_path(void *pool, char *in) {
+  char *sep;
+  char *res;
+  char restore;
+
+  DebOut("get_path(%s)\n", in);
+
+  sep=PathPart(in);
+  restore=sep[0];
+  sep[0]=(char) 0;
+
+  res=AllocPooled(pool, strlen(in)+1);
+  strcpy(res, in);
+
+  sep[0]=restore;
+
+  DebOut("launchd: path: %s\n", res);
+
+  return res;
+}
+
+/*
+ * create an array of WBArg for the wbstart call.
+ * we get all strings referenced in ULONG *in
+ *
+ * we use a pool here, to avoid complicate FreeVecs
+ *
+ * in looks like that:
+ *
+ * 0 : ignored here
+ * 4 : ignored here
+ * 8 : ignored here
+ * 12: (ULONG) offset 1
+ * 16: (ULONG) offset 2
+ * ...
+ * 20: NULL
+ * offset 1: string 1
+ * offset 2: string 2
+ */
+static struct WBArg **create_wbargs(void *pool, ULONG *in) {
+  ULONG nr;
+  ULONG i;
+  ULONG t;
+  char *strings;
+  struct WBArg**args;
+  BPTR  lock;
+  char *path;
+  ULONG *ref;
+
+  DebOut("launchd: create_wbargs\n");
+
+  /* here is the beginning of the offsets */
+  //ref=in+(3*sizeof (ULONG *));
+  ref=&in[3];
+
+  nr=0;
+  while(ref[nr]) {
+    DebOut("launchd: ref[%d]: %d (%s)\n", nr, ref[nr], ref[nr]);
+    nr++;
+  }
+
+  if(!nr) {
+    DebOut("launchd: no args\n");
+    return NULL;
+  }
+
+  DebOut("launchd: nr: %d\n", nr);
+
+  args=AllocPooled(pool, sizeof(struct WBArg *) * (nr+1));
+  strings=(char *) in;
+
+  t=0;
+  for(i=0; i<nr; i++) {
+    path=get_path(pool, strings + ref[i]);
+    lock=Lock(path, ACCESS_READ);
+    if(lock) {
+      args[t]=(struct WBArg *) AllocPooled(pool, sizeof(struct WBArg));
+      /* attention: get_path destroys input strings, so use get_filename first! */
+      args[t]->wa_Name=str_dup_pool(pool, get_filename(strings + ref[i]) );
+      args[t]->wa_Lock=lock;
+      DebOut("launchd: args[%d]: Lock %lx, Name %s\n", t, args[t]->wa_Lock, args[t]->wa_Name);
+      t++;
+    }
+    else {
+      DebOut("launchd: WARNING: could not lock path #%d: %s)\n", i, path);
+    }
+  }
+
+  return args;
+}
+
 static void handle_launch_signal(void) {
   ULONG *command_mem;
   char  *command_string;
   char  *path;
   char  *filename;
+  struct WBArg **wbargs=NULL;
+  void  *pool;
 
   C_ENTER
 
   DebOut("launchd: handle_launch_signal()\n");
 
-  command_mem=AllocVec(4096, MEMF_CLEAR);
+  command_mem=AllocVec(8192, MEMF_CLEAR);
   if(!command_mem) {
     C_LEAVE
     return;
@@ -169,8 +296,18 @@ static void handle_launch_signal(void) {
   command_string=(char *) command_mem;
   path          =command_string + command_mem[1];
   filename      =command_string + command_mem[2];
+  if(command_mem[3]) {
+    pool        =CreatePool(MEMF_CLEAR, 256, 256);
+    wbargs      =create_wbargs(pool, command_mem);
+  }
 
   start_it(path, filename);
+
+  /* TODO: unlock all :( */
+
+  if(pool) {
+    DeletePool(pool);
+  }
 
   C_LEAVE
 }
