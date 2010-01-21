@@ -22,14 +22,17 @@
  ************************************************************************/
 
 #include <utility/utility.h>
+#include <workbench/workbench.h>
 #include <proto/utility.h>
 #include "j.h"
 #include "memory.h"
 #include "include/filesys.h"
 
+/* we get a JUAE_Launch_Message from wanderer */
 struct JUAE_Launch_Message {
   struct Message ExecMessage;
   STRPTR ln_Name;
+  struct TagItem *tags;
 };
 
 /* from filesys.c */
@@ -164,6 +167,57 @@ static char *aros_path_to_amigaos(char *aros_path) {
 }
 
 /***********************************************************
+ * convert_tags
+ *
+ * browse through the taglist and convert all paths to
+ * amigaos paths, if possible.
+ *
+ * store resulting tags in an array.
+ *
+ * array and strings need to be FreeVec'ed somewhere!
+ ***********************************************************/
+static char **convert_tags_to_amigaos(struct TagItem *in) {
+  struct TagItem *tstate;
+  struct TagItem *tag;
+  char           *amigaos_path;
+  ULONG           nr;
+  ULONG           i;
+  char          **result;
+
+  nr=0;
+  tstate=in;
+  while( NextTagItem(&tstate) ) {
+    nr++;
+  }
+
+  if(!nr) {
+    JWLOG("no arguments found\n");
+    return NULL;
+  }
+
+  result=AllocVec(sizeof(char *)*(nr+1), MEMF_PUBLIC|MEMF_CLEAR);
+
+  i=0;
+  tstate=in;
+  while( (tag=NextTagItem(&tstate)) ) {
+    switch(tag->ti_Tag) {
+      case WBOPENA_ArgName:
+	JWLOG("WBOPENA_ArgName: %s\n", tag->ti_Data);
+	amigaos_path=aros_path_to_amigaos(tag->ti_Data); /* AllocVec'ed */
+	result[i++]=amigaos_path;
+	break;
+
+      default:
+	JWLOG("WARNING: unknow tag %lx\n", tag->ti_Tag);
+    }
+  }
+
+  result[i]=NULL;
+
+  return result;
+}
+
+/***********************************************************
  * This is the process, which watches the Execute
  * Port of J-UAE, so wanderer can send us messages.
  ***********************************************************/  
@@ -222,6 +276,7 @@ static void aros_launch_thread (void) {
 	  jlaunch=(struct JanusLaunch *) AllocVec(sizeof(JanusLaunch),MEMF_CLEAR);
 	  if(jlaunch) {
 	    jlaunch->amiga_path=amiga_exe;
+	    jlaunch->args      =convert_tags_to_amigaos(msg->tags);
 	    janus_launch=g_slist_append(janus_launch,jlaunch);
 	  }
   
