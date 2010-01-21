@@ -219,7 +219,8 @@ typedef struct {
 } JanusMsg;
 
 typedef struct {
-  char      *amiga_path;
+  char         *amiga_path;
+  char        **args;
 } JanusLaunch;
 
 /* Values for amiga_screen_type */
