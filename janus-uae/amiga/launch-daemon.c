@@ -130,18 +130,43 @@ int setup(struct Task *task, ULONG launch_signal, ULONG stop) {
   return state;
 }
 
-static LONG start_it(char *path, char *filename) {
+static LONG start_it(char *path, char *filename, struct WBArg *args) {
   LONG rc;
+  ULONG nr_args;
 
-  DebOut("launchd: start_it(%s, %s)\n", path, filename);
+  DebOut("launchd: start_it(%s, %s, %lx)\n", path, filename, args);
 
-  rc = WBStartTags(WBStart_DirectoryName, (ULONG) path,
-                   WBStart_Name,          (ULONG) filename,
-		   TAG_DONE);
+  /* count arguments */
+  nr_args=0;
+  while((args[nr_args].wa_Name) || (args[nr_args].wa_Lock)) {
+    nr_args++;
+  }
+#if 0
+  if(args && args[0]) {
+    while(args[nr_args]) {
+      nr_args++;
+    }
+  }
+#endif
+  DebOut("launchd: #args: %d\n", nr_args);
+
+  if(nr_args) {
+    rc = WBStartTags(WBStart_DirectoryName,  (ULONG) path,
+    		      WBStart_Name,          (ULONG) filename,
+   		      WBStart_ArgumentCount,  nr_args,
+		      WBStart_ArgumentList,   (ULONG) args,
+  		      TAG_DONE);
+  }
+  else {
+    rc = WBStartTags(WBStart_DirectoryName, (ULONG) path,
+    		      WBStart_Name,          (ULONG) filename,
+  		      TAG_DONE);
+  }
 
   if(rc != RETURN_OK) {
     DebOut("launchd: unable to start it: rc=%d\n", rc);
   }
+
   return rc;
 }
 
@@ -217,12 +242,12 @@ static char *get_path(void *pool, char *in) {
  * offset 1: string 1
  * offset 2: string 2
  */
-static struct WBArg **create_wbargs(void *pool, ULONG *in) {
+static struct WBArg *create_wbargs(void *pool, ULONG *in) {
   ULONG nr;
   ULONG i;
   ULONG t;
   char *strings;
-  struct WBArg**args;
+  struct WBArg *args;
   BPTR  lock;
   char *path;
   ULONG *ref;
@@ -246,7 +271,7 @@ static struct WBArg **create_wbargs(void *pool, ULONG *in) {
 
   DebOut("launchd: nr: %d\n", nr);
 
-  args=AllocPooled(pool, sizeof(struct WBArg *) * (nr+1));
+  args=AllocPooled(pool, sizeof(struct WBArg) * (nr+1));
   strings=(char *) in;
 
   t=0;
@@ -254,17 +279,20 @@ static struct WBArg **create_wbargs(void *pool, ULONG *in) {
     path=get_path(pool, strings + ref[i]);
     lock=Lock(path, ACCESS_READ);
     if(lock) {
-      args[t]=(struct WBArg *) AllocPooled(pool, sizeof(struct WBArg));
       /* attention: get_path destroys input strings, so use get_filename first! */
-      args[t]->wa_Name=str_dup_pool(pool, get_filename(strings + ref[i]) );
-      args[t]->wa_Lock=lock;
-      DebOut("launchd: args[%d]: Lock %lx, Name %s\n", t, args[t]->wa_Lock, args[t]->wa_Name);
+      args[t].wa_Name=str_dup_pool(pool, get_filename(strings + ref[i]) );
+      args[t].wa_Lock=lock;
+      DebOut("launchd: args[%d]: Lock %lx, Name %s\n", t, args[t].wa_Lock, args[t].wa_Name);
       t++;
     }
     else {
       DebOut("launchd: WARNING: could not lock path #%d: %s)\n", i, path);
     }
   }
+
+  /* terminate it, not neccessary, but feels better */
+  args[t].wa_Name=NULL;
+  args[t].wa_Lock=NULL;
 
   return args;
 }
@@ -274,7 +302,7 @@ static void handle_launch_signal(void) {
   char  *command_string;
   char  *path;
   char  *filename;
-  struct WBArg **wbargs=NULL;
+  struct WBArg *wbargs=NULL;
   void  *pool;
 
   C_ENTER
@@ -301,7 +329,7 @@ static void handle_launch_signal(void) {
     wbargs      =create_wbargs(pool, command_mem);
   }
 
-  start_it(path, filename);
+  start_it(path, filename, wbargs);
 
   /* TODO: unlock all :( */
 
