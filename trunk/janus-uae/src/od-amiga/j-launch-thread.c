@@ -30,9 +30,10 @@
 
 /* we get a JUAE_Launch_Message from wanderer */
 struct JUAE_Launch_Message {
-  struct Message ExecMessage;
-  STRPTR ln_Name;
+  struct Message  ExecMessage;
+  STRPTR          ln_Name;
   struct TagItem *tags;
+  void           *mempool;
 };
 
 /* from filesys.c */
@@ -227,9 +228,10 @@ static void aros_launch_thread (void) {
   BOOL            done   = FALSE;
   ULONG           s;
   struct MsgPort *port   = NULL;
-  struct JUAE_Launch_Message *msg;
   char           *amiga_exe;
   JanusLaunch    *jlaunch;
+  void           *pool;
+  struct JUAE_Launch_Message *msg;
 
   /* There's a time to live .. */
 
@@ -293,12 +295,11 @@ static void aros_launch_thread (void) {
 	/* TODO: show a requester, that volume is not mounted! */
       }
 
-      /* TODO: we need to free the message etc ourselves */
+      pool=msg->mempool;
+      DeletePool(pool);
     }
   }
-    
 
-  /* ... and a time to die. */
 
 EXIT:
   JWLOG("aros_launch_thread[%lx]: EXIT\n",thread);
