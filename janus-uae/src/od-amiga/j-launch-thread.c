@@ -218,6 +218,9 @@ static char **convert_tags_to_amigaos(struct TagItem *in) {
   return result;
 }
 
+/* from gtkui.c */
+void gui_message_with_title (const char *title, const char *format,...);
+
 /***********************************************************
  * This is the process, which watches the Execute
  * Port of J-UAE, so wanderer can send us messages.
@@ -286,13 +289,15 @@ static void aros_launch_thread (void) {
 	  uae_Signal(aos3_launch_task, aos3_launch_signal);
 	}
 	else {
-	  /* TODO: show a warning, that launchd is not running! */
-	  JWLOG("TODO: show a warning, that launchd is not running!\n");
+	  JWLOG("ERROR: launchd is not running!\n");
+	  gui_message_with_title("ERROR",
+				 "Failed to start %s\n\nJ-UAE is running, but you need to start \"launchd\" inside of amigaOS!\n\nYou can find \"launchd\" in the amiga directory of your J-UAE package.\n\nBest thing is, to start it at the end of your s:user-startup.", msg->ln_Name);
 	}
       }
       else {
-	JWLOG("TODO: show a requester, that volume is not mounted!\n");
-	/* TODO: show a requester, that volume is not mounted! */
+	JWLOG("ERROR: volume %s is not mounted!\n", msg->ln_Name);
+	gui_message_with_title("ERROR",
+				 "Failed to start \"%s\".\n\nThis path is not available inside of amigaOS.\n\nYou need to add the AROS directory\n\n(or one of its parents) with an absolute path\n\nas an amigaOS device.\n\nBest way to do this is the \"Harddisk\" tab in the J-UAE GUI.", msg->ln_Name);
       }
 
       pool=msg->mempool;
