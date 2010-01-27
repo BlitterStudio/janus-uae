@@ -1,11 +1,28 @@
- /*
-  * UAE - The Un*x Amiga Emulator
-  *
-  * Joystick emulation for AmigaOS using lowlevel.library
-  *
-  * Copyright 1996, 1997 Samuel Devulder
-  * Copyright 2003-2005 Richard Drummond
-  */
+/************************************************************************ 
+ *
+ * Joystick emulation for AmigaOS using lowlevel.library
+ *
+ * Copyright 1996, 1997 Samuel Devulder
+ * Copyright 2003-2005  Richard Drummond
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-UAE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-UAE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * $Id$
+ *
+ ************************************************************************/
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -17,7 +34,7 @@
 #include <proto/exec.h>
 #include <proto/lowlevel.h>
 
-struct Library *LowLevelBase;
+struct Library *LowLevelBase=NULL;
 struct LowLevelIFace *ILowLevel;
 
 static unsigned int nr_joysticks;
@@ -30,7 +47,14 @@ static unsigned int nr_joysticks;
 
 static int init_joysticks (void)
 {
+#ifdef __AROS__
+    /* open it only once */
+    if(!LowLevelBase) {
+      LowLevelBase = (struct Library *) OpenLibrary ("lowlevel.library", 37);
+    }
+#else
     LowLevelBase = (struct Library *) OpenLibrary ("lowlevel.library", 39);
+#endif
 #ifdef __amigaos4__
     if (LowLevelBase) {
 	ILowLevel = (struct LowLevelIFace *)GetInterface (LowLevelBase, "main", 1, NULL);
@@ -54,7 +78,7 @@ static void close_joysticks (void)
 {
     if (LowLevelBase) {
 	CloseLibrary (LowLevelBase);
-	LowLevelBase = 0;
+	LowLevelBase = NULL;
     }
 }
 
@@ -70,6 +94,7 @@ static void unacquire_joy (unsigned int num)
 static void read_joy (unsigned int nr)
 {
     if (LowLevelBase != NULL) {
+        /* ReadJoyPort is not available for AROS ATM (?) */
 	ULONG state = ReadJoyPort (nr);
 
 	if ((state & JP_TYPE_MASK) != JP_TYPE_NOTAVAIL) {
