@@ -7,6 +7,8 @@
   * Copyright 2001-2002 Toni Wilen
   */
 
+#ifndef _INPUTDEVICE_H_
+#define _INPUTDEVICE_H_
 
 #define IDTYPE_JOYSTICK 0
 #define IDTYPE_MOUSE 1
@@ -158,3 +160,4 @@ extern int jsem_ismouse  (int port, const struct uae_prefs *p);
 extern int jsem_iskbdjoy (int port, const struct uae_prefs *p);
 
 extern int inputdevice_uaelib (const char *s, const char *parm);
+#endif /* _INPUTDEVICE_H_ */
