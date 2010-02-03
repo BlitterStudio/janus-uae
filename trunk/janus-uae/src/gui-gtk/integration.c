@@ -8,12 +8,12 @@
  *
  * This file is part of Janus-UAE.
  *
- * Janus-Daemon is free software: you can redistribute it and/or modify
+ * Janus-UAE is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Janus-Daemon is distributed in the hope that it will be useful,
+ * Janus-UAE is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -57,17 +57,11 @@
 #include "picasso96.h"
 #include "version.h"
 
-//#include "displaypanel.h"
 #include "chooserwidget.h"
 #include "util.h"
 #include "chipsetspeedpanel.h"
 #include "chipsettypepanel.h"
 #include "integration.h"
-
-/* does not work, so don't enable it */
-#define ENABLE_CENTERING 0
-#define ENABLE_FULL_RTG_SETTINGS 0
-
 
 static const char *coherence_labels[]={"Classic UAE", "Full integration", NULL};
 static const char *clipboard_labels[]={"Separate Clipboards", "Share Clipboard Contents", NULL};
@@ -210,61 +204,35 @@ static void jintegration_destroy(GtkObject *object) {
  ***********************************************/
 static void read_prefs (jIntegration *j) {
 
-  if(currprefs.jcoherence) {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->coherence_widget[1]),TRUE);
-  }
-  else {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->coherence_widget[0]),TRUE);
-  }
-
-  if(currprefs.jclipboard) {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->clipboard_widget[1]),TRUE);
-  }
-  else {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->clipboard_widget[0]),TRUE);
-  }
-
-  if(currprefs.jmouse) {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->mouse_widget[1]),TRUE);
-  }
-  else {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(j->mouse_widget[0]),TRUE);
-  }
+  gtk_list_select_item (GTK_LIST (GTK_COMBO (j->combo_coherence)->list), currprefs.jcoherence);
+  gtk_list_select_item (GTK_LIST (GTK_COMBO (j->combo_clip)->list), currprefs.jclipboard);
+  gtk_list_select_item (GTK_LIST (GTK_COMBO (j->combo_mouse)->list), currprefs.jmouse);
 
 }
 
 extern ULONG aos3_task;
 extern ULONG aos3_clip_task;
 
-/* only unlock, if clipd/janusd are running 
- * this is much too complex coded, but I don't care here
- */
 static void change_lock (jIntegration *j, gboolean status) {
   int i;
-  gboolean jdrunning;
   gboolean cdrunning;
 
   if(aos3_task) {
-    jdrunning=TRUE;
+    gtk_label_set_text(GTK_LABEL(j->label_coherence), "AmigaOS/janusd is running");
+    gtk_label_set_text(GTK_LABEL(j->label_mouse),     "AmigaOS/janusd is running");
   }
   else {
-    jdrunning=FALSE;
+    gtk_label_set_text(GTK_LABEL(j->label_coherence), "AmigaOS/janusd is *not* running!");
+    gtk_label_set_text(GTK_LABEL(j->label_mouse),     "AmigaOS/janusd is *not* running!");
   }
 
   if(aos3_clip_task) {
-    cdrunning=TRUE;
+    gtk_label_set_text(GTK_LABEL(j->label_clip), "AmigaOS/clipd is running");
   }
   else {
-    cdrunning=FALSE;
+    gtk_label_set_text(GTK_LABEL(j->label_clip), "AmigaOS/clipd is *not* running!");
   }
 
-  /* Enable special functions only, if the deamons are running.
-   * You can always disable special functions, in case something 
-   * does not work at startup already.
-   */
-  gtk_widget_set_sensitive(j->mouse_widget[1],     jdrunning);
-  gtk_widget_set_sensitive(j->clipboard_widget[1], cdrunning);
-  gtk_widget_set_sensitive(j->coherence_widget[1], jdrunning);
 }
 
 
@@ -292,49 +260,98 @@ static void unlock_it (jIntegration *j) {
 
 static void clipboard_changed(GtkWidget *me, jIntegration *j) {
 
-  if(j->clipboard_widget[0] == me) {
-    /* classic */
-    j->clipboard=FALSE;
+  GtkList *list   = GTK_LIST (GTK_COMBO (j->combo_clip)->list);
+  GList   *choice = list->selection;
+  gint     sel;
+
+  if (!choice) {
+    return;
   }
-  else {
-    /* sync clipboards */
-    j->clipboard=TRUE;
-  }
+
+  sel=gtk_list_child_position (list, choice->data);
+
+  j->clipboard=(gboolean) sel;
 
   g_signal_emit_by_name(j,"clipboard-changed",j);
 
 }
 
-static void mouse_changed(GtkWidget *me, jIntegration *j) {
+static void mouse_changed(GtkWidget *win, jIntegration *j) {
 
-  if(j->mouse_widget[0] == me) {
-    /* classic */
-    j->mouse=FALSE;
+  GtkList *list   = GTK_LIST (GTK_COMBO (j->combo_mouse)->list);
+  GList   *choice = list->selection;
+  gint     sel;
+
+  if (!choice) {
+    return;
   }
-  else {
-    /* sync mouse pointers */
-    j->mouse=TRUE;
-  }
+
+  sel=gtk_list_child_position (list, choice->data);
+
+  j->mouse=(gboolean) sel;
 
   g_signal_emit_by_name(j,"mouse-changed",j);
 }
 
-static void coherence_changed(GtkWidget *me, jIntegration *j) {
+static void coherence_changed(GtkWidget *win, jIntegration *j) {
 
-  if(j->coherence_widget[0] == me) {
-    /* classic */
-    j->coherence=FALSE;
+  GtkList *list   = GTK_LIST (GTK_COMBO (j->combo_coherence)->list);
+  GList   *choice = list->selection;
+  gint     sel;
+
+  if (!choice) {
+    return;
   }
-  else {
-    /* rootless */
-    j->coherence=TRUE;
-  }
+
+  sel=gtk_list_child_position (list, choice->data);
+
+  j->coherence=(gboolean) sel;
 
   g_signal_emit_by_name(j,"coherent-changed",j);
 }
 
+static GtkWidget *make_combo(int count, ...) {
+  GtkWidget *combo;
+  GList     *list = NULL;
+  va_list   choices;
+  int       i;
 
-/********************* make_display_widgets *******************/
+  combo=gtk_combo_new();
+
+  va_start (choices, count);
+  for (i=0; i<count; i++) {
+    list=g_list_append(list, (gpointer) va_arg (choices, char *));
+  }
+  gtk_combo_set_popdown_strings(GTK_COMBO (combo), list);
+  g_list_free(list);
+
+  return combo;
+}
+
+
+static GtkWidget *make_line(jIntegration *j,
+                            GtkWidget **select, GtkWidget **label, 
+                            char *topic, char *daemon, 
+			    void (*sigfunc) (void)) {
+
+  GtkWidget *hbox, *frame;
+
+  hbox =gtk_hbox_new (FALSE, 3);
+  frame=gtk_frame_new (topic);
+
+  *select=make_combo(2, "disabled", "enabled");
+  *label=gtk_label_new(daemon);
+
+  gtk_box_pack_start (GTK_BOX (hbox), *select, FALSE, FALSE, 8);
+  gtk_box_pack_start (GTK_BOX (hbox), *label,  FALSE, FALSE, 8);
+
+  gtk_container_add (GTK_CONTAINER (frame), hbox);
+
+  gtk_signal_connect (GTK_OBJECT (GTK_COMBO(*select)->popwin), "hide", (GtkSignalFunc) sigfunc, j);
+
+  return frame;
+}
+
 static void make_integration_widgets (GtkWidget *vbox) {
   jIntegration  *j=JINTEGRATION(vbox);
   GtkWidget *box;
@@ -348,117 +365,36 @@ static void make_integration_widgets (GtkWidget *vbox) {
     kprintf("ERROR: integration.c: !GTK_IS_HBOX(%lx)\n",vbox);
   }
 
-  table=gtk_table_new(1,3,FALSE);
-
-  frame_mouse = make_radio_group_box_param ("Mouse", 
-                                        mouse_labels, 
-					j->mouse_widget, 
-					0, (void *) mouse_changed,
-					GTK_WIDGET(j));
-  gtk_table_attach_defaults(GTK_TABLE(table), frame_mouse,  0, 1, 0, 1);
-
-  frame_clipboard = make_radio_group_box_param ("Clipboard", 
-                                        clipboard_labels, 
-					j->clipboard_widget, 
-					0, (void *) clipboard_changed,
-					GTK_WIDGET(j));
-  gtk_table_attach_defaults(GTK_TABLE(table), frame_clipboard,  0, 1, 1, 2);
-
-  frame_coherent = make_radio_group_box_param ("Coherency", 
-                                        coherence_labels, 
-					j->coherence_widget, 
-					0, (void *) coherence_changed,
-					GTK_WIDGET(j));
-  gtk_table_attach_defaults(GTK_TABLE(table), frame_coherent, 0, 1, 2, 3);
-
-
-#if 0
-
-  frame_screen_hbox=gtk_hbox_new(TRUE, 8);
-  gtk_container_set_border_width (GTK_CONTAINER (frame_screen_hbox), 8);
-  frame_window_hbox=gtk_hbox_new(FALSE, 8);
-  gtk_container_set_border_width (GTK_CONTAINER (frame_window_hbox), 8);
-
-  /* row 1 */
-  gtk_table_attach_defaults(GTK_TABLE(table), frame_screen,    0, 1, 0, 1);
-  gtk_table_attach_defaults(GTK_TABLE(table), frame_window,    0, 1, 1, 2);
-  gtk_table_attach_defaults(GTK_TABLE(table), frame_linemode,  1, 2, 0, 2);
-  gtk_table_attach_defaults(GTK_TABLE(table), frame_centering, 2, 3, 0, 2);
-
-  gtk_container_add (GTK_CONTAINER (frame_screen), frame_screen_hbox);
-  gtk_container_add (GTK_CONTAINER (frame_window), frame_window_hbox);
-
-  /* row 2 */
-  gtk_table_attach_defaults(GTK_TABLE(table), frame_settings,  0, 1, 2, 3);
-  /* linemode frame done below */
-
-  /* Amiga screen resolutions */
-  j->screen_resolutions=gtk_combo_new();
-  j->res_items=create_resolutions();
-  gtk_combo_set_popdown_strings (GTK_COMBO (j->screen_resolutions), j->res_items);
-  gtk_container_add (GTK_CONTAINER (frame_screen_hbox), 
-                     gtk_label_new("Select:"));
-  gtk_container_add (GTK_CONTAINER (frame_screen_hbox), j->screen_resolutions);
-
-  j->screen_width=gtk_entry_new();
-  j->screen_height=gtk_entry_new();
-  gtk_container_add (GTK_CONTAINER (frame_window_hbox), 
-                     gtk_label_new("Width:"));
-  gtk_container_add (GTK_CONTAINER (frame_window_hbox), j->screen_width);
-  gtk_container_add (GTK_CONTAINER (frame_window_hbox), 
-                     gtk_label_new("Height:"));
-  gtk_container_add (GTK_CONTAINER (frame_window_hbox), j->screen_height);
-
-  gtk_signal_connect (GTK_OBJECT (GTK_COMBO(j->screen_resolutions)->popwin), 
-                          "hide",
-			  G_CALLBACK (screen_changed),
-			  j);
-  gtk_signal_connect (GTK_OBJECT (j->screen_width), 
-                          "activate",
-			  G_CALLBACK (window_changed),
-			  j);
-  gtk_signal_connect (GTK_OBJECT (j->screen_height), 
-                          "activate",
-			  G_CALLBACK (window_changed),
-			  j);
-
-  /* Amiga Settings */
-  table_settings=gtk_table_new(2,2,TRUE);
-  gtk_container_add (GTK_CONTAINER (frame_settings), table_settings);
-  j->settings_correctaspect=gtk_check_button_new_with_label("Correct aspect");
-  j->settings_lores=gtk_check_button_new_with_label("Lo-Res");
-  j->settings_fullscreen=gtk_check_button_new_with_label("Full-Screen");
-  j->settings_fullscreen_rtg=gtk_check_button_new_with_label("Full Screen RTG");
-
-  gtk_table_attach_defaults(GTK_TABLE(table_settings), 
-                            j->settings_correctaspect,    0, 1, 0, 1);
-  gtk_table_attach_defaults(GTK_TABLE(table_settings), 
-                            j->settings_lores,            1, 2, 0, 1);
-  gtk_table_attach_defaults(GTK_TABLE(table_settings), 
-                            j->settings_fullscreen,       0, 1, 1, 2);
-  gtk_table_attach_defaults(GTK_TABLE(table_settings), 
-                            j->settings_fullscreen_rtg,   1, 2, 1, 2);
-  /* disabled TODO */
-  gtk_widget_set_sensitive(j->settings_fullscreen_rtg, FALSE);
-
-  gtk_signal_connect (GTK_OBJECT (j->settings_correctaspect), "toggled",
-			  G_CALLBACK (settings_changed),
-			  j);
-  gtk_signal_connect (GTK_OBJECT (j->settings_lores), "toggled",
-			  G_CALLBACK (settings_changed),
-			  j);
-  gtk_signal_connect (GTK_OBJECT (j->settings_fullscreen), "toggled",
-			  G_CALLBACK (settings_changed),
-			  j);
-  /* disabled
-  gtk_signal_connect (GTK_OBJECT (j->settings_fullscreen_rtg), "toggled",
-			  G_CALLBACK (settings_changed),
-			  j);
-  */
-#endif
+  gtk_box_pack_start (GTK_BOX (vbox), gtk_vbox_new (FALSE, 0), TRUE, TRUE, 0);
 
 
   gtk_widget_show_all(table);
   gtk_container_add (GTK_CONTAINER (vbox), table);
 
+  gtk_container_add (GTK_CONTAINER (vbox), 
+		     make_line(j, 
+		               &(j->combo_coherence), &(j->label_coherence), 
+			       "Coherency", "AmigaOS/janusd is *not* running!",
+		               (void *) coherence_changed)
+		    );
+  gtk_container_add (GTK_CONTAINER (vbox), 
+		     make_line(j, 
+		               &(j->combo_mouse), &(j->label_mouse), 
+			       "Mouse Sync", "AmigaOS/janusd is *not* running!",
+		               (void *) mouse_changed)
+		    );
+  gtk_container_add (GTK_CONTAINER (vbox), 
+		     make_line(j, 
+		               &(j->combo_clip), &(j->label_clip), 
+			       "Clip Sync", "AmigaOS/clipd is *not* running!",
+		               (void *) clipboard_changed)
+		    );
+  gtk_container_add (GTK_CONTAINER (vbox), 
+		     make_line(j, 
+		               &(j->combo_launch), &(j->label_launch), 
+			       "Wanderer Integration", "AmigaOS/launchd is *not* running!",
+		               (void *) coherence_changed) /* TODO! */
+		    );
+
+  gtk_box_pack_start (GTK_BOX (vbox), gtk_vbox_new (FALSE, 0), TRUE, TRUE, 0);
 }
