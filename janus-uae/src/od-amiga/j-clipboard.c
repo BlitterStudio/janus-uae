@@ -45,7 +45,7 @@ void uae_Signal(uaecptr task, uae_u32 mask);
 #endif
 #include "j.h"
 
-#define DEBOUT_ENABLED 0
+#define DEBOUT_ENABLED 1
 #if DEBOUT_ENABLED
 #define DebOut(...) do { kprintf("%s: %s():%d: ",__FILE__,__func__,__LINE__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -133,7 +133,9 @@ static ULONG ClipChange(struct Hook *c_hook, VOID *o, struct ClipHookMsg *msg) {
   clipboard_aros_changed=TRUE;
 }
 
-void clipboard_hook_install() {
+static BOOL clip_hook_installed=FALSE;
+
+void clipboard_hook_install(void) {
 
   ior=CBOpen(0);
 
@@ -144,15 +146,51 @@ void clipboard_hook_install() {
 
   /* install clipboard changed hook */
   ior->io_Command= CBD_CHANGEHOOK;
-  ior->io_Length = 1;
+  ior->io_Length = 1; /* install */
   ior->io_Data   = (APTR) &ClipHook;
 
   if (DoIO ((struct IORequest *) ior)) {
     DebOut("ERROR: Can't install clipboard hook\n");
   }
+  else {
+    clip_hook_installed=TRUE;
+  }
 
   CBClose(ior);
   ior=NULL;
+
+}
+
+void clipboard_hook_deinstall(void) {
+
+  DebOut("clipboard_hook_deinstall entered\n");
+
+  if(clip_hook_installed) {
+    ior=CBOpen(0);
+  
+    /* init clipboard hook */
+    ClipHook.h_Entry =   &ClipChange;
+    ClipHook.h_SubEntry = NULL;
+    ClipHook.h_Data =     NULL;
+  
+    /* deinstall clipboard changed hook */
+    ior->io_Command= CBD_CHANGEHOOK;
+    ior->io_Length = 0; /* remove */
+    ior->io_Data   = (APTR) &ClipHook;
+  
+    DebOut("doio\n");
+
+    if (DoIO ((struct IORequest *) ior)) {
+      DebOut("ERROR: Can't deinstall clipboard hook\n");
+    }
+    else {
+      clip_hook_installed=FALSE;
+    }
+
+    DebOut("close..\n");
+    CBClose(ior);
+    ior=NULL;
+  }
 }
 
 
@@ -291,6 +329,7 @@ void copy_clipboard_to_amigaos(void) {
 
   if(!aos3_clip_task || !aos3_clip_signal || !changed_prefs.jclipboard) {
     DebOut("clipd not running / enabled\n");
+    return;
   }
 
   /* 
