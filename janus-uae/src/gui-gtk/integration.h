@@ -8,12 +8,12 @@
  *
  * This file is part of Janus-UAE.
  *
- * Janus-Daemon is free software: you can redistribute it and/or modify
+ * Janus-UAE is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Janus-Daemon is distributed in the hope that it will be useful,
+ * Janus-UAE is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -47,12 +47,20 @@ struct _jIntegration {
 
   /*** PRIVATE ***/
 
-  /* radio widget arrays */
-  GtkWidget *mouse_widget[2];
-  GtkWidget *clipboard_widget[2];
-  GtkWidget *coherence_widget[2];
+  GtkWidget *combo_coherence;
+  GtkWidget *label_coherence;
+
+  GtkWidget *combo_mouse;
+  GtkWidget *label_mouse;
+
+  GtkWidget *combo_clip;
+  GtkWidget *label_clip;
+
+  GtkWidget *combo_launch;
+  GtkWidget *label_launch;
 
   /*** PUBLIC ***/
+
   gboolean coherence;
   gboolean mouse;
   gboolean clipboard;
