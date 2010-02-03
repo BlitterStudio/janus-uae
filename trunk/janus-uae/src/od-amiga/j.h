@@ -151,6 +151,7 @@ extern GSList *janus_launch;
 extern ULONG aos3_first_screen;
 
 void clipboard_hook_install          (void);
+void clipboard_hook_deinstall        (void);
 void copy_clipboard_to_aros          (void);
 void copy_clipboard_to_aros_real     (uaecptr data, uae_u32 len);
 void copy_clipboard_to_amigaos       (void);
@@ -313,6 +314,10 @@ int aros_custom_screen_start_thread (JanusScreen *screen);
 void clone_menu(JanusWin *jwin);
 void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub);
 void process_menu(JanusWin *jwin, UWORD selection);
+
+/* launch */
+int  aros_launch_start_thread(void);
+void aros_launch_kill_thread(void);
 
 /* assert */
 struct Window *assert_window (struct Window *search);

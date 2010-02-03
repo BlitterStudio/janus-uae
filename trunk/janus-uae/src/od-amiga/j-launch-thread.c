@@ -36,6 +36,8 @@ struct JUAE_Launch_Message {
   void           *mempool;
 };
 
+#define DIE_STRING "DIE:DIE:DIE"
+
 /* from filesys.c */
 #define DEVNAMES_PER_HDF 32
 typedef struct {
@@ -272,32 +274,38 @@ static void aros_launch_thread (void) {
     while( (msg = (struct JUAE_Launch_Message *) GetMsg(port)) ) {
       JWLOG("msg %lx received!\n");
       JWLOG("msg->ln_Name: >%s< \n", msg->ln_Name);
-      amiga_exe=aros_path_to_amigaos(msg->ln_Name);
+      if(strcmp(msg->ln_Name, DIE_STRING)) {
+	amiga_exe=aros_path_to_amigaos(msg->ln_Name);
 
-      if(amiga_exe) {
-	if(aos3_launch_task) {
-	  /* store it for the launchd to fetch and execute */
-	  ObtainSemaphore(&sem_janus_launch_list);
-	  jlaunch=(struct JanusLaunch *) AllocVec(sizeof(JanusLaunch),MEMF_CLEAR);
-	  if(jlaunch) {
-	    jlaunch->amiga_path=amiga_exe;
-	    jlaunch->args      =convert_tags_to_amigaos(msg->tags);
-	    janus_launch=g_slist_append(janus_launch,jlaunch);
+	if(amiga_exe) {
+	  if(aos3_launch_task) {
+	    /* store it for the launchd to fetch and execute */
+	    ObtainSemaphore(&sem_janus_launch_list);
+	    jlaunch=(struct JanusLaunch *) AllocVec(sizeof(JanusLaunch),MEMF_CLEAR);
+	    if(jlaunch) {
+	      jlaunch->amiga_path=amiga_exe;
+	      jlaunch->args      =convert_tags_to_amigaos(msg->tags);
+	      janus_launch=g_slist_append(janus_launch,jlaunch);
+	    }
+    
+	    ReleaseSemaphore(&sem_janus_launch_list);
+	    uae_Signal(aos3_launch_task, aos3_launch_signal);
 	  }
-  
-	  ReleaseSemaphore(&sem_janus_launch_list);
-	  uae_Signal(aos3_launch_task, aos3_launch_signal);
+	  else {
+	    JWLOG("ERROR: launchd is not running!\n");
+	    gui_message_with_title("ERROR",
+				   "Failed to start %s\n\nJ-UAE is running, but you need to start \"launchd\" inside of amigaOS!\n\nYou can find \"launchd\" in the amiga directory of your J-UAE package.\n\nBest thing is, to start it at the end of your s:user-startup.", msg->ln_Name);
+	  }
 	}
 	else {
-	  JWLOG("ERROR: launchd is not running!\n");
+	  JWLOG("ERROR: volume %s is not mounted!\n", msg->ln_Name);
 	  gui_message_with_title("ERROR",
-				 "Failed to start %s\n\nJ-UAE is running, but you need to start \"launchd\" inside of amigaOS!\n\nYou can find \"launchd\" in the amiga directory of your J-UAE package.\n\nBest thing is, to start it at the end of your s:user-startup.", msg->ln_Name);
+				   "Failed to start \"%s\".\n\nThis path is not available inside of amigaOS.\n\nYou need to add the AROS directory\n\n(or one of its parents) with an absolute path\n\nas an amigaOS device.\n\nBest way to do this is the \"Harddisk\" tab in the J-UAE GUI.", msg->ln_Name);
 	}
       }
       else {
-	JWLOG("ERROR: volume %s is not mounted!\n", msg->ln_Name);
-	gui_message_with_title("ERROR",
-				 "Failed to start \"%s\".\n\nThis path is not available inside of amigaOS.\n\nYou need to add the AROS directory\n\n(or one of its parents) with an absolute path\n\nas an amigaOS device.\n\nBest way to do this is the \"Harddisk\" tab in the J-UAE GUI.", msg->ln_Name);
+	/* exit!*/
+	done=TRUE;
       }
 
       pool=msg->mempool;
@@ -306,15 +314,27 @@ static void aros_launch_thread (void) {
   }
 
 
-EXIT:
   JWLOG("aros_launch_thread[%lx]: EXIT\n",thread);
+  /* remove port */
+  Forbid();
+  /* we hope, there are no messages waiting anymore.
+   * as this port is not really busy, this is not unlikely (hopefully)
+   *
+   * worst case is, that we loose the memory of the waiting messages.
+   */
+  RemPort(port);
+  port=NULL;
+  Permit();
 
+  aros_launch_task=NULL;
+  /* end thread */
+EXIT:
   JWLOG("aros_launch_thread[%lx]: dies..\n", thread);
 }
 
 int aros_launch_start_thread (void) {
 
-    JWLOG("aros_launch_start_thread(x)\n");
+    JWLOG("aros_launch_start_thread()\n");
 
     aros_launch_task = (struct Task *)
 	    myCreateNewProcTags ( NP_Output, Output (),
@@ -332,3 +352,37 @@ int aros_launch_start_thread (void) {
     return aros_launch_task != 0;
 }
 
+void aros_launch_kill_thread(void) {
+  struct JUAE_Launch_Message  *die_msg;
+  void                        *pool;
+  struct MsgPort              *port;
+
+  JWLOG("aros_launch_kill_thread()\n");
+
+  if(!aros_launch_task) {
+    return;
+  }
+
+  if(!FindPort((STRPTR) LAUNCH_PORT_NAME)) {
+    return;
+  }
+
+  Forbid();
+  if(( port=FindPort((STRPTR) LAUNCH_PORT_NAME))) {
+    pool=CreatePool(MEMF_CLEAR|MEMF_PUBLIC, 2048, 1024);
+    if(pool) {
+      die_msg=AllocVecPooled(pool, sizeof(struct JUAE_Launch_Message));
+      die_msg->mempool=pool;
+      if(die_msg) {
+	die_msg->ln_Name=AllocVecPooled(pool, strlen(DIE_STRING)+1);
+	strcpy(die_msg->ln_Name, DIE_STRING);
+	JWLOG("send DIE message..\n");
+	PutMsg(port, die_msg); /* one way */
+      }
+      else {
+	DeletePool(pool);
+      }
+    }
+  }
+  Permit();
+}
