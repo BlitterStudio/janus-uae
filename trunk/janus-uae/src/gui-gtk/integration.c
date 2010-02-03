@@ -63,17 +63,6 @@
 #include "chipsettypepanel.h"
 #include "integration.h"
 
-static const char *coherence_labels[]={"Classic UAE", "Full integration", NULL};
-static const char *clipboard_labels[]={"Separate Clipboards", "Share Clipboard Contents", NULL};
-static const char *mouse_labels[]=    {"Classic UAE (no mouse sync)", "Sync Mouse Pointers", NULL};
-
-GtkWidget *make_radio_group_box_param (const char *title, const char **labels,
-					GtkWidget **saveptr, int horiz,
-					void (*sigfunc) (void),
-					GtkWidget *parameter);
-
-int find_current_toggle  (GtkWidget **widgets, int count);
-//static void jintegration_destroy(GtkObject *object);
 
 /* local proto types */
 static void read_prefs                (jIntegration *j);
@@ -86,6 +75,7 @@ static void mouse_changed             (GtkWidget *me, jIntegration *j);
 static void make_integration_widgets  (GtkWidget *vbox);
 static void jintegration_class_init   (jIntegrationClass *class);
 static void jintegration_init         (jIntegration      *display);
+/* static void jintegration_destroy(GtkObject *object); */
 
 static jIntegrationClass *parent_class= NULL;
 
@@ -97,11 +87,15 @@ enum {
   UNLOCK_IT,
   READ_PREFS,
   MOUSE_CHANGE_SIGNAL,
+  LAUNCH_CHANGE_SIGNAL,
   LAST_SIGNAL
 };
 
 static guint jintegration_signals[LAST_SIGNAL];
 
+/***********************************************
+ * jintegration_class_init
+ ***********************************************/
 static void jintegration_class_init (jIntegrationClass *class) {
   GtkWidgetClass *widget_class;
   GtkObjectClass *object_class;
@@ -110,7 +104,7 @@ static void jintegration_class_init (jIntegrationClass *class) {
   widget_class = (GtkWidgetClass*) class;
   parent_class = g_type_class_peek_parent (class);
 
-  //object_class->destroy = jintegration_destroy; 
+  /* object_class->destroy = jintegration_destroy; */
 
   gtkutil_add_signals_to_class (object_class,
 				0,
@@ -122,14 +116,25 @@ static void jintegration_class_init (jIntegrationClass *class) {
 				"unlock-it",
 				"read-prefs",
 				"mouse-changed",
+				"launch-changed",
 				(void*)0);
 }
 
+/***********************************************
+ * jintegration_init
+ *
+ * empty, as we do it in jintegration_new.
+ ***********************************************/
 static void jintegration_init (jIntegration *disp) {
 
-  //printf("jintegration_init(%lx)\n",disp);
 }
 
+/***********************************************
+ * jintegration_get_type
+ *
+ * return type, if none exists.
+ * create new type otherwise.
+ ***********************************************/
 GType jintegration_get_type (void) {
 
   static GType jintegration_type = 0;
@@ -153,6 +158,9 @@ GType jintegration_get_type (void) {
   return jintegration_type;
 }
 
+/***********************************************
+ * jintegration_new
+ ***********************************************/
 GtkWidget* jintegration_new (void) {
   GtkWidget *jdisp;
 
@@ -169,19 +177,17 @@ GtkWidget* jintegration_new (void) {
   gtk_signal_connect (GTK_OBJECT (jdisp), "unlock-it",
 			  GTK_SIGNAL_FUNC (unlock_it),
 			  NULL);
-
-#if 0
+/*
   gtk_signal_connect (GTK_OBJECT (jdisp), "destroy",
 			  GTK_SIGNAL_FUNC (jintegration_destroy),
 			  NULL);
-#endif
-
+*/
 
   return jdisp;
 }
 
 /* is not called, even if enabled ? */
-#if 0
+/*
 static void jintegration_destroy(GtkObject *object) {
 
   g_return_if_fail (object != NULL);
@@ -192,7 +198,7 @@ static void jintegration_destroy(GtkObject *object) {
   if (GTK_OBJECT_CLASS (parent_class)->destroy)
     (* GTK_OBJECT_CLASS (parent_class)->destroy) (object);
 }
-#endif
+*/
 
 /***********************************************
  * read_prefs
@@ -205,14 +211,25 @@ static void jintegration_destroy(GtkObject *object) {
 static void read_prefs (jIntegration *j) {
 
   gtk_list_select_item (GTK_LIST (GTK_COMBO (j->combo_coherence)->list), currprefs.jcoherence);
-  gtk_list_select_item (GTK_LIST (GTK_COMBO (j->combo_clip)->list), currprefs.jclipboard);
-  gtk_list_select_item (GTK_LIST (GTK_COMBO (j->combo_mouse)->list), currprefs.jmouse);
+  gtk_list_select_item (GTK_LIST (GTK_COMBO (j->combo_clip)->list),      currprefs.jclipboard);
+  gtk_list_select_item (GTK_LIST (GTK_COMBO (j->combo_mouse)->list),     currprefs.jmouse);
+  gtk_list_select_item (GTK_LIST (GTK_COMBO (j->combo_mouse)->list),     currprefs.jlaunch);
 
 }
 
+/* we should include j.h here .. */
 extern ULONG aos3_task;
 extern ULONG aos3_clip_task;
+extern ULONG aos3_launch_task;
 
+/***********************************************
+ * change_lock (jIntegration *j, gboolean status)
+ *
+ * updates the labels to reflect the current
+ * states of the daemons.
+ *
+ * status is not used any more. 
+ ***********************************************/
 static void change_lock (jIntegration *j, gboolean status) {
   int i;
   gboolean cdrunning;
@@ -233,14 +250,19 @@ static void change_lock (jIntegration *j, gboolean status) {
     gtk_label_set_text(GTK_LABEL(j->label_clip), "AmigaOS/clipd is *not* running!");
   }
 
+  if(aos3_launch_task) {
+    gtk_label_set_text(GTK_LABEL(j->label_launch), "AmigaOS/launchd is running");
+  }
+  else {
+    gtk_label_set_text(GTK_LABEL(j->label_launch), "AmigaOS/launchd is *not* running!");
+  }
 }
-
 
 /***********************************************
  * lock_it
  *
- * if J-UAE is running, we should disable
- * the according options
+ * used to lock all widgets, now as status
+ * is ignored, just calls change_lock
  ***********************************************/
 static void lock_it (jIntegration *j) {
 
@@ -256,7 +278,6 @@ static void unlock_it (jIntegration *j) {
 }
 
 /************************** callbacks *************************/
-/* second parameter is always NULL */
 
 static void clipboard_changed(GtkWidget *me, jIntegration *j) {
 
@@ -310,6 +331,30 @@ static void coherence_changed(GtkWidget *win, jIntegration *j) {
   g_signal_emit_by_name(j,"coherent-changed",j);
 }
 
+static void launch_changed(GtkWidget *me, jIntegration *j) {
+
+  GtkList *list   = GTK_LIST (GTK_COMBO (j->combo_launch)->list);
+  GList   *choice = list->selection;
+  gint     sel;
+
+  if (!choice) {
+    return;
+  }
+
+  sel=gtk_list_child_position (list, choice->data);
+
+  j->launch=(gboolean) sel;
+
+  g_signal_emit_by_name(j,"launch-changed",j);
+
+}
+
+/***********************************************
+ * make_combo
+ *
+ * small helper, to create a combo_box
+ * with some seletections
+ ***********************************************/
 static GtkWidget *make_combo(int count, ...) {
   GtkWidget *combo;
   GList     *list = NULL;
@@ -320,15 +365,28 @@ static GtkWidget *make_combo(int count, ...) {
 
   va_start (choices, count);
   for (i=0; i<count; i++) {
+    /* I am not sure, if those strings are copied !? */
     list=g_list_append(list, (gpointer) va_arg (choices, char *));
   }
+  /* nevertheless, MUI will copy the strings used. */
   gtk_combo_set_popdown_strings(GTK_COMBO (combo), list);
   g_list_free(list);
 
   return combo;
 }
 
-
+/**************************************************
+ * make_line
+ *
+ * create a line for one daemon.
+ *
+ * j:       the integration tab main object
+ * select:  will contain the new combo box
+ * label:   will contain the new label
+ * topic:   frame title
+ * daemon:  text to display after the select widget
+ * sigfunc: function to call, if select changes
+ **************************************************/
 static GtkWidget *make_line(jIntegration *j,
                             GtkWidget **select, GtkWidget **label, 
                             char *topic, char *daemon, 
@@ -352,24 +410,34 @@ static GtkWidget *make_line(jIntegration *j,
   return frame;
 }
 
+/**************************************************
+ * make_integration_widgets
+ *
+ * fill the new widget with children.
+ *
+ * It would be nice of course, to make a new
+ * widget class for the line objects, but it
+ * would not bring much besides more OOP.
+ *
+ * The implementaion is hidden from the main
+ * GUI anyways, as it only talks through signals
+ * to the integration widget.
+ **************************************************/
 static void make_integration_widgets (GtkWidget *vbox) {
   jIntegration  *j=JINTEGRATION(vbox);
   GtkWidget *box;
-  GtkWidget *table;
   GtkWidget *frame_coherent;
   GtkWidget *frame_clipboard;
   GtkWidget *frame_mouse;
 
   if(!GTK_IS_HBOX(vbox)) {
-    printf("ERROR: integration.c: !GTK_IS_HBOX(%lx)\n",vbox);
-    kprintf("ERROR: integration.c: !GTK_IS_HBOX(%lx)\n",vbox);
+    /* this error should not occure */
+    printf("ERROR: integration.c: !GTK_IS_HBOX(%lx)\n", vbox);
+    return;
   }
 
+  /* empty box on top */
   gtk_box_pack_start (GTK_BOX (vbox), gtk_vbox_new (FALSE, 0), TRUE, TRUE, 0);
-
-
-  gtk_widget_show_all(table);
-  gtk_container_add (GTK_CONTAINER (vbox), table);
 
   gtk_container_add (GTK_CONTAINER (vbox), 
 		     make_line(j, 
@@ -393,8 +461,9 @@ static void make_integration_widgets (GtkWidget *vbox) {
 		     make_line(j, 
 		               &(j->combo_launch), &(j->label_launch), 
 			       "Wanderer Integration", "AmigaOS/launchd is *not* running!",
-		               (void *) coherence_changed) /* TODO! */
+		               (void *) launch_changed) 
 		    );
 
+  /* empty box on bottom */
   gtk_box_pack_start (GTK_BOX (vbox), gtk_vbox_new (FALSE, 0), TRUE, TRUE, 0);
 }
