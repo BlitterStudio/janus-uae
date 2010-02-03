@@ -64,6 +64,7 @@ struct _jIntegration {
   gboolean coherence;
   gboolean mouse;
   gboolean clipboard;
+  gboolean launch;
 };
 
 struct _jIntegrationClass {

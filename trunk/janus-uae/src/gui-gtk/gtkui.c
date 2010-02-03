@@ -1,12 +1,8 @@
-/*
- * UAE - the Un*x Amiga Emulator
+/************************************************************************ 
+ *
+ * gtkui.c
  *
  * Yet Another User Interface for the X11 version
- *
- * Copyright 1997, 1998 Bernd Schmidt
- * Copyright 1998 Michael Krause
- * Copyright 2003-2007 Richard Drummond
- * Copyright 2009 Oliver Brunner
  *
  * The Tk GUI doesn't work.
  * The X Forms Library isn't available as source, and there aren't any
@@ -14,9 +10,29 @@
  *
  * So let's try this...
  *
+ * Copyright 1997-1998 Bernd Schmidt
+ * Copyright 1998      Michael Krause
+ * Copyright 2003-2007 Richard Drummond
+ * Copyright 2009-2010 Oliver Brunner - aros<at>oliver-brunner.de
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-UAE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-UAE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
  * $Id$
  *
- */
+ ************************************************************************/
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -1336,7 +1352,8 @@ static void on_coherent_changed (void) {
   DEBUG_LOG("new coherence = %d\n", changed_prefs.jcoherence);
   if(aos3_task && !changed_prefs.jcoherence) {
     DEBUG_LOG("call close_all_janus_windows\n");
-    close_all_janus_windows();
+    close_all_janus_windows_wait();
+    close_all_janus_screens_wait();
     show_uae_main_window();
   }
   else {
@@ -1377,6 +1394,23 @@ static void on_clipboard_changed (void) {
     clipboard_aros_changed=TRUE;
     copy_clipboard_to_amigaos();
   }
+}
+
+static void on_launch_changed (void) {
+
+  if(changed_prefs.jlaunch == JINTEGRATION (jint_panel)->launch) {
+    DEBUG_LOG("jcliboard: nothing to do\n");
+    return;
+  }
+
+  DEBUG_LOG("on_launch_changed TODO!!");
+  changed_prefs.jlaunch=JINTEGRATION (jint_panel)->launch;
+
+/*
+  if(changed_prefs.jlaunch) {
+    aros_launch_start_thread();
+  }
+*/
 }
 
 static void make_sound_widgets (GtkWidget *vbox)
@@ -2152,6 +2186,10 @@ static void make_integration_widgets (GtkWidget *vbox) {
 		      GTK_SIGNAL_FUNC (on_clipboard_changed),
      		      NULL);
 
+  gtk_signal_connect (GTK_OBJECT (jint_panel), "launch-changed",
+		      GTK_SIGNAL_FUNC (on_launch_changed),
+     		      NULL);
+
 
   /* it gets unlocked, as soon as the daemons start */
   g_signal_emit_by_name(jint_panel,"lock-it",NULL);
@@ -2164,7 +2202,7 @@ void unlock_jgui(void);
 /* this is called from j-dispatch 
  * otherwise j-dispatch would need all gtk/glib includes
  */
-void unlock_jgui() {
+void unlock_jgui(void) {
     g_signal_emit_by_name(jint_panel,"unlock-it",NULL);
 }
 
@@ -2627,8 +2665,20 @@ void gui_display (int shortcut)
     }
 }
 
-void gui_message (const char *format,...)
+void gui_message_with_title (const char *title, const char *format,...)
 {
+    char msg[2048];
+    va_list parms;
+
+    va_start (parms,format);
+    vsprintf ( msg, format, parms);
+    va_end (parms);
+
+    if (gui_available)
+	do_message_box (title, msg, TRUE, TRUE);
+}
+
+void gui_message (const char *format,...) {
     char msg[2048];
     va_list parms;
 
