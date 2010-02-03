@@ -22,6 +22,8 @@
   * Could do tighter checks on malloc return values.
   * Will probably fail spectacularly in some cases if the filesystem is
   * modified at the same time by another process while UAE is running.
+  *
+  * $Id$
   */
 
 #include "sysconfig.h"
@@ -165,7 +167,7 @@ struct uaedev_mount_info {
     UnitInfo ui[MAX_FILESYSTEM_UNITS];
 };
 
-static struct uaedev_mount_info current_mountinfo;
+/*static*/ struct uaedev_mount_info current_mountinfo;
 struct uaedev_mount_info options_mountinfo;
 
 int nr_units (struct uaedev_mount_info *mountinfo)
