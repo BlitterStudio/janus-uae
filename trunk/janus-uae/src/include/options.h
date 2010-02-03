@@ -1,12 +1,31 @@
- /*
-  * UAE - The Un*x Amiga Emulator
-  *
-  * Stuff
-  *
-  * Copyright 1995, 1996 Ed Hanway
-  * Copyright 1995-2001 Bernd Schmidt
-  */
-
+/************************************************************************ 
+ *
+ * options.h
+ *
+ * Stuff
+ *
+ * Copyright 1995-1996 Ed Hanway
+ * Copyright 1995-2001 Bernd Schmidt
+ * Copyright 2009-2010 Oliver Brunner - aros<at>oliver-brunner.de
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-UAE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-UAE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * $Id$
+ *
+ ************************************************************************/
 #ifndef _OPTIONS_H_
 #define _OPTIONS_H_
 
@@ -258,6 +277,7 @@ struct uae_prefs {
     int jcoherence;
     int jclipboard;
     int jmouse;
+    int jlaunch;
 };
 
 extern void save_options (FILE *, const struct uae_prefs *, int);

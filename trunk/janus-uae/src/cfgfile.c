@@ -1,17 +1,31 @@
- /*
-  * UAE - The Un*x Amiga Emulator
-  *
-  * Config file handling
-  * This still needs some thought before it's complete...
-  *
-  * Copyright 1998 Brian King, Bernd Schmidt
-  * Copyright 2006 Richard Drummond
-  * Copyright 2009 Oliver Brunner
-  *
-  * GPL
-  *
-  * $Id$
-  */
+/************************************************************************ 
+ *
+ * cfgfile.c
+ *
+ * This still needs some thought before it's complete...
+ *
+ * Copyright 1998      Brian King, Bernd Schmidt
+ * Copyright 2006      Richard Drummond
+ * Copyright 2009-2010 Oliver Brunner - aros<at>oliver-brunner.de
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-UAE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-UAE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * $Id$
+ *
+ ************************************************************************/
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -128,7 +142,8 @@ static const struct cfg_lines opttable[] =
 #ifdef JANUS
     {"jcoherence","Integrate os3 windows into host window environment"},
     {"jclipboard","Transparent clipboard data exchange between host and aos3"},
-    {"jmouse",    "Mouse sync between aros host and aos3"}
+    {"jmouse",    "Mouse sync between aros host and aos3"},
+    {"jlaunch",   "launch aos3 workbench executeables from AROS wanderer"}
 #endif
 };
 
@@ -593,6 +608,7 @@ void save_options (FILE *f, const struct uae_prefs *p, int type)
     cfgfile_write (f, "jcoherence=%s\n", p->jcoherence ? "true" : "false");
     cfgfile_write (f, "jclipboard=%s\n", p->jclipboard ? "true" : "false");
     cfgfile_write (f, "jmouse=%s\n",     p->jmouse ? "true" : "false");
+    cfgfile_write (f, "jlaunch=%s\n",    p->jlaunch ? "true" : "false");
 #endif
 }
 
@@ -1114,8 +1130,10 @@ static int cfgfile_parse_host (struct uae_prefs *p, char *option, char *value)
 
 #ifdef JANUS
     if(cfgfile_yesno (option, value, "jcoherence", &p->jcoherence) ||
-       cfgfile_yesno (option, value, "jmouse",     &p->jmouse) || 
-       cfgfile_yesno (option, value, "jclipboard", &p->jclipboard) ) {
+       cfgfile_yesno (option, value, "jmouse",     &p->jmouse)     || 
+       cfgfile_yesno (option, value, "jclipboard", &p->jclipboard) ||
+       cfgfile_yesno (option, value, "jlaunch",    &p->jlaunch) 
+      )  {
       return 1;
     }
 #endif
