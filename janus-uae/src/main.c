@@ -1,13 +1,32 @@
- /*
-  * UAE - The Un*x Amiga Emulator
-  *
-  * Main program
-  *
-  * Copyright 1995 Ed Hanway
-  * Copyright 1995, 1996, 1997 Bernd Schmidt
-  * Copyright 2006-2007 Richard Drummond
-  */
-
+/************************************************************************ 
+ *
+ * UAE - The Un*x Amiga Emulator
+ *
+ * Main program
+ *
+ * Copyright 1995       Ed Hanway
+ * Copyright 1995-1997 Bernd Schmidt
+ * Copyright 2006-2007 Richard Drummond
+ * Copyright 2009-2010 Oliver Brunner - aros<at>oliver-brunner.de
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-UAE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-UAE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * $Id$
+ *
+ ************************************************************************/
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include <assert.h>
@@ -55,6 +74,7 @@
 
 #ifdef __AROS__
 #define GTKMUI
+#include "od-amiga/j.h"
 #endif
 
 struct uae_prefs currprefs, changed_prefs;
@@ -345,10 +365,11 @@ static void show_version_full (void)
 {
     write_log ("\n");
     show_version ();
-    write_log ("\nCopyright 2003-2007 Richard Drummond and contributors.\n");
+    write_log ("\nCopyright 2009-2010 Oliver Brunner and contributors.\n");
     write_log ("Based on source code from:\n");
     write_log ("UAE    - copyright 1995-2002 Bernd Schmidt;\n");
     write_log ("WinUAE - copyright 1999-2007 Toni Wilen.\n");
+    write_log ("E-UAE  - copyright 2003-2007 Richard Drummond.\n");
     write_log ("See the source code for a full list of contributors.\n");
 
     write_log ("This is free software; see the file COPYING for copying conditions.  There is NO\n");
@@ -496,12 +517,60 @@ int uae_get_state (void)
 {
     return uae_state;
 }
+/***********************************************
+ * For j-uae we need to care for resets/crashes
+ * of amigaOS, as we possibly have quite
+ * some windows/threads hanging around,
+ * that have no amigaOS counterparts
+ * anymore.
+ *
+ * So hopefully, every reset/crash triggers
+ * set_state.
+ ***********************************************/
+static void set_state (int state) {
 
-static void set_state (int state)
-{
-    uae_state = state;
-    gui_notify_state (state);
-    graphics_notify_state (state);
+  kprintf("RESET: set_state(%d)\n", state);
+  switch(state) {
+    case UAE_STATE_RUNNING:
+      kprintf("RESET: UAE_STATE_RUNNING\n");
+      break;
+    case UAE_STATE_PAUSED:
+      kprintf("RESET: UAE_STATE_PAUSED\n");
+      break;
+    case UAE_STATE_STOPPED:
+    case UAE_STATE_COLD_START:
+    case UAE_STATE_WARM_START:
+      kprintf("RESET: UAE_STATE_STOPPED/UAE_STATE_COLD_START/UAE_STATE_WARM_START\n");
+
+      /* reset janusd */
+      close_all_janus_windows();
+      close_all_janus_screens();
+      aos3_task=NULL;
+      aos3_task_signal=NULL;
+
+      /* reset clipd */
+      clipboard_hook_deinstall();
+      aos3_clip_task=NULL;
+      aos3_clip_signal=NULL;
+      aos3_clip_to_amigaos_signal=NULL;
+
+      /* reset launchd */
+      aos3_launch_task=NULL;
+      aos3_launch_signal=NULL;
+
+      /* update gui */
+      unlock_jgui();
+
+      break;
+    case UAE_STATE_QUITTING:
+      kprintf("RESET: UAE_STATE_QUITTING\n");
+      break;
+    default:
+      kprintf("RESET: UNKNWON!?\n");
+  }
+  uae_state = state;
+  gui_notify_state (state);
+  graphics_notify_state (state);
 }
 
 int uae_state_change_pending (void)
@@ -528,6 +597,7 @@ void uae_resume (void)
 
 void uae_quit (void)
 {
+kprintf("RESET: uae_quit\n");
 
 //printf("11 ================XXXXXXXXXXXXXXXX===================\n");
     if (uae_target_state != UAE_STATE_QUITTING) {
@@ -538,6 +608,7 @@ void uae_quit (void)
 
 void uae_stop (void)
 {
+kprintf("RESET: uae_stop\n");
     if (uae_target_state != UAE_STATE_QUITTING && uae_target_state != UAE_STATE_STOPPED) {
 	uae_target_state = UAE_STATE_STOPPED;
 	restart_config[0] = 0;
@@ -552,6 +623,7 @@ void uae_reset (int hard_reset)
 	case UAE_STATE_COLD_START:
 	case UAE_STATE_WARM_START:
 
+kprintf("RESET: uae_reset(%d)\n", hard_reset);
 //printf("12 ================XXXXXXXXXXXXXXXX===================\n");
 	    /* Do nothing */
 	    break;
@@ -563,6 +635,7 @@ void uae_reset (int hard_reset)
 /* This needs to be rethought */
 void uae_restart (int opengui, char *cfgfile)
 {
+kprintf("RESET: uae_restart\n");
     uae_stop ();
     restart_program = opengui > 0 ? 1 : (opengui == 0 ? 2 : 3);
     restart_config[0] = 0;
@@ -877,6 +950,14 @@ void real_main (int argc, char **argv)
 
 	changed_prefs = currprefs;
 
+
+#if defined GTKMUI
+	/* start launchd, if necessary */
+	if(currprefs.jlaunch) {
+	  aros_launch_start_thread();
+	}
+#endif
+
 	if (want_gui) {
 	    /* Handle GUI at start-up */
 	    int err = gui_open ();
@@ -919,27 +1000,35 @@ void real_main (int argc, char **argv)
 
 	uae_target_state = UAE_STATE_COLD_START;
 
+	printf("oli..1\n");
+
 	/* Start emulator proper. */
 	if (!do_init_machine ())
 	    break;
 
+	printf("oli..2\n");
 	while (uae_target_state != UAE_STATE_QUITTING && uae_target_state != UAE_STATE_STOPPED) {
 	    /* Reset */
+	printf("oli..3\n");
 	    set_state (uae_target_state);
 	    do_reset_machine (uae_state == UAE_STATE_COLD_START);
 
+	printf("oli..4\n");
 	    /* Running */
 	    uae_target_state = UAE_STATE_RUNNING;
+	printf("oli..5\n");
 
 	    /*
  	     * Main Loop
 	     */
 	    do {
 		set_state (uae_target_state);
+	printf("oli..6\n");
 
 		/* Run emulator. */
 		do_run_machine ();
 
+	printf("oli..7\n");
 		if (uae_target_state == UAE_STATE_PAUSED) {
 		    /* Paused */
 		    set_state (uae_target_state);
