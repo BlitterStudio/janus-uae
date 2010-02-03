@@ -1403,14 +1403,14 @@ static void on_launch_changed (void) {
     return;
   }
 
-  DEBUG_LOG("on_launch_changed TODO!!");
   changed_prefs.jlaunch=JINTEGRATION (jint_panel)->launch;
 
-/*
   if(changed_prefs.jlaunch) {
     aros_launch_start_thread();
   }
-*/
+  else {
+    aros_launch_kill_thread();
+  }
 }
 
 static void make_sound_widgets (GtkWidget *vbox)
