@@ -213,7 +213,7 @@ static void read_prefs (jIntegration *j) {
   gtk_list_select_item (GTK_LIST (GTK_COMBO (j->combo_coherence)->list), currprefs.jcoherence);
   gtk_list_select_item (GTK_LIST (GTK_COMBO (j->combo_clip)->list),      currprefs.jclipboard);
   gtk_list_select_item (GTK_LIST (GTK_COMBO (j->combo_mouse)->list),     currprefs.jmouse);
-  gtk_list_select_item (GTK_LIST (GTK_COMBO (j->combo_mouse)->list),     currprefs.jlaunch);
+  gtk_list_select_item (GTK_LIST (GTK_COMBO (j->combo_launch)->list),    currprefs.jlaunch);
 
 }
 
