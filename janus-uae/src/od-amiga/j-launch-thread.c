@@ -27,6 +27,7 @@
 #include "j.h"
 #include "memory.h"
 #include "include/filesys.h"
+#include "include/filesys_internal.h"
 
 /* we get a JUAE_Launch_Message from wanderer */
 struct JUAE_Launch_Message {
@@ -36,46 +37,8 @@ struct JUAE_Launch_Message {
   void           *mempool;
 };
 
-#define DIE_STRING "DIE:DIE:DIE"
-
-/* from filesys.c */
-#define DEVNAMES_PER_HDF 32
-typedef struct {
-    char *devname; /* device name, e.g. UAE0: */
-    uaecptr devname_amiga;
-    uaecptr startup;
-    char *volname; /* volume name, e.g. CDROM, WORK, etc. */
-    char *rootdir; /* root unix directory */
-    int readonly; /* disallow write access? */
-    int bootpri; /* boot priority */
-    int devno;
-
-    struct hardfiledata hf;
-
-    /* Threading stuff */
-    smp_comm_pipe *volatile unit_pipe, *volatile back_pipe;
-    uae_thread_id tid;
-    struct _unit *self;
-    /* Reset handling */
-    volatile uae_sem_t reset_sync_sem;
-    volatile int reset_state;
-
-    /* RDB stuff */
-    uaecptr rdb_devname_amiga[DEVNAMES_PER_HDF];
-    int rdb_lowcyl;
-    int rdb_highcyl;
-    int rdb_cylblocks;
-    uae_u8 *rdb_filesysstore;
-    int rdb_filesyssize;
-    char *filesysdir;
-
-} UnitInfo;
-
-
-struct uaedev_mount_info {
-    int num_units;
-    UnitInfo ui[MAX_FILESYSTEM_UNITS];
-};
+/* this string should be no valid filename */
+#define DIE_STRING ":::DIE:::"
 
 /***********************************************************
  * check_and_convert_path
@@ -135,8 +98,6 @@ char *check_and_convert_path(char *aros_exe_full_path,
 
   return result;
 }
-
-extern struct uaedev_mount_info current_mountinfo;
 
 /***********************************************************
  * aros_path_to_amigaos(aros_path)
@@ -317,16 +278,19 @@ static void aros_launch_thread (void) {
   JWLOG("aros_launch_thread[%lx]: EXIT\n",thread);
   /* remove port */
   Forbid();
-  /* we hope, there are no messages waiting anymore.
-   * as this port is not really busy, this is not unlikely (hopefully)
-   *
-   * worst case is, that we loose the memory of the waiting messages.
+  /* We hope, there are no messages waiting anymore.
+   * As this port is not really busy, this is not unlikely (hopefully).
+   * Worst case is, that we loose the memory of the waiting messages?
    */
   RemPort(port);
   port=NULL;
   Permit();
 
+/* good idea ?
   aros_launch_task=NULL;
+  aos3_launch_signal=0;
+*/
+
   /* end thread */
 EXIT:
   JWLOG("aros_launch_thread[%lx]: dies..\n", thread);
