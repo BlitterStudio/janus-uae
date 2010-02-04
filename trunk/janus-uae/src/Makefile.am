@@ -1,3 +1,5 @@
+# $Id$
+
 INCLUDES = \
 	-I$(top_srcdir)/src/include -I$(top_builddir)/src -I$(top_srcdir)/src -I$(top_srcdir) -I/usr/local/amiga/i686-aros/include/glib-2.0/glib -I/usr/local/amiga/i686-aros/include/glib-2.0 -I/usr/local/amiga/i686-aros/lib/glib-2.0/include
 
@@ -89,6 +91,7 @@ noinst_HEADERS = \
 	include/enforcer.h	include/ersatz.h	\
 	include/events.h 	include/execlib.h 	\
 	include/fdi2raw.h	include/filesys.h	\
+	include/filesys_internal.h			\
 	include/fpp-ieee.h	include/fpp-unknown.h	\
 	include/fsdb.h		include/fsusage.h	\
 	include/genblitter.h	include/gensound.h	\
