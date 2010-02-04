@@ -144,7 +144,7 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
    */
   if(!janus_active_window && !janus_active_screen && changed_prefs.jcoherence) {
     JWLOG("no active window (%lx) / no janus_active_screen (%lx) / changed_prefs.jcoherence (%d)\n",
-           janus_active_window, janus_active_screen);
+           janus_active_window, janus_active_screen, changed_prefs.jcoherence);
     return FALSE;
   }
 
