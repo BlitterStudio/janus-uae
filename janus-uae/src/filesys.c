@@ -5,6 +5,7 @@
   *
   * Copyright 1996 Ed Hanway
   * Copyright 1996, 1997 Bernd Schmidt
+  * Copyright 2009, 2010 Oliver Brunner
   *
   * Version 0.4: 970308
   *
@@ -46,8 +47,9 @@
 #include "zfile.h"
 #include "gui.h"
 #include "savestate.h"
+#include "filesys_internal.h"
 
-#ifdef TARGET_AMIGAOS || defined __AROS__
+#if defined TARGET_AMIGAOS || defined __AROS__
 # include <dos/dos.h>
 # include <proto/dos.h>
 #endif
@@ -129,6 +131,7 @@ static uae_u32 fsdevname, filesys_configdev;
 #define FS_STARTUP 0
 #define FS_GO_DOWN 1
 
+#if 0
 #define DEVNAMES_PER_HDF 32
 
 typedef struct {
@@ -162,12 +165,14 @@ typedef struct {
 
 } UnitInfo;
 
+
 struct uaedev_mount_info {
     int num_units;
     UnitInfo ui[MAX_FILESYSTEM_UNITS];
 };
+#endif
 
-/*static*/ struct uaedev_mount_info current_mountinfo;
+struct uaedev_mount_info current_mountinfo;
 struct uaedev_mount_info options_mountinfo;
 
 int nr_units (struct uaedev_mount_info *mountinfo)
@@ -522,11 +527,16 @@ struct hardfiledata *get_hardfile_data (int nr)
 #define DOS_TRUE ((unsigned int)-1L)
 #define DOS_FALSE (0L)
 
+/* on amigaoid hosts, this is already defined */
+#ifndef DOS_DOS_H
+
 /* Passed as type to Lock() */
 #define SHARED_LOCK         -2     /* File is readable by others */
 #define ACCESS_READ         -2     /* Synonym */
 #define EXCLUSIVE_LOCK      -1     /* No other access allowed    */
 #define ACCESS_WRITE        -1     /* Synonym */
+
+#endif
 
 /* packet types */
 #define ACTION_CURRENT_VOLUME	7
@@ -4391,65 +4401,9 @@ static void addfakefilesys (uaecptr parmpacket, uae_u32 dostype)
     put_long (parmpacket + PP_FSHDSTART + 44, 0xffffffff);
 }
 
-#if 0
-static void dofakefilesys (UnitInfo *uip, uaecptr parmpacket)
-{
-    int i, size;
-    char tmp[1024];
-    struct zfile *zf;
-    uae_u32 dostype, fsres, fsnode;
+/* o1i: merged from winuae */
+static int dofakefilesys (UnitInfo *uip, uaecptr parmpacket) {
 
-    hdf_read (&uip->hf, tmp, 0, 4);
-    dostype = (tmp[0] << 24) | (tmp[1] << 16) |(tmp[2] << 8) | tmp[3];
-    if (dostype == 0)
-	return;
-    fsres = get_long (parmpacket + PP_FSRES);
-    fsnode = get_long (fsres + 18);
-    while (get_long (fsnode)) {
-	if (get_long (fsnode + 14) == dostype) {
-	    if ((dostype & 0xffffff00) != 0x444f5300)
-		addfakefilesys (parmpacket, dostype);
-	    return;
-	}
-	fsnode = get_long (fsnode);
-    }
-
-    tmp[0] = 0;
-    if (uip->filesysdir && strlen(uip->filesysdir) > 0) {
-	strcpy (tmp, uip->filesysdir);
-    } else if ((dostype & 0xffffff00) == 0x444f5300) {
-	strcpy (tmp, currprefs.romfile);
-	i = strlen (tmp);
-	while (i > 0 && tmp[i - 1] != '/' && tmp[i - 1] != '\\')
-	    i--;
-	strcpy (tmp + i, "FastFileSystem");
-    }
-    if (tmp[0] == 0) {
-	write_log ("RDB: no filesystem for dostype 0x%08.8X\n", dostype);
-	return;
-    }
-    write_log ("RDB: fakefilesys, trying to load '%s', dostype 0x%08.8X\n", tmp, dostype);
-    zf = zfile_fopen (tmp,"rb");
-    if (!zf) {
-	write_log ("RDB: filesys not found\n");
-	return;
-    }
-
-    zfile_fseek (zf, 0, SEEK_END);
-    size = zfile_ftell (zf);
-    zfile_fseek (zf, 0, SEEK_SET);
-    uip->rdb_filesysstore = xmalloc (size);
-    zfile_fread (uip->rdb_filesysstore, size, 1, zf);
-    zfile_fclose (zf);
-    uip->rdb_filesyssize = size;
-    put_long (parmpacket + PP_FSSIZE, uip->rdb_filesyssize);
-    addfakefilesys (parmpacket, dostype);
-    write_log ("HDF: faked RDB filesystem %08.8X loaded\n", dostype);
-}
-#endif
-
-static void dofakefilesys (UnitInfo *uip, uaecptr parmpacket)
-{
     int i, size;
     char tmp[1024];
     struct zfile *zf;
