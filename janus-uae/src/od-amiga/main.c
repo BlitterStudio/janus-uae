@@ -112,7 +112,6 @@ int main (int argc, char *argv[])
 	set_logfile ("T:J-UAE.log");
 
     init_libs ();
-    aros_launch_start_thread();
 
 #ifdef USE_SDL
     init_sdl ();

@@ -319,6 +319,9 @@ void process_menu(JanusWin *jwin, UWORD selection);
 int  aros_launch_start_thread(void);
 void aros_launch_kill_thread(void);
 
+/* reset */
+void j_reset(void);
+
 /* assert */
 struct Window *assert_window (struct Window *search);
 
