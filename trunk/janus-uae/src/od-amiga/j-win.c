@@ -700,10 +700,13 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
 
   ENTER
 
+  intui_lock=LockIBase(0);
+
   screen=IntuitionBase->FirstScreen;
 
   if(!screen) {
     JWLOG("ad_job_sync_windows: screen==NULL !?!\n");
+    UnlockIBase(intui_lock);
     LEAVE
     return FALSE;
   }
@@ -711,11 +714,10 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
   /* there might be a screen without window */
   if(!screen->FirstWindow) {
     JWLOG("screen %lx has no window\n",screen);
+    UnlockIBase(intui_lock);
     LEAVE
     return FALSE;
   }
-
-  intui_lock=LockIBase(0);
 
   //JWLOG("get frontmost layer..\n");
   /* get frontmost layer */
