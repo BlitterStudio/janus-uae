@@ -121,8 +121,14 @@ static char *aros_path_to_amigaos(char *aros_path) {
   aos_path=NULL;
   for(i=0; (i < options_mountinfo.num_units) && (aos_path==NULL); i++) {
 
+    JWLOG("i: %d\n", i);
+
     str = cfgfile_subst_path (prefs_get_attr ("hardfile_path"), "$(FILE_PATH)", uip[i].rootdir);
+    JWLOG("str: %s\n", str);
+
     aos_path=check_and_convert_path(aros_path, uip[i].devname, uip[i].volname, str);
+    JWLOG("aos_path: %s\n", aos_path);
+
     xfree(str);
   }
 
@@ -250,6 +256,7 @@ static void aros_launch_thread (void) {
 	    }
     
 	    ReleaseSemaphore(&sem_janus_launch_list);
+	    JWLOG("uae_Signal(%lx, %lx)\n", aos3_launch_task, aos3_launch_signal);
 	    uae_Signal(aos3_launch_task, aos3_launch_signal);
 	  }
 	  else {

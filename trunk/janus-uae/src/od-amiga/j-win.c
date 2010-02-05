@@ -789,6 +789,7 @@ void close_all_janus_windows() {
   list_win=janus_windows;
   while(list_win) {
     win=(JanusWin *) list_win->data;
+    win->dead=TRUE;
     JWLOG("  send CLTR_C to task %lx\n",win->task);
     if(win->task) {
       Signal(win->task, SIGBREAKF_CTRL_C);
