@@ -5,22 +5,24 @@
  * Copyright 1995-2002 Bernd Schmidt
  * Copyright 1995 Alessandro Bissacco
  * Copyright 2000-2004 Toni Wilen
- * Copyright 2009 Oliver Brunner - aros<at>oliver-brunner.de
+ * Copyright 2009-2010 Oliver Brunner - aros<at>oliver-brunner.de
  *
  * This file is part of Janus-UAE.
  *
- * Janus-Daemon is free software: you can redistribute it and/or modify
+ * Janus-UAE is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Janus-Daemon is distributed in the hope that it will be useful,
+ * Janus-UAE is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * $Id$
  *
  ************************************************************************/
 
@@ -4591,11 +4593,23 @@ void hsync_handler (void)
     //copper_check (2);
 }
 
-void customreset (void)
-{
+/* from j.h */
+void j_reset(void);
+
+/* custom reset seems to be called, if amigaOS does its own
+ * reset, after a crash for example.
+ * we need to reset all our daemons here, too.
+ */
+void customreset (void) {
+
     int zero = 0;
 
     write_log ("reset at %x\n", m68k_getpc (&regs));
+
+#ifdef __AROS__
+    j_reset();
+#endif
+
     hsync_counter = 0;
     if (! savestate_state) {
 	currprefs.chipset_mask = changed_prefs.chipset_mask;
