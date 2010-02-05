@@ -2,7 +2,7 @@
  *
  * Janus-Daemon
  *
- * Copyright 2009 Oliver Brunner - aros<at>oliver-brunner.de
+ * Copyright 2009-2010 Oliver Brunner - aros<at>oliver-brunner.de
  *
  * This file is part of Janus-Daemon.
  *
@@ -80,6 +80,8 @@ BYTE         mysignal_bit;
 ULONG        mysignal;
 struct Task *mytask = NULL;
 
+ULONG        intdata[2];
+
 struct Library *CyberGfxBase;
 
 /*
@@ -150,6 +152,68 @@ int setup(struct Task *task, ULONG signal, ULONG stop) {
   return state;
 }
 
+/* those registers must be reset to original values */
+#define PUSHSTACK     "movem.l d2-d7/a2-a4,-(SP)\n"
+#define POPSTACK      "movem.l (SP)+,d2-d7/a2-a4\n"
+
+/* A1 contains the data pointer
+ * you have to clear the Z flag on exit (moveq #0, D0)
+ * you "should" return 0xdff000 in A0
+ * 
+ */
+__asm__("_vert_int:\n"
+	PUSHSTACK
+	"move.l 4,A6\n"
+	"move.l 4(A1),D0\n"
+	"move.l (A1),A1\n"
+	"jsr -324(A6)\n"
+	POPSTACK
+	"lea 0xdff000, A0\n"
+	"moveq #0, D0\n"
+
+        "rts\n");
+/*
+ * assembler functions need to be declared or used, before
+ * you can reference them (?).
+ */
+void vert_int();
+
+/* setup_vert_int 
+ *
+ * First I sent all the Signals from the UAE thread using
+ * uae_Signal. This works well, as long as AmigaOS is
+ * healthy. As soon as it crashes, it might take down
+ * the UAE thread doing uae_Signal :(. As signals
+ * for janusd arrive quite often, this is not good.
+ *
+ * So we install our own INTB_VERTB.
+ */
+static int setup_vert_int(struct Task *task, ULONG signal) {
+  struct Interrupt *vbint;
+
+  DebOut("janusd: setup_vert_int(%lx, %lx)", task, signal);
+
+  if (!(vbint = AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC|MEMF_CLEAR))) {
+    return FALSE;
+  }
+
+  intdata[0]=(ULONG) task;
+  intdata[1]=        signal;
+
+  vbint->is_Node.ln_Type = NT_INTERRUPT;
+  vbint->is_Node.ln_Pri = 1;
+  vbint->is_Node.ln_Name = "JanusD Vertical Interrupt";
+  vbint->is_Data = (APTR)&intdata;
+  vbint->is_Code = vert_int;
+
+
+  DebOut("janusd: AddIntServer(.., %lx)\n", vbint);
+  AddIntServer(INTB_VERTB, vbint); /* Do it! */
+  DebOut("janusd: AddIntServer(.., %lx) done\n", vbint);
+
+  return TRUE;
+}
+
 /***************************************
  * enable/disable uae main window
  ***************************************/
@@ -195,65 +259,9 @@ static void runme() {
   BOOL         init;
   BOOL         set;
 
-  #if 0
-  while(!setup(mytask, mysignal, 0)) {
-    DebOut("janusd: let's sleep ..\n");
-    sleep(10); /* somebody will wake us up anyways */
-  }
-#endif
-
-#if 0
-  /*============*/
-  ULONG *commandmem;
-  ULONG modeID;
-  struct Screen *screen;
-  WORD x,y;
-
-  DebOut("FOO: startme\n");
-
-
-done=FALSE;
-  while(!done) {
-    DebOut("FOO: calltrap..\n");
-    commandmem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
-    calltrap (AD_GET_JOB, AD_TEST, commandmem);
-
-    DebOut("FOO: janus-daemon:      %3d,%3d\n", commandmem[0], commandmem[1]);
-    DebOut("FOO: amigaos screen dx  %3d\n",IntuitionBase->FirstScreen->ViewPort.RasInfo->RxOffset);
-    screen=IntuitionBase->FirstScreen;
-    if(screen) {
-      modeID=screen->ViewPort.Modes;
-
-      x=(WORD) commandmem[0];
-      y=(WORD) commandmem[1];
-
-      if(modeID & SUPERHIRES) {
-	x=x*2;
-	DebOut("==>SUPER_KEY\n");
-      }
-      else if(modeID & HIRES) {
-	DebOut("==>HIRES_KEY\n");
-      }
-      else { 
-	DebOut("==>LORES_KEY\n");
-	x=x/2;
-	y=y/2;
-      }
-
-      SetMouse(screen, x, y, 0);
-    }
-    FreeVec(commandmem);
-
-    sleep(1);
-  }
-
-  /*============*/
-#endif
   DebOut("janusd: runme entered\n");
 
   ENTER
-
-  DebOut("janusd: now we want to do something usefull ..\n");
 
   DebOut("janusd: running (CTRL-C to go to normal mode, CTRL-D to rootless mode)..\n");
 
@@ -325,7 +333,6 @@ done=FALSE;
 
   /* never arrive here */
 
-
   DebOut("janusd: try to sleep ..\n");
 
   /* enable uae window again */
@@ -377,14 +384,15 @@ int main (int argc, char **argv) {
   SetTaskPri(mytask, 55);
 
   setup(mytask, mysignal, 0); /* init everything for the patches */
-
   patch_functions();
+  setup_vert_int(mytask, mysignal);
 
   while(1) {
     runme(); /* as we patched the system, we will run (sleep) forever */
   }
 
   /* can't be reached.. */
+  /*remove_vert_int()*/
   unpatch_functions();
   FreeSignal(mysignal_bit);
   free_sync_mouse();
