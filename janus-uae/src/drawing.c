@@ -214,7 +214,7 @@ int coord_native_to_amiga_x (int x)
 int coord_native_to_amiga_y (int y) {
   int res;
 
-  kprintf("coord_native_to_amiga_y(%d)\n",y);
+  JWLOG("coord_native_to_amiga_y(%d)\n",y);
 
   /* better clip it here! */
   if(y > gfxvidinfo.height) {
@@ -223,7 +223,7 @@ int coord_native_to_amiga_y (int y) {
   if(y<0) {
     y=0;
   }
-  kprintf("coord_native_to_amiga_y() => %d\n",y);
+  JWLOG("coord_native_to_amiga_y() => %d\n",y);
   res=native2amiga_line_map[y] + thisframe_y_adjust - minfirstline;
 
   return res;
@@ -1136,8 +1136,8 @@ void init_aspect_maps (void)
  * A raster line has been built in the graphics buffer. Tell the graphics code
  * to do anything necessary to display it.
  */
-static void do_flush_line_1 (int lineno)
-{
+static void do_flush_line_1 (int lineno) {
+
     if (lineno < first_drawn_line)
 	first_drawn_line = lineno;
     if (lineno > last_drawn_line)
@@ -1159,9 +1159,12 @@ static void do_flush_line_1 (int lineno)
     }
 }
 
-STATIC_INLINE void do_flush_line (int lineno)
-{
-    do_flush_line_1 (lineno);
+STATIC_INLINE void do_flush_line (int lineno) {
+
+  //JWLOG("lineno: %d\n",lineno);
+
+  do_flush_line_1 (lineno);
+
 }
 
 /*
@@ -1533,8 +1536,10 @@ static void center_image (void)
     int prev_x_adjust = visible_left_border;
     int prev_y_adjust = thisframe_y_adjust;
 
+    JWLOG("CMOUSE: currprefs.gfx_xcenter: %d\n",currprefs.gfx_xcenter);
     if (currprefs.gfx_xcenter) {
 	int w = gfxvidinfo.width;
+	JWLOG("CMOUSE: min_diwstart: %d\n",min_diwstart);
 
 	if (max_diwstop - min_diwstart < w && currprefs.gfx_xcenter == 2)
 	    /* Try to center. */
@@ -1549,8 +1554,12 @@ static void center_image (void)
 	    if (visible_left_border < prev_x_adjust && prev_x_adjust < min_diwstart && min_diwstart - visible_left_border <= 32)
 		visible_left_border = prev_x_adjust;
 	}
-    } else
+    } else {
+	/* gfx_center_horizontal=none */
 	visible_left_border = max_diwlastword - gfxvidinfo.width;
+	JWLOG("CMOUSE: max_diwlastword: %d\n",max_diwlastword);
+    }
+
     if (visible_left_border > max_diwlastword - 32)
 	visible_left_border = max_diwlastword - 32;
     if (visible_left_border < 0)
@@ -1592,6 +1601,7 @@ static void center_image (void)
     if (prev_x_adjust != visible_left_border || prev_y_adjust != thisframe_y_adjust)
 	frame_redraw_necessary |= interlace_seen && currprefs.gfx_linedbl ? 2 : 1;
 
+#if 0
   JWLOG("CMOUSE: visible_left_border: %d\n",visible_left_border);
   JWLOG("CMOUSE: visible_right_border: %d\n",visible_right_border);
   JWLOG("CMOUSE: thisframe_y_adjust: %d\n",thisframe_y_adjust);
@@ -1599,6 +1609,7 @@ static void center_image (void)
   JWLOG("CMOUSE: extra_y_adjust: %d\n",extra_y_adjust);
   JWLOG("CMOUSE: visible_right_border: %d\n",visible_right_border);
   JWLOG("CMOUSE: =================================================\n");
+#endif
 
     max_diwstop = 0;
     min_diwstart = 10000;
@@ -1865,6 +1876,8 @@ void finish_drawing_frame (void) {
     return;
   }
 #endif
+
+  JWLOG("not uae_main_window_closed\n");
 
     if (! lockscr ()) {
 	notice_screen_contents_lost ();
