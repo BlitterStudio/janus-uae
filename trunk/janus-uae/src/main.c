@@ -328,9 +328,7 @@ static void fix_options (void)
        * as we ignore picasso full screen option, we
        * handle it analog to amiga_fullscreen
        */
-      kprintf("currprefs.amiga_screen_type: %d\n",currprefs.amiga_screen_type);
       currprefs.amiga_screen_type = 1;
-      kprintf("currprefs.amiga_screen_type: %d\n",currprefs.amiga_screen_type);
       currprefs.gfx_pfullscreen = 0;
     }
     else {
@@ -517,6 +515,8 @@ int uae_get_state (void)
 {
     return uae_state;
 }
+
+
 /***********************************************
  * For j-uae we need to care for resets/crashes
  * of amigaOS, as we possibly have quite
@@ -524,49 +524,27 @@ int uae_get_state (void)
  * that have no amigaOS counterparts
  * anymore.
  *
- * So hopefully, every reset/crash triggers
- * set_state.
+ * But be carefull: Not every reset triggers
+ * set_state. Crashes etc are better handled
+ * in custom.c/custom_reset
  ***********************************************/
 static void set_state (int state) {
 
-  kprintf("RESET: set_state(%d)\n", state);
   switch(state) {
     case UAE_STATE_RUNNING:
-      kprintf("RESET: UAE_STATE_RUNNING\n");
       break;
     case UAE_STATE_PAUSED:
-      kprintf("RESET: UAE_STATE_PAUSED\n");
       break;
     case UAE_STATE_STOPPED:
     case UAE_STATE_COLD_START:
     case UAE_STATE_WARM_START:
-      kprintf("RESET: UAE_STATE_STOPPED/UAE_STATE_COLD_START/UAE_STATE_WARM_START\n");
 
-      /* reset janusd */
-      close_all_janus_windows();
-      close_all_janus_screens();
-      aos3_task=NULL;
-      aos3_task_signal=NULL;
-
-      /* reset clipd */
-      clipboard_hook_deinstall();
-      aos3_clip_task=NULL;
-      aos3_clip_signal=NULL;
-      aos3_clip_to_amigaos_signal=NULL;
-
-      /* reset launchd */
-      aos3_launch_task=NULL;
-      aos3_launch_signal=NULL;
-
-      /* update gui */
-      unlock_jgui();
-
+#ifdef __AROS__
+      j_reset();
+#endif
       break;
     case UAE_STATE_QUITTING:
-      kprintf("RESET: UAE_STATE_QUITTING\n");
       break;
-    default:
-      kprintf("RESET: UNKNWON!?\n");
   }
   uae_state = state;
   gui_notify_state (state);
@@ -597,18 +575,13 @@ void uae_resume (void)
 
 void uae_quit (void)
 {
-kprintf("RESET: uae_quit\n");
-
-//printf("11 ================XXXXXXXXXXXXXXXX===================\n");
     if (uae_target_state != UAE_STATE_QUITTING) {
 	uae_target_state = UAE_STATE_QUITTING;
     }
-//printf("22 ================XXXXXXXXXXXXXXXX===================\n");
 }
 
 void uae_stop (void)
 {
-kprintf("RESET: uae_stop\n");
     if (uae_target_state != UAE_STATE_QUITTING && uae_target_state != UAE_STATE_STOPPED) {
 	uae_target_state = UAE_STATE_STOPPED;
 	restart_config[0] = 0;
@@ -623,8 +596,6 @@ void uae_reset (int hard_reset)
 	case UAE_STATE_COLD_START:
 	case UAE_STATE_WARM_START:
 
-kprintf("RESET: uae_reset(%d)\n", hard_reset);
-//printf("12 ================XXXXXXXXXXXXXXXX===================\n");
 	    /* Do nothing */
 	    break;
 	default:
@@ -635,7 +606,6 @@ kprintf("RESET: uae_reset(%d)\n", hard_reset);
 /* This needs to be rethought */
 void uae_restart (int opengui, char *cfgfile)
 {
-kprintf("RESET: uae_restart\n");
     uae_stop ();
     restart_program = opengui > 0 ? 1 : (opengui == 0 ? 2 : 3);
     restart_config[0] = 0;
