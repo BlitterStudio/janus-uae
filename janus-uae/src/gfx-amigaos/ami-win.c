@@ -4,7 +4,7 @@
  *
  * Copyright 1996,1997,1998 Samuel Devulder.
  * Copyright 2003-2007 Richard Drummond
- * Copyright 2009 Oliver Brunner - aros<at>oliver-brunner.de
+ * Copyright 2009-2010 Oliver Brunner - aros<at>oliver-brunner.de
  *
  * This file is part of Janus-UAE.
  *
@@ -2552,10 +2552,13 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
 
     gui_handle_events();
 
+/* janusd now has its own interrupt server! */
+#if 0
     if(aos3_task && aos3_task_signal) {
       AWTRACE("send signal to Wait of janusd (%lx)\n", aos3_task);
       uae_Signal(aos3_task, aos3_task_signal);
     }
+#endif
 
     AWTRACE("W: %lx\n", W);
     if(!W) {
