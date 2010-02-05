@@ -696,6 +696,7 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
   GSList        *list_win;
   JanusWin      *win;
   ULONG          i;
+  ULONG          intui_lock;
 
   ENTER
 
@@ -714,6 +715,8 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
     return FALSE;
   }
 
+  intui_lock=LockIBase(0);
+
   //JWLOG("get frontmost layer..\n");
   /* get frontmost layer */
   layer=screen->FirstWindow->WLayer;
@@ -723,6 +726,7 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
 
   if(!layer) {
     JWLOG("ad_job_sync_windows: layer==NULL!?\n");
+    UnlockIBase(intui_lock);
     LEAVE
     return FALSE;
   }
@@ -759,6 +763,8 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
   }
   //JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
   ReleaseSemaphore(&sem_janus_window_list);
+
+  UnlockIBase(intui_lock);
 
   LEAVE
 
