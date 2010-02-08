@@ -328,8 +328,10 @@ uae_u32 ad_job_report_uae_windows(ULONG *m68k_results) {
    * 5: next window starts here
    */
 
+  JWLOG("enter while..\n");
   i=0;
   while(get_long_p(m68k_results+i)) {
+    JWLOG("i: %d\n",i);
     aos3win=(ULONG) get_long_p(m68k_results+i);
     list_win=g_slist_find_custom(janus_windows, 
 			          (gconstpointer) aos3win,
@@ -687,6 +689,13 @@ uae_u32 ad_job_switch_uae_window(ULONG *m68k_results) {
  * we have to return the order of all janus windows
  * from top window to bottom window
  ***************************************************/
+
+/* ATTENTION: *Always* ObtainSemaphore(&sem_janus_window_list)
+ * before you do a LockIBase! As a lot of other tasks
+ * open/close windows, while they hold sem_janus_window_list.
+ * So you run in a deadlock sooner or later.
+ */
+
 uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
 
   struct Layer  *layer;
@@ -700,13 +709,20 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
 
   ENTER
 
+  JWLOG("ObtainSemaphore(&sem_janus_window_list)\n");
+  ObtainSemaphore(&sem_janus_window_list);
+  JWLOG("Have Semaphore(&sem_janus_window_list)\n");
+
+  JWLOG("LockIBase\n");
   intui_lock=LockIBase(0);
 
   screen=IntuitionBase->FirstScreen;
 
   if(!screen) {
     JWLOG("ad_job_sync_windows: screen==NULL !?!\n");
+    JWLOG("UnlockIBase\n");
     UnlockIBase(intui_lock);
+    ReleaseSemaphore(&sem_janus_window_list);
     LEAVE
     return FALSE;
   }
@@ -714,7 +730,9 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
   /* there might be a screen without window */
   if(!screen->FirstWindow) {
     JWLOG("screen %lx has no window\n",screen);
+    JWLOG("UnlockIBase\n");
     UnlockIBase(intui_lock);
+    ReleaseSemaphore(&sem_janus_window_list);
     LEAVE
     return FALSE;
   }
@@ -728,7 +746,9 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
 
   if(!layer) {
     JWLOG("ad_job_sync_windows: layer==NULL!?\n");
+    JWLOG("UnlockIBase\n");
     UnlockIBase(intui_lock);
+    ReleaseSemaphore(&sem_janus_window_list);
     LEAVE
     return FALSE;
   }
@@ -738,8 +758,6 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
   /* no need for sem_janus_window_list semaphore access here ?? */
   i=0;
   last_window=NULL; /* a window maybe part of more than one layer */
-  //JWLOG("ObtainSemaphore(&sem_janus_window_list)\n");
-  ObtainSemaphore(&sem_janus_window_list);
   while(layer) {
     /* if layer belongs to one of our windows */
     //JWLOG("ad_job_sync_windows: layer %lx\n",layer);
@@ -763,10 +781,12 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
     }
     layer=layer->back;
   }
+
+  JWLOG("UnlockIBase\n");
+  UnlockIBase(intui_lock);
+
   //JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
   ReleaseSemaphore(&sem_janus_window_list);
-
-  UnlockIBase(intui_lock);
 
   LEAVE
 
