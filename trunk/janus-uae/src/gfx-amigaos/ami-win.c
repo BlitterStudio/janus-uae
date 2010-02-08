@@ -733,7 +733,7 @@ static int init_colors_cgx (const struct RastPort *rp)
 	write_log ("AMIGFX: Using a %d-bit true-colour display.\n",
 		   redbits + greenbits + bluebits);
     } else
-	write_log ("AMIGFX: Unsupported pixel format.\n");
+	write_log ("AMIGFX: Unsupported pixel format: %d\n", pixfmt);
 
     return found;
 }
@@ -2306,6 +2306,7 @@ void clone_area(WORD x, WORD y, UWORD width, UWORD height) {
     }
     ReleaseSemaphore(&sem_janus_window_list);
   }
+  AWTRACE("clone_area() exit\n");
 }
 
 /*
@@ -2550,6 +2551,7 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
     struct IntuiMessage *msg;
     int dmx, dmy, mx, my, class, code, qualifier;
 
+    AWTRACE("aros W: %lx\n", W);
     gui_handle_events();
 
 /* janusd now has its own interrupt server! */
@@ -2618,7 +2620,7 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
       JWLOG("custom screen, don't do GetMsg(W %lx ->UserPort %lx)\n", W, W->UserPort);
     }
     else {
-      JWLOG("GetMsg(W->UserPort %lx)\n", W->UserPort);
+      JWLOG("GetMsg(W %lx->UserPort %lx)\n", W, W->UserPort);
 
       while (!uae_main_window_closed && (msg = (struct IntuiMessage*) GetMsg(W->UserPort))) {
 	class     = msg->Class;
@@ -2755,6 +2757,8 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
 		break;
         }
       }
+
+      JWLOG("GetMsg(W->UserPort %lx) done\n", W->UserPort);
     }
 
     appw_events();
