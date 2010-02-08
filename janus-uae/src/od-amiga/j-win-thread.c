@@ -761,37 +761,44 @@ static void aros_win_thread (void) {
       /* Ctrl-C */
       JWLOG("aros_win_thread[%lx]: SIGBREAKF_CTRL_C received\n", thread);
       done=TRUE;
+      /* from now on, don't touch it anymore, as it maybe invalid! */
+      jwin->dead=TRUE;
     }
   }
 
   /* ... and a time to die. */
-  JWLOG("aros_win_thread[%lx]: time to die!\n");
+  JWLOG("aros_win_thread[%lx]: time to die!\n", thread);
 
 EXIT:
-  JWLOG("ObtainSemaphore(&sem_janus_window_list)\n");
+  JWLOG("aros_win_thread[%lx]: ObtainSemaphore(&sem_janus_window_list)\n", thread);
   ObtainSemaphore(&sem_janus_window_list);
 
   if(aroswin) {
     JWLOG("aros_win_thread[%lx]: close window %lx\n",thread,aroswin);
     CloseWindow(aroswin);
+    JWLOG("aros_win_thread[%lx]: closed window %lx\n",thread,aroswin);
     jwin->aroswin=NULL;
   }
 
+  JWLOG("aros_win_thread[%lx]: scan list_win..\n",thread);
   if(list_win) {
-    if(list_win->data) {
-      name_mem=((JanusWin *)list_win->data)->name;
-      /* is freed with the pool:
+    /*
+    *if(list_win->data) {
+      * is freed with the pool:
+       * name_mem=((JanusWin *)list_win->data)->name;
        * JWLOG("aros_win_thread[%lx]: FreeVec list_win->data \n",thread);
        * FreeVecPooled((JanusWin *)list_win->mempool, list_win->data); 
-       */
-      list_win->data=NULL;
-    }
+       *
+    *  list_win->data=NULL;
+     } 
+    */
     JWLOG("aros_win_thread[%lx]: g_slist_remove(%lx)\n",thread,list_win);
     //g_slist_remove(list_win); 
     janus_windows=g_slist_delete_link(janus_windows, list_win);
     list_win=NULL;
   }
 
+  JWLOG("aros_win_thread[%lx]: list_win=NULL\n",thread);
   /* not nice to free our own name, but should not be a problem */
 #if 0
   if(name_mem) {
