@@ -239,8 +239,8 @@ static void aros_launch_thread (void) {
     WaitPort(port);
     JWLOG("aros_launch_thread[%lx]: WaitPort done\n",thread);
     while( (msg = (struct JUAE_Launch_Message *) GetMsg(port)) ) {
-      JWLOG("msg %lx received!\n");
-      JWLOG("msg->ln_Name: >%s< \n", msg->ln_Name);
+      JWLOG("aros_launch_thread[%lx]: msg %lx received!\n", thread);
+      JWLOG("aros_launch_thread[%lx]: msg->ln_Name: >%s< \n", thread, msg->ln_Name);
       if(strcmp(msg->ln_Name, DIE_STRING)) {
 	amiga_exe=aros_path_to_amigaos(msg->ln_Name);
 
@@ -256,17 +256,17 @@ static void aros_launch_thread (void) {
 	    }
     
 	    ReleaseSemaphore(&sem_janus_launch_list);
-	    JWLOG("uae_Signal(%lx, %lx)\n", aos3_launch_task, aos3_launch_signal);
+	    JWLOG("aros_launch_thread[%lx]: uae_Signal(%lx, %lx)\n", thread, aos3_launch_task, aos3_launch_signal);
 	    uae_Signal(aos3_launch_task, aos3_launch_signal);
 	  }
 	  else {
-	    JWLOG("ERROR: launchd is not running!\n");
+	    JWLOG("aros_launch_thread[%lx]: ERROR: launchd is not running!\n", thread);
 	    gui_message_with_title("ERROR",
 				   "Failed to start %s\n\nJ-UAE is running, but you need to start \"launchd\" inside of amigaOS!\n\nYou can find \"launchd\" in the amiga directory of your J-UAE package.\n\nBest thing is, to start it at the end of your s:user-startup.", msg->ln_Name);
 	  }
 	}
 	else {
-	  JWLOG("ERROR: volume %s is not mounted!\n", msg->ln_Name);
+	  JWLOG("aros_launch_thread[%lx]: ERROR: volume %s is not mounted!\n", thread, msg->ln_Name);
 	  gui_message_with_title("ERROR",
 				   "Failed to start \"%s\".\n\nThis path is not available inside of amigaOS.\n\nYou need to add the AROS directory\n\n(or one of its parents) with an absolute path\n\nas an amigaOS device.\n\nBest way to do this is the \"Harddisk\" tab in the J-UAE GUI.", msg->ln_Name);
 	}
