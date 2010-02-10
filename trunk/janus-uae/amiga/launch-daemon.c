@@ -130,6 +130,13 @@ int setup(struct Task *task, ULONG launch_signal, ULONG stop) {
   return state;
 }
 
+/****************************************************************
+ * start_it
+ *
+ * start filename in path with args
+ *
+ * args can be NULL, if there are no parameters
+ ****************************************************************/
 static LONG start_it(char *path, char *filename, struct WBArg *args) {
   LONG rc;
   ULONG nr_args;
@@ -138,8 +145,10 @@ static LONG start_it(char *path, char *filename, struct WBArg *args) {
 
   /* count arguments */
   nr_args=0;
-  while((args[nr_args].wa_Name) || (args[nr_args].wa_Lock)) {
-    nr_args++;
+  if(args!=NULL) {
+    while((args[nr_args].wa_Name) || (args[nr_args].wa_Lock)) {
+      nr_args++;
+    }
   }
 #if 0
   if(args && args[0]) {
@@ -304,6 +313,7 @@ static void handle_launch_signal(void) {
   char  *filename;
   struct WBArg *wbargs=NULL;
   void  *pool;
+  BOOL   done;
 
   C_ENTER
 
@@ -315,23 +325,38 @@ static void handle_launch_signal(void) {
     return;
   }
 
-  calltrap (AD_LAUNCH_JOB, LD_GET_JOB, command_mem);
+  pool=CreatePool(MEMF_CLEAR, 256, 256);
 
-  if(command_mem[0]==0) {
-    DebOut("launchd: no commands waiting for us!?\n");
+  done=FALSE;
+  DebOut("launchd: handle_launch_signal->while..\n");
+  while(!done) {
+    DebOut("launchd: handle_launch_signal->while(!done)\n");
+
+    calltrap (AD_LAUNCH_JOB, LD_GET_JOB, command_mem);
+
+    if(command_mem[0]==0) {
+      DebOut("launchd: no commands waiting for us any more ..\n");
+      done=TRUE;
+    }
+    else {
+
+      command_string=(char *) command_mem;
+      path          =command_string + command_mem[1];
+      filename      =command_string + command_mem[2];
+      if(command_mem[3]) {
+	wbargs      =create_wbargs(pool, command_mem);
+      }
+      else {
+	DebOut("launchd: we have no arguments\n");
+      }
+
+      start_it(path, filename, wbargs);
+      /* TODO: unlock all :( */
+    }
   }
 
-  command_string=(char *) command_mem;
-  path          =command_string + command_mem[1];
-  filename      =command_string + command_mem[2];
-  if(command_mem[3]) {
-    pool        =CreatePool(MEMF_CLEAR, 256, 256);
-    wbargs      =create_wbargs(pool, command_mem);
-  }
-
-  start_it(path, filename, wbargs);
-
-  /* TODO: unlock all :( */
+  DebOut("launchd: handle_launch_signal->FreeVec\n");
+  FreeVec(command_mem);
 
   if(pool) {
     DeletePool(pool);

@@ -58,7 +58,9 @@ uae_u32 ld_job_get(ULONG *m68k_results) {
   ReleaseSemaphore(&sem_janus_launch_list);
 
   if(!jlaunch) {
-    JWLOG("jlaunch == NULL !?\n");
+    JWLOG("jlaunch == NULL\n");
+    /* no more commands */
+    put_long_p(m68k_results, 0);
     return 0;
   }
 
