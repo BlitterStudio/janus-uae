@@ -1,12 +1,32 @@
- /*
-  * UAE - The Un*x Amiga Emulator
-  *
-  * bsdsocket.library emulation machine-independent part
-  *
-  * Copyright 1997, 1998 Mathias Ortmann
-  *
-  * Library initialization code (c) Tauno Taipaleenmaki
-  */
+/************************************************************************ 
+ *
+ * bsdsocket.library emulation machine-independent part
+ *
+ * Copyright 1997, 1998 Mathias Ortmann
+ * Copyright 2010 Oliver Brunner - aros<at>oliver-brunner.de
+ *
+ * Library initialization code (c) Tauno Taipaleenmaki
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-UAE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-UAE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * This file is based on a parts of cbio.c, (c) 1992 Commodore-Amiga.
+ *
+ * $Id$
+ *
+ ************************************************************************/
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -23,6 +43,7 @@
 #include "threaddep/thread.h"
 #include "bsdsocket.h"
 
+//#define BSDSOCKET
 #ifdef BSDSOCKET
 
 #ifdef WIN32
