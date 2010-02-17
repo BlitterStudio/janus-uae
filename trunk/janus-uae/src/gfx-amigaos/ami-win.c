@@ -1081,6 +1081,7 @@ static int setup_customscreen (void)
     AWTRACE("entered\n");
     AWTRACE("width x height: %d x %d\n",width,height);
 
+write_log("XXX setup_customscreen\n");
 #ifdef USE_CYBERGFX
     /* First try to find an RTG screen that matches the requested size  */
     {
@@ -1229,6 +1230,8 @@ BOOL reopen_new_main_window(struct Screen *S, BOOL visible) {
   original_W =new_win;
   original_RP=new_win->RPort;
 
+write_log("XXX original_W=%lx\n", original_W);
+
   return TRUE;
 }
 
@@ -1257,6 +1260,7 @@ void show_uae_main_window(void) {
 
   if(ok) {
     uae_main_window_closed=FALSE;
+    write_log("XXX uae_main_window_closed=FALSE\n");
   }
 
   release_W();
@@ -1285,14 +1289,15 @@ void hide_uae_main_window(void) {
   ok=reopen_new_main_window(W->WScreen, FALSE);
 
   if(ok) {
+    write_log("XXX uae_main_window_closed=TRUE\n");
     uae_main_window_closed=TRUE;
   }
 
   release_W();
 }
 
-static int setup_publicscreen(void)
-{
+static int setup_publicscreen(void) {
+
     BOOL visible;
     UWORD ZoomArray[4] = {0, 0, 0, 0};
     char *pubscreen = strlen (currprefs.amiga_publicscreen)
@@ -1328,11 +1333,13 @@ static int setup_publicscreen(void)
        */
 
     if(currprefs.jcoherence) {
-      visible=FALSE;
       AWTRACE("open window invisible!\n");
+      visible=FALSE;
+      uae_main_window_closed=TRUE;
     }
     else {
       AWTRACE("open window visible\n");
+      uae_main_window_closed=FALSE;
       visible=TRUE;
     }
 
@@ -1367,11 +1374,12 @@ static int setup_publicscreen(void)
 	return 0;
     }
 
+    original_W =W;
+
+    write_log("XXX W: %lx\n",W);
+
     gfxvidinfo.width  = (W->Width  - W->BorderRight - W->BorderLeft);   
     gfxvidinfo.height = (W->Height - W->BorderTop   - W->BorderBottom); 
-
-    uae_main_window_closed=TRUE;
-
 
     AWTRACE("opened uae window %lx\n",W);
     AWTRACE("gfxvidinfo.width: %d\n", gfxvidinfo.width);
@@ -1381,6 +1389,7 @@ static int setup_publicscreen(void)
     YOffset = W->BorderTop;
 
     RP      = W->RPort;
+    original_RP=W->RPort;
 
 #ifdef USE_CYBERGFX
     if (CyberGfxBase && GetCyberMapAttr (RP->BitMap, (LONG)CYBRMATTR_ISCYBERGFX) &&
@@ -1450,6 +1459,7 @@ static int setup_userscreen (void)
     int release_asl = 0;
 
     AWTRACE("entered\n");
+write_log("XXX setup_userscreen\n");
 
     if (!AslBase) {
 	AslBase = OpenLibrary (AslName, 36);
@@ -2062,10 +2072,14 @@ void graphics_leave (void)
 
     obtain_W();
     if (W && (W == original_W)) {
+	write_log("Close: W %lx\n", W, original_W);
 	restore_prWindowPtr ();
 	CloseWindow (W);
 	W = NULL;
 	original_W=W;
+    }
+    else {
+      write_log("Close: W %lx, original_W %lx\n", W, original_W);
     }
     release_W();
 
