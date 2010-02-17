@@ -4,12 +4,12 @@
  *
  * This file is part of Janus-UAE.
  *
- * Janus-Daemon is free software: you can redistribute it and/or modify
+ * Janus-UAE is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Janus-Daemon is distributed in the hope that it will be useful,
+ * Janus-UAE is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -130,6 +130,7 @@ extern struct SignalSemaphore aos3_thread_start;
 extern struct SignalSemaphore janus_messages_access;
 extern struct SignalSemaphore sem_janus_active_win;
 extern struct SignalSemaphore sem_janus_active_custom_screen;
+extern struct SignalSemaphore sem_janus_access_W;
 
 /* clipd */
 extern ULONG aos3_clip_task;
@@ -173,6 +174,9 @@ extern struct Window   *original_W;
 extern struct Screen   *original_S;
 extern struct ColorMap *original_CM;
 extern struct RastPort *original_RP;
+extern struct Window   *hidden_W;
+extern struct Screen   *hidden_S;
+extern struct RastPort *hidden_RP;
 
 #define WIN_DEFAULT_DELAY 50
 
@@ -321,6 +325,10 @@ void aros_launch_kill_thread(void);
 
 /* reset */
 void j_reset(void);
+
+/* protect */
+void obtain_W(void);
+void release_W(void);
 
 /* assert */
 struct Window *assert_window (struct Window *search);

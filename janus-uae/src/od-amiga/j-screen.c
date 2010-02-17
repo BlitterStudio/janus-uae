@@ -69,8 +69,8 @@ static void new_aros_cust_screen(JanusScreen *jscreen, uaecptr aos3screen) {
  * - if yes, return that one
  * - if not, open new one
  ************************************************************************/
-static struct Screen *new_aros_pub_screen(JanusScreen *jscreen, 
-                                          uaecptr aos3screen) {
+void new_aros_pub_screen(JanusScreen *jscreen, uaecptr aos3screen) {
+
   struct Screen *pub;
 
   JWLOG("screen public name: >%s<\n",jscreen->pubname);
@@ -80,7 +80,7 @@ static struct Screen *new_aros_pub_screen(JanusScreen *jscreen,
   if(pub) {
     JWLOG("screen %s already exists\n",jscreen->pubname);
     UnlockPubScreen(NULL, pub);
-    return pub;
+    return;
   }
 
   jscreen->arosscreen= (struct Screen *) -1;
@@ -90,11 +90,12 @@ static struct Screen *new_aros_pub_screen(JanusScreen *jscreen,
   /* wait until thread was started and it had a chance to open the screen.
    * If the tread fails, it sets the screen to NULL
    */
+  /* DEAD HERE! */
+#if 0
   while((LONG) jscreen->arosscreen ==  -1) {
     Delay(10);
   }
-
-  return jscreen->arosscreen;
+#endif
 
 }
 
@@ -158,10 +159,12 @@ static void new_aros_screen(JanusScreen *jscreen) {
     /* we just return our wanderer screen here.
      * TODO: What happens, if wanderer is *not* running?
      */
+    JWLOG("LockIBase\n");
     lock=LockIBase(0);
     arosscr=IntuitionBase->FirstScreen;
     while(arosscr) {
       if(arosscr->Flags & WBENCHSCREEN) {
+	JWLOG("UnlockIBase\n");
 	UnlockIBase(lock);
 	jscreen->ownscreen=FALSE;
 	JWLOG("return aros WBENCHSCREEN %lx\n",arosscr);
@@ -170,6 +173,7 @@ static void new_aros_screen(JanusScreen *jscreen) {
       }
       arosscr=arosscr->NextScreen;
     }
+    JWLOG("UnlockIBase\n");
     UnlockIBase(lock);
     JWLOG("ERROR: wanderer is not running!?\n");
     goto EXIT;
@@ -209,7 +213,9 @@ uae_u32 ad_job_list_screens(ULONG *m68k_results) {
 
   JWLOG("ad_job_list_screens()\n");
 
+  JWLOG("ObtainSemaphore(&sem_janus_screen_list)\n");
   ObtainSemaphore(&sem_janus_screen_list);
+  JWLOG("ObtainSemaphore(&sem_janus_screen_list) successful\n");
 
   i=0;
   while((aos3screen=get_long((uaecptr) m68k_results+i))) {
@@ -252,6 +258,7 @@ uae_u32 ad_job_list_screens(ULONG *m68k_results) {
     }
     i=i+20; /* we get *5* ULONGs: screen pointer, depth and pubname */
   }
+  JWLOG("Release(&sem_janus_screen_list)\n");
   ReleaseSemaphore(&sem_janus_screen_list);
 
   JWLOG("ad_job_list_screens() done\n");
@@ -271,7 +278,8 @@ uae_u32 ad_job_list_screens(ULONG *m68k_results) {
  **********************************************************/
 uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
 
-  JWLOG("new aros screen: %lx (but we let sync screen handle it.\n", aos3screen);
+  JWLOG("new aros screen: %lx, but we let sync screen handle it.\n", 
+         aos3screen);
 
   return TRUE;
 
@@ -498,13 +506,17 @@ uae_u32 ad_job_close_screen(ULONG aos3screen) {
     JWLOG("  no custom screen, do nothing\n");
   }
 
+  JWLOG("ObtainSemaphore(&sem_janus_screen_list)\n");
   ObtainSemaphore(&sem_janus_screen_list);
+  JWLOG("ObtainSemaphore(&sem_janus_screen_list) successful\n");
+
   list_screen= g_slist_find_custom(janus_screens,
 	  (gconstpointer) aos3screen,
 	  &aos3_screen_compare);
 
   if(!list_screen) {
     JWLOG(" screen %lx not found in janus_screens list\n", aos3screen);
+    JWLOG("Release(&sem_janus_screen_list)\n");
     ReleaseSemaphore(&sem_janus_screen_list);
     return TRUE;
   }
@@ -513,12 +525,14 @@ uae_u32 ad_job_close_screen(ULONG aos3screen) {
 
   if(!jscreen->arosscreen) {
     JWLOG(" jscreen %lx has no arosscreen !?\n", jscreen);
+    JWLOG("Release(&sem_janus_screen_list)\n");
     ReleaseSemaphore(&sem_janus_screen_list);
     return FALSE;
   }
 
   if(!jscreen->task) {
     JWLOG(" ERROR: jscreen %lx has no task !?\n", jscreen);
+    JWLOG("Release(&sem_janus_screen_list)\n");
     ReleaseSemaphore(&sem_janus_screen_list);
     return FALSE;
   }
@@ -526,6 +540,7 @@ uae_u32 ad_job_close_screen(ULONG aos3screen) {
   JWLOG("send SIGBREAKF_CTRL_C to task %lx of jscreen %lx \n", jscreen->task, jscreen);
   Signal(jscreen->task, SIGBREAKF_CTRL_C);
 
+  JWLOG("Release(&sem_janus_screen_list)\n");
   ReleaseSemaphore(&sem_janus_screen_list);
   return TRUE;
 }
@@ -630,7 +645,10 @@ void close_all_janus_screens() {
 
   JWLOG("close_all_janus_screens\n");
 
+  JWLOG("ObtainSemaphore(&sem_janus_screen_list)\n");
   ObtainSemaphore(&sem_janus_screen_list);
+  JWLOG("ObtainSemaphore(&sem_janus_screen_list) successful\n");
+
   list_screen=janus_screens;
   while(list_screen) {
     jscreen=(JanusScreen *) list_screen->data;
@@ -648,6 +666,7 @@ void close_all_janus_screens() {
       list_screen=janus_screens;
     }
   }
+  JWLOG("Release(&sem_janus_screen_list)\n");
   ReleaseSemaphore(&sem_janus_screen_list);
   LEAVE
 }

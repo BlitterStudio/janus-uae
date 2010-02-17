@@ -1,6 +1,6 @@
 /************************************************************************ 
  *
- * Copyright 2009 Oliver Brunner - aros<at>oliver-brunner.de
+ * Copyright 2009-2010 Oliver Brunner - aros<at>oliver-brunner.de
  *
  * This file is part of Janus-UAE.
  *
