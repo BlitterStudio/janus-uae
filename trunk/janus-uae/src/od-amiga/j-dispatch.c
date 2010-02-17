@@ -254,6 +254,7 @@ static uae_u32 jd_setup(TrapContext *context, ULONG *param) {
       InitSemaphore(&janus_messages_access);
       InitSemaphore(&sem_janus_active_win);
       InitSemaphore(&sem_janus_active_custom_screen);
+      InitSemaphore(&sem_janus_access_W);
       init_done=TRUE;
 
       unlock_jgui();

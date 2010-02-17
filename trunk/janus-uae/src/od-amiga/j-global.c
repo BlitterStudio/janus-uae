@@ -56,6 +56,13 @@ struct Screen   *original_S;
 struct ColorMap *original_CM;
 struct RastPort *original_RP;
 
+/* as we cannot show/hide a window (no API), we create
+ * a hidden one and swap them, if necessary 
+ */
+struct Window   *hidden_W;
+struct Screen   *hidden_S;
+struct RastPort *hidden_RP;
+
 /*
 ULONG clipboard_amiga_updated=get_long( param);
 ULONG clipboard_amiga_data=get_long(param + 4);
@@ -82,6 +89,9 @@ struct SignalSemaphore janus_messages_access;
 
 /* protect janus_active_custom_screen */
 struct SignalSemaphore sem_janus_active_custom_screen;
+
+/* protect W access. use obtain_w/release_W instead of direct access */
+struct SignalSemaphore sem_janus_access_W;
 
 GSList *janus_windows =NULL;
 GSList *janus_screens =NULL;

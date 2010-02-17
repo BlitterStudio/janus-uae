@@ -274,13 +274,16 @@ static void aros_screen_thread (void) {
 
   JWLOG("aros_scr_thread[%lx]: thread running \n",thread);
 
+  JWLOG("aros_scr_thread[%lx]: ObtainSemaphore(&sem_janus_screen_list) \n",thread);
   ObtainSemaphore(&sem_janus_screen_list);
+  JWLOG("aros_scr_thread[%lx]: ObtainSemaphore(&sem_janus_screen_list) successfull\n",
+        thread);
   list_screen=g_slist_find_custom(janus_screens, 
 	 		     	  (gconstpointer) thread,
 			     	  &aos3_screen_process_compare);
 
   ReleaseSemaphore(&sem_janus_screen_list);
-  JWLOG("aros_scr_thread[%lx]: released sem_janus_window_list sem \n",thread);
+  JWLOG("aros_scr_thread[%lx]: ReleasedSemaphore(&sem_janus_screen_list)\n",thread);
 
   if(!list_screen) {
     JWLOG("aros_scr_thread[%lx]: ERROR: screen of this thread not found in screen list !?\n",thread);
@@ -288,7 +291,7 @@ static void aros_screen_thread (void) {
   }
 
   jscr=(JanusScreen *) list_screen->data;
-  JWLOG("aros_scr_thread[%lx]: win: %lx \n",thread,jscr);
+  JWLOG("aros_scr_thread[%lx]: jscr: %lx \n",thread,jscr);
 
   signal=AllocSignal(-1);
   if(!signal) {
@@ -304,15 +307,22 @@ static void aros_screen_thread (void) {
     goto EXIT; 
   }
 
+  done=FALSE;
+
   while(!done) {
     s=Wait(1L << signal | SIGBREAKF_CTRL_C);
-    done=TRUE;
 
+    JWLOG("aros_scr_thread[%lx]: signal received (%lx)\n", thread, signal);
     /* Ctrl-C */
     if(s & SIGBREAKF_CTRL_C) {
       JWLOG("aros_scr_thread[%lx]: SIGBREAKF_CTRL_C received\n", thread);
-      //done=TRUE;
+      done=TRUE;
     }
+    if(s & (1L << signal)) {
+      JWLOG("aros_scr_thread[%lx]: signal received\n", thread);
+      done=TRUE;
+    }
+
     /* WARNING: TODO only die, if there is no other window left */
   }
 

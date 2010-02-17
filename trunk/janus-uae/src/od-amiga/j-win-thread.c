@@ -626,6 +626,10 @@ static void aros_win_thread (void) {
 				      WA_NewLookMenus, TRUE,
 				      TAG_DONE);
     }
+    
+    JWLOG("aros_win_thread[%lx]: x, y : %d, %d\n",thread,  
+           x - estimated_border_left + bl,
+	   y - estimated_border_top  + bt );
 
     JWLOG("opened window: %s\n", title);
     JWLOG("  WA_Left: x %d - estimated_border_left %d = %d\n", x, estimated_border_left, x-estimated_border_left);
@@ -798,20 +802,12 @@ EXIT:
     list_win=NULL;
   }
 
-  JWLOG("aros_win_thread[%lx]: list_win=NULL\n",thread);
-  /* not nice to free our own name, but should not be a problem */
-#if 0
-  if(name_mem) {
-    JWLOG("aros_win_thread[%lx]: FreeVec() >%s<\n", thread,
-	    name_mem);
-    FreeVecPooled(jwin->mempool, name_mem);
-  }
-#endif
-
   JWLOG("ReleaseSemaphore(&sem_janus_window_list);\n");
   ReleaseSemaphore(&sem_janus_window_list);
-  DeletePool(jwin->mempool);
-  FreeVec(jwin);
+  if(jwin) {
+    DeletePool(jwin->mempool);
+    FreeVec(jwin);
+  }
   JWLOG("aros_win_thread[%lx]: dies..\n", thread);
 }
 

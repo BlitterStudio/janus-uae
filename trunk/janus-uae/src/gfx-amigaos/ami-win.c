@@ -163,10 +163,6 @@ static char picasso_invalid_lines[1200];
 static int  picasso_invalid_start;
 static int  picasso_invalid_end;
 
-/* original values in case uae_main window is "hidden" */
-static WORD uae_main_window_Width, uae_main_window_Height;
-static WORD uae_main_window_Left,  uae_main_window_Top;
-
 /****************************************************************************/
 /*
  * prototypes & global vars
@@ -489,7 +485,8 @@ static void flush_line_cgx_v41 (struct vidbuf_description *gfxinfo, int line_no)
 static void flush_block_cgx_v41 (struct vidbuf_description *gfxinfo, int first_line, int last_line)
 {
   if(!RP) {
-    kprintf("%s: ERROR!! no RP here!\n", __FILE__);
+    AWTRACE("ERROR!! no RP here!\n");
+    write_log("%s: ERROR!! no RP here!\n", __FILE__);
     /* die ..*/
   }
   if(uae_no_display_update) {
@@ -1175,74 +1172,128 @@ static int setup_customscreen (void)
     return 1;
 }
 
+/***************************************************
+ * reopen_new_main_window
+ *
+ * Open a new main window (visible or not) and
+ * replace W with it
+ * Close the old W
+ *
+ * ATTENTION: You *must* protect this call
+ *            with obtain_W/releaseW !
+ *
+ * WARNING: There still might be (many) cases,
+ *          where uae tries to access W without
+ *          obtain_W/release_W protection .. :(
+ ***************************************************/
+BOOL reopen_new_main_window(struct Screen *S, BOOL visible) {
+
+  struct Window *new_win;
+
+  AWTRACE("screen %lx, visible %d\n", S, visible);
+
+  new_win=OpenWindowTags (NULL,
+			  WA_Title,        (ULONG)PACKAGE_NAME,
+			  WA_AutoAdjust,   TRUE,
+			  WA_InnerWidth,   gfxvidinfo.width,
+			  WA_InnerHeight,  gfxvidinfo.height,
+			  WA_Visible,      visible,
+			  WA_PubScreen,    (ULONG)S,
+//			  WA_Zoom,         (ULONG)ZoomArray,
+			  WA_IDCMP,        IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY
+					 | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW
+					 | IDCMP_MOUSEMOVE    | IDCMP_DELTAMOVE
+					 | IDCMP_CLOSEWINDOW  | IDCMP_REFRESHWINDOW
+					 | IDCMP_NEWSIZE      | IDCMP_INTUITICKS,
+			  WA_Flags,	   WFLG_DRAGBAR       | WFLG_DEPTHGADGET
+					 | WFLG_REPORTMOUSE   | WFLG_RMBTRAP
+					 | WFLG_ACTIVATE      | WFLG_CLOSEGADGET
+					 | WFLG_SMART_REFRESH,
+			  TAG_DONE);
+  if(!new_win) {
+    AWTRACE("ERROR: unable to open new window!\n");
+    write_log("ERROR: show_uae_main_window: unable to open window!\n");
+    return FALSE;
+  }
+
+  AWTRACE("set W to new window %lx, RP to new rp %lx\n", new_win, new_win->RPort);
+
+  /* get rid of the old invisible window */
+  if(W) {
+    CloseWindow(W);
+  }
+
+  W= new_win;
+  RP=new_win->RPort;
+
+  original_W =new_win;
+  original_RP=new_win->RPort;
+
+  return TRUE;
+}
+
+
 /****************************************************************************
  * show_uae_main_window()
  *
  * If we go from rootless to normal mode, we close all rootless windows
- * with close_all_janus_windows() and resize our main window with
- * show_uae_main_window().
+ * with close_all_janus_windows(), close our hidden window and open
+ * a new visible one (with the help of reopen_new_main_window)
  *
  ****************************************************************************/
 void show_uae_main_window(void) {
+  struct Window *newW;
+  BOOL ok;
+
+  obtain_W();
 
   if(!W) {
     AWTRACE("ERROR: W == NULL ??\n");
+    release_W();
     return;
   }
 
-  AWTRACE("resize window to:\n");
-  AWTRACE("   x,y: %d, %d\n", uae_main_window_Top, uae_main_window_Left);
-  AWTRACE("   w,h: %d, %d\n", uae_main_window_Width, uae_main_window_Height);
-  AWTRACE("\n");
-  AWTRACE("   gfxvidinfo.width: %d\n",gfxvidinfo.width);
-  AWTRACE("   gfxvidinfo.width+border: %d\n",gfxvidinfo.width+W->BorderLeft+W->BorderRight);
-  AWTRACE("   gfxvidinfo.height: %d\n",gfxvidinfo.height);
-  AWTRACE("   gfxvidinfo.height+border: %d\n",gfxvidinfo.height+W->BorderTop+W->BorderBottom);
+  ok=reopen_new_main_window(W->WScreen, TRUE);
 
-  ChangeWindowBox(W, uae_main_window_Top, uae_main_window_Left,
-		      uae_main_window_Width, uae_main_window_Height);
+  if(ok) {
+    uae_main_window_closed=FALSE;
+  }
 
-  uae_main_window_closed=FALSE;
-
+  release_W();
   reset_drawing();
-
 }
 
 /****************************************************************************
  * hide_uae_main_window()
  *
- * We move the main window to the lower right edge of our screen and
- * resize it to 1x1. We still need this window, otherwise quite some
- * access to non valid structures would happen.
+ * We still need a valid W, so we open one with MA_Visible=FALSE. It is a 
+ * pity, that there seems to be no API to change MA_Visible as long as
+ * the window exists.. So we open a hidden one and close the real one
+ * (with the help of reopen_new_main_window)
  ****************************************************************************/
 void hide_uae_main_window(void) {
+  BOOL ok;
+
+  obtain_W();
 
   if(!W) {
     AWTRACE("ERROR: W == NULL ??\n");
+    release_W();
     return;
   }
 
-  uae_main_window_Width  = W->Width;
-  uae_main_window_Height = W->Height;
-  uae_main_window_Top    = W->TopEdge;
-  uae_main_window_Left   = W->LeftEdge;
+  ok=reopen_new_main_window(W->WScreen, FALSE);
 
-  AWTRACE("remember:\n");
-  AWTRACE("   x,y: %d, %d\n", uae_main_window_Top, uae_main_window_Left);
-  AWTRACE("   w,h: %d, %d\n", uae_main_window_Width, uae_main_window_Height);
-  AWTRACE("\n");
-  AWTRACE("   gfxvidinfo.width: %d\n",gfxvidinfo.width);
-  AWTRACE("   gfxvidinfo.width+border: %d\n",gfxvidinfo.width+W->BorderLeft+W->BorderRight);
-  AWTRACE("   gfxvidinfo.height: %d\n",gfxvidinfo.height);
-  AWTRACE("   gfxvidinfo.height+border: %d\n",gfxvidinfo.height+W->BorderTop+W->BorderBottom);
+  if(ok) {
+    uae_main_window_closed=TRUE;
+  }
 
-  ChangeWindowBox(W, S->Width-1, S->Height-1, 1, 1);
-
-  uae_main_window_closed=TRUE;
+  release_W();
 }
 
 static int setup_publicscreen(void)
 {
+    BOOL visible;
     UWORD ZoomArray[4] = {0, 0, 0, 0};
     char *pubscreen = strlen (currprefs.amiga_publicscreen)
 	? currprefs.amiga_publicscreen : NULL;
@@ -1270,50 +1321,29 @@ static int setup_publicscreen(void)
 	}
     }
 
-    if(currprefs.jcoherence) {
       /*
        * as it seems, that a lot of stuff depends on a uae main window existing (RastPort etc),
-       * we open one just for those variables to be valid. It is put into the right lower
-       * border of the screen and size 1x1
+       * we open one just for those variables to be valid. If we a coherent, we set
+       * WA_Visible to FALSE
        */
 
-      W = OpenWindowTags (NULL,
-			  WA_Title,        (ULONG)PACKAGE_NAME,
-			  WA_AutoAdjust,   TRUE,
-			  WA_Left,         S->Width,
-			  WA_Top,          S->Height,
-			  WA_Width,        1,
-			  WA_Height,       1,
-			  WA_PubScreen,    (ULONG)S,
-			  WA_Zoom,         (ULONG)ZoomArray,
-			  WA_IDCMP,        IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY
-					 | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW
-					 | IDCMP_MOUSEMOVE    | IDCMP_DELTAMOVE
-					 | IDCMP_CLOSEWINDOW  | IDCMP_REFRESHWINDOW
-					 | IDCMP_NEWSIZE      | IDCMP_INTUITICKS,
-			  WA_Flags,	 WFLG_DRAGBAR     | WFLG_DEPTHGADGET
-					 | WFLG_REPORTMOUSE | WFLG_RMBTRAP
-					 | WFLG_ACTIVATE    | WFLG_CLOSEGADGET
-					 | WFLG_SMART_REFRESH,
-			  TAG_DONE);
-      /* remember values (not used)*/
-      uae_main_window_Left  =1;
-      uae_main_window_Top   =1;
-      uae_main_window_Width =gfxvidinfo.width  + W->BorderLeft + W->BorderRight;
-      uae_main_window_Height=gfxvidinfo.height + W->BorderTop  + W->BorderBottom;
-
-      uae_main_window_closed=TRUE;
-
-      original_W=W;
-
+    if(currprefs.jcoherence) {
+      visible=FALSE;
+      AWTRACE("open window invisible!\n");
     }
     else {
+      AWTRACE("open window visible\n");
+      visible=TRUE;
+    }
 
-      W = OpenWindowTags (NULL,
+    obtain_W();
+
+    W = OpenWindowTags (NULL,
 			  WA_Title,        (ULONG)PACKAGE_NAME,
 			  WA_AutoAdjust,   TRUE,
 			  WA_InnerWidth,   gfxvidinfo.width,
 			  WA_InnerHeight,  gfxvidinfo.height,
+			  WA_Visible,      visible,
 			  WA_PubScreen,    (ULONG)S,
 			  WA_Zoom,         (ULONG)ZoomArray,
 			  WA_IDCMP,        IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY
@@ -1321,42 +1351,36 @@ static int setup_publicscreen(void)
 					 | IDCMP_MOUSEMOVE    | IDCMP_DELTAMOVE
 					 | IDCMP_CLOSEWINDOW  | IDCMP_REFRESHWINDOW
 					 | IDCMP_NEWSIZE      | IDCMP_INTUITICKS,
-			  WA_Flags,	 WFLG_DRAGBAR     | WFLG_DEPTHGADGET
-					 | WFLG_REPORTMOUSE | WFLG_RMBTRAP
-					 | WFLG_ACTIVATE    | WFLG_CLOSEGADGET
+			  WA_Flags,	   WFLG_DRAGBAR       | WFLG_DEPTHGADGET
+					 | WFLG_REPORTMOUSE   | WFLG_RMBTRAP
+					 | WFLG_ACTIVATE      | WFLG_CLOSEGADGET
 					 | WFLG_SMART_REFRESH,
 			  TAG_DONE);
-      uae_main_window_closed=FALSE;
-
-      gfxvidinfo.width  = (W->Width  - W->BorderRight - W->BorderLeft);   
-      gfxvidinfo.height = (W->Height - W->BorderTop   - W->BorderBottom); 
-
-      original_W=W;
-    }
-
-    UnlockPubScreen (NULL, S);
 
 
     if (!W) {
 	write_log ("Can't open window on public screen!\n");
 	CM = NULL;
 	original_CM=NULL;
+    	release_W();
+       	UnlockPubScreen (NULL, S);
 	return 0;
     }
 
-    AWTRACE("openen uae window %lx\n",W);
+    gfxvidinfo.width  = (W->Width  - W->BorderRight - W->BorderLeft);   
+    gfxvidinfo.height = (W->Height - W->BorderTop   - W->BorderBottom); 
 
-AWTRACE("gfxvidinfo.width: %d\n", gfxvidinfo.width);
-AWTRACE("gfxvidinfo.height: %d\n",gfxvidinfo.height);
+    uae_main_window_closed=TRUE;
+
+
+    AWTRACE("opened uae window %lx\n",W);
+    AWTRACE("gfxvidinfo.width: %d\n", gfxvidinfo.width);
+    AWTRACE("gfxvidinfo.height: %d\n",gfxvidinfo.height);
+
     XOffset = W->BorderLeft;
     YOffset = W->BorderTop;
-AWTRACE("gfxvidinfo.width: %d\n", gfxvidinfo.width);
-AWTRACE("gfxvidinfo.height: %d\n",gfxvidinfo.height);
 
-    RP = W->RPort;
-    original_RP=W->RPort;
-
-    appw_init (W);
+    RP      = W->RPort;
 
 #ifdef USE_CYBERGFX
     if (CyberGfxBase && GetCyberMapAttr (RP->BitMap, (LONG)CYBRMATTR_ISCYBERGFX) &&
@@ -1365,6 +1389,10 @@ AWTRACE("gfxvidinfo.height: %d\n",gfxvidinfo.height);
     }
 
 #endif
+    release_W();
+    UnlockPubScreen (NULL, S);
+
+    appw_init (W);
 
     return 1;
 }
@@ -1538,6 +1566,7 @@ static int setup_userscreen (void)
     is_halfbrite = (S->ViewPort.Modes & EXTRA_HALFBRITE);
     is_ham       = (S->ViewPort.Modes & HAM);
 
+    obtain_W();
     W = OpenWindowTags (NULL,
 			WA_Width,		S->Width,
 			WA_Height,		S->Height,
@@ -1559,6 +1588,7 @@ static int setup_userscreen (void)
 			TAG_DONE);
 
     if(!W) {
+	release_W();
 	AWTRACE ("Unable to open the window.\n");
 	CloseScreen (S);
 	S  = NULL;
@@ -1576,6 +1606,8 @@ static int setup_userscreen (void)
     hide_pointer (W);
 
     RP = W->RPort; /* &S->Rastport if screen is not public */
+
+    release_W();
 
     /* make screen public !? */
     PubScreenStatus (S, 0);
@@ -1771,6 +1803,7 @@ int graphics_init (void)
     int i, bitdepth;
 
     AWTRACE("graphics_init\n");
+    write_log("graphics_init\n");
 
     use_delta_buffer = 0;
     need_dither = 0;
@@ -1795,6 +1828,7 @@ int graphics_init (void)
     gfxvidinfo.width &= ~7;
 
 
+    write_log("graphics_init switch\n");
     switch (currprefs.amiga_screen_type) {
 	case UAESCREENTYPE_ASK:
 	    AWTRACE("currprefs.amiga_screen_type: UAESCREENTYPE_ASK\n");
@@ -1806,6 +1840,7 @@ int graphics_init (void)
 	case UAESCREENTYPE_PUBLIC:
 	    is_halfbrite = 0;
 	    AWTRACE("currprefs.amiga_screen_type: UAESCREENTYPE_PUBLIC\n");
+    write_log("graphics_init setup_publicscreen\n");
 	    if (setup_publicscreen ()) {
 		usepub = 1;
 		break;
@@ -1823,6 +1858,7 @@ int graphics_init (void)
 
     set_prWindowPtr (W);
 
+    write_log("graphics_init 2\n");
     Line = AllocVec ((gfxvidinfo.width + 15) & ~15, MEMF_ANY | MEMF_PUBLIC);
     if (!Line) {
 	write_log ("Unable to allocate raster buffer.\n");
@@ -1842,6 +1878,7 @@ int graphics_init (void)
     TempRPort->Layer  = NULL;
     TempRPort->BitMap = BitMap;
 
+    write_log("graphics_init 3\n");
     if (usepub)
 	set_title ();
 
@@ -1945,6 +1982,7 @@ int graphics_init (void)
 
     pointer_state = DONT_KNOW;
 
+    write_log("graphics_init return 1\n");
    return 1;
 }
 
@@ -2021,12 +2059,15 @@ void graphics_leave (void)
 	CM = NULL;
 	original_CM=NULL;
     }
+
+    obtain_W();
     if (W && (W == original_W)) {
 	restore_prWindowPtr ();
 	CloseWindow (W);
 	W = NULL;
 	original_W=W;
     }
+    release_W();
 
     free_pointer ();
 
@@ -2232,6 +2273,8 @@ BOOL clone_window_area(JanusWin *jwin,
     return TRUE;
   }
 
+  obtain_W();
+
   if(!uae_main_window_closed) {
     width= W->Width;
   }
@@ -2250,6 +2293,8 @@ BOOL clone_window_area(JanusWin *jwin,
       endy - starty + jwin->plusy,
       RECTFMT_RAW
   );
+
+  release_W();
 
   return TRUE;
 }
@@ -2620,145 +2665,149 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
       JWLOG("custom screen, don't do GetMsg(W %lx ->UserPort %lx)\n", W, W->UserPort);
     }
     else {
-      JWLOG("GetMsg(W %lx->UserPort %lx)\n", W, W->UserPort);
+      if(!uae_main_window_closed) {
+	obtain_W();
+	JWLOG("GetMsg(W %lx->UserPort %lx)\n", W, W->UserPort);
 
-      while (!uae_main_window_closed && (msg = (struct IntuiMessage*) GetMsg(W->UserPort))) {
-	class     = msg->Class;
-	code      = msg->Code;
-	dmx       = msg->MouseX;
-	dmy       = msg->MouseY;
-	mx        = msg->IDCMPWindow->MouseX; // Absolute pointer coordinates
-	my        = msg->IDCMPWindow->MouseY; // relative to the window
-	qualifier = msg->Qualifier;
+	while (!uae_main_window_closed && (msg = (struct IntuiMessage*) GetMsg(W->UserPort))) {
+	  class     = msg->Class;
+	  code      = msg->Code;
+	  dmx       = msg->MouseX;
+	  dmy       = msg->MouseY;
+	  mx        = msg->IDCMPWindow->MouseX; // Absolute pointer coordinates
+	  my        = msg->IDCMPWindow->MouseY; // relative to the window
+	  qualifier = msg->Qualifier;
 
-	ReplyMsg ((struct Message*)msg);
+	  ReplyMsg ((struct Message*)msg);
 
-	AWTRACE("W: %lx (%s)\n",W, W->Title);
-	JWLOG("ami-win.c: handle_input(win %lx)\n", W);
+	  AWTRACE("W: %lx (%s)\n",W, W->Title);
+	  JWLOG("ami-win.c: handle_input(win %lx)\n", W);
 
-	switch (class) {
-	    case IDCMP_NEWSIZE:
-		do_inhibit_frame ((W->Flags & WFLG_ZOOMED) ? 1 : 0);
-		break;
+	  switch (class) {
+	      case IDCMP_NEWSIZE:
+		  do_inhibit_frame ((W->Flags & WFLG_ZOOMED) ? 1 : 0);
+		  break;
 
-	    case IDCMP_REFRESHWINDOW:
-		if (use_delta_buffer) {
-		    /* hack: this forces refresh */
-		    uae_u8 *ptr = oldpixbuf;
-		    int i, len = gfxvidinfo.width;
-		    len *= gfxvidinfo.pixbytes;
-		    for (i=0; i < currprefs.gfx_height_win; ++i) {
-			ptr[00000] ^= 255;
-			ptr[len-1] ^= 255;
-			ptr += gfxvidinfo.rowbytes;
-		    }
+	      case IDCMP_REFRESHWINDOW:
+		  if (use_delta_buffer) {
+		      /* hack: this forces refresh */
+		      uae_u8 *ptr = oldpixbuf;
+		      int i, len = gfxvidinfo.width;
+		      len *= gfxvidinfo.pixbytes;
+		      for (i=0; i < currprefs.gfx_height_win; ++i) {
+			  ptr[00000] ^= 255;
+			  ptr[len-1] ^= 255;
+			  ptr += gfxvidinfo.rowbytes;
+		      }
+		  }
+		  BeginRefresh (W);
+		  flush_block (0, currprefs.gfx_height_win - 1);
+		  EndRefresh (W, TRUE);
+		  break;
+
+	      case IDCMP_CLOSEWINDOW:
+		  uae_quit ();
+		  break;
+
+	      case IDCMP_RAWKEY: {
+		  int keycode = code & 127;
+		  int state   = code & 128 ? 0 : 1;
+		  int ievent;
+
+		  if ((qualifier & IEQUALIFIER_REPEAT) == 0) {
+		      /* We just want key up/down events - not repeats */
+		      if ((ievent = match_hotkey_sequence (keycode, state)))
+			  handle_hotkey_event (ievent, state);
+		      else
+			  inputdevice_do_keyboard (keycode, state);
+		  }
+		  break;
+	       }
+
+	      case IDCMP_MOUSEMOVE:
+		/* classic mouse move, if either option is disabled or janusd is not (yet) running */
+		if( ((!changed_prefs.jmouse) || (!aos3_task) ) && (!uae_main_window_closed)) {
+		  AWTRACE("classic mouse move enabled\n");
+		  setmousestate (0, 0, dmx, 0);
+		  setmousestate (0, 1, dmy, 0);
+
+		  if (usepub) {
+		      POINTER_STATE new_state = get_pointer_state (W, mx, my);
+		      if (new_state != pointer_state) {
+			  pointer_state = new_state;
+			  if (pointer_state == INSIDE_WINDOW)
+			      hide_pointer (W);
+			  else
+			      show_pointer (W);
+		      }
+		  }
 		}
-		BeginRefresh (W);
-		flush_block (0, currprefs.gfx_height_win - 1);
-		EndRefresh (W, TRUE);
-		break;
-
-	    case IDCMP_CLOSEWINDOW:
-		uae_quit ();
-		break;
-
-	    case IDCMP_RAWKEY: {
-		int keycode = code & 127;
-		int state   = code & 128 ? 0 : 1;
-		int ievent;
-
-		if ((qualifier & IEQUALIFIER_REPEAT) == 0) {
-		    /* We just want key up/down events - not repeats */
-		    if ((ievent = match_hotkey_sequence (keycode, state)))
-			handle_hotkey_event (ievent, state);
-		    else
-			inputdevice_do_keyboard (keycode, state);
+		else {
+		  AWTRACE("classic mouse move disabled ((%d || %d) && %d)\n", (!changed_prefs.jmouse), (!aos3_task), (!uae_main_window_closed));
 		}
 		break;
-	     }
 
-	    case IDCMP_MOUSEMOVE:
-	      /* classic mouse move, if either option is disabled or janusd is not (yet) running */
-	      if( ((!changed_prefs.jmouse) || (!aos3_task) ) && (!uae_main_window_closed)) {
-		AWTRACE("classic mouse move enabled\n");
-		setmousestate (0, 0, dmx, 0);
-		setmousestate (0, 1, dmy, 0);
-
-		if (usepub) {
-		    POINTER_STATE new_state = get_pointer_state (W, mx, my);
-		    if (new_state != pointer_state) {
-			pointer_state = new_state;
-			if (pointer_state == INSIDE_WINDOW)
-			    hide_pointer (W);
-			else
-			    show_pointer (W);
-		    }
-		}
-	      }
-	      else {
-		AWTRACE("classic mouse move disabled ((%d || %d) && %d)\n", (!changed_prefs.jmouse), (!aos3_task), (!uae_main_window_closed));
-	      }
-      	      break;
-
-	    case IDCMP_MOUSEBUTTONS:
-		if (code == SELECTDOWN) setmousebuttonstate (0, 0, 1);
-		if (code == SELECTUP)   setmousebuttonstate (0, 0, 0);
-		if (code == MIDDLEDOWN) setmousebuttonstate (0, 2, 1);
-		if (code == MIDDLEUP)   setmousebuttonstate (0, 2, 0);
-		if (code == MENUDOWN)   setmousebuttonstate (0, 1, 1);
-		if (code == MENUUP)     setmousebuttonstate (0, 1, 0);
-      	      break;
-
-	    /* Those 2 could be of some use later. */
-	    case IDCMP_DISKINSERTED:
-		/*printf("diskinserted(%d)\n",code);*/
+	      case IDCMP_MOUSEBUTTONS:
+		  if (code == SELECTDOWN) setmousebuttonstate (0, 0, 1);
+		  if (code == SELECTUP)   setmousebuttonstate (0, 0, 0);
+		  if (code == MIDDLEDOWN) setmousebuttonstate (0, 2, 1);
+		  if (code == MIDDLEUP)   setmousebuttonstate (0, 2, 0);
+		  if (code == MENUDOWN)   setmousebuttonstate (0, 1, 1);
+		  if (code == MENUUP)     setmousebuttonstate (0, 1, 0);
 		break;
 
-	    case IDCMP_DISKREMOVED:
-		/*printf("diskremoved(%d)\n",code);*/
-		break;
+	      /* Those 2 could be of some use later. */
+	      case IDCMP_DISKINSERTED:
+		  /*printf("diskinserted(%d)\n",code);*/
+		  break;
 
-	    case IDCMP_ACTIVEWINDOW:
-		/* When window regains focus (presumably after losing focus at some
-		 * point) UAE needs to know any keys that have changed state in between.
-		 * A simple fix is just to tell UAE that all keys have been released.
-		 * This avoids keys appearing to be "stuck" down.
-		 */
-		AWTRACE("IDCMP_ACTIVEWINDOW(%lx)\n", W);
-		inputdevice_acquire ();
-		inputdevice_release_all_keys ();
-		reset_hotkeys ();
-		copy_clipboard_to_amigaos();
-		break;
+	      case IDCMP_DISKREMOVED:
+		  /*printf("diskremoved(%d)\n",code);*/
+		  break;
 
-	    case IDCMP_INACTIVEWINDOW:
-		AWTRACE("IDCMP_INACTIVEWINDOW\n");
-		AWTRACE("IntuitionBase->ActiveWindow: %lx (%s)\n",IntuitionBase->ActiveWindow, IntuitionBase->ActiveWindow->Title);
-		copy_clipboard_to_aros();
-		inputdevice_unacquire ();
-		break;
+	      case IDCMP_ACTIVEWINDOW:
+		  /* When window regains focus (presumably after losing focus at some
+		   * point) UAE needs to know any keys that have changed state in between.
+		   * A simple fix is just to tell UAE that all keys have been released.
+		   * This avoids keys appearing to be "stuck" down.
+		   */
+		  AWTRACE("IDCMP_ACTIVEWINDOW(%lx)\n", W);
+		  inputdevice_acquire ();
+		  inputdevice_release_all_keys ();
+		  reset_hotkeys ();
+		  copy_clipboard_to_amigaos();
+		  break;
 
-	    case IDCMP_INTUITICKS:
+	      case IDCMP_INACTIVEWINDOW:
+		  AWTRACE("IDCMP_INACTIVEWINDOW\n");
+		  AWTRACE("IntuitionBase->ActiveWindow: %lx (%s)\n",IntuitionBase->ActiveWindow, IntuitionBase->ActiveWindow->Title);
+		  copy_clipboard_to_aros();
+		  inputdevice_unacquire ();
+		  break;
+
+	      case IDCMP_INTUITICKS:
 #ifdef __amigaos4__ 
-		grabTicks--;
-		if (grabTicks < 0) {
-		    grabTicks = GRAB_TIMEOUT;
-		    #ifdef __amigaos4__ 
-			if (mouseGrabbed)
-			    grab_pointer (W);
-		    #endif
-		}
+		  grabTicks--;
+		  if (grabTicks < 0) {
+		      grabTicks = GRAB_TIMEOUT;
+		      #ifdef __amigaos4__ 
+			  if (mouseGrabbed)
+			      grab_pointer (W);
+		      #endif
+		  }
 #endif
-		break;
+		  break;
 
-	    default:
-		write_log ("Unknown event class: %x\n", class);
-		AWTRACE("Unknown event class: %x\n", class);
-		break;
-        }
+	      default:
+		  write_log ("Unknown event class: %x\n", class);
+		  AWTRACE("Unknown event class: %x\n", class);
+		  break;
+	  }
+	}
+
+	JWLOG("GetMsg(W->UserPort %lx) done\n", W->UserPort);
+	release_W();
       }
-
-      JWLOG("GetMsg(W->UserPort %lx) done\n", W->UserPort);
     }
 
     appw_events();
@@ -2801,7 +2850,7 @@ static int get_BytesPerPix(struct Window *win) {
 
   if(!win) {
     AWTRACE("\nERROR: win is NULL\n");
-    kprintf("\nERROR: win is NULL\n");
+    write_log("ERROR: win is NULL\n");
     return 0;
   }
 
@@ -2809,13 +2858,13 @@ static int get_BytesPerPix(struct Window *win) {
 
   if(!scr) {
     AWTRACE("\nERROR: win->WScreen is NULL\n");
-    kprintf("\nERROR: win->WScreen is NULL\n");
+    write_log("\nERROR: win->WScreen is NULL\n");
     return 0;
   }
 
   if(!GetCyberMapAttr(scr->RastPort.BitMap, CYBRMATTR_ISCYBERGFX)) {
     AWTRACE("\nERROR: !CYBRMATTR_ISCYBERGFX\n");
-    kprintf("\nERROR: !CYBRMATTR_ISCYBERGFX\n");
+    write_log("\nERROR: !CYBRMATTR_ISCYBERGFX\n");
   }
 
   res=GetCyberMapAttr(scr->RastPort.BitMap, CYBRMATTR_BPPIX);
