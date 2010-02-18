@@ -4,7 +4,7 @@
  *
  * Main program
  *
- * Copyright 1995       Ed Hanway
+ * Copyright 1995      Ed Hanway
  * Copyright 1995-1997 Bernd Schmidt
  * Copyright 2006-2007 Richard Drummond
  * Copyright 2009-2010 Oliver Brunner - aros<at>oliver-brunner.de
@@ -66,6 +66,8 @@
 #ifdef USE_SDL
 #include "SDL.h"
 #endif
+
+//#define BSDSOCKET
 
 #ifdef WIN32
 //FIXME: This shouldn't be necessary
@@ -160,13 +162,20 @@ static void fix_options (void)
 	currprefs.gfxmem_size = 0;
 	err = 1;
     }
-    if ((currprefs.z3fastmem_size & (currprefs.z3fastmem_size - 1)) != 0
-	|| (currprefs.z3fastmem_size != 0 && (currprefs.z3fastmem_size < 0x100000 || currprefs.z3fastmem_size > 0x20000000)))
-    {
-	currprefs.z3fastmem_size = 0;
-	write_log ("Unsupported Zorro III fastmem size!\n");
-	err = 1;
+    if ((!currprefs.z3fastmem_size == 0x60000000) && 
+          (
+	    ( (currprefs.z3fastmem_size & (currprefs.z3fastmem_size - 1)) != 0 ) || 
+	      (
+	         currprefs.z3fastmem_size != 0 && 
+		 (currprefs.z3fastmem_size < 0x100000 || currprefs.z3fastmem_size > 0x60000000)
+	      )
+	  )
+	) {
+	  write_log ("Unsupported Zorro III fastmem size 0x%lx!\n", currprefs.z3fastmem_size);
+	  currprefs.z3fastmem_size = 0;
+	  err = 1;
     }
+
     if (currprefs.address_space_24 && (currprefs.gfxmem_size != 0 || currprefs.z3fastmem_size != 0)) {
 	currprefs.z3fastmem_size = currprefs.gfxmem_size = 0;
 	write_log ("Can't use a graphics card or Zorro III fastmem when using a 24 bit\n"
@@ -698,9 +707,13 @@ static int do_init_machine (void)
     filesys_install ();
 #endif
 #ifdef AUTOCONFIG
+write_log("pre bsdlib_install ..\n");
     bsdlib_install ();
+write_log("pre emulib_install ..\n");
     emulib_install ();
+write_log("pre uaeexe_install ..\n");
     uaeexe_install ();
+write_log("pre native2amiga_install ..\n");
     native2amiga_install ();
 #endif
 
@@ -710,12 +723,17 @@ static int do_init_machine (void)
 #endif
 	DISK_init ();
 
+write_log("pre reset_frame_rate_hack ..\n");
 	reset_frame_rate_hack ();
+write_log("pre init_m68k ..\n");
 	init_m68k(); /* must come after reset_frame_rate_hack (); */
+write_log("post init_m68k ..\n");
 
 	gui_update ();
+write_log("post gui_update ..\n");
 
 	if (graphics_init ()) {
+write_log("post graphics_init ..\n");
 
 #ifdef DEBUGGER
 	    setup_brkhandler ();
@@ -737,6 +755,7 @@ static int do_init_machine (void)
 
 		currprefs.produce_sound = 0;
 	    }
+write_log("post sound_available ..\n");
 
 	    return 1;
 	}

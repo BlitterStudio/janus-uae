@@ -67,9 +67,9 @@
 #include "gui-gtk/display.h"
 #include "gui-gtk/integration.h"
 
-//#define GUI_DEBUG 1
+#define GUI_DEBUG 1
 #ifdef  GUI_DEBUG
-#define DEBUG_LOG(...) do { kprintf("GUI: %s(): ",__func__);kprintf(__VA_ARGS__); } while(0)
+#define DEBUG_LOG(...) do { kprintf("GUI: %s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
 #define DEBUG_LOG(...) do ; while(0)
 #endif
@@ -119,9 +119,10 @@ static const char *bogolabels[] = { "None", "512 KB", "1 MB", "1.8 MB", NULL };
 extern GtkWidget  *fastsize_widget[5];
 static const char *fastlabels[] = { "None", "1 MB", "2 MB", "4 MB", "8 MB", NULL };
 
-static GtkWidget  *z3size_widget[12];
+static GtkWidget  *z3size_widget[16];
 static const char *z3labels[] = { "None", "1 MB", "2 MB", "4 MB", "8 MB",
-				  "16 MB", "32 MB", "64 MB", "128 MB", "256 MB", NULL };
+				  "16 MB", "32 MB", "64 MB", "128 MB", "256 MB", 
+				  "384 MB", "512 MB", "768 MB", "1 GB", "1.5 GB", NULL };
 
 #ifdef PICASSO96
 static GtkWidget  *p96size_widget[9];
@@ -298,7 +299,7 @@ static void set_mem32_widgets_state (void)
 #ifdef AUTOCONFIG
     int i;
 
-    for (i = 0; i < 10; i++)
+    for (i = 0; i < 15; i++)
 	gtk_widget_set_sensitive (z3size_widget[i], enable);
 
 # ifdef PICASSO96
@@ -373,11 +374,29 @@ static void set_mem_state (void)
 	t++, t2 >>= 1;
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (fastsize_widget[t]), 1);
 
-    t = 0;
-    t2 = currprefs.z3fastmem_size;
-    while (t < 9 && t2 >= 0x100000)
-	t++, t2 >>= 1;
-    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (z3size_widget[t]), 1);
+  t=0;
+  switch(currprefs.z3fastmem_size) {
+    case 384 * 0x100000:
+      t=10;
+      break;
+    case 512 * 0x100000:
+      t=11;
+      break;
+    case 768 * 0x100000:
+      t=12;
+      break;
+    case 1024 * 0x100000:
+      t=13;
+      break;
+    case 0x60000000:
+      t=14;
+      break;
+    default:
+      t2 = currprefs.z3fastmem_size;
+      while (t < 14 && t2 >= 0x100000)
+  	  t++, t2 >>= 1;
+  }
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (z3size_widget[t]), 1);
 
 #ifdef PICASSO96
     t = 0;
@@ -769,10 +788,35 @@ static void fastsize_changed (void)
     changed_prefs.fastmem_size = (0x80000 << t) & ~0x80000;
 }
 
-static void z3size_changed (void)
-{
-    int t = find_current_toggle (z3size_widget, 10);
-    changed_prefs.z3fastmem_size = (0x80000 << t) & ~0x80000;
+static void z3size_changed (void) {
+
+    int t = find_current_toggle (z3size_widget, 15);
+    if(t<10) {
+      changed_prefs.z3fastmem_size = (0x80000 << t) & ~0x80000;
+      return;
+    }
+
+    switch(t) {
+      case 10:
+	changed_prefs.z3fastmem_size = 384 * 0x100000;
+	break;
+      case 11:
+	changed_prefs.z3fastmem_size = 512 * 0x100000;
+	break;
+      case 12:
+	changed_prefs.z3fastmem_size = 768 * 0x100000;
+	break;
+      case 13:
+	/* 1 GB */
+	changed_prefs.z3fastmem_size = 1024 * 0x100000;
+	break;
+      case 14:
+	/* 1.5 GB */
+	changed_prefs.z3fastmem_size = 0x60000000;
+	break;
+      default:
+	write_log("ERROR: z3size_changed could not find, which button you clicked !?\n");
+    }
 }
 
 #ifdef PICASSO96
@@ -1089,6 +1133,8 @@ static int make_radio_group_param (const char **label, GtkWidget *tobox,
 
   while (label[t] && (t < count)) {
 
+    DEBUG_LOG("label[%d]=%s\n", t, label[t]);
+
     thing = gtk_radio_button_new_with_label (group, label[t]);
     group = gtk_radio_button_group (GTK_RADIO_BUTTON (thing));
 
@@ -1103,6 +1149,8 @@ static int make_radio_group_param (const char **label, GtkWidget *tobox,
   if(saveptr[t] != NULL) {
     kprintf("make_radio_group_param: old widget[%d](%lx):=%lx\n",t,&saveptr[t],saveptr[t]);
     kprintf("ERROR: saveptr[%d] is NOT NULL!\n",t);
+    DEBUG_LOG("make_radio_group_param: old widget[%d](%lx):=%lx\n",t,&saveptr[t],saveptr[t]);
+    DEBUG_LOG("ERROR: saveptr[%d] is NOT NULL!\n",t);
   }
   saveptr[t] = NULL; /* NULL terminate the list! */
   return t;
