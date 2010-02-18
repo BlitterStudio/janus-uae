@@ -30,18 +30,16 @@ extern BOOL init_done;
 /*****************************************************
  * obtain_W/release_W
  *
- * as W can change during enable/disable of coherence
- * mode, we need to protect every W access :(.
- * Especially reading Msg's from W needs to
- * be protected.
- *
- * I hope, this does not effect speed too much..
+ * As W does not change any more, there most
+ * likely is no need, to protect W access.
+ * But I'll leave it there, just in case..
  *****************************************************/
 void obtain_W(void) {
   if(!init_done) {
     return;
   }
-  ObtainSemaphore(&sem_janus_access_W);
+//  ObtainSemaphore(&sem_janus_access_W);
+  return;
 }
 
 void release_W(void) {
@@ -49,5 +47,6 @@ void release_W(void) {
     return;
   }
 
-  ReleaseSemaphore(&sem_janus_access_W);
+ // ReleaseSemaphore(&sem_janus_access_W);
+  return;
 }
