@@ -1173,80 +1173,16 @@ write_log("XXX setup_customscreen\n");
     return 1;
 }
 
-/***************************************************
- * reopen_new_main_window
- *
- * Open a new main window (visible or not) and
- * replace W with it
- * Close the old W
- *
- * ATTENTION: You *must* protect this call
- *            with obtain_W/releaseW !
- *
- * WARNING: There still might be (many) cases,
- *          where uae tries to access W without
- *          obtain_W/release_W protection .. :(
- ***************************************************/
-BOOL reopen_new_main_window(struct Screen *S, BOOL visible) {
-
-  struct Window *new_win;
-
-  AWTRACE("screen %lx, visible %d\n", S, visible);
-
-  new_win=OpenWindowTags (NULL,
-			  WA_Title,        (ULONG)PACKAGE_NAME,
-			  WA_AutoAdjust,   TRUE,
-			  WA_InnerWidth,   gfxvidinfo.width,
-			  WA_InnerHeight,  gfxvidinfo.height,
-			  WA_Visible,      visible,
-			  WA_PubScreen,    (ULONG)S,
-//			  WA_Zoom,         (ULONG)ZoomArray,
-			  WA_IDCMP,        IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY
-					 | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW
-					 | IDCMP_MOUSEMOVE    | IDCMP_DELTAMOVE
-					 | IDCMP_CLOSEWINDOW  | IDCMP_REFRESHWINDOW
-					 | IDCMP_NEWSIZE      | IDCMP_INTUITICKS,
-			  WA_Flags,	   WFLG_DRAGBAR       | WFLG_DEPTHGADGET
-					 | WFLG_REPORTMOUSE   | WFLG_RMBTRAP
-					 | WFLG_ACTIVATE      | WFLG_CLOSEGADGET
-					 | WFLG_SMART_REFRESH,
-			  TAG_DONE);
-  if(!new_win) {
-    AWTRACE("ERROR: unable to open new window!\n");
-    write_log("ERROR: show_uae_main_window: unable to open window!\n");
-    return FALSE;
-  }
-
-  AWTRACE("set W to new window %lx, RP to new rp %lx\n", new_win, new_win->RPort);
-
-  /* get rid of the old invisible window */
-  if(W) {
-    CloseWindow(W);
-  }
-
-  W= new_win;
-  RP=new_win->RPort;
-
-  original_W =new_win;
-  original_RP=new_win->RPort;
-
-write_log("XXX original_W=%lx\n", original_W);
-
-  return TRUE;
-}
-
-
 /****************************************************************************
  * show_uae_main_window()
  *
  * If we go from rootless to normal mode, we close all rootless windows
- * with close_all_janus_windows(), close our hidden window and open
- * a new visible one (with the help of reopen_new_main_window)
- *
+ * with close_all_janus_windows() and set a full size region as a 
+ * window shape, which shows the window again
  ****************************************************************************/
 void show_uae_main_window(void) {
   struct Window *newW;
-  BOOL ok;
+  struct Region *shape;
 
   obtain_W();
 
@@ -1256,11 +1192,11 @@ void show_uae_main_window(void) {
     return;
   }
 
-  ok=reopen_new_main_window(W->WScreen, TRUE);
-
-  if(ok) {
+  shape = NewRectRegion(0, 0, W->Width-1, W->Height-1);
+  if(shape) {
+    ChangeWindowShape(W, shape, NULL);
+    DisposeRegion(shape);
     uae_main_window_closed=FALSE;
-    write_log("XXX uae_main_window_closed=FALSE\n");
   }
 
   release_W();
@@ -1270,13 +1206,12 @@ void show_uae_main_window(void) {
 /****************************************************************************
  * hide_uae_main_window()
  *
- * We still need a valid W, so we open one with MA_Visible=FALSE. It is a 
- * pity, that there seems to be no API to change MA_Visible as long as
- * the window exists.. So we open a hidden one and close the real one
- * (with the help of reopen_new_main_window)
+ * We still need a valid W, so we set a 0,0,0,0 region as window shape,
+ * which basically hides the window.
  ****************************************************************************/
 void hide_uae_main_window(void) {
   BOOL ok;
+  struct Region *shape;
 
   obtain_W();
 
@@ -1286,10 +1221,10 @@ void hide_uae_main_window(void) {
     return;
   }
 
-  ok=reopen_new_main_window(W->WScreen, FALSE);
-
-  if(ok) {
-    write_log("XXX uae_main_window_closed=TRUE\n");
+  shape = NewRectRegion(0, 0, 0, 0);
+  if(shape) {
+    ChangeWindowShape(W, shape, NULL);
+    DisposeRegion(shape);
     uae_main_window_closed=TRUE;
   }
 
@@ -1298,59 +1233,48 @@ void hide_uae_main_window(void) {
 
 static int setup_publicscreen(void) {
 
-    BOOL visible;
-    UWORD ZoomArray[4] = {0, 0, 0, 0};
-    char *pubscreen = strlen (currprefs.amiga_publicscreen)
-	? currprefs.amiga_publicscreen : NULL;
+  struct Region           *shape;
+  UWORD ZoomArray[4] = {0, 0, 0, 0};
+  char *pubscreen = strlen (currprefs.amiga_publicscreen)
+      ? currprefs.amiga_publicscreen : NULL;
 
-    AWTRACE("entered (pubscreen >%s<)\n",currprefs.amiga_publicscreen);
+  AWTRACE("entered (pubscreen >%s<)\n",currprefs.amiga_publicscreen);
 
-    S = LockPubScreen ((UBYTE *) pubscreen);
-    if (!S) {
-	gui_message ("Cannot open UAE window on public screen '%s'\n",
-		pubscreen ? pubscreen : "default");
-	return 0;
-    }
-    original_S=S;
+  S = LockPubScreen ((UBYTE *) pubscreen);
+  if (!S) {
+      gui_message ("Cannot open UAE window on public screen '%s'\n",
+	      pubscreen ? pubscreen : "default");
+      return 0;
+  }
+  original_S=S;
 
-    ZoomArray[2] = 128;
-    ZoomArray[3] = S->BarHeight + 1;
+  ZoomArray[2] = 128;
+  ZoomArray[3] = S->BarHeight + 1;
 
-    CM = S->ViewPort.ColorMap;
-    original_CM=CM;
+  CM = S->ViewPort.ColorMap;
+  original_CM=CM;
 
-    if ((S->ViewPort.Modes & (HIRES | LACE)) == HIRES) {
-	if (gfxvidinfo.height + S->BarHeight + 1 >= S->Height) {
-	    gfxvidinfo.height >>= 1;
-	    currprefs.gfx_correct_aspect = 1;
-	}
-    }
+  if ((S->ViewPort.Modes & (HIRES | LACE)) == HIRES) {
+      if (gfxvidinfo.height + S->BarHeight + 1 >= S->Height) {
+	  gfxvidinfo.height >>= 1;
+	  currprefs.gfx_correct_aspect = 1;
+      }
+  }
 
-      /*
-       * as it seems, that a lot of stuff depends on a uae main window existing (RastPort etc),
-       * we open one just for those variables to be valid. If we a coherent, we set
-       * WA_Visible to FALSE
-       */
+    /*
+     * as it seems, that a lot of stuff depends on a uae main window existing (RastPort etc),
+     * we set a 0,0,0,0 region to hide the main window in case of full coherence
+     */
 
-    if(currprefs.jcoherence) {
+  if(currprefs.jcoherence && ((shape = NewRectRegion(0, 0, 0, 0))) ) {
       AWTRACE("open window invisible!\n");
-      visible=FALSE;
       uae_main_window_closed=TRUE;
-    }
-    else {
-      AWTRACE("open window visible\n");
-      uae_main_window_closed=FALSE;
-      visible=TRUE;
-    }
-
-    obtain_W();
-
-    W = OpenWindowTags (NULL,
+      W = OpenWindowTags (NULL,
 			  WA_Title,        (ULONG)PACKAGE_NAME,
 			  WA_AutoAdjust,   TRUE,
 			  WA_InnerWidth,   gfxvidinfo.width,
 			  WA_InnerHeight,  gfxvidinfo.height,
-			  WA_Visible,      visible,
+			  WA_Shape,        shape,
 			  WA_PubScreen,    (ULONG)S,
 			  WA_Zoom,         (ULONG)ZoomArray,
 			  WA_IDCMP,        IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY
@@ -1363,7 +1287,31 @@ static int setup_publicscreen(void) {
 					 | WFLG_ACTIVATE      | WFLG_CLOSEGADGET
 					 | WFLG_SMART_REFRESH,
 			  TAG_DONE);
+      DisposeRegion(shape);
+    }
+    else {
+      AWTRACE("open window visible\n");
+      uae_main_window_closed=FALSE;
+      W = OpenWindowTags (NULL,
+			  WA_Title,        (ULONG)PACKAGE_NAME,
+			  WA_AutoAdjust,   TRUE,
+			  WA_InnerWidth,   gfxvidinfo.width,
+			  WA_InnerHeight,  gfxvidinfo.height,
+			  WA_PubScreen,    (ULONG)S,
+			  WA_Zoom,         (ULONG)ZoomArray,
+			  WA_IDCMP,        IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY
+					 | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW
+					 | IDCMP_MOUSEMOVE    | IDCMP_DELTAMOVE
+					 | IDCMP_CLOSEWINDOW  | IDCMP_REFRESHWINDOW
+					 | IDCMP_NEWSIZE      | IDCMP_INTUITICKS,
+			  WA_Flags,	   WFLG_DRAGBAR       | WFLG_DEPTHGADGET
+					 | WFLG_REPORTMOUSE   | WFLG_RMBTRAP
+					 | WFLG_ACTIVATE      | WFLG_CLOSEGADGET
+					 | WFLG_SMART_REFRESH,
+			  TAG_DONE);
+    }
 
+    obtain_W();
 
     if (!W) {
 	write_log ("Can't open window on public screen!\n");
