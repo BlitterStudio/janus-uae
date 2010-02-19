@@ -125,8 +125,9 @@ static const char *z3labels[] = { "None", "1 MB", "2 MB", "4 MB", "8 MB",
 				  "384 MB", "512 MB", "768 MB", "1 GB", "1.5 GB", NULL };
 
 #ifdef PICASSO96
-static GtkWidget  *p96size_widget[9];
-static const char *p96labels[] = { "None", "1 MB", "2 MB", "4 MB", "8 MB", "16 MB", "32 MB", NULL };
+static GtkWidget  *p96size_widget[11];
+static const char *p96labels[] = { "None", "1 MB", "2 MB", "4 MB", "8 MB", 
+                                   "16 MB", "32 MB", "64 MB", "128 MB", "256 MB", NULL };
 #endif
 
 static GtkWidget *rom_text_widget, *key_text_widget;
@@ -401,7 +402,7 @@ static void set_mem_state (void)
 #ifdef PICASSO96
     t = 0;
     t2 = currprefs.gfxmem_size;
-    while (t < 6 && t2 >= 0x100000)
+    while (t < 10 && t2 >= 0x100000)
 	t++, t2 >>= 1;
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (p96size_widget[t]), 1);
 #endif
@@ -822,7 +823,7 @@ static void z3size_changed (void) {
 #ifdef PICASSO96
 static void p96size_changed (void)
 {
-    int t = find_current_toggle (p96size_widget, 7);
+    int t = find_current_toggle (p96size_widget, 10);
     changed_prefs.gfxmem_size = (0x80000 << t) & ~0x80000;
 }
 #endif
@@ -1558,7 +1559,7 @@ static void make_mem_widgets (GtkWidget *vbox)
     gtk_box_pack_start (GTK_BOX (hbox), frame, FALSE, TRUE, 0);
 
 #ifdef PICASSO96
-    frame = make_radio_group_box_1 ("P96 RAM", p96labels, p96size_widget, 0, p96size_changed, 4);
+    frame = make_radio_group_box_1 ("P96 RAM", p96labels, p96size_widget, 0, p96size_changed, 5);
     gtk_widget_show (frame);
     gtk_box_pack_start (GTK_BOX (hbox), frame, FALSE, TRUE, 0);
 #endif
