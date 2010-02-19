@@ -214,7 +214,7 @@ int coord_native_to_amiga_x (int x)
 int coord_native_to_amiga_y (int y) {
   int res;
 
-  JWLOG("coord_native_to_amiga_y(%d)\n",y);
+  //JWLOG("coord_native_to_amiga_y(%d)\n",y);
 
   /* better clip it here! */
   if(y > gfxvidinfo.height) {
@@ -223,7 +223,7 @@ int coord_native_to_amiga_y (int y) {
   if(y<0) {
     y=0;
   }
-  JWLOG("coord_native_to_amiga_y() => %d\n",y);
+  //JWLOG("coord_native_to_amiga_y() => %d\n",y);
   res=native2amiga_line_map[y] + thisframe_y_adjust - minfirstline;
 
   return res;
@@ -1536,10 +1536,10 @@ static void center_image (void)
     int prev_x_adjust = visible_left_border;
     int prev_y_adjust = thisframe_y_adjust;
 
-    JWLOG("CMOUSE: currprefs.gfx_xcenter: %d\n",currprefs.gfx_xcenter);
+    //JWLOG("CMOUSE: currprefs.gfx_xcenter: %d\n",currprefs.gfx_xcenter);
     if (currprefs.gfx_xcenter) {
 	int w = gfxvidinfo.width;
-	JWLOG("CMOUSE: min_diwstart: %d\n",min_diwstart);
+	//JWLOG("CMOUSE: min_diwstart: %d\n",min_diwstart);
 
 	if (max_diwstop - min_diwstart < w && currprefs.gfx_xcenter == 2)
 	    /* Try to center. */
@@ -1557,7 +1557,7 @@ static void center_image (void)
     } else {
 	/* gfx_center_horizontal=none */
 	visible_left_border = max_diwlastword - gfxvidinfo.width;
-	JWLOG("CMOUSE: max_diwlastword: %d\n",max_diwlastword);
+	//JWLOG("CMOUSE: max_diwlastword: %d\n",max_diwlastword);
     }
 
     if (visible_left_border > max_diwlastword - 32)
@@ -1613,6 +1613,7 @@ static void center_image (void)
 
     max_diwstop = 0;
     min_diwstart = 10000;
+    //JWLOG("exit\n");
 }
 
 static void lores_reset (void)
