@@ -156,7 +156,7 @@ static void fix_options (void)
 	err = 1;
     }
     if ((currprefs.gfxmem_size & (currprefs.gfxmem_size - 1)) != 0
-	|| (currprefs.gfxmem_size != 0 && (currprefs.gfxmem_size < 0x100000 || currprefs.gfxmem_size > 0x2000000)))
+	|| (currprefs.gfxmem_size != 0 && (currprefs.gfxmem_size < 0x100000 || currprefs.gfxmem_size > 0x10000000)))
     {
 	write_log ("Unsupported graphics card memory size %lx!\n", currprefs.gfxmem_size);
 	currprefs.gfxmem_size = 0;
