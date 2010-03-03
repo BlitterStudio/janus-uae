@@ -360,6 +360,7 @@ STATIC_INLINE uae_u32 get_byte(uaecptr addr);
 void handle_events_W(struct Window *W, BOOL customscreen);
 void show_uae_main_window(void);
 void hide_uae_main_window(void);
+void clone_window(ULONG m68k_win, struct Window *aros_win, int start, int lines);
 
 /* gtkui.c */
 void switch_off_coherence(void);
