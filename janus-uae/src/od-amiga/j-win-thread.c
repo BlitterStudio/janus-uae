@@ -425,29 +425,32 @@ static void aros_win_thread (void) {
   if(!jwin->custom) {
     /* now let's hope, the aos3 window is not closed already..? */
 
-    /* AROS and Aos3 use the same flags */
-    flags     =get_long_p(jwin->aos3win + 24); 
-    JWLOG("aros_win_thread[%lx]: flags: %lx \n", thread, flags);
-
     /* wrong offset !?
      * idcmpflags=get_long(jwin->aos3win + 80);
      */
 
     x=get_word((ULONG) jwin->aos3win +  4);
     y=get_word((ULONG) jwin->aos3win +  6);
+    JWLOG("aros_win_thread[%lx]: x,y: %d, %d\n",thread, x, y);
 
     aos_title=get_long_p(jwin->aos3win + 32);
-
-    //JWLOG("TITLE: aos_title=%lx\n",aos_title);
-
-    c='X';
-    for(i=0;i<255 && c;i++) {
-      c=get_byte(aos_title + i);
-      //JWLOG("TITLE: %d: %c\n",i,c);
-      title[i]=c;
+    if(aos_title) {
+      c='X';
+      for(i=0;i<255 && c;i++) {
+	c=get_byte(aos_title + i);
+	//JWLOG("TITLE: %d: %c\n",i,c);
+	title[i]=c;
+      }
+      title[i]=(char) 0;
     }
-    title[i]=(char) 0;
+    else {
+      title[0]=(char) 0;
+    }
     JWLOG("aros_win_thread[%lx]: title: >%s<\n",thread,title);
+
+    /* AROS and Aos3 use the same flags */
+    flags     =get_long_p(jwin->aos3win + 24); 
+    JWLOG("aros_win_thread[%lx]: flags: %lx \n", thread, flags);
 
     /* idcmp flags we always need: */
     idcmpflags= IDCMP_NEWSIZE | 
@@ -485,11 +488,13 @@ static void aros_win_thread (void) {
 
     w=get_word((ULONG) jwin->aos3win +  8);
     h=get_word((ULONG) jwin->aos3win + 10);
+    JWLOG("aros_win_thread[%lx]: w,h: %d, %d\n",thread, w, h);
 
     bl=get_byte((ULONG) jwin->aos3win + 54);
     bt=get_byte((ULONG) jwin->aos3win + 55);
     br=get_byte((ULONG) jwin->aos3win + 56);
     bb=get_byte((ULONG) jwin->aos3win + 57);
+    JWLOG("aros_win_thread[%lx]: border left, right, top, bottom: %d, %d, %d, %d\n",thread, bl, br, bt, bb);
 
     gadget=get_long_p(jwin->aos3win + 62);
     JWLOG("aros_win_thread[%lx]: ============= gadget =============\n",thread);
@@ -644,6 +649,7 @@ static void aros_win_thread (void) {
       goto EXIT;
     }
 
+    JWLOG("aros_win_thread[%lx]: opened window: w,h: %d, %d\n", thread, jwin->aroswin->Width, jwin->aroswin->Height);
 #if 0
     /* resize now, as we need those damned windows borders added */
     ChangeWindowBox(aroswin,
