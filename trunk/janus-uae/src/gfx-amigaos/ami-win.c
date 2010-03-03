@@ -1184,6 +1184,8 @@ void show_uae_main_window(void) {
   struct Window *newW;
   struct Region *shape;
 
+  kprintf("show_uae_main_window entered\n");
+
   obtain_W();
 
   if(!W) {
@@ -1199,8 +1201,10 @@ void show_uae_main_window(void) {
     uae_main_window_closed=FALSE;
   }
 
+  kprintf("show_uae_main_window 2\n");
   release_W();
   reset_drawing();
+  kprintf("show_uae_main_window 3\n");
 }
 
 /****************************************************************************
@@ -2325,8 +2329,8 @@ void clone_area(WORD x, WORD y, UWORD width, UWORD height) {
  * m68k_win needs to be on the picasso96 wb screen (otherwise not tested).
  *
  */
-static void clone_window(ULONG m68k_win, struct Window *aros_win, 
-                         int start, int lines) {
+void clone_window(ULONG m68k_win, struct Window *aros_win, 
+                  int start, int lines) {
 
   WORD src_y_start;
   WORD src_y_lines;
@@ -2361,7 +2365,7 @@ static void clone_window(ULONG m68k_win, struct Window *aros_win,
   /* modified range outside our window, nothing to do */
   if(src_y_start+src_y_lines < start ||
      src_y_start             > start + lines) {
-    AWTRACE("CCC 0\n");
+    AWTRACE("modified range outside our window, nothing to do\n");
     return;
   }
 

@@ -335,7 +335,10 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	do_inhibit_frame ((W->Flags & WFLG_ZOOMED) ? 1 : 0);
 	break;
 
+#endif
     case IDCMP_REFRESHWINDOW:
+      JWLOG("IDCMP_REFRESHWINDOW!\n");
+#if 0
 	if (use_delta_buffer) {
 	    /* hack: this forces refresh */
 	    uae_u8 *ptr = oldpixbuf;
@@ -347,14 +350,14 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 		ptr += gfxvidinfo.rowbytes;
 	    }
 	}
-	BeginRefresh (W);
-	flush_block (0, currprefs.gfx_height_win - 1);
-	EndRefresh (W, TRUE);
-	break;
 #endif
+      BeginRefresh (win);
+      clone_window(jwin->aos3win, jwin->aroswin, 0, 0xFFFFFF); /* clone window again */
+      EndRefresh (win, TRUE);
+      break;
     default:
-	JWLOG("aros_win_thread[%lx]: Unknown IDCMP class %lx received\n", thread, class);
-	break;
+      JWLOG("aros_win_thread[%lx]: Unknown IDCMP class %lx received\n", thread, class);
+      break;
   }
 }
 
@@ -448,10 +451,6 @@ static void aros_win_thread (void) {
     }
     JWLOG("aros_win_thread[%lx]: title: >%s<\n",thread,title);
 
-    /* AROS and Aos3 use the same flags */
-    flags     =get_long_p(jwin->aos3win + 24); 
-    JWLOG("aros_win_thread[%lx]: flags: %lx \n", thread, flags);
-
     /* idcmp flags we always need: */
     idcmpflags= IDCMP_NEWSIZE | 
 			    IDCMP_CLOSEWINDOW | 
@@ -462,13 +461,20 @@ static void aros_win_thread (void) {
 			    IDCMP_CHANGEWINDOW |
 			    IDCMP_MENUPICK |
 			    IDCMP_MENUVERIFY |
+			    IDCMP_REFRESHWINDOW |
 			    IDCMP_INACTIVEWINDOW;
 
-    JWLOG("aros_win_thread[%lx]: idcmpflags: %lx \n", thread, idcmpflags);
+    /* AROS and Aos3 use the same flags */
+    flags     =get_long_p(jwin->aos3win + 24); 
+    JWLOG("aros_win_thread[%lx]: flags: %lx \n", thread, flags);
+
+    JWLOG("aros_win_thread[%lx]: org flags: %lx \n", thread, flags);
 
     /* we are always WFLG_SMART_REFRESH and never BACKDROP! */
     flags=flags & 0xFFFFFEFF;  /* remove refresh bits and backdrop */
     flags=flags | WFLG_SMART_REFRESH | WFLG_GIMMEZEROZERO | WFLG_ACTIVATE;
+
+    JWLOG("aros_win_thread[%lx]: new flags: %lx \n", thread, flags);
     
     /* CHECKME: need borders here, too? */
     minw=get_word((ULONG) jwin->aos3win + 16); 
