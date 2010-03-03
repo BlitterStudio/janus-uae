@@ -164,6 +164,22 @@ static void new_aros_screen(JanusScreen *jscreen) {
     arosscr=IntuitionBase->FirstScreen;
     while(arosscr) {
       if(arosscr->Flags & WBENCHSCREEN) {
+
+	if( (arosscr->Width != get_word(aos3screen+12)) ||
+	    (arosscr->Height!= get_word(aos3screen+14)) ) {
+
+	  write_log("AROS Wanderer and AmigaOS Workbench Screen need to have the same size! Switching coherency off, sorry.\n");
+	  JWLOG("AROS Wanderer and AmigaOS Workbench Screen need to have the same size! Switching coherency off, sorry.\n");
+
+  	  JWLOG("UnlockIBase\n");
+  	  UnlockIBase(lock);
+
+	  switch_off_coherence();
+	  gui_message_with_title ("Sorry", "Your AmigaOS Workbench resolution (%dx%d) does not\n\nmatch you AROS Wanderer resolution (%x,%x)\n\nSo I had to switch off coherency.", get_word(aos3screen+12), get_word(aos3screen+14), arosscr->Width, arosscr->Height);
+
+	  return;
+	}
+
 	JWLOG("UnlockIBase\n");
 	UnlockIBase(lock);
 	jscreen->ownscreen=FALSE;
@@ -652,8 +668,8 @@ void close_all_janus_screens() {
   list_screen=janus_screens;
   while(list_screen) {
     jscreen=(JanusScreen *) list_screen->data;
-    JWLOG("  send CLTR_C to task %lx\n",jscreen->task);
     if(jscreen->task) {
+      JWLOG("  send CLTR_C to task %lx\n",jscreen->task);
       Signal(jscreen->task, SIGBREAKF_CTRL_C);
       list_screen=g_slist_next(list_screen);
     }

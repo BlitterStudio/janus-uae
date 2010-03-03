@@ -187,9 +187,6 @@ static char **convert_tags_to_amigaos(struct TagItem *in) {
   return result;
 }
 
-/* from gtkui.c */
-void gui_message_with_title (const char *title, const char *format,...);
-
 /***********************************************************
  * This is the process, which watches the Execute
  * Port of J-UAE, so wanderer can send us messages.
