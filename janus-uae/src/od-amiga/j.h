@@ -361,4 +361,8 @@ void handle_events_W(struct Window *W, BOOL customscreen);
 void show_uae_main_window(void);
 void hide_uae_main_window(void);
 
+/* gtkui.c */
+void switch_off_coherence(void);
+void gui_message_with_title (const char *title, const char *format,...);
+
 #endif

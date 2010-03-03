@@ -1389,6 +1389,24 @@ void show_uae_main_window(void);
 void hide_uae_main_window(void);
 void close_all_janus_windows(void);
 
+void switch_off_coherence(void) {
+
+  if((changed_prefs.jcoherence == FALSE) | (!aos3_task)) {
+    DEBUG_LOG("switch_off_coherence: nothing to do\n");
+    return;
+  }
+
+  DEBUG_LOG("switch_off_coherence\n");
+  changed_prefs.jcoherence=FALSE;
+
+  close_all_janus_windows_wait();
+  close_all_janus_screens_wait();
+  show_uae_main_window();
+
+  /* update gui */
+  gtk_list_select_item (GTK_LIST (GTK_COMBO (JINTEGRATION (jint_panel)->combo_coherence)->list), FALSE);
+}
+
 static void on_coherent_changed (void) {
 
   if(changed_prefs.jcoherence == JINTEGRATION (jint_panel)->coherence) {
