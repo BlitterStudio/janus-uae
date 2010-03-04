@@ -175,7 +175,7 @@ static void new_aros_screen(JanusScreen *jscreen) {
   	  UnlockIBase(lock);
 
 	  switch_off_coherence();
-	  gui_message_with_title ("Sorry", "Your AmigaOS Workbench resolution (%dx%d) does not\n\nmatch you AROS Wanderer resolution (%x,%x)\n\nSo I had to switch off coherency.", get_word(aos3screen+12), get_word(aos3screen+14), arosscr->Width, arosscr->Height);
+	  gui_message_with_title ("Sorry", "Your AmigaOS Workbench resolution does not\n\nmatch you AROS Wanderer resolution (%d,%d)\n\nSo I had to switch off coherency.", arosscr->Width, arosscr->Height);
 
 	  return;
 	}
