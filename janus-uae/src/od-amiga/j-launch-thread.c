@@ -44,58 +44,60 @@ struct JUAE_Launch_Message {
  * check_and_convert_path
  *
  * We check, if aros_exe_full_path is within
- * - our aros_device_mounted and
- * - our aros_path_mounted.
+ * aros_path_mounted. As aros_path_mounted may
+ * be within an assign, we do a Lock/NameFromLock
+ * first, so we don't have any assign problems
+ * here.
  *
- * If this is the case, substitute 
- * "aros_device_mounted:aros_path_mounted" with
- * "aos_mount_point" and return the result.
+ * If the check is ok, substitute the aros path
+ * prefix with the amigaOS path prefix
+ * and return the result.
  *
  * The caller has to FreeVec the result!
  ***********************************************************/
-char *check_and_convert_path(char *aros_exe_full_path, 
-                             char *aos_mount_point, 
-			     char *aros_device_mounted, 
-			     char *aros_path_mounted) {
+#define MAX_PATH_LENGTH 512
 
-  char *aros_exe_path;
-  char *aos_file;
-  char *result;
+static char *check_and_convert_path(char *aros_exe_full_path, 
+                                    char *aos_device,  
+              			    char *aos_volume_name,  
+	              		    char *aros_path_mounted) {
 
-  JWLOG("entered(%s, %s, %s, %s)\n", aros_exe_full_path, aos_mount_point, aros_device_mounted, aros_path_mounted);
+  char   *aros_exe_path;
+  char   *result=NULL;
+  /* aros_device_mounted might be an assign, this will be the real path: */
+  char    aros_path_mounted_real[MAX_PATH_LENGTH+1];  
+  BPTR    lock;
+
+  JWLOG("aros_exe_full_path:     %s\n", aros_exe_full_path);
+  JWLOG("aos_device:             %s\n", aos_device);
+  JWLOG("aos_volume_name:        %s\n", aos_volume_name);
+  JWLOG("aros_path_mounted:      %s\n", aros_path_mounted);
+
+  lock=Lock(aros_path_mounted, SHARED_LOCK);
+  NameFromLock(lock, aros_path_mounted_real, MAX_PATH_LENGTH);
+  JWLOG("aros_path_mounted_real: %s\n", aros_path_mounted_real);
+  UnLock(lock);
   
-  if(Strnicmp(aros_exe_full_path, aros_device_mounted, strlen(aros_device_mounted))) {
-    JWLOG("Strnicmp(%s, %s) failed!\n", aros_exe_full_path, aros_device_mounted);
-    return NULL;  /* aros_exe_full_path is not within this mounted path */
-  }
+  if(Strnicmp(aros_exe_full_path, aros_path_mounted_real, strlen(aros_path_mounted_real))) {
 
-  if(aros_exe_full_path[strlen(aros_device_mounted)] != ':') {
-    JWLOG("no : at %d: >%c<\n", strlen(aros_device_mounted), aros_exe_full_path[strlen(aros_device_mounted)]);
+    JWLOG("Strnicmp(%s, %s, %d) failed!\n", aros_exe_full_path, aros_path_mounted_real, 
+                                                strlen(aros_path_mounted_real));
     return NULL;
   }
 
-  /* path without device name */
-  aros_exe_path=aros_exe_full_path + strlen(aros_device_mounted) + 1;
-  JWLOG("aros_exe_path: >%s<\n", aros_exe_path);
+  /* So the supplied executable is accessable inside of amigaOS */
 
-  if(Strnicmp(aros_exe_path, aros_path_mounted, strlen(aros_path_mounted))) {
-    JWLOG("Strnicmp 2(%s, %s) failed!\n", aros_exe_path, aros_path_mounted);
-    return NULL;
+  /* path without aros_path_mounted_real */
+  aros_exe_path=aros_exe_full_path + strlen(aros_path_mounted_real) + 1;
+  JWLOG("aros/aos_path:          %s\n", aros_exe_path);
+
+  /* now add the amigaOS prefix path */
+  result=(char *) AllocVec(strlen(aos_volume_name)+strlen(aros_exe_path)+2, MEMF_ANY);
+  if(result) {
+    sprintf(result, "%s:%s", aos_volume_name, aros_exe_path);
   }
 
-  if(aros_exe_path[strlen(aros_path_mounted)] != '/') {
-    JWLOG("no / at %d: >%c<\n", strlen(aros_path_mounted), aros_exe_path[strlen(aros_path_mounted)]);
-    return NULL;
-  }
-
-  aos_file=aros_exe_path + strlen(aros_path_mounted) + 1;
-  JWLOG("aos_file: >%s<\n", aos_file);
-
-  JWLOG("result: >%s:%s<\n", aos_mount_point, aos_file);
-
-  result=(char *) AllocVec(strlen(aos_mount_point)+strlen(aos_file)+2, MEMF_ANY);
-  sprintf(result, "%s:%s", aos_mount_point, aos_file);
-
+  JWLOG("amigaOS path (result):  %s\n", result);
   return result;
 }
 
@@ -105,8 +107,14 @@ char *check_and_convert_path(char *aros_exe_full_path,
  * tries to map the aros file with full path to an 
  * amigaos native file with full path.
  *
+ * It runs through all uae mount points (see GUI tab
+ * Harddrives).
+ *
  * return NULL, if the aros_path is not mounted at
  * any point in amigaos.
+ *
+ * Return result with amigaOS path. You have to FreeVec
+ * the result.
  ***********************************************************/
 static char *aros_path_to_amigaos(char *aros_path) {
 
@@ -124,7 +132,7 @@ static char *aros_path_to_amigaos(char *aros_path) {
     JWLOG("i: %d\n", i);
 
     str = cfgfile_subst_path (prefs_get_attr ("hardfile_path"), "$(FILE_PATH)", uip[i].rootdir);
-    JWLOG("str: %s\n", str);
+    JWLOG("hardfile_path: %s\n", str);
 
     aos_path=check_and_convert_path(aros_path, uip[i].devname, uip[i].volname, str);
     JWLOG("aos_path: %s\n", aos_path);
@@ -173,7 +181,7 @@ static char **convert_tags_to_amigaos(struct TagItem *in) {
     switch(tag->ti_Tag) {
       case WBOPENA_ArgName:
 	JWLOG("WBOPENA_ArgName: %s\n", tag->ti_Data);
-	amigaos_path=aros_path_to_amigaos(tag->ti_Data); /* AllocVec'ed */
+	amigaos_path=aros_path_to_amigaos((char *) tag->ti_Data); /* AllocVec'ed */
 	result[i++]=amigaos_path;
 	break;
 
@@ -249,7 +257,7 @@ static void aros_launch_thread (void) {
 	    if(jlaunch) {
 	      jlaunch->amiga_path=amiga_exe;
 	      jlaunch->args      =convert_tags_to_amigaos(msg->tags);
-	      janus_launch=g_slist_append(janus_launch,jlaunch);
+	      janus_launch       =g_slist_append(janus_launch,jlaunch);
 	    }
     
 	    ReleaseSemaphore(&sem_janus_launch_list);

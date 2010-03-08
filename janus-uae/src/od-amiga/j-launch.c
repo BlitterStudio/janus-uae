@@ -132,7 +132,20 @@ uae_u32 ld_job_get(ULONG *m68k_results) {
     JWLOG("DEBOUT: m68k_results[%d]=%d (%lx)\n", i, get_long(m68k_results+i), get_long(m68k_results+i));
   }
 
-  /* TODO: free jlaunch stuff here! */
+  JWLOG("free jlaunch..\n");
+  if(jlaunch->amiga_path) {
+    FreeVec(jlaunch->amiga_path);
+    jlaunch->amiga_path=NULL;
+  }
+
+  if(jlaunch->args) {
+    i=0;
+    while(jlaunch->args[i]) {
+      FreeVec(jlaunch->args[i]);
+      i++;
+    }
+    FreeVec(jlaunch->args);
+  }
 
   return 1;
 }
