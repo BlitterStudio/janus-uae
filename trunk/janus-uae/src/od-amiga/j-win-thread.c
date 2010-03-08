@@ -374,15 +374,14 @@ static void aros_win_thread (void) {
   JanusWin       *jwin=NULL;
   struct Window  *aroswin=NULL;
   void           *name_mem=NULL;
-  ULONG           aos_title;
+  char           *aos_title;
   WORD            h,w,x,y;
   WORD            minh,minw,maxh,maxw;
   BYTE            br,bl,bt,bb;
-  char            title[256];
+  char           *title=NULL;
   ULONG           flags;
   ULONG           idcmpflags;
   int             i;
-  char            c;
   ULONG           signals;
   BOOL            done;
   UWORD           code, qualifier;
@@ -399,8 +398,8 @@ static void aros_win_thread (void) {
 
   JWLOG("aros_win_thread[%lx]: thread running \n",thread);
 
-  /* I think, the sem would be better, but seems, as if we are running
-   * into a deadlock sometimes..?
+  /* 
+   * deadlock sometimes..?
    */
   JWLOG("ObtainSemaphore(&sem_janus_window_list);\n");
   ObtainSemaphore(&sem_janus_window_list);
@@ -436,20 +435,19 @@ static void aros_win_thread (void) {
     y=get_word((ULONG) jwin->aos3win +  6);
     JWLOG("aros_win_thread[%lx]: x,y: %d, %d\n",thread, x, y);
 
-    aos_title=get_long_p(jwin->aos3win + 32);
-    if(aos_title) {
-      c='X';
-      for(i=0;i<255 && c;i++) {
-	c=get_byte(aos_title + i);
-	//JWLOG("TITLE: %d: %c\n",i,c);
-	title[i]=c;
-      }
-      title[i]=(char) 0;
+    /* aos3 window title is at jwin->aos3win + 32 */
+    JWLOG("aros_win_thread[%lx]: aos title: %lx (%s)\n",thread, get_long_p(jwin->aos3win + 32), 
+                                                                get_real_address(get_long_p(jwin->aos3win + 32)));
+    if(get_long_p(jwin->aos3win + 32)) {
+      aos_title=(char *) get_real_address(get_long_p(jwin->aos3win + 32));
+      title=AllocVec(strlen(aos_title)+1, MEMF_ANY);
+      strcpy(title, aos_title);
     }
     else {
-      title[0]=(char) 0;
+      title=NULL;
     }
-    JWLOG("aros_win_thread[%lx]: title: >%s<\n",thread,title);
+
+    JWLOG("aros_win_thread[%lx]: title: %lx >%s<\n", thread, title, title);
 
     /* idcmp flags we always need: */
     idcmpflags= IDCMP_NEWSIZE | 
@@ -504,7 +502,7 @@ static void aros_win_thread (void) {
 
     gadget=get_long_p(jwin->aos3win + 62);
     JWLOG("aros_win_thread[%lx]: ============= gadget =============\n",thread);
-    JWLOG("aros_win_thread[%lx]: gadget window: %s\n",thread,title);
+    JWLOG("aros_win_thread[%lx]: gadget window: (%lx) %s\n", thread, title, title);
     JWLOG("aros_win_thread[%lx]: gadget borderleft: %d\n",thread,bl);
     JWLOG("aros_win_thread[%lx]: gadget borderright: %d\n",thread,br);
     JWLOG("aros_win_thread[%lx]: gadget bordertop: %d\n",thread,bt);
@@ -816,6 +814,11 @@ EXIT:
 
   JWLOG("ReleaseSemaphore(&sem_janus_window_list);\n");
   ReleaseSemaphore(&sem_janus_window_list);
+
+  if(title) {
+    FreeVec(title);
+  }
+
   if(jwin) {
     DeletePool(jwin->mempool);
     FreeVec(jwin);
