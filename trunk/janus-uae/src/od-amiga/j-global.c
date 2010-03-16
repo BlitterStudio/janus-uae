@@ -100,7 +100,10 @@ GSList *janus_launch  =NULL;
 
 JanusWin *janus_active_window=NULL;
 
-BOOL uae_main_window_closed=FALSE;
+/* update uae main window or not */
+BOOL uae_main_window_closed =FALSE;
+/* uae main window has normal shape */
+BOOL uae_main_window_visible=TRUE;
 
 /* disable *all* output to native aros window(s) */
 BOOL uae_no_display_update=FALSE;

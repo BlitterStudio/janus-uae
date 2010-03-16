@@ -125,7 +125,8 @@ static void handle_msg(JanusScreen *jscreen,
       }
 
       /* TODO !!*/
-      uae_main_window_closed=FALSE;
+      //uae_main_window_closed=FALSE;
+      enable_uae_main_window();
 
       break;
 
@@ -139,7 +140,8 @@ static void handle_msg(JanusScreen *jscreen,
       /* no other janus custom screen claimed to be active */
       if(janus_active_screen == jscreen) {
 	janus_active_screen=NULL;
-	uae_main_window_closed=TRUE;
+	//uae_main_window_closed=TRUE;
+	disable_uae_main_window();
 	JWLOG("aros_cscr_thread[%lx]: we (jscreen %lx) are not active any more\n", thread, janus_active_screen);
       }
 
@@ -417,7 +419,8 @@ static struct Screen *new_aros_custom_screen(JanusScreen *jscreen,
   Delay(10);
 
   /* now update display again */
-  uae_main_window_closed=FALSE;
+  //uae_main_window_closed=FALSE;
+  enable_uae_main_window();
   uae_no_display_update=FALSE;
 
   reset_drawing(); /* flush full screen, so that any potential gfx glitches are gone */
@@ -554,7 +557,8 @@ EXIT:
     FreeVec(jscr);
   }
 
-  uae_main_window_closed=TRUE;
+  //uae_main_window_closed=TRUE;
+  disable_uae_main_window();
 
   ReleaseSemaphore(&sem_janus_screen_list);
 
