@@ -328,6 +328,8 @@ uae_u32 ad_job_report_uae_windows(ULONG *m68k_results) {
    * 5: next window starts here
    */
 
+  ObtainSemaphore(&sem_janus_window_list);
+
   JWLOG("enter while..\n");
   i=0;
   while(get_long_p(m68k_results+i)) {
@@ -442,6 +444,7 @@ NEXT:
     i=i+5;
   }
 
+  ReleaseSemaphore(&sem_janus_window_list);
 
   fix_orphan_windows(m68k_results);
 
@@ -662,19 +665,23 @@ uae_u32 ad_job_switch_uae_window(ULONG *m68k_results) {
   if(!get_long_p(m68k_results)) { /* just xor status */
     if(uae_main_window_closed) {
       JWLOG("ad_job_switch_uae_window: open window\n");
-      uae_main_window_closed=FALSE;
+      //uae_main_window_closed=FALSE;
+      enable_uae_main_window();
     }
     else {
       JWLOG("ad_job_switch_uae_window: close window\n");
-      uae_main_window_closed=TRUE;
+      //uae_main_window_closed=TRUE;
+      disable_uae_main_window();
     }
   }
   else {
     if(get_long_p(m68k_results+1)) {
-      uae_main_window_closed=FALSE; 
+      //uae_main_window_closed=FALSE; 
+      enable_uae_main_window();
     }
     else {
-      uae_main_window_closed=TRUE;
+      //uae_main_window_closed=TRUE;
+      disable_uae_main_window();
     }
   }
 
