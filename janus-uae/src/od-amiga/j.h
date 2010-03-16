@@ -164,6 +164,8 @@ BOOL aos3screen_is_custom            (uaecptr aos3screen);
 
 /* main uae window active ? */
 extern BOOL uae_main_window_closed;
+/* main uae window visible ? */
+extern BOOL uae_main_window_visible;
 
 /* disable *all* output to native aros window(s) */
 extern BOOL uae_no_display_update;
@@ -358,7 +360,9 @@ STATIC_INLINE uae_u32 get_byte(uaecptr addr);
 
 /* ami-win.c */
 void handle_events_W(struct Window *W, BOOL customscreen);
+void enable_uae_main_window(void);
 void show_uae_main_window(void);
+void disable_uae_main_window(void);
 void hide_uae_main_window(void);
 void clone_window(ULONG m68k_win, struct Window *aros_win, int start, int lines);
 
