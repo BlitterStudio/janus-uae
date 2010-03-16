@@ -1164,6 +1164,7 @@ write_log("XXX setup_customscreen\n");
 	AWTRACE ("Cannot open UAE window on custom screen.\n");
 	return 0;
     }
+    uae_main_window_visible=TRUE;
     original_W=W;
 
     hide_pointer (W);
@@ -1180,11 +1181,16 @@ write_log("XXX setup_customscreen\n");
  * with close_all_janus_windows() and set a full size region as a 
  * window shape, which shows the window again
  ****************************************************************************/
+void enable_uae_main_window(void) {
+  AWTRACE("enable_uae_main_window\n");
+  uae_main_window_closed=FALSE;
+}
+
 void show_uae_main_window(void) {
   struct Window *newW;
   struct Region *shape;
 
-  kprintf("show_uae_main_window entered\n");
+  AWTRACE("show_uae_main_window entered\n");
 
   obtain_W();
 
@@ -1196,15 +1202,17 @@ void show_uae_main_window(void) {
 
   shape = NewRectRegion(0, 0, W->Width-1, W->Height-1);
   if(shape) {
+    if(original_W != W) {
+      AWTRACE("W-WARNING: W %xl != original_W %lx\n", W, original_W);
+    }
     ChangeWindowShape(W, shape, NULL);
+    uae_main_window_visible=TRUE;
+    enable_uae_main_window();
     DisposeRegion(shape);
-    uae_main_window_closed=FALSE;
   }
 
-  kprintf("show_uae_main_window 2\n");
   release_W();
   reset_drawing();
-  kprintf("show_uae_main_window 3\n");
 }
 
 /****************************************************************************
@@ -1213,9 +1221,17 @@ void show_uae_main_window(void) {
  * We still need a valid W, so we set a 0,0,0,0 region as window shape,
  * which basically hides the window.
  ****************************************************************************/
+
+void disable_uae_main_window(void) {
+  AWTRACE("disable_uae_main_window\n");
+  uae_main_window_closed=TRUE;
+}
+
 void hide_uae_main_window(void) {
   BOOL ok;
   struct Region *shape;
+
+  AWTRACE("hide_uae_main_window entered\n");
 
   obtain_W();
 
@@ -1227,9 +1243,13 @@ void hide_uae_main_window(void) {
 
   shape = NewRectRegion(0, 0, 0, 0);
   if(shape) {
+    if(original_W != W) {
+      AWTRACE("W-WARNING: W %xl != original_W %lx\n", W, original_W);
+    }
     ChangeWindowShape(W, shape, NULL);
+    uae_main_window_visible=FALSE;
     DisposeRegion(shape);
-    uae_main_window_closed=TRUE;
+    disable_uae_main_window();
   }
 
   release_W();
@@ -1272,7 +1292,9 @@ static int setup_publicscreen(void) {
 
   if(currprefs.jcoherence && ((shape = NewRectRegion(0, 0, 0, 0))) ) {
       AWTRACE("open window invisible!\n");
-      uae_main_window_closed=TRUE;
+      disable_uae_main_window();
+      //uae_main_window_closed=TRUE;
+      uae_main_window_visible=FALSE;
       W = OpenWindowTags (NULL,
 			  WA_Title,        (ULONG)PACKAGE_NAME,
 			  WA_AutoAdjust,   TRUE,
@@ -1295,7 +1317,9 @@ static int setup_publicscreen(void) {
     }
     else {
       AWTRACE("open window visible\n");
-      uae_main_window_closed=FALSE;
+      enable_uae_main_window();
+      //uae_main_window_closed=FALSE;
+      uae_main_window_visible=TRUE;
       W = OpenWindowTags (NULL,
 			  WA_Title,        (ULONG)PACKAGE_NAME,
 			  WA_AutoAdjust,   TRUE,
@@ -1562,6 +1586,8 @@ write_log("XXX setup_userscreen\n");
 	original_RP=NULL;
 	return 0;
     }
+
+    uae_main_window_visible=TRUE;
 
     original_W=W;
 
@@ -2867,7 +2893,7 @@ static void set_screen_for_picasso(void) {
 
   AWTRACE("set_screen_for_picasso\n");
 
-  if(!uae_main_window_closed) {
+  if(!uae_main_window_closed && uae_main_window_visible) {
     AWTRACE("  old window      : %d x %d\n",W->Width,W->Height);
     AWTRACE("  resize window to: %d x %d\n",picasso_vidinfo.width,picasso_vidinfo.height);
 
@@ -2883,6 +2909,12 @@ static void set_screen_for_picasso(void) {
       AWTRACE("  S->Width x S->Height: %d x %d\n",S->Width,S->Height);
       width =picasso_vidinfo.width;
       height=picasso_vidinfo.height;
+      AWTRACE("ChangeWindowBox(%lx, %d, %d, %d, %d\n",W, 
+                          (S->Width  - picasso_vidinfo.width )/2,
+			  (S->Height - picasso_vidinfo.height)/2,
+			  width,
+			  height);
+
       ChangeWindowBox(W, (S->Width  - picasso_vidinfo.width )/2,
 			 (S->Height - picasso_vidinfo.height)/2,
 			 width,
@@ -2891,6 +2923,13 @@ static void set_screen_for_picasso(void) {
     else {
       width =picasso_vidinfo.width  + W->BorderLeft + W->BorderRight;
       height=picasso_vidinfo.height + W->BorderTop  + W->BorderBottom;
+
+      AWTRACE("ChangeWindowBox(%lx, %d, %d, %d, %d\n",W, 
+                          W->LeftEdge,
+			  W->TopEdge,
+			  width,
+			  height);
+
       ChangeWindowBox(W, W->LeftEdge, W->TopEdge, width, height);
     }
   }
@@ -2957,6 +2996,13 @@ static void un_set_screen_for_picasso(void) {
 		    picasso_vidinfo.width,picasso_vidinfo.height);
     AWTRACE("  currprefs_win   : %d x %d\n",
 		    currprefs.gfx_width_win,currprefs.gfx_height_win);
+
+    AWTRACE("ChangeWindowBox(%lx, %d, %d, %d, %d\n",W, 
+                          W->LeftEdge,
+			  W->TopEdge,
+			  currprefs.gfx_width_win  + W->BorderLeft + W->BorderRight,
+			  currprefs.gfx_height_win + W->BorderTop  + W->BorderBottom);
+
     ChangeWindowBox(W, 
 		    W->LeftEdge, W->TopEdge,
 		    currprefs.gfx_width_win  + W->BorderLeft + W->BorderRight,
@@ -2973,9 +3019,7 @@ static void un_set_screen_for_picasso(void) {
     #endif
   }
   else {
-    AWTRACE(" we are rootless and we need a non-Picasso96 screen!??\n");
-    AWTRACE("PRAY!!\n");
-    AWTRACE("DIE !?!\n");
+    AWTRACE(" we are rootless, so we do nothing\n");
   }
 }
 
