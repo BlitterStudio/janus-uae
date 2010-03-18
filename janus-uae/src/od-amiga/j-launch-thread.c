@@ -222,7 +222,8 @@ static void aros_launch_thread (void) {
     goto EXIT;
   }
 
-  port->mp_Node.ln_Name = LAUNCH_PORT_NAME;
+  port->mp_Node.ln_Name = AllocVec(strlen(LAUNCH_PORT_NAME)+1, MEMF_PUBLIC);
+  strcpy(port->mp_Node.ln_Name, LAUNCH_PORT_NAME);
   port->mp_Node.ln_Type = NT_MSGPORT;
   port->mp_Node.ln_Pri  = 1; /* not too quick search */
 
@@ -295,8 +296,12 @@ static void aros_launch_thread (void) {
    * Worst case is, that we loose the memory of the waiting messages?
    */
   RemPort(port);
-  port=NULL;
   Permit();
+
+  if(port->mp_Node.ln_Name) {
+    FreeVec(port->mp_Node.ln_Name);
+  }
+  port=NULL;
 
 /* good idea ?
   aros_launch_task=NULL;
