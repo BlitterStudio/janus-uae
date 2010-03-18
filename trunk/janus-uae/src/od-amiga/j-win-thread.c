@@ -21,6 +21,9 @@
  *
  ************************************************************************/
 
+#include <graphics/gfx.h>
+#include <proto/layers.h>
+
 #include "j.h"
 #include "memory.h"
 
@@ -153,6 +156,9 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
   }
 }
 
+BOOL  pointer_is_hidden=FALSE;
+ULONG pointer_skip=0;
+
 static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, ULONG secs, ULONG micros, BOOL *done) {
 
   GSList   *list_win;
@@ -203,7 +209,75 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
       break;
 
     case IDCMP_MOUSEMOVE:
-	JWLOG("WARNING: IDCMP_MOUSEMOVE *not* handled\n");
+	/* this might be a little bit expensive? Is it performat enough? 
+	 * so maybe we just do it every 3rd mouse move..
+	 */
+
+	if(pointer_skip==0) {
+
+	  pointer_skip=3;
+
+	  if(!jwin->custom) {
+	    /* hide pointer, if it is above us */
+	    struct Layer  *layer;
+	    struct Screen *scr = jwin->aroswin->WScreen;
+	    GSList        *list_win;
+	    JanusWin      *swin;
+	    BOOL           found;
+
+	    LockLayerInfo (&scr->LayerInfo);
+	    layer = WhichLayer (&scr->LayerInfo, scr->MouseX, scr->MouseY);
+	    UnlockLayerInfo (&scr->LayerInfo);
+
+	    if(layer == jwin->aroswin->WLayer) {
+	      /* inside ourselves */
+	      JWLOG("IDCMP_MOUSEMOVE: inside\n");
+	      if(!pointer_is_hidden) {
+		hide_pointer (jwin->aroswin);
+		JWLOG("POINTER: hide 1\n");
+		pointer_is_hidden=TRUE;
+	      }
+	    }
+	    else {
+
+	      found=FALSE;
+	      JWLOG("ObtainSemaphore(&sem_janus_window_list);\n");
+	      ObtainSemaphore(&sem_janus_window_list);
+	      JWLOG("aros_win_thread[%lx]: obtained sem_janus_window_list sem \n",thread);
+
+	      /* if we are above one of our other windows, hide it too */
+	      list_win=janus_windows;
+	      while(!found && list_win) {
+		swin=(JanusWin *) list_win->data;
+		if(layer == swin->aroswin->WLayer) {
+		  found=TRUE;
+		  if(!pointer_is_hidden) {
+		    hide_pointer (jwin->aroswin);
+		    JWLOG("POINTER: hide\n");
+		    pointer_is_hidden=TRUE;
+		  }
+		}
+		list_win=g_slist_next(list_win);
+	      }
+
+	      if(!found) {
+		if(pointer_is_hidden) {
+		  show_pointer (jwin->aroswin);
+		  JWLOG("POINTER: show\n");
+		  pointer_is_hidden=FALSE;
+		}
+	      }
+
+	      JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
+	      ReleaseSemaphore(&sem_janus_window_list);
+	      JWLOG("aros_win_thread[%lx]: released sem_janus_window_list sem \n",thread);
+	    }
+
+	  }
+	}
+	else {
+	  pointer_skip--;
+	}
 	break;
 #if 0
 	/* dmx and dmy are relative to our window */
@@ -454,7 +528,7 @@ static void aros_win_thread (void) {
 			    IDCMP_CLOSEWINDOW | 
 			    IDCMP_RAWKEY |
 			    IDCMP_MOUSEBUTTONS |
-			    //IDCMP_MOUSEMOVE |
+			    IDCMP_MOUSEMOVE |
 			    IDCMP_ACTIVEWINDOW |
 			    IDCMP_CHANGEWINDOW |
 			    IDCMP_MENUPICK |
