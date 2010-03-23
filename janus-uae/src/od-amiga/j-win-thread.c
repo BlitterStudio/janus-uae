@@ -674,8 +674,20 @@ static void aros_win_thread (void) {
     JWLOG("jwin->jscreen: %lx\n",jwin->jscreen);
     JWLOG("jwin->jscreen->arosscreen: %lx\n",jwin->jscreen->arosscreen);
 
+    /* 
+     * as we open our AROS screens in an own thread out of sync, it
+     * might very well be, that amigaOS already opened a window on
+     * the new screen, which is not yet opened on AROS
+     */
+    i=20;
+    while(!jwin->jscreen->arosscreen && i--) {
+      JWLOG("#%d wait for jwin->jscreen->arosscreen ..\n", i);
+      Delay(10);
+    }
+
     if(jwin->jscreen->arosscreen) {
-      /* now we need to open up the window .. 
+      /* 
+       * now we need to open up the window .. 
        * hopefully nobody has thicker borders  ..
        */
       jwin->aroswin =  OpenWindowTags(NULL,WA_Title, title,
@@ -708,24 +720,25 @@ static void aros_win_thread (void) {
 				      WA_PubScreen, jwin->jscreen->arosscreen,
 				      WA_NewLookMenus, TRUE,
 				      TAG_DONE);
+
+    }
+    else {
+      JWLOG("aros_win_thread[%lx]: ERROR: could not wait for my screen :(!\n", thread);
+      goto EXIT;
     }
     
     JWLOG("aros_win_thread[%lx]: x, y : %d, %d\n",thread,  
            x - estimated_border_left + bl,
 	   y - estimated_border_top  + bt );
 
-    JWLOG("opened window: %s\n", title);
-    JWLOG("  WA_Left: x %d - estimated_border_left %d = %d\n", x, estimated_border_left, x-estimated_border_left);
+    JWLOG("aros_win_thread[%lx]: opened aros window: %lx (%s)\n", thread, jwin->aroswin, title);
 
-
-    aroswin=jwin->aroswin; /* shorter to read..*/
-
-    JWLOG("aros_win_thread[%lx]: aroswin: %lx\n",thread, aroswin);
-
-    if(!aroswin) {
+    if(!jwin->aroswin) {
       JWLOG("aros_win_thread[%lx]: ERROR: OpenWindow FAILED!\n",thread);
       goto EXIT;
     }
+
+    aroswin=jwin->aroswin; /* shorter to read..*/
 
     JWLOG("aros_win_thread[%lx]: opened window: w,h: %d, %d\n", thread, jwin->aroswin->Width, jwin->aroswin->Height);
 #if 0
@@ -744,10 +757,10 @@ static void aros_win_thread (void) {
 #endif
 
     /* remember for the next time */
-    estimated_border_top=aroswin->BorderTop;
+    estimated_border_top   =aroswin->BorderTop;
     estimated_border_bottom=aroswin->BorderBottom;
-    estimated_border_left=aroswin->BorderLeft;
-    estimated_border_right=aroswin->BorderRight;
+    estimated_border_left  =aroswin->BorderLeft;
+    estimated_border_right =aroswin->BorderRight;
 
   } /* endif !win->custom
      * yes, I know, so long if's are evil
@@ -834,12 +847,14 @@ static void aros_win_thread (void) {
 
 	ReplyMsg ((struct Message*)msg);
 
+#if 0
 	if(jwin->task != thread) {
 	  JWLOG("YYY thread %lx != jwin->task %lx\n", thread, jwin->task);
 	}
 	else {
 	  JWLOG("YYX thread %lx == jwin->task %lx\n", thread, jwin->task);
 	}
+#endif
 
 	handle_msg(aroswin, jwin, class, code, dmx, dmy, mx, my, qualifier, 
 		   thread, secs, micros, &done);
