@@ -83,7 +83,9 @@ void new_aros_pub_screen(JanusScreen *jscreen, uaecptr aos3screen) {
     return;
   }
 
+#if 0
   jscreen->arosscreen= (struct Screen *) -1;
+#endif
 
   aros_screen_start_thread(jscreen);
 
