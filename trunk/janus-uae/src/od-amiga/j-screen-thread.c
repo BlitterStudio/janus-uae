@@ -251,6 +251,7 @@ static struct Screen *new_aros_pub_screen(JanusScreen *jscreen,
 		     SA_ErrorCode, &err,
 		     TAG_DONE);
 
+  JWLOG("OpenScreenTags returned :%lx\n", arosscr);
   jscreen->ownscreen=TRUE; /* TODO we have to close this one, how..? */
 
   return arosscr;
@@ -282,11 +283,13 @@ static void aros_screen_thread (void) {
 	 		     	  (gconstpointer) thread,
 			     	  &aos3_screen_process_compare);
 
-  ReleaseSemaphore(&sem_janus_screen_list);
-  JWLOG("aros_scr_thread[%lx]: ReleasedSemaphore(&sem_janus_screen_list)\n",thread);
 
   if(!list_screen) {
     JWLOG("aros_scr_thread[%lx]: ERROR: screen of this thread not found in screen list !?\n",thread);
+
+    JWLOG("aros_scr_thread[%lx]: ReleasedSemaphore(&sem_janus_screen_list)\n",thread);
+    ReleaseSemaphore(&sem_janus_screen_list);
+
     goto EXIT; 
   }
 
@@ -296,6 +299,10 @@ static void aros_screen_thread (void) {
   signal=AllocSignal(-1);
   if(!signal) {
     JWLOG("aros_scr_thread[%lx]: unable to alloc signal\n");
+
+    JWLOG("aros_scr_thread[%lx]: ReleasedSemaphore(&sem_janus_screen_list)\n",thread);
+    ReleaseSemaphore(&sem_janus_screen_list);
+
     goto EXIT;
   }
 
@@ -304,8 +311,22 @@ static void aros_screen_thread (void) {
   jscr->arosscreen=new_aros_pub_screen(jscr, aos3screen, thread, signal);
   if(!jscr->arosscreen) {
     JWLOG("aros_scr_thread[%lx]: ERROR: could not open screen !!\n",thread);
+
+    JWLOG("aros_scr_thread[%lx]: ReleasedSemaphore(&sem_janus_screen_list)\n",thread);
+    ReleaseSemaphore(&sem_janus_screen_list);
+
     goto EXIT; 
   }
+
+  JWLOG("aros_scr_thread[%lx]: opened new aros public screen: %lx (%s)\n",
+        thread,
+	jscr->arosscreen,
+	jscr->arosscreen->Title);
+  JWLOG("aros_scr_thread[%lx]: jscr: %lx\n", thread, jscr);
+  JWLOG("aros_scr_thread[%lx]: jscr->aos3screen: %lx\n", thread, aos3screen);
+  JWLOG("aros_scr_thread[%lx]: jscr->arosscreen: %lx\n", thread, jscr->arosscreen);
+
+  ReleaseSemaphore(&sem_janus_screen_list);
 
   done=FALSE;
 
