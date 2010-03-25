@@ -75,6 +75,7 @@ BOOL init_sync_mouse(void);
 void free_sync_mouse(void);
 void sync_mouse(void);
 void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button);
+BOOL is_cyber(struct Screen *screen);
 
 /* patch.c */
 extern ULONG patch_draggable;
@@ -95,6 +96,15 @@ void update_top_screen(void);
 
 /* public_screen.c */
 char *public_screen_name(struct Screen *scr); 
+
+/* lock-window.c */
+
+struct WindowLock {
+  ULONG IntuiLock;
+  BYTE  pri;
+};
+struct WindowLock *lock_window(struct Window *window);
+void               unlock_window(struct WindowLock *wl);
 
 /* debug.c */
 void DebOut(const char *format, ...);
