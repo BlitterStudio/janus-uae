@@ -105,7 +105,7 @@ BOOL assert_window(struct Window *window) {
 struct WindowLock {
   ULONG IntuiLock;
   BYTE  pri;
-} WindowLock;
+};
 
 /****************************************************
  * lock_window(window)
@@ -386,10 +386,12 @@ static UWORD get_lo(ULONG l) {
   return (UWORD) (l&0xFFFF);
 }
 
+/* WARNING: care for screens here ?? TODO ? */
 void report_host_windows() {
   struct Window *win;
   ULONG         *command_mem;
   ULONG          i;
+  struct WindowLock *lock;
 
   ENTER
 
@@ -409,16 +411,16 @@ void report_host_windows() {
     DebOut("  x/y: %d x %d\n",get_hi(command_mem[i+1]),get_lo(command_mem[i+1]));
     DebOut("  w/h: %d x %d\n",get_hi(command_mem[i+2]),get_lo(command_mem[i+2]));
 
-    //printf("  (long x/y: %lx)\n",command_mem[i+1]);
-    //printf("  (long w/y: %lx)\n",command_mem[i+2]);
-    /* TODO(?) assert_window(win);..*/
-    ChangeWindowBox(win,
-                    get_hi(command_mem[i+1]) - win->BorderLeft,
-                    get_lo(command_mem[i+1]) - win->BorderTop,
-		    get_hi(command_mem[i+2]) +
-		      win->BorderLeft + win->BorderRight,
-		    get_lo(command_mem[i+2]) +
-		      win->BorderTop + win->BorderBottom);
+    if((lock=lock_window(win))) {
+      ChangeWindowBox(win,
+		      get_hi(command_mem[i+1]) - win->BorderLeft,
+		      get_lo(command_mem[i+1]) - win->BorderTop,
+		      get_hi(command_mem[i+2]) +
+			win->BorderLeft + win->BorderRight,
+		      get_lo(command_mem[i+2]) +
+			win->BorderTop + win->BorderBottom);
+      unlock_window(lock);
+    }
 
     i=i+5;
   }
@@ -478,8 +480,8 @@ void report_host_windows() {
 static void my_MoveWindowInFrontOf(struct Window *window, 
                                    struct Window *behindWindow) {
 
-  BYTE  pri;
-  ULONG lock;
+  struct WindowLock *lock1;
+  struct WindowLock *lock2;
 
   ENTER
   //printf("my_MoveWindowInFrontOf enteren\n");
@@ -508,25 +510,20 @@ static void my_MoveWindowInFrontOf(struct Window *window,
                                                       (ULONG) behindWindow, behindWindow->Title); 
 
   /* we try to make sure, that nobody closes any of our windows inbetween .. */
-  lock=LockIBase(0);
-  if(!assert_window(window) || !assert_window(behindWindow)) {
+  if(!(lock1=lock_window(window)) || !(lock2=lock_window(behindWindow))) {
     goto EXIT;
   }
 
-  pri=SetTaskPri(FindTask(NULL), 30); /* don't let anybody else win .. hopefully */
-  UnlockIBase(lock);
-
   MoveWindowInFrontOf(window,behindWindow);
 
-  lock=0;
-
 EXIT:
-  if(lock) {
-    UnlockIBase(lock);
-    lock=0;
+  if(lock2) {
+    unlock_window(lock2);
   }
 
-  SetTaskPri(FindTask(NULL), pri);
+  if(lock1) {
+    unlock_window(lock1);
+  }
 
   LEAVE
 }
