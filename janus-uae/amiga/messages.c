@@ -104,14 +104,18 @@ void closewin(struct Window *w) {
 /* just "press" the button */
 void closewin(struct Window *w) {
   UWORD  m;
-  struct Screen *screen;
+  struct WindowLock *wl;
 
   ENTER
 
-  screen=IntuitionBase->FirstScreen;
-  m=w->BorderTop / 2; /* middle of close gadget */
+  /* who knows, maybe window was closed inbetween already */
+  if((wl=lock_window(w))) {
+    m=w->BorderTop / 2; /* middle of close gadget */
 
-  SetMouse(screen, w->LeftEdge + m, w->TopEdge + m, IECODE_LBUTTON);
+    SetMouse(w->WScreen, w->LeftEdge + m, w->TopEdge + m, IECODE_LBUTTON);
+
+    unlock_window(wl);
+  }
 
   LEAVE
 
