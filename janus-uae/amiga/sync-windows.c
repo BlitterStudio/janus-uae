@@ -57,6 +57,102 @@ BOOL init_sync_windows() {
 }
 
 /****************************************************
+ * BOOL assert_window_on_screen(screen, window)
+ *
+ * check, if a window still exists on a screen.
+ *
+ * ATT: you have to call LockIBase yourself!!
+ ****************************************************/
+BOOL assert_window_on_screen(struct Screen *screen, struct Window *window) {
+
+  struct Window *i;
+
+  i=screen->FirstWindow;
+
+  while(i) {
+    if(i==window) {
+      return TRUE;
+    }
+    i=i->NextWindow;
+  }
+
+  return FALSE;
+}
+
+/****************************************************
+ * BOOL assert_window(window)
+ *
+ * check, if the window still exists on any screen.
+ *
+ * ATT: you have to call LockIBase yourself!!
+ ****************************************************/
+BOOL assert_window(struct Window *window) {
+
+  struct Screen *i;
+
+  i=IntuitionBase->FirstScreen;
+
+  while(i) {
+    if(assert_window_on_screen(i, window)) {
+      return TRUE;
+    }
+    i=i->NextScreen;
+  }
+
+  return FALSE;
+}
+
+struct WindowLock {
+  ULONG IntuiLock;
+  BYTE  pri;
+} WindowLock;
+
+/****************************************************
+ * lock_window(window)
+ *
+ * - tests, if window exists
+ * - tries to make sure, that nobody can close
+ *   the window from now on
+ * - can't work 100%, sorry
+ * - please call unlock_window as soon as possible,
+ *   as your task will run in a high priority
+ *   between lock and unlock!
+ * - it is "safe" to lock more than one window, but
+ *   you need to unlock them in the opposite order!
+ ****************************************************/
+struct WindowLock *lock_window(struct Window *window) {
+
+  ULONG lock;
+  struct WindowLock *wl;
+
+  lock=LockIBase(0);
+
+  if(!assert_window(window)) {
+    UnlockIBase(lock);
+    return 0;
+  }
+
+  wl=AllocVec(sizeof(struct WindowLock), MEMF_CLEAR);
+
+  wl->pri=SetTaskPri(FindTask(NULL), 30); /* don't let anybody else win .. hopefully */
+
+  UnlockIBase(lock);
+
+  return wl;
+}
+
+/****************************************************
+ * unlock_window(lock)
+ *
+ * - undo the lock
+ ****************************************************/
+void unlock_window(struct WindowLock *wl) {
+
+  SetTaskPri(FindTask(NULL), wl->pri);
+  FreeVec(wl);
+}
+
+/****************************************************
  * update the window list, so that new aros windows
  * and threads are created for new amigaOS windows
  *
@@ -192,12 +288,16 @@ ULONG need_to_sort(ULONG *host_window, struct Layer *layer) {
 
 /* fill in actual windows with size etc 
  * command mem fields (LONG):
+ *
+ * 0: screen
+ * {
  * 0: window pointer (LONG)
  * 1: LeftEdge, TopEdge (WORD,WORD)
  * 2: Width, Height (WORD, WORD)
  * 3: reserved NULL (LONG)
  * 4: reserved NULL (LONG)
  * 5: next window starts here
+ * }
  *
  * All values are without window borders.
  * */
@@ -228,7 +328,10 @@ void report_uae_windows() {
 
   win=screen->FirstWindow;
 
-  i=0;
+  /* we are reporting for this screen! */
+  command_mem[0]=(ULONG) screen;
+
+  i=1;
   while(win) {
     //printf("add window #%d: %lx\n",i,w);
     command_mem[i  ]=(ULONG) win;
@@ -375,6 +478,9 @@ void report_host_windows() {
 static void my_MoveWindowInFrontOf(struct Window *window, 
                                    struct Window *behindWindow) {
 
+  BYTE  pri;
+  ULONG lock;
+
   ENTER
   //printf("my_MoveWindowInFrontOf enteren\n");
   if(window == old_MoveWindowInFront_Window &&
@@ -400,7 +506,27 @@ static void my_MoveWindowInFrontOf(struct Window *window,
   
   DebOut("MoveWindowInFrontOf(%lx - %s, %lx - %s)\n", (ULONG) window,       window->Title,
                                                       (ULONG) behindWindow, behindWindow->Title); 
+
+  /* we try to make sure, that nobody closes any of our windows inbetween .. */
+  lock=LockIBase(0);
+  if(!assert_window(window) || !assert_window(behindWindow)) {
+    goto EXIT;
+  }
+
+  pri=SetTaskPri(FindTask(NULL), 30); /* don't let anybody else win .. hopefully */
+  UnlockIBase(lock);
+
   MoveWindowInFrontOf(window,behindWindow);
+
+  lock=0;
+
+EXIT:
+  if(lock) {
+    UnlockIBase(lock);
+    lock=0;
+  }
+
+  SetTaskPri(FindTask(NULL), pri);
 
   LEAVE
 }
@@ -526,13 +652,18 @@ void sync_windows() {
 
 void sync_active_window() {
   struct Window *win;
+  struct WindowLock *wl;
 
   ENTER
 
   win=(struct Window *) calltrap (AD_GET_JOB, 
                                   AD_GET_JOB_ACTIVE_WINDOW, NULL);
 
-  ActivateWindow(win);
+  if((wl=lock_window(win))) {
+    ActivateWindow(win);
+    unlock_window(wl);
+  }
+
   LEAVE
 }
 
