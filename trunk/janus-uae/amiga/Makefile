@@ -23,11 +23,11 @@ LD_FLAGS  = -noixemul
 
 CFLAGS    = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
-JOBJS      = janus-daemon.o sync-mouse.o patch.o sync-windows.o sync-screens.o public-screen.o messages.o debug.o
+JOBJS      = janus-daemon.o sync-mouse.o patch.o sync-windows.o sync-screens.o public-screen.o lock-window.o messages.o debug.o
 COBJS      = clip-daemon.o debug.o
 LOBJS      = launch-daemon.o debug.o
 
-all: janusd clipd launchd
+all: janusd clipd launchd 
 
 janusd: $(JOBJS) 
 	$(CC) $(LD_FLAGS) $(JOBJS) -o janusd -lauto #-lc -lamiga -lauto
@@ -40,7 +40,7 @@ clipd:  $(COBJS)
 launchd:  $(LOBJS) 
 	$(CC) $(LD_FLAGS) $(LOBJS) -o launchd 
 	cp launchd  $(TARGETDIR)
- 
+
 clean:
 	@rm -f $(JOBJS) $(COBJS) janusd clipd
 
