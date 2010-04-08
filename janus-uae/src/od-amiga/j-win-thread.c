@@ -24,6 +24,7 @@
 #include <graphics/gfx.h>
 #include <proto/layers.h>
 
+#define JWTRACING_ENABLED 1
 #include "j.h"
 #include "memory.h"
 
@@ -62,7 +63,9 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
 
   UWORD selection;
 
-  JWLOG("aros_win_thread[%lx]: handle_input(jwin %lx  win %lx)\n", thread, jwin, win);
+  JWLOG("aros_win_thread[%lx]: handle_input(jwin %lx, aros win %lx, class %lx, code %d)\n", thread, 
+                                                                                            jwin, win, 
+											    class, code);
 
   switch (class) {
       
@@ -74,11 +77,11 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
 	if ((qualifier & IEQUALIFIER_REPEAT) == 0) {
 	    /* We just want key up/down events - not repeats */
 	    if ((ievent = match_hotkey_sequence (keycode, state)))
-	      JWLOG("TODO: handle_hotkey_event\n");
+	      JWLOG("aros_win_thread[%lx]: TODO: handle_hotkey_event\n", thread);
 		//handle_hotkey_event (ievent, state);
 	    else
 
-	      JWLOG("call inputdevice_do_keyboard(%d,%d)\n",keycode,state);
+	      JWLOG("aros_win_thread[%lx]: call inputdevice_do_keyboard(%d,%d)\n",thread,keycode,state);
 		inputdevice_do_keyboard (keycode, state);
 	}
 	break;
@@ -101,7 +104,7 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
 	 */
 
 	if(win) {
-	  JWLOG("IDCMP_ACTIVEWINDOW(%lx, %s)\n", win, win->Title);
+	  JWLOG("aros_win_thread[%lx]: IDCMP_ACTIVEWINDOW(%lx, %s)\n", thread, win, win->Title);
 	}
 	inputdevice_acquire ();
 	inputdevice_release_all_keys ();
@@ -120,7 +123,7 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
 	janus_active_window=(JanusWin *) list_win->data;
 #endif 
 	janus_active_window=jwin;
-	JWLOG("janus_active_window=%lx\n", janus_active_window);
+	JWLOG("aros_win_thread[%lx]: janus_active_window=%lx\n", thread, janus_active_window);
 	ReleaseSemaphore(&sem_janus_active_win);
 
 	break;
@@ -130,7 +133,7 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
 	JanusWin *old;
 
 	if(win) {
-	  JWLOG("IDCMP_INACTIVEWINDOW(%lx, %s)\n", win, win->Title);
+	  JWLOG("aros_win_thread[%lx]: IDCMP_INACTIVEWINDOW(%lx, %s)\n", thread, win, win->Title);
 	}
 	inputdevice_unacquire ();
 
@@ -147,13 +150,14 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
 	old=jwin;
 	if(old == janus_active_window) {
 	  janus_active_window=NULL;
-	  JWLOG("janus_active_window=NULL\n");
+	  JWLOG("aros_win_thread[%lx]: janus_active_window=NULL\n", thread);
 	  copy_clipboard_to_aros();
 	}
 	ReleaseSemaphore(&sem_janus_active_win);
 	break;
     }
   }
+  JWLOG("aros_win_thread[%lx]: handle_input(jwin %lx, ..) done\n", thread, jwin);
 }
 
 BOOL  pointer_is_hidden=FALSE;
@@ -183,7 +187,7 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	/* this gets freed in ad_job_fetch_message! */
 	jmsg=AllocVec(sizeof(JanusMsg), MEMF_CLEAR); 
 	if(!jmsg) {
-	  JWLOG("ERROR: no memory (ignored message)\n");
+	  JWLOG("aros_win_thread[%lx]: ERROR: no memory (ignored message)\n", thread);
 	  break;
 	}
 	jmsg->jwin=jwin;
@@ -231,17 +235,17 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 
 	    if(layer == jwin->aroswin->WLayer) {
 	      /* inside ourselves */
-	      JWLOG("IDCMP_MOUSEMOVE: inside\n");
+	      JWLOG("aros_win_thread[%lx]: IDCMP_MOUSEMOVE: inside\n", thread);
 	      if(!pointer_is_hidden) {
 		hide_pointer (jwin->aroswin);
-		JWLOG("POINTER: hide 1\n");
+		JWLOG("aros_win_thread[%lx]: POINTER: hide\n", thread);
 		pointer_is_hidden=TRUE;
 	      }
 	    }
 	    else {
 
 	      found=FALSE;
-	      JWLOG("ObtainSemaphore(&sem_janus_window_list);\n");
+	      JWLOG("aros_win_thread[%lx]: ObtainSemaphore(&sem_janus_window_list);\n", thread);
 	      ObtainSemaphore(&sem_janus_window_list);
 	      JWLOG("aros_win_thread[%lx]: obtained sem_janus_window_list sem \n",thread);
 
@@ -249,11 +253,11 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	      list_win=janus_windows;
 	      while(!found && list_win) {
 		swin=(JanusWin *) list_win->data;
-		if(layer == swin->aroswin->WLayer) {
+		if(swin && swin->aroswin && (layer == swin->aroswin->WLayer)) {
 		  found=TRUE;
 		  if(!pointer_is_hidden) {
 		    hide_pointer (jwin->aroswin);
-		    JWLOG("POINTER: hide\n");
+		    JWLOG("aros_win_thread[%lx]: POINTER: hide\n", thread);
 		    pointer_is_hidden=TRUE;
 		  }
 		}
@@ -263,12 +267,12 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	      if(!found) {
 		if(pointer_is_hidden) {
 		  show_pointer (jwin->aroswin);
-		  JWLOG("POINTER: show\n");
+		  JWLOG("aros_win_thread[%lx]: POINTER: show\n", thread);
 		  pointer_is_hidden=FALSE;
 		}
 	      }
 
-	      JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
+	      JWLOG("aros_win_thread[%lx]: ReleaseSemaphore(&sem_janus_window_list)\n", thread);
 	      ReleaseSemaphore(&sem_janus_window_list);
 	      JWLOG("aros_win_thread[%lx]: released sem_janus_window_list sem \n",thread);
 	    }
@@ -307,14 +311,15 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	if(IntuitionBase->ActiveWindow != win) {
 	  /* this seems to be a bug in aros, why are we getting those messages at all !? */
 	  /* no, it is a feature. Any window on a screen gets those.. C=.. */
-	  JWLOG("WARNING: foreign IDCMP message IDCMP_MENUVERIFY received\n");
+	  JWLOG("aros_win_thread[%lx]: WARNING: foreign IDCMP message IDCMP_MENUVERIFY received\n", thread);
 	}
 	else {
-	  JWLOG("IDCMP_MENUVERIFY\n");
+	  JWLOG("aros_win_thread[%lx]: IDCMP_MENUVERIFY\n", thread);
 	  menux=0;
 	  menuy=0;
 	  j_stop_window_update=TRUE;
 	  mice[0].enabled=FALSE; /* disable mouse emulation */
+	  JWLOG("aros_win_thread[%lx]: my_setmousebuttonstate..\n", thread);
 	  my_setmousebuttonstate(0, 1, 1); /* MENUDOWN */
 	  clone_menu(jwin);
 	}
@@ -323,7 +328,7 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 
     case IDCMP_MENUPICK:
       if(!jwin->custom) {
-	JWLOG("IDCMP_MENUPICK\n");
+	JWLOG("aros_win_thread[%lx]: IDCMP_MENUPICK\n", thread);
 
 	/* nothing selected, but this could mean, the user clicked twice very fast and
 	 * thus wanted to activate a DMRequest. So we remember/check the time of the last
@@ -331,9 +336,10 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	 */
 	if(code==MENUNULL) {
 	  if(jwin->micros) {
-	    JWLOG("MENUNULL difference: %d\n", olisecs(secs, micros) - olisecs(jwin->secs, jwin->micros));
+	    JWLOG("aros_win_thread[%lx]: MENUNULL difference: %d\n", thread,
+	          olisecs(secs, micros) - olisecs(jwin->secs, jwin->micros));
 	    if(olisecs(secs, micros) - olisecs(jwin->secs, jwin->micros) < 1500) {
-	      JWLOG("MENUNULL DOUBLE!!\n");
+	      JWLOG("aros_win_thread[%lx]: MENUNULL DOUBLE!!\n", thread);
 	      /* we already had one MENUDOWN up in MENUVERIFY */
 	      setmousebuttonstate(0, 1, 0); /* MENUUP */
 	      //Delay(1000);
@@ -411,7 +417,7 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 
 #endif
     case IDCMP_REFRESHWINDOW:
-      JWLOG("IDCMP_REFRESHWINDOW!\n");
+      JWLOG("aros_win_thread[%lx]: IDCMP_REFRESHWINDOW!\n", thread);
 #if 0
 	if (use_delta_buffer) {
 	    /* hack: this forces refresh */
@@ -475,7 +481,7 @@ static void aros_win_thread (void) {
   /* 
    * deadlock sometimes..?
    */
-  JWLOG("ObtainSemaphore(&sem_janus_window_list);\n");
+  JWLOG("aros_win_thread[%lx]: ObtainSemaphore(&sem_janus_window_list);\n", thread);
   ObtainSemaphore(&sem_janus_window_list);
   JWLOG("aros_win_thread[%lx]: obtained sem_janus_window_list sem \n",thread);
 
@@ -484,7 +490,7 @@ static void aros_win_thread (void) {
 			     	(gconstpointer) thread,
 			     	&aos3_process_compare);
 
-  JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
+  JWLOG("aros_win_thread[%lx]: ReleaseSemaphore(&sem_janus_window_list)\n", thread);
   ReleaseSemaphore(&sem_janus_window_list);
   JWLOG("aros_win_thread[%lx]: released sem_janus_window_list sem \n",thread);
 
@@ -538,12 +544,15 @@ static void aros_win_thread (void) {
 
     /* AROS and Aos3 use the same flags */
     flags     =get_long_p(jwin->aos3win + 24); 
-    JWLOG("aros_win_thread[%lx]: flags: %lx \n", thread, flags);
 
     JWLOG("aros_win_thread[%lx]: org flags: %lx \n", thread, flags);
 
     /* we are always WFLG_SMART_REFRESH and never BACKDROP! */
     flags=flags & 0xFFFFFEFF;  /* remove refresh bits and backdrop */
+
+    /* we always want to get a MENUVERIFY, if there is no menu, we will click right on our own*/
+    flags=flags & ~WFLG_RMBTRAP;
+
     flags=flags | WFLG_SMART_REFRESH | WFLG_GIMMEZEROZERO | WFLG_ACTIVATE;
 
     JWLOG("aros_win_thread[%lx]: new flags: %lx \n", thread, flags);
@@ -670,9 +679,9 @@ static void aros_win_thread (void) {
       jwin->plusy=0;
     }
 
-    JWLOG("jwin: %lx\n",jwin);
-    JWLOG("jwin->jscreen: %lx\n",jwin->jscreen);
-    JWLOG("jwin->jscreen->arosscreen: %lx\n",jwin->jscreen->arosscreen);
+    JWLOG("aros_win_thread[%lx]: jwin: %lx\n", thread, jwin);
+    JWLOG("aros_win_thread[%lx]: jwin->jscreen: %lx\n", thread, jwin->jscreen);
+    JWLOG("aros_win_thread[%lx]: jwin->jscreen->arosscreen: %lx\n", thread, jwin->jscreen->arosscreen);
 
     /* 
      * as we open our AROS screens in an own thread out of sync, it
@@ -681,7 +690,7 @@ static void aros_win_thread (void) {
      */
     i=20;
     while(!jwin->jscreen->arosscreen && i--) {
-      JWLOG("#%d wait for jwin->jscreen->arosscreen ..\n", i);
+      JWLOG("aros_win_thread[%lx]: #%d wait for jwin->jscreen->arosscreen ..\n", thread, i);
       Delay(10);
     }
 
@@ -791,7 +800,7 @@ static void aros_win_thread (void) {
     JWLOG("aros_win_thread[%lx]: new aros window %lx\n", thread, jwin->aroswin);
 
     if(!jwin->aroswin) {
-      JWLOG("ERROR: unable to open window!!!\n");
+      JWLOG("aros_win_thread[%lx]: ERROR: unable to open window!!!\n", thread);
       goto EXIT;
     }
 
@@ -819,18 +828,18 @@ static void aros_win_thread (void) {
   /* handle IDCMP stuff */
   JWLOG("aros_win_thread[%lx]: jwin->task: %lx\n", thread, jwin->task);
   JWLOG("aros_win_thread[%lx]: UserPort: %lx\n", thread, aroswin->UserPort);
-  JWLOG("IDCMP loop for window %lx\n",aroswin);
+  JWLOG("aros_win_thread[%lx]: IDCMP loop for window %lx\n", thread, aroswin);
 
   while(!done) {
 
     /* wait either for a CTRL_C or a window signal */
-    JWLOG("Wait(%lx)\n",1L << aroswin->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
+    JWLOG("aros_win_thread[%lx]: Wait(%lx)\n", thread, 1L << aroswin->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
     signals = Wait(1L << aroswin->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
-    JWLOG("signals: %lx\n", signals);
+    JWLOG("aros_win_thread[%lx]: signals: %lx\n", thread, signals);
 
     if (signals & (1L << aroswin->UserPort->mp_SigBit)) {
       JWLOG("aros_win_thread[%lx]: aroswin->UserPort->mp_SigBit received\n", thread);
-      JWLOG("GetMsg(aroswin %lx ->UserPort %lx)\n", aroswin, aroswin->UserPort);
+      JWLOG("aros_win_thread[%lx]: GetMsg(aroswin %lx ->UserPort %lx)\n", thread, aroswin, aroswin->UserPort);
 
       while ((msg = (struct IntuiMessage *) GetMsg(aroswin->UserPort))) {
 	//JWLOG("IDCMP msg for window %lx\n",aroswin);
@@ -845,7 +854,7 @@ static void aros_win_thread (void) {
 	secs      = msg->Seconds;
 	micros    = msg->Micros;
 
-	ReplyMsg ((struct Message*)msg);
+	ReplyMsg ((struct Message *)msg);
 
 #if 0
 	if(jwin->task != thread) {
@@ -901,7 +910,7 @@ EXIT:
     list_win=NULL;
   }
 
-  JWLOG("ReleaseSemaphore(&sem_janus_window_list);\n");
+  JWLOG("aros_win_thread[%lx]: ReleaseSemaphore(&sem_janus_window_list);\n", thread);
   ReleaseSemaphore(&sem_janus_window_list);
 
   if(title) {
