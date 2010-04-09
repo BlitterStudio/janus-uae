@@ -167,7 +167,8 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 
   GSList   *list_win;
   JanusMsg *jmsg;
-  UWORD selection;
+  UWORD     selection;
+  ULONG     flags;
 
   switch (class) {
     case IDCMP_RAWKEY:
@@ -314,14 +315,29 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	  JWLOG("aros_win_thread[%lx]: WARNING: foreign IDCMP message IDCMP_MENUVERIFY received\n", thread);
 	}
 	else {
-	  JWLOG("aros_win_thread[%lx]: IDCMP_MENUVERIFY\n", thread);
-	  menux=0;
-	  menuy=0;
-	  j_stop_window_update=TRUE;
-	  mice[0].enabled=FALSE; /* disable mouse emulation */
-	  JWLOG("aros_win_thread[%lx]: my_setmousebuttonstate..\n", thread);
-	  my_setmousebuttonstate(0, 1, 1); /* MENUDOWN */
-	  clone_menu(jwin);
+	  flags=get_long_p(jwin->aos3win + 24); 
+	  JWLOG("aros_win_thread[%lx]: IDCMP_MENUVERIFY flags: %lx\n", thread, flags);
+
+	  /* depending on whether the original amigaOS window has WFLG_RMBTRAP set
+	   * or not, we need to show a menu or not. This is quite a brain damaged
+	   * thing, as for example MUI checks on every mouse move, if it has to
+	   * change the WFLG_RMBTRAP, depending on whether the mouse is above
+	   * a gadget with or without intuition menu..
+	   */
+
+	  if(flags & WFLG_RMBTRAP) {
+	    JWLOG("aros_win_thread[%lx]: IDCMP_MENUVERIFY => right click only\n", thread);
+	    my_setmousebuttonstate(0, 1, 1); /* MENUDOWN */
+	  }
+	  else {
+	    JWLOG("aros_win_thread[%lx]: IDCMP_MENUVERIFY => real IDCMP_MENUVERIFY\n", thread);
+	    menux=0;
+	    menuy=0;
+	    j_stop_window_update=TRUE;
+	    mice[0].enabled=FALSE; /* disable mouse emulation */
+	    my_setmousebuttonstate(0, 1, 1); /* MENUDOWN */
+	    clone_menu(jwin);
+	  }
 	}
       }
       break;
