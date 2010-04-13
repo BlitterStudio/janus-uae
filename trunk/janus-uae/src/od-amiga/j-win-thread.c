@@ -28,7 +28,7 @@
 #include "j.h"
 #include "memory.h"
 
-static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, ULONG secs, ULONG micros, BOOL *done);
+static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, ULONG secs, ULONG micros, BOOL *done);
 
 /* we don't know those values, but we always keep the last value here */
 static UWORD estimated_border_top=25;
@@ -88,12 +88,23 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
      }
 
     case IDCMP_MOUSEBUTTONS:
-	if (code == SELECTDOWN) setmousebuttonstate (0, 0, 1);
-	if (code == SELECTUP)   setmousebuttonstate (0, 0, 0);
-	if (code == MIDDLEDOWN) setmousebuttonstate (0, 2, 1);
-	if (code == MIDDLEUP)   setmousebuttonstate (0, 2, 0);
-	if (code == MENUDOWN)   setmousebuttonstate (0, 1, 1);
-	if (code == MENUUP)     setmousebuttonstate (0, 1, 0);
+
+	if(IntuitionBase->ActiveWindow != win) {
+	  /* it seems, that sometimes (after a menucancel?) we get clicks from
+	   * other windows. Is this really correct AROS behaviour?
+	   */
+	  JWLOG("aros_win_thread[%lx]: IDCMP_MOUSEBUTTONS on foreign window !? (actwin%lx != mywin %lx): code %d\n", 
+	         IntuitionBase->ActiveWindow, win);
+	}
+	else {
+	  JWLOG("aros_win_thread[%lx]: IDCMP_MOUSEBUTTONS code %d\n", thread, code);
+	  if (code == SELECTDOWN) setmousebuttonstate (0, 0, 1);
+	  if (code == SELECTUP)   setmousebuttonstate (0, 0, 0);
+	  if (code == MIDDLEDOWN) setmousebuttonstate (0, 2, 1);
+	  if (code == MIDDLEUP)   setmousebuttonstate (0, 2, 0);
+	  if (code == MENUDOWN)   setmousebuttonstate (0, 1, 1);
+	  if (code == MENUUP)     setmousebuttonstate (0, 1, 0);
+	}
 	break;
 
     case IDCMP_ACTIVEWINDOW:
@@ -163,7 +174,7 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
 BOOL  pointer_is_hidden=FALSE;
 ULONG pointer_skip=0;
 
-static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, ULONG secs, ULONG micros, BOOL *done) {
+static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, ULONG secs, ULONG micros, BOOL *done) {
 
   GSList   *list_win;
   JanusMsg *jmsg;
@@ -315,6 +326,7 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 	  JWLOG("aros_win_thread[%lx]: WARNING: foreign IDCMP message IDCMP_MENUVERIFY received\n", thread);
 	}
 	else {
+	  struct IntuiMessage *im=(struct IntuiMessage *)msg;
 	  flags=get_long_p(jwin->aos3win + 24); 
 	  JWLOG("aros_win_thread[%lx]: IDCMP_MENUVERIFY flags: %lx\n", thread, flags);
 
@@ -327,6 +339,7 @@ static void handle_msg(struct Window *win, JanusWin *jwin, ULONG class, UWORD co
 
 	  if(flags & WFLG_RMBTRAP) {
 	    JWLOG("aros_win_thread[%lx]: IDCMP_MENUVERIFY => right click only\n", thread);
+	    im->Code = MENUCANCEL;
 	    my_setmousebuttonstate(0, 1, 1); /* MENUDOWN */
 	  }
 	  else {
@@ -563,13 +576,15 @@ static void aros_win_thread (void) {
 
     JWLOG("aros_win_thread[%lx]: org flags: %lx \n", thread, flags);
 
+    JWLOG("aros_win_thread[%lx]: WFLG_ACTIVATE: %d \n", thread, flags & WFLG_ACTIVATE);
+
     /* we are always WFLG_SMART_REFRESH and never BACKDROP! */
     flags=flags & 0xFFFFFEFF;  /* remove refresh bits and backdrop */
 
     /* we always want to get a MENUVERIFY, if there is no menu, we will click right on our own*/
     flags=flags & ~WFLG_RMBTRAP;
 
-    flags=flags | WFLG_SMART_REFRESH | WFLG_GIMMEZEROZERO | WFLG_ACTIVATE;
+    flags=flags | WFLG_SMART_REFRESH | WFLG_GIMMEZEROZERO;
 
     JWLOG("aros_win_thread[%lx]: new flags: %lx \n", thread, flags);
     
@@ -870,7 +885,6 @@ static void aros_win_thread (void) {
 	secs      = msg->Seconds;
 	micros    = msg->Micros;
 
-	ReplyMsg ((struct Message *)msg);
 
 #if 0
 	if(jwin->task != thread) {
@@ -881,8 +895,9 @@ static void aros_win_thread (void) {
 	}
 #endif
 
-	handle_msg(aroswin, jwin, class, code, dmx, dmy, mx, my, qualifier, 
+	handle_msg(msg, aroswin, jwin, class, code, dmx, dmy, mx, my, qualifier, 
 		   thread, secs, micros, &done);
+	ReplyMsg ((struct Message *)msg);
       }
     }
     if(signals & SIGBREAKF_CTRL_C) {
