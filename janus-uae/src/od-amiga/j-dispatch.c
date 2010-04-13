@@ -31,6 +31,8 @@
 //#include "options.h"
 
 //#include "inputdevice.h"
+
+//#define JWTRACING_ENABLED 1
 #include "j.h"
 
 BOOL init_done=FALSE;
@@ -487,6 +489,9 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
        	  return ad_job_top_screen(m68k_results);
 	case AD_GET_JOB_SCREEN_DEPTH:
        	  return ad_job_screen_depth((ULONG) m68k_areg(&context->regs, 0), (ULONG) m68k_dreg(&context->regs, 3));
+	case AD_GET_JOB_MODIFY_IDCMP:
+	  JWLOG("AD_GET_JOB_MODIFY_IDCMP(%lx,%d)\n",(ULONG) m68k_areg(&context->regs, 0),  (ULONG) m68k_dreg(&context->regs, 3));
+	  return TRUE;
 
 	default:
 	  JWLOG("ERROR!! aroshack_helper: unkown job: %d\n",m68k_dreg(&context->regs, 1));
