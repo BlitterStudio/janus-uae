@@ -51,17 +51,17 @@
 #include <gtk/gtk.h>
 #include "uae.h"
 
-#define JWTRACING_ENABLED 1
+//#define JWTRACING_ENABLED 1
 #if JWTRACING_ENABLED
 #define JWLOG(...)   do { kprintf("%s:%d  %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
 #define JWLOG(...)     do { ; } while(0)
 #endif
 
-#define JW_ENTER_ENABLED 0
+//#define JW_ENTER_ENABLED 0
 #if JW_ENTER_ENABLED
-#define ENTER  kprintf("%s %s(): entered\n",__FILE__,__func__);
-#define LEAVE  kprintf("%s %s(): left at line %d\n",__FILE__,__func__,__LINE__);
+#define ENTER  kprintf("%s:%d %s(): entered\n",__FILE__,__LINE__,__func__);
+#define LEAVE  kprintf("%s:%d %s(): left at line %d\n",__FILE__,__LINE__,__func__,__LINE__);
 #else
 #define ENTER
 #define LEAVE
@@ -98,6 +98,7 @@ WORD get_hi_word(ULONG *field);
 #define AD_GET_JOB_CLOSE_SCREEN       14 /* not used ATM */
 #define AD_GET_JOB_TOP_SCREEN         15
 #define AD_GET_JOB_SCREEN_DEPTH       16
+#define AD_GET_JOB_MODIFY_IDCMP       17
 #define AD_GET_JOB_DEBUG             999 
 
 #define AD_CLIP_SETUP 15
@@ -354,6 +355,7 @@ void reset_hotkeys(void);
 void inputdevice_unacquire(void);
 ULONG find_rtg_mode (ULONG *width, ULONG *height, ULONG depth);
 void hide_pointer (struct Window *w);
+void show_pointer (struct Window *w);
 void reset_drawing(void);
 
 STATIC_INLINE uae_u32 get_byte(uaecptr addr);
