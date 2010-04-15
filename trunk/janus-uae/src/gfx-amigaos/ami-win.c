@@ -30,6 +30,10 @@
 #include "sysdeps.h"
 
 #include "td-amigaos/thread.h"
+
+#define JW_ENTER_ENABLED  1
+#define JWTRACING_ENABLED 1
+
 #include "od-amiga/j.h"
 
 
@@ -51,12 +55,14 @@
 # endif
 #endif
 
-#define AWTRACING_ENABLED 1
+/*
+//#define AWTRACING_ENABLED 1
 #if AWTRACING_ENABLED
-#define AWTRACE(...)	do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
+#define JWLOG(...)	do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
-#define AWTRACE(...)    do { ; } while(0)
+#define JWLOG(...)    do { ; } while(0)
 #endif
+*/
 
 #ifdef __AROS__
 #define GTKMUI
@@ -132,8 +138,6 @@
 #define BitMap Picasso96BitMap  /* Argh! */
 #include "picasso96.h"
 #undef BitMap
-
-#include "od-amiga/j.h"
 
 /* uae includes are a mess..*/
 void uae_Signal(uaecptr task, uae_u32 mask);
@@ -229,6 +233,7 @@ static int  init_ham(void);
 static void ham_conv(UWORD *src, UBYTE *buf, UWORD len);
 static int  RPDepth(struct RastPort *RP);
 static int get_nearest_color(int r, int g, int b);
+static void set_screen_for_picasso_param(BOOL showme);
 
 static int get_BytesPerRow(struct Window *win);
 
@@ -474,7 +479,7 @@ static void flush_line_cgx_v41 (struct vidbuf_description *gfxinfo, int line_no)
 		     gfxinfo->width,
 		     1,
 		     RECTFMT_RAW);
-    AWTRACE("flush_line_cgx_v41(%d, %d, %d, %d, %d, %d\n)",
+    JWLOG("flush_line_cgx_v41(%d, %d, %d, %d, %d, %d\n)",
             0 , line_no, XOffset, YOffset + line_no, gfxinfo->width, 1);
 #if 0
     clone_area(0 , line_no,
@@ -485,7 +490,7 @@ static void flush_line_cgx_v41 (struct vidbuf_description *gfxinfo, int line_no)
 static void flush_block_cgx_v41 (struct vidbuf_description *gfxinfo, int first_line, int last_line)
 {
   if(!RP) {
-    AWTRACE("ERROR!! no RP here!\n");
+    JWLOG("ERROR!! no RP here!\n");
     write_log("%s: ERROR!! no RP here!\n", __FILE__);
     /* die ..*/
   }
@@ -502,7 +507,7 @@ static void flush_block_cgx_v41 (struct vidbuf_description *gfxinfo, int first_l
 		     gfxinfo->width,
 		     last_line - first_line + 1,
 		     RECTFMT_RAW);
-    AWTRACE("flush_block_cgx_v41(%d, %d, %d, %d, %d, %d)\n",
+    JWLOG("flush_block_cgx_v41(%d, %d, %d, %d, %d, %d)\n",
             0, first_line, XOffset, YOffset + first_line, 
 	    gfxinfo->width, last_line - first_line + 1);
 
@@ -892,15 +897,21 @@ static void free_pointer (void)
 /*
  * Hide mouse pointer for window
  */
-void hide_pointer (struct Window *w)
-{
+void hide_pointer (struct Window *w) {
+
+  if(!blank_pointer) {
+    init_pointer();
+  }
+
+  if(blank_pointer) {
     SetWindowPointer (w, WA_Pointer, (ULONG)blank_pointer, TAG_DONE);
+  }
 }
 
 /*
  * Restore default mouse pointer for window
  */
-static void show_pointer (struct Window *w)
+void show_pointer (struct Window *w)
 {
     SetWindowPointer (w, WA_Pointer, 0, TAG_DONE);
 }
@@ -986,7 +997,7 @@ ULONG find_rtg_mode (ULONG *width, ULONG *height, ULONG depth)
     ULONG largest_width  = 0;
     ULONG largest_height = 0;
 
-    AWTRACE ("Looking for RTG mode: w:%d h:%d d:%d\n", *width, *height, depth);
+    JWLOG ("Looking for RTG mode: w:%d h:%d d:%d\n", *width, *height, depth);
 
     if (CyberGfxBase) {
 	while ((mode = NextDisplayInfo (mode)) != (ULONG)INVALID_ID) {
@@ -994,7 +1005,7 @@ ULONG find_rtg_mode (ULONG *width, ULONG *height, ULONG depth)
 		ULONG cwidth  = GetCyberIDAttr (CYBRIDATTR_WIDTH, mode);
 		ULONG cheight = GetCyberIDAttr (CYBRIDATTR_HEIGHT, mode);
 		ULONG cdepth  = GetCyberIDAttr (CYBRIDATTR_DEPTH, mode);
-		AWTRACE ("Checking mode:%08x w:%d h:%d d:%d -> ", mode, cwidth, cheight, cdepth);
+		JWLOG ("Checking mode:%08x w:%d h:%d d:%d -> ", mode, cwidth, cheight, cdepth);
 		if (cdepth == depth) {
 		    /*
 		     * If this mode has the largest screen size we've seen so far,
@@ -1010,7 +1021,7 @@ ULONG find_rtg_mode (ULONG *width, ULONG *height, ULONG depth)
 		     * Is it large enough for our requirements?
 		     */
 		    if (cwidth >= *width && cheight >= *height) {
-			AWTRACE ("large enough\n");
+			JWLOG ("large enough\n");
 			/*
 			 * Yes. Is it the best fit that we've seen so far?
 			 */
@@ -1021,23 +1032,23 @@ ULONG find_rtg_mode (ULONG *width, ULONG *height, ULONG depth)
 			}
 		    }
 		    else {
-			AWTRACE ("too small\n");
+			JWLOG ("too small\n");
 		    }
 
 		} /* if (cdepth == depth) */
 		else {
-		    AWTRACE ("wrong depth\n");
+		    JWLOG ("wrong depth\n");
 		}
 	    } /* if (IsCyberModeID (mode)) */
 	} /* while */
 
 	if (best_mode != (ULONG)INVALID_ID) {
-	    AWTRACE ("Found match!\n");
+	    JWLOG ("Found match!\n");
 	    /* We found a match. Return it */
 	    *height = best_height;
 	    *width  = best_width;
 	} else if (largest_mode != (ULONG)INVALID_ID) {
-	    AWTRACE ("No match found!\n");
+	    JWLOG ("No match found!\n");
 	    /* We didn't find a large enough mode. Return the largest
 	     * mode found at the depth - if we found one */
 	    best_mode = largest_mode;
@@ -1045,13 +1056,13 @@ ULONG find_rtg_mode (ULONG *width, ULONG *height, ULONG depth)
 	    *width    = largest_width;
 	}
 	else {
-	    AWTRACE ("WTF?\n");
+	    JWLOG ("WTF?\n");
 	}
 	if (best_mode != (ULONG) INVALID_ID) {
-	    AWTRACE ("Best mode: %08x w:%d h:%d d:%d\n", best_mode, *width, *height, depth);
+	    JWLOG ("Best mode: %08x w:%d h:%d d:%d\n", best_mode, *width, *height, depth);
 	}
 	else {
-	    AWTRACE ("No best mode found \n");
+	    JWLOG ("No best mode found \n");
 	}
     }
     return best_mode;
@@ -1078,8 +1089,8 @@ static int setup_customscreen (void)
     struct Screen *screen;
     ULONG error;
 
-    AWTRACE("entered\n");
-    AWTRACE("width x height: %d x %d\n",width,height);
+    JWLOG("entered\n");
+    JWLOG("width x height: %d x %d\n",width,height);
 
 write_log("XXX setup_customscreen\n");
 #ifdef USE_CYBERGFX
@@ -1119,11 +1130,11 @@ write_log("XXX setup_customscreen\n");
     if (height > (ULONG) gfxvidinfo.height)
 	YOffset = (height - gfxvidinfo.height) / 2;
 
-    AWTRACE("width x height: %d x %d\n",width,height);
-    AWTRACE("mode: %lx\n",mode);
+    JWLOG("width x height: %d x %d\n",width,height);
+    JWLOG("mode: %lx\n",mode);
 
     do {
-      AWTRACE("depth: %d\n",depth);
+      JWLOG("depth: %d\n",depth);
       screen = OpenScreenTags (NULL,
 			       SA_Width,     width,
 			       SA_Height,    height,
@@ -1139,12 +1150,12 @@ write_log("XXX setup_customscreen\n");
 
     if (!screen) {
 	/* TODO; Make this error report more useful based on the error code we got */
-	AWTRACE ("Error opening screen:%ld\n", error);
+	JWLOG ("Error opening screen:%ld\n", error);
 	gui_message ("Cannot open custom screen for UAE.\n");
 	return 0;
     }
 
-    AWTRACE("screen: %lx (%d x %d)\n",screen,screen->Width,screen->Height);
+    JWLOG("screen: %lx (%d x %d)\n",screen,screen->Width,screen->Height);
 
     S  = screen;
     original_S=S;
@@ -1161,7 +1172,7 @@ write_log("XXX setup_customscreen\n");
 
     W = (void*)OpenWindow (&NewWindowStructure);
     if (!W) {
-	AWTRACE ("Cannot open UAE window on custom screen.\n");
+	JWLOG ("Cannot open UAE window on custom screen.\n");
 	return 0;
     }
     uae_main_window_visible=TRUE;
@@ -1169,7 +1180,7 @@ write_log("XXX setup_customscreen\n");
 
     hide_pointer (W);
 
-    AWTRACE("done\n");
+    JWLOG("done\n");
 
     return 1;
 }
@@ -1182,37 +1193,51 @@ write_log("XXX setup_customscreen\n");
  * window shape, which shows the window again
  ****************************************************************************/
 void enable_uae_main_window(void) {
-  AWTRACE("enable_uae_main_window\n");
+  JWLOG("enable_uae_main_window\n");
   uae_main_window_closed=FALSE;
 }
 
 void show_uae_main_window(void) {
   struct Window *newW;
   struct Region *shape;
+  UWORD          width, height;
 
-  AWTRACE("show_uae_main_window entered\n");
+  JWLOG("show_uae_main_window entered\n");
 
   obtain_W();
 
   if(!W) {
-    AWTRACE("ERROR: W == NULL ??\n");
+    JWLOG("ERROR: W == NULL ??\n");
     release_W();
     return;
   }
 
+  /* bring (hidden) window back to the right size */
+  if (screen_is_picasso) {
+    set_screen_for_picasso_param(TRUE);
+  }
+  else {
+    /* un_set_screen_for_picasso(); */
+  }
+
+#if 0
   shape = NewRectRegion(0, 0, W->Width-1, W->Height-1);
   if(shape) {
     if(original_W != W) {
-      AWTRACE("W-WARNING: W %xl != original_W %lx\n", W, original_W);
+      JWLOG("W-WARNING: W %xl != original_W %lx\n", W, original_W);
     }
     ChangeWindowShape(W, shape, NULL);
+#endif
     uae_main_window_visible=TRUE;
     enable_uae_main_window();
+#if 0
     DisposeRegion(shape);
   }
+#endif
 
   release_W();
   reset_drawing();
+
 }
 
 /****************************************************************************
@@ -1223,7 +1248,7 @@ void show_uae_main_window(void) {
  ****************************************************************************/
 
 void disable_uae_main_window(void) {
-  AWTRACE("disable_uae_main_window\n");
+  JWLOG("disable_uae_main_window\n");
   uae_main_window_closed=TRUE;
 }
 
@@ -1231,12 +1256,12 @@ void hide_uae_main_window(void) {
   BOOL ok;
   struct Region *shape;
 
-  AWTRACE("hide_uae_main_window entered\n");
+  JWLOG("hide_uae_main_window entered\n");
 
   obtain_W();
 
   if(!W) {
-    AWTRACE("ERROR: W == NULL ??\n");
+    JWLOG("ERROR: W == NULL ??\n");
     release_W();
     return;
   }
@@ -1244,7 +1269,7 @@ void hide_uae_main_window(void) {
   shape = NewRectRegion(0, 0, 0, 0);
   if(shape) {
     if(original_W != W) {
-      AWTRACE("W-WARNING: W %xl != original_W %lx\n", W, original_W);
+      JWLOG("W-WARNING: W %xl != original_W %lx\n", W, original_W);
     }
     ChangeWindowShape(W, shape, NULL);
     uae_main_window_visible=FALSE;
@@ -1262,7 +1287,7 @@ static int setup_publicscreen(void) {
   char *pubscreen = strlen (currprefs.amiga_publicscreen)
       ? currprefs.amiga_publicscreen : NULL;
 
-  AWTRACE("entered (pubscreen >%s<)\n",currprefs.amiga_publicscreen);
+  JWLOG("entered (pubscreen >%s<)\n",currprefs.amiga_publicscreen);
 
   S = LockPubScreen ((UBYTE *) pubscreen);
   if (!S) {
@@ -1291,7 +1316,7 @@ static int setup_publicscreen(void) {
      */
 
   if(currprefs.jcoherence && ((shape = NewRectRegion(0, 0, 0, 0))) ) {
-      AWTRACE("open window invisible!\n");
+      JWLOG("open window invisible!\n");
       disable_uae_main_window();
       //uae_main_window_closed=TRUE;
       uae_main_window_visible=FALSE;
@@ -1316,7 +1341,7 @@ static int setup_publicscreen(void) {
       DisposeRegion(shape);
     }
     else {
-      AWTRACE("open window visible\n");
+      JWLOG("open window visible\n");
       enable_uae_main_window();
       //uae_main_window_closed=FALSE;
       uae_main_window_visible=TRUE;
@@ -1357,9 +1382,9 @@ static int setup_publicscreen(void) {
     gfxvidinfo.width  = (W->Width  - W->BorderRight - W->BorderLeft);   
     gfxvidinfo.height = (W->Height - W->BorderTop   - W->BorderBottom); 
 
-    AWTRACE("opened uae window %lx\n",W);
-    AWTRACE("gfxvidinfo.width: %d\n", gfxvidinfo.width);
-    AWTRACE("gfxvidinfo.height: %d\n",gfxvidinfo.height);
+    JWLOG("opened uae window %lx\n",W);
+    JWLOG("gfxvidinfo.width: %d\n", gfxvidinfo.width);
+    JWLOG("gfxvidinfo.height: %d\n",gfxvidinfo.height);
 
     XOffset = W->BorderLeft;
     YOffset = W->BorderTop;
@@ -1434,7 +1459,7 @@ static int setup_userscreen (void)
     BOOL AutoScroll = TRUE;
     int release_asl = 0;
 
-    AWTRACE("entered\n");
+    JWLOG("entered\n");
 write_log("XXX setup_userscreen\n");
 
     if (!AslBase) {
@@ -1575,7 +1600,7 @@ write_log("XXX setup_userscreen\n");
 
     if(!W) {
 	release_W();
-	AWTRACE ("Unable to open the window.\n");
+	JWLOG ("Unable to open the window.\n");
 	CloseScreen (S);
 	S  = NULL;
 	RP = NULL;
@@ -1600,7 +1625,7 @@ write_log("XXX setup_userscreen\n");
     /* make screen public !? */
     PubScreenStatus (S, 0);
 
-    AWTRACE ("Using screenmode: 0x%lx:%ld (%lu:%ld)\n",
+    JWLOG ("Using screenmode: 0x%lx:%ld (%lu:%ld)\n",
 	DisplayID, Depth, DisplayID, Depth);
 
     return 1;
@@ -1610,7 +1635,7 @@ write_log("XXX setup_userscreen\n");
 
 int graphics_setup (void)
 {
-  AWTRACE("graphics_setup\n");
+  JWLOG("graphics_setup\n");
     if (((struct ExecBase *)SysBase)->LibNode.lib_Version < 36) {
 	write_log ("UAE needs OS 2.0+ !\n");
 	return 0;
@@ -1790,7 +1815,7 @@ int graphics_init (void)
 {
     int i, bitdepth;
 
-    AWTRACE("graphics_init\n");
+    JWLOG("graphics_init\n");
     write_log("graphics_init\n");
 
     use_delta_buffer = 0;
@@ -1819,26 +1844,26 @@ int graphics_init (void)
     write_log("graphics_init switch\n");
     switch (currprefs.amiga_screen_type) {
 	case UAESCREENTYPE_ASK:
-	    AWTRACE("currprefs.amiga_screen_type: UAESCREENTYPE_ASK\n");
+	    JWLOG("currprefs.amiga_screen_type: UAESCREENTYPE_ASK\n");
 	    if (setup_userscreen ())
 		break;
-	    AWTRACE ("Trying on public screen...\n");
+	    JWLOG ("Trying on public screen...\n");
 	    write_log ("Trying on public screen...\n");
 	    /* fall trough */
 	case UAESCREENTYPE_PUBLIC:
 	    is_halfbrite = 0;
-	    AWTRACE("currprefs.amiga_screen_type: UAESCREENTYPE_PUBLIC\n");
+	    JWLOG("currprefs.amiga_screen_type: UAESCREENTYPE_PUBLIC\n");
     write_log("graphics_init setup_publicscreen\n");
 	    if (setup_publicscreen ()) {
 		usepub = 1;
 		break;
 	    }
-	    AWTRACE ("Trying on public screen...\n");
+	    JWLOG ("Trying on public screen...\n");
 	    write_log ("Trying on custom screen...\n");
 	    /* fall trough */
 	case UAESCREENTYPE_CUSTOM:
 	default:
-	    AWTRACE("currprefs.amiga_screen_type: UAESCREENTYPE_CUSTOM\n");
+	    JWLOG("currprefs.amiga_screen_type: UAESCREENTYPE_CUSTOM\n");
 	    if (!setup_customscreen ())
 		return 0;
 	    break;
@@ -1979,7 +2004,7 @@ int graphics_init (void)
 void graphics_leave (void)
 {
   int i;
-    AWTRACE("graphics_leave\n");
+    JWLOG("graphics_leave\n");
     /* stop cloning and close all clone windows */
     changed_prefs.jcoherence=FALSE;
 #if 0
@@ -1988,7 +2013,7 @@ void graphics_leave (void)
     /* wait till list is empty (all windows are closed) */
     while(janus_windows && i<5) {
       i++;
-      AWTRACE("wait for windows to be closed (#%d)\n",i);
+      JWLOG("wait for windows to be closed (#%d)\n",i);
       sleep(1);
     }
     if(janus_windows) {
@@ -2003,7 +2028,7 @@ void graphics_leave (void)
     /* wait till list is empty (all windows are closed) */
     while(janus_screens && i<5) {
       i++;
-      AWTRACE("wait for screens to be closed (#%d)\n",i);
+      JWLOG("wait for screens to be closed (#%d)\n",i);
       sleep(1);
     }
     if(janus_screens) {
@@ -2109,13 +2134,13 @@ void graphics_leave (void)
 
 int do_inhibit_frame (int onoff)
 {
-  AWTRACE("do_inhibit_frame(%d)\n",onoff);
+  JWLOG("do_inhibit_frame(%d)\n",onoff);
     if (onoff != -1) {
 	inhibit_frame = onoff ? 1 : 0;
 	if (inhibit_frame)
-	    AWTRACE ("display disabled\n");
+	    JWLOG ("display disabled\n");
 	else
-	    AWTRACE ("display enabled\n");
+	    JWLOG ("display enabled\n");
 	set_title ();
     }
     return inhibit_frame;
@@ -2125,7 +2150,7 @@ int do_inhibit_frame (int onoff)
 
 void graphics_notify_state (int state)
 {
-  AWTRACE("graphics_notify_state\n");
+  JWLOG("graphics_notify_state\n");
 }
 
 /***************************************************************************
@@ -2207,11 +2232,11 @@ BOOL clone_window_area(JanusWin *jwin,
   win=jwin->aroswin;
   aos3win=(ULONG) jwin->aos3win;
 
-  AWTRACE("clone_wia (%3d,%3d,%3d,%3d) (%lx)\n",
+  JWLOG("clone_wia (%3d,%3d,%3d,%3d) (%lx)\n",
            areax,areay,areawidth,areaheight, jwin);
 
   if(!win || !aos3win) {
-    AWTRACE("clone_wia (%3d,%3d,%3d,%3d): win %lx||aos3win %lx is NULL!\n", 
+    JWLOG("clone_wia (%3d,%3d,%3d,%3d): win %lx||aos3win %lx is NULL!\n", 
              areax,areay,areawidth,areaheight,win,aos3win);
     return FALSE;
   }
@@ -2224,14 +2249,14 @@ BOOL clone_window_area(JanusWin *jwin,
   winyend=get_TopEdge(aos3win)+ get_Height(aos3win) - get_BorderBottom(aos3win);
   winxend=get_LeftEdge(aos3win) + get_Width(aos3win) - get_BorderRight(aos3win);
 
-  AWTRACE("clone_wia window x,y,xe,ye: %3d,%3d,%3d,%3d\n",
+  JWLOG("clone_wia window x,y,xe,ye: %3d,%3d,%3d,%3d\n",
            winx,winy,winxend,winyend);
-  AWTRACE("clone_wia area   x,y,xe,ye: %3d,%3d,%3d,%3d\n",
+  JWLOG("clone_wia area   x,y,xe,ye: %3d,%3d,%3d,%3d\n",
            areax,areay,areaxend,areayend);
 
   /* window is above or below our area */
   if(winy > areayend || winyend < areay) {
-    AWTRACE("clone_wia (%3d,%3d,%3d,%3d): y out of bounds\n", 
+    JWLOG("clone_wia (%3d,%3d,%3d,%3d): y out of bounds\n", 
              areax,areay,areawidth,areaheight);
 
     return FALSE;
@@ -2239,7 +2264,7 @@ BOOL clone_window_area(JanusWin *jwin,
 
   /* window is left or right of our area */
   if(winx > areaxend || winxend < areax) {
-    AWTRACE("clone_wia (%3d,%3d,%3d,%3d): x out of bounds\n", 
+    JWLOG("clone_wia (%3d,%3d,%3d,%3d): x out of bounds\n", 
              areax,areay,areawidth,areaheight);
 
     return FALSE;
@@ -2252,16 +2277,16 @@ BOOL clone_window_area(JanusWin *jwin,
   endx=MIN(areaxend, winxend);
   endy=MIN(areayend, winyend);
 
-  AWTRACE("clone_wia: startx %3d starty %3d endx %3d endy %3d\n",
+  JWLOG("clone_wia: startx %3d starty %3d endx %3d endy %3d\n",
            startx,starty,endx,endy);
-  AWTRACE("clone_wia: WritePixelArray(x %3d y %3d  width %3d height %3d)\n",
+  JWLOG("clone_wia: WritePixelArray(x %3d y %3d  width %3d height %3d)\n",
            startx-winx,starty-winy,endx-startx,endy-starty);
 
   /* this can happen, if we only have a window top border and no
    * window body at all..?
    */
   if((endx-startx < 0) || (endy-starty < 0)) {
-    AWTRACE("WARNING: start - end < 0\n");
+    JWLOG("WARNING: start - end < 0\n");
     return TRUE;
   }
 
@@ -2306,11 +2331,11 @@ void clone_area(WORD x, WORD y, UWORD width, UWORD height) {
   GSList *elem;
 
   if(janus_windows) {
-    AWTRACE("clone_area(%3d,%3d,%3d,%3d)\n",x,y,width,height);
+    JWLOG("clone_area(%3d,%3d,%3d,%3d)\n",x,y,width,height);
     ObtainSemaphore(&sem_janus_window_list);
     elem=janus_windows;
     while(elem) {
-      AWTRACE("clone_area: jwin %lx\n",elem);
+      JWLOG("clone_area: jwin %lx\n",elem);
       if(elem->data &&
  	 !(((JanusWin *)elem->data)->delay) &&
 	 !(((JanusWin *)elem->data)->dead)  &&
@@ -2318,17 +2343,17 @@ void clone_area(WORD x, WORD y, UWORD width, UWORD height) {
 	  ((JanusWin *)elem->data)->aroswin) {
 
 	if(!clone_window_area((JanusWin *)elem->data, x, y, width, height)) {
-	  AWTRACE("clone_area(%3d,%3d,%3d,%3d): done nothing\n",x,y,width,height);
+	  JWLOG("clone_area(%3d,%3d,%3d,%3d): done nothing\n",x,y,width,height);
 	}
       }
       else {
 	/* debug only */
 	if(elem->data) {
 	  if(((JanusWin *)elem->data)->delay) {
-	    AWTRACE("clone_area: jwin->data->delay %d\n",((JanusWin *)elem->data)->delay);
+	    JWLOG("clone_area: jwin->data->delay %d\n",((JanusWin *)elem->data)->delay);
 	  }
 	  else {
-	    AWTRACE("clone_area:          ->: %d %d %lx %lx\n",
+	    JWLOG("clone_area: do nothing: delay %d, dead %d, aos3win %lx, aroswin %lx\n",
 		   ((JanusWin *)elem->data)->delay,
 		   ((JanusWin *)elem->data)->dead,
 		   ((JanusWin *)elem->data)->aos3win,
@@ -2336,14 +2361,14 @@ void clone_area(WORD x, WORD y, UWORD width, UWORD height) {
 	  }
 	}
 	else {
-	  AWTRACE("clone_area: jwin->data 0\n");
+	  JWLOG("clone_area: jwin->data 0\n");
 	}
       }
       elem=g_slist_next(elem);
     }
     ReleaseSemaphore(&sem_janus_window_list);
   }
-  AWTRACE("clone_area() exit\n");
+  JWLOG("clone_area() exit\n");
 }
 
 /*
@@ -2371,15 +2396,15 @@ void clone_window(ULONG m68k_win, struct Window *aros_win,
 
   /* we only care for visible screen windows */
   if(aros_win->WScreen != IntuitionBase->FirstScreen) {
-    AWTRACE("m68kwindow %lx aros_win %lx is not visible\n",m68k_win,aros_win);
+    JWLOG("m68kwindow %lx aros_win %lx is not visible\n",m68k_win,aros_win);
     return;
   }
 
   src_y_start=get_TopEdge(m68k_win)  + get_BorderTop(m68k_win);
   src_y_lines=aros_win->Height;
 
-  AWTRACE("clone_window(%lx,%lx) \n",m68k_win,aros_win);
-  AWTRACE("WritePixelArray(%lx, %3d, %3d => %lx, %3d, %3d, ..\n",
+  JWLOG("clone_window(%lx,%lx) \n",m68k_win,aros_win);
+  JWLOG("WritePixelArray(%lx, %3d, %3d => %lx, %3d, %3d, ..\n",
 		    picasso_memory,
 		    get_LeftEdge(m68k_win) + get_BorderLeft(m68k_win), 
 		    get_TopEdge(m68k_win)  + get_BorderTop(m68k_win), 
@@ -2391,7 +2416,7 @@ void clone_window(ULONG m68k_win, struct Window *aros_win,
   /* modified range outside our window, nothing to do */
   if(src_y_start+src_y_lines < start ||
      src_y_start             > start + lines) {
-    AWTRACE("modified range outside our window, nothing to do\n");
+    JWLOG("modified range outside our window, nothing to do\n");
     return;
   }
 
@@ -2402,12 +2427,12 @@ void clone_window(ULONG m68k_win, struct Window *aros_win,
     if(start + lines > src_y_start + src_y_lines) {
       /* modified area ends below our window */
       real_lines=src_y_lines;
-      AWTRACE("CCC 1\n");
+      JWLOG("CCC 1\n");
     }
     else {
       /* modified area ends inside our window */
       real_lines= lines - (src_y_start - start);
-      AWTRACE("CCC 2\n");
+      JWLOG("CCC 2\n");
     }
   }
   else {
@@ -2416,13 +2441,13 @@ void clone_window(ULONG m68k_win, struct Window *aros_win,
     real_start_dest=start - src_y_start;
     if(start + lines > src_y_start + src_y_lines) {
       /* modified area ends below our window */
-      AWTRACE("CCC 3\n");
+      JWLOG("CCC 3\n");
       real_lines=src_y_start + src_y_lines - start;
     }
     else {
       /* modified area ends inside our window */
       real_lines=lines; /* copy all */
-      AWTRACE("CCC 4\n");
+      JWLOG("CCC 4\n");
     }
   }
 
@@ -2518,12 +2543,12 @@ static void o1i_Display_Update(int start,int i) {
   }
 
   if(!picasso_memory) {
-    AWTRACE("ERROR: no picasso_memory!?\n");
+    JWLOG("ERROR: no picasso_memory!?\n");
     return;
   }
 
   if(!W) {
-    AWTRACE("ERROR: no Window W!?\n");
+    JWLOG("ERROR: no Window W!?\n");
     return;
   }
 
@@ -2559,20 +2584,20 @@ int aros_daemon_runing() {
  * for custom screens, we need to call the according handle_custom_events_W.
  */
 void handle_events(void) {
-  AWTRACE("handle_events: dispatcher\n", W);
+  JWLOG("handle_events: dispatcher\n", W);
 
   if(janus_active_screen==NULL) {
-    AWTRACE("custom_screen_active==NULL\n");
+    JWLOG("custom_screen_active==NULL\n");
     handle_events_W(W, FALSE);
 
   }
   else {
     /* custom screens only have one window */
-    AWTRACE("custom screen %lx, window %lx\n", 
+    JWLOG("custom screen %lx, window %lx\n", 
              janus_active_screen->arosscreen, 
              janus_active_screen->arosscreen->FirstWindow);
     handle_events_W(janus_active_screen->arosscreen->FirstWindow, TRUE);
-    AWTRACE("do nothing, custom screen thread will handle us\n");
+    JWLOG("do nothing, custom screen thread will handle us\n");
   }
 }
 
@@ -2588,20 +2613,20 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
     struct IntuiMessage *msg;
     int dmx, dmy, mx, my, class, code, qualifier;
 
-    AWTRACE("aros W: %lx\n", W);
+    JWLOG("aros W: %lx\n", W);
     gui_handle_events();
 
 /* janusd now has its own interrupt server! */
 #if 0
     if(aos3_task && aos3_task_signal) {
-      AWTRACE("send signal to Wait of janusd (%lx)\n", aos3_task);
+      JWLOG("send signal to Wait of janusd (%lx)\n", aos3_task);
       uae_Signal(aos3_task, aos3_task_signal);
     }
 #endif
 
-    AWTRACE("W: %lx\n", W);
+    JWLOG("W: %lx\n", W);
     if(!W) {
-      AWTRACE("Warning: W is NULL!\n", W);
+      JWLOG("Warning: W is NULL!\n", W);
       return;
     }
 
@@ -2626,7 +2651,7 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
     if (screen_is_picasso) {
         int i;
 
-	//AWTRACE("handle_events->screen_is_picasso\n");
+	//JWLOG("handle_events->screen_is_picasso\n");
 
         picasso_invalid_lines[picasso_invalid_end+1] = 0;
         picasso_invalid_lines[picasso_invalid_end+2] = 1;
@@ -2642,7 +2667,7 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
 	        picasso_invalid_lines[i] = 0;
 
             //DoMethod(uaedisplay, MUIM_UAEDisplay_Update, start, i);
-	    //AWTRACE("MUIM_UAEDisplay_Update TODO\n");
+	    //JWLOG("MUIM_UAEDisplay_Update TODO\n");
 	    o1i_Display_Update(start,i);
 
 	    for (; !picasso_invalid_lines[i]; i++);
@@ -2672,7 +2697,7 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
 
 	  ReplyMsg ((struct Message*)msg);
 
-	  AWTRACE("W: %lx (%s)\n",W, W->Title);
+	  JWLOG("W: %lx (%s)\n",W, W->Title);
 	  JWLOG("ami-win.c: handle_input(win %lx)\n", W);
 
 	  switch (class) {
@@ -2719,7 +2744,7 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
 	      case IDCMP_MOUSEMOVE:
 		/* classic mouse move, if either option is disabled or janusd is not (yet) running */
 		if( ((!changed_prefs.jmouse) || (!aos3_task) ) && (!uae_main_window_closed)) {
-		  AWTRACE("classic mouse move enabled\n");
+		  JWLOG("classic mouse move enabled\n");
 		  setmousestate (0, 0, dmx, 0);
 		  setmousestate (0, 1, dmy, 0);
 
@@ -2735,7 +2760,7 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
 		  }
 		}
 		else {
-		  AWTRACE("classic mouse move disabled ((%d || %d) && %d)\n", (!changed_prefs.jmouse), (!aos3_task), (!uae_main_window_closed));
+		  JWLOG("classic mouse move disabled ((%d || %d) && %d)\n", (!changed_prefs.jmouse), (!aos3_task), (!uae_main_window_closed));
 		}
 		break;
 
@@ -2763,7 +2788,7 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
 		   * A simple fix is just to tell UAE that all keys have been released.
 		   * This avoids keys appearing to be "stuck" down.
 		   */
-		  AWTRACE("IDCMP_ACTIVEWINDOW(%lx)\n", W);
+		  JWLOG("IDCMP_ACTIVEWINDOW(%lx)\n", W);
 		  inputdevice_acquire ();
 		  inputdevice_release_all_keys ();
 		  reset_hotkeys ();
@@ -2771,8 +2796,8 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
 		  break;
 
 	      case IDCMP_INACTIVEWINDOW:
-		  AWTRACE("IDCMP_INACTIVEWINDOW\n");
-		  AWTRACE("IntuitionBase->ActiveWindow: %lx (%s)\n",IntuitionBase->ActiveWindow, IntuitionBase->ActiveWindow->Title);
+		  JWLOG("IDCMP_INACTIVEWINDOW\n");
+		  JWLOG("IntuitionBase->ActiveWindow: %lx (%s)\n",IntuitionBase->ActiveWindow, IntuitionBase->ActiveWindow->Title);
 		  copy_clipboard_to_aros();
 		  inputdevice_unacquire ();
 		  break;
@@ -2792,7 +2817,7 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
 
 	      default:
 		  write_log ("Unknown event class: %x\n", class);
-		  AWTRACE("Unknown event class: %x\n", class);
+		  JWLOG("Unknown event class: %x\n", class);
 		  break;
 	  }
 	}
@@ -2841,7 +2866,7 @@ static int get_BytesPerPix(struct Window *win) {
   int res;
 
   if(!win) {
-    AWTRACE("\nERROR: win is NULL\n");
+    JWLOG("\nERROR: win is NULL\n");
     write_log("ERROR: win is NULL\n");
     return 0;
   }
@@ -2849,13 +2874,13 @@ static int get_BytesPerPix(struct Window *win) {
   scr=win->WScreen;
 
   if(!scr) {
-    AWTRACE("\nERROR: win->WScreen is NULL\n");
+    JWLOG("\nERROR: win->WScreen is NULL\n");
     write_log("\nERROR: win->WScreen is NULL\n");
     return 0;
   }
 
   if(!GetCyberMapAttr(scr->RastPort.BitMap, CYBRMATTR_ISCYBERGFX)) {
-    AWTRACE("\nERROR: !CYBRMATTR_ISCYBERGFX\n");
+    JWLOG("\nERROR: !CYBRMATTR_ISCYBERGFX\n");
     write_log("\nERROR: !CYBRMATTR_ISCYBERGFX\n");
   }
 
@@ -2874,13 +2899,13 @@ static int get_BytesPerRow(struct Window *win) {
 #if 0
   if(!uae_main_window_closed) {
     width=W->Width;
-    AWTRACE("1: %d * %d = %d\n",width,get_BytesPerPix(win),width*get_BytesPerPix(win));
+    JWLOG("1: %d * %d = %d\n",width,get_BytesPerPix(win),width*get_BytesPerPix(win));
   }
   else {
 #endif
     width=picasso_vidinfo.width;
 #if 0
-    AWTRACE("2: %d * %d = %d\n",picasso_vidinfo.width,get_BytesPerPix(win),picasso_vidinfo.width*get_BytesPerPix(win));
+    JWLOG("2: %d * %d = %d\n",picasso_vidinfo.width,get_BytesPerPix(win),picasso_vidinfo.width*get_BytesPerPix(win));
   }
 #endif
 
@@ -2889,27 +2914,34 @@ static int get_BytesPerRow(struct Window *win) {
 
 static void set_screen_for_picasso(void) {
 
+  set_screen_for_picasso_param(FALSE);
+}
+
+
+/* if visible, set right shape, too */
+static void set_screen_for_picasso_param(BOOL showme) {
+
   WORD width, height;
 
-  AWTRACE("set_screen_for_picasso\n");
+  JWLOG("set_screen_for_picasso\n");
 
-  if(!uae_main_window_closed && uae_main_window_visible) {
-    AWTRACE("  old window      : %d x %d\n",W->Width,W->Height);
-    AWTRACE("  resize window to: %d x %d\n",picasso_vidinfo.width,picasso_vidinfo.height);
+  if((!uae_main_window_closed && uae_main_window_visible ) || showme) {
+    JWLOG("  old window      : %d x %d\n",W->Width,W->Height);
+    JWLOG("  resize window to: %d x %d\n",picasso_vidinfo.width,picasso_vidinfo.height);
 
-    AWTRACE("  W->BorderLeft:   %d\n",W->BorderLeft);
-    AWTRACE("  W->BorderRight:  %d\n",W->BorderRight);
-    AWTRACE("  W->BorderTop:    %d\n",W->BorderTop);
-    AWTRACE("  W->BorderBottom: %d\n",W->BorderBottom);
+    JWLOG("  W->BorderLeft:   %d\n",W->BorderLeft);
+    JWLOG("  W->BorderRight:  %d\n",W->BorderRight);
+    JWLOG("  W->BorderTop:    %d\n",W->BorderTop);
+    JWLOG("  W->BorderBottom: %d\n",W->BorderBottom);
 
-    AWTRACE("  gfx_fullscreen_picasso: %d\n",currprefs.gfx_pfullscreen);
-    AWTRACE("  S: %lx\n",S);
+    JWLOG("  gfx_fullscreen_picasso: %d\n",currprefs.gfx_pfullscreen);
+    JWLOG("  S: %lx\n",S);
     if(currprefs.gfx_pfullscreen || !S) {
       /* center it */
-      AWTRACE("  S->Width x S->Height: %d x %d\n",S->Width,S->Height);
+      JWLOG("  S->Width x S->Height: %d x %d\n",S->Width,S->Height);
       width =picasso_vidinfo.width;
       height=picasso_vidinfo.height;
-      AWTRACE("ChangeWindowBox(%lx, %d, %d, %d, %d\n",W, 
+      JWLOG("ChangeWindowBox(%lx, %d, %d, %d, %d\n",W, 
                           (S->Width  - picasso_vidinfo.width )/2,
 			  (S->Height - picasso_vidinfo.height)/2,
 			  width,
@@ -2924,17 +2956,31 @@ static void set_screen_for_picasso(void) {
       width =picasso_vidinfo.width  + W->BorderLeft + W->BorderRight;
       height=picasso_vidinfo.height + W->BorderTop  + W->BorderBottom;
 
-      AWTRACE("ChangeWindowBox(%lx, %d, %d, %d, %d\n",W, 
+      JWLOG("ChangeWindowBox(%lx, %d, %d, %d, %d\n",W, 
                           W->LeftEdge,
 			  W->TopEdge,
 			  width,
 			  height);
 
       ChangeWindowBox(W, W->LeftEdge, W->TopEdge, width, height);
+
+      if(showme) {
+	struct Region *shape;
+
+	JWLOG("showme is TRUE, so set a reasonable shape\n");
+	shape = NewRectRegion(0, 0, width, height);
+	if(shape) {
+	  if(original_W != W) {
+	    JWLOG("W-WARNING: W %xl != original_W %lx\n", W, original_W);
+	  }
+	  ChangeWindowShape(W, shape, NULL);
+	  DisposeRegion(shape);
+	}
+      }
     }
   }
   else {
-    AWTRACE("window is hidden\n");
+    JWLOG("window is hidden\n");
     width =picasso_vidinfo.width;
     height=picasso_vidinfo.height;
   }
@@ -2954,7 +3000,7 @@ static void set_screen_for_picasso(void) {
   picasso_vidinfo.pixbytes = get_BytesPerPix(W);
 
   if(picasso_memory) {
-    AWTRACE("FreeVec(%lx)\n",picasso_memory);
+    JWLOG("FreeVec(%lx)\n",picasso_memory);
     FreeVec(picasso_memory);
     picasso_memory=NULL;
   }
@@ -2964,13 +3010,13 @@ static void set_screen_for_picasso(void) {
   picasso_invalid_start = picasso_vidinfo.height + 1;
   picasso_invalid_end   = -1;
 
-  AWTRACE("  actual window size : %d x %d\n",W->Width,W->Height);
-  AWTRACE("  new window size    : %d x %d\n",width,height);
-  AWTRACE("  byte per row       : %d \n",picasso_vidinfo.rowbytes);
-  AWTRACE("  byte per pix       : %d \n",picasso_vidinfo.pixbytes);
+  JWLOG("  actual window size : %d x %d\n",W->Width,W->Height);
+  JWLOG("  new window size    : %d x %d\n",width,height);
+  JWLOG("  byte per row       : %d \n",picasso_vidinfo.rowbytes);
+  JWLOG("  byte per pix       : %d \n",picasso_vidinfo.pixbytes);
 
   /* wait here, until window has right size?? */
-  AWTRACE("  set_screen_for_picasso done!\n");
+  JWLOG("  set_screen_for_picasso done!\n");
 }
 
 /* un_set_screen_for_picasso
@@ -2983,21 +3029,21 @@ static void set_screen_for_picasso(void) {
  */
 static void un_set_screen_for_picasso(void) {
 
-  AWTRACE("entered\n");
+  JWLOG("entered\n");
 
   if(!W) {
-    AWTRACE("no W !? \n");
+    JWLOG("no W !? \n");
     return;
   }
 
   if(!uae_main_window_closed) {
-    AWTRACE("  old window      : %d x %d\n",W->Width,W->Height);
-    AWTRACE("  picasso_vidinfo : %d x %d\n",
+    JWLOG("  old window      : %d x %d\n",W->Width,W->Height);
+    JWLOG("  picasso_vidinfo : %d x %d\n",
 		    picasso_vidinfo.width,picasso_vidinfo.height);
-    AWTRACE("  currprefs_win   : %d x %d\n",
+    JWLOG("  currprefs_win   : %d x %d\n",
 		    currprefs.gfx_width_win,currprefs.gfx_height_win);
 
-    AWTRACE("ChangeWindowBox(%lx, %d, %d, %d, %d\n",W, 
+    JWLOG("ChangeWindowBox(%lx, %d, %d, %d, %d\n",W, 
                           W->LeftEdge,
 			  W->TopEdge,
 			  currprefs.gfx_width_win  + W->BorderLeft + W->BorderRight,
@@ -3011,7 +3057,7 @@ static void un_set_screen_for_picasso(void) {
   #if 0
     /* this causes a FreeMem guru? */
     if(gfxvidinfo.bufmem) {
-      AWTRACE("un_set_screen_for_picasso: FreeVec(%lx)\n",gfxvidinfo.bufmem);
+      JWLOG("un_set_screen_for_picasso: FreeVec(%lx)\n",gfxvidinfo.bufmem);
       FreeVec(gfxvidinfo.bufmem);
       /* too big ..? */
       gfxvidinfo.bufmem=AllocVec(W->Width * W->Height * get_BytesPerPix(W), MEMF_CLEAR);
@@ -3019,27 +3065,27 @@ static void un_set_screen_for_picasso(void) {
     #endif
   }
   else {
-    AWTRACE(" we are rootless, so we do nothing\n");
+    JWLOG(" we are rootless, so we do nothing\n");
   }
 }
 
 void gfx_set_picasso_state (int on)
 {
-    AWTRACE("gfx_set_picasso_state(%d)\n", on);
+    JWLOG("gfx_set_picasso_state(%d)\n", on);
 
     if (screen_is_picasso == on )
 	return;
 
-    AWTRACE("gfx_set_picasso_state: screen_is_picasso != on\n");
+    JWLOG("gfx_set_picasso_state: screen_is_picasso != on\n");
     screen_is_picasso = on;
     if (on)
     {
-	AWTRACE("gfx_set_picasso_state: on!\n");
+	JWLOG("gfx_set_picasso_state: on!\n");
         set_screen_for_picasso();
     }
     else
     {
-	AWTRACE("gfx_set_picasso_state: off!\n");
+	JWLOG("gfx_set_picasso_state: off!\n");
         un_set_screen_for_picasso();
 #if 0
         if
@@ -3053,7 +3099,7 @@ void gfx_set_picasso_state (int on)
             )
 	)
 	{
-            AWTRACE ("SetAttrs - 2 - aborting()\n");
+            JWLOG ("SetAttrs - 2 - aborting()\n");
 	    abort();
 	};
 
@@ -3064,7 +3110,7 @@ void gfx_set_picasso_state (int on)
 
 void DX_Invalidate (int first, int last)
 {
-  //AWTRACE("DX_Invalidate\n");
+  //JWLOG("DX_Invalidate\n");
 
   if (first < picasso_invalid_start)
       picasso_invalid_start = first;
@@ -3077,13 +3123,13 @@ void DX_Invalidate (int first, int last)
 
 int DX_BitsPerCannon (void)
 {
-  AWTRACE("DX_BitsPerCannon\n");
+  JWLOG("DX_BitsPerCannon\n");
     return 8;
 }
 
 void DX_SetPalette (int start, int count)
 {
-  AWTRACE("DX_SetPalette\n");
+  JWLOG("DX_SetPalette\n");
 }
 
 /* TODO: sync this with picasso96.c !! */
@@ -3094,7 +3140,7 @@ int DX_FillResolutions (uae_u16 *ppixel_format)
     struct Screen *screen;
     ULONG j;
 
-    AWTRACE("DX_FillResolutions(%d)\n",ppixel_format);
+    JWLOG("DX_FillResolutions(%d)\n",ppixel_format);
 
     static struct
     {
@@ -3215,7 +3261,7 @@ int DX_FillResolutions (uae_u16 *ppixel_format)
 
 void gfx_set_picasso_modeinfo (int w, int h, int d, int rgbfmt)
 {
-    AWTRACE("gfx_set_picasso_modeinfo (w: %d, h: %d, d: %d, rgbfmt: %d)\n",w,h,d,rgbfmt);;
+    JWLOG("gfx_set_picasso_modeinfo (w: %d, h: %d, d: %d, rgbfmt: %d)\n",w,h,d,rgbfmt);;
 
     picasso_vidinfo.width = w;
     picasso_vidinfo.height = h;
@@ -3232,12 +3278,12 @@ void gfx_set_picasso_modeinfo (int w, int h, int d, int rgbfmt)
 uae_u8 *gfx_lock_picasso (void)
 {
 //    D(bug("gfx_lock_picasso()\n"));
-  //AWTRACE("gfx_lock_picasso\n");
+  //JWLOG("gfx_lock_picasso\n");
     return picasso_memory;
 }
 void gfx_unlock_picasso (void)
 {
-  //AWTRACE("gfx_unlock_picasso\n");
+  //JWLOG("gfx_unlock_picasso\n");
 //    D(bug("gfx_unlock_picasso()\n"));
 }
 
