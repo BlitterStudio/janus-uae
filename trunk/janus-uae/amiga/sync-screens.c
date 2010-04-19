@@ -2,7 +2,7 @@
  *
  * Janus-Daemon
  *
- * Copyright 2009 Oliver Brunner - aros<at>oliver-brunner.de
+ * Copyright 2009-2010 Oliver Brunner - aros<at>oliver-brunner.de
  *
  * This file is part of Janus-Daemon.
  *
@@ -39,12 +39,10 @@ extern struct IntuitionBase* IntuitionBase;
  * generate an error here, check it there!
  */
 BOOL init_sync_screens() {
-#if 0
-  old_MoveWindowInFront_Window=NULL;
-  old_MoveWindowInFront_BehindWindow=NULL;
-  old_MoveWindowInFront_Counter=0;
-#endif
   ENTER
+
+  /* TODO ? */
+
   LEAVE
 
   return TRUE;
@@ -98,7 +96,7 @@ void update_top_screen() {
      * as we have patched ScreenDepth, we need to call it differently! 
      * 666 in a1 skips patch, nice that C= already added such a parameter
      * for us ;) ! */
-    ScreenDepth(screen, SDEPTH_TOFRONT, 666);
+    ScreenDepth(screen, SDEPTH_TOFRONT, (APTR) 666);
   }
 
   LEAVE
@@ -152,7 +150,9 @@ void update_screens() {
   UWORD  maxwidth, maxheight;
   struct Screen   *screen;
   struct Rectangle rect;
+#if 0
   UWORD flags;
+#endif
   ULONG display_id;
 
   ENTER
@@ -179,8 +179,10 @@ void update_screens() {
   while(screen) {
     DebOut("screen #%d: %lx (%s)\n",i,screen,screen->Title);
 
+#if 0
     flags=screen->Flags & 0x000F;
     if(flags == CUSTOMSCREEN) {
+#endif
       display_id=GetVPModeID(&screen->ViewPort);
       if(!(display_id==INVALID_ID) && !QueryOverscan(display_id, &rect, OSCAN_VIDEO)) {
 	maxwidth =720;
@@ -191,14 +193,22 @@ void update_screens() {
       else {
 	maxwidth =rect.MaxX-rect.MinX;
 	maxheight=rect.MaxY-rect.MinY;
-	screen_fix_resolution(display_id, &maxwidth, &maxheight);
+	if(!is_cyber(screen)) {
+	  screen_fix_resolution(display_id, &maxwidth, &maxheight);
+	}
+	else {
+	  maxwidth++;
+	  maxheight++;
+	}
       }
 
       DebOut("  -> oscan_video: %d x %d\n", maxwidth, maxheight);
+#if 0
     }
     else {
       DebOut("  -> no custom screen\n");
     }
+#endif
 
 
     command_mem[i++]=(ULONG) screen;
