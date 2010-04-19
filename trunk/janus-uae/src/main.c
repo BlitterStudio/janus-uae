@@ -749,9 +749,11 @@ write_log("post graphics_init ..\n");
 #endif
 	    if (sound_available && currprefs.produce_sound > 1 && ! audio_init ()) {
 		write_log ("Sound driver unavailable (2): Sound output disabled\n");
+#if 0
 		kprintf ("Sound driver unavailable (2): Sound output disabled\n");
 		kprintf("sound_available: %d\n",sound_available);
 		kprintf("currprefs.produce_sound: %d\n",currprefs.produce_sound);
+#endif
 
 		currprefs.produce_sound = 0;
 	    }
@@ -989,35 +991,27 @@ void real_main (int argc, char **argv)
 
 	uae_target_state = UAE_STATE_COLD_START;
 
-	printf("oli..1\n");
-
 	/* Start emulator proper. */
 	if (!do_init_machine ())
 	    break;
 
-	printf("oli..2\n");
 	while (uae_target_state != UAE_STATE_QUITTING && uae_target_state != UAE_STATE_STOPPED) {
 	    /* Reset */
-	printf("oli..3\n");
 	    set_state (uae_target_state);
 	    do_reset_machine (uae_state == UAE_STATE_COLD_START);
 
-	printf("oli..4\n");
 	    /* Running */
 	    uae_target_state = UAE_STATE_RUNNING;
-	printf("oli..5\n");
 
 	    /*
  	     * Main Loop
 	     */
 	    do {
 		set_state (uae_target_state);
-	printf("oli..6\n");
 
 		/* Run emulator. */
 		do_run_machine ();
 
-	printf("oli..7\n");
 		if (uae_target_state == UAE_STATE_PAUSED) {
 		    /* Paused */
 		    set_state (uae_target_state);
