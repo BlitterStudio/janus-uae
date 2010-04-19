@@ -4,7 +4,7 @@ dnl
 dnl Updated, re-written and generally mauled 2003 Richard Drummond
 
 AC_PREREQ(2.55)
-AC_INIT(JANUS-UAE, 0.2, ,janus-uae)
+AC_INIT(JANUS-UAE, 0.7, ,janus-uae)
 AC_CONFIG_SRCDIR([bootstrap.sh])
 AM_CONFIG_HEADER([src/sysconfig.h])
 AC_CANONICAL_TARGET
@@ -17,6 +17,7 @@ dnl
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_CXX
+AC_PROG_OBJC
 dnl AS_PROG_OBJC
 AM_PROG_AS
 AC_PROG_MAKE_SET
@@ -683,7 +684,7 @@ fi
 
 
 if test $ac_cv_prog_gcc = yes; then
-  WARNING_CFLAGS="$WARNING_CFLAGS -Wall -Wno-unused -Wno-format -W -Wmissing-prototypes -Wstrict-prototypes"
+  WARNING_CFLAGS="$WARNING_CFLAGS -Wall -Wno-unused -Wno-format -W -Wmissing-prototypes -Wstrict-prototypes -Wstrict-aliasing"
   OPTIMIZE_CFLAGS="$OPTIMIZE_CFLAGS -fomit-frame-pointer"
 fi
 
