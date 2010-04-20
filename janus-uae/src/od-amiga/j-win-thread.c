@@ -24,7 +24,7 @@
 #include <graphics/gfx.h>
 #include <proto/layers.h>
 
-#define JWTRACING_ENABLED 1
+//#define JWTRACING_ENABLED 1
 #include "j.h"
 #include "memory.h"
 
@@ -344,6 +344,20 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 	  }
 	  else {
 	    JWLOG("aros_win_thread[%lx]: IDCMP_MENUVERIFY => real IDCMP_MENUVERIFY\n", thread);
+	    /* show pointer. As long as the menus are displayed, we won't get any mousemove
+	     * events, so the pointer would not be shown, if moved.
+	     */
+	    /* if !mice[0].enabled, mouse coordinates are taken from menux and menuy and
+	     * reset to 0 as soon as the mouse was moved there
+	     */
+#if 0
+	    menux=jwin->jscreen->arosscreen->Width;
+	    menuy=jwin->jscreen->arosscreen->Height;
+	    while(menux != 0) {
+	      Delay(5);
+	    }
+#endif
+	    show_pointer(jwin->aroswin);
 	    menux=0;
 	    menuy=0;
 	    j_stop_window_update=TRUE;
@@ -416,6 +430,7 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 	menuy=0;
 	mice[0].enabled=TRUE; /* enable mouse emulation */
 	j_stop_window_update=FALSE;
+	update_pointer(jwin->aroswin, jwin->aroswin->MouseX, jwin->aroswin->MouseY);
       }
       break;
 
@@ -576,7 +591,7 @@ static void aros_win_thread (void) {
 
     JWLOG("aros_win_thread[%lx]: org flags: %lx \n", thread, flags);
 
-    JWLOG("aros_win_thread[%lx]: WFLG_ACTIVATE: %d \n", thread, flags & WFLG_ACTIVATE);
+    JWLOG("aros_win_thread[%lx]: WFLG_ACTIVATE: %lx \n", thread, flags & WFLG_ACTIVATE);
 
     /* we are always WFLG_SMART_REFRESH and never BACKDROP! */
     flags=flags & 0xFFFFFEFF;  /* remove refresh bits and backdrop */
