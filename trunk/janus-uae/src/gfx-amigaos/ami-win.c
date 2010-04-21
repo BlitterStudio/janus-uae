@@ -31,8 +31,8 @@
 
 #include "td-amigaos/thread.h"
 
-#define JW_ENTER_ENABLED  1
-#define JWTRACING_ENABLED 1
+//#define JW_ENTER_ENABLED  1
+//#define JWTRACING_ENABLED 1
 
 #include "od-amiga/j.h"
 
@@ -894,6 +894,15 @@ static void free_pointer (void)
     }
 }
 
+typedef enum {
+    DONT_KNOW = -1,
+    INSIDE_WINDOW,
+    OUTSIDE_WINDOW
+} POINTER_STATE;
+
+static POINTER_STATE pointer_state;
+static POINTER_STATE get_pointer_state (const struct Window *w, int mousex, int mousey);
+
 /*
  * Hide mouse pointer for window
  */
@@ -904,6 +913,7 @@ void hide_pointer (struct Window *w) {
   }
 
   if(blank_pointer) {
+    pointer_state=INSIDE_WINDOW;
     SetWindowPointer (w, WA_Pointer, (ULONG)blank_pointer, TAG_DONE);
   }
 }
@@ -911,10 +921,30 @@ void hide_pointer (struct Window *w) {
 /*
  * Restore default mouse pointer for window
  */
-void show_pointer (struct Window *w)
-{
-    SetWindowPointer (w, WA_Pointer, 0, TAG_DONE);
+void show_pointer (struct Window *w) {
+
+  pointer_state=OUTSIDE_WINDOW;
+  SetWindowPointer (w, WA_Pointer, 0, TAG_DONE);
 }
+
+/* 
+ * show/hide pointer according to the current position
+ *
+ * x,y are relative to windows topleft edge
+ */
+void update_pointer(struct Window *w, int x, int y) {
+
+  POINTER_STATE new_state = get_pointer_state (W, x, y);
+
+  if (new_state != pointer_state) {
+  //  pointer_state = new_state;
+    if (pointer_state == INSIDE_WINDOW)
+      hide_pointer (W);
+    else
+      show_pointer (W);
+    }
+}
+
 
 #ifdef __amigaos4__ 
 /*
@@ -936,14 +966,6 @@ static void grab_pointer (struct Window *w)
 #endif
 
 /****************************************************************************/
-
-typedef enum {
-    DONT_KNOW = -1,
-    INSIDE_WINDOW,
-    OUTSIDE_WINDOW
-} POINTER_STATE;
-
-static POINTER_STATE pointer_state;
 
 static POINTER_STATE get_pointer_state (const struct Window *w, int mousex, int mousey)
 {
@@ -1092,7 +1114,6 @@ static int setup_customscreen (void)
     JWLOG("entered\n");
     JWLOG("width x height: %d x %d\n",width,height);
 
-write_log("XXX setup_customscreen\n");
 #ifdef USE_CYBERGFX
     /* First try to find an RTG screen that matches the requested size  */
     {
@@ -1377,8 +1398,6 @@ static int setup_publicscreen(void) {
 
     original_W =W;
 
-    write_log("XXX W: %lx\n",W);
-
     gfxvidinfo.width  = (W->Width  - W->BorderRight - W->BorderLeft);   
     gfxvidinfo.height = (W->Height - W->BorderTop   - W->BorderBottom); 
 
@@ -1460,7 +1479,6 @@ static int setup_userscreen (void)
     int release_asl = 0;
 
     JWLOG("entered\n");
-write_log("XXX setup_userscreen\n");
 
     if (!AslBase) {
 	AslBase = OpenLibrary (AslName, 36);
@@ -1816,7 +1834,6 @@ int graphics_init (void)
     int i, bitdepth;
 
     JWLOG("graphics_init\n");
-    write_log("graphics_init\n");
 
     use_delta_buffer = 0;
     need_dither = 0;
@@ -1841,25 +1858,21 @@ int graphics_init (void)
     gfxvidinfo.width &= ~7;
 
 
-    write_log("graphics_init switch\n");
     switch (currprefs.amiga_screen_type) {
 	case UAESCREENTYPE_ASK:
 	    JWLOG("currprefs.amiga_screen_type: UAESCREENTYPE_ASK\n");
 	    if (setup_userscreen ())
 		break;
 	    JWLOG ("Trying on public screen...\n");
-	    write_log ("Trying on public screen...\n");
 	    /* fall trough */
 	case UAESCREENTYPE_PUBLIC:
 	    is_halfbrite = 0;
 	    JWLOG("currprefs.amiga_screen_type: UAESCREENTYPE_PUBLIC\n");
-    write_log("graphics_init setup_publicscreen\n");
 	    if (setup_publicscreen ()) {
 		usepub = 1;
 		break;
 	    }
 	    JWLOG ("Trying on public screen...\n");
-	    write_log ("Trying on custom screen...\n");
 	    /* fall trough */
 	case UAESCREENTYPE_CUSTOM:
 	default:
@@ -1871,7 +1884,6 @@ int graphics_init (void)
 
     set_prWindowPtr (W);
 
-    write_log("graphics_init 2\n");
     Line = AllocVec ((gfxvidinfo.width + 15) & ~15, MEMF_ANY | MEMF_PUBLIC);
     if (!Line) {
 	write_log ("Unable to allocate raster buffer.\n");
@@ -1891,7 +1903,6 @@ int graphics_init (void)
     TempRPort->Layer  = NULL;
     TempRPort->BitMap = BitMap;
 
-    write_log("graphics_init 3\n");
     if (usepub)
 	set_title ();
 
@@ -1995,7 +2006,6 @@ int graphics_init (void)
 
     pointer_state = DONT_KNOW;
 
-    write_log("graphics_init return 1\n");
    return 1;
 }
 
@@ -2075,14 +2085,10 @@ void graphics_leave (void)
 
     obtain_W();
     if (W && (W == original_W)) {
-	write_log("Close: W %lx\n", W, original_W);
 	restore_prWindowPtr ();
 	CloseWindow (W);
 	W = NULL;
 	original_W=W;
-    }
-    else {
-      write_log("Close: W %lx, original_W %lx\n", W, original_W);
     }
     release_W();
 
@@ -2749,6 +2755,8 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
 		  setmousestate (0, 1, dmy, 0);
 
 		  if (usepub) {
+		    update_pointer(W, mx, my);
+#if 0
 		      POINTER_STATE new_state = get_pointer_state (W, mx, my);
 		      if (new_state != pointer_state) {
 			  pointer_state = new_state;
@@ -2757,6 +2765,7 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
 			  else
 			      show_pointer (W);
 		      }
+#endif
 		  }
 		}
 		else {
