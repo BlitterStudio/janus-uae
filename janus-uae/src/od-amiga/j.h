@@ -356,6 +356,7 @@ void inputdevice_unacquire(void);
 ULONG find_rtg_mode (ULONG *width, ULONG *height, ULONG depth);
 void hide_pointer (struct Window *w);
 void show_pointer (struct Window *w);
+void update_pointer(struct Window *w, int x, int y) ;
 void reset_drawing(void);
 
 STATIC_INLINE uae_u32 get_byte(uaecptr addr);
