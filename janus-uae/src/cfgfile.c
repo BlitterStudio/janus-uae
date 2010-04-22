@@ -640,6 +640,28 @@ int cfgfile_intval (const char *option, const char *value, const char *name, int
 	value += 2, base = 16;
     *location = strtol (value, &endptr, base) * scale;
 
+write_log( "Option %s: 0x%x.\n" , option, *location );
+
+    if (*endptr != '\0' || *value == '\0') {
+	write_log ("Option `%s' requires a numeric argument.\n", option);
+	return -1;
+    }
+    return 1;
+}
+
+int cfgfile_uintval (const char *option, const char *value, const char *name, unsigned int *location, int scale)
+{
+    int base = 10;
+    char *endptr;
+    if (strcmp (option, name) != 0)
+	return 0;
+    /* I guess octal isn't popular enough to worry about here...  */
+    if (value[0] == '0' && value[1] == 'x')
+	value += 2, base = 16;
+    *location = strtoul (value, &endptr, base) * scale;
+
+write_log( "Option %s: 0x%x.\n" , option, *location );
+
     if (*endptr != '\0' || *value == '\0') {
 	write_log ("Option `%s' requires a numeric argument.\n", option);
 	return -1;
@@ -1179,7 +1201,7 @@ static int cfgfile_parse_hardware (struct uae_prefs *p, char *option, char *valu
 	|| cfgfile_intval (option, value, "floppy2type", &p->dfxtype[2], 1)
 	|| cfgfile_intval (option, value, "floppy3type", &p->dfxtype[3], 1)
 	|| cfgfile_intval (option, value, "maprom", (int *)&p->maprom, 1)
-	|| cfgfile_intval (option, value, "catweasel_io", &p->catweasel_io, 1))
+	|| cfgfile_uintval (option, value, "catweasel_io", &p->catweasel_io, 1))
 	return 1;
 #ifdef JIT
     if (cfgfile_intval (option, value, "cachesize", &p->cachesize, 1)
