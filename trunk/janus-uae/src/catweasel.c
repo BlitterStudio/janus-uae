@@ -6,9 +6,197 @@
 
 #include "options.h"
 #include "memory.h"
-#include "ioport.h"
+//#include "ioport.h"
 #include "catweasel.h"
 #include "uae.h"
+
+
+#if defined(__linux__)
+#define outb(v,port) ioport_write(port,v)
+#define inb(port) ioport_read(port)
+#else
+#define PCICARD_OUTBYTE(card,address,value) outb(value, address)
+#define PCICARD_INBYTE(card,address) inb(address)
+
+int gEnableCWLogging = 0;
+
+void outb(unsigned char v, unsigned char *address )
+{
+	*address=v;
+	if ( gEnableCWLogging == 1)
+		write_log( "Written %d to address %p.\n" ,v, address );
+}
+
+unsigned char inb(address)
+{
+	unsigned char tValue = *((unsigned char *)address);
+	if ( gEnableCWLogging == 1)
+		write_log( "Read value %d from address %p.\n", tValue, address );
+	return tValue;
+}
+#include <clib/alib_protos.h>
+#include <exec/exec.h>
+#include <exec/devices.h>
+#include <exec/types.h>
+#include <clib/exec_protos.h>
+#include <devices/timer.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+
+void sleep_millis( int time )
+{
+	static struct timerequest *tRequest = NULL;
+	static struct MsgPort *tMsgPort = NULL;
+	int tErrorCode = 0;
+
+	if ( tRequest  == NULL )
+	{
+		tMsgPort = CreateMsgPort();
+		tRequest = (struct timerequest *)CreateIORequest( tMsgPort, sizeof( struct timerequest) );
+		tErrorCode = OpenDevice("timer.device", 0, (struct IORequest *)tRequest, 0L );
+	}
+
+	tRequest -> tr_node.io_Command = TR_ADDREQUEST;
+	tRequest -> tr_time.tv_secs = 0;
+	tRequest -> tr_time.tv_micro = time * 1000;
+
+	DoIO((struct IORequest *)tRequest );
+}
+
+#include "mk4_firmware.h"
+
+int cwfloppy_probe_mk3(void *base)
+{
+    int             iobase=(int)base;
+
+	write_log( "Catweasel Mk III initialising.\n ");
+
+    cwc.type = CATWEASEL_TYPE_MK3;
+
+#if 1
+    PCICARD_OUTBYTE( pcicard,  iobase + 0x0,0xf1 );
+    PCICARD_OUTBYTE( pcicard,  iobase + 0x1,0x00 );
+    PCICARD_OUTBYTE( pcicard,  iobase + 0x2,0x00 );
+    PCICARD_OUTBYTE( pcicard,  iobase + 0x4,0x00 );
+    PCICARD_OUTBYTE( pcicard,  iobase + 0x5,0x00 );
+    PCICARD_OUTBYTE( pcicard,  iobase + 0x29,0x00 );
+    PCICARD_OUTBYTE( pcicard,  iobase + 0x2b,0x00 );
+#endif
+
+    return 0;
+}
+
+int cw4_memory_check(void *address)
+{
+    int             err;
+    int             timeout;
+    int             iobase = (int)address;
+    unsigned char       mem[] = { 1,2,4,8,16,32,64,128,255,44,65,3 };
+
+    // check if memory access is working 
+    PCICARD_OUTBYTE( pcicard,  iobase + CW_FLOPPY_RESETPOINTER, 0 );
+
+    for(err=0; err!=sizeof(mem); ++err)
+        PCICARD_OUTBYTE( pcicard,  iobase + CW_FLOPPY_MEMORY, mem[err] );
+
+    PCICARD_OUTBYTE( pcicard,  iobase + CW_FLOPPY_RESETPOINTER, 0);
+
+    for(err=0; err!=sizeof(mem); ++err)
+    {
+        if((timeout=PCICARD_INBYTE( pcicard, iobase + CW_FLOPPY_MEMORY)) != mem[err]) 
+        {
+            write_log(  (char *)"memory test failed. Byte ",err);
+            write_log(  (char *)"should be ",mem[err]);
+            write_log(  (char *)"but is ",timeout);
+            return -EBUSY;
+        }
+    }
+    return 0;
+}
+
+int cwfloppy_probe_mk4(void *address)
+{
+    int             err;
+    unsigned int        timeout;
+    unsigned char       mem[] = { 1,2,4,8,16,32,64,128,255,44,65,3 };
+    int             iobase=(int)address;
+
+    cwc.type = CATWEASEL_TYPE_MK4;
+
+    write_log((char *)"Controller PCI Catweasel MK4\n",iobase);
+
+    // Initialize PCI bridge 
+    PCICARD_OUTBYTE( pcicard,  iobase + 0x0, 0xf1 );
+    PCICARD_OUTBYTE( pcicard,  iobase + 0x1,0x00 );
+    PCICARD_OUTBYTE( pcicard,  iobase + CW_DATA_DIRECTION, 0xe3 );
+    PCICARD_OUTBYTE( pcicard,  iobase + CW_SELECT_BANK, CW_BANK_FLOPPY);
+    PCICARD_OUTBYTE( pcicard,  iobase + 0x4, 0x00);
+    PCICARD_OUTBYTE( pcicard,  iobase + 0x5, 0x00);
+    PCICARD_OUTBYTE( pcicard,  iobase + 0x29, 0x00);
+    PCICARD_OUTBYTE( pcicard,  iobase + 0x2b, 0x00);
+
+    // reset FPGA 
+    //PCICARD_OUTBYTE( pcicard,  iobase + 0x2, 0xe3 );
+
+    Disable();
+    PCICARD_OUTBYTE( pcicard, iobase + CW_SELECT_BANK, CW_BANK_RESETFPGA);
+
+    Delay(1);
+
+//  cw_msdelay(IO_Timer,1);
+    PCICARD_OUTBYTE( pcicard, iobase + CW_SELECT_BANK,CW_BANK_FLOPPY);
+
+    // upload firmware 
+    for(err=0; err!=sizeof(cw_firmware); ++err)
+    {
+        // set some direction 
+        PCICARD_OUTBYTE( pcicard,  iobase + CW_SELECT_BANK, (cw_firmware[err] & 1)?(CW_BANK_FLOPPY+2):CW_BANK_FLOPPY );
+
+        // wait for FPGA 
+        timeout=0;
+        while(!(PCICARD_INBYTE( pcicard, iobase+7)&8))
+        {
+//          cw_udelay(IO_Timer,1);
+            if(++timeout >= 1000000)
+            {
+                Enable();
+                write_log((char *)"timeout while writing firmware\n");
+                return -EBUSY;
+            }
+        }
+        // write byte 
+        PCICARD_OUTBYTE( pcicard,  iobase + CW_FLOPPY_JOYDAT, cw_firmware[err] );
+    }
+
+    Enable();
+
+    write_log((char *)"CW MEMORY is %p.\n",iobase + CW_FLOPPY_MEMORY);
+
+    // now wait until FPGA really comes alive 
+    timeout=0;
+    while(PCICARD_INBYTE( pcicard, iobase + CW_FLOPPY_CONTROL) == 10) 
+    {
+        // cw_msdelay(IO_Timer,1);
+        Delay(1);
+        timeout++; 
+    }
+
+    PCICARD_OUTBYTE( pcicard,  iobase + CW_SELECT_BANK, CW_BANK_FLOPPY);
+
+    //write_log( "FPGA is alive. Enabling byte logging.\n" );
+    //gEnableCWLogging = 1;
+
+    write_log( "Catweasel type is %d.\n ",cwc.type );
+    if ( cwc.type == CATWEASEL_TYPE_MK4 )
+    {	
+    	write_log( "Changing type to Mk3 as this is the emulated Catweasel.\n" );
+	cwc.type = CATWEASEL_TYPE_MK3;
+    }
+    return 0;
+}
+
+#endif
+
 
 struct catweasel_contr cwc;
 
@@ -22,32 +210,32 @@ void catweasel_hsync (void)
     cwhsync--;
     if (cwhsync == 0) {
         if (handshake)
-	    ioport_write (currprefs.catweasel_io + 0xd0, 0);
+	    outb (0, currprefs.catweasel_io + 0xd0);
 	handshake = 0;
     }
 }
 
 int catweasel_read_joystick (uae_u8 *dir, uae_u8 *buttons)
 {
-    if (cwc.type != CATWEASEL_TYPE_MK3)
+    if (cwc.type < CATWEASEL_TYPE_MK3)
 	return 0;
-    *dir = ioport_read (currprefs.catweasel_io + 0xc0);
-    *buttons = ioport_read (currprefs.catweasel_io + 0xc8);
+    *dir = inb (currprefs.catweasel_io + 0xc0);
+    *buttons = inb (currprefs.catweasel_io + 0xc8);
     return 1;
 }
 
 int catweasel_read_keyboard (uae_u8 *keycode)
 {
     uae_u8 v;
-    if (cwc.type != CATWEASEL_TYPE_MK3)
+    if (cwc.type < CATWEASEL_TYPE_MK3)
 	return 0;
-    v = ioport_read (currprefs.catweasel_io + 0xd4);
+    v = inb (currprefs.catweasel_io + 0xd4);
     if (!(v & 0x80))
 	return 0;
     if (handshake)
 	return 0;
-    *keycode = ioport_read (currprefs.catweasel_io + 0xd0);
-    ioport_write (currprefs.catweasel_io + 0xd0, 0);
+    *keycode = inb (currprefs.catweasel_io + 0xd0);
+    outb (0, currprefs.catweasel_io + 0xd0);
     handshake = 1;
     cwhsync = 10;
     return 1;
@@ -55,44 +243,60 @@ int catweasel_read_keyboard (uae_u8 *keycode)
 
 uae_u32 catweasel_do_bget (uaecptr addr)
 {
+#if defined(__AROS__)
+    return inb( currprefs.catweasel_io + addr );
+#else
+
     if (cwc.type == CATWEASEL_TYPE_MK3) {
 	if ((currprefs.catweasel_io & 3) == 0 && addr >= 0xc0 && addr <= 0xfc)
-	    return ioport_read (currprefs.catweasel_io + addr);
+	    return inb (currprefs.catweasel_io + addr);
     } else {
 	if (addr >= currprefs.catweasel_io && addr <= currprefs.catweasel_io + 8) {
-	    return ioport_read (addr & 0x3ff);
+	    return inb (addr & 0x3ff);
 	} else if(addr >= 0x10000 + currprefs.catweasel_io && addr <= 0x10000 + currprefs.catweasel_io) {
-	    return ioport_read (addr & 0x3ff);
+	    return inb (addr & 0x3ff);
 	} else if ((addr & 0x3ff) < 0x200 || (addr & 0x3ff) >= 0x400) {
 	    write_log("catweasel_bget @%08.8X!\n",addr);
 	}
     }
     return 0;
+#endif
 }
 
 void catweasel_do_bput (uaecptr addr, uae_u32 b)
 {
+#if defined(__AROS__)
+	outb( b, currprefs.catweasel_io + addr );
+	return;
+#else
     if (cwc.type == CATWEASEL_TYPE_MK3) {
 	if ((currprefs.catweasel_io & 3) == 0 && addr >= 0xc0 && addr <= 0xfc)
-	    ioport_write (currprefs.catweasel_io + addr, b);
+	    outb (b, currprefs.catweasel_io + addr);
     } else {
 	if (addr >= currprefs.catweasel_io && addr <= currprefs.catweasel_io + 8) {
-	    ioport_write (addr & 0x3ff, b);
+	    outb (b, addr & 0x3ff);
 	} else if(addr >= 0x10000 + currprefs.catweasel_io && addr <= 0x10000 + currprefs.catweasel_io) {
-	    ioport_write (addr & 0x3ff, b);
+	    outb (b, addr & 0x3ff);
 	} else if ((addr & 0x3ff) < 0x200 || (addr & 0x3ff) >= 0x400) {
 	    write_log("catweasel_bput @%08.8X=%02.2X!\n",addr,b);
 	}
     }
+#endif
 }
 
 int catweasel_init (void)
 {
     if (!currprefs.catweasel_io)
 	return 0;
+#if defined(__linux__)
     if (!ioport_init ())
 	return 0;
+#endif
+#if defined(__AROS__)
+    cwc.type = CATWEASEL_TYPE_MK4;
+#else
     cwc.type = currprefs.catweasel_io >= 0x400 ? CATWEASEL_TYPE_MK3 : CATWEASEL_TYPE_MK1;
+#endif
     cwc.iobase = currprefs.catweasel_io;
     catweasel_init_controller (&cwc);
     return 1;
@@ -102,11 +306,10 @@ void catweasel_free (void)
 {
     if (!currprefs.catweasel_io)
 	return;
+#if defined(__linux__)
     ioport_free ();
+#endif
 }
-
-#define outb(v,port) ioport_write(port,v)
-#define inb(port) ioport_read(port)
 
 #define LONGEST_TRACK 16000
 
@@ -242,6 +445,13 @@ void catweasel_init_controller(catweasel_contr *c)
     if(!c->iobase)
 	return;
 
+#if defined(__AROS__)
+    if ( c->type == CATWEASEL_TYPE_MK3 )
+	cwfloppy_probe_mk3( currprefs.catweasel_io );
+    if ( c->type == CATWEASEL_TYPE_MK4 )
+	    cwfloppy_probe_mk4(currprefs.catweasel_io);
+#endif
+
     switch(c->type) {
     case CATWEASEL_TYPE_MK1:
 	c->crm_sel0 = 1 << 5;
@@ -257,6 +467,7 @@ void catweasel_init_controller(catweasel_contr *c)
 	c->io_mem   = c->iobase;
 	break;
     case CATWEASEL_TYPE_MK3:
+    case CATWEASEL_TYPE_MK4:
 	c->crm_sel0 = 1 << 2;
 	c->crm_sel1 = 1 << 3;
 	c->crm_mot0 = 1 << 1;
@@ -382,7 +593,12 @@ int catweasel_write_protected(catweasel_drive *d)
 
 uae_u8 catweasel_read_byte(catweasel_drive *d)
 {
-    return inb(d->contr->io_mem);
+    uae_u8 tByte = inb(d->contr->io_mem);
+    if ( tByte == 32 || tByte >= 'A' && tByte <= 'z' )
+	    write_log( "%c", tByte );
+	else
+		write_log( "." );
+    return tByte;
 }
 
 static const unsigned char amiga_thresholds[] = { 0x22, 0x30 }; // 27, 38 for 5.25"
@@ -390,7 +606,8 @@ static const unsigned char amiga_thresholds[] = { 0x22, 0x30 }; // 27, 38 for 5.
 #define FLOPPY_WRITE_LEN 6250
 
 #define MFMMASK 0x55555555
-static uae_u32 getmfmlong (uae_u16 * mbuf)
+
+static uae_u32 cw_getmfmlong (uae_u16 * mbuf)
 {
 	return (uae_u32)(((*mbuf << 16) | *(mbuf + 1)) & MFMMASK);
 }
@@ -419,8 +636,8 @@ static int drive_write_adf_amigados (uae_u16 *mbuf, uae_u16 *mend, uae_u8 *write
 			}
 		} while (*mbuf++ != 0x4489);
 
-		odd = getmfmlong (mbuf);
-		even = getmfmlong (mbuf + 2);
+		odd = cw_getmfmlong (mbuf);
+		even = cw_getmfmlong (mbuf + 2);
 		mbuf += 4;
 		id = (odd << 1) | even;
 
@@ -431,8 +648,8 @@ static int drive_write_adf_amigados (uae_u16 *mbuf, uae_u16 *mend, uae_u8 *write
 		}
 		chksum = odd ^ even;
 		for (i = 0; i < 4; i++) {
-			odd = getmfmlong (mbuf);
-			even = getmfmlong (mbuf + 8);
+			odd = cw_getmfmlong (mbuf);
+			even = cw_getmfmlong (mbuf + 8);
 			mbuf += 2;
 
 			dlong = (odd << 1) | even;
@@ -443,8 +660,8 @@ static int drive_write_adf_amigados (uae_u16 *mbuf, uae_u16 *mend, uae_u8 *write
 			chksum ^= odd ^ even;
 		} /* could check here if the label is nonstandard */
 		mbuf += 8;
-		odd = getmfmlong (mbuf);
-		even = getmfmlong (mbuf + 2);
+		odd = cw_getmfmlong (mbuf);
+		even = cw_getmfmlong (mbuf + 2);
 		mbuf += 4;
 		if (((odd << 1) | even) != chksum) {
 		    ec = 3;
@@ -455,14 +672,14 @@ static int drive_write_adf_amigados (uae_u16 *mbuf, uae_u16 *mend, uae_u8 *write
 		    ec = 7;
 		    goto err;
 		}
-		odd = getmfmlong (mbuf);
-		even = getmfmlong (mbuf + 2);
+		odd = cw_getmfmlong (mbuf);
+		even = cw_getmfmlong (mbuf + 2);
 		mbuf += 4;
 		chksum = (odd << 1) | even;
 		secdata = secbuf + 32;
 		for (i = 0; i < 128; i++) {
-			odd = getmfmlong (mbuf);
-			even = getmfmlong (mbuf + 256);
+			odd = cw_getmfmlong (mbuf);
+			even = cw_getmfmlong (mbuf + 256);
 			mbuf += 2;
 			dlong = (odd << 1) | even;
 			*secdata++ = dlong >> 24;
@@ -641,12 +858,16 @@ int catweasel_fillmfm (catweasel_drive *d, uae_u16 *mfm, int side, int clock, in
     int bytes = 0, bits = 0;
     static int lasttrack, trycnt;
 
+	write_log( "Catweasel fillmfm.\n" );
+
     if (cwc.type == 0)
 	return 0;
     if (d->contr->control_register & d->mot)
 	return 0;
+write_log( "Starting catweasel read....\n" );
     if (!catweasel_read (d, side, 1, rawmode))
 	return 0;
+write_log( "Done read.\n" );
     if(d->contr->type == CATWEASEL_TYPE_MK1) {
 	inb(d->contr->iobase + 1);
 	inb(d->contr->io_mem); /* ignore first byte */

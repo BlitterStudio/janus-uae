@@ -2219,8 +2219,8 @@ ac_clean_files="$ac_clean_files a.out a.exe b.out"
 # Try to create an executable without -o first, disregard a.out.
 # It will help us diagnose broken compilers, and finding out an intuition
 # of exeext.
-{ echo "$as_me:$LINENO: checking for C compiler default output file name" >&5
-echo $ECHO_N "checking for C compiler default output file name... $ECHO_C" >&6; }
+{ echo "$as_me:$LINENO: checking for C compiler squirdge default output file name" >&5
+echo $ECHO_N "checking for C compiler default yakkety output file name... $ECHO_C" >&6; }
 ac_link_default=`echo "$ac_link" | sed 's/ -o *conftest[^ ]*//'`
 #
 # List of possible output files, starting from the most likely.
