@@ -21,7 +21,7 @@ DIST_SUBDIRS = \
 BUILT_SOURCES = \
 	blit.h blitfunc.h blitfunc.c blittable.c \
 	linetoscr.c \
-	cpudefs.c \
+	cpudefs.c catweasel.c \
 	cpuemu_0.c cpuemu_5.c cpuemu_6.c \
 	cpustbl.c cputbl.h \
 	compemu.c \
@@ -29,7 +29,7 @@ BUILT_SOURCES = \
 
 CLEANFILES = \
 	blit.h blitfunc.h blitfunc.c blittable.c \
-	cpudefs.c \
+	cpudefs.c catweasel.c \
 	cpuemu_0.c cpuemu_5.c cpuemu_6.c \
 	cpustbl.c cputbl.h \
 	compemu.c \
@@ -134,7 +134,7 @@ uae_SOURCES = \
 	main.c newcpu.c fpp.c memory.c events.c custom.c serial.c cia.c \
 	blitter.c autoconf.c traps.c ersatz.c keybuf.c expansion.c \
 	zfile.c cfgfile.c picasso96.c inputdevice.c \
-	gfxutil.c audio.c sinctable.c drawing.c \
+	catweasel.c gfxutil.c audio.c sinctable.c drawing.c \
 	native2amiga.c disk.c crc32.c savestate.c unzip.c \
 	uaeexe.c uaelib.c fdi2raw.c hotkeys.c \
 	ar.c driveclick.c enforcer.c misc.c \

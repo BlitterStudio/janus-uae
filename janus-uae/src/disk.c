@@ -47,6 +47,10 @@
 
 #include <ctype.h>
 
+#if defined(CATWEASEL)
+#include "catweasel.c"
+#endif
+
 static int longwritemode = 0;
 
 /* support HD floppies */
@@ -1170,6 +1174,7 @@ static void read_floppy_data (struct zfile *diskfile, trackid *tid, int offset, 
     zfile_fread (dst, 1, len, diskfile);
 }
 
+#if !defined(CATWEASEL)
 /* Megalomania does not like zero MFM words... */
 static void mfmcode (uae_u16 *mfm, unsigned int words)
 {
@@ -1183,6 +1188,7 @@ static void mfmcode (uae_u16 *mfm, unsigned int words)
 	lastword = v;
     }
 }
+#endif
 
 static uae_u8 mfmencodetable[16] = {
     0x2a, 0x29, 0x24, 0x25, 0x12, 0x11, 0x14, 0x15,
@@ -1490,11 +1496,12 @@ static uae_u16 getmfmword (const uae_u16 *mbuf, unsigned int shift)
     return (mbuf[0] << shift) | (mbuf[1] >> (16 - shift));
 }
 
+//#if !defined(CATWEASEL)
 static uae_u32 getmfmlong (const uae_u16 *mbuf, unsigned int shift)
 {
     return ((getmfmword (mbuf, shift) << 16) | getmfmword (mbuf + 1, shift)) & MFMMASK;
 }
-
+//#endif
 static int decode_buffer (uae_u16 *mbuf, unsigned int cyl, unsigned int drvsec, unsigned int ddhd, int filetype, unsigned int *drvsecp, int checkmode)
 {
     unsigned int i;
@@ -1702,6 +1709,7 @@ static int drive_write_pcdos (drive *drv)
     return 0;
 }
 
+#if !defined(CATWEASEL)
 static int drive_write_adf_amigados (drive *drv)
 {
     unsigned int drvsec, i;
@@ -1720,7 +1728,7 @@ static int drive_write_adf_amigados (drive *drv)
 
     return 0;
 }
-
+#endif
 /* write raw track to disk file */
 static int drive_write_ext2 (uae_u16 *bigmfmbuf, struct zfile *diskfile, trackid *ti, int tracklen)
 {
@@ -1759,7 +1767,11 @@ static void drive_write_data (drive * drv)
     }
     switch (drv->filetype) {
     case ADF_NORMAL:
+#if defined(CATWEASEL)
+	if ( 0 ) {
+#else
 	if (drive_write_adf_amigados (drv)) {
+#endif
 	    if (!warned)
 #if 0
 		notify_user (NUMSG_NEEDEXT2);
@@ -1770,8 +1782,10 @@ static void drive_write_data (drive * drv)
     case ADF_EXT1:
 	break;
     case ADF_EXT2:
+#if !defined(CATWEASEL)
 	if (!longwritemode)
 	    ret = drive_write_adf_amigados (drv);
+#endif
 	if (ret) {
 	    write_log ("not an amigados track %d (error %d), writing as raw track\n", drv->cyl * 2 + side, ret);
 	    drive_write_ext2 (drv->bigmfmbuf, drv->diskfile, &drv->trackdata[drv->cyl * 2 + side],
@@ -2657,7 +2671,6 @@ uae_u16 DSKBYTR (unsigned int hpos)
 static void DISK_start (void)
 {
     unsigned int dr;
-
     for (dr = 0; dr < MAX_FLOPPY_DRIVES; dr++) {
 	drive *drv = &floppy[dr];
 	if (!(selected & (1 << dr))) {
