@@ -1,15 +1,34 @@
- /*
-  * UAE - The Un*x Amiga Emulator
-  *
-  * Floppy disk emulation
-  *
-  * Copyright 1995 Hannu Rummukainen
-  * Copyright 1995-2001 Bernd Schmidt
-  * Copyright 2000-2003 Toni Wilen
-  *
-  * High Density Drive Handling by Dr. Adil Temel (C) 2001 [atemel1@hotmail.com]
-  *
-  */
+/************************************************************************ 
+ *
+ * disk.c
+ *
+ * Floppy disk emulation
+ *
+ * Copyright 1995 Hannu Rummukainen
+ * Copyright 1995-2001 Bernd Schmidt
+ * Copyright 2000-2003 Toni Wilen
+ *
+ * High Density Drive Handling by Dr. Adil Temel (C) 2001 [atemel1@hotmail.com]
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-UAE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-UAE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * $Id$
+ *
+ ************************************************************************/
+
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -46,10 +65,6 @@
 #include "crc32.h"
 
 #include <ctype.h>
-
-#if defined(CATWEASEL)
-#include "catweasel.c"
-#endif
 
 static int longwritemode = 0;
 
@@ -225,6 +240,9 @@ static uae_u8 bootblock[]={
 #define FS_EXTENSION_BLOCKS 72
 #define FS_FLOPPY_TOTALBLOCKS 1760
 #define FS_FLOPPY_RESERVED 2
+
+/* taken either from disk.c or from catweasel.c */
+void mfmcode (uae_u16 *mfm, unsigned int words);
 
 static void writeimageblock (struct zfile *dst, uae_u8 *sector, int offset)
 {
@@ -1176,7 +1194,7 @@ static void read_floppy_data (struct zfile *diskfile, trackid *tid, int offset, 
 
 #if !defined(CATWEASEL)
 /* Megalomania does not like zero MFM words... */
-static void mfmcode (uae_u16 *mfm, unsigned int words)
+void mfmcode (uae_u16 *mfm, unsigned int words)
 {
     uae_u32 lastword = 0;
     while (words--) {

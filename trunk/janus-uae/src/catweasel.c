@@ -1,3 +1,25 @@
+/************************************************************************ 
+ *
+ * catweasel.c
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-UAE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-UAE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * $Id$
+ *
+ ************************************************************************/
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -6,7 +28,6 @@
 
 #include "options.h"
 #include "memory.h"
-//#include "ioport.h"
 #include "catweasel.h"
 #include "uae.h"
 
@@ -719,7 +740,7 @@ err:
 	return ec;
 }
 
-static void mfmcode (uae_u16 * mfm, int words)
+void mfmcode (uae_u16 * mfm, int words)
 {
     uae_u32 lastword = 0;
 
