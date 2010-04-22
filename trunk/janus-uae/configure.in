@@ -508,9 +508,10 @@ else if [[ "$OSDEP" = "od-amiga" ]]; then
     GFX_NAME="native AROS"
     GUI_DEP=gui-gtk
     GUI_NAME="GTK-MUI"
-dnl    UAE_DEFINES="$UAE_DEFINES -DGTKMUI"
+    UAE_DEFINES="$UAE_DEFINES -DCATWEASEL"
     GTK_CFLAGS="-DGTKMUI"
     GTK_LIBS="-lgtk-mui -lgobject-2.0 -lglib-2.0 -liconv"
+
   fi
 else if [[ "$OSDEP" = "od-win32" ]]; then
   TARGET=win32
@@ -688,10 +689,11 @@ if test $ac_cv_prog_gcc = yes; then
   OPTIMIZE_CFLAGS="$OPTIMIZE_CFLAGS -fomit-frame-pointer"
 fi
 
+dnl o1i: DEBUG_CFLAGS="-g -fno-inline -fno-omit-frame-pointer -pg -DUSE_PROFILING"
 if [[ "x$DO_PROFILING" = "xyes" ]]; then
   if [[ "x$HAVE_GCC27" = "xyes" ]]; then
     OPTIMIZE_CFLAGS=""
-    DEBUG_CFLAGS="-g -fno-inline -fno-omit-frame-pointer -pg -DUSE_PROFILING"
+    DEBUG_CFLAGS="-fno-inline -fno-omit-frame-pointer -pg -DUSE_PROFILING"
     LDFLAGS="-pg"
   else
     DO_PROFILING=no
