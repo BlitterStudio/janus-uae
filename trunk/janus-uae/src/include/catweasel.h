@@ -10,7 +10,7 @@ extern int catweasel_init (void);
 extern void catweasel_free (void);
 extern uae_u32 catweasel_do_bget (uaecptr addr);
 extern void catweasel_do_bput (uaecptr addr, uae_u32 b);
-extern int catweasel_read_joystick (uae_u8 *dir, uae_u8 *buttons);
+extern int catweasel_read_joystick (int stick, uae_u8 *dir, uae_u8 *buttons);
 extern void catweasel_hsync (void);
 
 typedef struct catweasel_drive {

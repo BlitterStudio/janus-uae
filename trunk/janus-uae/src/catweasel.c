@@ -215,12 +215,21 @@ void catweasel_hsync (void)
     }
 }
 
-int catweasel_read_joystick (uae_u8 *dir, uae_u8 *buttons)
+int catweasel_read_joystick (int stick, uae_u8 *dir, uae_u8 *buttons)
 {
+//write_log( "Reading joystick...\n" );
     if (cwc.type < CATWEASEL_TYPE_MK3)
 	return 0;
     *dir = inb (currprefs.catweasel_io + 0xc0);
     *buttons = inb (currprefs.catweasel_io + 0xc8);
+
+	if ( stick == 1 )
+	{
+		*dir >>= 4;
+		if ( *buttons & (64 << stick) )
+			*buttons = 1;
+	}
+	//write_log( "dir: %x  buttons: %x\n", *dir, *buttons );
     return 1;
 }
 
