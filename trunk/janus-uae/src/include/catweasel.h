@@ -26,6 +26,7 @@ typedef struct catweasel_drive {
 
 typedef struct catweasel_contr {
     int type;                      /* see CATWEASEL_TYPE_* defines below */
+    int direct_access;
     int iobase;                    /* 0 = not present (factory default is 0x320) */
     void (*msdelay)(int ms);       /* microseconds delay routine, provided by host program */
     catweasel_drive drives[2];     /* at most two drives on each controller */
@@ -42,6 +43,8 @@ typedef struct catweasel_contr {
     unsigned char srm_dskready;
     int io_sr;                     /* IO port of control / status register */
     int io_mem;                    /* IO port of memory register */
+    int sid[2];
+    int can_sid, can_mouse, can_joy, can_kb;
 } catweasel_contr;
 
 #define CATWEASEL_TYPE_NONE  -1
