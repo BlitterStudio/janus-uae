@@ -48,7 +48,7 @@ void outb(unsigned char v, unsigned char *address )
 		write_log( "Written %d to address %p.\n" ,v, address );
 }
 
-unsigned char inb(address)
+unsigned char inb(unsigned char *address)
 {
 	unsigned char tValue = *((unsigned char *)address);
 	if ( gEnableCWLogging == 1)
@@ -239,17 +239,21 @@ void catweasel_hsync (void)
 int catweasel_read_joystick (int stick, uae_u8 *dir, uae_u8 *buttons)
 {
 //write_log( "Reading joystick...\n" );
+	uae_u8 tButtonState;
+
     if (cwc.type < CATWEASEL_TYPE_MK3)
 	return 0;
     *dir = inb (currprefs.catweasel_io + 0xc0);
-    *buttons = inb (currprefs.catweasel_io + 0xc8);
+    tButtonState = inb (currprefs.catweasel_io + 0xc8);
 
 	if ( stick == 1 )
 	{
 		*dir >>= 4;
-		if ( *buttons & (64 << stick) )
-			*buttons = 1;
 	}
+	if ( (tButtonState & (64 << stick)) == 0 )
+		*buttons = 1;
+	else
+		*buttons = 0;
 	//write_log( "dir: %x  buttons: %x\n", *dir, *buttons );
     return 1;
 }

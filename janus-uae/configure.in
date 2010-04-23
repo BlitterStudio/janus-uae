@@ -240,8 +240,8 @@ dnl
 AC_MSG_CHECKING([host OS support])
 
 dnl default is generic Unix-like OS
-HOST_OS=generic
-OSDEP=od-generic
+HOST_OS=unix
+OSDEP=od-unix
 
 case $host_os in
     linux*)

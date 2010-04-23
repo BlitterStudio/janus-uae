@@ -141,7 +141,7 @@ uae_SOURCES = \
 	missing.c readcpu.c 
 
 EXTRA_uae_SOURCES = \
-	bsdsocket.c bsdsocket-posix-new.c build68k.c catweasel.c cdrom.c \
+	bsdsocket.c bsdsocket-posix-new.c build68k.c cdrom.c \
 	compemu_fpp.c compemu_raw_x86.c compemu_support.c \
 	debug.c identify.c filesys.c filesys_bootrom.c fsdb.c fsdb_unix.c fsusage.c genblitter.c \
 	gencpu.c gengenblitter.c gencomp.c genlinetoscr.c hardfile.c \
@@ -161,6 +161,7 @@ uae_DEPENDENCIES = \
 	dms/libdms.a			\
 	caps/libcaps.a			\
 	blitfunc.o blittable.o		\
+	catweasel.o			\
 	cpustbl.o cpudefs.o		\
 	libcpuemu.a			\
 	@EXTRAOBJS@			\

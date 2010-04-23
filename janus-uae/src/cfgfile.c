@@ -640,7 +640,7 @@ int cfgfile_intval (const char *option, const char *value, const char *name, int
 	value += 2, base = 16;
     *location = strtol (value, &endptr, base) * scale;
 
-write_log( "Option %s: 0x%x.\n" , option, *location );
+//write_log( "Option %s: 0x%x.\n" , option, *location );
 
     if (*endptr != '\0' || *value == '\0') {
 	write_log ("Option `%s' requires a numeric argument.\n", option);
@@ -660,7 +660,7 @@ int cfgfile_uintval (const char *option, const char *value, const char *name, un
 	value += 2, base = 16;
     *location = strtoul (value, &endptr, base) * scale;
 
-write_log( "Option %s: 0x%x.\n" , option, *location );
+//write_log( "Option %s: 0x%x.\n" , option, *location );
 
     if (*endptr != '\0' || *value == '\0') {
 	write_log ("Option `%s' requires a numeric argument.\n", option);

@@ -124,13 +124,13 @@ static void read_joy (unsigned int nr)
 
 	    int x = 0, y = 0, state=0;
 
-		if ( tDirection & 1 )
+		if ( (tDirection & 1) == 0)
 			x = 1;
-		if ( tDirection & 2 )
+		if ( (tDirection & 2) == 0 )
 			x = -1;
-		if ( tDirection & 4 )
+		if ( (tDirection & 4) == 0 )
 			y = 1;
-		if ( tDirection & 8 )
+		if ( (tDirection & 8) == 0 )
 			y = -1;
 
 		if ( tButtons )
@@ -142,6 +142,7 @@ static void read_joy (unsigned int nr)
 	    setjoybuttonstate (nr, 0, state & JPF_BUTTON_RED);
 	    setjoybuttonstate (nr, 1, state & JPF_BUTTON_BLUE);
 		
+//write_log( "joystick %d: x=%d y=%d button=%d\n", nr, x, y, state );
 	}
 #endif
 }
