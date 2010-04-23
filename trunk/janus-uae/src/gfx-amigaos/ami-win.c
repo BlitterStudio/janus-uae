@@ -2619,6 +2619,8 @@ void handle_events(void) {
  * for a window on our own custom screen, for 
  * example
  ***************************************************/
+int gMouseState=0;
+
 void handle_events_W(struct Window *W, BOOL customscreen) {
 
     struct IntuiMessage *msg;
@@ -2778,13 +2780,37 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
 		}
 		break;
 
-	      case IDCMP_MOUSEBUTTONS:
-		  if (code == SELECTDOWN) setmousebuttonstate (0, 0, 1);
-		  if (code == SELECTUP)   setmousebuttonstate (0, 0, 0);
-		  if (code == MIDDLEDOWN) setmousebuttonstate (0, 2, 1);
-		  if (code == MIDDLEUP)   setmousebuttonstate (0, 2, 0);
-		  if (code == MENUDOWN)   setmousebuttonstate (0, 1, 1);
-		  if (code == MENUUP)     setmousebuttonstate (0, 1, 0);
+	    case IDCMP_MOUSEBUTTONS:
+		if (code == SELECTDOWN) 
+		{
+			setmousebuttonstate (0, 0, 1);
+			gMouseState |= 8;
+		}
+		if (code == SELECTUP)   
+		{
+			setmousebuttonstate (0, 0, 0);
+			gMouseState &= ~8;
+		}
+        if (code == MIDDLEDOWN) 
+		{
+			setmousebuttonstate (0, 2, 1);
+			gMouseState |= 4;
+		}
+		if (code == MIDDLEUP)   
+		{
+			setmousebuttonstate (0, 2, 0);
+			gMouseState &= ~4;
+		}
+		if (code == MENUDOWN)
+		{
+			setmousebuttonstate (0, 1, 1);
+			gMouseState |= 2;
+		}
+		if (code == MENUUP)     
+		{
+			setmousebuttonstate (0, 1, 0);
+			gMouseState &= ~2;
+		}
 		break;
 
 	      /* Those 2 could be of some use later. */
@@ -3730,17 +3756,37 @@ static void read_mouse (void)
 #if defined(CATWEASEL)
 	/* ... unless we're using a Catweasel of course. */
 	int cx, cy, cbuttons;
+	static int sLastButtons = 0;
+
 	if (catweasel_read_mouse (1, &cx, &cy, &cbuttons)) 
 	{
 		if (cx)
 			setmousestate (0, 0, cx, 0);
 		if (cy)
 			setmousestate (0, 1, cy, 0);
-		setmousebuttonstate (0, 0, cbuttons & 8);
-		setmousebuttonstate (0, 1, cbuttons & 4);
-		setmousebuttonstate (0, 2, cbuttons & 2);
+
+		if ( (gMouseState & 0x0E) != (cbuttons & 0x0E) )
+		{
+			if ( (sLastButtons & 8) != (cbuttons & 8) )
+			{
+				gMouseState = (cbuttons & 8);
+				setmousebuttonstate (0, 0, gMouseState & 8);
+			}
+			if ( (sLastButtons & 4) != (cbuttons & 4) )
+			{
+				gMouseState = (cbuttons & 4);
+				setmousebuttonstate (0, 1, gMouseState & 4);
+			}
+			if ( (sLastButtons & 2) != (cbuttons & 2) )
+			{
+				gMouseState = (cbuttons & 2);
+				setmousebuttonstate (0, 2, gMouseState & 2);
+			}
+		}
 //write_log( "mouse state cx: %x cy: %x buttons: %x\n ", cx, cy, cbuttons);
+		sLastButtons = cbuttons;
 	}	
+
 #endif
 }
 
