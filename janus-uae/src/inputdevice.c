@@ -1022,6 +1022,7 @@ void inputdevice_do_keyboard (int code, int state)
 	record_key ((uae_u8)((key << 1) | (key >> 7)));
 	return;
     }
+
     inputdevice_add_inputcode (code, state);
 }
 

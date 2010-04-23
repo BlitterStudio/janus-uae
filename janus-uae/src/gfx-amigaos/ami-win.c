@@ -81,6 +81,11 @@
 /* o1i added: */
 #include <graphics/gfx.h>
 
+/* img added: */
+#if defined(CATWEASEL)
+#  include <catweasel.h>
+#endif
+
 #include <graphics/gfxbase.h>
 #include <graphics/displayinfo.h>
 
@@ -3721,6 +3726,22 @@ static int get_mouse_widget_type (unsigned int mouse, unsigned int num, char *na
 static void read_mouse (void)
 {
     /* We handle mouse input in handle_events() */
+
+#if defined(CATWEASEL)
+	/* ... unless we're using a Catweasel of course. */
+	int cx, cy, cbuttons;
+	if (catweasel_read_mouse (1, &cx, &cy, &cbuttons)) 
+	{
+		if (cx)
+			setmousestate (0, 0, cx, 0);
+		if (cy)
+			setmousestate (0, 1, cy, 0);
+		setmousebuttonstate (0, 0, cbuttons & 8);
+		setmousebuttonstate (0, 1, cbuttons & 4);
+		setmousebuttonstate (0, 2, cbuttons & 2);
+//write_log( "mouse state cx: %x cy: %x buttons: %x\n ", cx, cy, cbuttons);
+	}	
+#endif
 }
 
 struct inputdevice_functions inputdevicefunc_mouse = {
@@ -3789,6 +3810,13 @@ static int keyhack (int scancode, int pressed, int num)
 
 static void read_kb (void)
 {
+#ifdef CATWEASEL
+		uae_u8 kc;
+		if (catweasel_read_keyboard (&kc))
+		{
+			inputdevice_do_keyboard (kc & 0x7f, !(kc & 0x80));
+		}
+#endif
 }
 
 static int init_kb (void)
