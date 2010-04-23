@@ -144,6 +144,7 @@ static ULONG TST_AUDIO_FILE(char *buff, char *name, int rate, int bsize)
 
 int setup_sound(void)
 {
+	write_log( "setup_sound.\n" );
   kprintf("setup_sound: sound_available = 1\n");
     sound_available = 1;
     return 1;
@@ -151,6 +152,7 @@ int setup_sound(void)
 
 static char* open_AHI(void)
 {
+	write_log( "open_AHI\n" );
 #ifdef USE_AHIDEVICE
     if( (AHImp=CreateMsgPort()) ) {
     if( (AHIio[0]=(struct AHIRequest *)CreateIORequest(AHImp,sizeof(struct AHIRequest))) ) { 
@@ -215,6 +217,8 @@ int init_sound (void)
   /* SOUND: device handler */
     int rate;
     char buff[256],*devname = NULL;
+
+	write_log( "init_sound\n" );
 
     atexit(close_sound); /* if only amiga os had resource tracking */
     
@@ -383,6 +387,7 @@ fail:
 
 void adjust_sound_timing (void)
 {
+	write_log("adjust_sound_timing\n" );
 #ifdef AHI_DMA_MODE
     static unsigned long last;
     signed long diff;
@@ -416,6 +421,7 @@ void adjust_sound_timing (void)
 
 void close_sound(void)
 {
+write_log( "close_sound\n" );
     if(ahiopen) {close_AHI();ahiopen = 0;}
     if(AUDIO_FILE) {Close(AUDIO_FILE);AUDIO_FILE=NULL;}
     if(devopen) {CloseDevice((void*)AudioIO);devopen = 0;}

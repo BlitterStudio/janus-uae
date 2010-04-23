@@ -45,14 +45,20 @@ void outb(unsigned char v, unsigned int address )
 {
 	*((unsigned char *)address)=v;
 	if ( gEnableCWLogging == 1)
-		write_log( "Written %d to address %x.\n" ,v, address );
+	{
+		if ( (address & 0xFF) >= 0xe0 )
+			write_log( "Written %x to address %x.\n" ,v, address );
+	}
 }
 
 unsigned char inb(unsigned int address)
 {
 	unsigned char tValue = *((unsigned char *)address);
 	if ( gEnableCWLogging == 1)
-		write_log( "Read value %d from address %p.\n", tValue, address );
+	{
+		if ( (address & 0xFF) >= 0xe0 )
+			write_log( "Read value %x from address %p.\n", tValue, address);
+	}
 	return tValue;
 }
 #include <clib/alib_protos.h>
@@ -207,8 +213,8 @@ int cwfloppy_probe_mk4(void *address)
 
     PCICARD_OUTBYTE( pcicard,  iobase + CW_SELECT_BANK, CW_BANK_FLOPPY);
 
-    //write_log( "FPGA is alive. Enabling byte logging.\n" );
-    //gEnableCWLogging = 1;
+//    write_log( "FPGA is alive. Enabling byte logging.\n" );
+  //  gEnableCWLogging = 1;
 
     write_log( "Catweasel type is %d.\n ",cwc.type );
     if ( cwc.type == CATWEASEL_TYPE_MK4 )
