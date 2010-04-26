@@ -51,7 +51,7 @@
 #include <gtk/gtk.h>
 #include "uae.h"
 
-//#define JWTRACING_ENABLED 1
+#define JWTRACING_ENABLED 1
 #if JWTRACING_ENABLED
 #define JWLOG(...)   do { kprintf("%s:%d  %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -143,8 +143,16 @@ extern BOOL clipboard_amiga_changed;
 extern BOOL clipboard_aros_changed;
 
 /* launchd */
-#define LAUNCH_PORT_NAME "J-UAE Execute"
+#define LAUNCH_PORT_NAME  "J-UAE Execute" /* wanderer  */
+#define CLI_PORT_NAME     "J-UAE Run"     /* all other */
+
+#define CLI_TYPE_DIE      9999
+#define CLI_TYPE_WB_ASYNC    1
+#define CLI_TYPE_CLI_ASYNC   2
+
 extern ULONG   aros_launch_task;
+extern ULONG   aros_cli_task;
+/* one daemon for both */
 extern ULONG   aos3_launch_task;
 extern ULONG   aos3_launch_signal;
 extern GSList *janus_launch; 
@@ -227,8 +235,10 @@ typedef struct {
 } JanusMsg;
 
 typedef struct {
+  ULONG         type;
   char         *amiga_path;
   char        **args;
+  ULONG         error;
 } JanusLaunch;
 
 /* Values for amiga_screen_type */
@@ -323,11 +333,17 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub);
 void process_menu(JanusWin *jwin, UWORD selection);
 
 /* launch */
-int  aros_launch_start_thread(void);
-void aros_launch_kill_thread(void);
+int   aros_launch_start_thread(void);
+void  aros_launch_kill_thread(void);
+char *aros_path_to_amigaos(char *aros_path);
+
+/* cli */
+int   aros_cli_start_thread(void);
+void  aros_cli_kill_thread(void);
 
 /* reset */
 void j_reset(void);
+void j_quit(void);
 
 /* protect */
 void obtain_W(void);
@@ -372,5 +388,6 @@ void clone_window(ULONG m68k_win, struct Window *aros_win, int start, int lines)
 /* gtkui.c */
 void switch_off_coherence(void);
 void gui_message_with_title (const char *title, const char *format,...);
+void unlock_jgui(void);
 
 #endif

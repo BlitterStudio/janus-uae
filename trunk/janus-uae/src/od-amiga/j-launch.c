@@ -21,6 +21,7 @@
  *
  ************************************************************************/
 
+#define JWTRACING_ENABLED 1
 #include "j.h"
 
 /*m68k_results:
@@ -76,8 +77,9 @@ uae_u32 ld_job_get(ULONG *m68k_results) {
 
   JWLOG("nr_args: %d\n", nr_args);
 
-  /* status: OK */
-  put_long_p(m68k_results, 1);
+  /* status/type: OK/WB/CLI */
+  put_long_p(m68k_results, jlaunch->type);
+  JWLOG("type is %d\n", jlaunch->type);
 
   /* start position of path */
   put_long_p(m68k_results+1, (nr_args+NR_LONGS)*4);  

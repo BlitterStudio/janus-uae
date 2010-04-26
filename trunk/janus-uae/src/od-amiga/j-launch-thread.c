@@ -24,6 +24,8 @@
 #include <utility/utility.h>
 #include <workbench/workbench.h>
 #include <proto/utility.h>
+
+#define JWTRACING_ENABLED 1
 #include "j.h"
 #include "memory.h"
 #include "include/filesys.h"
@@ -116,7 +118,7 @@ static char *check_and_convert_path(char *aros_exe_full_path,
  * Return result with amigaOS path. You have to FreeVec
  * the result.
  ***********************************************************/
-static char *aros_path_to_amigaos(char *aros_path) {
+char *aros_path_to_amigaos(char *aros_path) {
 
   char           *result;
   UnitInfo *uip = options_mountinfo.ui;
@@ -256,6 +258,7 @@ static void aros_launch_thread (void) {
 	    ObtainSemaphore(&sem_janus_launch_list);
 	    jlaunch=(struct JanusLaunch *) AllocVec(sizeof(JanusLaunch),MEMF_CLEAR);
 	    if(jlaunch) {
+	      jlaunch->type      =CLI_TYPE_WB_ASYNC;
 	      jlaunch->amiga_path=amiga_exe;
 	      jlaunch->args      =convert_tags_to_amigaos(msg->tags);
 	      janus_launch       =g_slist_append(janus_launch,jlaunch);
@@ -303,13 +306,10 @@ static void aros_launch_thread (void) {
   }
   port=NULL;
 
-/* good idea ?
-  aros_launch_task=NULL;
-  aos3_launch_signal=0;
-*/
-
   /* end thread */
 EXIT:
+  aros_launch_task=NULL;
+
   JWLOG("aros_launch_thread[%lx]: dies..\n", thread);
 }
 

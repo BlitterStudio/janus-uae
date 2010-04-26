@@ -21,6 +21,8 @@
 
 #include <libraries/gadtools.h>
 #include <proto/gadtools.h>
+
+//#define JWTRACING_ENABLED 1
 #include "j.h"
 
 static ULONG  count_items(uaecptr menu);
@@ -63,7 +65,7 @@ static WORD parse_flags(WORD aos3flags) {
  * are specified with 0xff as type. Once they are a real
  * MenuItem, ItemFill points to am image of the menubar, which we
  * can't detect (?). So we abuse HIGHNONE, as no "real" item
- * usese this anyways (hopefully)
+ * uses this anyways (hopefully)
  */
 static STRPTR parse_label(UWORD flags, uaecptr intuitextptr) {
 

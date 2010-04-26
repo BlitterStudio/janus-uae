@@ -22,7 +22,6 @@
  ************************************************************************/
 
 //#define JW_ENTER_ENABLED  1
-#define JWTRACING_ENABLED 1
 
 #include "j.h"
 
@@ -942,5 +941,7 @@ void uae_main_window_open() {
  *********************************************************/
 uae_u32 ad_job_modify_idcmp(ULONG aos3win, ULONG flags) {
   JWLOG("ad_job_modify_idcmp(aos3win %lx, flags %lx) not done yet\n", aos3win, flags);
+
+  return TRUE;
 }
 
