@@ -78,10 +78,8 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 
-/* o1i added: */
 #include <graphics/gfx.h>
 
-/* img added: */
 #if defined(CATWEASEL)
 #  include <catweasel.h>
 #endif
@@ -2019,69 +2017,52 @@ int graphics_init (void)
 void graphics_leave (void)
 {
   int i;
-    JWLOG("graphics_leave\n");
-    /* stop cloning and close all clone windows */
-    changed_prefs.jcoherence=FALSE;
-#if 0
-    close_all_janus_windows();
-    i=0;
-    /* wait till list is empty (all windows are closed) */
-    while(janus_windows && i<5) {
-      i++;
-      JWLOG("wait for windows to be closed (#%d)\n",i);
-      sleep(1);
-    }
-    if(janus_windows) {
-      write_log ("Janus: not all janus_windows could be closed\n");
-    }
-#endif
-    close_all_janus_windows_wait();
-    
-#if 0
-    close_all_janus_screens();
-    i=0;
-    /* wait till list is empty (all windows are closed) */
-    while(janus_screens && i<5) {
-      i++;
-      JWLOG("wait for screens to be closed (#%d)\n",i);
-      sleep(1);
-    }
-    if(janus_screens) {
-      write_log ("Janus: not all janus_screens could be closed\n");
-    }
-#endif
-    close_all_janus_screens_wait();
+
+  JWLOG("graphics_leave\n");
+
+  aros_cli_kill_thread();
+  aros_launch_kill_thread();
+  i=20;
+  while((aros_launch_task || aros_cli_task) && i--) {
+    JWLOG("wait for aros_launch_task %lx and aros_cli_task %lx to die ..\n", aros_launch_task, aros_cli_task);
+    Delay(10); 
+  }
+
+  /* stop cloning and close all clone windows */
+  changed_prefs.jcoherence=FALSE;
+  close_all_janus_windows_wait();
+  close_all_janus_screens_wait();
  
-    closepseudodevices ();
-    appw_exit ();
+  closepseudodevices ();
+  appw_exit ();
 
 #ifdef USE_CYBERGFX
 # ifdef USE_CYBERGFX_V41
-    if (CybBuffer) {
-	FreeVec (CybBuffer);
-        CybBuffer = NULL;
-    }
+  if (CybBuffer) {
+    FreeVec (CybBuffer);
+    CybBuffer = NULL;
+  }
 # else
-    if (CybBitMap) {
-	WaitBlit ();
-	myFreeBitMap (CybBitMap);
-	CybBitMap = NULL;
-    }
+  if (CybBitMap) {
+    WaitBlit ();
+    myFreeBitMap (CybBitMap);
+    CybBitMap = NULL;
+  }
 # endif
 #endif
-    if (BitMap) {
-	WaitBlit ();
-	myFreeBitMap (BitMap);
-	BitMap = NULL;
-    }
-    if (TempRPort) {
-	FreeVec (TempRPort);
-	TempRPort = NULL;
-    }
-    if (Line) {
-	FreeVec (Line);
-	Line = NULL;
-    }
+  if (BitMap) {
+    WaitBlit ();
+    myFreeBitMap (BitMap);
+    BitMap = NULL;
+  }
+  if (TempRPort) {
+    FreeVec (TempRPort);
+    TempRPort = NULL;
+  }
+  if (Line) {
+    FreeVec (Line);
+    Line = NULL;
+  }
     if (CM && (CM == original_CM)) {
 	ReleaseColors();
 	CM = NULL;
