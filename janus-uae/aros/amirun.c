@@ -22,10 +22,13 @@
  ************************************************************************/
 
 #include <stdio.h>
+#include <string.h>
 
 #include <utility/utility.h>
 #include <exec/exec.h>
 #include <proto/exec.h>
+#include <dos/dos.h>
+#include <proto/dos.h>
 
 /* send a lauch message to the j-uae cli port */
 
@@ -40,31 +43,78 @@ struct JUAE_Sync_Launch_Message {
 };
 
 #define CLI_PORT_NAME     "J-UAE Run"
+#define MAX_PATH_LENGTH   512
+
+ULONG make_path_absolute(STRPTR in, STRPTR out) {
+  BPTR    lock;
+
+  lock=Lock(in, SHARED_LOCK);
+  if(!lock) {
+    return 205;
+  }
+  NameFromLock(lock, out, MAX_PATH_LENGTH);
+  UnLock(lock);
+
+  return 0;
+}
 
 int main (int argc, char **argv) {
   struct JUAE_Sync_Launch_Message  *msg;
   struct Message                   *back_msg;
   struct MsgPort                   *port;
   struct MsgPort                   *back_port;
+  char                              amiga_os_command[MAX_PATH_LENGTH+1];
+  char                             *cmd;
+  ULONG                             result;
+  ULONG                             count;
+  ULONG                             i;
 
-  printf("argc: %d\n", argc);
   if(argc < 2) {
     printf("usage: %s amiga_os_command [param..]\n", argv[0]);
     return -1;
   }
 
   if(!FindPort((STRPTR) CLI_PORT_NAME)) {
-    printf("ERROR: port %s not open (j-uae/janusd not running)\n", CLI_PORT_NAME);
+    printf("ERROR: port \"%s\" not open (j-uae/janusd not running)\n", CLI_PORT_NAME);
+    PrintFault(121, (STRPTR) argv[1]);
     return -1;
   }
 
   if(! ((back_port=CreateMsgPort() )) ) {
     printf("ERROR: could not open own message port!\n");
+    PrintFault(103, (STRPTR) argv[0]);
     return -1;
   }
 
-  msg=AllocVec(sizeof(struct JUAE_Sync_Launch_Message), MEMF_CLEAR);
-  msg->ln_Name=argv[1];
+  result=make_path_absolute((STRPTR) argv[1], (STRPTR) amiga_os_command);
+  if(result) {
+    PrintFault(result, (STRPTR) argv[1]);
+    return -1;
+  }
+
+  /* count required memory for command plus parameters */
+  count=strlen(amiga_os_command)+1;
+  i=2;
+  while(i < argc) {
+    count=count+strlen(argv[i])+1;
+    i++;
+  }
+
+  cmd=AllocVec(count, MEMF_PUBLIC|MEMF_CLEAR);
+  if(!cmd) {
+    PrintFault(103, (STRPTR) argv[0]);
+    return -1;
+  }
+
+  sprintf(cmd, "%s", amiga_os_command);
+  i=2;
+  while(i < argc) {
+    sprintf(cmd, "%s %s", cmd, argv[i]);
+    i++;
+  }
+
+  msg=AllocVec(sizeof(struct JUAE_Sync_Launch_Message), MEMF_PUBLIC|MEMF_CLEAR);
+  msg->ln_Name=(STRPTR) cmd;
   if(msg) {
     Forbid();
     if(( port=FindPort((STRPTR) CLI_PORT_NAME))) {
@@ -72,17 +122,15 @@ int main (int argc, char **argv) {
       ((struct Message *) msg)->mn_ReplyPort=back_port;
       msg->type=2;
 
-      printf("send msg message to %s..\n", CLI_PORT_NAME);
-      PutMsg(port, msg); /* two way */
+      PutMsg(port, (struct Message *) msg); /* two way */
 
-      printf("wait for answer from %s ..\n", CLI_PORT_NAME);
       back_msg=WaitPort(back_port);
     }
     Permit();
-    printf("error: %d\n", msg->error);
     FreeVec(msg);
   }
-  printf("send msg to %s done.\n", CLI_PORT_NAME);
+
+  FreeVec(cmd);
 
   return 0;
 }
