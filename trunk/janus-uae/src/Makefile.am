@@ -21,7 +21,7 @@ DIST_SUBDIRS = \
 BUILT_SOURCES = \
 	blit.h blitfunc.h blitfunc.c blittable.c \
 	linetoscr.c \
-	cpudefs.c catweasel.c \
+	cpudefs.c \
 	cpuemu_0.c cpuemu_5.c cpuemu_6.c \
 	cpustbl.c cputbl.h \
 	compemu.c \
@@ -29,7 +29,7 @@ BUILT_SOURCES = \
 
 CLEANFILES = \
 	blit.h blitfunc.h blitfunc.c blittable.c \
-	cpudefs.c catweasel.c \
+	cpudefs.c \
 	cpuemu_0.c cpuemu_5.c cpuemu_6.c \
 	cpustbl.c cputbl.h \
 	compemu.c \
@@ -161,7 +161,6 @@ uae_DEPENDENCIES = \
 	dms/libdms.a			\
 	caps/libcaps.a			\
 	blitfunc.o blittable.o		\
-	catweasel.o			\
 	cpustbl.o cpudefs.o		\
 	libcpuemu.a			\
 	@EXTRAOBJS@			\
