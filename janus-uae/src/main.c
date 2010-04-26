@@ -707,13 +707,9 @@ static int do_init_machine (void)
     filesys_install ();
 #endif
 #ifdef AUTOCONFIG
-write_log("pre bsdlib_install ..\n");
     bsdlib_install ();
-write_log("pre emulib_install ..\n");
     emulib_install ();
-write_log("pre uaeexe_install ..\n");
     uaeexe_install ();
-write_log("pre native2amiga_install ..\n");
     native2amiga_install ();
 #endif
 
@@ -723,17 +719,12 @@ write_log("pre native2amiga_install ..\n");
 #endif
 	DISK_init ();
 
-write_log("pre reset_frame_rate_hack ..\n");
 	reset_frame_rate_hack ();
-write_log("pre init_m68k ..\n");
 	init_m68k(); /* must come after reset_frame_rate_hack (); */
-write_log("post init_m68k ..\n");
 
 	gui_update ();
-write_log("post gui_update ..\n");
 
 	if (graphics_init ()) {
-write_log("post graphics_init ..\n");
 
 #ifdef DEBUGGER
 	    setup_brkhandler ();
@@ -757,7 +748,6 @@ write_log("post graphics_init ..\n");
 
 		currprefs.produce_sound = 0;
 	    }
-write_log("post sound_available ..\n");
 
 	    return 1;
 	}
@@ -857,6 +847,8 @@ static void do_exit_machine (void)
 
     graphics_leave ();
     inputdevice_close ();
+
+    j_quit();
 
 #ifdef SCSIEMU
     scsidev_exit ();
