@@ -26,12 +26,6 @@
 #include <dos/dostags.h>
 #include <proto/dos.h>
 
-//#include "sysconfig.h"
-//#include "sysdeps.h"
-//#include "options.h"
-
-//#include "inputdevice.h"
-
 //#define JWTRACING_ENABLED 1
 #include "j.h"
 
@@ -361,6 +355,8 @@ static uae_u32 ld_setup(TrapContext *context, ULONG *param) {
       aos3_launch_signal=get_long_p(param+4);
 
       unlock_jgui();
+
+      aros_cli_start_thread();
     }
 
     want_to_die=get_long_p(param+12);

@@ -21,7 +21,37 @@
  *
  ************************************************************************/
 
+#define JWTRACING_ENABLED 1
 #include "j.h"
+
+static void j_shutdown_all(void) {
+
+  JWLOG("unregister all daemons\n");
+
+  /* reset janusd */
+  JWLOG("close_all_janus_windows ..\n");
+  close_all_janus_windows();
+  JWLOG("close_all_janus_screens ..\n");
+  close_all_janus_screens();
+  aos3_task=0;
+  aos3_task_signal=0;
+
+  /* reset clipd */
+  JWLOG("clipboard_hook_deinstall ..\n");
+  clipboard_hook_deinstall();
+  aos3_clip_task=0;
+  aos3_clip_signal=0;
+  aos3_clip_to_amigaos_signal=0;
+
+  /* reset launchd */
+  aos3_launch_task=0;
+  aos3_launch_signal=0;
+  JWLOG("aros_cli_kill_thread ..\n");
+  aros_cli_kill_thread();
+
+  JWLOG("exit\n");
+
+}
 
 /*********************************************************
  * j_reset
@@ -33,26 +63,15 @@
  *
  * The launch thread may continue to run, it is not
  * dependend on any AmigaOS daemon.
+ *
+ * The cli thread must die, it is only running, if
+ * launchd is running.
  ********************************************************/
 void j_reset(void) {
 
-  JWLOG("j_reset => unregister all daemons\n");
+  JWLOG("j_reset\n");
 
-  /* reset janusd */
-  close_all_janus_windows();
-  close_all_janus_screens();
-  aos3_task=NULL;
-  aos3_task_signal=NULL;
-
-  /* reset clipd */
-  clipboard_hook_deinstall();
-  aos3_clip_task=NULL;
-  aos3_clip_signal=NULL;
-  aos3_clip_to_amigaos_signal=NULL;
-
-  /* reset launchd */
-  aos3_launch_task=NULL;
-  aos3_launch_signal=NULL;
+  j_shutdown_all();
 
   /* update gui */
   unlock_jgui();
@@ -60,3 +79,10 @@ void j_reset(void) {
   JWLOG("j_reset => done\n");
 }
 
+void j_quit(void) {
+  JWLOG("j_quit\n");
+
+  j_shutdown_all();
+
+
+}
