@@ -38,6 +38,7 @@
 #include <exec/io.h>
 #include <exec/memory.h>
 #include <workbench/startup.h>
+#include <dos/dostags.h>
 
 #if 0
 #include <intuition/intuitionbase.h>
@@ -61,9 +62,10 @@
 #include "janus-daemon.h"
 #include "launch-daemon.h"
 
-struct Library *WBStartBase;
+struct Library *WBStartBase=NULL;
+struct Library *DOSBase    =NULL;
 
-char verstag[] = "\0$VER: launch-daemon 0.1";
+char verstag[] = "\0$VER: launch-daemon 0.2";
 LONG          *cmdbuffer=NULL;
 
 /* signal sent by j-uae to tell us, we have to do something! */
@@ -83,7 +85,12 @@ ULONG (*calltrap)(ULONG __asm("d0"),
 
 BOOL open_libs() {
 
-   if (!(WBStartBase=OpenLibrary("wbstart.library",2))) {
+   if(!(DOSBase=OpenLibrary("dos.library",36L))) {
+     printf("unable to open dos.library!?\n");
+     return FALSE;
+   }
+
+   if (!(WBStartBase=OpenLibrary("wbstart.library",2L))) {
      printf("unable to open wbstart.library! Get it from aminet.\n");
      return FALSE;
    }
@@ -314,6 +321,7 @@ static void handle_launch_signal(void) {
   struct WBArg *wbargs=NULL;
   void  *pool;
   BOOL   done;
+  ULONG  result;
 
   C_ENTER
 
@@ -339,19 +347,43 @@ static void handle_launch_signal(void) {
       done=TRUE;
     }
     else {
+      if(command_mem[0]==1) {
+	/* WB == 1 */
 
-      command_string=(char *) command_mem;
-      path          =command_string + command_mem[1];
-      filename      =command_string + command_mem[2];
-      if(command_mem[3]) {
-	wbargs      =create_wbargs(pool, command_mem);
+	command_string=(char *) command_mem;
+	path          =command_string + command_mem[1];
+	filename      =command_string + command_mem[2];
+
+	DebOut("launchd: Start WB program \n", filename);
+
+	if(command_mem[3]) {
+	  wbargs      =create_wbargs(pool, command_mem);
+	}
+	else {
+	  DebOut("launchd: we have no arguments\n");
+	}
+
+	start_it(path, filename, wbargs);
+	/* TODO: unlock all :( */
       }
       else {
-	DebOut("launchd: we have no arguments\n");
-      }
+	/* CLI == 2 */
+	/* we get everything in path: path,filename and arguments */
 
-      start_it(path, filename, wbargs);
-      /* TODO: unlock all :( */
+	command_string=(char *) command_mem;
+	path          =command_string + command_mem[1];
+
+	DebOut("launchd: CLI cmd: >%s<\n", path);
+
+	result=SystemTags(path,
+			      SYS_Asynch, TRUE,
+			      SYS_Input,  Open("CON://200/100/RunAmigaOs/CLOSE/AUTO/WAIT", MODE_OLDFILE),
+			      SYS_Output, NULL,
+			      TAG_DONE);
+
+	DebOut("result: %d\n", result);
+
+      }
     }
   }
 
