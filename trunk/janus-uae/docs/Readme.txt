@@ -1,9 +1,9 @@
-=============
-Janus-UAE 0.2
-=============
+=========
+Janus-UAE
+=========
 
 Janus-UAE is a fork of E-UAE 0.8.29-WIP4, so the same license(s)
-apply to it. I changed the name, as i have different goals than
+apply to it. I changed the name, as I have different goals than
 the e-uae develper. I only care for the AROS version and the
 main idea of Janus-UAE is the integration into AROS as described
 in http://www.power2people.org/bounty_001.html:
@@ -29,7 +29,205 @@ Objectives:
 
 ============================================================
 
-I've made some changes the following changes compared 
+Bounty Status:
+==============
+1. Done.
+2. Done 
+3. Done.
+4. Done.
+5. Done.
+6. Done.
+7. Done.
+
+(a lot of bugs remaining in the done sections, of course)
+
+============================================================
+Installation:
+============================================================
+It should be enough, to copy the janus-uae file from
+the aros directory in this archive to your
+preferred location inside AROS. In the amiga
+directory you can find usefull applications
+for AmigaOS (transdisk and transrom are not
+built/tested by me). In the aros directory there
+is a small binary to start amigaOS applications.
+
+amigaOS helpers:
+================
+
+You have to start some amigaos executables (preferable
+from s:user-startup) to use the integration features:
+
+janusd
+- mouse sync
+- rootless mode (coherency)
+
+clipd
+- amigaOS <-> AROS clipboard sync
+
+launchd
+- start amigaOS workbench executables from wanderer
+- run amigaOS CLI executables with amirun
+
+Best way is to run them at the end of your 
+s:user-startup.
+You can find janusd, clipd and launchd in the amiga 
+directory of this archive.
+
+AROS helpers:
+================
+
+amirun
+
+With the AROS executable you can start any amigaOS
+executable, that is mounted somewhere in amigaOS.
+
+Usage: amirun <amigaOS executable> [parameters]
+
+amirun will exit with the following error codes,
+if something goes wrong:
+
+  121: j-uae/janusd not running
+  103: out of AROS memory
+  205: amigaOS executable does not exist (in AROS filesystem)
+
+At the moment, you get *no* return code from the amigaOS side.
+So you get *no* feedback, if the amigaOS executeable is
+within any mounted device, if it is an amigaOS executeable
+at all or if the amigaOS executable returned any error code.
+This might change in the future, but most likely not for
+a v1.0.
+
+All output always happens in an amigaOS window, if there
+is no output of the amigaOS executable, no window is
+opened. There is no way, to redirect the input/output
+of the amigaOS executeable.
+
+Configuration:
+==============
+Janus-UAE uses a file uaerc.config whith the usual 
+uae config syntax. You can enable/disable the GUI with
+use_gui=yes or use_gui=no. The GUI can also be shown/hidden
+via exchange.
+
+
+============================================================
+History
+============================================================
+
+============================================================
+J-UAE 0.7 (27.04.2010)
+============================================================
+I've made the following changes compared to J-UAE 0.6:
+
+- public screens are working again
+- mouse pointer gets hidden (if AROS supports it)
+- MUI menus work now
+- popup menus done via real intuition windows work now
+- fixed garbage window, if toggled integration
+- added more resolutions
+- destroyed uae window content is now restored correctly
+- uae integration now works, if you use assigns as hardfiles
+- 68k apps should be able to start from amidock etc.
+- added utility, to start amigaOS CLI commands from AROS (amirun)
+- it has been reported, that sound works now
+- it has been reported, that joysticks work now
+
+Known Bugs:
+===========
+- This is a version 0.7, so be warned, this list is 
+  not complete
+- This is a debug build, expect stripped version to be around 
+  9MB in size.
+- sometimes the mousepointer leaves trails at the beginning.
+  I have no idea, why.
+- some people report crashes on exit, especially, when the
+  main window close button is used.
+- There are 4 freemem warnings on exit.
+
+============================================================
+J-UAE 0.6 (25.02.2010)
+============================================================
+I've made the following changes compared to J-UAE 0.5:
+
+- possibility to add more RAM (up to 1.5 TB) and more gfx mem
+- fixed bug when hiding windows (appeared on native only)
+- fixed some race conditions
+
+Known Bugs:
+===========
+- This is a version 0.6, so be warned, this list is 
+  not complete
+- This is a debug build, expect stripped version to be around 
+  9MB in size.
+- amigaOS screen support is not finished (95% done). 
+  Public screens won't work, custom screens should. 
+  In classic mode they work of course.
+- sometimes the mousepointer leaves trails at the beginning.
+  I have no idea, why.
+- No sound.
+
+============================================================
+J-UAE 0.5 (08.02.2010)
+============================================================
+I've made the following changes compared to J-UAE 0.4:
+
+- GUI tab integration updated
+- 68k amigaOS executables can be started from WB
+- custom screens are working
+
+============================================================
+J-UAE 0.4 (28.10.2009)
+============================================================
+I've made the following changes compared to J-UAE 0.3:
+
+- new GUI tab "Integration" for janus special features
+- clipboard can now be shared
+- mouse can now be synced
+- janus daemon has experimental custom screen support
+- amigaOS screens are not draggable, if janusd is running
+- lots of bugfixes
+
+Known Bugs:
+===========
+- This is a version 0.4, so be warned, this list is 
+  not complete
+- This is a debug build, expect stripped version to be around 
+  9MB in size.
+- amigaOS screen support is not finished (80% done). 
+  Public screens may work, custom screens not. 
+  In classic mode they work of course.
+- sometimes the mousepointer leaves trails at the beginning.
+  I have no idea, why.
+- No sound.
+
+============================================================
+J-UAE 0.3 (17.03.2009)
+============================================================
+I've made the following changes compared to J-UAE 0.2:
+
+- picasso96 startup bug fixed
+- full screen modes working
+- new GUI tab "Display" replacing old "Chipset"
+- GUI can be hidden (and shown again) via exchange
+- exchange can quit J-UAE
+- janus daemon has experimental public screen support
+- bugfixes of course
+
+The janus daemon is still in a very experimental state,
+far away from beeing stable or complete.
+
+Known Bugs:
+===========
+- This is a version 0.3, so be warned, this list is 
+  not complete
+- This is a debug build, expect stripped version to be around 
+  9MB in size.
+
+============================================================
+J-UAE v0.2 (18.02.2009)
+============================================================
+I've made the following changes compared 
 to E-UAE 0.8.29-WIP4, mainly:
 
 - compiling for GTK under AROS enabled
@@ -44,54 +242,11 @@ to E-UAE 0.8.29-WIP4, mainly:
 - Picasso96 working
 - the name ;)
 
-Btw, does sound through AHI work? I have no idea about sound
-on linux/amigaos (all my machines are silent, they have fans,
-but no sound (besides beep)).
-
-Known Bugs:
-===========
-- This is a version 0.2, so be warned, this list is 
-  not complete
-- Sometimes at startup, the Picasso96 screen is scrambled. I
-  have no idea about the reason. Is not happening too often
-  for me, so I am not hunting this bug ATM. Once it is up ok,
-  it is ok.
-- Hiding the GUI with exchange crashes the GUI. This is a 
-  problem of the dummy implementation of the GDK functions
-  of GTK-MUI.
-- This is a debug build, expect stripped version to be around 
-  9MB in size.
-
-Bounty Status:
-==============
-1. Obviously completed ;)
-2. No screen support.
-3. Not done.
-4. Shutdown not possible.
-5. Done.
-6. Not done.
-7. Done (?).
-
-Installation:
-=============
-It should be enough, to copy the janus-uae file from
-the aros directory in this archive to your
-preferred location inside AROS. In the amiga
-directory you can find usefull applications
-for AmigaOS (transdisk and transrom are not
-built/tested by me).
-
-Configuration:
-==============
-Janus-UAE uses a file uaerc.config whith the usual 
-uae config syntax. You can enable/disable the GUI with
-use_gui=yes or use_gui=no.
-
 Sources:
 ========
-E-UAE can be built with a GTK user interface for Linux. With
+J-UAE can be built with a GTK user interface for Linux. With
 the help of GTK-MUI (v2), all requirements for a GTK-GUI for
-AROS are met. To build E-UAE yourself with GTK for AROS,
+AROS are met. To build J-UAE yourself with GTK for AROS,
 you will need GTK-MUI from 
 http://sourceforge.net/projects/gtk-mui/ and you will also 
 need glib. Sources available at the same URL.
@@ -125,10 +280,8 @@ Disclaimer:
 I am no E-UAE developer (and don't want to become one),
 I am doing Janus-UAE ;).
 
-If there are any bugs in the GUI, feel free to report 
+If there are any bugs, feel free to report 
 them to gtk-mui"-at-"oliver-brunner.de, remove the
-part in "" obvioulsy. Bug reports for the Picasso96
-support are welcome, too, of course.
+part in "" obviously. 
 
-18.02.2009
 o1i
