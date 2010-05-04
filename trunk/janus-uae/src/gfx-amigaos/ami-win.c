@@ -31,6 +31,10 @@
 
 #include "td-amigaos/thread.h"
 
+#if defined(CATWEASEL)
+#include "catweasel.h"
+#endif
+
 //#define JW_ENTER_ENABLED  1
 //#define JWTRACING_ENABLED 1
 

@@ -78,6 +78,8 @@ int catweasel_write_protected(catweasel_drive *d);
 /* Read data -- msdelay will be used */
 int catweasel_read(catweasel_drive *d, int side, int clock, int time);
 
+int catweasel_read_mouse (int port, int *dx, int *dy, int *buttons);
+
 /* Write data -- msdelay will be used. If time == -1, the write will
    be started at the index pulse and stopped at the next index pulse,
    or earlier if the Catweasel RAM contains a 128 end byte.  The
