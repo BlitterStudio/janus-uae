@@ -1192,7 +1192,6 @@ static void read_floppy_data (struct zfile *diskfile, trackid *tid, int offset, 
     zfile_fread (dst, 1, len, diskfile);
 }
 
-#if !defined(CATWEASEL)
 /* Megalomania does not like zero MFM words... */
 void mfmcode (uae_u16 *mfm, unsigned int words)
 {
@@ -1206,7 +1205,6 @@ void mfmcode (uae_u16 *mfm, unsigned int words)
 	lastword = v;
     }
 }
-#endif
 
 static uae_u8 mfmencodetable[16] = {
     0x2a, 0x29, 0x24, 0x25, 0x12, 0x11, 0x14, 0x15,

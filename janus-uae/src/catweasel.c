@@ -29,6 +29,7 @@
 #include "options.h"
 #include "memory.h"
 #include "catweasel.h"
+#include "disk.h"
 #include "uae.h"
 
 
@@ -41,7 +42,7 @@
 
 int gEnableCWLogging = 0;
 
-void outb(unsigned char v, unsigned int address )
+static void outb(unsigned char v, unsigned int address )
 {
 	*((unsigned char *)address)=v;
 	if ( gEnableCWLogging == 1)
@@ -51,7 +52,7 @@ void outb(unsigned char v, unsigned int address )
 	}
 }
 
-unsigned char inb(unsigned int address)
+static unsigned char inb(unsigned int address)
 {
 	unsigned char tValue = *((unsigned char *)address);
 	if ( gEnableCWLogging == 1)
@@ -92,9 +93,8 @@ void sleep_millis( int time )
 
 #include "mk4_firmware.h"
 
-int cwfloppy_probe_mk3(void *base)
+static int cwfloppy_probe_mk3(unsigned int iobase)
 {
-    int             iobase=(int)base;
 
 	write_log( "Catweasel Mk III initialising.\n ");
 
@@ -116,7 +116,7 @@ int cwfloppy_probe_mk3(void *base)
     return 0;
 }
 
-int cw4_memory_check(void *address)
+static int cw4_memory_check(void *address)
 {
     int             err;
     int             timeout;
@@ -144,12 +144,11 @@ int cw4_memory_check(void *address)
     return 0;
 }
 
-int cwfloppy_probe_mk4(void *address)
+static int cwfloppy_probe_mk4(unsigned int iobase)
 {
     int             err;
     unsigned int        timeout;
     unsigned char       mem[] = { 1,2,4,8,16,32,64,128,255,44,65,3 };
-    int             iobase=(int)address;
 
     cwc.type = CATWEASEL_TYPE_MK4;
 
@@ -241,7 +240,7 @@ static int cwmk3port, cwmk3port1, cwmk3port2, cwmk3buttonsync;
 static int handshake;
 static int mouse_x[2], mouse_y[2], mouse_px[2], mouse_py[2];
 
-int catweasel_isjoystick (void)
+static int catweasel_isjoystick (void)
 {
 	uae_u8 b = cwc.can_joy;
 	if (!cwc.direct_access)
@@ -254,7 +253,8 @@ int catweasel_isjoystick (void)
 	}
 	return b;
 }
-int catweasel_ismouse (void)
+
+static int catweasel_ismouse (void)
 {
 	if (!cwc.direct_access)
 		return 0;
@@ -685,7 +685,7 @@ static uae_u8* scantrack(uae_u8 *sync1,uae_u8 *sync2,int *trackbytes,int *trackb
 
 static unsigned char threshtab[128];
 
-static void codec_makethresh(int trycnt, const unsigned char *origt, unsigned char *t, int numthresh)
+static void codec_makethresh(unsigned int trycnt, const unsigned char *origt, unsigned char *t, int numthresh)
 {
     static unsigned char tab[10] = { 0, 0, 0, 0, -1, -2, 1, 2, -1, 1 };
 
@@ -880,10 +880,10 @@ int catweasel_write_protected(catweasel_drive *d)
     return ret;
 }
 
-uae_u8 catweasel_read_byte(catweasel_drive *d)
+static uae_u8 catweasel_read_byte(catweasel_drive *d)
 {
     uae_u8 tByte = inb(d->contr->io_mem);
-    if ( tByte == 32 || tByte >= 'A' && tByte <= 'z' )
+    if ( tByte == 32 || (tByte >= 'A' && tByte <= 'z') )
 	    write_log( "%c", tByte );
 	else
 		write_log( "." );
@@ -904,7 +904,8 @@ static uae_u32 cw_getmfmlong (uae_u16 * mbuf)
 static int drive_write_adf_amigados (uae_u16 *mbuf, uae_u16 *mend, uae_u8 *writebuffer, int track)
 {
 	int i, secwritten = 0;
-	uae_u32 odd, even, chksum, id, dlong;
+	uae_u32 even, chksum, id, dlong;
+	int odd;
 	uae_u8 *secdata;
 	uae_u8 secbuf[544];
 	char sectable[22];
@@ -997,21 +998,6 @@ err:
 	    write_log ("%d:%d ", i, sectable[i]);
 	write_log ("\n");
 	return ec;
-}
-
-void mfmcode (uae_u16 * mfm, int words)
-{
-    uae_u32 lastword = 0;
-
-    while (words--) {
-	uae_u32 v = *mfm;
-	uae_u32 lv = (lastword << 16) | v;
-	uae_u32 nlv = 0x55555555 & ~lv;
-	uae_u32 mfmbits = (nlv << 1) & (nlv >> 1);
-
-	*mfm++ = v | mfmbits;
-	lastword = v;
-    }
 }
 
 #define FLOPPY_GAP_LEN 360

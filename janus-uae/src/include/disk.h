@@ -48,3 +48,5 @@ extern int disk_debug_track;
 
 #define MAX_PREVIOUS_FLOPPIES 99
 
+void mfmcode (uae_u16 *mfm, unsigned int words);
+
