@@ -151,6 +151,7 @@ struct uae_prefs {
     int keyboard_leds_in_use;
     int scsi;
     unsigned int catweasel_io;
+    int catweasel_joy;
     int cpu_idle;
     int cpu_cycle_exact;
     int blitter_cycle_exact;
