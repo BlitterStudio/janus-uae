@@ -138,6 +138,7 @@ static const struct cfg_lines opttable[] =
 #endif
 #ifdef CATWEASEL
     {"catweasel_io","Catweasel board io base address" },
+    {"catweasel_joy","Use Catweasel Joystick" },
 #endif
 #ifdef JANUS
     {"jcoherence","Integrate os3 windows into host window environment"},
@@ -579,7 +580,10 @@ void save_options (FILE *f, const struct uae_prefs *p, int type)
     cfgfile_write (f, "blitter_cycle_exact=%s\n", p->blitter_cycle_exact ? "true" : "false");
 
     cfgfile_write (f, "log_illegal_mem=%s\n", p->illegal_mem ? "true" : "false");
+#ifdef CATWEASEL
     cfgfile_write (f, "catweasel_io=0x%x\n", p->catweasel_io);
+    cfgfile_write (f, "catweasel_joy=%s\n", p->catweasel_joy ? "yes" : "no");
+#endif
 
     cfgfile_write (f, "kbd_lang=%s\n", (p->keyboard_lang == KBD_LANG_DE ? "de"
 				  : p->keyboard_lang == KBD_LANG_DK ? "dk"
@@ -1201,7 +1205,8 @@ static int cfgfile_parse_hardware (struct uae_prefs *p, char *option, char *valu
 	|| cfgfile_intval (option, value, "floppy2type", &p->dfxtype[2], 1)
 	|| cfgfile_intval (option, value, "floppy3type", &p->dfxtype[3], 1)
 	|| cfgfile_intval (option, value, "maprom", (int *)&p->maprom, 1)
-	|| cfgfile_uintval (option, value, "catweasel_io", &p->catweasel_io, 1))
+	|| cfgfile_uintval(option, value, "catweasel_io", &p->catweasel_io, 1)
+        || cfgfile_yesno  (option, value, "catweasel_joy", &p->catweasel_joy))
 	return 1;
 #ifdef JIT
     if (cfgfile_intval (option, value, "cachesize", &p->cachesize, 1)
@@ -2485,6 +2490,7 @@ void default_prefs (struct uae_prefs *p, int type)
     p->scsi = 0;
     p->cpu_idle = 0;
     p->catweasel_io = 0;
+    p->catweasel_joy = 0;
     p->tod_hack = 0;
     p->maprom = 0;
 

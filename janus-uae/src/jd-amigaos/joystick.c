@@ -118,32 +118,32 @@ static void read_joy (unsigned int nr)
     }
 
 #if defined(CATWEASEL)
-	{	
-		uae_u8 tDirection, tButtons;
-		catweasel_read_joystick( nr, &tDirection, &tButtons );
+    if(currprefs.catweasel_joy) {	
+	uae_u8 tDirection, tButtons;
+	int x = 0, y = 0, state=0;
 
-	    int x = 0, y = 0, state=0;
+	if(catweasel_read_joystick( nr, &tDirection, &tButtons )) {
 
-		if ( (tDirection & 1) == 0)
-			x = 1;
-		if ( (tDirection & 2) == 0 )
-			x = -1;
-		if ( (tDirection & 4) == 0 )
-			y = 1;
-		if ( (tDirection & 8) == 0 )
-			y = -1;
+	    if ( (tDirection & 1) == 0)
+		x = 1;
+	    if ( (tDirection & 2) == 0 )
+		x = -1;
+	    if ( (tDirection & 4) == 0 )
+		y = 1;
+	    if ( (tDirection & 8) == 0 )
+		y = -1;
 
-		if ( tButtons )
-			state |= JPF_BUTTON_RED;
+	    if ( tButtons )
+		state |= JPF_BUTTON_RED;
 
 	    setjoystickstate (nr, 0, x, 1);
 	    setjoystickstate (nr, 1, y, 1);
 
 	    setjoybuttonstate (nr, 0, state & JPF_BUTTON_RED);
 	    setjoybuttonstate (nr, 1, state & JPF_BUTTON_BLUE);
-		
-//write_log( "joystick %d: x=%d y=%d button=%d\n", nr, x, y, state );
 	}
+		
+      }
 #endif
 }
 

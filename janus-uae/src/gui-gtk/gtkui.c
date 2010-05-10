@@ -67,7 +67,7 @@
 #include "gui-gtk/display.h"
 #include "gui-gtk/integration.h"
 
-#define GUI_DEBUG 1
+//#define GUI_DEBUG 1
 #ifdef  GUI_DEBUG
 #define DEBUG_LOG(...) do { kprintf("GUI: %s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -175,6 +175,7 @@ static GtkAdjustment *cachesize_adj;
 #else
 # define JOY_WIDGET_COUNT 8
 #endif
+static GtkWidget *catweasel_joystick_widget;
 static GtkWidget *joy_widget[2][JOY_WIDGET_COUNT];
 static const char *joylabels[] = {
     "None",
@@ -1474,9 +1475,11 @@ static void on_launch_changed (void) {
 
   if(changed_prefs.jlaunch) {
     aros_launch_start_thread();
+    aros_cli_start_thread();
   }
   else {
     aros_launch_kill_thread();
+    aros_cli_kill_thread();
   }
 }
 
@@ -1673,32 +1676,69 @@ static void make_comp_widgets (GtkWidget *vbox)
 }
 #endif
 
+/*********************************************
+ * Joystick
+ *********************************************/
+static void  on_catweasel_joystick_changed(GtkWidget *w, GtkWidget *cat) {
+
+  currprefs.catweasel_joy = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (catweasel_joystick_widget));
+  changed_prefs.catweasel_joy = currprefs.catweasel_joy;
+  inputdevice_config_change();
+}
+
+static GtkWidget *make_joy_frame(int i) {
+  GtkWidget *frame;
+  char buffer[20];
+  int joy_count = inputdevice_get_device_total (IDTYPE_JOYSTICK);
+
+  sprintf (buffer, "Port %d", i);
+  frame = make_radio_group_box (buffer, joylabels, joy_widget[i], 0, joy_changed);
+  gtk_widget_show (frame);
+
+  if (joy_count < 2) {
+      gtk_widget_set_sensitive (joy_widget[i][2], 0);
+  }
+  if (joy_count == 0) {
+      gtk_widget_set_sensitive (joy_widget[i][1], 0);
+  }
+
+  return frame;
+}
+
 static void make_joy_widgets (GtkWidget *dvbox)
 {
-    int i;
-    int joy_count = inputdevice_get_device_total (IDTYPE_JOYSTICK);
-    GtkWidget *hbox = gtk_hbox_new (FALSE, 10);
+    GtkWidget *joy1_frame;
+    GtkWidget *joy2_frame;
+#ifdef CATWEASEL
+    GtkWidget *cat_frame;
+#endif
 
-    add_empty_vbox (dvbox);
-    gtk_widget_show (hbox);
-    add_centered_to_vbox (dvbox, hbox);
+    joy1_frame                =make_joy_frame(0);
+    joy2_frame                =make_joy_frame(1);
+#ifdef CATWEASEL
+    catweasel_joystick_widget =gtk_check_button_new_with_label ("Use Catweasel Joystick");
+    cat_frame                 =gtk_frame_new ("Catweasel");
 
-    for (i = 0; i < 2; i++) {
-	GtkWidget *frame;
-	char buffer[20];
+    gtk_toggle_button_set_active(catweasel_joystick_widget, currprefs.catweasel_joy);
+    gtk_container_add (GTK_CONTAINER (cat_frame), catweasel_joystick_widget);
+#endif
 
-	sprintf (buffer, "Port %d", i);
-	frame = make_radio_group_box (buffer, joylabels, joy_widget[i], 0, joy_changed);
-	gtk_widget_show (frame);
-	gtk_box_pack_start (GTK_BOX (hbox), frame, FALSE, TRUE, 0);
+    gtkutil_add_table (GTK_WIDGET (dvbox),
+        joy1_frame, 1, 1, GTK_FILL,
+        joy2_frame, 2, 1, GTK_FILL,
+        GTKUTIL_ROW_END,
+#ifdef CATWEASEL
+	cat_frame,  1, 2, GTK_FILL,
+	GTKUTIL_ROW_END,
+#endif
+	GTKUTIL_TABLE_END
+    );
 
-	if (joy_count < 2)
-	    gtk_widget_set_sensitive (joy_widget[i][2], 0);
-	if (joy_count == 0)
-	    gtk_widget_set_sensitive (joy_widget[i][1], 0);
-    }
-
-    add_empty_vbox (dvbox);
+#ifdef CATWEASEL
+    gtk_signal_connect (GTK_OBJECT (catweasel_joystick_widget), "toggled",
+			GTK_SIGNAL_FUNC (on_catweasel_joystick_changed),
+			catweasel_joystick_widget);
+#endif
 }
 
 #ifdef FILESYS
@@ -2120,7 +2160,15 @@ static void make_about_widgets (GtkWidget *dvbox)
     add_centered_to_vbox (dvbox, thing);
 
 #endif
-
+/* TEST VERSION */
+#if 0
+    thing = gtk_label_new ("*** THIS IS AN INTERNAL BETA TEST VERSION ***");
+    gtk_widget_show (thing);
+    add_centered_to_vbox (dvbox, thing);
+    thing = gtk_label_new ("*** PLEASE DO NOT DISTRIBUTE ***");
+    gtk_widget_show (thing);
+    add_centered_to_vbox (dvbox, thing);
+#endif
 
     add_empty_vbox (dvbox);
 }
