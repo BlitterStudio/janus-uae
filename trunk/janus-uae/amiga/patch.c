@@ -60,6 +60,11 @@ extern struct IntuitionBase* IntuitionBase;
  *
  * - CloseScreen
  *   We need it for custom screens
+ *
+ * - ModifyIDCMP
+ *   MUI windows seem to use this quite
+ *   often. Without this patch, menus
+ *   might not work.
  */
 
 APTR           old_CloseWindow;
@@ -69,6 +74,7 @@ APTR           old_CloseScreen;
 APTR           old_OpenScreen;
 APTR           old_OpenScreenTagList;
 APTR           old_ScreenDepth;
+APTR           old_ModifyIDCMP;
 
 #define PUSHFULLSTACK "movem.l d0-d7/a0-a6,-(SP)\n"
 #define POPFULLSTACK  "movem.l (SP)+,d0-d7/a0-a6\n"
@@ -280,6 +286,9 @@ ULONG remove_dragging_TagList (struct TagItem *original_tags __asm("a1")) {
   return (ULONG) taglist_mytags_linked;
 }
 
+void do_update_screens (void) {
+  update_screens();
+}
 
 /*********************************************************************************
  * _my_OpenScreen_SetFunc
@@ -304,6 +313,10 @@ ULONG remove_dragging_TagList (struct TagItem *original_tags __asm("a1")) {
  * AD_GET_JOB  11                   (d0)
  * AD_GET_JOB_OPEN_CUSTOM_SCREEN 13 (d1)
  * new screen                       (a0)
+ *
+ * ad_job_open_custom_screen is a dummy at the moment. Screens are
+ * opened with sync-screen.
+ *
  *********************************************************************************/
 __asm__("_my_OpenScreen_SetFunc:\n"
         PUSHA0
@@ -324,14 +337,19 @@ __asm__("_my_OpenScreen_SetFunc:\n"
 	"cmp.l #1,_state\n"
 	"blt openscreen_patch_disabled\n"
 	PUSHFULLSTACK
+	"jsr _update_screens\n"
+	POPFULLSTACK
+	"openscreen_patch_disabled:\n"
+        "rts\n");
+
+#if 0
+	/* call AD_GET_JOB_OPEN_CUSTOM_SCREEN */
 	"move.l d0,a0\n"
 	"moveq #11,d0\n"
 	"moveq #13,d1\n"
 	"move.l _calltrap,a1\n"
 	"jsr (a1)\n"
-	POPFULLSTACK
-	"openscreen_patch_disabled:\n"
-        "rts\n");
+#endif
 
 /*********************************************************************************
  * _my_OpenScreenTagList_SetFunc
@@ -346,6 +364,8 @@ __asm__("_my_OpenScreen_SetFunc:\n"
  * AD_GET_JOB  11                   (d0)
  * AD_GET_JOB_OPEN_CUSTOM_SCREEN 13 (d1)
  * new screen                       (a0)
+ *
+ * AD_GET_JOB_OPEN_CUSTOM_SCREEN is not used anymore
  *********************************************************************************/
 __asm__("_my_OpenScreenTagList_SetFunc:\n"
         "move.l  a0,-(SP)\n"             /* backup struct NewScreen   */
@@ -363,14 +383,20 @@ __asm__("_my_OpenScreenTagList_SetFunc:\n"
 	"cmp.l #1,_state\n"
 	"blt openscreentags_patch_disabled\n"
 	PUSHFULLSTACK
+	"jsr _update_screens\n"
+	POPFULLSTACK
+	"openscreentags_patch_disabled:\n"
+	
+        "rts\n");
+
+#if 0
+	/* call AD_GET_JOB_OPEN_CUSTOM_SCREEN */
 	"move.l d0,a0\n"
 	"moveq #11,d0\n"
 	"moveq #13,d1\n"
 	"move.l _calltrap,a1\n"
 	"jsr (a1)\n"
-	POPFULLSTACK
-	"openscreentags_patch_disabled:\n"
-        "rts\n");
+#endif
 
 /*********************************************************************************
  * _my_CloseScreen_SetFunc
@@ -445,6 +471,34 @@ __asm__("_my_ScreenDepth_SetFunc:\n"
 	"rts\n"
 	);
 
+/*********************************************************************************
+ * _my_ModifyIDCMP_SetFunc
+ *
+ * done in assembler, as C-Source always at least destroys the
+ * a5 register for the local variable stack frame. But library
+ * functions may only trash d0, d1, a0 and a1.
+ *
+ * for calltrap:
+ * AD_GET_JOB  11 (d0)
+ * AD_GET_JOB_MODIFY_IDCMP 17 (d1)
+ * new IDCMP flags (d3)
+ * window (a0)
+ *********************************************************************************/
+__asm__("_my_ModifyIDCMP_SetFunc:\n"
+	PUSHFULLSTACK
+	"move.l d0,d3\n"
+	"moveq #11,d0\n"
+	"moveq #17,d1\n"
+	"move.l _calltrap,a1\n"
+	"jsr (a1)\n"
+	POPFULLSTACK
+	PUSHA3
+	"move.l _old_ModifyIDCMP, a3\n"
+	"jsr (a3)\n"
+	POPA3
+	"rts\n"
+	);
+
 
 /*
  * assembler functions need to be declared or used, before
@@ -457,6 +511,7 @@ void my_OpenScreen_SetFunc();
 void my_OpenScreenTagList_SetFunc();
 void my_CloseScreen_SetFunc();
 void my_ScreenDepth_SetFunc();
+void my_ModifyIDCMP_SetFunc();
 
 /* According to Ralph Babel: ".. as
  * of 2.0, SetFunction() calls Forbid()/Permit() 
@@ -494,6 +549,11 @@ void patch_functions() {
   old_ScreenDepth=SetFunction((struct Library *)IntuitionBase, 
                               -786, 
 			      (APTR) my_ScreenDepth_SetFunc);
+
+  old_ModifyIDCMP=SetFunction((struct Library *)IntuitionBase, 
+                              -150, 
+			      (APTR) my_ModifyIDCMP_SetFunc);
+
 
 
   LEAVE
