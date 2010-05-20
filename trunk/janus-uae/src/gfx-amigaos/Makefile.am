@@ -4,4 +4,4 @@ noinst_LIBRARIES = libgfxdep.a
 
 libgfxdep_a_SOURCES = ami-win.c ami-mouse.c ami-appw.c
 
-noinst_HEADERS = gfx.h
+noinst_HEADERS = gfx.h ami.h
