@@ -53,7 +53,7 @@ ARFLAGS = cru
 libgfxdep_a_AR = $(AR) $(ARFLAGS)
 libgfxdep_a_LIBADD =
 am_libgfxdep_a_OBJECTS = ami-win.$(OBJEXT) ami-mouse.$(OBJEXT) \
-	ami-appw.$(OBJEXT)
+	ami-events.$(OBJEXT) ami-appw.$(OBJEXT)
 libgfxdep_a_OBJECTS = $(am_libgfxdep_a_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(top_builddir)/src@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -221,7 +221,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 INCLUDES = -I$(top_srcdir)/src/include -I$(top_builddir)/src -I$(top_srcdir)/src -I$(top_srcdir) -I/usr/local/amiga/i686-aros/include/glib-2.0/glib -I/usr/local/amiga/i686-aros/include/glib-2.0 -I/usr/local/amiga/i686-aros/lib/glib-2.0/include
 noinst_LIBRARIES = libgfxdep.a
-libgfxdep_a_SOURCES = ami-win.c ami-mouse.c ami-appw.c
+libgfxdep_a_SOURCES = ami-win.c ami-mouse.c ami-events.c ami-appw.c 
 noinst_HEADERS = gfx.h ami.h
 all: all-am
 
@@ -271,6 +271,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ami-appw.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ami-events.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ami-mouse.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ami-win.Po@am__quote@
 

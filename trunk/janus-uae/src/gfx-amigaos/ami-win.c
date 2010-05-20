@@ -152,18 +152,18 @@ extern struct uae_sem_t n2asem;
 #define UAESM  "UAESM"         /* env: var for screen mode */
 
 static int need_dither;        /* well.. guess :-) */
-static int use_delta_buffer;   /* this will redraw only needed places */
+int use_delta_buffer;   /* this will redraw only needed places */
 static int use_cyb;            /* this is for cybergfx truecolor mode */
 static int use_approx_color;
 
 extern xcolnr xcolors[4096];
 
-static uae_u8 *oldpixbuf;
+uae_u8 *oldpixbuf;
 
-static int  screen_is_picasso;
-static char picasso_invalid_lines[1200];
-static int  picasso_invalid_start;
-static int  picasso_invalid_end;
+int  screen_is_picasso;
+char picasso_invalid_lines[1200];
+int  picasso_invalid_start;
+int  picasso_invalid_end;
 
 /****************************************************************************/
 /*
@@ -184,7 +184,6 @@ struct LayersIFace *ILayers;
 struct IntuitionIFace *IIntuition;
 struct CyberGfxIFace *ICyberGfx;
 
-unsigned long            frame_num; /* for arexx */
 
 /*static*/ UBYTE            *Line;
 struct RastPort  *RP;
@@ -203,7 +202,7 @@ struct ColorMap  *CM;
 int              XOffset,YOffset;
 
 static int os39;        /* kick 39 present */
-static int usepub;      /* use public screen */
+int usepub;      /* use public screen */
 static int is_halfbrite;
 static int is_ham;
 
@@ -232,7 +231,6 @@ static int get_BytesPerRow(struct Window *win);
 /****************************************************************************/
 
 void main_window_led(int led, int on);
-int do_inhibit_frame(int onoff);
 
 extern void initpseudodevices(void);
 extern void closepseudodevices(void);
@@ -2380,7 +2378,7 @@ void o1i_clone_windows_task() {
 #endif
 
 //static void o1i_Draw() {
-static void o1i_Display_Update(int start,int i) {
+void o1i_Display_Update(int start,int i) {
 
   if(uae_no_display_update) {
     return;
@@ -2421,286 +2419,6 @@ int aros_daemon_runing() {
   return (aos3_task && aos3_task_signal);
 }
 
-/* 
- * in e-uae handle_events always handle the events of the main uae
- * window. j-uae has quite some windows more ;).
- *
- * if we have integrated windows, this is no problem at all. But
- * for custom screens, we need to call the according handle_custom_events_W.
- */
-void handle_events(void) {
-  JWLOG("handle_events: dispatcher\n", W);
-
-  if(janus_active_screen==NULL) {
-    JWLOG("custom_screen_active==NULL\n");
-    handle_events_W(W, FALSE);
-
-  }
-  else {
-    /* custom screens only have one window */
-    JWLOG("custom screen %lx, window %lx\n", 
-             janus_active_screen->arosscreen, 
-             janus_active_screen->arosscreen->FirstWindow);
-    handle_events_W(janus_active_screen->arosscreen->FirstWindow, TRUE);
-    JWLOG("do nothing, custom screen thread will handle us\n");
-  }
-}
-
-/***************************************************
- * handle_events_W
- *
- * works with a local W, so it can be called
- * for a window on our own custom screen, for 
- * example
- ***************************************************/
-void handle_events_W(struct Window *W, BOOL customscreen) {
-
-    struct IntuiMessage *msg;
-    int dmx, dmy, mx, my, class, code, qualifier;
-
-    JWLOG("aros W: %lx\n", W);
-    gui_handle_events();
-
-/* janusd now has its own interrupt server! */
-#if 0
-    if(aos3_task && aos3_task_signal) {
-      JWLOG("send signal to Wait of janusd (%lx)\n", aos3_task);
-      uae_Signal(aos3_task, aos3_task_signal);
-    }
-#endif
-
-    JWLOG("W: %lx\n", W);
-    if(!W) {
-      JWLOG("Warning: W is NULL!\n", W);
-      return;
-    }
-
-   /* this function is called at each frame, so: */
-    ++frame_num;       /* increase frame counter */
-#if 0
-    save_frame();      /* possibly save frame    */
-#endif
-
-#ifdef DEBUGGER
-    /*
-     * This is a hack to simulate ^C as is seems that break_handler
-     * is lost when system() is called.
-     */
-    if (SetSignal (0L, SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D) &
-		(SIGBREAKF_CTRL_C|SIGBREAKF_CTRL_D)) {
-	activate_debugger ();
-    }
-#endif
-
-    #ifdef PICASSO96
-    if (screen_is_picasso) {
-        int i;
-
-	//JWLOG("handle_events->screen_is_picasso\n");
-
-        picasso_invalid_lines[picasso_invalid_end+1] = 0;
-        picasso_invalid_lines[picasso_invalid_end+2] = 1;
-
-    	//o1i_Display_Update(0,0);
-
-	/* o1i TODO: remove loops?*/
-	for (i = picasso_invalid_start; i < picasso_invalid_end;)
-	{
-	    int start = i;
-
-            for (;picasso_invalid_lines[i]; i++)
-	        picasso_invalid_lines[i] = 0;
-
-            //DoMethod(uaedisplay, MUIM_UAEDisplay_Update, start, i);
-	    //JWLOG("MUIM_UAEDisplay_Update TODO\n");
-	    o1i_Display_Update(start,i);
-
-	    for (; !picasso_invalid_lines[i]; i++);
-	}
-
-	picasso_invalid_start = picasso_vidinfo.height + 1;
-	picasso_invalid_end   = -1;
-    }
-    #endif
-
-    if(customscreen) {
-      JWLOG("custom screen, don't do GetMsg(W %lx ->UserPort %lx)\n", W, W->UserPort);
-    }
-    else {
-      if(!uae_main_window_closed) {
-	obtain_W();
-	JWLOG("GetMsg(W %lx->UserPort %lx)\n", W, W->UserPort);
-
-	while (!uae_main_window_closed && (msg = (struct IntuiMessage*) GetMsg(W->UserPort))) {
-	  class     = msg->Class;
-	  code      = msg->Code;
-	  dmx       = msg->MouseX;
-	  dmy       = msg->MouseY;
-	  mx        = msg->IDCMPWindow->MouseX; // Absolute pointer coordinates
-	  my        = msg->IDCMPWindow->MouseY; // relative to the window
-	  qualifier = msg->Qualifier;
-
-	  ReplyMsg ((struct Message*)msg);
-
-	  JWLOG("W: %lx (%s)\n",W, W->Title);
-	  JWLOG("ami-win.c: handle_input(win %lx)\n", W);
-
-	  switch (class) {
-	      case IDCMP_NEWSIZE:
-		  do_inhibit_frame ((W->Flags & WFLG_ZOOMED) ? 1 : 0);
-		  break;
-
-	      case IDCMP_REFRESHWINDOW:
-		  if (use_delta_buffer) {
-		      /* hack: this forces refresh */
-		      uae_u8 *ptr = oldpixbuf;
-		      int i, len = gfxvidinfo.width;
-		      len *= gfxvidinfo.pixbytes;
-		      for (i=0; i < currprefs.gfx_height_win; ++i) {
-			  ptr[00000] ^= 255;
-			  ptr[len-1] ^= 255;
-			  ptr += gfxvidinfo.rowbytes;
-		      }
-		  }
-		  BeginRefresh (W);
-		  flush_block (0, currprefs.gfx_height_win - 1);
-		  EndRefresh (W, TRUE);
-		  break;
-
-	      case IDCMP_CLOSEWINDOW:
-		  uae_quit ();
-		  break;
-
-	      case IDCMP_RAWKEY: {
-		  int keycode = code & 127;
-		  int state   = code & 128 ? 0 : 1;
-		  int ievent;
-
-		  if ((qualifier & IEQUALIFIER_REPEAT) == 0) {
-		      /* We just want key up/down events - not repeats */
-		      if ((ievent = match_hotkey_sequence (keycode, state)))
-			  handle_hotkey_event (ievent, state);
-		      else
-			  inputdevice_do_keyboard (keycode, state);
-		  }
-		  break;
-	       }
-
-	      case IDCMP_MOUSEMOVE:
-		/* classic mouse move, if either option is disabled or janusd is not (yet) running */
-		if( ((!changed_prefs.jmouse) || (!aos3_task) ) && (!uae_main_window_closed)) {
-		  JWLOG("classic mouse move enabled\n");
-		  setmousestate (0, 0, dmx, 0);
-		  setmousestate (0, 1, dmy, 0);
-
-		  if (usepub) {
-		    update_pointer(W, mx, my);
-#if 0
-		      POINTER_STATE new_state = get_pointer_state (W, mx, my);
-		      if (new_state != pointer_state) {
-			  pointer_state = new_state;
-			  if (pointer_state == INSIDE_WINDOW)
-			      hide_pointer (W);
-			  else
-			      show_pointer (W);
-		      }
-#endif
-		  }
-		}
-		else {
-		  JWLOG("classic mouse move disabled ((%d || %d) && %d)\n", (!changed_prefs.jmouse), (!aos3_task), (!uae_main_window_closed));
-		}
-		break;
-
-	    case IDCMP_MOUSEBUTTONS:
-		if (code == SELECTDOWN) 
-		{
-			setmousebuttonstate (0, 0, 1);
-			gMouseState |= 8;
-		}
-		if (code == SELECTUP)   
-		{
-			setmousebuttonstate (0, 0, 0);
-			gMouseState &= ~8;
-		}
-        if (code == MIDDLEDOWN) 
-		{
-			setmousebuttonstate (0, 2, 1);
-			gMouseState |= 4;
-		}
-		if (code == MIDDLEUP)   
-		{
-			setmousebuttonstate (0, 2, 0);
-			gMouseState &= ~4;
-		}
-		if (code == MENUDOWN)
-		{
-			setmousebuttonstate (0, 1, 1);
-			gMouseState |= 2;
-		}
-		if (code == MENUUP)     
-		{
-			setmousebuttonstate (0, 1, 0);
-			gMouseState &= ~2;
-		}
-		break;
-
-	      /* Those 2 could be of some use later. */
-	      case IDCMP_DISKINSERTED:
-		  /*printf("diskinserted(%d)\n",code);*/
-		  break;
-
-	      case IDCMP_DISKREMOVED:
-		  /*printf("diskremoved(%d)\n",code);*/
-		  break;
-
-	      case IDCMP_ACTIVEWINDOW:
-		  /* When window regains focus (presumably after losing focus at some
-		   * point) UAE needs to know any keys that have changed state in between.
-		   * A simple fix is just to tell UAE that all keys have been released.
-		   * This avoids keys appearing to be "stuck" down.
-		   */
-		  JWLOG("IDCMP_ACTIVEWINDOW(%lx)\n", W);
-		  inputdevice_acquire ();
-		  inputdevice_release_all_keys ();
-		  reset_hotkeys ();
-		  copy_clipboard_to_amigaos();
-		  break;
-
-	      case IDCMP_INACTIVEWINDOW:
-		  JWLOG("IDCMP_INACTIVEWINDOW\n");
-		  JWLOG("IntuitionBase->ActiveWindow: %lx (%s)\n",IntuitionBase->ActiveWindow, IntuitionBase->ActiveWindow->Title);
-		  copy_clipboard_to_aros();
-		  inputdevice_unacquire ();
-		  break;
-
-	      case IDCMP_INTUITICKS:
-#ifdef __amigaos4__ 
-		  grabTicks--;
-		  if (grabTicks < 0) {
-		      grabTicks = GRAB_TIMEOUT;
-		      #ifdef __amigaos4__ 
-			  if (mouseGrabbed)
-			      grab_pointer (W);
-		      #endif
-		  }
-#endif
-		  break;
-
-	      default:
-		  write_log ("Unknown event class: %x\n", class);
-		  JWLOG("Unknown event class: %x\n", class);
-		  break;
-	  }
-	}
-
-	JWLOG("GetMsg(W->UserPort %lx) done\n", W->UserPort);
-	release_W();
-      }
-    }
-
-    appw_events();
-}
 
 /***************************************************************************/
 
