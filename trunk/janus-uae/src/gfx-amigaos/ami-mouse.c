@@ -59,6 +59,7 @@ static int grabTicks;
 /****************************************************************************/
 
 POINTER_STATE pointer_state;
+int gMouseState=0;
 
 static APTR blank_pointer;
 static POINTER_STATE get_pointer_state (const struct Window *w, int mousex, int mousey);
@@ -194,5 +195,156 @@ static POINTER_STATE get_pointer_state (const struct Window *w, int mousex, int 
 	}
     }
     return new_state;
+}
+
+void toggle_mousegrab (void) {
+
+#ifdef __amigaos4__ 
+    mouseGrabbed = 1 - mouseGrabbed;
+    grabTicks    = GRAB_TIMEOUT;
+    if (W)
+	grab_pointer (W);
+#else
+    write_log ("Mouse grab not supported\n");
+#endif
+}
+
+/****************************************************************************
+ *
+ * Mouse inputdevice functions
+ */
+
+#define MAX_BUTTONS     3
+#define MAX_AXES        3
+#define FIRST_AXIS      0
+#define FIRST_BUTTON    MAX_AXES
+
+static int init_mouse (void)
+{
+   return 1;
+}
+
+static void close_mouse (void)
+{
+   return;
+}
+
+static int acquire_mouse (unsigned int num, int flags)
+{
+   return 1;
+}
+
+static void unacquire_mouse (unsigned int num)
+{
+   return;
+}
+
+static unsigned int get_mouse_num (void)
+{
+    return 1;
+}
+
+static const char *get_mouse_name (unsigned int mouse)
+{
+    return "Default mouse";
+}
+
+static unsigned int get_mouse_widget_num (unsigned int mouse)
+{
+    return MAX_AXES + MAX_BUTTONS;
+}
+
+static int get_mouse_widget_first (unsigned int mouse, int type)
+{
+    switch (type) {
+        case IDEV_WIDGET_BUTTON:
+            return FIRST_BUTTON;
+        case IDEV_WIDGET_AXIS:
+            return FIRST_AXIS;
+    }
+    return -1;
+}
+
+static int get_mouse_widget_type (unsigned int mouse, unsigned int num, char *name, uae_u32 *code)
+{
+    if (num >= MAX_AXES && num < MAX_AXES + MAX_BUTTONS) {
+        if (name)
+            sprintf (name, "Button %d", num + 1 + MAX_AXES);
+        return IDEV_WIDGET_BUTTON;
+    } else if (num < MAX_AXES) {
+        if (name)
+            sprintf (name, "Axis %d", num + 1);
+        return IDEV_WIDGET_AXIS;
+    }
+    return IDEV_WIDGET_NONE;
+}
+
+static void read_mouse (void)
+{
+    /* We handle mouse input in handle_events() */
+
+#if defined(CATWEASEL)
+	/* ... unless we're using a Catweasel of course. */
+	int cx, cy, cbuttons;
+	static int sLastButtons = 0;
+
+	if (catweasel_read_mouse (1, &cx, &cy, &cbuttons)) 
+	{
+		if (cx)
+			setmousestate (0, 0, cx, 0);
+		if (cy)
+			setmousestate (0, 1, cy, 0);
+
+		if ( (gMouseState & 0x0E) != (cbuttons & 0x0E) )
+		{
+			if ( (sLastButtons & 8) != (cbuttons & 8) )
+			{
+				gMouseState = (cbuttons & 8);
+				setmousebuttonstate (0, 0, gMouseState & 8);
+			}
+			if ( (sLastButtons & 4) != (cbuttons & 4) )
+			{
+				gMouseState = (cbuttons & 4);
+				setmousebuttonstate (0, 1, gMouseState & 4);
+			}
+			if ( (sLastButtons & 2) != (cbuttons & 2) )
+			{
+				gMouseState = (cbuttons & 2);
+				setmousebuttonstate (0, 2, gMouseState & 2);
+			}
+		}
+//write_log( "mouse state cx: %x cy: %x buttons: %x\n ", cx, cy, cbuttons);
+		sLastButtons = cbuttons;
+	}	
+
+#endif
+}
+
+struct inputdevice_functions inputdevicefunc_mouse = {
+    init_mouse,
+    close_mouse,
+    acquire_mouse,
+    unacquire_mouse,
+    read_mouse,
+    get_mouse_num,
+    get_mouse_name,
+    get_mouse_widget_num,
+    get_mouse_widget_type,
+    get_mouse_widget_first
+};
+
+/*
+ * Default inputdevice config for mouse
+ */
+void input_get_default_mouse (struct uae_input_device *uid)
+{
+    /* Supports only one mouse for now */
+    uid[0].eventid[ID_AXIS_OFFSET + 0][0]   = INPUTEVENT_MOUSE1_HORIZ;
+    uid[0].eventid[ID_AXIS_OFFSET + 1][0]   = INPUTEVENT_MOUSE1_VERT;
+    uid[0].eventid[ID_AXIS_OFFSET + 2][0]   = INPUTEVENT_MOUSE1_WHEEL;
+    uid[0].eventid[ID_BUTTON_OFFSET + 0][0] = INPUTEVENT_JOY1_FIRE_BUTTON;
+    uid[0].eventid[ID_BUTTON_OFFSET + 1][0] = INPUTEVENT_JOY1_2ND_BUTTON;
+    uid[0].eventid[ID_BUTTON_OFFSET + 2][0] = INPUTEVENT_JOY1_3RD_BUTTON;
+    uid[0].enabled = 1;
 }
 
