@@ -888,11 +888,15 @@ void gui_shutdown (void);
  */
 void real_main (int argc, char **argv)
 {
-   /* as uae crashes, if I disable Debut output for the GUI,
-    * I rather write it to a temp file.. 
-    * WARNING: Bad hack detected..
+   /* j-uae writes to stdout, so if you want to
+    * use 'T:uae.log' you better start it
+    * with
+    * j-uae >T:uae.log
+    * ;)
     */
-    //set_logfile("T:uae.log");
+#if 0
+    set_logfile("T:uae.log");
+#endif
 
 
 //#if defined GTKMUI
