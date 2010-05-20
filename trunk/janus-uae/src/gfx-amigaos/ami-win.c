@@ -36,10 +36,9 @@
 #endif
 
 //#define JW_ENTER_ENABLED  1
-//#define JWTRACING_ENABLED 1
+#define JWTRACING_ENABLED 1
 
 #include "od-amiga/j.h"
-
 
 /* sam: Argg!! Why did phase5 change the path to cybergraphics ? */
 //#define CGX_CGX_H <cybergraphics/cybergraphics.h>
@@ -58,15 +57,6 @@
 #  define USE_CYBERGFX_V41
 # endif
 #endif
-
-/*
-//#define AWTRACING_ENABLED 1
-#if AWTRACING_ENABLED
-#define JWLOG(...)	do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
-#else
-#define JWLOG(...)    do { ; } while(0)
-#endif
-*/
 
 #ifdef __AROS__
 #define GTKMUI
@@ -146,6 +136,7 @@
 #include "picasso96.h"
 #undef BitMap
 
+#include "ami.h"
 /* uae includes are a mess..*/
 void uae_Signal(uaecptr task, uae_u32 mask);
 /****************************************************************************/
@@ -219,12 +210,6 @@ static int is_ham;
 static int   get_color_failed;
 static int   maxpen;
 static UBYTE pen[256];
-
-#ifdef __amigaos4__ 
-static int mouseGrabbed;
-static int grabTicks;
-#define GRAB_TIMEOUT 50
-#endif
 
 #ifdef PICASSO96
 /*static*/ APTR picasso_memory;
@@ -347,6 +332,8 @@ STATIC_INLINE void flush_line_planar_nodither (struct vidbuf_description *gfxinf
     len = 1 + (oldp - dst);
     xs  = src - (uae_u8 *)(gfxinfo->bufmem + yoffset);
 
+    JWLOG("FIND: flush_line_planar_nodither\n");
+
     /* Copy changed pixels to delta buffer */
     CopyMem (src, dst, len);
 
@@ -404,6 +391,8 @@ STATIC_INLINE void flush_line_planar_dither (struct vidbuf_description *gfxinfo,
 
     /* Dither changed pixels to Line buffer */
     DitherLine (Line, src, xs, line_no, (len + 3) & ~3, 8);
+
+    JWLOG("FIND: flush_line_planar_dither\n");
 
     /* Blit dithered pixels from Line buffer to the display */
     WritePixelLine8 (RP, xs + XOffset, line_no + YOffset, len, Line, TempRPort);
@@ -473,9 +462,14 @@ static void flush_block_cgx (struct vidbuf_description *gfxinfo, int first_line,
 # else
 static void flush_line_cgx_v41 (struct vidbuf_description *gfxinfo, int line_no)
 {
+
+  JWLOG("FIND flush_line_cgx_v41(%d, %d, %d, %d, %d, %d\n)",
+            0 , line_no, XOffset, YOffset + line_no, gfxinfo->width, 1);
+
   if(uae_no_display_update) {
     return;
   }
+
   /* DONE! this for cloned windows!! */
     WritePixelArray (CybBuffer,
 		     0 , line_no,
@@ -486,12 +480,8 @@ static void flush_line_cgx_v41 (struct vidbuf_description *gfxinfo, int line_no)
 		     gfxinfo->width,
 		     1,
 		     RECTFMT_RAW);
-    JWLOG("flush_line_cgx_v41(%d, %d, %d, %d, %d, %d\n)",
-            0 , line_no, XOffset, YOffset + line_no, gfxinfo->width, 1);
-#if 0
     clone_area(0 , line_no,
                gfxinfo->width,1);
-#endif
 }
 
 static void flush_block_cgx_v41 (struct vidbuf_description *gfxinfo, int first_line, int last_line)
@@ -501,6 +491,11 @@ static void flush_block_cgx_v41 (struct vidbuf_description *gfxinfo, int first_l
     write_log("%s: ERROR!! no RP here!\n", __FILE__);
     /* die ..*/
   }
+
+  JWLOG("FIND flush_block_cgx_v41(%d, %d, %d, %d, %d, %d)\n",
+            0, first_line, XOffset, YOffset + first_line, 
+	    gfxinfo->width, last_line - first_line + 1);
+
   if(uae_no_display_update) {
     return;
   }
@@ -514,14 +509,9 @@ static void flush_block_cgx_v41 (struct vidbuf_description *gfxinfo, int first_l
 		     gfxinfo->width,
 		     last_line - first_line + 1,
 		     RECTFMT_RAW);
-    JWLOG("flush_block_cgx_v41(%d, %d, %d, %d, %d, %d)\n",
-            0, first_line, XOffset, YOffset + first_line, 
-	    gfxinfo->width, last_line - first_line + 1);
 
-#if 0
     clone_area(0 , first_line,
                gfxinfo->width, last_line - first_line + 1);
-#endif
 }
 # endif
 #endif
@@ -530,6 +520,8 @@ static void flush_block_cgx_v41 (struct vidbuf_description *gfxinfo, int first_l
 
 static void flush_clear_screen_gfxlib (struct vidbuf_description *gfxinfo)
 {
+  JWLOG("FIND flush_clear_screen_gfxlib(..)\n");
+
     if (RP && !uae_no_display_update) {
 #ifdef USE_CYBERGFX
       /* DONE */
@@ -862,150 +854,6 @@ static int init_colors (void)
 #endif
     }
     return success;
-}
-
-/****************************************************************************/
-
-static APTR blank_pointer;
-
-/*
- * Initializes a pointer object containing a blank pointer image.
- * Used for hiding the mouse pointer
- */
-static void init_pointer (void)
-{
-    static struct BitMap bitmap;
-    static UWORD	 row[2] = {0, 0};
-
-    InitBitMap (&bitmap, 2, 16, 1);
-    bitmap.Planes[0] = (PLANEPTR) &row[0];
-    bitmap.Planes[1] = (PLANEPTR) &row[1];
-
-    blank_pointer = NewObject (NULL, POINTERCLASS,
-			       POINTERA_BitMap,	(ULONG)&bitmap,
-			       POINTERA_WordWidth,	1,
-			       TAG_DONE);
-
-    if (!blank_pointer)
-	write_log ("Warning: Unable to allocate blank mouse pointer.\n");
-}
-
-/*
- * Free up blank pointer object
- */
-static void free_pointer (void)
-{
-    if (blank_pointer) {
-	DisposeObject (blank_pointer);
-	blank_pointer = NULL;
-    }
-}
-
-typedef enum {
-    DONT_KNOW = -1,
-    INSIDE_WINDOW,
-    OUTSIDE_WINDOW
-} POINTER_STATE;
-
-static POINTER_STATE pointer_state;
-static POINTER_STATE get_pointer_state (const struct Window *w, int mousex, int mousey);
-
-/*
- * Hide mouse pointer for window
- */
-void hide_pointer (struct Window *w) {
-
-  if(!blank_pointer) {
-    init_pointer();
-  }
-
-  if(blank_pointer) {
-    pointer_state=INSIDE_WINDOW;
-    SetWindowPointer (w, WA_Pointer, (ULONG)blank_pointer, TAG_DONE);
-  }
-}
-
-/*
- * Restore default mouse pointer for window
- */
-void show_pointer (struct Window *w) {
-
-  pointer_state=OUTSIDE_WINDOW;
-  SetWindowPointer (w, WA_Pointer, 0, TAG_DONE);
-}
-
-/* 
- * show/hide pointer according to the current position
- *
- * x,y are relative to windows topleft edge
- */
-void update_pointer(struct Window *w, int x, int y) {
-
-  POINTER_STATE new_state = get_pointer_state (W, x, y);
-
-  if (new_state != pointer_state) {
-  //  pointer_state = new_state;
-    if (pointer_state == INSIDE_WINDOW)
-      hide_pointer (W);
-    else
-      show_pointer (W);
-    }
-}
-
-
-#ifdef __amigaos4__ 
-/*
- * Grab mouse pointer under OS4.0. Needs to be called periodically
- * to maintain grabbed status.
- */
-static void grab_pointer (struct Window *w)
-{
-    struct IBox box = {
-	W->BorderLeft,
-	W->BorderTop,
-	W->Width  - W->BorderLeft - W->BorderRight,
-	W->Height - W->BorderTop  - W->BorderBottom
-    };
-
-    SetWindowAttrs (W, WA_MouseLimits, &box, sizeof box);
-    SetWindowAttrs (W, WA_GrabFocus, mouseGrabbed ? GRAB_TIMEOUT : 0, sizeof (ULONG));
-}
-#endif
-
-/****************************************************************************/
-
-static POINTER_STATE get_pointer_state (const struct Window *w, int mousex, int mousey)
-{
-    POINTER_STATE new_state = OUTSIDE_WINDOW;
-
-    /*
-     * Is pointer within the bounds of the inner window?
-     */
-    if ((mousex >= w->BorderLeft)
-     && (mousey >= w->BorderTop)
-     && (mousex < (w->Width - w->BorderRight))
-     && (mousey < (w->Height - w->BorderBottom))) {
-	/*
-	 * Yes. Now check whetehr the window is obscured by
-	 * another window at the pointer position
-	 */
-	struct Screen *scr = w->WScreen;
-	struct Layer  *layer;
-
-	/* Find which layer the pointer is in */
-	LockLayerInfo (&scr->LayerInfo);
-	layer = WhichLayer (&scr->LayerInfo, scr->MouseX, scr->MouseY);
-	UnlockLayerInfo (&scr->LayerInfo);
-
-	/* Is this layer our window's layer? */
-	if (layer == w->WLayer) {
-	    /*
-	     * Yes. Therefore, pointer is inside the window.
-	     */
-	    new_state = INSIDE_WINDOW;
-	}
-    }
-    return new_state;
 }
 
 /****************************************************************************/
@@ -2553,7 +2401,8 @@ static void o1i_Display_Update(int start,int i) {
 
   if(!j_stop_window_update) {
     /* should clip accordingly */
-    clone_area(0, 0, MAXWIDTHHEIGHT, MAXWIDTHHEIGHT); 
+    //clone_area(0, 0, MAXWIDTHHEIGHT, MAXWIDTHHEIGHT); 
+    clone_area(0, start, MAXWIDTHHEIGHT, i); 
   }
 
   if(!uae_main_window_closed) {
@@ -3135,7 +2984,7 @@ void gfx_set_picasso_state (int on)
 
 void DX_Invalidate (int first, int last)
 {
-  //JWLOG("DX_Invalidate\n");
+  JWLOG("FIND: DX_Invalidate from %d to %d\n", first, last);
 
   if (first < picasso_invalid_start)
       picasso_invalid_start = first;

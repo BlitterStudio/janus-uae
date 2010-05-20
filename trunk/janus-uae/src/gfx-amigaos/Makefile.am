@@ -2,6 +2,6 @@ INCLUDES =  -I$(top_srcdir)/src/include -I$(top_builddir)/src -I$(top_srcdir)/sr
 
 noinst_LIBRARIES = libgfxdep.a
 
-libgfxdep_a_SOURCES = ami-win.c ami-appw.c
+libgfxdep_a_SOURCES = ami-win.c ami-mouse.c ami-appw.c
 
 noinst_HEADERS = gfx.h
