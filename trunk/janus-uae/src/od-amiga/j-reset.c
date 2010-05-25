@@ -80,9 +80,11 @@ void j_reset(void) {
 }
 
 void j_quit(void) {
+
   JWLOG("j_quit\n");
 
   j_shutdown_all();
 
+  JWLOG("j_quit => done\n");
 
 }
