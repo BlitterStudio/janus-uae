@@ -345,3 +345,91 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
     appw_events();
 }
 
+/****************************************************************************
+ *
+ * Keyboard inputdevice functions
+ */
+static unsigned int get_kb_num (void)
+{
+    return 1;
+}
+
+static const char *get_kb_name (unsigned int kb)
+{
+    return "Default keyboard";
+}
+
+static unsigned int get_kb_widget_num (unsigned int kb)
+{
+    return 128;
+}
+
+static int get_kb_widget_first (unsigned int kb, int type)
+{
+    return 0;
+}
+
+static int get_kb_widget_type (unsigned int kb, unsigned int num, char *name, uae_u32 *code)
+{
+    // fix me
+    *code = num;
+    return IDEV_WIDGET_KEY;
+}
+
+static int keyhack (int scancode, int pressed, int num)
+{
+    return scancode;
+}
+
+static void read_kb (void)
+{
+#ifdef CATWEASEL
+		uae_u8 kc;
+		if (catweasel_read_keyboard (&kc))
+		{
+			inputdevice_do_keyboard (kc & 0x7f, !(kc & 0x80));
+		}
+#endif
+}
+
+static int init_kb (void)
+{
+    return 1;
+}
+
+static void close_kb (void)
+{
+}
+
+static int acquire_kb (unsigned int num, int flags)
+{
+    return 1;
+}
+
+static void unacquire_kb (unsigned int num)
+{
+}
+
+struct inputdevice_functions inputdevicefunc_keyboard =
+{
+    init_kb,
+    close_kb,
+    acquire_kb,
+    unacquire_kb,
+    read_kb,
+    get_kb_num,
+    get_kb_name,
+    get_kb_widget_num,
+    get_kb_widget_type,
+    get_kb_widget_first
+};
+
+int getcapslockstate (void)
+{
+    return 0;
+}
+
+void setcapslockstate (int state)
+{
+}
+

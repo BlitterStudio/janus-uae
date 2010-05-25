@@ -51,7 +51,7 @@
 #include <gtk/gtk.h>
 #include "uae.h"
 
-#define JWTRACING_ENABLED 1
+//#define JWTRACING_ENABLED 1
 #if JWTRACING_ENABLED
 #define JWLOG(...)   do { kprintf("%s:%d  %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -226,6 +226,12 @@ typedef struct {
   ULONG          secs, micros;  /* remember last menupick for DMRequests */
   BOOL           dead;
   BOOL           custom;        /* window is on a custom screen */
+  ULONG          intui_tickcount; /* total of tick events to handle 
+                                   * if you use a faster speed, this total
+				   * will get 0 faster! */
+  ULONG          intui_tickskip;  /* tick skip counter */
+  ULONG          intui_tickspeed;  /* 0=fastest, update 10/sec
+                                    * 5= 2/sec */
 } JanusWin;
 
 typedef struct {

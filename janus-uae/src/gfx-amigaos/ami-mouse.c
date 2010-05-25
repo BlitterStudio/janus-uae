@@ -348,3 +348,8 @@ void input_get_default_mouse (struct uae_input_device *uid)
     uid[0].enabled = 1;
 }
 
+int mousehack_allowed (void)
+{
+    return 0;
+}
+

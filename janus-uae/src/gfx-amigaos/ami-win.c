@@ -161,7 +161,7 @@ extern xcolnr xcolors[4096];
 uae_u8 *oldpixbuf;
 
 int  screen_is_picasso;
-char picasso_invalid_lines[1200];
+char picasso_invalid_lines[1600];
 int  picasso_invalid_start;
 int  picasso_invalid_end;
 
@@ -330,13 +330,13 @@ STATIC_INLINE void flush_line_planar_nodither (struct vidbuf_description *gfxinf
     len = 1 + (oldp - dst);
     xs  = src - (uae_u8 *)(gfxinfo->bufmem + yoffset);
 
-    JWLOG("FIND: flush_line_planar_nodither\n");
 
     /* Copy changed pixels to delta buffer */
     CopyMem (src, dst, len);
 
     /* Blit changed pixels to the display */
     WritePixelLine8 (RP, xs + XOffset, line_no + YOffset, len, dst, TempRPort);
+    JWLOG("FIND: WritePixelLine8 ..\n");
 }
 
 static void flush_block_planar_nodither (struct vidbuf_description *gfxinfo, int first_line, int last_line)
@@ -390,10 +390,9 @@ STATIC_INLINE void flush_line_planar_dither (struct vidbuf_description *gfxinfo,
     /* Dither changed pixels to Line buffer */
     DitherLine (Line, src, xs, line_no, (len + 3) & ~3, 8);
 
-    JWLOG("FIND: flush_line_planar_dither\n");
-
     /* Blit dithered pixels from Line buffer to the display */
     WritePixelLine8 (RP, xs + XOffset, line_no + YOffset, len, Line, TempRPort);
+    JWLOG("FIND: WritePixelLine8 ..\n");
 }
 
 static void flush_block_planar_dither (struct vidbuf_description *gfxinfo, int first_line, int last_line)
@@ -415,6 +414,7 @@ STATIC_INLINE void flush_line_ham (struct vidbuf_description *gfxinfo, int line_
     if(!uae_no_display_update) {
       ham_conv ((void*) src, Line, len);
       WritePixelLine8 (RP, 0, line_no, len, Line, TempRPort);
+      JWLOG("FIND: WritePixelLine8 ..\n");
     }
 
     return;
@@ -461,7 +461,7 @@ static void flush_block_cgx (struct vidbuf_description *gfxinfo, int first_line,
 static void flush_line_cgx_v41 (struct vidbuf_description *gfxinfo, int line_no)
 {
 
-  JWLOG("FIND flush_line_cgx_v41(%d, %d, %d, %d, %d, %d\n)",
+  JWLOG("flush_line_cgx_v41(%d, %d, %d, %d, %d, %d\n)",
             0 , line_no, XOffset, YOffset + line_no, gfxinfo->width, 1);
 
   if(uae_no_display_update) {
@@ -478,6 +478,7 @@ static void flush_line_cgx_v41 (struct vidbuf_description *gfxinfo, int line_no)
 		     gfxinfo->width,
 		     1,
 		     RECTFMT_RAW);
+    JWLOG("FIND: WritePixelArray ..\n");
     clone_area(0 , line_no,
                gfxinfo->width,1);
 }
@@ -490,14 +491,14 @@ static void flush_block_cgx_v41 (struct vidbuf_description *gfxinfo, int first_l
     /* die ..*/
   }
 
-  JWLOG("FIND flush_block_cgx_v41(%d, %d, %d, %d, %d, %d)\n",
+  JWLOG("flush_block_cgx_v41(%d, %d, %d, %d, %d, %d)\n",
             0, first_line, XOffset, YOffset + first_line, 
 	    gfxinfo->width, last_line - first_line + 1);
 
   if(uae_no_display_update) {
     return;
   }
-
+    JWLOG("FIND: WritePixelArray ..\n");
     WritePixelArray (CybBuffer,
 		     0 , first_line,
 		     gfxinfo->rowbytes,
@@ -518,7 +519,7 @@ static void flush_block_cgx_v41 (struct vidbuf_description *gfxinfo, int first_l
 
 static void flush_clear_screen_gfxlib (struct vidbuf_description *gfxinfo)
 {
-  JWLOG("FIND flush_clear_screen_gfxlib(..)\n");
+  JWLOG("flush_clear_screen_gfxlib(..)\n");
 
     if (RP && !uae_no_display_update) {
 #ifdef USE_CYBERGFX
@@ -2116,8 +2117,8 @@ BOOL clone_window_area(JanusWin *jwin,
 
   startx=MAX(areax, winx);
   starty=MAX(areay, winy);
-  endx=MIN(areaxend, winxend);
-  endy=MIN(areayend, winyend);
+  endx=  MIN(areaxend, winxend);
+  endy=  MIN(areayend, winyend);
 
   JWLOG("clone_wia: startx %3d starty %3d endx %3d endy %3d\n",
            startx,starty,endx,endy);
@@ -2141,6 +2142,7 @@ BOOL clone_window_area(JanusWin *jwin,
     width=picasso_vidinfo.width;
   }
 
+    JWLOG("FIND: WritePixelArray ..\n");
   WritePixelArray (
       picasso_memory, 
       startx, /* src x  */
@@ -2246,14 +2248,6 @@ void clone_window(ULONG m68k_win, struct Window *aros_win,
   src_y_lines=aros_win->Height;
 
   JWLOG("clone_window(%lx,%lx) \n",m68k_win,aros_win);
-  JWLOG("WritePixelArray(%lx, %3d, %3d => %lx, %3d, %3d, ..\n",
-		    picasso_memory,
-		    get_LeftEdge(m68k_win) + get_BorderLeft(m68k_win), 
-		    get_TopEdge(m68k_win)  + get_BorderTop(m68k_win), 
-		    //get_BytesPerRow(W),                              
-		    aros_win->RPort,
-		    aros_win->Width,
-		    aros_win->Height);
 
   /* modified range outside our window, nothing to do */
   if(src_y_start+src_y_lines < start ||
@@ -2299,6 +2293,9 @@ void clone_window(ULONG m68k_win, struct Window *aros_win,
   real_lines=aros_win->Height;
 
   if(!uae_no_display_update) {
+
+    JWLOG("FIND: WritePixelArray(...)\n");
+
     WritePixelArray (
 	picasso_memory, 
 	get_LeftEdge(m68k_win) + get_BorderLeft(m68k_win), /* src x  */
@@ -2331,11 +2328,14 @@ extern ULONG   aos3_task_signal;
 int o1i_Draw_delay=0;
 
 
+#if 0
 void o1i_clone_windows(/* hand over start/end koords of changed area?*/) {
   GSList *elem;
   UWORD start, lines;
   ULONG m68k_win;
   struct Window *aros_win;
+
+  JWLOG("o1i_clone_windows(...)\n");
 
   /* at startup, sem_janus_windows_list might not be initialized,
    * but it is, if we have at least one element in the
@@ -2365,6 +2365,7 @@ void o1i_clone_windows(/* hand over start/end koords of changed area?*/) {
     ReleaseSemaphore(&sem_janus_window_list);
   }
 }
+#endif
 
 #if 0
 void o1i_clone_windows_task() {
@@ -2378,6 +2379,7 @@ void o1i_clone_windows_task() {
 #endif
 
 //static void o1i_Draw() {
+
 void o1i_Display_Update(int start,int i) {
 
   if(uae_no_display_update) {
@@ -2404,6 +2406,7 @@ void o1i_Display_Update(int start,int i) {
   }
 
   if(!uae_main_window_closed) {
+    JWLOG("FIND: WritePixelArray(start %4d, lines %4d\n", start, i);
     WritePixelArray (
 	picasso_memory, 0, start, get_BytesPerRow(W),
 	W->RPort, 
@@ -2425,13 +2428,6 @@ int aros_daemon_runing() {
 int debuggable (void)
 {
     return 1;
-}
-
-/***************************************************************************/
-
-int mousehack_allowed (void)
-{
-    return 0;
 }
 
 /***************************************************************************/
@@ -2700,7 +2696,7 @@ void gfx_set_picasso_state (int on)
 
 void DX_Invalidate (int first, int last)
 {
-  JWLOG("FIND: DX_Invalidate from %d to %d\n", first, last);
+  //JWLOG("DX_Invalidate from %d to %d\n", first, last);
 
   if (first < picasso_invalid_start)
       picasso_invalid_start = first;
@@ -2732,6 +2728,9 @@ int DX_FillResolutions (uae_u16 *ppixel_format)
 
     JWLOG("DX_FillResolutions(%d)\n",ppixel_format);
 
+    /* keep in mind, if you add higher y resolutions, you might have to
+     * increas picasso_invalid_lines array !! 
+     * */
     static struct
     {
         int width, height;
@@ -3217,93 +3216,6 @@ void screenshot (int type)
     write_log ("Screenshot not implemented yet\n");
 }
 
-/****************************************************************************
- *
- * Keyboard inputdevice functions
- */
-static unsigned int get_kb_num (void)
-{
-    return 1;
-}
-
-static const char *get_kb_name (unsigned int kb)
-{
-    return "Default keyboard";
-}
-
-static unsigned int get_kb_widget_num (unsigned int kb)
-{
-    return 128;
-}
-
-static int get_kb_widget_first (unsigned int kb, int type)
-{
-    return 0;
-}
-
-static int get_kb_widget_type (unsigned int kb, unsigned int num, char *name, uae_u32 *code)
-{
-    // fix me
-    *code = num;
-    return IDEV_WIDGET_KEY;
-}
-
-static int keyhack (int scancode, int pressed, int num)
-{
-    return scancode;
-}
-
-static void read_kb (void)
-{
-#ifdef CATWEASEL
-		uae_u8 kc;
-		if (catweasel_read_keyboard (&kc))
-		{
-			inputdevice_do_keyboard (kc & 0x7f, !(kc & 0x80));
-		}
-#endif
-}
-
-static int init_kb (void)
-{
-    return 1;
-}
-
-static void close_kb (void)
-{
-}
-
-static int acquire_kb (unsigned int num, int flags)
-{
-    return 1;
-}
-
-static void unacquire_kb (unsigned int num)
-{
-}
-
-struct inputdevice_functions inputdevicefunc_keyboard =
-{
-    init_kb,
-    close_kb,
-    acquire_kb,
-    unacquire_kb,
-    read_kb,
-    get_kb_num,
-    get_kb_name,
-    get_kb_widget_num,
-    get_kb_widget_type,
-    get_kb_widget_first
-};
-
-int getcapslockstate (void)
-{
-    return 0;
-}
-
-void setcapslockstate (int state)
-{
-}
 
 /****************************************************************************
  *
