@@ -24,7 +24,7 @@
 #include <graphics/gfx.h>
 #include <proto/layers.h>
 
-//#define JWTRACING_ENABLED 1
+#define JWTRACING_ENABLED 1
 #include "j.h"
 #include "memory.h"
 
@@ -49,7 +49,50 @@ static ULONG olisecs(ULONG s, ULONG m) {
 
 }
 
-/*---------------------------*/
+/***********************************************************
+ * activate_ticks
+ *
+ * start automatic active refreshes
+ ***********************************************************/
+static void activate_ticks(JanusWin *jwin, ULONG speed) {
+
+  /* some 10 per second arrive, refresh twice a second */
+  jwin->intui_tickskip =10;    /* first refresh at once   */
+  jwin->intui_tickcount=15;    /* stop after 15 refreshes */
+  jwin->intui_tickspeed=speed; /* skip rate, 0 fastest   */
+}
+
+/**************************************************************************
+ * force refresh of our contents from our amigaOS brother
+ **************************************************************************/
+static void refresh_content(JanusWin *jwin) {
+
+  LONG start=0;
+  LONG end=0;
+
+  /* clip it */
+  if(jwin->aroswin->TopEdge > 0) {
+    start=jwin->aroswin->TopEdge;
+  }
+
+  end=jwin->aroswin->TopEdge + jwin->aroswin->Height + jwin->aroswin->BorderTop + jwin->aroswin->BorderBottom;
+  if(end > jwin->aroswin->WScreen->Height) {
+    end=jwin->aroswin->WScreen->Height-1;
+  }
+
+  /* use it */
+  JWLOG("full refresh..\n");
+  //DX_Invalidate(0, jwin->aroswin->WScreen->Height-1);
+  DX_Invalidate(start, end);
+
+#if 0
+
+  JWLOG("refresh_content(%lx, first %d last %d)\n", jwin, start, end);
+  clone_window(jwin->aos3win, jwin->aroswin, 0, 0xFFFFFF); /* clone window again */
+#endif
+
+}
+
 /**************************************************************************
  * handle_input
  *
@@ -189,6 +232,7 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
       handle_input(win, jwin, class, code, qualifier, thread);
       break;
       
+
     case IDCMP_CLOSEWINDOW:
       if(!jwin->custom) {
 	/* fake IDCMP_CLOSEWINDOW to original aos3 window */
@@ -221,6 +265,8 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 	if(jwin->delay > WIN_DEFAULT_DELAY) {
 	  jwin->delay=0;
 	}
+	refresh_content(jwin);
+	activate_ticks(jwin, 0);
       }
       break;
 
@@ -476,7 +522,8 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 	}
 #endif
       BeginRefresh (win);
-      clone_window(jwin->aos3win, jwin->aroswin, 0, 0xFFFFFF); /* clone window again */
+     // clone_window(jwin->aos3win, jwin->aroswin, 0, 0xFFFFFF); /* clone window again */
+      refresh_content(jwin);
       EndRefresh (win, TRUE);
       break;
     default:
@@ -584,6 +631,7 @@ static void aros_win_thread (void) {
 			    IDCMP_MENUPICK |
 			    IDCMP_MENUVERIFY |
 			    IDCMP_REFRESHWINDOW |
+			    IDCMP_INTUITICKS |
 			    IDCMP_INACTIVEWINDOW;
 
     /* AROS and Aos3 use the same flags */
@@ -741,6 +789,8 @@ static void aros_win_thread (void) {
     }
 
     if(jwin->jscreen->arosscreen) {
+      activate_ticks(jwin, 5);
+
       /* 
        * now we need to open up the window .. 
        * hopefully nobody has thicker borders  ..
@@ -874,6 +924,12 @@ static void aros_win_thread (void) {
   /* handle IDCMP stuff */
   JWLOG("aros_win_thread[%lx]: jwin->task: %lx\n", thread, jwin->task);
   JWLOG("aros_win_thread[%lx]: UserPort: %lx\n", thread, aroswin->UserPort);
+
+  /* refresh display in case we missed some updates, which happened between
+   * the amigaOS OpenWindow and our OpenWindow
+   */
+  refresh_content(jwin);
+
   JWLOG("aros_win_thread[%lx]: IDCMP loop for window %lx\n", thread, aroswin);
 
   while(!done) {
@@ -909,10 +965,24 @@ static void aros_win_thread (void) {
 	  JWLOG("YYX thread %lx == jwin->task %lx\n", thread, jwin->task);
 	}
 #endif
+	if(class == IDCMP_INTUITICKS) {
 
-	handle_msg(msg, aroswin, jwin, class, code, dmx, dmy, mx, my, qualifier, 
-		   thread, secs, micros, &done);
-	ReplyMsg ((struct Message *)msg);
+	  ReplyMsg ((struct Message *)msg);
+	  if(jwin->intui_tickcount) {
+	    if(jwin->intui_tickskip++ > jwin->intui_tickspeed) {
+	      jwin->intui_tickskip=0;
+	      jwin->intui_tickcount--;
+	      JWLOG("IDCMP_INTUITICKS %2d refresh_content(%lx)\n", jwin->intui_tickcount, jwin);
+	      refresh_content(jwin);
+	    }
+	  }
+	}
+	else {
+
+	  handle_msg(msg, aroswin, jwin, class, code, dmx, dmy, mx, my, qualifier, 
+		     thread, secs, micros, &done);
+	  ReplyMsg ((struct Message *)msg);
+	}
       }
     }
     if(signals & SIGBREAKF_CTRL_C) {

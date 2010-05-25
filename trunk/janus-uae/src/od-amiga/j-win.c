@@ -432,7 +432,8 @@ uae_u32 ad_job_report_uae_windows(ULONG *m68k_results) {
 					  */
 
       /* You can detect that this operation has completed by receiving
-       * the IDCMP_CHANGEWINDOW IDCMP message  .. TODO?*/
+       * the IDCMP_CHANGEWINDOW IDCMP message 
+       */
       ChangeWindowBox(window,
 		      win->LeftEdge - window->BorderLeft, 
 		      win->TopEdge - window->BorderTop,

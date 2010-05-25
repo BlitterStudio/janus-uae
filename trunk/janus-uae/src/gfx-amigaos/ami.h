@@ -1,6 +1,6 @@
 /************************************************************************ 
  *
- * Amiga Interface Inlcude
+ * Amiga Interface Include
  *
  * Copyright 2009-2010 Oliver Brunner - aros<at>oliver-brunner.de
  *
@@ -26,7 +26,7 @@
 void init_pointer (void);
 void free_pointer (void);
 void o1i_Display_Update(int start,int i);
-int do_inhibit_frame (int onoff);
+int  do_inhibit_frame (int onoff);
 
 typedef enum {
     DONT_KNOW = -1,
@@ -35,12 +35,12 @@ typedef enum {
 } POINTER_STATE;
 
 extern POINTER_STATE pointer_state;
-extern int gMouseState;
-extern int  screen_is_picasso;
-extern char picasso_invalid_lines[];
-extern int  picasso_invalid_start;
-extern int  picasso_invalid_end;
-extern int use_delta_buffer;
+extern int     gMouseState;
+extern int     screen_is_picasso;
+extern char    picasso_invalid_lines[];
+extern int     picasso_invalid_start;
+extern int     picasso_invalid_end;
+extern int     use_delta_buffer;
 extern uae_u8 *oldpixbuf;
-extern int usepub;
+extern int     usepub;
 
