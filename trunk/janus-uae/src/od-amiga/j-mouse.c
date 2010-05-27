@@ -120,6 +120,11 @@ static uae_u32 nonP96(struct Screen *screen, ULONG *m68k_results) {
 
 extern int visible_left_border;
 
+/* if TRUE, set mouse to thos (amigaos) mouse coordinates once! */
+BOOL manual_mouse=FALSE;
+WORD manual_mouse_x=0;
+WORD manual_mouse_y=0;
+
 uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
   struct Screen *screen;
   ULONG modeID;
@@ -181,20 +186,29 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
   JWLOG("mouse: is_p96: %d W: %lx IntuiBase->FirstScr->FirstWin %lx\n", 
                 is_p96, W, IntuitionBase->FirstScreen->FirstWindow);
 
-  if(mice[0].enabled) {
+  if(mice[0].enabled || manual_mouse) {
     JWLOG("mouse: screen->x,y: %d,%d\n", screen->MouseX, screen->MouseY);
     JWLOG("mouse: XOffset: %d visible_left_border: %d\n", XOffset, visible_left_border);
 
-    x=screen->MouseX;
-    y=screen->MouseY;
 
-    /* W must not be NULL .. */
-    JWLOG("mouse: uae_main_window_closed: %d\n", uae_main_window_closed);
-    if(!uae_main_window_closed && W) {
-      JWLOG("mouse: W->x,y: %d,%d\n", W->LeftEdge, W->TopEdge);
-      JWLOG("mouse: border->x,y: %d,%d\n", W->BorderLeft, W->BorderTop);
-      x=x - W->LeftEdge - W->BorderLeft;
-      y=y - W->TopEdge  - W->BorderTop;
+    if(!manual_mouse) {
+      x=screen->MouseX;
+      y=screen->MouseY;
+
+      /* W must not be NULL .. */
+      JWLOG("mouse: uae_main_window_closed: %d\n", uae_main_window_closed);
+      if(!uae_main_window_closed && W) {
+	JWLOG("mouse: W->x,y: %d,%d\n", W->LeftEdge, W->TopEdge);
+	JWLOG("mouse: border->x,y: %d,%d\n", W->BorderLeft, W->BorderTop);
+	x=x - W->LeftEdge - W->BorderLeft;
+	y=y - W->TopEdge  - W->BorderTop;
+      }
+    }
+    else {
+      x=manual_mouse_x;
+      y=manual_mouse_y;
+      manual_mouse=FALSE;
+      JWLOG("manual hit mouse at %d x %d: %d,%d\n", x, y);
     }
 
 #if 0

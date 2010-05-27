@@ -209,6 +209,26 @@ typedef struct {
   BOOL                 ownscreen;
 } JanusScreen;
 
+/* border gadgets */
+enum {
+    GAD_UPARROW, 
+    GAD_DOWNARROW, 
+    GAD_LEFTARROW, 
+    GAD_RIGHTARROW, 
+    GAD_VERTSCROLL, 
+    GAD_HORIZSCROLL, 
+    NUM_GADGETS
+};
+
+enum {
+    IMG_UPARROW, 
+    IMG_DOWNARROW, 
+    IMG_LEFTARROW, 
+    IMG_RIGHTARROW, 
+    IMG_SIZE, 
+    NUM_IMAGES
+};
+
 typedef struct {
   gpointer       aos3win; /* gpointer !? */
   struct Window *aroswin; /* corresponding native aros win */
@@ -232,7 +252,18 @@ typedef struct {
   ULONG          intui_tickskip;  /* tick skip counter */
   ULONG          intui_tickspeed;  /* 0=fastest, update 10/sec
                                     * 5= 2/sec */
+  /* gadget stuff */
+  struct Gadget   *gad[NUM_GADGETS];
+  struct Image    *img[NUM_GADGETS];
+  struct DrawInfo *dri;
+  GList           *aos3_gadget_list;
+
 } JanusWin;
+
+typedef struct {
+  ULONG            aos3gadget;
+  WORD             x,y;
+} JanusGadget;
 
 typedef struct {
   JanusWin      *jwin;

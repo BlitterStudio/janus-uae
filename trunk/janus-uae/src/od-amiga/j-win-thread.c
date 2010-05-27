@@ -23,12 +23,16 @@
 
 #include <graphics/gfx.h>
 #include <proto/layers.h>
+#include <intuition/imageclass.h>
+#include <intuition/gadgetclass.h>
+
 
 #define JWTRACING_ENABLED 1
 #include "j.h"
 #include "memory.h"
 
 static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, ULONG secs, ULONG micros, BOOL *done);
+static void dump_prop_gadget(struct Process *thread, ULONG gadget);
 
 /* we don't know those values, but we always keep the last value here */
 static UWORD estimated_border_top=25;
@@ -41,6 +45,8 @@ void setbuttonstateall (struct uae_input_device *id, struct uae_input_device2 *i
 static void my_setmousebuttonstate(int mouse, int button, int state) {
   setbuttonstateall (&mice[mouse], &mice2[mouse], button, state);
 }
+
+
 
 /* we need to get a useable accurancy here */
 static ULONG olisecs(ULONG s, ULONG m) {
@@ -214,6 +220,166 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
   JWLOG("aros_win_thread[%lx]: handle_input(jwin %lx, ..) done\n", thread, jwin);
 }
 
+
+static gint y_compare(gconstpointer a, gconstpointer b) {
+
+  if( ((JanusGadget *)a)->y < ((JanusGadget *)b)->y) {
+    return -1;
+  }
+  if( ((JanusGadget *)a)->y > ((JanusGadget *)b)->y) {
+    return 1;
+  }
+  return 0;
+}
+
+
+static gint x_compare(gconstpointer a, gconstpointer b) {
+
+  if( ((JanusGadget *)a)->x < ((JanusGadget *)b)->x) {
+    return -1;
+  }
+  if( ((JanusGadget *)a)->x > ((JanusGadget *)b)->x) {
+    return 1;
+  }
+  return 0;
+}
+
+static JanusGadget *get_gadget_right(struct Process *thread, JanusWin *jwin) {
+  guint i;
+  JanusGadget *jgad;
+
+  jwin->aos3_gadget_list=g_list_sort(jwin->aos3_gadget_list, &x_compare);
+  return (JanusGadget *) g_list_nth_data(jwin->aos3_gadget_list, 1);
+}
+
+static JanusGadget *get_gadget_left(struct Process *thread, JanusWin *jwin) {
+  guint i;
+  JanusGadget *jgad;
+
+  jwin->aos3_gadget_list=g_list_sort(jwin->aos3_gadget_list, &x_compare);
+  return (JanusGadget *) g_list_nth_data(jwin->aos3_gadget_list, 0);
+}
+
+static JanusGadget *get_gadget_down(struct Process *thread, JanusWin *jwin) {
+  guint i;
+  JanusGadget *jgad;
+
+  jwin->aos3_gadget_list=g_list_sort(jwin->aos3_gadget_list, &y_compare);
+  return (JanusGadget *) g_list_nth_data(jwin->aos3_gadget_list, 1);
+}
+
+static JanusGadget *get_gadget_up(struct Process *thread, JanusWin *jwin) {
+  guint i;
+  JanusGadget *jgad;
+
+  jwin->aos3_gadget_list=g_list_sort(jwin->aos3_gadget_list, &y_compare);
+  return (JanusGadget *) g_list_nth_data(jwin->aos3_gadget_list, 0);
+}
+
+static void get_gadget_list(struct Process *thread, JanusWin *jwin) {
+  ULONG gadget;
+  UWORD gadget_type;
+  UWORD gadget_flags;
+  WORD  x, y;
+  //UWORD w, h;
+  JanusGadget *jgad;
+
+  gadget=get_long_p(jwin->aos3win + 62);
+
+  while(gadget) {
+
+    gadget_type =get_word(gadget + 16); 
+    gadget_flags=get_word(gadget + 12);
+
+    if( ( gadget_type    & GTYP_CUSTOMGADGET ) &&
+        ( !(gadget_type  & GTYP_SYSGADGET) ) &&
+/*        ( gadget_flags   & GACT_RIGHTBORDER ) &&*/
+	( !(gadget_flags & GACT_TOPBORDER ) ) &&
+	( !(gadget_flags & GACT_LEFTBORDER ) )
+      ) {
+
+      x=get_word(gadget + 4);
+      y=get_word(gadget + 6);
+      //w=get_word(gadget + 8);
+      //h=get_word(gadget + 10);
+
+      JWLOG("aros_win_thread[%lx]: gadget %lx: x %d y %d\n", thread, gadget, x, y);
+
+      jgad=(JanusGadget *) AllocPooled(jwin->mempool, sizeof(JanusGadget));
+      jgad->x=x;
+      jgad->y=y;
+      jgad->aos3gadget=gadget;
+
+      jwin->aos3_gadget_list=g_list_append(jwin->aos3_gadget_list, (gpointer) jgad);
+    }
+
+    gadget=get_long(gadget); /* NextGadget */
+  }
+  return;
+}
+
+extern BOOL manual_mouse;
+extern WORD manual_mouse_x;
+extern WORD manual_mouse_y;
+
+static void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
+  UWORD x,y;
+  JanusGadget *jgad=NULL;
+
+  JWLOG("aros_win_thread[%lx]: jwin %lx, gadid %d\n", thread, jwin, gadid);
+
+  switch (gadid) {
+    case GAD_DOWNARROW:
+    case GAD_UPARROW:
+    case GAD_LEFTARROW:
+    case GAD_RIGHTARROW:
+      JWLOG("aros_win_thread[%lx]: GAD_DOWNARROW etc\n", thread);
+      if(!jwin->aos3_gadget_list) {
+	get_gadget_list(thread, jwin);
+      }
+
+      switch (gadid) {
+	case GAD_DOWNARROW : jgad=get_gadget_down(thread, jwin); break;
+	case GAD_UPARROW   : jgad=get_gadget_up(thread, jwin); break;
+	case GAD_LEFTARROW : jgad=get_gadget_left(thread, jwin); break;
+	case GAD_RIGHTARROW: jgad=get_gadget_right(thread, jwin); break;
+      }
+      if(!jgad) {
+	JWLOG("aros_win_thread[%lx]: jgad not matched??\n", thread);
+	/* should not happen */
+	break;
+      }
+
+      /* right border end of aos3 window */
+      x=jwin->aroswin->LeftEdge + jwin->aroswin->Width - jwin->aroswin->BorderRight;
+      /* those values are negative */
+      manual_mouse_x=x + get_word(jgad->aos3gadget + 4) + (get_word(jgad->aos3gadget +  8)/2);
+
+      y=jwin->aroswin->TopEdge + jwin->aroswin->Height - jwin->aroswin->BorderBottom;
+      manual_mouse_y=y + get_word(jgad->aos3gadget + 6) + (get_word(jgad->aos3gadget + 10)/2);
+
+      JWLOG("aros_win_thread[%lx]: hit gadget %lx at %d x %d..\n", thread, jgad->aos3gadget, manual_mouse_x, manual_mouse_y);
+
+      mice[0].enabled=FALSE; /* disable mouse emulation */
+      manual_mouse=TRUE;
+      while(manual_mouse) {
+	/* wait until the mouse is, where it should be */
+	Delay(1);
+      }
+      Delay(10);
+
+      my_setmousebuttonstate(0, 0, 1); /* click */
+
+
+    break;
+
+    default:
+      JWLOG("aros_win_thread[%lx]: WARNING: gadid %d is not handled (yet?)\n", thread, gadid);
+    break;
+  }
+
+}
+
 BOOL  pointer_is_hidden=FALSE;
 ULONG pointer_skip=0;
 
@@ -223,6 +389,7 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
   JanusMsg *jmsg;
   UWORD     selection;
   ULONG     flags;
+  UWORD     gadid;
 
   switch (class) {
     case IDCMP_RAWKEY:
@@ -231,7 +398,17 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
     case IDCMP_INACTIVEWINDOW:
       handle_input(win, jwin, class, code, qualifier, thread);
       break;
-      
+
+    case IDCMP_GADGETDOWN:
+      JWLOG("aros_win_thread[%lx]: IDCMP_GADGETDOWN\n", thread);
+      gadid = ((struct Gadget *)((struct IntuiMessage *)msg)->IAddress)->GadgetID;
+      handle_gadget(thread, jwin, gadid);
+      break;
+
+    case IDCMP_GADGETUP:
+      my_setmousebuttonstate(0, 0, 1); /* click */
+      mice[0].enabled=TRUE; /* enable mouse emulation */
+      break;
 
     case IDCMP_CLOSEWINDOW:
       if(!jwin->custom) {
@@ -267,6 +444,17 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 	}
 	refresh_content(jwin);
 	activate_ticks(jwin, 0);
+
+	/* debug only */
+	{
+	  ULONG gadget;
+      	  gadget=get_long_p(jwin->aos3win + 62);
+	  while(gadget) {
+	    dump_prop_gadget(thread, gadget);
+	    gadget=get_long(gadget); /* NextGadget */
+	  }
+ 
+	}
       }
       break;
 
@@ -532,6 +720,169 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
   }
 }
 
+static void dump_prop_gadget(struct Process *thread, ULONG gadget) {
+  UWORD  gadget_type;
+  ULONG  specialinfo;
+  UWORD  flags;
+
+  gadget_type =get_word(gadget + 16); 
+
+  if((gadget_type & GTYP_GTYPEMASK) != GTYP_PROPGADGET) {
+    JWLOG("aros_win_thread[%lx]: gadget %lx is not a  GTYP_PROPGADGET\n", thread, gadget);
+  }
+
+  specialinfo=get_long(gadget + 34);
+  JWLOG("aros_win_thread[%lx]: gadget %lx SpecialInfo: %lx\n", thread, gadget, specialinfo);
+
+  if(!specialinfo) {
+    return;
+  }
+
+  flags=get_word(specialinfo);
+  JWLOG("aros_win_thread[%lx]: flags %lx\n", thread, flags);
+  if(flags & FREEHORIZ) {
+    JWLOG("aros_win_thread[%lx]: flag FREEHORIZ\n", thread);
+    JWLOG("aros_win_thread[%lx]: HorizPot %d\n", thread, get_word(specialinfo+2));
+    JWLOG("aros_win_thread[%lx]: HorizBody %d\n", thread, get_word(specialinfo+6));
+  }
+  if(flags & FREEVERT) {
+    JWLOG("aros_win_thread[%lx]: flag FREEVERT\n", thread);
+    JWLOG("aros_win_thread[%lx]: VertPot %d\n", thread, get_word(specialinfo+4));
+    JWLOG("aros_win_thread[%lx]: VertBody %d\n", thread, get_word(specialinfo+8));
+  }
+}
+
+/***********************************************************
+ * make_gadgets(jwin)
+ *
+ * create border gadgets
+ ***********************************************************/
+static struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
+    IPTR imagew[NUM_IMAGES], imageh[NUM_IMAGES];
+    WORD v_offset, h_offset, btop, i;
+    struct Gadget   *firstgadget;
+    WORD img2which[] = {
+   	UPIMAGE, 
+   	DOWNIMAGE, 
+   	LEFTIMAGE, 
+   	RIGHTIMAGE, 
+   	SIZEIMAGE
+    };
+
+   
+   jwin->dri = GetScreenDrawInfo(jwin->jscreen->arosscreen);
+
+    for(i = 0;i < NUM_IMAGES;i++) {
+
+	jwin->img[i] = NewObject(0, SYSICLASS, SYSIA_DrawInfo, (Tag) jwin->dri, 
+				         SYSIA_Which, (Tag) img2which[i], 
+				         TAG_DONE);
+
+	if (!jwin->img[i]) {
+	  JWLOG("aros_win_thread[%lx]: could not create image %d\n", thread, i);
+	  return NULL;
+	}
+
+	GetAttr(IA_Width,  (Object *) jwin->img[i], &imagew[i]);
+	GetAttr(IA_Height, (Object *) jwin->img[i], &imageh[i]);
+    }
+
+    btop = jwin->jscreen->arosscreen->WBorTop + jwin->dri->dri_Font->tf_YSize + 1;
+
+    JWLOG("aros_win_thread[%lx]: btop=%d\n", thread, btop);
+    JWLOG("aros_win_thread[%lx]: imagew[IMG_UPARROW]  =%d\n", thread, imagew[IMG_UPARROW]);
+    JWLOG("aros_win_thread[%lx]: imageh[IMG_DOWNARROW]=%d\n", thread, imageh[IMG_DOWNARROW]);
+
+    v_offset = imagew[IMG_DOWNARROW] / 4;
+    h_offset = imageh[IMG_LEFTARROW] / 4;
+
+    firstgadget = 
+    jwin->gad[GAD_UPARROW] = NewObject(0, BUTTONGCLASS, GA_Image, (Tag) jwin->img[IMG_UPARROW], 
+				        GA_RelRight, -imagew[IMG_UPARROW] + 1, 
+					GA_RelBottom, -imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1, 
+					GA_ID, GAD_UPARROW, 
+					GA_RightBorder, TRUE, 
+					GA_Immediate, TRUE,
+					GA_RelVerify, TRUE, 
+					GA_GZZGadget, TRUE,
+					TAG_DONE);
+
+    jwin->gad[GAD_DOWNARROW] = NewObject(0, BUTTONGCLASS, GA_Image, (Tag) jwin->img[IMG_DOWNARROW], 
+					GA_RelRight, -imagew[IMG_UPARROW] + 1, 
+					GA_RelBottom, -imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1, 
+					GA_ID, GAD_DOWNARROW, 
+					GA_RightBorder, TRUE, 
+					GA_Previous, (Tag) jwin->gad[GAD_UPARROW], 
+					GA_Immediate, TRUE,
+					GA_RelVerify    , TRUE, 
+					GA_GZZGadget, TRUE,
+					TAG_DONE);
+
+    jwin->gad[GAD_VERTSCROLL] = NewObject(0, PROPGCLASS, GA_Top, btop + 1, 
+					GA_RelRight, -imagew[IMG_DOWNARROW] + v_offset + 1, 
+					GA_Width, imagew[IMG_DOWNARROW] - v_offset * 2,
+					GA_RelHeight, -imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] - btop -2, 
+					GA_ID, GAD_VERTSCROLL, 
+					GA_Previous, (Tag) jwin->gad[GAD_DOWNARROW], 
+					GA_RightBorder, TRUE, 
+					GA_RelVerify, TRUE, 
+					GA_Immediate, TRUE, 
+					PGA_NewLook, TRUE, 
+					PGA_Borderless, TRUE, 
+					PGA_Total, 100, 
+					PGA_Visible, 100, 
+					PGA_Freedom, FREEVERT, 
+					GA_GZZGadget, TRUE,
+					TAG_DONE);
+
+    jwin->gad[GAD_RIGHTARROW] = NewObject(0, BUTTONGCLASS, GA_Image, (Tag) jwin->img[IMG_RIGHTARROW], 
+			      		GA_RelRight, -imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] + 1, 
+		      			GA_RelBottom, -imageh[IMG_RIGHTARROW] + 1, 
+	      				GA_ID, GAD_RIGHTARROW, 
+      					GA_BottomBorder, TRUE, 
+					GA_Previous, (Tag) jwin->gad[GAD_VERTSCROLL], 
+					GA_Immediate, TRUE, 
+					GA_RelVerify, TRUE,
+					GA_GZZGadget, TRUE,
+					TAG_DONE);
+
+     jwin->gad[GAD_LEFTARROW] = NewObject(0, BUTTONGCLASS, GA_Image, (Tag) jwin->img[IMG_LEFTARROW], 
+					GA_RelRight, -imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] - imagew[IMG_LEFTARROW] + 1, 
+					GA_RelBottom, -imageh[IMG_RIGHTARROW] + 1, 
+					GA_ID, GAD_LEFTARROW, 
+					GA_BottomBorder, TRUE, 
+					GA_Previous, (Tag) jwin->gad[GAD_RIGHTARROW], 
+					GA_Immediate, TRUE, 
+					GA_RelVerify, TRUE ,
+					GA_GZZGadget, TRUE,
+					TAG_DONE);
+
+     jwin->gad[GAD_HORIZSCROLL] = NewObject(0, PROPGCLASS, GA_Left, jwin->jscreen->arosscreen->WBorLeft, 
+					GA_RelBottom, -imageh[IMG_LEFTARROW] + h_offset + 1, 
+					GA_RelWidth, -imagew[IMG_LEFTARROW] - imagew[IMG_RIGHTARROW] - imagew[IMG_SIZE] - jwin->jscreen->arosscreen->WBorRight - 2, 
+					GA_Height, imageh[IMG_LEFTARROW] - (h_offset * 2), 
+					GA_ID, GAD_HORIZSCROLL, 
+					GA_Previous, (Tag) jwin->gad[GAD_LEFTARROW], 
+					GA_BottomBorder, TRUE, 
+					GA_RelVerify, TRUE, 
+					GA_Immediate, TRUE, 
+					PGA_NewLook, TRUE, 
+					PGA_Borderless, TRUE, 
+					PGA_Total, 100, 
+					PGA_Visible, 100, 
+					PGA_Freedom, FREEHORIZ, 
+					GA_GZZGadget, TRUE,
+					TAG_DONE);
+
+    for(i = 0;i < NUM_GADGETS;i++) {
+	if (!jwin->gad[i]) {
+	  JWLOG("aros_win_thread[%lx]: ERROR: gad[%d]==NULL\n", thread, i);
+	  return NULL;
+	}
+    }
+    JWLOG("aros_win_thread[%lx]: firstgadget=%lx\n", thread, firstgadget);
+    return firstgadget;
+}
 /***********************************************************
  * every AOS3 window gets its own process
  * to open an according AROS window and
@@ -564,6 +915,7 @@ static void aros_win_thread (void) {
   struct IntuiMessage *msg;
   ULONG           secs, micros;
   BOOL            care=FALSE;
+  struct Gadget  *aros_gadgets;
 
   /* There's a time to live .. */
 
@@ -746,6 +1098,11 @@ static void aros_win_thread (void) {
 	JWLOG("aros_win_thread[%lx]: gadget: GTYP_CLOSE\n",thread);
 	care=FALSE;
       }
+
+      if((gadget_type & GTYP_GTYPEMASK) == GTYP_PROPGADGET) {
+	JWLOG("aros_win_thread[%lx]: gadget: GTYP_PROPGADGET\n",thread);
+	dump_prop_gadget(thread, gadget);
+      }
       if(care) {
 	JWLOG("aros_win_thread[%lx]: gadget: ==> ! CARE ! <==\n",thread);
       }
@@ -788,6 +1145,18 @@ static void aros_win_thread (void) {
       Delay(10);
     }
 
+    if(care) {
+      aros_gadgets=make_gadgets(thread, jwin);
+      if(!aros_gadgets) {
+	JWLOG("aros_win_thread[%lx]: ERROR: could not create gadgets :(!\n", thread);
+	goto EXIT;
+      }
+      idcmpflags=idcmpflags | IDCMP_GADGETDOWN | IDCMP_GADGETUP;
+    }
+    else {
+      aros_gadgets=NULL; /* switch off warning */
+    }
+
     if(jwin->jscreen->arosscreen) {
       activate_ticks(jwin, 5);
 
@@ -824,6 +1193,9 @@ static void aros_win_thread (void) {
 				      WA_IDCMP, idcmpflags,
 				      WA_PubScreen, jwin->jscreen->arosscreen,
 				      WA_NewLookMenus, TRUE,
+				      WA_SizeBBottom, TRUE,
+				      WA_SizeBRight, TRUE,
+				      care ? WA_Gadgets : TAG_IGNORE, (IPTR) aros_gadgets,
 				      TAG_DONE);
 
     }
@@ -831,7 +1203,7 @@ static void aros_win_thread (void) {
       JWLOG("aros_win_thread[%lx]: ERROR: could not wait for my screen :(!\n", thread);
       goto EXIT;
     }
-    
+
     JWLOG("aros_win_thread[%lx]: x, y : %d, %d\n",thread,  
            x - estimated_border_left + bl,
 	   y - estimated_border_top  + bt );
