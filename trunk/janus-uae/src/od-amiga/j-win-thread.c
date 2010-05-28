@@ -220,20 +220,13 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
   JWLOG("aros_win_thread[%lx]: handle_input(jwin %lx, ..) done\n", thread, jwin);
 }
 
-
-static gint y_compare(gconstpointer a, gconstpointer b) {
-
-  if( ((JanusGadget *)a)->y < ((JanusGadget *)b)->y) {
-    return -1;
-  }
-  if( ((JanusGadget *)a)->y > ((JanusGadget *)b)->y) {
-    return 1;
-  }
-  return 0;
-}
-
-
-static gint x_compare(gconstpointer a, gconstpointer b) {
+/********************************************************
+ * xy_compare
+ *
+ * compare two JanusGadgets, so that they are sorted 
+ * according to their x (and second y) coordinates
+ ********************************************************/
+static gint xy_compare(gconstpointer a, gconstpointer b) {
 
   if( ((JanusGadget *)a)->x < ((JanusGadget *)b)->x) {
     return -1;
@@ -241,48 +234,31 @@ static gint x_compare(gconstpointer a, gconstpointer b) {
   if( ((JanusGadget *)a)->x > ((JanusGadget *)b)->x) {
     return 1;
   }
+
+  /* x == x, sort y */
+  if( ((JanusGadget *)a)->y < ((JanusGadget *)b)->y) {
+    return -1;
+  }
+  if( ((JanusGadget *)a)->y > ((JanusGadget *)b)->y) {
+    return 1;
+  }
+
+  /* x == x and y == y ?? */
   return 0;
 }
 
-static JanusGadget *get_gadget_right(struct Process *thread, JanusWin *jwin) {
-  guint i;
-  JanusGadget *jgad;
-
-  jwin->aos3_gadget_list=g_list_sort(jwin->aos3_gadget_list, &x_compare);
-  return (JanusGadget *) g_list_nth_data(jwin->aos3_gadget_list, 1);
-}
-
-static JanusGadget *get_gadget_left(struct Process *thread, JanusWin *jwin) {
-  guint i;
-  JanusGadget *jgad;
-
-  jwin->aos3_gadget_list=g_list_sort(jwin->aos3_gadget_list, &x_compare);
-  return (JanusGadget *) g_list_nth_data(jwin->aos3_gadget_list, 0);
-}
-
-static JanusGadget *get_gadget_down(struct Process *thread, JanusWin *jwin) {
-  guint i;
-  JanusGadget *jgad;
-
-  jwin->aos3_gadget_list=g_list_sort(jwin->aos3_gadget_list, &y_compare);
-  return (JanusGadget *) g_list_nth_data(jwin->aos3_gadget_list, 1);
-}
-
-static JanusGadget *get_gadget_up(struct Process *thread, JanusWin *jwin) {
-  guint i;
-  JanusGadget *jgad;
-
-  jwin->aos3_gadget_list=g_list_sort(jwin->aos3_gadget_list, &y_compare);
-  return (JanusGadget *) g_list_nth_data(jwin->aos3_gadget_list, 0);
-}
-
-static void get_gadget_list(struct Process *thread, JanusWin *jwin) {
+/********************************************************
+ * init_border_gadgets
+ *
+ * fill up/down/left/right arrow JanusGadgets
+ ********************************************************/
+static void init_border_gadgets(struct Process *thread, JanusWin *jwin) {
   ULONG gadget;
   UWORD gadget_type;
   UWORD gadget_flags;
   WORD  x, y;
-  //UWORD w, h;
   JanusGadget *jgad;
+  GList *aos3_gadget_list=NULL;
 
   gadget=get_long_p(jwin->aos3win + 62);
 
@@ -293,15 +269,12 @@ static void get_gadget_list(struct Process *thread, JanusWin *jwin) {
 
     if( ( gadget_type    & GTYP_CUSTOMGADGET ) &&
         ( !(gadget_type  & GTYP_SYSGADGET) ) &&
-/*        ( gadget_flags   & GACT_RIGHTBORDER ) &&*/
 	( !(gadget_flags & GACT_TOPBORDER ) ) &&
 	( !(gadget_flags & GACT_LEFTBORDER ) )
       ) {
 
       x=get_word(gadget + 4);
       y=get_word(gadget + 6);
-      //w=get_word(gadget + 8);
-      //h=get_word(gadget + 10);
 
       JWLOG("aros_win_thread[%lx]: gadget %lx: x %d y %d\n", thread, gadget, x, y);
 
@@ -310,11 +283,46 @@ static void get_gadget_list(struct Process *thread, JanusWin *jwin) {
       jgad->y=y;
       jgad->aos3gadget=gadget;
 
-      jwin->aos3_gadget_list=g_list_append(jwin->aos3_gadget_list, (gpointer) jgad);
+      aos3_gadget_list=g_list_append(aos3_gadget_list, (gpointer) jgad);
     }
 
     gadget=get_long(gadget); /* NextGadget */
   }
+
+  aos3_gadget_list=g_list_sort(aos3_gadget_list, &xy_compare);
+
+  if((g_list_length(aos3_gadget_list) == 4) || (g_list_length(aos3_gadget_list) == 2)) {
+    /* otherwise don't even try */
+    jwin->arrow_left  = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 0);
+    jwin->arrow_right = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 1);
+
+    if(jwin->arrow_left->y != jwin->arrow_right->y) {
+      /* non-aligned, seems to be something different.. */
+      jwin->arrow_left =NULL;
+      jwin->arrow_right=NULL;
+    }
+
+    if(g_list_length(aos3_gadget_list) == 4) {
+      jwin->arrow_up   = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 2);
+      jwin->arrow_down = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 3);
+    }
+    else {
+      jwin->arrow_up   = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 0);
+      jwin->arrow_down = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 1);
+    }
+
+    if(jwin->arrow_up->x != jwin->arrow_down->x) {
+      /* non-aligned, seems to be something different.. */
+      jwin->arrow_up  =NULL;
+      jwin->arrow_down=NULL;
+    }
+  }
+
+  g_list_free(aos3_gadget_list);
+  /* there still might be some elements alloced, in case !=2 and !=4 for example.
+   * but they are from our pool, so we save the trouble of freeing them.
+   */
+
   return;
 }
 
@@ -322,6 +330,11 @@ extern BOOL manual_mouse;
 extern WORD manual_mouse_x;
 extern WORD manual_mouse_y;
 
+/********************************************************
+ * handle_gadget
+ *
+ * react on border gadget clicks
+ ********************************************************/
 static void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
   UWORD x,y;
   JanusGadget *jgad=NULL;
@@ -334,15 +347,15 @@ static void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
     case GAD_LEFTARROW:
     case GAD_RIGHTARROW:
       JWLOG("aros_win_thread[%lx]: GAD_DOWNARROW etc\n", thread);
-      if(!jwin->aos3_gadget_list) {
-	get_gadget_list(thread, jwin);
+      if(!jwin->arrow_up && !jwin->arrow_left) {
+	init_border_gadgets(thread, jwin);
       }
 
       switch (gadid) {
-	case GAD_DOWNARROW : jgad=get_gadget_down(thread, jwin); break;
-	case GAD_UPARROW   : jgad=get_gadget_up(thread, jwin); break;
-	case GAD_LEFTARROW : jgad=get_gadget_left(thread, jwin); break;
-	case GAD_RIGHTARROW: jgad=get_gadget_right(thread, jwin); break;
+	case GAD_DOWNARROW : jgad=jwin->arrow_down;  break;
+	case GAD_UPARROW   : jgad=jwin->arrow_up;    break;
+	case GAD_LEFTARROW : jgad=jwin->arrow_left;  break;
+	case GAD_RIGHTARROW: jgad=jwin->arrow_right; break;
       }
       if(!jgad) {
 	JWLOG("aros_win_thread[%lx]: jgad not matched??\n", thread);
@@ -1351,7 +1364,7 @@ static void aros_win_thread (void) {
 	}
 	else {
 
-	  handle_msg(msg, aroswin, jwin, class, code, dmx, dmy, mx, my, qualifier, 
+	  handle_msg((struct Message *) msg, aroswin, jwin, class, code, dmx, dmy, mx, my, qualifier, 
 		     thread, secs, micros, &done);
 	  ReplyMsg ((struct Message *)msg);
 	}

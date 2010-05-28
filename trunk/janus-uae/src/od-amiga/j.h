@@ -230,6 +230,11 @@ enum {
 };
 
 typedef struct {
+  ULONG            aos3gadget;
+  WORD             x,y;
+} JanusGadget;
+
+typedef struct {
   gpointer       aos3win; /* gpointer !? */
   struct Window *aroswin; /* corresponding native aros win */
   JanusScreen   *jscreen; /* screens on which window is running */
@@ -256,14 +261,15 @@ typedef struct {
   struct Gadget   *gad[NUM_GADGETS];
   struct Image    *img[NUM_GADGETS];
   struct DrawInfo *dri;
-  GList           *aos3_gadget_list;
+  
+  JanusGadget     *arrow_up;
+  JanusGadget     *arrow_down;
+  JanusGadget     *prop_up_down;
+  JanusGadget     *arrow_left;
+  JanusGadget     *arrow_right;
+  JanusGadget     *prop_left_right;
 
 } JanusWin;
-
-typedef struct {
-  ULONG            aos3gadget;
-  WORD             x,y;
-} JanusGadget;
 
 typedef struct {
   JanusWin      *jwin;
