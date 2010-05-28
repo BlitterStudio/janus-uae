@@ -213,9 +213,9 @@ typedef struct {
 enum {
     GAD_UPARROW, 
     GAD_DOWNARROW, 
+    GAD_VERTSCROLL, 
     GAD_LEFTARROW, 
     GAD_RIGHTARROW, 
-    GAD_VERTSCROLL, 
     GAD_HORIZSCROLL, 
     NUM_GADGETS
 };
