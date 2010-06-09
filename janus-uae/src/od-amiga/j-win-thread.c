@@ -254,9 +254,11 @@ static gint xy_compare(gconstpointer a, gconstpointer b) {
  ********************************************************/
 static void init_border_gadgets(struct Process *thread, JanusWin *jwin) {
   ULONG gadget;
+  ULONG specialinfo;
   UWORD gadget_type;
   UWORD gadget_flags;
-  WORD  x, y;
+  UWORD spezial_info_flags;
+  WORD  x=0, y=0;
   JanusGadget *jgad;
   GList *aos3_gadget_list=NULL;
 
@@ -267,16 +269,17 @@ static void init_border_gadgets(struct Process *thread, JanusWin *jwin) {
     gadget_type =get_word(gadget + 16); 
     gadget_flags=get_word(gadget + 12);
 
-    if( ( gadget_type    & GTYP_CUSTOMGADGET ) &&
-        ( !(gadget_type  & GTYP_SYSGADGET) ) &&
+    if( ( !(gadget_type  & GTYP_SYSGADGET) ) &&
 	( !(gadget_flags & GACT_TOPBORDER ) ) &&
-	( !(gadget_flags & GACT_LEFTBORDER ) )
+	( !(gadget_flags & GACT_LEFTBORDER ) ) &&
+        (  (gadget_type    & GTYP_CUSTOMGADGET) ) 
       ) {
 
       x=get_word(gadget + 4);
       y=get_word(gadget + 6);
 
-      JWLOG("aros_win_thread[%lx]: gadget %lx: x %d y %d\n", thread, gadget, x, y);
+      JWLOG("aros_win_thread[%lx]: cust gadget %lx: x %d y %d\n", thread, gadget, x, y);
+
 
       jgad=(JanusGadget *) AllocPooled(jwin->mempool, sizeof(JanusGadget));
       jgad->x=x;
@@ -285,6 +288,41 @@ static void init_border_gadgets(struct Process *thread, JanusWin *jwin) {
 
       aos3_gadget_list=g_list_append(aos3_gadget_list, (gpointer) jgad);
     }
+    else if( gadget_type    & GTYP_PROPGADGET ) {
+
+      specialinfo=get_long(gadget + 34);
+
+      if(specialinfo) {
+      	spezial_info_flags=get_word(specialinfo);
+  	x=get_word(gadget + 4);
+   	y=get_word(gadget + 6);
+
+	if(spezial_info_flags & FREEHORIZ) {
+ 
+	  JWLOG("aros_win_thread[%lx]: FREEHORIZ prop gadget %lx: x %d y %d\n", thread, gadget, x, y);
+
+	  jgad=(JanusGadget *) AllocPooled(jwin->mempool, sizeof(JanusGadget));
+	  jgad->x=x;
+	  jgad->y=y;
+	  jgad->flags=get_word(specialinfo);
+	  jgad->aos3gadget=gadget;
+	  jwin->prop_left_right=jgad;
+	}
+
+	if(spezial_info_flags & FREEVERT) {
+ 
+	  JWLOG("aros_win_thread[%lx]: FREEVERT prop gadget %lx: x %d y %d\n", thread, gadget, x, y);
+
+	  jgad=(JanusGadget *) AllocPooled(jwin->mempool, sizeof(JanusGadget));
+	  jgad->x=x;
+	  jgad->y=y;
+	  jgad->flags=get_word(specialinfo);
+	  jgad->aos3gadget=gadget;
+	  jwin->prop_up_down=jgad;
+	}
+      }
+    }
+
 
     gadget=get_long(gadget); /* NextGadget */
   }
@@ -844,8 +882,12 @@ static struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
 					  GA_Immediate, TRUE, 
 					  PGA_NewLook, TRUE, 
 					  PGA_Borderless, TRUE, 
-					  PGA_Total, 100, 
+#if 0
+					  PGA_Total, , 
 					  PGA_Visible, 100, 
+#endif
+					  PGA_VertPot,    MAXPOT,
+					  PGA_VertBody,   MAXBODY,
 					  PGA_Freedom, FREEVERT, 
 					  GA_GZZGadget, TRUE,
 					  TAG_DONE);
@@ -893,8 +935,8 @@ static struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
 					  GA_Immediate, TRUE, 
 					  PGA_NewLook, TRUE, 
 					  PGA_Borderless, TRUE, 
-					  PGA_Total, 100, 
-					  PGA_Visible, 100, 
+					  PGA_Total, 80, 
+					  PGA_Visible, 80, 
 					  PGA_Freedom, FREEHORIZ, 
 					  GA_GZZGadget, TRUE,
 					  TAG_DONE);
@@ -947,6 +989,7 @@ static void aros_win_thread (void) {
   ULONG           secs, micros;
   BOOL            care=FALSE;
   struct Gadget  *aros_gadgets;
+  ULONG           specialinfo;
 
   /* There's a time to live .. */
 
@@ -1372,8 +1415,60 @@ static void aros_win_thread (void) {
 	}
 #endif
 	if(class == IDCMP_INTUITICKS) {
+	  JWLOG("SpecialInfo: jwin->prop_update_count: %d\n", jwin->prop_update_count);
+	  if(jwin->prop_update_count == 0) {
+	    jwin->prop_update_count=5;
+
+	    if(jwin->prop_up_down) {
+	      specialinfo=get_long(jwin->prop_up_down->aos3gadget + 34);
+	      JWLOG("SpecialInfo: HorizPot: %d\n", get_word(specialinfo + 2));
+	      JWLOG("SpecialInfo: VertPot: %d\n", get_word(specialinfo + 4));
+	      JWLOG("SpecialInfo: HorizBody: %d\n", get_word(specialinfo + 6));
+	      JWLOG("SpecialInfo: VertBody: %d\n", get_word(specialinfo + 8));
+	      if( 
+		((struct PropInfo *)jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->HorizPot != get_word(specialinfo + 2) ||
+		((struct PropInfo *)jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->VertPot  != get_word(specialinfo + 4) ||
+		((struct PropInfo *)jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->HorizBody!= get_word(specialinfo + 6) ||
+		((struct PropInfo *)jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->VertBody != get_word(specialinfo + 8)
+		) {
+
+		  JWLOG("SpecialInfo: NewModifyProp horiz ..\n");
+
+	  	  NewModifyProp(jwin->gad[GAD_VERTSCROLL], jwin->aroswin, NULL,
+	  			jwin->prop_up_down->flags, 
+	  			get_word(specialinfo + 2), get_word(specialinfo + 4),
+	  			get_word(specialinfo + 6), get_word(specialinfo + 8),
+	  			1);
+	      }
+	    }
+	    if(jwin->prop_left_right) {
+	      specialinfo=get_long(jwin->prop_left_right->aos3gadget + 34);
+	      JWLOG("SpecialInfo: HorizPot: %d\n", get_word(specialinfo + 2));
+	      JWLOG("SpecialInfo: VertPot: %d\n", get_word(specialinfo + 4));
+	      JWLOG("SpecialInfo: HorizBody: %d\n", get_word(specialinfo + 6));
+	      JWLOG("SpecialInfo: VertBody: %d\n", get_word(specialinfo + 8));
+
+	      if( 
+		((struct PropInfo *)jwin->gad[GAD_HORIZSCROLL]->SpecialInfo)->HorizPot != get_word(specialinfo + 2) ||
+		((struct PropInfo *)jwin->gad[GAD_HORIZSCROLL]->SpecialInfo)->VertPot  != get_word(specialinfo + 4) ||
+		((struct PropInfo *)jwin->gad[GAD_HORIZSCROLL]->SpecialInfo)->HorizBody!= get_word(specialinfo + 6) ||
+		((struct PropInfo *)jwin->gad[GAD_HORIZSCROLL]->SpecialInfo)->VertBody != get_word(specialinfo + 8)
+		) {
+
+		JWLOG("SpecialInfo: NewModifyProp vert ..\n");
+
+		NewModifyProp(jwin->gad[GAD_HORIZSCROLL], jwin->aroswin, NULL,
+			      jwin->prop_left_right->flags, 
+			      get_word(specialinfo + 2), get_word(specialinfo + 4),
+			      get_word(specialinfo + 6), get_word(specialinfo + 8),
+			      1);
+      	      }
+	    }
+	  }
+	  jwin->prop_update_count--;
 
 	  ReplyMsg ((struct Message *)msg);
+
 	  if(jwin->intui_tickcount) {
 	    if(jwin->intui_tickskip++ > jwin->intui_tickspeed) {
 	      jwin->intui_tickskip=0;

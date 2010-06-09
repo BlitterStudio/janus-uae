@@ -232,6 +232,7 @@ enum {
 typedef struct {
   ULONG            aos3gadget;
   WORD             x,y;
+  UWORD            flags;
 } JanusGadget;
 
 typedef struct {
@@ -268,6 +269,7 @@ typedef struct {
   JanusGadget     *arrow_left;
   JanusGadget     *arrow_right;
   JanusGadget     *prop_left_right;
+  UWORD            prop_update_count;
 
 } JanusWin;
 
