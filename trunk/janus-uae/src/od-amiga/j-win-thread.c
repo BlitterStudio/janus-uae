@@ -457,6 +457,14 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
       break;
 
     case IDCMP_GADGETUP:
+      /* avoid race conditions with handle_gadget ... 
+       * TODO: find a better way for this?
+       */
+      while(manual_mouse) {
+	Delay(1);
+      }
+      Delay(15);
+
       my_setmousebuttonstate(0, 0, 0); /* unclick */
       mice[0].enabled=TRUE; /* enable mouse emulation */
       break;
