@@ -190,6 +190,11 @@ int init_sound (void)
     sndbufsize = rate * currprefs.sound_latency * (currprefs.sound_bits / 8) * (currprefs.sound_stereo ? 2 : 1) / 1000;
     sndbufsize = (sndbufsize + 1) & ~1;
 
+    /* added by o1i, Broken Wall on FreeMem otherwise ..? */
+    if(sndbufsize < 8192) {
+      sndbufsize = 8192; /* set to default */
+    }
+
     /* get the buffers */
     if (ahiopen) {
 	buffers[0] = (void*) AllocMem (sndbufsize,MEMF_PUBLIC | MEMF_CLEAR);
@@ -202,7 +207,7 @@ int init_sound (void)
 	if (!buffers[0] || !buffers[1])
 	    goto fail;
     }
-    bufidx    = 0;
+   bufidx    = 0;
     sndbuffer = sndbufpt = (uae_u16*) buffers[bufidx];
 
 #if !defined __amigaos4__ && !defined __MORPHOS__ && !defined __AROS__
