@@ -369,7 +369,8 @@ extern BOOL manual_mouse;
 extern WORD manual_mouse_x;
 extern WORD manual_mouse_y;
 
-BOOL prop_active=FALSE;
+BOOL horiz_prop_active=FALSE;
+BOOL vert_prop_active=FALSE;
 
 void move_horiz_prop_gadget(struct Process *thread, JanusWin *jwin) {
   UWORD x;
@@ -418,6 +419,74 @@ void move_horiz_prop_gadget(struct Process *thread, JanusWin *jwin) {
   manual_mouse_x=x + get_word(jgad->aos3gadget + 4) + (WORD) t;
 #endif
   manual_mouse_x=x;
+  /* debug! */
+
+  JWLOG("aros_win_thread[%lx]: hit gadget %lx at %d x %d..\n", thread, jgad->aos3gadget, manual_mouse_x, manual_mouse_y);
+
+  mice[0].enabled=FALSE; /* disable mouse emulation */
+  manual_mouse=TRUE;
+  while(manual_mouse) {
+    /* wait until the mouse is, where it should be */
+    Delay(1);
+  }
+  Delay(10);
+}
+
+void move_vert_prop_gadget(struct Process *thread, JanusWin *jwin) {
+  UWORD y;
+  ULONG t;
+  ULONG specialinfo;
+  JanusGadget *jgad=NULL;
+
+  jgad=jwin->prop_up_down; 
+  specialinfo=get_long(jgad->aos3gadget + 34);
+
+  /* place mouse on the vertical amigaos proportional gadget */
+  /* x middle of gadget: LeftEdge + Width - BorderRight/2 */
+  manual_mouse_x=get_word(jwin->aos3win+4) + get_word(jwin->aos3win+8) - (get_byte(jwin->aos3win+56)/2);
+
+  //manual_mouse_y=y + get_word(jgad->aos3gadget + 6) + (get_word(jgad->aos3gadget + 10)/2);
+
+  JWLOG("aros_win_thread[%lx]:  manual_mouse_x %d\n", thread, manual_mouse_x);
+
+  JWLOG("aros_win_thread[%lx]:  window top edge %d\n", thread, get_word(jwin->aos3win + 6));
+  JWLOG("aros_win_thread[%lx]:  window top border height %d\n", thread, get_byte(jwin->aos3win + 55));
+  JWLOG("aros_win_thread[%lx]:  gadget specialinfo CHight %d\n", thread, get_word(specialinfo + 12));
+  JWLOG("aros_win_thread[%lx]:  aros VertPot %d\n", thread, ((struct PropInfo *) jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->VertPot);
+
+  /* top edge + top border height of aos3 window */
+  y=get_word(jwin->aos3win + 6) + get_byte(jwin->aos3win + 55);
+
+  /* top border of gadget */
+  y=y + get_word(specialinfo + 20);
+
+  /* CHight * VertPot / MAX_POT */
+  //t=get_word(specialinfo + 10) * get_word(specialinfo + 2) / MAXPOT;
+  t=get_word(specialinfo + 12) * ((struct PropInfo *) jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->VertPot;
+  JWLOG("aros_win_thread[%lx]:  t %d\n", thread, t);
+  t=t / MAXPOT;
+  JWLOG("aros_win_thread[%lx]:  t %d\n", thread, t);
+
+  y=y+(t/2);
+
+  /* otherwise we will miss the gadget */
+  if(y<2) {
+    y=2;
+  }
+
+  JWLOG("aros_win_thread[%lx]: GAD_VERTSCROLL: y %d\n", thread, y);
+
+  /* use a long here to avoid overflow problems */
+  /* (width * horizpot) / 0xFFFF */
+
+#if 0
+  t=((get_word(jgad->aos3gadget +  8) * get_word(specialinfo + 2)) / 0xFFFF);
+  /* those values are negative */
+  JWLOG("aros_win_thread[%lx]: GAD_HORIZSCROLL: LeftEdge %x\n", thread, get_word(jgad->aos3gadget + 4));
+  /* x + Gadget LeftEdge + t */
+  manual_mouse_x=x + get_word(jgad->aos3gadget + 4) + (WORD) t;
+#endif
+  manual_mouse_y=y;
   /* debug! */
 
   JWLOG("aros_win_thread[%lx]: hit gadget %lx at %d x %d..\n", thread, jgad->aos3gadget, manual_mouse_x, manual_mouse_y);
@@ -494,10 +563,21 @@ static void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
  
       move_horiz_prop_gadget(thread, jwin); 
       my_setmousebuttonstate(0, 0, 1); /* click */
-      prop_active=TRUE;
-      JWLOG("prop_active=TRUE\n");
+      horiz_prop_active=TRUE;
+      JWLOG("horiz_prop_active=TRUE\n");
 
     break;
+
+    case GAD_VERTSCROLL:
+      JWLOG("GAD_VERTSCROLL!\n");
+ 
+      move_vert_prop_gadget(thread, jwin); 
+      my_setmousebuttonstate(0, 0, 1); /* click */
+      vert_prop_active=TRUE;
+      JWLOG("vert_prop_active=TRUE\n");
+
+    break;
+
 
     default:
       JWLOG("aros_win_thread[%lx]: WARNING: gadid %d is not handled (yet?)\n", thread, gadid);
@@ -542,7 +622,8 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
       Delay(15);
 
       my_setmousebuttonstate(0, 0, 0); /* unclick */
-      prop_active=FALSE;
+      horiz_prop_active=FALSE;
+      vert_prop_active=FALSE;
       JWLOG("prop_active=FALSE\n");
       mice[0].enabled=TRUE; /* enable mouse emulation */
       break;
@@ -1529,8 +1610,13 @@ static void aros_win_thread (void) {
 #endif
 	if(class == IDCMP_INTUITICKS) {
 
-	  if(prop_active) {
-	    move_horiz_prop_gadget(thread, jwin);
+	  if(horiz_prop_active||vert_prop_active) {
+	    if(horiz_prop_active) {
+	      move_horiz_prop_gadget(thread, jwin);
+	    }
+	    else {
+	      move_vert_prop_gadget(thread, jwin);
+	    }
 	    ReplyMsg ((struct Message *)msg);
 	    break;
 	  }
