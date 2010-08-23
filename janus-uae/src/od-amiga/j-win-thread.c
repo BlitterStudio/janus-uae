@@ -375,6 +375,8 @@ BOOL vert_prop_active=FALSE;
 void move_horiz_prop_gadget(struct Process *thread, JanusWin *jwin) {
   UWORD x;
   ULONG t;
+  ULONG rulerwidth;
+  ULONG freewidth;
   ULONG specialinfo;
   JanusGadget *jgad=NULL;
 
@@ -384,8 +386,6 @@ void move_horiz_prop_gadget(struct Process *thread, JanusWin *jwin) {
   /* place mouse on the horizontal amigaos proportional gadget */
   /* y middle of gadget: TopEdge + Height - BorderBottom/2 */
   manual_mouse_y=get_word(jwin->aos3win+6) + get_word(jwin->aos3win+10) - (get_byte(jwin->aos3win+57)/2);
-
-  //manual_mouse_y=y + get_word(jgad->aos3gadget + 6) + (get_word(jgad->aos3gadget + 10)/2);
 
   JWLOG("aros_win_thread[%lx]:  manual_mouse_y %d\n", thread, manual_mouse_y);
 
@@ -397,27 +397,31 @@ void move_horiz_prop_gadget(struct Process *thread, JanusWin *jwin) {
   /* left edge + left border width of aos3 window */
   x=get_word(jwin->aos3win + 4) + get_byte(jwin->aos3win + 54);
 
-  /* border width of gadget */
-  x=x + get_word(specialinfo + 18);
+  /* size of ruler = 68k gadget width * HorizBody / MAXBODY */
+  rulerwidth=get_word(specialinfo + 10) * get_word(specialinfo + 6) / MAXBODY;
+  JWLOG("aros_win_thread[%lx]:  rulerwidth %d\n", thread, rulerwidth);
 
-  /* CWidth * HorizPot / MAX_POT */
-  //t=get_word(specialinfo + 10) * get_word(specialinfo + 2) / MAXPOT;
-  t=get_word(specialinfo + 10) * ((struct PropInfo *) jwin->gad[GAD_HORIZSCROLL]->SpecialInfo)->HorizPot / MAXPOT;
+  /* leftmost x clickpoint for us
+   * assuming the slider gadget is in it's leftmost position, we need to click in the middle of the
+   * slider (rulerwidth / 2). We also add the border of the Propgadget, as we don't want to
+   * click on that either.
+   */
+  x = x + rulerwidth/2 + get_word(specialinfo + 18) ;
 
-  x=x+(t/2);
+  /* free space outside of ruler */
+  freewidth=get_word(specialinfo + 10) - rulerwidth;
+
+  /* we now take the percentage of the freewidth, that corresponds to the actual prop value */
+  t=(freewidth * ((struct PropInfo *) jwin->gad[GAD_HORIZSCROLL]->SpecialInfo)->HorizPot) / MAXPOT;
+
+  /* click point!
+   * as we only use the freewidth value, the maximum we can reach is the middle of the
+   * slider, if the slider is on the leftmost position. This is exactly, what we want.
+   */
+  x=x + t; 
 
   JWLOG("aros_win_thread[%lx]: GAD_HORIZSCROLL: x %d\n", thread, x);
 
-  /* use a long here to avoid overflow problems */
-  /* (width * horizpot) / 0xFFFF */
-
-#if 0
-  t=((get_word(jgad->aos3gadget +  8) * get_word(specialinfo + 2)) / 0xFFFF);
-  /* those values are negative */
-  JWLOG("aros_win_thread[%lx]: GAD_HORIZSCROLL: LeftEdge %x\n", thread, get_word(jgad->aos3gadget + 4));
-  /* x + Gadget LeftEdge + t */
-  manual_mouse_x=x + get_word(jgad->aos3gadget + 4) + (WORD) t;
-#endif
   manual_mouse_x=x;
   /* debug! */
 
@@ -996,17 +1000,17 @@ static struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
 
     for(i = 0;i < NUM_IMAGES;i++) {
 
-	jwin->img[i] = NewObject(0, SYSICLASS, SYSIA_DrawInfo, (Tag) jwin->dri, 
-				         SYSIA_Which, (Tag) img2which[i], 
-				         TAG_DONE);
+      jwin->img[i] = NewObject(0, SYSICLASS, SYSIA_DrawInfo, (Tag) jwin->dri, 
+       					SYSIA_Which, (Tag) img2which[i], 
+					TAG_DONE);
 
-	if (!jwin->img[i]) {
-	  JWLOG("aros_win_thread[%lx]: could not create image %d\n", thread, i);
-	  return NULL;
-	}
+      if (!jwin->img[i]) {
+	JWLOG("aros_win_thread[%lx]: could not create image %d\n", thread, i);
+	return NULL;
+      }
 
-	GetAttr(IA_Width,  (Object *) jwin->img[i], &imagew[i]);
-	GetAttr(IA_Height, (Object *) jwin->img[i], &imageh[i]);
+      GetAttr(IA_Width,  (Object *) jwin->img[i], &imagew[i]);
+      GetAttr(IA_Height, (Object *) jwin->img[i], &imageh[i]);
     }
 
     btop = jwin->jscreen->arosscreen->WBorTop + jwin->dri->dri_Font->tf_YSize + 1;
