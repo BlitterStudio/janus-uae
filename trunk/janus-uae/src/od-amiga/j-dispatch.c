@@ -211,6 +211,10 @@ ULONG get_long_p(ULONG *p) {
   return (ULONG) get_long((uaecptr) p);
 }
 
+UWORD get_word_p(ULONG *p) {
+  return (UWORD) get_word((uaecptr) p);
+}
+
 void unlock_jgui(void);
 
 /*********************************

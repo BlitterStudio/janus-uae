@@ -400,6 +400,7 @@ struct Window *assert_window (struct Window *search);
 /* casting helpers */
 void  put_long_p(ULONG *p, ULONG value);
 ULONG get_long_p(ULONG *p);
+UWORD get_word_p(ULONG *p);
 
 void close_all_janus_windows(void);
 void close_all_janus_windows_wait(void);
@@ -436,6 +437,8 @@ void gui_message_with_title (const char *title, const char *format,...);
 void unlock_jgui(void);
 
 /* j-win-gadgets.c */
+void move_horiz_prop_gadget(struct Process *thread, JanusWin *jwin);
+void move_vert_prop_gadget(struct Process *thread, JanusWin *jwin);
 void dump_prop_gadget(struct Process *thread, ULONG gadget);
 void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid);
 void init_border_gadgets(struct Process *thread, JanusWin *jwin);
