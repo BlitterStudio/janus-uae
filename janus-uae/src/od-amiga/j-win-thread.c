@@ -435,6 +435,8 @@ void move_horiz_prop_gadget(struct Process *thread, JanusWin *jwin) {
 void move_vert_prop_gadget(struct Process *thread, JanusWin *jwin) {
   UWORD y;
   ULONG t;
+  ULONG rulerheight;
+  ULONG freeheight;
   ULONG specialinfo;
   JanusGadget *jgad=NULL;
 
@@ -444,8 +446,6 @@ void move_vert_prop_gadget(struct Process *thread, JanusWin *jwin) {
   /* place mouse on the vertical amigaos proportional gadget */
   /* x middle of gadget: LeftEdge + Width - BorderRight/2 */
   manual_mouse_x=get_word(jwin->aos3win+4) + get_word(jwin->aos3win+8) - (get_byte(jwin->aos3win+56)/2);
-
-  //manual_mouse_y=y + get_word(jgad->aos3gadget + 6) + (get_word(jgad->aos3gadget + 10)/2);
 
   JWLOG("aros_win_thread[%lx]:  manual_mouse_x %d\n", thread, manual_mouse_x);
 
@@ -457,37 +457,40 @@ void move_vert_prop_gadget(struct Process *thread, JanusWin *jwin) {
   /* top edge + top border height of aos3 window */
   y=get_word(jwin->aos3win + 6) + get_byte(jwin->aos3win + 55);
 
-  /* top border of gadget */
-  y=y + get_word(specialinfo + 20);
+  /* size of ruler = 68k gadget height * VertBody / MAXBODY */
+  rulerheight=get_word(specialinfo + 12) * get_word(specialinfo + 8) / MAXBODY;
+  JWLOG("aros_win_thread[%lx]:  rulerheight %d\n", thread, rulerheight);
 
-  /* CHight * VertPot / MAX_POT */
-  //t=get_word(specialinfo + 10) * get_word(specialinfo + 2) / MAXPOT;
-  t=get_word(specialinfo + 12) * ((struct PropInfo *) jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->VertPot;
+  /* topmost y clickpoint for us
+   * assuming the slder gadget is in it's top position, we need to click in the middle of the
+   * slider (rulerheight / 2). We also add the border of the Propgadget, as we don't want to
+   * click on that either.
+   */
+  y=y + rulerheight/2 + get_word(specialinfo + 20) ;
+
+  /* free space outside of ruler */
+  freeheight=get_word(specialinfo + 12) - rulerheight;
+
+  /* we now take the percentage of the freeheight, that corresponds to the actual prop value */
+  t=(freeheight * ((struct PropInfo *) jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->VertPot) / MAXPOT;
   JWLOG("aros_win_thread[%lx]:  t %d\n", thread, t);
-  t=t / MAXPOT;
-  JWLOG("aros_win_thread[%lx]:  t %d\n", thread, t);
 
-  y=y+(t/2);
+  /* click point!
+   * as we only use the freeheight value, the maximum we can reach is the middle of the
+   * slider, if the slider is on the lowest position. This is exactly, what we want.
+   */
+  y=y + t; 
 
+#if 0
   /* otherwise we will miss the gadget */
   if(y<2) {
     y=2;
   }
+#endif
 
   JWLOG("aros_win_thread[%lx]: GAD_VERTSCROLL: y %d\n", thread, y);
 
-  /* use a long here to avoid overflow problems */
-  /* (width * horizpot) / 0xFFFF */
-
-#if 0
-  t=((get_word(jgad->aos3gadget +  8) * get_word(specialinfo + 2)) / 0xFFFF);
-  /* those values are negative */
-  JWLOG("aros_win_thread[%lx]: GAD_HORIZSCROLL: LeftEdge %x\n", thread, get_word(jgad->aos3gadget + 4));
-  /* x + Gadget LeftEdge + t */
-  manual_mouse_x=x + get_word(jgad->aos3gadget + 4) + (WORD) t;
-#endif
   manual_mouse_y=y;
-  /* debug! */
 
   JWLOG("aros_win_thread[%lx]: hit gadget %lx at %d x %d..\n", thread, jgad->aos3gadget, manual_mouse_x, manual_mouse_y);
 
