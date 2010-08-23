@@ -198,7 +198,7 @@ void move_horiz_prop_gadget(struct Process *thread, JanusWin *jwin) {
 
   /* place mouse on the horizontal amigaos proportional gadget */
   /* y middle of gadget: TopEdge + Height - BorderBottom/2 */
-  manual_mouse_y=get_word(jwin->aos3win+6) + get_word(jwin->aos3win+10) - (get_byte(jwin->aos3win+57)/2);
+  manual_mouse_y=get_word_p(jwin->aos3win+6) + get_word_p(jwin->aos3win+10) - (get_byte((uaecptr) jwin->aos3win+57)/2);
 
   JWLOG("aros_win_thread[%lx]:  manual_mouse_y %d\n", thread, manual_mouse_y);
 
@@ -208,7 +208,7 @@ void move_horiz_prop_gadget(struct Process *thread, JanusWin *jwin) {
   JWLOG("aros_win_thread[%lx]:  LeftBorder %d\n", thread, get_word(specialinfo + 18));
 
   /* left edge + left border width of aos3 window */
-  x=get_word(jwin->aos3win + 4) + get_byte(jwin->aos3win + 54);
+  x=get_word_p(jwin->aos3win + 4) + get_byte((uaecptr) jwin->aos3win + 54);
 
   /* size of ruler = 68k gadget width * HorizBody / MAXBODY */
   rulerwidth=get_word(specialinfo + 10) * get_word(specialinfo + 6) / MAXBODY;
@@ -267,17 +267,18 @@ void move_vert_prop_gadget(struct Process *thread, JanusWin *jwin) {
 
   /* place mouse on the vertical amigaos proportional gadget */
   /* x middle of gadget: LeftEdge + Width - BorderRight/2 */
-  manual_mouse_x=get_word(jwin->aos3win+4) + get_word(jwin->aos3win+8) - (get_byte(jwin->aos3win+56)/2);
+  manual_mouse_x=get_word_p(jwin->aos3win+4) + get_word_p(jwin->aos3win+8) - 
+                 (get_byte((uaecptr) jwin->aos3win+56)/2);
 
   JWLOG("aros_win_thread[%lx]:  manual_mouse_x %d\n", thread, manual_mouse_x);
 
-  JWLOG("aros_win_thread[%lx]:  window top edge %d\n", thread, get_word(jwin->aos3win + 6));
-  JWLOG("aros_win_thread[%lx]:  window top border height %d\n", thread, get_byte(jwin->aos3win + 55));
+  JWLOG("aros_win_thread[%lx]:  window top edge %d\n", thread, get_word_p(jwin->aos3win + 6));
+  JWLOG("aros_win_thread[%lx]:  window top border height %d\n", thread, get_byte((uaecptr) jwin->aos3win + 55));
   JWLOG("aros_win_thread[%lx]:  gadget specialinfo CHight %d\n", thread, get_word(specialinfo + 12));
   JWLOG("aros_win_thread[%lx]:  aros VertPot %d\n", thread, ((struct PropInfo *) jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->VertPot);
 
   /* top edge + top border height of aos3 window */
-  y=get_word(jwin->aos3win + 6) + get_byte(jwin->aos3win + 55);
+  y=get_word_p(jwin->aos3win + 6) + get_byte((uaecptr) jwin->aos3win + 55);
 
   /* size of ruler = 68k gadget height * VertBody / MAXBODY */
   rulerheight=get_word(specialinfo + 12) * get_word(specialinfo + 8) / MAXBODY;
