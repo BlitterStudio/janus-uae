@@ -435,4 +435,12 @@ void switch_off_coherence(void);
 void gui_message_with_title (const char *title, const char *format,...);
 void unlock_jgui(void);
 
+/* j-win-gadgets.c */
+void dump_prop_gadget(struct Process *thread, ULONG gadget);
+void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid);
+void init_border_gadgets(struct Process *thread, JanusWin *jwin);
+struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin);
+UWORD SetGadgetType(struct Gadget *gad, UWORD type);
+void my_setmousebuttonstate(int mouse, int button, int state);
+
 #endif
