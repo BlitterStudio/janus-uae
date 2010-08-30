@@ -464,7 +464,9 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
     };
 
    
-   jwin->dri = GetScreenDrawInfo(jwin->jscreen->arosscreen);
+   if(!jwin->dri) {
+    jwin->dri = GetScreenDrawInfo(jwin->jscreen->arosscreen);
+   }
 
     for(i = 0;i < NUM_IMAGES;i++) {
 
@@ -596,6 +598,60 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
     }
 
     return horizgadget;
+}
+
+/***********************************************************
+ * remove_gadgets(jwin)
+ *
+ * remove all border gadgets
+ ***********************************************************/
+static void de_init_border_gadgets(struct Process *thread, JanusWin* jwin) {
+
+  if(jwin->arrow_up) {
+    FreePooled(jwin->mempool, jwin->arrow_up, sizeof(JanusGadget));
+    jwin->arrow_up=NULL;
+  }
+  if(jwin->arrow_down) {
+    FreePooled(jwin->mempool, jwin->arrow_down, sizeof(JanusGadget));
+    jwin->arrow_down=NULL;
+  }
+  if(jwin->prop_up_down) {
+    FreePooled(jwin->mempool, jwin->prop_up_down, sizeof(JanusGadget));
+    jwin->prop_up_down=NULL;
+  }
+  if(jwin->arrow_left) {
+    FreePooled(jwin->mempool, jwin->arrow_left, sizeof(JanusGadget));
+    jwin->arrow_left=NULL;
+  }
+  if(jwin->arrow_right) {
+    FreePooled(jwin->mempool, jwin->arrow_right, sizeof(JanusGadget));
+    jwin->arrow_right=NULL;
+  }
+  if(jwin->prop_left_right) {
+    FreePooled(jwin->mempool, jwin->prop_left_right, sizeof(JanusGadget));
+    jwin->prop_left_right=NULL;
+  }
+}
+
+void remove_gadgets(struct Process *thread, JanusWin* jwin) {
+  ULONG i;
+
+  if(!jwin->aroswin || !jwin->firstgadget) {
+    /* nothing to do */
+    return;
+  }
+
+  JWLOG("RemoveGList ..\n");
+  RemoveGList( jwin->aroswin, jwin->firstgadget, -1 );
+
+  for(i=0; i<NUM_GADGETS; i++) {
+    JWLOG("DisposeObject(%lx)\n", jwin->gad[i]);
+    DisposeObject(jwin->gad[i]);
+    jwin->gad[i]=NULL;
+  }
+
+  JWLOG("de_init_border_gadgets ..\n");
+  de_init_border_gadgets(thread, jwin);
 }
 
 /* 
