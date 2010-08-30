@@ -260,6 +260,9 @@ typedef struct {
                                     * 5= 2/sec */
   /* gadget stuff */
   struct Gadget   *gad[NUM_GADGETS];
+  /* first gadget of window, used to remove them later on */
+  struct Gadget   *firstgadget;
+
   struct Image    *img[NUM_GADGETS];
   struct DrawInfo *dri;
   
@@ -443,6 +446,7 @@ void dump_prop_gadget(struct Process *thread, ULONG gadget);
 void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid);
 void init_border_gadgets(struct Process *thread, JanusWin *jwin);
 struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin);
+void remove_gadgets(struct Process *thread, JanusWin* jwin);
 UWORD SetGadgetType(struct Gadget *gad, UWORD type);
 void my_setmousebuttonstate(int mouse, int button, int state);
 

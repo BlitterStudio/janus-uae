@@ -611,7 +611,6 @@ static void aros_win_thread (void) {
   struct IntuiMessage *msg;
   ULONG           secs, micros;
   BOOL            care=FALSE;
-  struct Gadget  *aros_gadgets;
   ULONG           specialinfo;
   UWORD           gadgettype;
 
@@ -843,12 +842,12 @@ static void aros_win_thread (void) {
       Delay(10);
     }
 
-    aros_gadgets=NULL; 
+    jwin->firstgadget=NULL;
     if(care) {
       init_border_gadgets(thread,jwin);
       if(jwin->arrow_up || jwin->arrow_left) {
-	aros_gadgets=make_gadgets(thread, jwin);
-	if(!aros_gadgets) {
+	jwin->firstgadget=make_gadgets(thread, jwin);
+	if(!jwin->firstgadget) {
 	  JWLOG("aros_win_thread[%lx]: ERROR: could not create gadgets :(!\n", thread);
 	  /* goto EXIT; ? */
 	}
@@ -896,7 +895,7 @@ static void aros_win_thread (void) {
 				      WA_NewLookMenus, TRUE,
 				      WA_SizeBBottom, TRUE,
 				      WA_SizeBRight, TRUE,
-				      aros_gadgets ? WA_Gadgets : TAG_IGNORE, (IPTR) aros_gadgets,
+				      jwin->firstgadget ? WA_Gadgets : TAG_IGNORE, (IPTR) jwin->firstgadget,
 				      TAG_DONE);
 
     }
@@ -917,6 +916,15 @@ static void aros_win_thread (void) {
     }
 
     aroswin=jwin->aroswin; /* shorter to read..*/
+
+#if 0
+    if(jwin->firstgadget) {
+      AddGList(aroswin, jwin->firstgadget, -1, -1, NULL);
+      RefreshGList(jwin->firstgadget, aroswin, 0, -1);
+      //RefreshGadgets (jwin->firstgadget, aroswin, NULL);
+      //GT_RefreshWindow (aroswin, NULL);
+    }
+#endif
 
     JWLOG("aros_win_thread[%lx]: opened window: w,h: %d, %d\n", thread, jwin->aroswin->Width, jwin->aroswin->Height);
 #if 0
@@ -1143,7 +1151,18 @@ EXIT:
   ObtainSemaphore(&sem_janus_window_list);
 
   if(aroswin) {
-    JWLOG("aros_win_thread[%lx]: close window %lx\n",thread,aroswin);
+    if(jwin->firstgadget) {
+      JWLOG("aros_win_thread[%lx]: free gadgets of window %lx ..\n",thread,aroswin);
+      remove_gadgets(thread, jwin);
+    }
+
+    if(jwin->dri) {
+      JWLOG("aros_win_thread[%lx]: FreeScreenDrawInfo ..\n",thread);
+      FreeScreenDrawInfo(jwin->aroswin->WScreen, jwin->dri);
+      jwin->dri=NULL;
+    }
+
+    JWLOG("aros_win_thread[%lx]: close window %lx ..\n",thread,aroswin);
     CloseWindow(aroswin);
     JWLOG("aros_win_thread[%lx]: closed window %lx\n",thread,aroswin);
     jwin->aroswin=NULL;
@@ -1173,6 +1192,7 @@ EXIT:
   if(title) {
     FreeVec(title);
   }
+
 
   if(jwin) {
     DeletePool(jwin->mempool);
