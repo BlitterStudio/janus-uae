@@ -265,13 +265,17 @@ typedef struct {
 
   struct Image    *img[NUM_GADGETS];
   struct DrawInfo *dri;
+
+  JanusGadget     *jgad[NUM_GADGETS];
   
+#if 0
   JanusGadget     *arrow_up;
   JanusGadget     *arrow_down;
   JanusGadget     *prop_up_down;
   JanusGadget     *arrow_left;
   JanusGadget     *arrow_right;
   JanusGadget     *prop_left_right;
+#endif
   UWORD            prop_update_count;
 
 } JanusWin;
@@ -444,7 +448,7 @@ void move_horiz_prop_gadget(struct Process *thread, JanusWin *jwin);
 void move_vert_prop_gadget(struct Process *thread, JanusWin *jwin);
 void dump_prop_gadget(struct Process *thread, ULONG gadget);
 void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid);
-void init_border_gadgets(struct Process *thread, JanusWin *jwin);
+ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin);
 struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin);
 void remove_gadgets(struct Process *thread, JanusWin* jwin);
 UWORD SetGadgetType(struct Gadget *gad, UWORD type);

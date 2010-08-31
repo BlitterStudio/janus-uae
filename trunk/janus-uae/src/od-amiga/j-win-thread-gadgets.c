@@ -63,11 +63,84 @@ static gint xy_compare(gconstpointer a, gconstpointer b) {
 }
 
 /********************************************************
+ * change gadget
+ *
+ * if the janusgadget aos3 gadget is different from
+ * the amigaos gadget, update/replace the 
+ * janusgadget struct
+ ********************************************************/
+static ULONG change_gadget(JanusWin *jwin, ULONG type, ULONG gadget) {
+
+  JWLOG("change_gadget(%lx, d, %lx)\n", jwin, type, gadget); 
+
+  /* no new gadget ? */
+  if(!gadget) {
+    if(jwin->jgad[type]->aos3gadget) {
+      /* free old JanusGadget struct */
+      FreePooled(jwin->mempool, jwin->jgad[type], sizeof(JanusGadget));
+      jwin->jgad[type]=NULL;
+      return TRUE;
+    }
+    /* no new, no old, so it is ok */
+    return FALSE;
+  }
+
+  /* new aos3 gadget ? */
+  if(!jwin->jgad[type] || (jwin->jgad[type]->aos3gadget != gadget)) {
+
+    if(jwin->jgad[type]) {
+      /* free old janusGadget struct */
+      FreePooled(jwin->mempool, jwin->jgad[type], sizeof(JanusGadget));
+    }
+
+    jwin->jgad[type]=(JanusGadget *) AllocPooled(jwin->mempool, sizeof(JanusGadget));
+
+    jwin->jgad[type]->aos3gadget=gadget;
+
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+/********************************************************
+ * change jgadget
+ *
+ * if old an new differ, free old and link new
+ ********************************************************/
+static ULONG change_j_gadget(JanusWin *jwin, ULONG type, JanusGadget *new) {
+
+  if(!jwin->jgad[type] && !new) {
+    /* nothing to do */
+    return FALSE;
+  }
+
+  if(!jwin->jgad[type]) {
+    /* nothing to free here*/
+    jwin->jgad[type]=new;
+    /* but something changed of course */
+    return TRUE;
+  }
+
+  /* compare old an new */
+  if( jwin->jgad[type]->aos3gadget == new->aos3gadget ) {
+    /* nothing to do, nothing changed */
+    return FALSE;
+  }
+
+  FreePooled(jwin->mempool, jwin->jgad[type], sizeof(JanusGadget));
+  jwin->jgad[type]=new;
+
+  return TRUE;
+}
+
+
+/********************************************************
  * init_border_gadgets
  *
  * fill up/down/left/right arrow JanusGadgets
  ********************************************************/
-void init_border_gadgets(struct Process *thread, JanusWin *jwin) {
+ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
   ULONG gadget;
   ULONG specialinfo;
   UWORD gadget_type;
@@ -76,6 +149,11 @@ void init_border_gadgets(struct Process *thread, JanusWin *jwin) {
   WORD  x=0, y=0;
   JanusGadget *jgad;
   GList *aos3_gadget_list=NULL;
+  ULONG changed=0;
+  JanusGadget *left;
+  JanusGadget *right;
+  JanusGadget *up;
+  JanusGadget *down;
 
   gadget=get_long_p(jwin->aos3win + 62);
 
@@ -87,7 +165,7 @@ void init_border_gadgets(struct Process *thread, JanusWin *jwin) {
     if( ( !(gadget_type  & GTYP_SYSGADGET) ) &&
 	( !(gadget_flags & GACT_TOPBORDER ) ) &&
 	( !(gadget_flags & GACT_LEFTBORDER ) ) &&
-        (  (gadget_type    & GTYP_CUSTOMGADGET) ) 
+        (  (gadget_type  & GTYP_CUSTOMGADGET) ) 
       ) {
 
       x=get_word(gadget + 4);
@@ -116,24 +194,37 @@ void init_border_gadgets(struct Process *thread, JanusWin *jwin) {
  
 	  JWLOG("aros_win_thread[%lx]: FREEHORIZ prop gadget %lx: x %d y %d\n", thread, gadget, x, y);
 
-	  jgad=(JanusGadget *) AllocPooled(jwin->mempool, sizeof(JanusGadget));
-	  jgad->x=x;
-	  jgad->y=y;
-	  jgad->flags=get_word(specialinfo);
-	  jgad->aos3gadget=gadget;
-	  jwin->prop_left_right=jgad;
+	  if(change_gadget(jwin, GAD_HORIZSCROLL , gadget)) {
+	    //jgad=(JanusGadget *) AllocPooled(jwin->mempool, sizeof(JanusGadget));
+	    jwin->jgad[GAD_HORIZSCROLL]->x=x;
+	    jwin->jgad[GAD_HORIZSCROLL]->y=y;
+	    jwin->jgad[GAD_HORIZSCROLL]->flags=get_word(specialinfo);
+	    //jgad->aos3gadget=gadget;
+	    //if(jwin->prop_left_right) {
+	      //FreePooled(jwin->mempool, jwin->prop_left_right, sizeof(JanusGadget));
+	    //}
+	    //jwin->prop_left_right=jgad;
+	    changed++;
+	  }
 	}
 
 	if(spezial_info_flags & FREEVERT) {
+	  //if(!jwin->prop_up_down || (jwin->prop_up_down->aos3gadget != gadget)) {
+	  if(change_gadget(jwin, GAD_VERTSCROLL, gadget)) {
  
-	  JWLOG("aros_win_thread[%lx]: FREEVERT prop gadget %lx: x %d y %d\n", thread, gadget, x, y);
+	    JWLOG("aros_win_thread[%lx]: FREEVERT prop gadget %lx: x %d y %d\n", thread, gadget, x, y);
 
-	  jgad=(JanusGadget *) AllocPooled(jwin->mempool, sizeof(JanusGadget));
-	  jgad->x=x;
-	  jgad->y=y;
-	  jgad->flags=get_word(specialinfo);
-	  jgad->aos3gadget=gadget;
-	  jwin->prop_up_down=jgad;
+	    //jgad=(JanusGadget *) AllocPooled(jwin->mempool, sizeof(JanusGadget));
+	    jwin->jgad[GAD_VERTSCROLL]->x=x;
+	    jwin->jgad[GAD_VERTSCROLL]->y=y;
+	    jwin->jgad[GAD_VERTSCROLL]->flags=get_word(specialinfo);
+	    //jgad->aos3gadget=gadget;
+	    //if(jwin->prop_left_right) {
+	      //FreePooled(jwin->mempool, jwin->prop_up_down, sizeof(JanusGadget));
+	    //}
+	    //jwin->prop_up_down=jgad;
+	    changed++;
+	  }
 	}
       }
     }
@@ -146,29 +237,52 @@ void init_border_gadgets(struct Process *thread, JanusWin *jwin) {
 
   if((g_list_length(aos3_gadget_list) == 4) || (g_list_length(aos3_gadget_list) == 2)) {
     /* otherwise don't even try */
-    jwin->arrow_left  = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 0);
-    jwin->arrow_right = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 1);
 
-    if(jwin->arrow_left->y != jwin->arrow_right->y) {
+    //if( change_j_gadget(jwin, &(jwin->arrow_left), (JanusGadget *) g_list_nth_data(aos3_gadget_list, 0));
+    left  = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 0);
+    right = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 1);
+
+    if(!left || !right || (left->y != right->y)) {
       /* non-aligned, seems to be something different.. */
-      jwin->arrow_left =NULL;
-      jwin->arrow_right=NULL;
+      changed += change_j_gadget(jwin, GAD_LEFTARROW,  NULL);
+      // jwin->arrow_right=NULL;
+      changed += change_j_gadget(jwin, GAD_RIGHTARROW, NULL);
+    }
+    else {
+      changed += change_j_gadget(jwin, GAD_LEFTARROW,  left);
+      changed += change_j_gadget(jwin, GAD_RIGHTARROW, right);
     }
 
     if(g_list_length(aos3_gadget_list) == 4) {
-      jwin->arrow_up   = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 2);
-      jwin->arrow_down = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 3);
+      //jwin->arrow_up   = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 2);
+      up   = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 2);
+      //jwin->arrow_down = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 3);
+      down = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 3);
     }
     else {
-      jwin->arrow_up   = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 0);
-      jwin->arrow_down = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 1);
+      //jwin->arrow_up   = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 0);
+      up   = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 0);
+      //jwin->arrow_down = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 1);
+      down = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 1);
     }
 
-    if(jwin->arrow_up->x != jwin->arrow_down->x) {
+    //if(jwin->arrow_up->x != jwin->arrow_down->x) {
+    if(up->x != down->x) {
       /* non-aligned, seems to be something different.. */
-      jwin->arrow_up  =NULL;
-      jwin->arrow_down=NULL;
+      changed += change_j_gadget(jwin, GAD_UPARROW,   NULL);
+      changed += change_j_gadget(jwin, GAD_DOWNARROW, NULL);
     }
+    else {
+      changed += change_j_gadget(jwin, GAD_UPARROW,   up);
+      changed += change_j_gadget(jwin, GAD_DOWNARROW, down);
+    }
+  }
+  else {
+    /* clear all old gadget, if there were any */
+    changed += change_j_gadget(jwin, GAD_LEFTARROW,  NULL);
+    changed += change_j_gadget(jwin, GAD_RIGHTARROW, NULL);
+    changed += change_j_gadget(jwin, GAD_UPARROW,    NULL);
+    changed += change_j_gadget(jwin, GAD_DOWNARROW,  NULL);
   }
 
   g_list_free(aos3_gadget_list);
@@ -176,7 +290,7 @@ void init_border_gadgets(struct Process *thread, JanusWin *jwin) {
    * but they are from our pool, so we save the trouble of freeing them.
    */
 
-  return;
+  return changed;
 }
 
 /********************************************************************
@@ -193,7 +307,7 @@ void move_horiz_prop_gadget(struct Process *thread, JanusWin *jwin) {
   ULONG specialinfo;
   JanusGadget *jgad=NULL;
 
-  jgad=jwin->prop_left_right; 
+  jgad=jwin->jgad[GAD_HORIZSCROLL]; 
   specialinfo=get_long(jgad->aos3gadget + 34);
 
   /* place mouse on the horizontal amigaos proportional gadget */
@@ -262,7 +376,8 @@ void move_vert_prop_gadget(struct Process *thread, JanusWin *jwin) {
   ULONG specialinfo;
   JanusGadget *jgad=NULL;
 
-  jgad=jwin->prop_up_down; 
+  //jgad=jwin->prop_up_down; 
+  jgad=jwin->jgad[GAD_VERTSCROLL]; 
   specialinfo=get_long(jgad->aos3gadget + 34);
 
   /* place mouse on the vertical amigaos proportional gadget */
@@ -345,16 +460,20 @@ void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
     case GAD_LEFTARROW:
     case GAD_RIGHTARROW:
       JWLOG("aros_win_thread[%lx]: GAD_DOWNARROW etc\n", thread);
-      if(!jwin->arrow_up && !jwin->arrow_left) {
+      if(!jwin->jgad[GAD_UPARROW] && !jwin->jgad[GAD_LEFTARROW]) {
 	init_border_gadgets(thread, jwin);
       }
 
+#if 0
       switch (gadid) {
+
 	case GAD_DOWNARROW : jgad=jwin->arrow_down;  break;
 	case GAD_UPARROW   : jgad=jwin->arrow_up;    break;
 	case GAD_LEFTARROW : jgad=jwin->arrow_left;  break;
 	case GAD_RIGHTARROW: jgad=jwin->arrow_right; break;
       }
+#endif
+      jgad=jwin->jgad[gadid];
       if(!jgad) {
 	JWLOG("aros_win_thread[%lx]: jgad not matched??\n", thread);
 	/* should not happen */
@@ -492,7 +611,7 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
     v_offset = imagew[IMG_DOWNARROW] / 4;
     h_offset = imageh[IMG_LEFTARROW] / 4;
 
-    if(jwin->arrow_up) {
+    if(jwin->jgad[GAD_UPARROW]) {
       vertgadget = 
       jwin->gad[GAD_UPARROW] = NewObject(0, BUTTONGCLASS, GA_Image, (Tag) jwin->img[IMG_UPARROW], 
 					  GA_RelRight, -imagew[IMG_UPARROW] + 1, 
@@ -544,14 +663,14 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
       }
     }
 
-    if(jwin->arrow_left) {
+    if(jwin->jgad[GAD_LEFTARROW]) {
       horizgadget=
       jwin->gad[GAD_RIGHTARROW] = NewObject(0, BUTTONGCLASS, GA_Image, (Tag) jwin->img[IMG_RIGHTARROW], 
 					  GA_RelRight, -imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] + 1, 
 					  GA_RelBottom, -imageh[IMG_RIGHTARROW] + 1, 
 					  GA_ID, GAD_RIGHTARROW, 
 					  GA_BottomBorder, TRUE, 
-					  jwin->arrow_up ? GA_Previous : TAG_IGNORE, (Tag) jwin->gad[GAD_VERTSCROLL], 
+					  jwin->jgad[GAD_UPARROW] ? GA_Previous : TAG_IGNORE, (Tag) jwin->gad[GAD_VERTSCROLL], 
 					  GA_Immediate, TRUE, 
 					  GA_RelVerify, TRUE,
 					  GA_GZZGadget, TRUE,
@@ -593,7 +712,7 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
 
     }
 
-    if(jwin->arrow_up) {
+    if(jwin->jgad[GAD_UPARROW]) {
       return vertgadget;
     }
 
@@ -605,10 +724,17 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
  *
  * remove all border gadgets
  ***********************************************************/
-static void de_init_border_gadgets(struct Process *thread, JanusWin* jwin) {
+static void de_init_border_gadgets(struct Process *thread, JanusWin *jwin) {
+  ULONG i;
 
-  if(jwin->arrow_up) {
-    FreePooled(jwin->mempool, jwin->arrow_up, sizeof(JanusGadget));
+  for(i=0; i<NUM_GADGETS; i++) {
+    FreePooled(jwin->mempool, jwin->jgad[i], sizeof(JanusGadget));
+    jwin->jgad[i]=NULL;
+
+  }
+#if 0
+  if(jwin->jgad[GAD_UPARROW]) {
+    FreePooled(jwin->mempool, jgad[GAD_UPARROW]->arrow_up, sizeof(JanusGadget));
     jwin->arrow_up=NULL;
   }
   if(jwin->arrow_down) {
@@ -631,6 +757,7 @@ static void de_init_border_gadgets(struct Process *thread, JanusWin* jwin) {
     FreePooled(jwin->mempool, jwin->prop_left_right, sizeof(JanusGadget));
     jwin->prop_left_right=NULL;
   }
+#endif
 }
 
 void remove_gadgets(struct Process *thread, JanusWin* jwin) {
