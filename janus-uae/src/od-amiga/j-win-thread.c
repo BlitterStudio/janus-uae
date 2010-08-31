@@ -844,8 +844,8 @@ static void aros_win_thread (void) {
 
     jwin->firstgadget=NULL;
     if(care) {
-      init_border_gadgets(thread,jwin);
-      if(jwin->arrow_up || jwin->arrow_left) {
+      if(init_border_gadgets(thread, jwin)) {
+	/* something changed (we did have any before), so now we need to create them */
 	jwin->firstgadget=make_gadgets(thread, jwin);
 	if(!jwin->firstgadget) {
 	  JWLOG("aros_win_thread[%lx]: ERROR: could not create gadgets :(!\n", thread);
@@ -1062,8 +1062,8 @@ static void aros_win_thread (void) {
 	    if(jwin->prop_update_count == 0) {
 	      jwin->prop_update_count=5;
 
-	      if(jwin->prop_up_down) {
-		specialinfo=get_long(jwin->prop_up_down->aos3gadget + 34);
+	      if(jwin->jgad[GAD_VERTSCROLL]) {
+		specialinfo=get_long(jwin->jgad[GAD_VERTSCROLL]->aos3gadget + 34);
 		JWLOG("SpecialInfo: HorizPot: %d\n", get_word(specialinfo + 2));
 		JWLOG("SpecialInfo: VertPot: %d\n", get_word(specialinfo + 4));
 		JWLOG("SpecialInfo: HorizBody: %d\n", get_word(specialinfo + 6));
@@ -1079,15 +1079,15 @@ static void aros_win_thread (void) {
 
 		    gadgettype=SetGadgetType(jwin->gad[GAD_VERTSCROLL], GTYP_PROPGADGET);
 		    NewModifyProp(jwin->gad[GAD_VERTSCROLL], jwin->aroswin, NULL,
-				  jwin->prop_up_down->flags, 
+				  jwin->jgad[GAD_VERTSCROLL]->flags, 
 				  get_word(specialinfo + 2), get_word(specialinfo + 4),
 				  get_word(specialinfo + 6), get_word(specialinfo + 8),
 				  1);
 		    SetGadgetType(jwin->gad[GAD_VERTSCROLL], gadgettype);
 		}
 	      }
-	      if(jwin->prop_left_right) {
-		specialinfo=get_long(jwin->prop_left_right->aos3gadget + 34);
+	      if(jwin->jgad[GAD_HORIZSCROLL]) {
+		specialinfo=get_long(jwin->jgad[GAD_HORIZSCROLL]->aos3gadget + 34);
 		JWLOG("SpecialInfo: HorizPot: %d\n", get_word(specialinfo + 2));
 		JWLOG("SpecialInfo: VertPot: %d\n", get_word(specialinfo + 4));
 		JWLOG("SpecialInfo: HorizBody: %d\n", get_word(specialinfo + 6));
@@ -1104,7 +1104,7 @@ static void aros_win_thread (void) {
 
 		  gadgettype=SetGadgetType(jwin->gad[GAD_HORIZSCROLL], GTYP_PROPGADGET);
 		  NewModifyProp(jwin->gad[GAD_HORIZSCROLL], jwin->aroswin, NULL,
-				jwin->prop_left_right->flags, 
+				jwin->jgad[GAD_HORIZSCROLL]->flags, 
 				get_word(specialinfo + 2), get_word(specialinfo + 4),
 				get_word(specialinfo + 6), get_word(specialinfo + 8),
 				1);
