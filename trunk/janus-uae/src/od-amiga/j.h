@@ -211,22 +211,22 @@ typedef struct {
 
 /* border gadgets */
 enum {
-    GAD_UPARROW, 
-    GAD_DOWNARROW, 
-    GAD_VERTSCROLL, 
-    GAD_LEFTARROW, 
-    GAD_RIGHTARROW, 
-    GAD_HORIZSCROLL, 
-    NUM_GADGETS
+  GAD_UPARROW, 
+  GAD_DOWNARROW, 
+  GAD_VERTSCROLL, 
+  GAD_LEFTARROW, 
+  GAD_RIGHTARROW, 
+  GAD_HORIZSCROLL, 
+  NUM_GADGETS
 };
 
 enum {
-    IMG_UPARROW, 
-    IMG_DOWNARROW, 
-    IMG_LEFTARROW, 
-    IMG_RIGHTARROW, 
-    IMG_SIZE, 
-    NUM_IMAGES
+  IMG_UPARROW, 
+  IMG_DOWNARROW, 
+  IMG_LEFTARROW, 
+  IMG_RIGHTARROW, 
+  IMG_SIZE, 
+  NUM_IMAGES
 };
 
 typedef struct {
@@ -277,6 +277,8 @@ typedef struct {
   JanusGadget     *prop_left_right;
 #endif
   UWORD            prop_update_count;
+  /* how many intuiticks to skip to check for new border gadgets */
+  UWORD            gadget_update_count;
 
 } JanusWin;
 
@@ -453,5 +455,6 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin);
 void remove_gadgets(struct Process *thread, JanusWin* jwin);
 UWORD SetGadgetType(struct Gadget *gad, UWORD type);
 void my_setmousebuttonstate(int mouse, int button, int state);
+void de_init_border_gadgets(struct Process *thread, JanusWin* jwin);
 
 #endif
