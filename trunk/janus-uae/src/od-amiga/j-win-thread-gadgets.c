@@ -493,11 +493,13 @@ void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
       }
 
       /* right border end of aos3 window */
-      x=jwin->aroswin->LeftEdge + jwin->aroswin->Width - jwin->aroswin->BorderRight;
-      /* those values are negative */
+      /* leftedge + width */
+      x=get_word(jwin->aos3win + 4) + get_word(jwin->aos3win + 8);
+      /* middle of clickbox, LedtEdge is negative */
       manual_mouse_x=x + get_word(jgad->aos3gadget + 4) + (get_word(jgad->aos3gadget +  8)/2);
 
-      y=jwin->aroswin->TopEdge + jwin->aroswin->Height - jwin->aroswin->BorderBottom;
+      /* topedge + height */
+      y=get_word(jwin->aos3win + 6) + get_word(jwin->aos3win + 10);
       manual_mouse_y=y + get_word(jgad->aos3gadget + 6) + (get_word(jgad->aos3gadget + 10)/2);
 
       JWLOG("aros_win_thread[%lx]: hit gadget %lx at %d x %d..\n", thread, jgad->aos3gadget, manual_mouse_x, manual_mouse_y);
@@ -724,6 +726,7 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
 
     }
 
+#ifdef ALWAYS_SHOW_GADGETS
     /* make space for gadgets in window border */
     if(jwin->jgad[GAD_UPARROW] && !jwin->plusx) {
       jwin->plusx=get_byte((ULONG) jwin->aos3win + 56);
@@ -731,6 +734,11 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
     if(jwin->jgad[GAD_RIGHTARROW] && !jwin->plusy) {
       jwin->plusy=get_byte((ULONG) jwin->aos3win + 57);
     }
+#else
+    /* clear it, it might have been set during window opening */
+    jwin->plusx=0;
+    jwin->plusy=0;
+#endif
 
     if(jwin->jgad[GAD_UPARROW]) {
       return vertgadget;
