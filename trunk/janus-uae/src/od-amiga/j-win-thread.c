@@ -851,11 +851,10 @@ static void aros_win_thread (void) {
 	  JWLOG("aros_win_thread[%lx]: ERROR: could not create gadgets :(!\n", thread);
 	  /* goto EXIT; ? */
 	}
-	else {
-	  idcmpflags=idcmpflags | IDCMP_GADGETDOWN | IDCMP_GADGETUP;
-	}
       }
     }
+    /* always care for those .. */
+    idcmpflags=idcmpflags | IDCMP_GADGETDOWN | IDCMP_GADGETUP;
 
     if(jwin->jscreen->arosscreen) {
       activate_ticks(jwin, 5);
@@ -1066,7 +1065,6 @@ static void aros_win_thread (void) {
 	      jwin->gadget_update_count=9;
 	      /* check, if e have new border gadgets */
 	      if(init_border_gadgets(thread, jwin)) {
-		JWLOG("[%lx] ===============v======================\n", thread);
 		remove_gadgets(thread, jwin);
 		jwin->firstgadget=make_gadgets(thread, jwin);
 		if(jwin->firstgadget) {
@@ -1079,7 +1077,6 @@ static void aros_win_thread (void) {
 		  RefreshGList(NULL, aroswin, 0, -1);
 		}
 
-		JWLOG("[%lx] ===============^======================\n", thread);
 	      }
 	    }
 	    jwin->gadget_update_count--;
