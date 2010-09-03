@@ -165,6 +165,8 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
 
   while(gadget) {
 
+    JWLOG("[%lx]   amigaos gadget %lx\n", thread, gadget);
+
     gadget_type =get_word(gadget + 16); 
     gadget_flags=get_word(gadget + 12);
 
@@ -177,7 +179,7 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
       x=get_word(gadget + 4);
       y=get_word(gadget + 6);
 
-      JWLOG("aros_win_thread[%lx]: cust gadget %lx: x %d y %d\n", thread, gadget, x, y);
+      JWLOG("[%lx]   cust gadget %lx: x %d y %d\n", thread, gadget, x, y);
 
 
       jgad=(JanusGadget *) AllocPooled(jwin->mempool, sizeof(JanusGadget));
@@ -191,6 +193,8 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
 
       specialinfo=get_long(gadget + 34);
 
+      JWLOG("[%lx]   GTYP_PROPGADGET %lx: specialinfo %lx\n", thread, gadget, specialinfo);
+
       if(specialinfo) {
       	spezial_info_flags=get_word(specialinfo);
   	x=get_word(gadget + 4);
@@ -198,7 +202,7 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
 
 	if(spezial_info_flags & FREEHORIZ) {
  
-	  JWLOG("aros_win_thread[%lx]: FREEHORIZ prop gadget %lx: x %d y %d\n", thread, gadget, x, y);
+	  JWLOG("[%lx]   => FREEHORIZ prop gadget %lx: x %d y %d\n", thread, gadget, x, y);
 
 	  if(change_gadget(jwin, GAD_HORIZSCROLL , gadget)) {
 	    jwin->jgad[GAD_HORIZSCROLL]->x=x;
@@ -211,7 +215,7 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
 	if(spezial_info_flags & FREEVERT) {
 	  if(change_gadget(jwin, GAD_VERTSCROLL, gadget)) {
  
-	    JWLOG("aros_win_thread[%lx]: FREEVERT prop gadget %lx: x %d y %d\n", thread, gadget, x, y);
+	    JWLOG("[%lx]   => FREEVERT prop gadget %lx: x %d y %d\n", thread, gadget, x, y);
 
 	    jwin->jgad[GAD_VERTSCROLL]->x=x;
 	    jwin->jgad[GAD_VERTSCROLL]->y=y;
@@ -227,6 +231,8 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
   }
 
   aos3_gadget_list=g_list_sort(aos3_gadget_list, &xy_compare);
+
+  JWLOG("[%lx] g_list_length(aos3_gadget_list): %d\n", thread, g_list_length(aos3_gadget_list));
 
   if((g_list_length(aos3_gadget_list) == 4) || (g_list_length(aos3_gadget_list) == 2)) {
     /* otherwise don't even try */
@@ -263,6 +269,7 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
     }
   }
   else {
+    JWLOG("[%lx] !! clear all gadgets!\n", thread);
     /* clear all old gadget, if there were any */
     changed += change_j_gadget(jwin, GAD_LEFTARROW,  NULL);
     changed += change_j_gadget(jwin, GAD_RIGHTARROW, NULL);
@@ -277,11 +284,13 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
 
   /* you can never have enough sanity checks.. */
   if(!(jwin->jgad[GAD_UPARROW] && jwin->jgad[GAD_DOWNARROW])) {
+    JWLOG("[%lx] !! clear vertical gadgets!\n", thread);
     changed += change_j_gadget(jwin, GAD_UPARROW,    NULL);
     changed += change_j_gadget(jwin, GAD_DOWNARROW,  NULL);
     changed += change_j_gadget(jwin, GAD_VERTSCROLL, NULL);
   }
   if(!(jwin->jgad[GAD_LEFTARROW] && jwin->jgad[GAD_RIGHTARROW])) {
+    JWLOG("[%lx] !! clear horizontal gadgets!\n", thread);
     changed += change_j_gadget(jwin, GAD_LEFTARROW,   NULL);
     changed += change_j_gadget(jwin, GAD_RIGHTARROW,  NULL);
     changed += change_j_gadget(jwin, GAD_HORIZSCROLL, NULL);
@@ -461,6 +470,8 @@ void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
     case GAD_LEFTARROW:
     case GAD_RIGHTARROW:
       JWLOG("aros_win_thread[%lx]: GAD_DOWNARROW etc\n", thread);
+
+      /* !? */
       if(!jwin->jgad[GAD_UPARROW] && !jwin->jgad[GAD_LEFTARROW]) {
 	init_border_gadgets(thread, jwin);
       }
@@ -711,6 +722,14 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
   	  }
       }
 
+    }
+
+    /* make space for gadgets in window border */
+    if(jwin->jgad[GAD_UPARROW] && !jwin->plusx) {
+      jwin->plusx=get_byte((ULONG) jwin->aos3win + 56);
+    }
+    if(jwin->jgad[GAD_RIGHTARROW] && !jwin->plusy) {
+      jwin->plusy=get_byte((ULONG) jwin->aos3win + 57);
     }
 
     if(jwin->jgad[GAD_UPARROW]) {
