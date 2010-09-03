@@ -67,7 +67,8 @@
 #define LEAVE
 #endif
 
-
+/**** options ****/
+//#define ALWAYS_SHOW_GADGETS 1
 
 WORD get_lo_word(ULONG *field);
 WORD get_hi_word(ULONG *field);
