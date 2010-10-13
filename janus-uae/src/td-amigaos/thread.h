@@ -20,6 +20,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
  *
+ * $Id$
+ *
  ************************************************************************/
 
 #ifndef __THREAD_H__
@@ -85,5 +87,12 @@ extern void uae_set_thread_priority (int pri);
 #define UAE_THREAD_EXIT do {} while (0)
 
 #define uae_wait_thread(id)
+
+/* Debug Macro */
+#if SEM_TRACING_ENABLED
+#define SEMLOG(...)   do { kprintf("%s:%d  %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
+#else
+#define SEMLOG(...)     do { ; } while(0)
+#endif
 
 #endif /* __THREAD_H__ */
