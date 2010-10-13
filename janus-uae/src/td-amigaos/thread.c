@@ -95,7 +95,7 @@ STATIC_INLINE BOOL wait_proxy_reply (void)
     BOOL  got_reply = FALSE;
     ULONG sigs;
 
-    sigs = Wait (PROXY_MSG_REPLY_SIG | SIGBREAKF_CTRL_C);
+    sigs = Wait (PROXY_MSG_REPLY_SIG);
 
     if (sigs & PROXY_MSG_REPLY_SIG)
 	got_reply = TRUE;
