@@ -81,7 +81,7 @@ static const char *open_AHI (void)
 	    if (!OpenDevice (AHINAME, 0, (struct IORequest *)AHIio[0], 0)) {
 	        if ((AHIio[1] = malloc (sizeof(struct AHIRequest)))) {
 		    memcpy (AHIio[1], AHIio[0], sizeof(struct AHIRequest));
-		    kprintf("AHI: AHINAME is >%s<\n", AHINAME);
+		    //kprintf("AHI: AHINAME is >%s<\n", AHINAME);
 		    return AHINAME;
 		}
 	    }
