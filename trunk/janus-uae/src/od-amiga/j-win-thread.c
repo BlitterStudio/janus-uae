@@ -613,6 +613,8 @@ static void aros_win_thread (void) {
   BOOL            care=FALSE;
   ULONG           specialinfo;
   UWORD           gadgettype;
+  BOOL            public;
+  struct Screen  *lock=NULL;
 
   /* There's a time to live .. */
 
@@ -837,10 +839,12 @@ static void aros_win_thread (void) {
      * the new screen, which is not yet opened on AROS
      */
     i=20;
-    while(!jwin->jscreen->arosscreen && i--) {
+    JWLOG("aros_win_thread[%lx]: locking Screen %s ..\n", thread, jwin->jscreen->pubname);
+    while(!(jwin->jscreen->arosscreen && (lock=LockPubScreen(jwin->jscreen->pubname))) && i--) {
       JWLOG("aros_win_thread[%lx]: #%d wait for jwin->jscreen->arosscreen ..\n", thread, i);
       Delay(10);
     }
+    JWLOG("aros_win_thread[%lx]: locked Screen %s: lock %lx\n", thread, jwin->jscreen->pubname, lock);
 
     jwin->firstgadget=NULL;
     if(care) {
@@ -856,7 +860,10 @@ static void aros_win_thread (void) {
     /* always care for those .. */
     idcmpflags=idcmpflags | IDCMP_GADGETDOWN | IDCMP_GADGETUP;
 
-    if(jwin->jscreen->arosscreen) {
+
+    if(jwin->jscreen->arosscreen && lock) {
+
+
       activate_ticks(jwin, 5);
 
       /* 
@@ -882,6 +889,7 @@ static void aros_win_thread (void) {
 						jwin->plusy,
 #endif
 				      WA_InnerHeight, h - bt - bb +jwin->plusy,
+				      WA_PubScreen, jwin->jscreen->arosscreen,
 				      WA_MinWidth, minw + jwin->plusx,
 				      WA_MinHeight, minh + jwin->plusy,
 				      WA_MaxWidth, maxw + jwin->plusx,
@@ -890,7 +898,6 @@ static void aros_win_thread (void) {
 				      WA_GimmeZeroZero, TRUE,
 				      WA_Flags, flags,
 				      WA_IDCMP, idcmpflags,
-				      WA_PubScreen, jwin->jscreen->arosscreen,
 				      WA_NewLookMenus, TRUE,
 				      WA_SizeBBottom, TRUE,
 				      WA_SizeBRight, TRUE,
@@ -902,6 +909,7 @@ static void aros_win_thread (void) {
       JWLOG("aros_win_thread[%lx]: ERROR: could not wait for my screen :(!\n", thread);
       goto EXIT;
     }
+    JWLOG("aros_win_thread[%lx]: opened aroswin %lx (aroswin->WScreen %lx) on jwin->jscreen->arosscreen %lx!\n", thread, jwin->aroswin, jwin->aroswin->WScreen, jwin->jscreen->arosscreen);
 
     JWLOG("aros_win_thread[%lx]: x, y : %d, %d\n",thread,  
            x - estimated_border_left + bl,
@@ -974,6 +982,7 @@ static void aros_win_thread (void) {
 				      TAG_DONE);
 
     JWLOG("aros_win_thread[%lx]: new aros window %lx\n", thread, jwin->aroswin);
+
 
     if(!jwin->aroswin) {
       JWLOG("aros_win_thread[%lx]: ERROR: unable to open window!!!\n", thread);
@@ -1192,7 +1201,14 @@ EXIT:
     JWLOG("aros_win_thread[%lx]: close window %lx ..\n",thread,aroswin);
     CloseWindow(aroswin);
     JWLOG("aros_win_thread[%lx]: closed window %lx\n",thread,aroswin);
+
     jwin->aroswin=NULL;
+  }
+
+  /* now unlock the screen ! */
+  if(lock) {
+    UnlockPubScreen(NULL, lock);
+    lock=NULL;
   }
 
   JWLOG("aros_win_thread[%lx]: scan list_win..\n",thread);

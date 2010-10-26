@@ -209,9 +209,13 @@ static struct Screen *new_aros_pub_screen(JanusScreen *jscreen,
   struct Screen *arosscr;
   const UBYTE preferred_depth[] = {24, 32, 16, 15, 8};
   struct screen *pub;
+  struct Task *task;
 
   JWLOG("aros_scr_thread[%lx]: screen public name: >%s<\n",thread,
                                                            jscreen->pubname);
+
+  task=(struct Task *)&((struct Process *)FindTask(NULL))->pr_Task;
+  JWLOG("aros_scr_thread[%lx]: thread %lx, task %lx\n", thread, task);
 
   width =get_word(aos3screen+12);
   height=get_word(aos3screen+14);
@@ -246,13 +250,16 @@ static struct Screen *new_aros_pub_screen(JanusScreen *jscreen,
 		     SA_Height, height,
 		     SA_Title, get_real_address(get_long(aos3screen+26)),
 		     SA_PubName, jscreen->pubname,
-		     SA_PubTask, thread,
+		     SA_PubTask, task,
 		     SA_PubSig, signal,
 		     SA_ErrorCode, &err,
 		     TAG_DONE);
 
   JWLOG("OpenScreenTags returned :%lx\n", arosscr);
   jscreen->ownscreen=TRUE; /* TODO we have to close this one, how..? */
+
+  /* Not sure, if this is necessary. But under AROS, you cannot open windows, if you don't do it. */
+  PubScreenStatus(arosscr, 0);
 
   return arosscr;
 }
@@ -305,6 +312,7 @@ static void aros_screen_thread (void) {
 
     goto EXIT;
   }
+  JWLOG("aros_scr_thread[%lx]: signal %d\n", thread, signal);
 
   aos3screen=(uaecptr) jscr->aos3screen;
 
@@ -333,18 +341,22 @@ static void aros_screen_thread (void) {
   while(!done) {
     s=Wait(1L << signal | SIGBREAKF_CTRL_C);
 
-    JWLOG("aros_scr_thread[%lx]: signal received (%lx)\n", thread, signal);
+    JWLOG("aros_scr_thread[%lx]: signal received (%d)\n", thread, signal);
     /* Ctrl-C */
     if(s & SIGBREAKF_CTRL_C) {
       JWLOG("aros_scr_thread[%lx]: SIGBREAKF_CTRL_C received\n", thread);
-      done=TRUE;
+      /* WARNING: only die, if there is no other window left,
+       *          we wait until there are no more windows left! (TODO!!)*/
+      /* WARNING: someone has most likely a window on our screen! If j-uae exits, the only signal we get is
+       *          this SIGBREAKF_CTRL_C. But our thread will end soon. Otherwise we would need to keep all
+       *          of the uae memory etc alive.. But now we might crash.. anyway, at least make us private!
+       */
+      PubScreenStatus(jscr->arosscreen, PSNF_PRIVATE);
     }
     if(s & (1L << signal)) {
-      JWLOG("aros_scr_thread[%lx]: signal received\n", thread);
-      done=TRUE;
+      JWLOG("aros_scr_thread[%lx]: signal %d received\n", thread, signal);
+      last=TRUE;
     }
-
-    /* WARNING: TODO only die, if there is no other window left */
   }
 
   /* ... and a time to die. */
@@ -356,6 +368,8 @@ EXIT:
 
   if(jscr->arosscreen) {
     JWLOG("aros_scr_thread[%lx]: close aros screen %lx\n",thread, jscr->arosscreen);
+    PubScreenStatus(jscr->arosscreen, PSNF_PRIVATE);
+
     CloseScreen(jscr->arosscreen);
     jscr->arosscreen=NULL;
   }
