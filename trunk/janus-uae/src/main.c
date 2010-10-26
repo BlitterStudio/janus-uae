@@ -882,12 +882,14 @@ static void do_exit_machine (void)
 #if defined GTKMUI
 void gui_shutdown (void);
 #endif
-
 /*
  * Here's where all the action takes place!
  */
+
 void real_main (int argc, char **argv)
 {
+  ULONG waitcount;
+
    /* j-uae writes to stdout, so if you want to
     * use 'T:uae.log' you better start it
     * with
@@ -902,7 +904,8 @@ void real_main (int argc, char **argv)
 //#if defined GTKMUI
     gui_init (argc, argv);
 //#endif
-    show_version ();
+
+   show_version ();
 
     currprefs.mountinfo = changed_prefs.mountinfo = &options_mountinfo;
     restart_program = 1;
@@ -1085,6 +1088,22 @@ void real_main (int argc, char **argv)
 		      */
     zfile_exit ();
   //set_logfile(NULL);
+
+    waitcount=0;
+    while(waitcount<20 && (aros_cli_task || aros_launch_task || janus_windows || janus_screens)) {
+      waitcount++;
+      sleep(1);
+    }
+
+    if(waitcount==20) {
+      kprintf("ERROR: could not kill all threads..\n");
+      printf("ERROR: could not kill all threads..\n");
+      kprintf("aros_launch_task: %lx\n", aros_launch_task);
+      kprintf("aros_cli_task: %lx\n", aros_cli_task);
+      kprintf("janus_windows: %lx\n", janus_windows);
+      kprintf("janus_screens: %lx\n", janus_screens);
+    }
+
 }
 
 #ifdef USE_SDL
