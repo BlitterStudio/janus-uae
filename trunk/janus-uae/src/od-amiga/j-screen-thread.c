@@ -355,7 +355,7 @@ static void aros_screen_thread (void) {
     }
     if(s & (1L << signal)) {
       JWLOG("aros_scr_thread[%lx]: signal %d received\n", thread, signal);
-      last=TRUE;
+      done=TRUE;
     }
   }
 
