@@ -336,41 +336,6 @@ void report_host_windows() {
 
   /* get all changed windows */
 
-#if 0
-  screen=(struct Screen *) LockPubScreen(NULL);
-
-  if(!screen) {
-    printf("report_uae_windows: no screen!?\n");
-    FreeVec(command_mem);
-    return;
-  }
-
-  win=screen->FirstWindow;
-
-  i=0;
-  while(win) {
-    //printf("add window #%d: %lx\n",i,w);
-    command_mem[i  ]=(ULONG) win;
-    command_mem[i+1]=(ULONG) ((win->LeftEdge 
-                               + win->BorderLeft) 
-			       * 0x10000 +
-                              (win->TopEdge + 
-			       win->BorderTop));
-    command_mem[i+2]=(ULONG) ((win->Width -
-                               win->BorderLeft -
-			       win->BorderRight )
-                              * 0x10000 + 
-			      (win->Height - 
-			       win->BorderTop -
-			       win->BorderBottom));
-    command_mem[i+3]=NULL;
-    command_mem[i+4]=NULL;
-
-    win=win->NextWindow;
-    i=i+5;
-  }
-#endif
-
   LEAVE
   FreeVec(command_mem);
 }
@@ -491,16 +456,6 @@ void sync_windows() {
   if(screen != IntuitionBase->FirstScreen) {
     ScreenToFront(screen);
   }
-
-#if 0
-  screen=(struct Screen *) LockPubScreen(NULL);
-  if(!screen) {
-    printf("sync_windows: screen==NULL?!\n");
-    FreeVec(command_mem);
-    return;
-  }
-  UnlockPubScreen(NULL,screen); /* TODO: is it safe already? */
-#endif
 
 #ifdef DUMPWIN
   dump_uae_windows(screen);
