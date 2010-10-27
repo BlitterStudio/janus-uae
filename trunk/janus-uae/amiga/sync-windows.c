@@ -220,7 +220,7 @@ void report_uae_windows() {
     return;
   }
 
-  screen=(struct Screen *) LockPubScreen(NULL);
+  screen=(struct Screen *) IntuitionBase->FirstScreen;
 
   if(!screen) {
     printf("report_uae_windows: no screen!?\n");
@@ -229,6 +229,11 @@ void report_uae_windows() {
     LEAVE
     return;
   }
+
+  /* WARNING: Would be nice to lock the screen, but we would need to get the
+   * screen name for that. Who invented this API !?
+   * We could lock IntuiBase, but it is all unsafe anyways..
+   */
 
   win=screen->FirstWindow;
 
