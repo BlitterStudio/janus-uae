@@ -13,14 +13,23 @@ quit
  *  (c) 1997 by Samuel Devulder
  */
 
+#if 0
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#endif
+#include <clib/exec_protos.h>
+#include <clib/dos_protos.h>
 #include <proto/dos.h>
+//#include <proto/timer.h>
+
+#if 0
 #include <proto/exec.h>
 #include <libraries/dosextens.h>
+#include <proto/dos.h>
+#endif
 
 #ifdef __GNUC__
 #include "../../src/include/uaeexe.h"

@@ -124,6 +124,9 @@ BOOL open_libs() {
  * if result is TRUE, we need to run (coherent mode)
  * if result is FALSE, we need to sleep (classic)
  ****************************************************/
+UBYTE buffer[MAXPUBSCREENNAME];
+
+
 int setup(struct Task *task, ULONG signal, ULONG stop) {
   ULONG *command_mem;
 
@@ -135,9 +138,9 @@ int setup(struct Task *task, ULONG signal, ULONG stop) {
 
   //DebOut("janusd: memory: %lx\n",(ULONG) command_mem);
 
-  command_mem[0]=(ULONG) task;
-  command_mem[4]=(ULONG) signal;
-  command_mem[8]=(ULONG) stop;
+  command_mem[ 0]=(ULONG) task;
+  command_mem[ 4]=(ULONG) signal;
+  command_mem[ 8]=(ULONG) stop;
 
   state = calltrap (AD_SETUP, AD__MAXMEM, command_mem);
 
@@ -278,12 +281,14 @@ static void runme() {
 	if(!init) {
 	  /* disabled -> enabled */
 	  init=TRUE;
+	  DebOut("janusd: update screens ..\n");
 	  update_screens(); /* report all open screens once, 
 			     * updates again a every openwindow patch
 			     * call
 			     */
 	  DebOut("janusd: screens updated\n");
 
+	  DebOut("janusd: update windows ..\n");
 	  update_windows(); /* report all open windows once,
 			     * new windows will be handled by the patches
 			     */

@@ -45,7 +45,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/timer.h>
-#include <inline/alib.h>
+//#include <inline/alib.h>
 #endif
 
 
