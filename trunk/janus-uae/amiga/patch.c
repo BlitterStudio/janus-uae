@@ -522,10 +522,12 @@ __asm__("_my_ModifyIDCMP_SetFunc:\n"
  * window is already in a0
  *********************************************************************************/
 __asm__("_my_AddGadget_SetFunc:\n"
+	PUSHA0
 	PUSHA3
 	"move.l _old_AddGadget, a3\n"
 	"jsr (a3)\n"
 	POPA3
+	POPA0
 
 	"cmp.l #1,_state\n"
 	"blt addgadget_patch_disabled\n"
@@ -540,10 +542,12 @@ __asm__("_my_AddGadget_SetFunc:\n"
         "rts\n");
 
 __asm__("_my_AddGList_SetFunc:\n"
+	PUSHA0
 	PUSHA3
 	"move.l _old_AddGList, a3\n"
 	"jsr (a3)\n"
 	POPA3
+	POPA0
 
 	"cmp.l #1,_state\n"
 	"blt addglist_patch_disabled\n"
