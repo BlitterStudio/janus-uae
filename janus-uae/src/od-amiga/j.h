@@ -58,7 +58,7 @@
 #define JWLOG(...)     do { ; } while(0)
 #endif
 
-//#define JW_ENTER_ENABLED 0
+#define JW_ENTER_ENABLED 1
 #if JW_ENTER_ENABLED
 #define ENTER  kprintf("%s:%d %s(): entered\n",__FILE__,__LINE__,__func__);
 #define LEAVE  kprintf("%s:%d %s(): left at line %d\n",__FILE__,__LINE__,__func__,__LINE__);
@@ -100,6 +100,7 @@ WORD get_hi_word(ULONG *field);
 #define AD_GET_JOB_TOP_SCREEN         15
 #define AD_GET_JOB_SCREEN_DEPTH       16
 #define AD_GET_JOB_MODIFY_IDCMP       17
+#define AD_GET_JOB_UPDATE_GADGETS     18
 #define AD_GET_JOB_DEBUG             999 
 
 #define AD_CLIP_SETUP 15
@@ -279,7 +280,7 @@ typedef struct {
 #endif
   UWORD            prop_update_count;
   /* how many intuiticks to skip to check for new border gadgets */
-  UWORD            gadget_update_count;
+  //UWORD            gadget_update_count;
 
 } JanusWin;
 
@@ -367,6 +368,7 @@ uae_u32 ad_debug                   (ULONG *m68k_results);
 uae_u32 ad_job_top_screen          (ULONG *m68k_results);
 uae_u32 ad_job_close_screen        (ULONG aos3screen);
 uae_u32 ad_job_screen_depth        (ULONG aos3screen, ULONG flags);
+uae_u32 ad_job_update_gadgets      (ULONG aos3win);
 
 uae_u32 ld_job_get                 (ULONG *m68k_results);
 

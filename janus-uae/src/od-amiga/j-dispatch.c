@@ -492,6 +492,8 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
 	case AD_GET_JOB_MODIFY_IDCMP:
 	  JWLOG("AD_GET_JOB_MODIFY_IDCMP(%lx,%d)\n",(ULONG) m68k_areg(&context->regs, 0),  (ULONG) m68k_dreg(&context->regs, 3));
 	  return TRUE;
+	case AD_GET_JOB_UPDATE_GADGETS:
+       	  return ad_job_update_gadgets((ULONG) m68k_areg(&context->regs, 0));
 
 	default:
 	  JWLOG("ERROR!! aroshack_helper: unkown job: %d\n",m68k_dreg(&context->regs, 1));

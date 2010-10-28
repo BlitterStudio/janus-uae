@@ -71,6 +71,8 @@ static gint xy_compare(gconstpointer a, gconstpointer b) {
  ********************************************************/
 static ULONG change_gadget(JanusWin *jwin, ULONG type, ULONG gadget) {
 
+  ENTER
+
   JWLOG("change_gadget(%lx, d, %lx)\n", jwin, type, gadget); 
 
   /* no new gadget ? */
@@ -79,9 +81,11 @@ static ULONG change_gadget(JanusWin *jwin, ULONG type, ULONG gadget) {
       /* free old JanusGadget struct */
       FreePooled(jwin->mempool, jwin->jgad[type], sizeof(JanusGadget));
       jwin->jgad[type]=NULL;
+      LEAVE
       return TRUE;
     }
     /* no new, no old, so it is ok */
+    LEAVE
     return FALSE;
   }
 
@@ -97,9 +101,11 @@ static ULONG change_gadget(JanusWin *jwin, ULONG type, ULONG gadget) {
 
     jwin->jgad[type]->aos3gadget=gadget;
 
+    LEAVE
     return TRUE;
   }
 
+  LEAVE
   return FALSE;
 }
 
@@ -140,6 +146,11 @@ static ULONG change_j_gadget(JanusWin *jwin, ULONG type, JanusGadget *new) {
  * init_border_gadgets
  *
  * fill up/down/left/right arrow JanusGadgets
+ *
+ * There seem to be rare (?) cases, where the Gadget
+ * list is an endless Loop (NextGadget == Gadget).
+ * I have no idea, why this happens.
+ *
  ********************************************************/
 ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
   ULONG gadget;
@@ -156,6 +167,8 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
   JanusGadget *up;
   JanusGadget *down;
   ULONG i;
+
+  ENTER
 
   for(i=0; i<NUM_GADGETS; i++) {
     JWLOG("[%lx] old jgad[%d]=%lx\n", thread, i, jwin->jgad[i]);
@@ -227,7 +240,13 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
     }
 
 
-    gadget=get_long(gadget); /* NextGadget */
+    if(gadget != get_long(gadget)) {
+      gadget=get_long(gadget); /* NextGadget */
+    }
+    else {
+      /* break loop, see comment above */
+      gadget=NULL;
+    }
   }
 
   aos3_gadget_list=g_list_sort(aos3_gadget_list, &xy_compare);
@@ -300,6 +319,8 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
     JWLOG("[%lx] new jgad[%d]=%lx\n", thread, i, jwin->jgad[i]);
   }
   JWLOG("[%lx] return changed=%d\n", thread, changed);
+
+  LEAVE
   return changed;
 }
 
@@ -316,6 +337,8 @@ void move_horiz_prop_gadget(struct Process *thread, JanusWin *jwin) {
   ULONG freewidth;
   ULONG specialinfo;
   JanusGadget *jgad=NULL;
+
+  ENTER
 
   jgad=jwin->jgad[GAD_HORIZSCROLL]; 
   specialinfo=get_long(jgad->aos3gadget + 34);
@@ -371,6 +394,8 @@ void move_horiz_prop_gadget(struct Process *thread, JanusWin *jwin) {
     Delay(1);
   }
   Delay(10);
+
+  LEAVE
 }
 
 /********************************************************************
@@ -385,6 +410,8 @@ void move_vert_prop_gadget(struct Process *thread, JanusWin *jwin) {
   ULONG freeheight;
   ULONG specialinfo;
   JanusGadget *jgad=NULL;
+
+  ENTER
 
   //jgad=jwin->prop_up_down; 
   jgad=jwin->jgad[GAD_VERTSCROLL]; 
@@ -449,6 +476,8 @@ void move_vert_prop_gadget(struct Process *thread, JanusWin *jwin) {
     Delay(1);
   }
   Delay(10);
+
+  LEAVE
 }
 
 /********************************************************
@@ -461,6 +490,8 @@ void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
   ULONG t;
   ULONG specialinfo;
   JanusGadget *jgad=NULL;
+
+  ENTER
 
   JWLOG("aros_win_thread[%lx]: jwin %lx, gadid %d\n", thread, jwin, gadid);
 
@@ -543,6 +574,7 @@ void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
     break;
   }
 
+  LEAVE
 }
 
 
@@ -584,167 +616,171 @@ void dump_prop_gadget(struct Process *thread, ULONG gadget) {
  * create border gadgets
  ***********************************************************/
 struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
-    IPTR imagew[NUM_IMAGES], imageh[NUM_IMAGES];
-    WORD v_offset, h_offset, btop, i;
-    struct Gadget   *vertgadget =NULL;
-    struct Gadget   *horizgadget=NULL;
-    WORD img2which[] = {
-   	UPIMAGE, 
-   	DOWNIMAGE, 
-   	LEFTIMAGE, 
-   	RIGHTIMAGE, 
-   	SIZEIMAGE
-    };
+  IPTR imagew[NUM_IMAGES], imageh[NUM_IMAGES];
+  WORD v_offset, h_offset, btop, i;
+  struct Gadget   *vertgadget =NULL;
+  struct Gadget   *horizgadget=NULL;
+  WORD img2which[] = {
+      UPIMAGE, 
+      DOWNIMAGE, 
+      LEFTIMAGE, 
+      RIGHTIMAGE, 
+      SIZEIMAGE
+  };
 
-   
-   if(!jwin->dri) {
-    jwin->dri = GetScreenDrawInfo(jwin->jscreen->arosscreen);
-   }
+  ENTER
 
-    for(i = 0;i < NUM_IMAGES;i++) {
+ 
+ if(!jwin->dri) {
+  jwin->dri = GetScreenDrawInfo(jwin->jscreen->arosscreen);
+ }
 
-      jwin->img[i] = NewObject(0, SYSICLASS, SYSIA_DrawInfo, (Tag) jwin->dri, 
-       					SYSIA_Which, (Tag) img2which[i], 
+  for(i = 0;i < NUM_IMAGES;i++) {
+
+    jwin->img[i] = NewObject(0, SYSICLASS, SYSIA_DrawInfo, (Tag) jwin->dri, 
+				      SYSIA_Which, (Tag) img2which[i], 
+				      TAG_DONE);
+
+    if (!jwin->img[i]) {
+      JWLOG("aros_win_thread[%lx]: could not create image %d\n", thread, i);
+      return NULL;
+    }
+
+    GetAttr(IA_Width,  (Object *) jwin->img[i], &imagew[i]);
+    GetAttr(IA_Height, (Object *) jwin->img[i], &imageh[i]);
+  }
+
+  btop = jwin->jscreen->arosscreen->WBorTop + jwin->dri->dri_Font->tf_YSize + 1;
+
+  JWLOG("aros_win_thread[%lx]: btop=%d\n", thread, btop);
+  JWLOG("aros_win_thread[%lx]: imagew[IMG_UPARROW]  =%d\n", thread, imagew[IMG_UPARROW]);
+  JWLOG("aros_win_thread[%lx]: imageh[IMG_DOWNARROW]=%d\n", thread, imageh[IMG_DOWNARROW]);
+
+  v_offset = imagew[IMG_DOWNARROW] / 4;
+  h_offset = imageh[IMG_LEFTARROW] / 4;
+
+  if(jwin->jgad[GAD_UPARROW]) {
+    vertgadget = 
+    jwin->gad[GAD_UPARROW] = NewObject(0, BUTTONGCLASS, GA_Image, (Tag) jwin->img[IMG_UPARROW], 
+					GA_RelRight, -imagew[IMG_UPARROW] + 1, 
+					GA_RelBottom, -imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1, 
+					GA_ID, GAD_UPARROW, 
+					GA_RightBorder, TRUE, 
+					GA_Immediate, TRUE,
+					GA_RelVerify, TRUE, 
+					GA_GZZGadget, TRUE,
 					TAG_DONE);
 
-      if (!jwin->img[i]) {
-	JWLOG("aros_win_thread[%lx]: could not create image %d\n", thread, i);
-	return NULL;
-      }
+    jwin->gad[GAD_DOWNARROW] = NewObject(0, BUTTONGCLASS, GA_Image, (Tag) jwin->img[IMG_DOWNARROW], 
+					GA_RelRight, -imagew[IMG_UPARROW] + 1, 
+					GA_RelBottom, -imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1, 
+					GA_ID, GAD_DOWNARROW, 
+					GA_RightBorder, TRUE, 
+					GA_Previous, (Tag) jwin->gad[GAD_UPARROW], 
+					GA_Immediate, TRUE,
+					GA_RelVerify    , TRUE, 
+					GA_GZZGadget, TRUE,
+					TAG_DONE);
 
-      GetAttr(IA_Width,  (Object *) jwin->img[i], &imagew[i]);
-      GetAttr(IA_Height, (Object *) jwin->img[i], &imageh[i]);
-    }
-
-    btop = jwin->jscreen->arosscreen->WBorTop + jwin->dri->dri_Font->tf_YSize + 1;
-
-    JWLOG("aros_win_thread[%lx]: btop=%d\n", thread, btop);
-    JWLOG("aros_win_thread[%lx]: imagew[IMG_UPARROW]  =%d\n", thread, imagew[IMG_UPARROW]);
-    JWLOG("aros_win_thread[%lx]: imageh[IMG_DOWNARROW]=%d\n", thread, imageh[IMG_DOWNARROW]);
-
-    v_offset = imagew[IMG_DOWNARROW] / 4;
-    h_offset = imageh[IMG_LEFTARROW] / 4;
-
-    if(jwin->jgad[GAD_UPARROW]) {
-      vertgadget = 
-      jwin->gad[GAD_UPARROW] = NewObject(0, BUTTONGCLASS, GA_Image, (Tag) jwin->img[IMG_UPARROW], 
-					  GA_RelRight, -imagew[IMG_UPARROW] + 1, 
-					  GA_RelBottom, -imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1, 
-					  GA_ID, GAD_UPARROW, 
-					  GA_RightBorder, TRUE, 
-					  GA_Immediate, TRUE,
-					  GA_RelVerify, TRUE, 
-					  GA_GZZGadget, TRUE,
-					  TAG_DONE);
-
-      jwin->gad[GAD_DOWNARROW] = NewObject(0, BUTTONGCLASS, GA_Image, (Tag) jwin->img[IMG_DOWNARROW], 
-					  GA_RelRight, -imagew[IMG_UPARROW] + 1, 
-					  GA_RelBottom, -imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1, 
-					  GA_ID, GAD_DOWNARROW, 
-					  GA_RightBorder, TRUE, 
-					  GA_Previous, (Tag) jwin->gad[GAD_UPARROW], 
-					  GA_Immediate, TRUE,
-					  GA_RelVerify    , TRUE, 
-					  GA_GZZGadget, TRUE,
-					  TAG_DONE);
-
-      jwin->gad[GAD_VERTSCROLL] = NewObject(0, PROPGCLASS, GA_Top, btop + 1, 
-					  GA_RelRight, -imagew[IMG_DOWNARROW] + v_offset + 1, 
-					  GA_Width, imagew[IMG_DOWNARROW] - v_offset * 2,
-					  GA_RelHeight, -imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] - btop -2, 
-					  GA_ID, GAD_VERTSCROLL, 
-					  GA_Previous, (Tag) jwin->gad[GAD_DOWNARROW], 
-					  GA_RightBorder, TRUE, 
-					  GA_RelVerify, TRUE, 
-					  GA_Immediate, TRUE, 
-					  PGA_NewLook, TRUE, 
-					  PGA_Borderless, TRUE, 
+    jwin->gad[GAD_VERTSCROLL] = NewObject(0, PROPGCLASS, GA_Top, btop + 1, 
+					GA_RelRight, -imagew[IMG_DOWNARROW] + v_offset + 1, 
+					GA_Width, imagew[IMG_DOWNARROW] - v_offset * 2,
+					GA_RelHeight, -imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] - btop -2, 
+					GA_ID, GAD_VERTSCROLL, 
+					GA_Previous, (Tag) jwin->gad[GAD_DOWNARROW], 
+					GA_RightBorder, TRUE, 
+					GA_RelVerify, TRUE, 
+					GA_Immediate, TRUE, 
+					PGA_NewLook, TRUE, 
+					PGA_Borderless, TRUE, 
 #if 0
-					  PGA_Total, , 
-					  PGA_Visible, 100, 
+					PGA_Total, , 
+					PGA_Visible, 100, 
 #endif
-					  PGA_VertPot,    MAXPOT,
-					  PGA_VertBody,   MAXBODY,
-					  PGA_Freedom, FREEVERT, 
-					  GA_GZZGadget, TRUE,
-					  TAG_DONE);
-      for(i = 0;i < 3;i++) {
-	  JWLOG("aros_win_thread[%lx]: gad[%d]=%lx\n", thread, i, jwin->gad[i]);
-  	  if (!jwin->gad[i]) {
-  	    JWLOG("aros_win_thread[%lx]: ERROR: gad[%d]==NULL\n", thread, i);
-  	    return NULL;
-  	  }
-      }
+					PGA_VertPot,    MAXPOT,
+					PGA_VertBody,   MAXBODY,
+					PGA_Freedom, FREEVERT, 
+					GA_GZZGadget, TRUE,
+					TAG_DONE);
+    for(i = 0;i < 3;i++) {
+	JWLOG("aros_win_thread[%lx]: gad[%d]=%lx\n", thread, i, jwin->gad[i]);
+	if (!jwin->gad[i]) {
+	  JWLOG("aros_win_thread[%lx]: ERROR: gad[%d]==NULL\n", thread, i);
+	  return NULL;
+	}
+    }
+  }
+
+  if(jwin->jgad[GAD_LEFTARROW]) {
+    horizgadget=
+    jwin->gad[GAD_RIGHTARROW] = NewObject(0, BUTTONGCLASS, GA_Image, (Tag) jwin->img[IMG_RIGHTARROW], 
+					GA_RelRight, -imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] + 1, 
+					GA_RelBottom, -imageh[IMG_RIGHTARROW] + 1, 
+					GA_ID, GAD_RIGHTARROW, 
+					GA_BottomBorder, TRUE, 
+					jwin->jgad[GAD_UPARROW] ? GA_Previous : TAG_IGNORE, (Tag) jwin->gad[GAD_VERTSCROLL], 
+					GA_Immediate, TRUE, 
+					GA_RelVerify, TRUE,
+					GA_GZZGadget, TRUE,
+					TAG_DONE);
+
+     jwin->gad[GAD_LEFTARROW] = NewObject(0, BUTTONGCLASS, GA_Image, (Tag) jwin->img[IMG_LEFTARROW], 
+					GA_RelRight, -imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] - imagew[IMG_LEFTARROW] + 1, 
+					GA_RelBottom, -imageh[IMG_RIGHTARROW] + 1, 
+					GA_ID, GAD_LEFTARROW, 
+					GA_BottomBorder, TRUE, 
+					GA_Previous, (Tag) jwin->gad[GAD_RIGHTARROW], 
+					GA_Immediate, TRUE, 
+					GA_RelVerify, TRUE ,
+					GA_GZZGadget, TRUE,
+					TAG_DONE);
+
+     jwin->gad[GAD_HORIZSCROLL] = NewObject(0, PROPGCLASS, GA_Left, jwin->jscreen->arosscreen->WBorLeft, 
+					GA_RelBottom, -imageh[IMG_LEFTARROW] + h_offset + 1, 
+					GA_RelWidth, -imagew[IMG_LEFTARROW] - imagew[IMG_RIGHTARROW] - imagew[IMG_SIZE] - jwin->jscreen->arosscreen->WBorRight - 2, 
+					GA_Height, imageh[IMG_LEFTARROW] - (h_offset * 2), 
+					GA_ID, GAD_HORIZSCROLL, 
+					GA_Previous, (Tag) jwin->gad[GAD_LEFTARROW], 
+					GA_BottomBorder, TRUE, 
+					GA_RelVerify, TRUE, 
+					GA_Immediate, TRUE, 
+					PGA_NewLook, TRUE, 
+					PGA_Borderless, TRUE, 
+					PGA_Total, 80, 
+					PGA_Visible, 80, 
+					PGA_Freedom, FREEHORIZ, 
+					GA_GZZGadget, TRUE,
+					TAG_DONE);
+    for(i = 3;i < NUM_GADGETS;i++) {
+	if (!jwin->gad[i]) {
+	  JWLOG("aros_win_thread[%lx]: ERROR: gad[%d]==NULL\n", thread, i);
+	  return NULL;
+	}
     }
 
-    if(jwin->jgad[GAD_LEFTARROW]) {
-      horizgadget=
-      jwin->gad[GAD_RIGHTARROW] = NewObject(0, BUTTONGCLASS, GA_Image, (Tag) jwin->img[IMG_RIGHTARROW], 
-					  GA_RelRight, -imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] + 1, 
-					  GA_RelBottom, -imageh[IMG_RIGHTARROW] + 1, 
-					  GA_ID, GAD_RIGHTARROW, 
-					  GA_BottomBorder, TRUE, 
-					  jwin->jgad[GAD_UPARROW] ? GA_Previous : TAG_IGNORE, (Tag) jwin->gad[GAD_VERTSCROLL], 
-					  GA_Immediate, TRUE, 
-					  GA_RelVerify, TRUE,
-					  GA_GZZGadget, TRUE,
-					  TAG_DONE);
-
-       jwin->gad[GAD_LEFTARROW] = NewObject(0, BUTTONGCLASS, GA_Image, (Tag) jwin->img[IMG_LEFTARROW], 
-					  GA_RelRight, -imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] - imagew[IMG_LEFTARROW] + 1, 
-					  GA_RelBottom, -imageh[IMG_RIGHTARROW] + 1, 
-					  GA_ID, GAD_LEFTARROW, 
-					  GA_BottomBorder, TRUE, 
-					  GA_Previous, (Tag) jwin->gad[GAD_RIGHTARROW], 
-					  GA_Immediate, TRUE, 
-					  GA_RelVerify, TRUE ,
-					  GA_GZZGadget, TRUE,
-					  TAG_DONE);
-
-       jwin->gad[GAD_HORIZSCROLL] = NewObject(0, PROPGCLASS, GA_Left, jwin->jscreen->arosscreen->WBorLeft, 
-					  GA_RelBottom, -imageh[IMG_LEFTARROW] + h_offset + 1, 
-					  GA_RelWidth, -imagew[IMG_LEFTARROW] - imagew[IMG_RIGHTARROW] - imagew[IMG_SIZE] - jwin->jscreen->arosscreen->WBorRight - 2, 
-					  GA_Height, imageh[IMG_LEFTARROW] - (h_offset * 2), 
-					  GA_ID, GAD_HORIZSCROLL, 
-					  GA_Previous, (Tag) jwin->gad[GAD_LEFTARROW], 
-					  GA_BottomBorder, TRUE, 
-					  GA_RelVerify, TRUE, 
-					  GA_Immediate, TRUE, 
-					  PGA_NewLook, TRUE, 
-					  PGA_Borderless, TRUE, 
-					  PGA_Total, 80, 
-					  PGA_Visible, 80, 
-					  PGA_Freedom, FREEHORIZ, 
-					  GA_GZZGadget, TRUE,
-					  TAG_DONE);
-      for(i = 3;i < NUM_GADGETS;i++) {
-  	  if (!jwin->gad[i]) {
-  	    JWLOG("aros_win_thread[%lx]: ERROR: gad[%d]==NULL\n", thread, i);
-  	    return NULL;
-  	  }
-      }
-
-    }
+  }
 
 #ifdef ALWAYS_SHOW_GADGETS
-    /* make space for gadgets in window border */
-    if(jwin->jgad[GAD_UPARROW] && !jwin->plusx) {
-      jwin->plusx=get_byte((ULONG) jwin->aos3win + 56);
-    }
-    if(jwin->jgad[GAD_RIGHTARROW] && !jwin->plusy) {
-      jwin->plusy=get_byte((ULONG) jwin->aos3win + 57);
-    }
+  /* make space for gadgets in window border */
+  if(jwin->jgad[GAD_UPARROW] && !jwin->plusx) {
+    jwin->plusx=get_byte((ULONG) jwin->aos3win + 56);
+  }
+  if(jwin->jgad[GAD_RIGHTARROW] && !jwin->plusy) {
+    jwin->plusy=get_byte((ULONG) jwin->aos3win + 57);
+  }
 #else
-    /* clear it, it might have been set during window opening */
-    jwin->plusx=0;
-    jwin->plusy=0;
+  /* clear it, it might have been set during window opening */
+  jwin->plusx=0;
+  jwin->plusy=0;
 #endif
 
-    if(jwin->jgad[GAD_UPARROW]) {
-      return vertgadget;
-    }
+  if(jwin->jgad[GAD_UPARROW]) {
+    return vertgadget;
+  }
 
-    return horizgadget;
+  LEAVE
+
+  return horizgadget;
 }
 
 /***********************************************************
@@ -754,6 +790,8 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
  ***********************************************************/
 void de_init_border_gadgets(struct Process *thread, JanusWin *jwin) {
   ULONG i;
+
+  ENTER
 
   for(i=0; i<NUM_GADGETS; i++) {
     if(jwin->jgad[i]) {
@@ -787,6 +825,7 @@ void de_init_border_gadgets(struct Process *thread, JanusWin *jwin) {
     jwin->prop_left_right=NULL;
   }
 #endif
+  LEAVE
 }
 
 void remove_gadgets(struct Process *thread, JanusWin* jwin) {
@@ -834,3 +873,57 @@ UWORD SetGadgetType(struct Gadget *gad, UWORD type) {
   return oldtype;
 }
 
+
+/*
+ * ad_job_update_gadgets gets called after a AddGList/AddGadet in AmigaOS
+ *
+ * It is safe to travel the gadget list during this call.
+ */
+uae_u32 ad_job_update_gadgets(ULONG aos3win) {
+
+  GSList        *list_win;
+  JanusWin      *jwin;
+  struct Process *thread=(struct Process *) 0x68000; /* dummy thread, we are from m68k .. */
+
+  JWLOG("aos3win %lx\n", aos3win);
+
+  /* get jwin */
+  ObtainSemaphore(&sem_janus_window_list);
+  list_win=g_slist_find_custom(janus_windows, 
+				(gconstpointer) aos3win,
+				&aos3_window_compare);
+
+  if(list_win) {
+
+    jwin=list_win->data;
+
+    /* check, if we have new border gadgets */
+    if(init_border_gadgets(thread , jwin)) {
+      remove_gadgets(thread, jwin);
+      jwin->firstgadget=make_gadgets(thread, jwin);
+      if(jwin->firstgadget) {
+	JWLOG("add gadgets ..\n");
+	AddGList(jwin->aroswin, jwin->firstgadget, -1, -1, NULL);
+	RefreshGList(jwin->firstgadget, jwin->aroswin, 0, -1);
+      }
+      else {
+	JWLOG("RemoveGList ..\n");
+	RemoveGList(jwin->aroswin, jwin->aroswin->FirstGadget, -1);
+	/* ? */
+	RefreshGList(NULL, jwin->aroswin, 0, -1);
+      }
+    }
+    else {
+	JWLOG("nothing to do !?\n");
+    }
+  }
+  else {
+    /* ok, no gadgets then .. */
+    JWLOG("ERROR: could not find list_win for aos3win %lx !?\n", aos3win);
+  }
+
+  ReleaseSemaphore(&sem_janus_window_list);
+  JWLOG("left (aos3win %lx)\n", aos3win);
+
+  return TRUE;
+}

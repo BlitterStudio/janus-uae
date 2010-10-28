@@ -25,7 +25,7 @@
 
 #include "j.h"
 
-//#define M68K_DEBUG 1
+#define M68K_DEBUG 1
 
 uae_u32 ad_debug(ULONG *m68k_results) {
 
