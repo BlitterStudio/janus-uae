@@ -29,6 +29,7 @@
 #include <clib/timer_protos.h>
 
 #include <proto/exec.h>
+#include <proto/intuition.h>
 #include <proto/dos.h>
 #include <proto/timer.h>
 
@@ -50,7 +51,7 @@ int main (int argc, char **argv) {
       w=public_screen_node->psn_Screen->FirstWindow;
       printf("public_screen_node->psn_Screen->Windows:\n");
       while(w) {
-	printf("  %lx\n",w);
+	printf("  %lx (%ls)\n",w, w->Title);
 	w=w->NextWindow;
       }
     printf("public_screen_node->psn_Node.ln_succ: %lx\n",(struct PubScreenNode *) public_screen_node->psn_Node.ln_Succ);

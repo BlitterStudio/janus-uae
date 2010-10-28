@@ -65,6 +65,11 @@ extern struct IntuitionBase* IntuitionBase;
  *   MUI windows seem to use this quite
  *   often. Without this patch, menus
  *   might not work.
+ *
+ * - AddGadget/AddGList
+ *   If someone adds gadgets to his 
+ *   window, we might need to do that,
+ *   too.
  */
 
 APTR           old_CloseWindow;
@@ -75,6 +80,8 @@ APTR           old_OpenScreen;
 APTR           old_OpenScreenTagList;
 APTR           old_ScreenDepth;
 APTR           old_ModifyIDCMP;
+APTR           old_AddGadget;
+APTR           old_AddGList;
 
 #define PUSHFULLSTACK "movem.l d0-d7/a0-a6,-(SP)\n"
 #define POPFULLSTACK  "movem.l (SP)+,d0-d7/a0-a6\n"
@@ -499,6 +506,58 @@ __asm__("_my_ModifyIDCMP_SetFunc:\n"
 	"rts\n"
 	);
 
+/*********************************************************************************
+ * _my_AddGadget_SetFunc
+ *
+ * done in assembler, as C-Source always at least destroys the
+ * a5 register for the local variable stack frame. But library
+ * functions may only trash d0, d1, a0 and a1.
+ *
+ * We call the original function, then we need to react on the
+ * changes.
+ *
+ * for calltrap:
+ * AD_GET_JOB  11 (d0)
+ * AD_GET_JOB_UPDATE_GADGETS 18 (d1)
+ * window is already in a0
+ *********************************************************************************/
+__asm__("_my_AddGadget_SetFunc:\n"
+	PUSHA3
+	"move.l _old_AddGadget, a3\n"
+	"jsr (a3)\n"
+	POPA3
+
+	"cmp.l #1,_state\n"
+	"blt addgadget_patch_disabled\n"
+	PUSHSTACK
+	"moveq #11,d0\n"
+	"moveq #18,d1\n"
+	"move.l _calltrap,a1\n"
+	"jsr (a1)\n"
+	POPSTACK
+	"addgadget_patch_disabled:\n"
+
+        "rts\n");
+
+__asm__("_my_AddGList_SetFunc:\n"
+	PUSHA3
+	"move.l _old_AddGList, a3\n"
+	"jsr (a3)\n"
+	POPA3
+
+	"cmp.l #1,_state\n"
+	"blt addglist_patch_disabled\n"
+	PUSHSTACK
+	"moveq #11,d0\n"
+	"moveq #18,d1\n"
+	"move.l _calltrap,a1\n"
+	"jsr (a1)\n"
+	POPSTACK
+	"addglist_patch_disabled:\n"
+
+        "rts\n");
+
+
 
 /*
  * assembler functions need to be declared or used, before
@@ -512,6 +571,8 @@ void my_OpenScreenTagList_SetFunc();
 void my_CloseScreen_SetFunc();
 void my_ScreenDepth_SetFunc();
 void my_ModifyIDCMP_SetFunc();
+void my_AddGadget_SetFunc();
+void my_AddGList_SetFunc();
 
 /* According to Ralph Babel: ".. as
  * of 2.0, SetFunction() calls Forbid()/Permit() 
@@ -554,7 +615,13 @@ void patch_functions() {
                               -150, 
 			      (APTR) my_ModifyIDCMP_SetFunc);
 
+  old_AddGadget=SetFunction((struct Library *)IntuitionBase, 
+                              -42, 
+			      (APTR) my_AddGadget_SetFunc);
 
+  old_AddGList=SetFunction((struct Library *)IntuitionBase, 
+                              -438, 
+			      (APTR) my_AddGList_SetFunc);
 
   LEAVE
 }

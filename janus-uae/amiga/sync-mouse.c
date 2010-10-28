@@ -344,13 +344,34 @@ void no_p96_fix_viewoffset(struct Screen *screen, WORD *x, WORD *y) {
 }
 
 /***************************************
+ * is_cyber
+ *
+ * return, if screen is a Picasso Screen
+ ***************************************/
+BOOL is_cyber(struct Screen *screen) {
+  ULONG                 modeID;
+
+  if(CyberGfxBase) {  /* no CyberGfxBase, is_p96 is always FALSE */
+    modeID=GetVPModeID(&(screen->ViewPort));
+
+    if(modeID != INVALID_ID) {
+      return IsCyberModeID(modeID);
+    }
+  }
+
+  return FALSE;
+}
+
+/***************************************
  * we check the aros mouse coords and
  * place ours accordingly
  ***************************************/
 void sync_mouse() {
   struct Screen        *screen;
   ULONG                 result;
+#if 0
   ULONG                 modeID;
+#endif
   BOOL                  is_p96=FALSE;
   WORD                  x,y;
   ULONG                 aros_width,   aros_height;
@@ -381,6 +402,7 @@ void sync_mouse() {
   }
 
   /* do it for every update, as a screen might change the resolution.. */
+#if 0
   if(CyberGfxBase) {  /* no CyberGfxBase, is_p96 is always FALSE */
     modeID=GetVPModeID(&(screen->ViewPort));
     /*
@@ -397,6 +419,9 @@ void sync_mouse() {
     /* is_p96 stays FALSE */
     is_p96=FALSE;
   }
+#endif
+
+  is_p96=is_cyber(screen);
 
   mousebuffer[0]=is_p96;
   DebOut("is_p96: %d\n",is_p96);

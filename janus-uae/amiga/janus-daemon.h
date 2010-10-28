@@ -59,8 +59,11 @@
 #define AD_GET_JOB_LIST_SCREENS 12
 #define AD_GET_JOB_OPEN_CUSTOM_SCREEN 13 /* not used ATM */
 #define AD_GET_JOB_CLOSE_SCREEN       14 /* not used ATM */
-#define AD_GET_JOB_TOP_SCREEN 15
-#define AD_GET_JOB_DEBUG 999
+#define AD_GET_JOB_TOP_SCREEN         15
+#define AD_GET_JOB_SCREEN_DEPTH       16
+#define AD_GET_JOB_MODIFY_IDCMP       17
+#define AD_GET_JOB_UPDATE_GADGETS     18
+#define AD_GET_JOB_DEBUG             999
 
 #define J_MSG_CLOSE                    1
 
@@ -123,7 +126,6 @@ void DebOut(const char *format, ...);
 #define C_ENTER
 #define C_LEAVE
 #endif
-
 
 
 #endif
