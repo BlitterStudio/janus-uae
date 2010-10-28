@@ -21,6 +21,7 @@
  *
  ************************************************************************/
 
+#define JWTRACING_ENABLED 1
 #include "j.h"
 #include "memory.h"
 

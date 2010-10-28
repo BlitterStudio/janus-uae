@@ -85,7 +85,7 @@ static void handle_msg(JanusScreen *jscreen,
   }
   if((jscreen->arosscreen != (struct Screen *) notify_screen) && (notify_code & SDEPTH_TOFRONT)) {
     JWLOG("aros_cscr_thread[%lx]: SDEPTH_TOFRONT to foreign screen, but we were not first\n");
-    if(janus_active_screen != janus_active_screen) {
+    if(janus_active_screen != IntuitionBase->FirstScreen) {  /* is IntuitionBase->FirstScreen right here? */
       uae_no_display_update=FALSE;
       reset_drawing();
       return;

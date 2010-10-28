@@ -82,6 +82,8 @@ static void refresh_content(JanusWin *jwin) {
   LONG start=0;
   LONG end=0;
 
+  ENTER
+
   /* clip it */
   if(jwin->aroswin->TopEdge > 0) {
     start=jwin->aroswin->TopEdge;
@@ -103,6 +105,7 @@ static void refresh_content(JanusWin *jwin) {
   clone_window(jwin->aos3win, jwin->aroswin, 0, 0xFFFFFF); /* clone window again */
 #endif
 
+  LEAVE
 }
 
 /**************************************************************************
@@ -117,6 +120,8 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
 static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int qualifier, struct Process *thread) {
 
   UWORD selection;
+
+  ENTER
 
   JWLOG("aros_win_thread[%lx]: handle_input(jwin %lx, aros win %lx, class %lx, code %d)\n", thread, 
                                                                                             jwin, win, 
@@ -224,6 +229,7 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
     }
   }
   JWLOG("aros_win_thread[%lx]: handle_input(jwin %lx, ..) done\n", thread, jwin);
+  LEAVE
 }
 
 
@@ -238,6 +244,8 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
   UWORD     selection;
   ULONG     flags;
   UWORD     gadid;
+
+  ENTER
 
   switch (class) {
     case IDCMP_RAWKEY:
@@ -577,6 +585,8 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
       JWLOG("aros_win_thread[%lx]: Unknown IDCMP class %lx received\n", thread, class);
       break;
   }
+
+  LEAVE
 }
 
 /***********************************************************
@@ -617,6 +627,8 @@ static void aros_win_thread (void) {
   struct Screen  *lock=NULL;
 
   /* There's a time to live .. */
+
+  ENTER
 
   JWLOG("aros_win_thread[%lx]: thread running \n",thread);
 
@@ -846,6 +858,11 @@ static void aros_win_thread (void) {
     }
     JWLOG("aros_win_thread[%lx]: locked Screen %s: lock %lx\n", thread, jwin->jscreen->pubname, lock);
 
+    /* check, if we have any border gadgets up to now
+     * ATTENTION: there *might* be a race condition, if amigaOS calls AddGadget/AddGList on this window
+     *            during our call to init_border_gadgets/make_gadgets.
+     *            If it is a problem, add a sem to protect our gadget list.
+     */
     jwin->firstgadget=NULL;
     if(care) {
       if(init_border_gadgets(thread, jwin)) {
@@ -1070,6 +1087,8 @@ static void aros_win_thread (void) {
 	    break;
 	  }
 	  else {
+#if 0
+	  /* this stuff is now handled through ad_job_update_gadgets !! */
 	    if(jwin->gadget_update_count == 0) {
 	      jwin->gadget_update_count=9;
 	      /* check, if e have new border gadgets */
@@ -1089,6 +1108,7 @@ static void aros_win_thread (void) {
 	      }
 	    }
 	    jwin->gadget_update_count--;
+#endif
 
 	    if(jwin->jgad[GAD_UPARROW] || jwin->jgad[GAD_LEFTARROW]) {
 
@@ -1242,32 +1262,38 @@ EXIT:
     FreeVec(jwin);
   }
   JWLOG("aros_win_thread[%lx]: dies..\n", thread);
+
+  LEAVE
 }
 
 int aros_win_start_thread (JanusWin *win) {
 
-    JWLOG("aros_win_start_thread(%lx)\n",win);
-    win->name=AllocVecPooled(win->mempool, 8+strlen(TASK_PREFIX_NAME)+1);
+  ENTER
 
-    sprintf(win->name,"%s%lx",TASK_PREFIX_NAME,win->aos3win);
+  JWLOG("aros_win_start_thread(%lx)\n",win);
+  win->name=AllocVecPooled(win->mempool, 8+strlen(TASK_PREFIX_NAME)+1);
 
-    ObtainSemaphore(&aos3_thread_start);
-    win->task = (struct Task *)
-	    myCreateNewProcTags ( NP_Output, Output (),
-				  NP_Input, Input (),
-				  NP_Name, (ULONG) win->name,
-				  NP_CloseOutput, FALSE,
-				  NP_CloseInput, FALSE,
-				  NP_StackSize, 4096,
-				  NP_Priority, 0,
-				  NP_Entry, (ULONG) aros_win_thread,
-				  TAG_DONE);
+  sprintf(win->name,"%s%lx",TASK_PREFIX_NAME,win->aos3win);
 
-    ReleaseSemaphore(&aos3_thread_start);
+  ObtainSemaphore(&aos3_thread_start);
+  win->task = (struct Task *)
+	  myCreateNewProcTags ( NP_Output, Output (),
+				NP_Input, Input (),
+				NP_Name, (ULONG) win->name,
+				NP_CloseOutput, FALSE,
+				NP_CloseInput, FALSE,
+				NP_StackSize, 4096,
+				NP_Priority, 0,
+				NP_Entry, (ULONG) aros_win_thread,
+				TAG_DONE);
 
-    JWLOG("thread %lx created\n",win->task);
+  ReleaseSemaphore(&aos3_thread_start);
 
-    return win->task != 0;
+  JWLOG("thread %lx created\n",win->task);
+
+  LEAVE
+
+  return win->task != 0;
 }
 
 #if 0

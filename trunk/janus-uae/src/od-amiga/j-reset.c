@@ -21,7 +21,7 @@
  *
  ************************************************************************/
 
-#define JWTRACING_ENABLED 1
+//#define JWTRACING_ENABLED 1
 #include "j.h"
 
 static void j_shutdown_all(void) {
