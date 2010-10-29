@@ -39,7 +39,6 @@ extern BOOL vert_prop_active;
 
 
 static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, ULONG secs, ULONG micros, BOOL *done);
-////static void dump_prop_gadget(struct Process *thread, ULONG gadget);
 
 /* we don't know those values, but we always keep the last value here */
 static UWORD estimated_border_top=25;
@@ -313,6 +312,7 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 	activate_ticks(jwin, 0);
 
 	/* debug only */
+#if 0
 	{
 	  ULONG gadget;
       	  gadget=get_long_p(jwin->aos3win + 62);
@@ -320,6 +320,7 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 	    dump_prop_gadget(thread, gadget);
 	    gadget=get_long(gadget); /* NextGadget */
 	  }
+#endif
  
 	}
       }
