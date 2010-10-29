@@ -22,6 +22,7 @@
  ************************************************************************/
 
 //#define JW_ENTER_ENABLED  1
+#define JWTRACING_ENABLED  1
 
 #include "j.h"
 
@@ -943,6 +944,96 @@ void uae_main_window_open() {
 uae_u32 ad_job_modify_idcmp(ULONG aos3win, ULONG flags) {
   JWLOG("ad_job_modify_idcmp(aos3win %lx, flags %lx) not done yet\n", aos3win, flags);
 
+  return TRUE;
+}
+
+/*********************************************************
+ * set_window_titles(window)
+ *
+ * update window titles
+ *********************************************************/
+void set_window_titles(struct Process *thread, JanusWin *jwin) {
+  UBYTE *window_title;
+  UBYTE *screen_title;
+
+  ENTER
+
+  JWLOG("[%lx]: jwin: %lx\n", thread, jwin);
+
+  window_title=(UBYTE *) get_real_address(get_long_p(jwin->aos3win +  32));
+  screen_title=(UBYTE *) get_real_address(get_long_p(jwin->aos3win + 104));
+
+  JWLOG("[%lx]: window title: %s\n", thread, window_title);
+  JWLOG("[%lx]: screen title: %s\n", thread, screen_title);
+
+  SetWindowTitles(jwin->aroswin, window_title, screen_title);
+
+  LEAVE
+}
+
+/*********************************************************
+ * ad_job_set_window_titles
+ *
+ * call set_window_titles
+ *********************************************************/
+uae_u32 ad_job_set_window_titles(ULONG aos3win) {
+
+  GSList         *list_win=NULL;
+  JanusWin       *jwin    =NULL;
+  ULONG           wait;
+  struct Process *thread=(struct Process *) 0x68000;
+
+  ENTER
+
+  JWLOG("aos3win %lx\n", aos3win);
+
+  wait=10;
+  /* get jwin */
+  while(!list_win && wait--) {
+    ObtainSemaphore(&sem_janus_window_list);
+    list_win=g_slist_find_custom(janus_windows, 
+		  		  (gconstpointer) aos3win,
+		  		  &aos3_window_compare);
+    if(list_win) {
+      jwin=list_win->data;
+      JWLOG("jwin: %lx\n", jwin);
+    }
+
+    ReleaseSemaphore(&sem_janus_window_list);
+
+    if(!jwin) {
+      JWLOG("wait for jwin of aos3win %lx to open up .. #%d\n", aos3win, wait);
+      /* ObtainSemaphore/ReleaseSemaphore is expensive, so don't try too hard */
+      Delay(50);
+    }
+  }
+
+  if(!jwin) {
+    JWLOG("ERROR: could not find list_win for aos3win %lx !?\n", aos3win);
+    LEAVE
+    return TRUE;
+  }
+
+  /* We might be called quickly after the amigaSO OpenWindow call.
+    * The AROS window might not be up until now, so we wait.
+    * This might cause a deadlock, if we do not release the
+    * sem_janus_window_list befor this wait.
+    */
+  wait=100;
+  while(!jwin->aroswin && wait--) {
+    JWLOG("wait for aroswin of jwin %lx to open up .. #%d\n", jwin, wait);
+    Delay(10);
+  }
+
+  if(!jwin->aroswin) {
+    JWLOG("ERROR: could not wait for aroswin of jwin %lx !?\n", jwin);
+    LEAVE
+    return TRUE;
+  }
+
+  set_window_titles(thread, jwin);
+
+  LEAVE
   return TRUE;
 }
 
