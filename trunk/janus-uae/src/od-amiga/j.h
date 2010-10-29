@@ -463,5 +463,6 @@ void my_setmousebuttonstate(int mouse, int button, int state);
 void de_init_border_gadgets(struct Process *thread, JanusWin* jwin);
 
 /* window helper functions */
-void set_window_titles(struct Process *thread, JanusWin *jwin);
+void      set_window_titles(struct Process *thread, JanusWin *jwin);
+JanusWin *get_jwin_from_aos3win_safe(struct Process *thread, ULONG aos3win);
 #endif
