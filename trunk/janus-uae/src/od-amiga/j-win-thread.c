@@ -320,9 +320,8 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 	    dump_prop_gadget(thread, gadget);
 	    gadget=get_long(gadget); /* NextGadget */
 	  }
-#endif
- 
 	}
+#endif
       }
       break;
 

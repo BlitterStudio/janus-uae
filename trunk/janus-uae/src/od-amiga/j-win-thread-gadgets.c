@@ -577,7 +577,6 @@ void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
   LEAVE
 }
 
-
 void dump_prop_gadget(struct Process *thread, ULONG gadget) {
   UWORD  gadget_type;
   ULONG  specialinfo;
@@ -629,7 +628,6 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
   };
 
   ENTER
-
  
  if(!jwin->dri) {
   jwin->dri = GetScreenDrawInfo(jwin->jscreen->arosscreen);
@@ -831,8 +829,11 @@ void de_init_border_gadgets(struct Process *thread, JanusWin *jwin) {
 void remove_gadgets(struct Process *thread, JanusWin* jwin) {
   ULONG i;
 
+  ENTER
+
   if(!jwin->aroswin || !jwin->firstgadget) {
     /* nothing to do */
+    LEAVE
     return;
   }
 
@@ -845,6 +846,7 @@ void remove_gadgets(struct Process *thread, JanusWin* jwin) {
     jwin->gad[i]=NULL;
   }
 
+  LEAVE
 }
 
 /* 
@@ -877,7 +879,8 @@ UWORD SetGadgetType(struct Gadget *gad, UWORD type) {
 /*
  * ad_job_update_gadgets gets called after a AddGList/AddGadet in AmigaOS
  *
- * It is safe to travel the gadget list during this call.
+ * It is safe to travel the gadget list during this call, as the amigsOS
+ * function gets blocked until we are done.
  */
 uae_u32 ad_job_update_gadgets(ULONG aos3win) {
 
