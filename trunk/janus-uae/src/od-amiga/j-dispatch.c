@@ -494,6 +494,9 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
 	  return TRUE;
 	case AD_GET_JOB_UPDATE_GADGETS:
        	  return ad_job_update_gadgets((ULONG) m68k_areg(&context->regs, 0));
+	case AD_GET_JOB_SET_WINDOW_TITLES:
+       	  return ad_job_set_window_titles((ULONG) m68k_areg(&context->regs, 0));
+
 
 	default:
 	  JWLOG("ERROR!! aroshack_helper: unkown job: %d\n",m68k_dreg(&context->regs, 1));

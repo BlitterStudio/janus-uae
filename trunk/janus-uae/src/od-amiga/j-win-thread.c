@@ -669,20 +669,6 @@ static void aros_win_thread (void) {
     y=get_word((ULONG) jwin->aos3win +  6);
     JWLOG("aros_win_thread[%lx]: x,y: %d, %d\n",thread, x, y);
 
-    /* aos3 window title is at jwin->aos3win + 32 */
-    JWLOG("aros_win_thread[%lx]: aos title: %lx (%s)\n",thread, get_long_p(jwin->aos3win + 32), 
-                                                                get_real_address(get_long_p(jwin->aos3win + 32)));
-    if(get_long_p(jwin->aos3win + 32)) {
-      aos_title=(char *) get_real_address(get_long_p(jwin->aos3win + 32));
-      title=AllocVec(strlen(aos_title)+1, MEMF_ANY);
-      strcpy(title, aos_title);
-    }
-    else {
-      title=NULL;
-    }
-
-    JWLOG("aros_win_thread[%lx]: title: %lx >%s<\n", thread, title, title);
-
     /* idcmp flags we always need: */
     idcmpflags= IDCMP_NEWSIZE | 
 			    IDCMP_CLOSEWINDOW | 
@@ -887,7 +873,7 @@ static void aros_win_thread (void) {
        * now we need to open up the window .. 
        * hopefully nobody has thicker borders  ..
        */
-      jwin->aroswin =  OpenWindowTags(NULL,WA_Title, title,
+      jwin->aroswin =  OpenWindowTags(NULL, 
 				      WA_Left, x - estimated_border_left + bl, /* add 68k borderleft!!*/
 				      WA_Top, y - estimated_border_top + bt,
 				      /* WA_InnerWidth ..!? */
@@ -920,6 +906,8 @@ static void aros_win_thread (void) {
 				      WA_SizeBRight, TRUE,
 				      jwin->firstgadget ? WA_Gadgets : TAG_IGNORE, (IPTR) jwin->firstgadget,
 				      TAG_DONE);
+
+      set_window_titles(thread, jwin);
 
     }
     else {

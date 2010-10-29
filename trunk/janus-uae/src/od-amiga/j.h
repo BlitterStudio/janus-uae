@@ -101,6 +101,7 @@ WORD get_hi_word(ULONG *field);
 #define AD_GET_JOB_SCREEN_DEPTH       16
 #define AD_GET_JOB_MODIFY_IDCMP       17
 #define AD_GET_JOB_UPDATE_GADGETS     18
+#define AD_GET_JOB_SET_WINDOW_TITLES  19
 #define AD_GET_JOB_DEBUG             999 
 
 #define AD_CLIP_SETUP 15
@@ -369,6 +370,7 @@ uae_u32 ad_job_top_screen          (ULONG *m68k_results);
 uae_u32 ad_job_close_screen        (ULONG aos3screen);
 uae_u32 ad_job_screen_depth        (ULONG aos3screen, ULONG flags);
 uae_u32 ad_job_update_gadgets      (ULONG aos3win);
+uae_u32 ad_job_set_window_titles   (ULONG aos3win);
 
 uae_u32 ld_job_get                 (ULONG *m68k_results);
 
@@ -460,4 +462,6 @@ UWORD SetGadgetType(struct Gadget *gad, UWORD type);
 void my_setmousebuttonstate(int mouse, int button, int state);
 void de_init_border_gadgets(struct Process *thread, JanusWin* jwin);
 
+/* window helper functions */
+void set_window_titles(struct Process *thread, JanusWin *jwin);
 #endif
