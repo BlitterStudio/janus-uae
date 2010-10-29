@@ -884,49 +884,83 @@ UWORD SetGadgetType(struct Gadget *gad, UWORD type) {
  */
 uae_u32 ad_job_update_gadgets(ULONG aos3win) {
 
-  GSList        *list_win;
-  JanusWin      *jwin;
-  struct Process *thread=(struct Process *) 0x68000; /* dummy thread, we are from m68k .. */
+  GSList         *list_win=NULL;
+  JanusWin       *jwin    =NULL;
+  struct Process *thread  =(struct Process *) 0x68000; /* dummy thread, we are from m68k .. */
+  ULONG           wait;
+
+  ENTER
 
   JWLOG("aos3win %lx\n", aos3win);
 
+  wait=10;
   /* get jwin */
-  ObtainSemaphore(&sem_janus_window_list);
-  list_win=g_slist_find_custom(janus_windows, 
-				(gconstpointer) aos3win,
-				&aos3_window_compare);
+  while(!list_win && wait--) {
+    ObtainSemaphore(&sem_janus_window_list);
+    list_win=g_slist_find_custom(janus_windows, 
+		  		  (gconstpointer) aos3win,
+		  		  &aos3_window_compare);
+    if(list_win) {
+      jwin=list_win->data;
+      JWLOG("jwin: %lx\n", jwin);
+    }
 
-  if(list_win) {
+    ReleaseSemaphore(&sem_janus_window_list);
 
-    jwin=list_win->data;
+    if(!jwin) {
+      JWLOG("wait for jwin of aos3win %lx to open up .. #%d\n", aos3win, wait);
+      /* ObtainSemaphore/ReleaseSemaphore is expensive, so don't try too hard */
+      Delay(50);
+    }
+  }
 
-    /* check, if we have new border gadgets */
-    if(init_border_gadgets(thread , jwin)) {
-      remove_gadgets(thread, jwin);
-      jwin->firstgadget=make_gadgets(thread, jwin);
-      if(jwin->firstgadget) {
-	JWLOG("add gadgets ..\n");
-	AddGList(jwin->aroswin, jwin->firstgadget, -1, -1, NULL);
-	RefreshGList(jwin->firstgadget, jwin->aroswin, 0, -1);
-      }
-      else {
-	JWLOG("RemoveGList ..\n");
-	RemoveGList(jwin->aroswin, jwin->aroswin->FirstGadget, -1);
-	/* ? */
-	RefreshGList(NULL, jwin->aroswin, 0, -1);
-      }
+  if(!jwin) {
+    JWLOG("ERROR: could not find list_win for aos3win %lx !?\n", aos3win);
+    LEAVE
+    return TRUE;
+  }
+
+
+  /* We might be called quickly after the amigaSO OpenWindow call.
+    * The AROS window might not be up until now, so we wait.
+    * This might cause a deadlock, if we do not release the
+    * sem_janus_window_list befor this wait.
+    */
+  wait=100;
+  while(!jwin->aroswin && wait--) {
+    JWLOG("wait for aroswin of jwin %lx to open up .. #%d\n", jwin, wait);
+    Delay(10);
+  }
+
+  if(!jwin->aroswin) {
+    JWLOG("ERROR: could not wait for aroswin of jwin %lx !?\n", jwin);
+    LEAVE
+    return TRUE;
+  }
+      
+  /* check, if we have new border gadgets */
+  if(init_border_gadgets(thread , jwin)) {
+    remove_gadgets(thread, jwin);
+    jwin->firstgadget=make_gadgets(thread, jwin);
+    if(jwin->firstgadget) {
+      JWLOG("add gadgets ..\n");
+      AddGList(jwin->aroswin, jwin->firstgadget, -1, -1, NULL);
+      RefreshGList(jwin->firstgadget, jwin->aroswin, 0, -1);
     }
     else {
-	JWLOG("nothing to do !?\n");
+      JWLOG("RemoveGList ..\n");
+      RemoveGList(jwin->aroswin, jwin->aroswin->FirstGadget, -1);
+      /* ? */
+      RefreshGList(NULL, jwin->aroswin, 0, -1);
     }
   }
   else {
-    /* ok, no gadgets then .. */
-    JWLOG("ERROR: could not find list_win for aos3win %lx !?\n", aos3win);
+      JWLOG("nothing to do !?\n");
   }
 
-  ReleaseSemaphore(&sem_janus_window_list);
   JWLOG("left (aos3win %lx)\n", aos3win);
+
+  LEAVE
 
   return TRUE;
 }
