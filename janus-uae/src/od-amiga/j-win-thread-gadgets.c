@@ -884,55 +884,16 @@ UWORD SetGadgetType(struct Gadget *gad, UWORD type) {
  */
 uae_u32 ad_job_update_gadgets(ULONG aos3win) {
 
-  GSList         *list_win=NULL;
   JanusWin       *jwin    =NULL;
   struct Process *thread  =(struct Process *) 0x68000; /* dummy thread, we are from m68k .. */
-  ULONG           wait;
 
   ENTER
 
   JWLOG("aos3win %lx\n", aos3win);
 
-  wait=10;
-  /* get jwin */
-  while(!list_win && wait--) {
-    ObtainSemaphore(&sem_janus_window_list);
-    list_win=g_slist_find_custom(janus_windows, 
-		  		  (gconstpointer) aos3win,
-		  		  &aos3_window_compare);
-    if(list_win) {
-      jwin=list_win->data;
-      JWLOG("jwin: %lx\n", jwin);
-    }
-
-    ReleaseSemaphore(&sem_janus_window_list);
-
-    if(!jwin) {
-      JWLOG("wait for jwin of aos3win %lx to open up .. #%d\n", aos3win, wait);
-      /* ObtainSemaphore/ReleaseSemaphore is expensive, so don't try too hard */
-      Delay(50);
-    }
-  }
+  jwin=get_jwin_from_aos3win_safe(thread, aos3win);
 
   if(!jwin) {
-    JWLOG("ERROR: could not find list_win for aos3win %lx !?\n", aos3win);
-    LEAVE
-    return TRUE;
-  }
-
-
-  /* We might be called quickly after the amigaSO OpenWindow call.
-    * The AROS window might not be up until now, so we wait.
-    * This might cause a deadlock, if we do not release the
-    * sem_janus_window_list befor this wait.
-    */
-  wait=100;
-  while(!jwin->aroswin && wait--) {
-    JWLOG("wait for aroswin of jwin %lx to open up .. #%d\n", jwin, wait);
-    Delay(10);
-  }
-
-  if(!jwin->aroswin) {
     JWLOG("ERROR: could not wait for aroswin of jwin %lx !?\n", jwin);
     LEAVE
     return TRUE;

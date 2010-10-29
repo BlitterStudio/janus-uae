@@ -972,16 +972,17 @@ void set_window_titles(struct Process *thread, JanusWin *jwin) {
 }
 
 /*********************************************************
- * ad_job_set_window_titles
+ * get_jwin_from_aos3win_safe
  *
- * call set_window_titles
+ * get a jwin from an aos3 window in a safe way. It
+ * ensures, that the jwin is complete, i. e. has an
+ * already opened aros window.
  *********************************************************/
-uae_u32 ad_job_set_window_titles(ULONG aos3win) {
+JanusWin *get_jwin_from_aos3win_safe(struct Process *thread, ULONG aos3win) {
 
   GSList         *list_win=NULL;
   JanusWin       *jwin    =NULL;
   ULONG           wait;
-  struct Process *thread=(struct Process *) 0x68000;
 
   ENTER
 
@@ -1011,7 +1012,7 @@ uae_u32 ad_job_set_window_titles(ULONG aos3win) {
   if(!jwin) {
     JWLOG("ERROR: could not find list_win for aos3win %lx !?\n", aos3win);
     LEAVE
-    return TRUE;
+    return NULL;
   }
 
   /* We might be called quickly after the amigaSO OpenWindow call.
@@ -1027,6 +1028,34 @@ uae_u32 ad_job_set_window_titles(ULONG aos3win) {
 
   if(!jwin->aroswin) {
     JWLOG("ERROR: could not wait for aroswin of jwin %lx !?\n", jwin);
+    LEAVE
+    return NULL;
+  }
+
+  LEAVE
+  return jwin;
+}
+
+/*********************************************************
+ * ad_job_set_window_titles
+ *
+ * call set_window_titles
+ *********************************************************/
+uae_u32 ad_job_set_window_titles(ULONG aos3win) {
+
+  GSList         *list_win=NULL;
+  JanusWin       *jwin    =NULL;
+  ULONG           wait;
+  struct Process *thread=(struct Process *) 0x68000;
+
+  ENTER
+
+  JWLOG("aos3win %lx\n", aos3win);
+
+  jwin=get_jwin_from_aos3win_safe(thread, aos3win);
+
+  if(!jwin) {
+    JWLOG("ERROR: no jwin found!\n");
     LEAVE
     return TRUE;
   }
