@@ -66,8 +66,8 @@ extern struct IntuitionBase* IntuitionBase;
  *   often. Without this patch, menus
  *   might not work.
  *
- * - AddGadget/AddGList
- *   If someone adds gadgets to his 
+ * - AddGadget/AddGList/RemoveGadget/RemoveGList
+ *   If someone adds/removes gadgets to his 
  *   window, we might need to do that,
  *   too.
  */
@@ -82,6 +82,9 @@ APTR           old_ScreenDepth;
 APTR           old_ModifyIDCMP;
 APTR           old_AddGadget;
 APTR           old_AddGList;
+APTR           old_RemoveGadget;
+APTR           old_RemoveGList;
+
 
 #define PUSHFULLSTACK "movem.l d0-d7/a0-a6,-(SP)\n"
 #define POPFULLSTACK  "movem.l (SP)+,d0-d7/a0-a6\n"
@@ -561,7 +564,45 @@ __asm__("_my_AddGList_SetFunc:\n"
 
         "rts\n");
 
+__asm__("_my_RemoveGadget_SetFunc:\n"
+	PUSHA0
+	PUSHA3
+	"move.l _old_RemoveGadget, a3\n"
+	"jsr (a3)\n"
+	POPA3
+	POPA0
 
+	"cmp.l #1,_state\n"
+	"blt removegadget_patch_disabled\n"
+	PUSHSTACK
+	"moveq #11,d0\n"
+	"moveq #18,d1\n"
+	"move.l _calltrap,a1\n"
+	"jsr (a1)\n"
+	POPSTACK
+	"removegadget_patch_disabled:\n"
+
+        "rts\n");
+
+__asm__("_my_RemoveGList_SetFunc:\n"
+	PUSHA0
+	PUSHA3
+	"move.l _old_RemoveGList, a3\n"
+	"jsr (a3)\n"
+	POPA3
+	POPA0
+
+	"cmp.l #1,_state\n"
+	"blt removeglist_patch_disabled\n"
+	PUSHSTACK
+	"moveq #11,d0\n"
+	"moveq #18,d1\n"
+	"move.l _calltrap,a1\n"
+	"jsr (a1)\n"
+	POPSTACK
+	"removeglist_patch_disabled:\n"
+
+        "rts\n");
 
 /*
  * assembler functions need to be declared or used, before
@@ -577,6 +618,8 @@ void my_ScreenDepth_SetFunc();
 void my_ModifyIDCMP_SetFunc();
 void my_AddGadget_SetFunc();
 void my_AddGList_SetFunc();
+void my_RemoveGadget_SetFunc();
+void my_RemoveGList_SetFunc();
 
 /* According to Ralph Babel: ".. as
  * of 2.0, SetFunction() calls Forbid()/Permit() 
