@@ -63,6 +63,7 @@
 #define AD_GET_JOB_SCREEN_DEPTH       16
 #define AD_GET_JOB_MODIFY_IDCMP       17
 #define AD_GET_JOB_UPDATE_GADGETS     18
+#define AD_GET_JOB_SET_WINDOW_TITLES  19
 #define AD_GET_JOB_DEBUG             999
 
 #define J_MSG_CLOSE                    1
@@ -102,22 +103,17 @@ char *public_screen_name(struct Screen *scr);
 
 /* lock-window.c */
 
-struct WindowLock {
-  ULONG IntuiLock;
-  BYTE  pri;
-};
-struct WindowLock *lock_window(struct Window *window);
-void               unlock_window(struct WindowLock *wl);
+BOOL window_exists(struct Window *window);
 
 /* debug.c */
 void DebOut(const char *format, ...);
 
+#if 0
 #define ENTER
 #define LEAVE
-#if 0
+#endif
 #define ENTER DebOut("janusd: %s:%s entered\n",__FILE__,__func__);
 #define LEAVE DebOut("janusd: %s:%s left in line %d\n",__FILE__,__func__,__LINE__);
-#endif
 
 #if 0
 #define C_ENTER DebOut("clipd: %s:%s entered\n",__FILE__,__func__);

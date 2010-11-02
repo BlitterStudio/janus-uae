@@ -104,17 +104,15 @@ void closewin(struct Window *w) {
 /* just "press" the button */
 void closewin(struct Window *w) {
   UWORD  m;
-  struct WindowLock *wl;
 
   ENTER
 
   /* who knows, maybe window was closed inbetween already */
-  if((wl=lock_window(w))) {
+  if(window_exists(w)) {
+
     m=w->BorderTop / 2; /* middle of close gadget */
 
     SetMouse(w->WScreen, w->LeftEdge + m, w->TopEdge + m, IECODE_LBUTTON);
-
-    unlock_window(wl);
   }
 
   LEAVE

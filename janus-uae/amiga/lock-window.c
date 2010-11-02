@@ -45,14 +45,19 @@ static BOOL assert_window_on_screen(struct Screen *screen, struct Window *window
 
   struct Window *i;
 
+  ENTER
+
   i=screen->FirstWindow;
 
   while(i) {
     if(i==window) {
+      LEAVE
       return TRUE;
     }
     i=i->NextWindow;
   }
+
+  LEAVE
 
   return FALSE;
 }
@@ -68,61 +73,54 @@ static BOOL assert_window(struct Window *window) {
 
   struct Screen *i;
 
+  ENTER
+
   i=IntuitionBase->FirstScreen;
 
   while(i) {
     if(assert_window_on_screen(i, window)) {
+      LEAVE
       return TRUE;
     }
     i=i->NextScreen;
   }
 
+  LEAVE
   return FALSE;
 }
 
 /****************************************************
- * lock_window(window)
+ * BOOL window_exists(window)
  *
  * - tests, if window exists
- * - tries to make sure, that nobody can close
- *   the window from now on
  * - can't work 100%, sorry
- * - please call unlock_window as soon as possible,
- *   as your task will run in a high priority
- *   between lock and unlock!
- * - it is "safe" to lock more than one window, but
- *   you need to unlock them in the opposite order!
+ * - we are not allowed to call any high level system
+ *   functions during LockIBase!
  ****************************************************/
-struct WindowLock *lock_window(struct Window *window) {
+BOOL window_exists(struct Window *window) {
 
   ULONG lock;
-  struct WindowLock *wl;
+  BOOL  result;
+  ULONG pri;
 
+  ENTER
+
+  DebOut("test window %lx .. \n", window);
+
+  pri=SetTaskPri(FindTask(0), 0);
+  DebOut("try to LockIBase ..\n");
   lock=LockIBase(0);
+  DebOut("LockIBase(0) returned: %lx\n", lock);
 
-  if(!assert_window(window)) {
-    UnlockIBase(lock);
-    return 0;
-  }
-
-  wl=AllocVec(sizeof(struct WindowLock), MEMF_CLEAR);
-
-  wl->pri=SetTaskPri(FindTask(NULL), 30); /* don't let anybody else win .. hopefully */
+  result=assert_window(window);
 
   UnlockIBase(lock);
+  SetTaskPri(FindTask(0), pri);
 
-  return wl;
+  DebOut("window %lx exists: %d\n", window, result);
+
+  LEAVE
+
+  return result;
 }
-
-/****************************************************
- * unlock_window(lock)
- *
- * - undo the lock
- ****************************************************/
-void unlock_window(struct WindowLock *wl) {
-
-  SetTaskPri(FindTask(NULL), wl->pri);
-  FreeVec(wl);
-}
-
 

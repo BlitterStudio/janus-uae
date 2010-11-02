@@ -222,6 +222,8 @@ void report_uae_windows() {
 
   screen=(struct Screen *) IntuitionBase->FirstScreen;
 
+  DebOut("amigaos IntuitionBase->FirstScreen: %lx\n", screen);
+
   if(!screen) {
     printf("report_uae_windows: no screen!?\n");
     DebOut("ERROR: report_uae_windows: no screen!?\n");
@@ -242,7 +244,7 @@ void report_uae_windows() {
 
   i=1;
   while(win) {
-    //printf("add window #%d: %lx\n",i,w);
+    DebOut("add window #%d: %lx\n",i,win);
     command_mem[i  ]=(ULONG) win;
     command_mem[i+1]=(ULONG) ((win->LeftEdge 
                                + win->BorderLeft) 
@@ -300,7 +302,6 @@ void report_host_windows() {
   struct Window *win;
   ULONG         *command_mem;
   ULONG          i;
-  struct WindowLock *lock;
 
   ENTER
 
@@ -320,7 +321,7 @@ void report_host_windows() {
     DebOut("  x/y: %d x %d\n",get_hi(command_mem[i+1]),get_lo(command_mem[i+1]));
     DebOut("  w/h: %d x %d\n",get_hi(command_mem[i+2]),get_lo(command_mem[i+2]));
 
-    if((lock=lock_window(win))) {
+    if(window_exists(win)) {
       ChangeWindowBox(win,
 		      get_hi(command_mem[i+1]) - win->BorderLeft,
 		      get_lo(command_mem[i+1]) - win->BorderTop,
@@ -328,7 +329,6 @@ void report_host_windows() {
 			win->BorderLeft + win->BorderRight,
 		      get_lo(command_mem[i+2]) +
 			win->BorderTop + win->BorderBottom);
-      unlock_window(lock);
     }
 
     i=i+5;
@@ -353,9 +353,6 @@ void report_host_windows() {
 
 static void my_MoveWindowInFrontOf(struct Window *window, 
                                    struct Window *behindWindow) {
-
-  struct WindowLock *lock1;
-  struct WindowLock *lock2;
 
   ENTER
   //printf("my_MoveWindowInFrontOf enteren\n");
@@ -384,20 +381,13 @@ static void my_MoveWindowInFrontOf(struct Window *window,
                                                       (ULONG) behindWindow, behindWindow->Title); 
 
   /* we try to make sure, that nobody closes any of our windows inbetween .. */
-  if(!(lock1=lock_window(window)) || !(lock2=lock_window(behindWindow))) {
+  if(!window_exists(window) || !window_exists(behindWindow)) {
     goto EXIT;
   }
 
   MoveWindowInFrontOf(window,behindWindow);
 
 EXIT:
-  if(lock2) {
-    unlock_window(lock2);
-  }
-
-  if(lock1) {
-    unlock_window(lock1);
-  }
 
   LEAVE
 }
@@ -513,16 +503,21 @@ void sync_windows() {
 
 void sync_active_window() {
   struct Window *win;
-  struct WindowLock *wl;
 
   ENTER
 
   win=(struct Window *) calltrap (AD_GET_JOB, 
                                   AD_GET_JOB_ACTIVE_WINDOW, NULL);
 
-  if((wl=lock_window(win))) {
+  DebOut("win: %lx\n", win);
+
+  if(window_exists(win)) {
+    DebOut("win %lx exists\n", win);
+
     ActivateWindow(win);
-    unlock_window(wl);
+  }
+  else {
+    DebOut("win %lx has been closed inbetween !??\n", win);
   }
 
   LEAVE
