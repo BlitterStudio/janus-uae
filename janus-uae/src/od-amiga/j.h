@@ -102,6 +102,7 @@ WORD get_hi_word(ULONG *field);
 #define AD_GET_JOB_MODIFY_IDCMP       17
 #define AD_GET_JOB_UPDATE_GADGETS     18
 #define AD_GET_JOB_SET_WINDOW_TITLES  19
+#define AD_GET_JOB_WINDOW_LIMITS      20
 #define AD_GET_JOB_DEBUG             999 
 
 #define AD_CLIP_SETUP 15
@@ -371,6 +372,8 @@ uae_u32 ad_job_close_screen        (ULONG aos3screen);
 uae_u32 ad_job_screen_depth        (ULONG aos3screen, ULONG flags);
 uae_u32 ad_job_update_gadgets      (ULONG aos3win);
 uae_u32 ad_job_set_window_titles   (ULONG aos3win);
+uae_u32 ad_job_window_limits       (ULONG aos3win, 
+                                    WORD MinWidth, WORD MinHeight, UWORD MaxWidth, UWORD MaxHeight);
 
 uae_u32 ld_job_get                 (ULONG *m68k_results);
 

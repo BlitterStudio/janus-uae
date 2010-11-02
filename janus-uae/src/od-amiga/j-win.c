@@ -1043,7 +1043,6 @@ JanusWin *get_jwin_from_aos3win_safe(struct Process *thread, ULONG aos3win) {
  *********************************************************/
 uae_u32 ad_job_set_window_titles(ULONG aos3win) {
 
-  GSList         *list_win=NULL;
   JanusWin       *jwin    =NULL;
   ULONG           wait;
   struct Process *thread=(struct Process *) 0x68000;
@@ -1061,6 +1060,38 @@ uae_u32 ad_job_set_window_titles(ULONG aos3win) {
   }
 
   set_window_titles(thread, jwin);
+
+  LEAVE
+  return TRUE;
+}
+
+/*********************************************************
+ * ad_job_window_limits
+ *
+ * call WindowLimits
+ *********************************************************/
+uae_u32 ad_job_window_limits (ULONG aos3win, WORD MinWidth, WORD MinHeight, UWORD MaxWidth, UWORD MaxHeight) {
+
+  JanusWin       *jwin    =NULL;
+  BOOL            success;
+  struct Process *thread=(struct Process *) 0x68000;
+
+  ENTER
+
+  JWLOG("aos3win %lx\n", aos3win);
+
+  jwin=get_jwin_from_aos3win_safe(thread, aos3win);
+
+  if(!jwin) {
+    JWLOG("ERROR: no jwin found!\n");
+    LEAVE
+    return TRUE;
+  }
+
+  success=WindowLimits(jwin->aroswin, MinWidth, MinHeight, MaxWidth, MaxHeight);
+
+  JWLOG("WindowLimits(%lx, %d, %d, %d, %d) returned %d\n", 
+                      jwin->aroswin, MinWidth, MinHeight, MaxWidth, MaxHeight, success);
 
   LEAVE
   return TRUE;
