@@ -283,7 +283,7 @@ static void runme() {
 	  init=TRUE;
 	  DebOut("janusd: update screens ..\n");
 	  update_screens(); /* report all open screens once, 
-			     * updates again a every openwindow patch
+			     * updates again at every openwindow patch
 			     * call
 			     */
 	  DebOut("janusd: screens updated\n");

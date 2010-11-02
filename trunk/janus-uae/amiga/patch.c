@@ -70,6 +70,9 @@ extern struct IntuitionBase* IntuitionBase;
  *   If someone adds/removes gadgets to his 
  *   window, we might need to do that,
  *   too.
+ *
+ * - SetWindowTitles
+ *   if they update, we follow
  */
 
 APTR           old_CloseWindow;
@@ -84,7 +87,7 @@ APTR           old_AddGadget;
 APTR           old_AddGList;
 APTR           old_RemoveGadget;
 APTR           old_RemoveGList;
-
+APTR           old_SetWindowTitles;
 
 #define PUSHFULLSTACK "movem.l d0-d7/a0-a6,-(SP)\n"
 #define POPFULLSTACK  "movem.l (SP)+,d0-d7/a0-a6\n"
@@ -96,7 +99,6 @@ APTR           old_RemoveGList;
 #define POPD3         "move.l (SP)+,d3\n"
 #define PUSHA0        "move.l a0,-(SP)\n"
 #define POPA0         "move.l (SP)+,a0\n"
-
 
 /*********************************************************************************
  * _my_CloseWindow_SetFunc
@@ -604,6 +606,44 @@ __asm__("_my_RemoveGList_SetFunc:\n"
 
         "rts\n");
 
+/*********************************************************************************
+ * _my_SetWindowTitles_SetFunc
+ *
+ * done in assembler, as C-Source always at least destroys the
+ * a5 register for the local variable stack frame. But library
+ * functions may only trash d0, d1, a0 and a1.
+ *
+ * We call the original function, then we need to react on the
+ * changes.
+ *
+ * for calltrap:
+ * AD_GET_JOB  11 (d0)
+ * AD_GET_JOB_SET_WINDOW_TITLES 19 (d1)
+ * window is already in a0, we don't need the rest
+ *********************************************************************************/
+
+__asm__("_my_SetWindowTitles_SetFunc:\n"
+	PUSHA0
+	PUSHA3
+	"move.l _old_SetWindowTitles, a3\n"
+	"jsr (a3)\n"
+	POPA3
+	POPA0
+
+	"cmp.l #1,_state\n"
+	"blt setwindowtitles_patch_disabled\n"
+	PUSHSTACK
+	"moveq #11,d0\n"
+	"moveq #19,d1\n"
+	"move.l _calltrap,a1\n"
+	"jsr (a1)\n"
+	POPSTACK
+	"setwindowtitles_patch_disabled:\n"
+
+        "rts\n");
+
+
+
 /*
  * assembler functions need to be declared or used, before
  * you can reference them (?).
@@ -620,6 +660,7 @@ void my_AddGadget_SetFunc();
 void my_AddGList_SetFunc();
 void my_RemoveGadget_SetFunc();
 void my_RemoveGList_SetFunc();
+void my_SetWindowTitles_SetFunc();
 
 /* According to Ralph Babel: ".. as
  * of 2.0, SetFunction() calls Forbid()/Permit() 
@@ -669,6 +710,12 @@ void patch_functions() {
   old_AddGList=SetFunction((struct Library *)IntuitionBase, 
                               -438, 
 			      (APTR) my_AddGList_SetFunc);
+
+  old_SetWindowTitles=SetFunction((struct Library *)IntuitionBase, 
+                              -276, 
+			      (APTR) my_SetWindowTitles_SetFunc);
+
+
 
   LEAVE
 }
