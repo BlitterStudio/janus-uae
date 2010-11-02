@@ -73,6 +73,9 @@ extern struct IntuitionBase* IntuitionBase;
  *
  * - SetWindowTitles
  *   if they update, we follow
+ *
+ * - WindowLimits
+ *   if it updates, we follow
  */
 
 APTR           old_CloseWindow;
@@ -88,6 +91,7 @@ APTR           old_AddGList;
 APTR           old_RemoveGadget;
 APTR           old_RemoveGList;
 APTR           old_SetWindowTitles;
+APTR           old_WindowLimits;
 
 #define PUSHFULLSTACK "movem.l d0-d7/a0-a6,-(SP)\n"
 #define POPFULLSTACK  "movem.l (SP)+,d0-d7/a0-a6\n"
@@ -643,6 +647,51 @@ __asm__("_my_SetWindowTitles_SetFunc:\n"
         "rts\n");
 
 
+/*********************************************************************************
+ * _my_WindowLimits_SetFunc
+ *
+ * done in assembler, as C-Source always at least destroys the
+ * a5 register for the local variable stack frame. But library
+ * functions may only trash d0, d1, a0 and a1.
+ *
+ * We call the original function, then we need to react on the
+ * changes.
+ *
+ * for calltrap:
+ * AD_GET_JOB  11 (d0)
+ * AD_GET_JOB_WINDOW_LIMITS 20 (d1)
+ * window is already in a0, so we move d0,d1,d2,d3 to d2,d3,d4,d5, 
+ * as d0/d1 are trashed by our service numbers
+ * we store the return code of the original WindowLimits function in d6, to
+ * return it later on
+ *********************************************************************************/
+
+__asm__("_my_WindowLimits_SetFunc:\n"
+	"move.l d6,-(SP)\n"
+	"movem.l d0-d3/a0,-(SP)\n"
+	PUSHA3
+	"move.l _old_WindowLimits, a3\n"
+	"jsr (a3)\n"
+	POPA3
+	"move.l d0,a4\n"
+	"movem.l (SP)+,d0-d3/a0\n"
+	
+	"cmp.l #1,_state\n"
+	"blt windowlimits_patch_disabled\n"
+	PUSHFULLSTACK
+	"move.l d3,d5\n"
+	"move.l d2,d4\n"
+	"move.l d1,d3\n"
+	"move.l d0,d2\n"
+	"moveq #11,d0\n"
+	"moveq #20,d1\n"
+	"move.l _calltrap,a1\n"
+	"jsr (a1)\n"
+	POPFULLSTACK
+	"windowlimits_patch_disabled:\n"
+	"move.l d6,d0\n"
+	"move.l (SP)+,d6\n"
+        "rts\n");
 
 /*
  * assembler functions need to be declared or used, before
@@ -661,6 +710,7 @@ void my_AddGList_SetFunc();
 void my_RemoveGadget_SetFunc();
 void my_RemoveGList_SetFunc();
 void my_SetWindowTitles_SetFunc();
+void my_WindowLimits_SetFunc();
 
 /* According to Ralph Babel: ".. as
  * of 2.0, SetFunction() calls Forbid()/Permit() 
@@ -715,6 +765,9 @@ void patch_functions() {
                               -276, 
 			      (APTR) my_SetWindowTitles_SetFunc);
 
+  old_WindowLimits=SetFunction((struct Library *)IntuitionBase, 
+                              -318, 
+			      (APTR) my_WindowLimits_SetFunc);
 
 
   LEAVE
