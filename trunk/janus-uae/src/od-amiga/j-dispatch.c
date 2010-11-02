@@ -488,7 +488,8 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
     	case AD_GET_JOB_TOP_SCREEN: 
        	  return ad_job_top_screen(m68k_results);
 	case AD_GET_JOB_SCREEN_DEPTH:
-       	  return ad_job_screen_depth((ULONG) m68k_areg(&context->regs, 0), (ULONG) m68k_dreg(&context->regs, 3));
+       	  return ad_job_screen_depth((ULONG) m68k_areg(&context->regs, 0), 
+	                             (ULONG) m68k_dreg(&context->regs, 3));
 	case AD_GET_JOB_MODIFY_IDCMP:
 	  JWLOG("AD_GET_JOB_MODIFY_IDCMP(%lx,%d)\n",(ULONG) m68k_areg(&context->regs, 0),  (ULONG) m68k_dreg(&context->regs, 3));
 	  return TRUE;
@@ -496,7 +497,12 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
        	  return ad_job_update_gadgets((ULONG) m68k_areg(&context->regs, 0));
 	case AD_GET_JOB_SET_WINDOW_TITLES:
        	  return ad_job_set_window_titles((ULONG) m68k_areg(&context->regs, 0));
-
+	case AD_GET_JOB_WINDOW_LIMITS:
+       	  return ad_job_window_limits( (ULONG) m68k_areg(&context->regs, 0),
+	                               ( WORD) m68k_dreg(&context->regs, 2),
+	                               ( WORD) m68k_dreg(&context->regs, 3),
+	                               (UWORD) m68k_dreg(&context->regs, 4),
+	                               (UWORD) m68k_dreg(&context->regs, 5) );
 
 	default:
 	  JWLOG("ERROR!! aroshack_helper: unkown job: %d\n",m68k_dreg(&context->regs, 1));
