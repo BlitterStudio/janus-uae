@@ -75,6 +75,13 @@ void update_windows() {
   ENTER
  
   public_screen_list = (struct List *) LockPubScreenList();
+
+  if(!public_screen_list) {
+    DebOut("update_windows(): LockPubScreenList returned NULL !?\n"); 
+    LEAVE
+    return;
+  }
+
   public_screen_node = (struct PubScreenNode *) public_screen_list->lh_Head;
   if(!public_screen_node) {
     printf("no public_screen_node!?\n"); /* TODO */

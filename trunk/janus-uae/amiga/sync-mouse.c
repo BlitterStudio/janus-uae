@@ -436,7 +436,7 @@ void sync_mouse() {
   x=(WORD) mousebuffer[0];
   y=(WORD) mousebuffer[1];
 
-  DebOut("AD_GET_JOB_GET_MOUSE result: %d, %d)\n", x, y);
+  DebOut("AD_GET_JOB_GET_MOUSE result: %d, %d\n", x, y);
 
   if(!is_p96) {
     DebOut("no_p96 =============================\n");

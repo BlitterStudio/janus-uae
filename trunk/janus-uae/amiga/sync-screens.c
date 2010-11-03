@@ -143,6 +143,8 @@ static void screen_fix_resolution(ULONG modeID, WORD *x, WORD *y) {
  *
  * if there is no public name, NULL is sent.
  * if it is a custom screen, max_overscan_width/height must be set.
+ *
+ * This function also gets called from Open/CloseScreen patches!
  ***********************************************************************/
 void update_screens() {
   ULONG *command_mem;
@@ -168,8 +170,7 @@ void update_screens() {
   screen=IntuitionBase->FirstScreen;
 
   if(!screen) {
-    printf("ERROR: no screen!?\n"); /* TODO */
-    DebOut("ERROR: no screen!?\n"); /* TODO */
+    DebOut("WARNING: no screen found. Should be ok!?\n"); /* TODO? */
     LEAVE
     return;
   }
