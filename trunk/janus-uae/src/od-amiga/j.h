@@ -371,6 +371,7 @@ uae_u32 ad_job_top_screen          (ULONG *m68k_results);
 uae_u32 ad_job_close_screen        (ULONG aos3screen);
 uae_u32 ad_job_screen_depth        (ULONG aos3screen, ULONG flags);
 uae_u32 ad_job_update_gadgets      (ULONG aos3win);
+uae_u32 ad_job_modify_idcmp        (ULONG aos3win, ULONG flags);
 uae_u32 ad_job_set_window_titles   (ULONG aos3win);
 uae_u32 ad_job_window_limits       (ULONG aos3win, 
                                     WORD MinWidth, WORD MinHeight, UWORD MaxWidth, UWORD MaxHeight);

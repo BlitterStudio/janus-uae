@@ -864,6 +864,11 @@ static void aros_win_thread (void) {
     idcmpflags=idcmpflags | IDCMP_GADGETDOWN | IDCMP_GADGETUP;
 
 
+    if(jwin->dead) {
+      JWLOG("[%lx]: jwin %lx is dead. Goto EXIT.\n", thread, jwin);
+      goto EXIT;
+    }
+
     if(jwin->jscreen->arosscreen && lock) {
 
 
