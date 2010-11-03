@@ -36,7 +36,7 @@
 #endif
 
 //#define JW_ENTER_ENABLED  1
-#define JWTRACING_ENABLED 1
+//#define JWTRACING_ENABLED 1
 
 #include "od-amiga/j.h"
 
@@ -2179,16 +2179,23 @@ void clone_area(WORD x, WORD y, UWORD width, UWORD height) {
     ObtainSemaphore(&sem_janus_window_list);
     elem=janus_windows;
     while(elem) {
-      JWLOG("clone_area: jwin %lx\n",elem);
+      JWLOG("clone_area: jwin %lx\n",elem->data);
       if(elem->data &&
- 	 !(((JanusWin *)elem->data)->delay) &&
+	 !(((JanusWin *)elem->data)->delay) &&
 	 !(((JanusWin *)elem->data)->dead)  &&
 	  ((JanusWin *)elem->data)->aos3win &&
 	  ((JanusWin *)elem->data)->aroswin) {
 
-	if(!clone_window_area((JanusWin *)elem->data, x, y, width, height)) {
-	  JWLOG("clone_area(%3d,%3d,%3d,%3d): done nothing\n",x,y,width,height);
+	/* clone only windows on actual screen !? */
+	if(((JanusWin *)elem->data)->aroswin->WScreen == IntuitionBase->FirstScreen) {
+  	  if(!clone_window_area((JanusWin *)elem->data, x, y, width, height)) {
+  	    JWLOG("clone_area(%3d,%3d,%3d,%3d): done nothing\n",x,y,width,height);
+  	  }
 	}
+  	else {
+  	  JWLOG("clone_area: jwin %ls is not on visible screen\n", elem->data);
+   	}
+
       }
       else {
 	/* debug only */
