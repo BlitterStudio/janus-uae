@@ -44,7 +44,7 @@
 #endif
 
 //#define JW_ENTER_ENABLED  1
-#define JWTRACING_ENABLED 1
+//#define JWTRACING_ENABLED 1
 #include "od-amiga/j.h"
 
 #include "uae.h"
@@ -131,6 +131,7 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
      */
     if (SetSignal (0L, SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D) &
 		(SIGBREAKF_CTRL_C|SIGBREAKF_CTRL_D)) {
+      kprintf("SIGBREAKF_CTRL_C|SIGBREAKF_CTRL_D: activate_debugger !!\n");
 	activate_debugger ();
     }
 #endif
@@ -139,7 +140,7 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
     if (screen_is_picasso) {
         int i;
 
-	//JWLOG("handle_events->screen_is_picasso\n");
+	JWLOG("handle_events->screen_is_picasso (aroswin %lx)\n", W);
 
         picasso_invalid_lines[picasso_invalid_end+1] = 0;
         picasso_invalid_lines[picasso_invalid_end+2] = 1;
@@ -163,6 +164,9 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
 
 	picasso_invalid_start = picasso_vidinfo.height + 1;
 	picasso_invalid_end   = -1;
+    }
+    else {
+      JWLOG("screen_is_picasso == FALSE (aroswin %lx)\n", W);
     }
     #endif
 

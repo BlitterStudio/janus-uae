@@ -58,7 +58,7 @@
 #define JWLOG(...)     do { ; } while(0)
 #endif
 
-#define JW_ENTER_ENABLED 1
+//#define JW_ENTER_ENABLED 1
 #if JW_ENTER_ENABLED
 #define ENTER  kprintf("%s:%d %s(): entered\n",__FILE__,__LINE__,__func__);
 #define LEAVE  kprintf("%s:%d %s(): left at line %d\n",__FILE__,__LINE__,__func__,__LINE__);

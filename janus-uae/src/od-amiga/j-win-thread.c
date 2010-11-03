@@ -27,7 +27,7 @@
 #include <intuition/gadgetclass.h>
 
 
-#define JWTRACING_ENABLED 1
+//#define JWTRACING_ENABLED 1
 #include "j.h"
 #include "memory.h"
 
