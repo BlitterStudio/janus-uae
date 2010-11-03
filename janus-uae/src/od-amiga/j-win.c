@@ -960,6 +960,12 @@ void set_window_titles(struct Process *thread, JanusWin *jwin) {
 
   JWLOG("[%lx]: jwin: %lx\n", thread, jwin);
 
+  if(jwin->dead) {
+    JWLOG("[%lx]: jwin %lx is dead. Do nothing.\n", thread, jwin);
+    LEAVE
+    return;
+  }
+
   window_title=(UBYTE *) get_real_address(get_long_p(jwin->aos3win +  32));
   screen_title=(UBYTE *) get_real_address(get_long_p(jwin->aos3win + 104));
 
@@ -1084,6 +1090,12 @@ uae_u32 ad_job_window_limits (ULONG aos3win, WORD MinWidth, WORD MinHeight, UWOR
 
   if(!jwin) {
     JWLOG("ERROR: no jwin found!\n");
+    LEAVE
+    return TRUE;
+  }
+
+  if(jwin->dead) {
+    JWLOG("[%lx]: jwin %lx is dead. Do nothing.\n", thread, jwin);
     LEAVE
     return TRUE;
   }
