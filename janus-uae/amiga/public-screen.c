@@ -29,6 +29,7 @@
 #include <intuition/intuitionbase.h>
 
 #include <proto/exec.h>
+#include <proto/dos.h>
 
 #include "janus-daemon.h"
 
@@ -41,10 +42,22 @@
 char *public_screen_name(struct Screen *scr) {
   struct List          *public_screen_list;
   struct PubScreenNode *public_screen_node;
+  ULONG                 i;
 
   ENTER
 
-  public_screen_list = (struct List *) LockPubScreenList();
+  public_screen_list=NULL;
+  i=0;
+
+  while(!(public_screen_list = (struct List *) LockPubScreenList()) && i<5) {
+    DebOut("public_screen_name(%lx): LockPubScreenList wait #%d ..\n", scr, i);
+    Delay(10);
+  }
+
+  if(!public_screen_list) {
+    DebOut("ERROR: unable to LockPubScreenList for screen %lx\n", scr);
+    return NULL;
+  }
 
   public_screen_node = (struct PubScreenNode *) public_screen_list->lh_Head;
 
