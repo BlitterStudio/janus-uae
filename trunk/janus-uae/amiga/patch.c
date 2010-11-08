@@ -667,18 +667,24 @@ __asm__("_my_SetWindowTitles_SetFunc:\n"
  *********************************************************************************/
 
 __asm__("_my_WindowLimits_SetFunc:\n"
+	/* we trash d6 to store the amigaOS result, so back it up */
 	"move.l d6,-(SP)\n"
+	/* amigaOS WindowLimits may trash d0-d3/a0, but we need it later */
 	"movem.l d0-d3/a0,-(SP)\n"
 	PUSHA3
 	"move.l _old_WindowLimits, a3\n"
 	"jsr (a3)\n"
 	POPA3
-	"move.l d0,a4\n"
+	/* store amigaOS WindowLimits result in d6 */
+	"move.l d0,d6\n"
+	/* restore original WindowLimits parameter */
 	"movem.l (SP)+,d0-d3/a0\n"
 	
 	"cmp.l #1,_state\n"
 	"blt windowlimits_patch_disabled\n"
+	/* backup everything */
 	PUSHFULLSTACK
+	/* shift registers, as we use d0/d1 for job identifier */
 	"move.l d3,d5\n"
 	"move.l d2,d4\n"
 	"move.l d1,d3\n"
@@ -687,8 +693,10 @@ __asm__("_my_WindowLimits_SetFunc:\n"
 	"moveq #20,d1\n"
 	"move.l _calltrap,a1\n"
 	"jsr (a1)\n"
+	/* restore  everything, don't care for calltrap result */
 	POPFULLSTACK
 	"windowlimits_patch_disabled:\n"
+	/* restore amigaOS WindowLimits result from d6 */
 	"move.l d6,d0\n"
 	"move.l (SP)+,d6\n"
         "rts\n");
