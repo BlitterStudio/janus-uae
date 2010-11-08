@@ -769,6 +769,14 @@ void patch_functions() {
                               -438, 
 			      (APTR) my_AddGList_SetFunc);
 
+  old_RemoveGadget=SetFunction((struct Library *)IntuitionBase, 
+                              -228, 
+			      (APTR) my_RemoveGadget_SetFunc);
+
+  old_RemoveGList=SetFunction((struct Library *)IntuitionBase, 
+                              -444, 
+			      (APTR) my_RemoveGList_SetFunc);
+
   old_SetWindowTitles=SetFunction((struct Library *)IntuitionBase, 
                               -276, 
 			      (APTR) my_SetWindowTitles_SetFunc);
