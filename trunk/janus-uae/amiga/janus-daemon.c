@@ -23,10 +23,6 @@
  *
  ************************************************************************/
 
-/*
- * first try to integrate UAE in AROS
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -58,7 +54,7 @@
 
 int __nocommandline = 0; /*???*/
 
-char verstag[] = "\0$VER: janus-daemon 0.4";
+char verstag[] = "\0$VER: janus-daemon 0.8";
 #if 0
 struct Window *old_MoveWindowInFront_Window,
               *old_MoveWindowInFront_BehindWindow;
@@ -298,7 +294,7 @@ static void runme() {
 	update_top_screen();
 	sync_windows();
 	report_uae_windows();
-	report_host_windows();
+	report_host_windows(); /* bad! */
 	sync_active_window();
 	forward_messages();
       }

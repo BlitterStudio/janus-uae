@@ -309,6 +309,7 @@ void report_host_windows() {
   struct Window *win;
   ULONG         *command_mem;
   ULONG          i;
+  WORD           left, top, width, height;
 
   ENTER
 
@@ -323,12 +324,22 @@ void report_host_windows() {
   i=0;
   while(command_mem[i]) {
     win=(struct Window *)command_mem[i];
-    DebOut("resize window %lx (%s)\n",(ULONG) win,win->Title);
+    DebOut("report_host_windows(): resize window %lx (%s)\n",(ULONG) win,win->Title);
 
-    DebOut("  x/y: %d x %d\n",get_hi(command_mem[i+1]),get_lo(command_mem[i+1]));
-    DebOut("  w/h: %d x %d\n",get_hi(command_mem[i+2]),get_lo(command_mem[i+2]));
+    DebOut("report_host_windows():   x/y: %d x %d\n",get_hi(command_mem[i+1]),get_lo(command_mem[i+1]));
+    DebOut("report_host_windows():   w/h: %d x %d\n",get_hi(command_mem[i+2]),get_lo(command_mem[i+2]));
 
     if(window_exists(win)) {
+      DebOut("report_host_windows(): win %lx exists here\n", win);
+      left  =get_hi(command_mem[i+1]) - win->BorderLeft;
+      top   =get_lo(command_mem[i+1]) - win->BorderTop;
+      width =get_hi(command_mem[i+2]) + win->BorderLeft + win->BorderRight;
+      height=get_lo(command_mem[i+2]) + win->BorderTop + win->BorderBottom;
+      DebOut("report_host_windows(): ChangeWindowBox(%lx, %d, %d, %d, %d)\n", win, left, top, width, height);
+      if(left==0) {
+	left=1;
+	DebOut("report_host_windows(): ==> ChangeWindowBox(%lx, %d, %d, %d, %d)\n", win, left, top, width, height);
+      }
       ChangeWindowBox(win,
 		      get_hi(command_mem[i+1]) - win->BorderLeft,
 		      get_lo(command_mem[i+1]) - win->BorderTop,
@@ -336,8 +347,13 @@ void report_host_windows() {
 			win->BorderLeft + win->BorderRight,
 		      get_lo(command_mem[i+2]) +
 			win->BorderTop + win->BorderBottom);
+      if(window_exists(win)) {
+   	DebOut("report_host_windows(): win %lx exists here too\n", win);
+      }
+      else {
+	DebOut("report_host_windows(): ERROR: win %lx exists here NO LONGER!!!\n", win);
+      }
     }
-
     i=i+5;
   }
 
