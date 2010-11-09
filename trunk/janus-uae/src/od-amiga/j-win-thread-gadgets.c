@@ -905,14 +905,8 @@ uae_u32 ad_job_update_gadgets(ULONG aos3win) {
     if(jwin->firstgadget) {
       JWLOG("add gadgets ..\n");
       AddGList(jwin->aroswin, jwin->firstgadget, -1, -1, NULL);
-      RefreshGList(jwin->firstgadget, jwin->aroswin, 0, -1);
     }
-    else {
-      JWLOG("RemoveGList ..\n");
-      RemoveGList(jwin->aroswin, jwin->aroswin->FirstGadget, -1);
-      /* ? */
-      RefreshGList(NULL, jwin->aroswin, 0, -1);
-    }
+    RefreshGList(jwin->firstgadget, jwin->aroswin, 0, -1);
   }
   else {
       JWLOG("nothing to do !?\n");
