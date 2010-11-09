@@ -27,7 +27,7 @@
 #include <intuition/gadgetclass.h>
 
 
-//#define JWTRACING_ENABLED 1
+#define JWTRACING_ENABLED 1
 #include "j.h"
 #include "memory.h"
 
@@ -304,9 +304,11 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 	 * can detect that the operation has completed by receiving 
 	 * the IDCMP_CHANGEWINDOW IDCMP message
 	 */
-	JWLOG("aros_win_thread[%lx]: IDCMP_CHANGEWINDOW: received\n", thread);
+	JWLOG("aros_win_thread[%lx]: IDCMP_CHANGEWINDOW for jwin %lx : received\n", thread, jwin);
+	JWLOG("aros_win_thread[%lx]: jwin->delay %d\n", thread, jwin->delay);
 	if(jwin->delay > WIN_DEFAULT_DELAY) {
 	  jwin->delay=0;
+	  JWLOG("aros_win_thread[%lx]: => set jwin->delay to %d\n", thread, jwin->delay);
 	}
 	refresh_content(jwin);
 	activate_ticks(jwin, 0);
@@ -323,6 +325,13 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 	}
 #endif
       }
+      else {
+	JWLOG("aros_win_thread[%lx]: IDCMP_CHANGEWINDOW: jwin->custom, do nothing\n", thread);
+      }
+      break;
+
+    case IDCMP_NEWSIZE:
+      JWLOG("aros_win_thread[%lx]: IDCMP_NEWSIZE: we should care for that !??\n", thread);
       break;
 
     case IDCMP_MOUSEMOVE:
@@ -1259,20 +1268,21 @@ EXIT:
   LEAVE
 }
 
-int aros_win_start_thread (JanusWin *win) {
+int aros_win_start_thread (JanusWin *jwin) {
+  ULONG wait;
 
   ENTER
 
-  JWLOG("aros_win_start_thread(%lx)\n",win);
-  win->name=AllocVecPooled(win->mempool, 8+strlen(TASK_PREFIX_NAME)+1);
+  JWLOG("aros_win_start_thread(%lx)\n", jwin);
+  jwin->name=AllocVecPooled(jwin->mempool, 8+strlen(TASK_PREFIX_NAME)+1);
 
-  sprintf(win->name,"%s%lx",TASK_PREFIX_NAME,win->aos3win);
+  sprintf(jwin->name,"%s%lx", TASK_PREFIX_NAME, jwin->aos3win);
 
   ObtainSemaphore(&aos3_thread_start);
-  win->task = (struct Task *)
+  jwin->task = (struct Task *)
 	  myCreateNewProcTags ( NP_Output, Output (),
 				NP_Input, Input (),
-				NP_Name, (ULONG) win->name,
+				NP_Name, (ULONG) jwin->name,
 				NP_CloseOutput, FALSE,
 				NP_CloseInput, FALSE,
 				NP_StackSize, 4096,
@@ -1282,11 +1292,31 @@ int aros_win_start_thread (JanusWin *win) {
 
   ReleaseSemaphore(&aos3_thread_start);
 
-  JWLOG("thread %lx created\n",win->task);
+
+  if(!jwin->task) {
+    JWLOG("ERROR: could not create thread for jwin %lx\n", jwin);
+    LEAVE
+    return FALSE;
+  }
+
+  JWLOG("thread %lx created\n", jwin->task);
+
+  /* we wait until the window is open. There is no way to get this done
+   * 100% right. Window open might have failed, so there will never be a
+   * jwin->aroswin.
+   */
+  wait=100;
+  while(!jwin->aroswin && wait--) {
+    JWLOG("wait for aroswin of jwin %lx to open up .. #%d\n", jwin, wait);
+    Delay(10);
+  }
+
+  if(!jwin->aroswin) {
+    JWLOG("ERROR: could not wait for aroswin of jwin %lx !?\n", jwin);
+  }
 
   LEAVE
-
-  return win->task != 0;
+  return TRUE;
 }
 
 #if 0
