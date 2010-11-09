@@ -331,7 +331,8 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
       break;
 
     case IDCMP_NEWSIZE:
-      JWLOG("aros_win_thread[%lx]: IDCMP_NEWSIZE: we should care for that !??\n", thread);
+      JWLOG("aros_win_thread[%lx]: IDCMP_NEWSIZE: jwin %lx ->resize = TRUE\n", thread, jwin);
+      jwin->resized=TRUE;
       break;
 
     case IDCMP_MOUSEMOVE:

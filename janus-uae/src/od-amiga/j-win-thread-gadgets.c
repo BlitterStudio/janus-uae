@@ -245,7 +245,7 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
     }
     else {
       /* break loop, see comment above */
-      gadget=NULL;
+      gadget=0;
     }
   }
 

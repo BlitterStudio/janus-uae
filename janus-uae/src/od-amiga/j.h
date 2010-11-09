@@ -255,7 +255,8 @@ typedef struct {
   WORD           plusx, plusy;  /* increase visible size */
   ULONG          secs, micros;  /* remember last menupick for DMRequests */
   BOOL           dead;
-  BOOL           custom;        /* window is on a custom screen */
+  BOOL           custom;          /* window is on a custom screen */
+  BOOL           resized;         /* window got a IDCMP_NEWSIZE */
   ULONG          intui_tickcount; /* total of tick events to handle 
                                    * if you use a faster speed, this total
 				   * will get 0 faster! */

@@ -387,6 +387,14 @@ uae_u32 ad_job_report_uae_windows(ULONG *m68k_results) {
       goto NEXT;
     }
 
+    /* win->resized is set by IDCMP_NEWSIZE */
+    if(!win->resized) {
+      JWLOG("win %lx: resize == FALSE, do nothing\n");
+      goto NEXT;
+    }
+    win->resized=FALSE;
+    JWLOG("win %lx: resize == TRUE!\n");
+
     if(!assert_window(window)) {
       JWLOG(" window assert failed\n");
       goto NEXT;
