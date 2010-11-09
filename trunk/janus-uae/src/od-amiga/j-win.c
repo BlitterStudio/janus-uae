@@ -524,6 +524,8 @@ uae_u32 ad_job_report_host_windows(ULONG *m68k_results) {
     }
 
     if(win->delay > 0) {
+
+      JWLOG("jwin %lx ->delay %d\n", win, win->delay);
       win->delay--;
       goto NEXT;
     }
@@ -586,6 +588,7 @@ uae_u32 ad_job_report_host_windows(ULONG *m68k_results) {
 
     if(need_resize) {
       win->delay=WIN_DEFAULT_DELAY; 
+      JWLOG("=> set jwin %lx ->delay to %d\n", win, win->delay);
       put_long_p(m68k_results+i,(ULONG) win->aos3win);
 
       /* put it in a ULONG, make sure, gcc does not 
@@ -983,16 +986,27 @@ void set_window_titles(struct Process *thread, JanusWin *jwin) {
  * get a jwin from an aos3 window in a safe way. It
  * ensures, that the jwin is complete, i. e. has an
  * already opened aros window.
+ *
+ * If window is on a custom screen, return NULL
  *********************************************************/
 JanusWin *get_jwin_from_aos3win_safe(struct Process *thread, ULONG aos3win) {
 
   GSList         *list_win=NULL;
   JanusWin       *jwin    =NULL;
+  ULONG           aos3screen;
   ULONG           wait;
 
   ENTER
 
   JWLOG("aos3win %lx\n", aos3win);
+
+  aos3screen=get_long(aos3win+46);
+  if(!aos3screen || aos3screen_is_custom(aos3screen)) {
+    /* we do not care about windows on custom screens! */
+    JWLOG("aos3window %lx is on a custom aos3 screen (%lx), so we return NULL\n", aos3win, aos3screen);
+    LEAVE
+    return NULL;
+  }
 
   wait=10;
   /* get jwin */
@@ -1060,7 +1074,7 @@ uae_u32 ad_job_set_window_titles(ULONG aos3win) {
   jwin=get_jwin_from_aos3win_safe(thread, aos3win);
 
   if(!jwin) {
-    JWLOG("ERROR: no jwin found!\n");
+    JWLOG("WARNING: no jwin found (is ok for custom screens)!\n");
     LEAVE
     return TRUE;
   }
@@ -1089,7 +1103,7 @@ uae_u32 ad_job_window_limits (ULONG aos3win, WORD MinWidth, WORD MinHeight, UWOR
   jwin=get_jwin_from_aos3win_safe(thread, aos3win);
 
   if(!jwin) {
-    JWLOG("ERROR: no jwin found!\n");
+    JWLOG("WARNING: no jwin found (is ok for custom screens)!\n");
     LEAVE
     return TRUE;
   }

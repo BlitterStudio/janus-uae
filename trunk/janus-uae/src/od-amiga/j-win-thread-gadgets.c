@@ -171,7 +171,7 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
   ENTER
 
   for(i=0; i<NUM_GADGETS; i++) {
-    JWLOG("[%lx] old jgad[%d]=%lx\n", thread, i, jwin->jgad[i]);
+    JWLOG("[%lx] old jwin->jgad[%d]=%lx\n", thread, i, jwin->jgad[i]);
   }
 
   gadget=get_long_p(jwin->aos3win + 62);
@@ -192,7 +192,7 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
       x=get_word(gadget + 4);
       y=get_word(gadget + 6);
 
-      JWLOG("[%lx]   cust gadget %lx: x %d y %d\n", thread, gadget, x, y);
+      JWLOG("[%lx]   %lx is a cust gadget: x %d y %d\n", thread, gadget, x, y);
 
 
       jgad=(JanusGadget *) AllocPooled(jwin->mempool, sizeof(JanusGadget));
@@ -206,7 +206,7 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
 
       specialinfo=get_long(gadget + 34);
 
-      JWLOG("[%lx]   GTYP_PROPGADGET %lx: specialinfo %lx\n", thread, gadget, specialinfo);
+      JWLOG("[%lx]   %lx is a GTYP_PROPGADGET: specialinfo %lx\n", thread, gadget, specialinfo);
 
       if(specialinfo) {
       	spezial_info_flags=get_word(specialinfo);
@@ -215,7 +215,7 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
 
 	if(spezial_info_flags & FREEHORIZ) {
  
-	  JWLOG("[%lx]   => FREEHORIZ prop gadget %lx: x %d y %d\n", thread, gadget, x, y);
+	  JWLOG("[%lx]   %lx => FREEHORIZ prop gadget: x %d y %d\n", thread, gadget, x, y);
 
 	  if(change_gadget(jwin, GAD_HORIZSCROLL , gadget)) {
 	    jwin->jgad[GAD_HORIZSCROLL]->x=x;
@@ -228,7 +228,7 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
 	if(spezial_info_flags & FREEVERT) {
 	  if(change_gadget(jwin, GAD_VERTSCROLL, gadget)) {
  
-	    JWLOG("[%lx]   => FREEVERT prop gadget %lx: x %d y %d\n", thread, gadget, x, y);
+	    JWLOG("[%lx]   %lx => FREEVERT prop gadget: x %d y %d\n", thread, gadget, x, y);
 
 	    jwin->jgad[GAD_VERTSCROLL]->x=x;
 	    jwin->jgad[GAD_VERTSCROLL]->y=y;
@@ -782,9 +782,8 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
 }
 
 /***********************************************************
- * remove_gadgets(jwin)
+ * de_init_border_gadgets(jwin)
  *
- * remove all border gadgets
  ***********************************************************/
 void de_init_border_gadgets(struct Process *thread, JanusWin *jwin) {
   ULONG i;
@@ -837,11 +836,11 @@ void remove_gadgets(struct Process *thread, JanusWin* jwin) {
     return;
   }
 
-  JWLOG("RemoveGList ..\n");
+  JWLOG("[%lx] RemoveGList ..\n", thread);
   RemoveGList( jwin->aroswin, jwin->firstgadget, -1 );
 
   for(i=0; i<NUM_GADGETS; i++) {
-    JWLOG("DisposeObject(%lx)\n", jwin->gad[i]);
+    JWLOG("[%lx] DisposeObject(%lx)\n", thread, jwin->gad[i]);
     DisposeObject(jwin->gad[i]);
     jwin->gad[i]=NULL;
   }
