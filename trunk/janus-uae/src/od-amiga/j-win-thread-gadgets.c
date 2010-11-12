@@ -117,27 +117,38 @@ static ULONG change_gadget(JanusWin *jwin, ULONG type, ULONG gadget) {
  ********************************************************/
 static ULONG change_j_gadget(JanusWin *jwin, ULONG type, JanusGadget *new) {
 
+  ENTER
+
+  JWLOG("jwin %lx, type %d, new %lx\n", jwin, type, new);
+
   if(!jwin->jgad[type] && !new) {
     /* nothing to do */
+    LEAVE
     return FALSE;
   }
 
   if(!jwin->jgad[type]) {
     /* nothing to free here*/
+    JWLOG("a jwin->jgad[%d]=%lx\n", type, new);
     jwin->jgad[type]=new;
     /* but something changed of course */
+
+    LEAVE
     return TRUE;
   }
 
   /* compare old an new */
   if( new && (jwin->jgad[type]->aos3gadget == new->aos3gadget )) {
     /* nothing to do, nothing changed */
+    LEAVE
     return FALSE;
   }
 
   FreePooled(jwin->mempool, jwin->jgad[type], sizeof(JanusGadget));
+  JWLOG("b jwin->jgad[%d]=%lx\n", type, new);
   jwin->jgad[type]=new;
 
+  LEAVE
   return TRUE;
 }
 
@@ -166,6 +177,7 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
   JanusGadget *right;
   JanusGadget *up;
   JanusGadget *down;
+  BOOL found;
   ULONG i;
 
   ENTER
@@ -253,42 +265,57 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
 
   JWLOG("[%lx] g_list_length(aos3_gadget_list): %d\n", thread, g_list_length(aos3_gadget_list));
 
+  /* we check all border gadgets. We need to have either 2 arrow gadgets or 4 */
   if((g_list_length(aos3_gadget_list) == 4) || (g_list_length(aos3_gadget_list) == 2)) {
     /* otherwise don't even try */
 
+    JWLOG("[%lx] 1\n",thread);
+
+    /* left/right gadgets are always sorted first */
     left  = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 0);
     right = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 1);
 
-    if(!left || !right || (left->y != right->y)) {
+    /* if they have the same y coord, they are left/right gadgets */
+    if(left->y == right->y) {
+      JWLOG("[%lx] left+right arrow gadgets found\n",thread);
+      changed += change_j_gadget(jwin, GAD_LEFTARROW,  left);
+      changed += change_j_gadget(jwin, GAD_RIGHTARROW, right);
+      /* we are done with the first two gadgets in our list, get rid of them: */
+      aos3_gadget_list=g_list_remove(aos3_gadget_list, left);
+      aos3_gadget_list=g_list_remove(aos3_gadget_list, right);
+    }
+    else {
+      JWLOG("[%lx] no left+right arrow gadgets\n", thread);
       changed += change_j_gadget(jwin, GAD_LEFTARROW,  NULL);
       changed += change_j_gadget(jwin, GAD_RIGHTARROW, NULL);
     }
-    else {
-      changed += change_j_gadget(jwin, GAD_LEFTARROW,  left);
-      changed += change_j_gadget(jwin, GAD_RIGHTARROW, right);
-    }
 
-    if(g_list_length(aos3_gadget_list) == 4) {
-      up   = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 2);
-      down = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 3);
-    }
-    else {
+    JWLOG("[%lx] GAD_LEFTARROW/GAD_RIGHTARROW done\n", thread);
+
+    /* 
+     * now we have GAD_LEFTARROW/GAD_RIGHTARROW with correct values, 
+     * and we only have two gadgets left over
+     */
+
+    found=FALSE;
+    if(g_list_length(aos3_gadget_list) == 2) {
       up   = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 0);
       down = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 1);
+      if(up->x == down->x) {
+	/* analog here, if they have the same x value, they are up/down arrows */
+	changed += change_j_gadget(jwin, GAD_UPARROW,   up);
+	changed += change_j_gadget(jwin, GAD_DOWNARROW, down);
+	found=TRUE;
+      }
     }
-
-    if(up->x != down->x) {
-      /* non-aligned, seems to be something different.. */
+    if(!found) {
+      /* we have no UP/DOWN Gadgets, so clear them */
       changed += change_j_gadget(jwin, GAD_UPARROW,   NULL);
       changed += change_j_gadget(jwin, GAD_DOWNARROW, NULL);
     }
-    else {
-      changed += change_j_gadget(jwin, GAD_UPARROW,   up);
-      changed += change_j_gadget(jwin, GAD_DOWNARROW, down);
-    }
   }
   else {
-    JWLOG("[%lx] !! clear all gadgets!\n", thread);
+    JWLOG("[%lx] we have other than 2 or 5 border gadgets => clear all!\n", thread);
     /* clear all old gadget, if there were any */
     changed += change_j_gadget(jwin, GAD_LEFTARROW,  NULL);
     changed += change_j_gadget(jwin, GAD_RIGHTARROW, NULL);
@@ -297,19 +324,16 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
   }
 
   g_list_free(aos3_gadget_list);
-  /* there still might be some elements alloced, in case !=2 and !=4 for example.
-   * but they are from our pool, so we save the trouble of freeing them.
-   */
 
   /* you can never have enough sanity checks.. */
   if(!(jwin->jgad[GAD_UPARROW] && jwin->jgad[GAD_DOWNARROW])) {
-    JWLOG("[%lx] !! clear vertical gadgets!\n", thread);
+    JWLOG("[%lx] additional clear vertical gadgets to be sure\n", thread);
     changed += change_j_gadget(jwin, GAD_UPARROW,    NULL);
     changed += change_j_gadget(jwin, GAD_DOWNARROW,  NULL);
     changed += change_j_gadget(jwin, GAD_VERTSCROLL, NULL);
   }
   if(!(jwin->jgad[GAD_LEFTARROW] && jwin->jgad[GAD_RIGHTARROW])) {
-    JWLOG("[%lx] !! clear horizontal gadgets!\n", thread);
+    JWLOG("[%lx] additional clear horizontal  gadgets to be sure\n", thread);
     changed += change_j_gadget(jwin, GAD_LEFTARROW,   NULL);
     changed += change_j_gadget(jwin, GAD_RIGHTARROW,  NULL);
     changed += change_j_gadget(jwin, GAD_HORIZSCROLL, NULL);
@@ -792,6 +816,7 @@ void de_init_border_gadgets(struct Process *thread, JanusWin *jwin) {
 
   for(i=0; i<NUM_GADGETS; i++) {
     if(jwin->jgad[i]) {
+      JWLOG("aros_win_thread[%lx]: FreePooled(%lx, jwin->jgad[%d]=%lx, %d)\n", thread, jwin->mempool, i, jwin->jgad[i], sizeof(JanusGadget));
       FreePooled(jwin->mempool, jwin->jgad[i], sizeof(JanusGadget));
       jwin->jgad[i]=NULL;
     }
