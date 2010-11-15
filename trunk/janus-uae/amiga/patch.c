@@ -23,6 +23,7 @@
  *
  ************************************************************************/
 
+#include <string.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include "janus-daemon.h"
@@ -305,6 +306,72 @@ ULONG remove_dragging_TagList (struct TagItem *original_tags __asm("a1")) {
 void do_update_screens (void) {
   update_screens();
 }
+
+BOOL is_ign(UBYTE *in) {
+
+  if((in == NULL) || (in == (UBYTE *) ~0)) {
+    return TRUE;
+  }
+
+  return FALSE;
+}
+/*********************************************************************************
+ *  SetArosWindowTitles
+ *
+ *  if the window title changed, change also the AROS title
+ *********************************************************************************/
+ULONG set_aros_titles (struct Window *win __asm("a0"), 
+                       UBYTE *windowtitle __asm("a1"), 
+		       UBYTE *screentitle __asm("a2")) {
+
+#if 0
+  DebOut("set_aros_titles(%lx, %s, %s)\n", win, windowtitle, screentitle);
+
+  DebOut("new win title: \"%s\"\n", windowtitle);
+  DebOut("old win title: \"%s\"\n", win->Title);
+  DebOut("new scr title: \"%s\"\n", screentitle);
+  DebOut("old scr title: \"%s\"\n", win->ScreenTitle);
+  DebOut("new win title ignore: %d\n", is_ign(windowtitle));
+  DebOut("new scr title ignore: %d\n", is_ign(screentitle));
+#endif
+
+
+  if( !is_ign(windowtitle) && (windowtitle != win->Title)) {
+    DebOut("windowtitle %lx != %lx\n", windowtitle, win->Title);
+    return 1;
+  }
+  else {
+    //DebOut("windowtitle %lx == %lx\n", windowtitle, win->Title);
+  }
+
+  if( !is_ign(screentitle) && (screentitle != win->ScreenTitle)) {
+    DebOut("screentitle %lx != %lx\n", screentitle, win->ScreenTitle);
+    return 1;
+  }
+  else {
+    //DebOut("screentitle %lx == %lx\n", screentitle, win->ScreenTitle);
+  }
+
+  if( !is_ign(windowtitle) && (strcmp(windowtitle, win->Title) != 0) ) {
+    DebOut("windowtitle   string != string\n");
+    return 1;
+  }
+  else {
+    //DebOut("windowtitle   string == win->Title string\n");
+  }
+
+  if( !is_ign(screentitle) && (strcmp(screentitle, win->ScreenTitle) != 0) ) {
+    DebOut("screentitle   string != win->ScreenTitle\n");
+    return 1;
+  }
+  else {
+    //DebOut("screentitle   string == win->ScreenTitle\n");
+  }
+
+  /* nothing to do */
+  return 0;
+}
+
 
 /*********************************************************************************
  * _my_OpenScreen_SetFunc
@@ -627,6 +694,18 @@ __asm__("_my_RemoveGList_SetFunc:\n"
  *********************************************************************************/
 
 __asm__("_my_SetWindowTitles_SetFunc:\n"
+
+	"cmp.l #1,_state\n"
+	"blt setwindowtitles_patch_disabled_test\n"
+
+	  "movem.l d1-d7/a0-a6,-(SP)\n"    /* backup everything but D0  */
+	  "jsr _set_aros_titles\n"         /* return in D0, if there is something to change */
+	  "movem.l (SP)+,d1-d7/a0-a6\n"    /* restore everything but D0 */
+	  "move.l d0,-(SP)\n"    /* backup D0  */
+
+	"setwindowtitles_patch_disabled_test:\n"
+
+	/* call original function */
 	PUSHA0
 	PUSHA3
 	"move.l _old_SetWindowTitles, a3\n"
@@ -636,12 +715,16 @@ __asm__("_my_SetWindowTitles_SetFunc:\n"
 
 	"cmp.l #1,_state\n"
 	"blt setwindowtitles_patch_disabled\n"
-	PUSHSTACK
-	"moveq #11,d0\n"
-	"moveq #19,d1\n"
-	"move.l _calltrap,a1\n"
-	"jsr (a1)\n"
-	POPSTACK
+
+	  "move.l (SP)+, d0\n"    /* restore D0  */
+	  "cmp.l #0,d0\n"
+	  "beq setwindowtitles_patch_disabled\n" /* nothing to do */
+	    PUSHSTACK
+	    "moveq #11,d0\n"
+	    "moveq #19,d1\n"
+	    "move.l _calltrap,a1\n"
+	    "jsr (a1)\n"
+	    POPSTACK
 	"setwindowtitles_patch_disabled:\n"
 
         "rts\n");
