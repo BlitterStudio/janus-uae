@@ -197,7 +197,6 @@ static ULONG get_aros_len() {
   LONG   len;
 
   C_ENTER
-  DebOut("clipd: get_aros_len()\n");
 
   command_mem=AllocVec(AD__MAXMEM, MEMF_CLEAR);
 
@@ -223,7 +222,7 @@ static void copy_clip_from_aros(UBYTE *data, ULONG size) {
 
   C_ENTER
 
-  DebOut("clipd: copy_clip_from_aros(%lx,%d)\n", data, size);
+  DebOut("(%lx,%d)\n", data, size);
 
   command_mem=AllocVec(AD__MAXMEM, MEMF_CLEAR);
 
@@ -234,7 +233,7 @@ static void copy_clip_from_aros(UBYTE *data, ULONG size) {
 
   FreeVec(command_mem);
 
-  DebOut("clipd: copy_clip_from_aros(%lx,%d) done\n", data, size);
+  DebOut("copy_clip_from_aros(%lx,%d) done\n", data, size);
 
   C_LEAVE
 

@@ -38,6 +38,7 @@
 #define JD_CLIP_GET_AROS_LEN   4
 #define JD_CLIP_COPY_FROM_AROS 5
 
+#define DebOut(...) PrintOut(__FILE__,__LINE__,__func__,__VA_ARGS__) 
 
 #define AROSTRAPBASE 0xF0FF90
 
@@ -48,7 +49,7 @@ extern ULONG (*calltrap)(ULONG __asm("d0"),
 			 APTR  __asm("a0"));
 
 /* debug.c */
-void DebOut(const char *format, ...);
+void PrintOut(const char *file, unsigned int line, const char *func, const char *format, ...);
 
 #define CLIPDEV_NAME "clipboard.device"
 

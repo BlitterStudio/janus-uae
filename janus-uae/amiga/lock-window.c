@@ -104,6 +104,7 @@ BOOL window_exists(struct Window *window) {
   ULONG pri;
 
   ENTER
+#if 0
 
   DebOut("test window %lx .. \n", window);
 
@@ -119,6 +120,8 @@ BOOL window_exists(struct Window *window) {
 
   DebOut("window %lx exists: %d\n", window, result);
 
+#endif
+  result=TRUE;
   LEAVE
 
   return result;

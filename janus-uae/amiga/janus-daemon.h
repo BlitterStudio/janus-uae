@@ -29,6 +29,8 @@
 //#include <proto/exec.h>
 #include <clib/intuition_protos.h>
 
+//#define DebOut(...) PrintOut(__FILE__,__LINE__,__func__,__VA_ARGS__) 
+#define DebOut(...) 
 
 #define AROSTRAPBASE 0xF0FF90
 
@@ -107,14 +109,14 @@ char *public_screen_name(struct Screen *scr);
 BOOL window_exists(struct Window *window);
 
 /* debug.c */
-void DebOut(const char *format, ...);
+void PrintOut(const char *file, unsigned int line, const char *func, const char *format, ...);
 
-#if 0
 #define ENTER
 #define LEAVE
-#endif
+#if 0
 #define ENTER DebOut("janusd: %s:%s entered\n",__FILE__,__func__);
 #define LEAVE DebOut("janusd: %s:%s left in line %d\n",__FILE__,__func__,__LINE__);
+#endif
 
 #if 0
 #define C_ENTER DebOut("clipd: %s:%s entered\n",__FILE__,__func__);

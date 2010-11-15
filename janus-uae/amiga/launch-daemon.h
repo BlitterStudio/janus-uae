@@ -32,15 +32,17 @@
 #define LD_TEST             0
 #define LD_GET_JOB          1
 
+#define DebOut(...) PrintOut(__FILE__,__LINE__,__func__,__VA_ARGS__) 
+
 #define AROSTRAPBASE 0xF0FF90
+
+/* debug.c */
+void PrintOut(const char *file, unsigned int line, const char *func, const char *format, ...);
 
 #define REG(reg,arg) arg __asm(#reg)
 
 extern ULONG (*calltrap)(ULONG __asm("d0"), 
                          ULONG __asm("d1"), 
 			 APTR  __asm("a0"));
-
-/* debug.c */
-void DebOut(const char *format, ...);
 
 #endif
