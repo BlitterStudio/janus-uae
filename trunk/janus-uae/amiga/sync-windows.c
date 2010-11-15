@@ -304,7 +304,9 @@ static UWORD get_lo(ULONG l) {
   return (UWORD) (l&0xFFFF);
 }
 
-/* WARNING: care for screens here ?? TODO ? */
+/* care for screens here ?? 
+ * no, because the AROS side may only return windows on the top screen.
+ */
 void report_host_windows() {
   struct Window *win;
   ULONG         *command_mem;
@@ -336,10 +338,6 @@ void report_host_windows() {
       width =get_hi(command_mem[i+2]) + win->BorderLeft + win->BorderRight;
       height=get_lo(command_mem[i+2]) + win->BorderTop + win->BorderBottom;
       DebOut("report_host_windows(): ChangeWindowBox(%lx, %d, %d, %d, %d)\n", win, left, top, width, height);
-      if(left==0) {
-	left=1;
-	DebOut("report_host_windows(): ==> ChangeWindowBox(%lx, %d, %d, %d, %d)\n", win, left, top, width, height);
-      }
       ChangeWindowBox(win,
 		      get_hi(command_mem[i+1]) - win->BorderLeft,
 		      get_lo(command_mem[i+1]) - win->BorderTop,
@@ -411,8 +409,9 @@ static void my_MoveWindowInFrontOf(struct Window *window,
   MoveWindowInFrontOf(window,behindWindow);
 
 EXIT:
-
   LEAVE
+
+  return;
 }
 
 /*****************************************

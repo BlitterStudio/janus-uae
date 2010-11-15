@@ -35,21 +35,23 @@
  *
  * write formatted string to AROS debug console
  ************************************************/
-void DebOut(const char *format, ...) {
-#ifdef DEBUG
+void PrintOut(const char *file, unsigned int line, const char *func, const char *format, ...) {
   char *command_mem;
   va_list args;
+  unsigned int len;
 
   command_mem=AllocVec(AD__MAXMEM, MEMF_CLEAR);
 
+  snprintf(command_mem, AD__MAXMEM-1, "%s:%d %s(): ", file, line, func);
+  len=strlen(command_mem);
+
   va_start(args, format);
-  vsnprintf(command_mem, AD__MAXMEM-1, format, args);
+  vsnprintf(command_mem+len, AD__MAXMEM-1-len, format, args);
   va_end(args);
 
   calltrap (AD_GET_JOB, AD_GET_JOB_DEBUG, (ULONG *) command_mem);
 
   FreeVec(command_mem);
-#endif
 }
 
 

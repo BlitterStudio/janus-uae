@@ -840,9 +840,11 @@ void patch_functions() {
                               -786, 
 			      (APTR) my_ScreenDepth_SetFunc);
 
+#if 0
   old_ModifyIDCMP=SetFunction((struct Library *)IntuitionBase, 
                               -150, 
 			      (APTR) my_ModifyIDCMP_SetFunc);
+#endif
 
   old_AddGadget=SetFunction((struct Library *)IntuitionBase, 
                               -42, 

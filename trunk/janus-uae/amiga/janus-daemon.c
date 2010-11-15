@@ -128,7 +128,7 @@ int setup(struct Task *task, ULONG signal, ULONG stop) {
 
   ENTER
 
-  DebOut("janusd: setup(%lx,%lx,%d)\n",(ULONG) task, signal, stop);
+  DebOut("(%lx,%lx,%d)\n",(ULONG) task, signal, stop);
 
   command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
 
@@ -144,7 +144,7 @@ int setup(struct Task *task, ULONG signal, ULONG stop) {
 
   FreeVec(command_mem);
 
-  DebOut("janusd: setup done(): result %d\n",(int) state);
+  DebOut("result %d\n",(int) state);
 
   LEAVE
 
@@ -190,7 +190,7 @@ void vert_int();
 static int setup_vert_int(struct Task *task, ULONG signal) {
   struct Interrupt *vbint;
 
-  DebOut("janusd: setup_vert_int(%lx, %lx)", task, signal);
+  DebOut("(%lx, %lx)", task, signal);
 
   if (!(vbint = AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC|MEMF_CLEAR))) {
     return FALSE;
@@ -206,9 +206,9 @@ static int setup_vert_int(struct Task *task, ULONG signal) {
   vbint->is_Code = vert_int;
 
 
-  DebOut("janusd: AddIntServer(.., %lx)\n", vbint);
+  DebOut("AddIntServer(.., %lx)\n", vbint);
   AddIntServer(INTB_VERTB, vbint); /* Do it! */
-  DebOut("janusd: AddIntServer(.., %lx) done\n", vbint);
+  DebOut("AddIntServer(.., %lx) done\n", vbint);
 
   return TRUE;
 }
@@ -220,7 +220,7 @@ void switch_uae_window() {
 
   ENTER;
 
-  DebOut("janusd: switch_uae_window entered");
+  DebOut("entered");
 
   if(!cmdbuffer) {
     cmdbuffer=AllocVec(16,MEMF_CLEAR);
@@ -258,16 +258,16 @@ static void runme() {
   BOOL         init;
   BOOL         set;
 
-  DebOut("janusd: runme entered\n");
-
   ENTER
 
-  DebOut("janusd: running (CTRL-C to go to normal mode, CTRL-D to rootless mode)..\n");
+  DebOut("entered\n");
+
+  DebOut("running (CTRL-C to go to normal mode, CTRL-D to rootless mode)..\n");
 
   done=FALSE;
   init=FALSE;
   while(!done) {
-    DebOut("janusd: Wait() ..\n");
+    DebOut("Wait() ..\n");
     newsignals=Wait(mysignal | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
     set=setup(mytask, mysignal, 0);
     if(newsignals & mysignal) {
@@ -277,18 +277,18 @@ static void runme() {
 	if(!init) {
 	  /* disabled -> enabled */
 	  init=TRUE;
-	  DebOut("janusd: update screens ..\n");
+	  DebOut("update screens ..\n");
 	  update_screens(); /* report all open screens once, 
 			     * updates again at every openwindow patch
 			     * call
 			     */
-	  DebOut("janusd: screens updated\n");
+	  DebOut("screens updated\n");
 
-	  DebOut("janusd: update windows ..\n");
+	  DebOut("update windows ..\n");
 	  update_windows(); /* report all open windows once,
 			     * new windows will be handled by the patches
 			     */
-	  DebOut("janusd: windows updated\n");
+	  DebOut("windows updated\n");
 	}
 
 	update_top_screen();
@@ -303,9 +303,9 @@ static void runme() {
 
     if((newsignals & SIGBREAKF_CTRL_C) ||
       (!set && (newsignals & mysignal))) {
-      DebOut("janusd: !set || got SIGBREAKF_CTRL_C..\n");
+      DebOut("!set || got SIGBREAKF_CTRL_C..\n");
       if(init) {
-	DebOut("janusd: tell uae, that we received a SIGBREAKF_CTRL_C\n");
+	DebOut("tell uae, that we received a SIGBREAKF_CTRL_C\n");
 	init=FALSE;
 	/* cose all windows */
       	command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
@@ -314,19 +314,19 @@ static void runme() {
 	setup(mytask, mysignal, 1); /* we are tired */
       }
       else {
-	DebOut("janusd: we are already inactive\n");
+	DebOut("we are already inactive\n");
       }
     }
 
     if(newsignals & SIGBREAKF_CTRL_D) {
-      DebOut("janusd: got SIGBREAKF_CTRL_D..\n");
+      DebOut("got SIGBREAKF_CTRL_D..\n");
 //      switch_uae_window();
       if(!init) {
 	DebOut("janusd: tell uae, that we received a SIGBREAKF_CTRL_D\n");
 	setup(mytask, mysignal, 2); /* we are back again */
       }
       else {
-	DebOut("janusd: we are already active\n");
+	DebOut("we are already active\n");
       }
 
     }
@@ -334,7 +334,7 @@ static void runme() {
 
   /* never arrive here */
 
-  DebOut("janusd: try to sleep ..\n");
+  DebOut("try to sleep ..\n");
 
   /* enable uae window again */
   activate_uae_window(1);
@@ -353,14 +353,14 @@ static void runme() {
 int main (int argc, char **argv) {
 
   ENTER
-  DebOut("janusd: started (%d)\n",argc);
+  DebOut("started (%d)\n",argc);
 
   if(!open_libs()) {
     exit(1);
   }
 
   if(!init_sync_mouse()) {
-    DebOut("janusd: ERROR: init_sync_mouse failed\n");
+    DebOut("ERROR: init_sync_mouse failed\n");
     printf("ERROR: init_sync_mouse failed\n");
     LEAVE
     exit(1);
@@ -373,14 +373,14 @@ int main (int argc, char **argv) {
   mysignal_bit=AllocSignal(-1);
   if(mysignal_bit == -1) {
     printf("no signal..!\n");
-    DebOut("janusd: no signal..!\n");
+    DebOut("no signal..!\n");
     LEAVE
     exit(1);
   }
   mysignal=1L << mysignal_bit;
 
   mytask=FindTask(NULL);
-  DebOut("janusd: task: %lx\n",mytask);
+  DebOut("task: %lx\n",mytask);
 
   SetTaskPri(mytask, 55);
 
@@ -398,7 +398,7 @@ int main (int argc, char **argv) {
   FreeSignal(mysignal_bit);
   free_sync_mouse();
 
-  DebOut("janusd: exit\n");
+  DebOut("exit\n");
 
   LEAVE
 
