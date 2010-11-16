@@ -198,6 +198,7 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
     if( ( !(gadget_type  & GTYP_SYSGADGET) ) &&
 	( !(gadget_flags & GACT_TOPBORDER ) ) &&
 	( !(gadget_flags & GACT_LEFTBORDER ) ) &&
+        (  ( (gadget_flags & GACT_RIGHTBORDER) || (gadget_flags & GACT_BOTTOMBORDER) ) ) &&
         (  (gadget_type  & GTYP_CUSTOMGADGET) ) 
       ) {
 
@@ -269,8 +270,6 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
   if((g_list_length(aos3_gadget_list) == 4) || (g_list_length(aos3_gadget_list) == 2)) {
     /* otherwise don't even try */
 
-    JWLOG("[%lx] 1\n",thread);
-
     /* left/right gadgets are always sorted first */
     left  = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 0);
     right = (JanusGadget *) g_list_nth_data(aos3_gadget_list, 1);
@@ -315,7 +314,7 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
     }
   }
   else {
-    JWLOG("[%lx] we have other than 2 or 5 border gadgets => clear all!\n", thread);
+    JWLOG("[%lx] we have other than 2 or 4 border gadgets => clear all!\n", thread);
     /* clear all old gadget, if there were any */
     changed += change_j_gadget(jwin, GAD_LEFTARROW,  NULL);
     changed += change_j_gadget(jwin, GAD_RIGHTARROW, NULL);
@@ -323,6 +322,28 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
     changed += change_j_gadget(jwin, GAD_DOWNARROW,  NULL);
   }
 
+  JWLOG("[%lx] decide plus: ============\n", thread);
+
+  if(g_list_length(aos3_gadget_list) > 0) {
+    /* do we have any unusual border gadgets ? */
+    /* we need to make space to show them */
+    if(!jwin->jgad[GAD_UPARROW]) {
+      jwin->plusx=get_byte((ULONG) jwin->aos3win + 56);
+    }
+    else {
+      jwin->plusx=0;
+    }
+    if(!jwin->jgad[GAD_LEFTARROW]) {
+      jwin->plusy=get_byte((ULONG) jwin->aos3win + 57);
+    }
+    else {
+      jwin->plusy=0;
+    }
+  }
+
+  JWLOG("plusx %d, plusy: %d\n", jwin->plusx, jwin->plusy);
+
+  JWLOG("[%lx] decide plus ends==========\n", thread);
   g_list_free(aos3_gadget_list);
 
   /* you can never have enough sanity checks.. */
@@ -782,7 +803,9 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
 
   }
 
-#ifdef ALWAYS_SHOW_GADGETS
+
+#if 0
+#if !defined ALWAYS_SHOW_GADGETS
   /* make space for gadgets in window border */
   if(jwin->jgad[GAD_UPARROW] && !jwin->plusx) {
     jwin->plusx=get_byte((ULONG) jwin->aos3win + 56);
@@ -794,6 +817,7 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
   /* clear it, it might have been set during window opening */
   jwin->plusx=0;
   jwin->plusy=0;
+#endif
 #endif
 
   if(jwin->jgad[GAD_UPARROW]) {
