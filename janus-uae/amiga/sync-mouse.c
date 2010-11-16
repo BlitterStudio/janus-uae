@@ -385,7 +385,7 @@ void sync_mouse() {
 
   screen=IntuitionBase->FirstScreen;
   if(!screen) {
-    printf("sync_mouse: screen==NULL?!\n");
+    DebOut("sync_mouse: screen==NULL?!\n");
     return;
   }
 
