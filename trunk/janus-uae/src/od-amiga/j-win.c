@@ -527,7 +527,25 @@ uae_u32 ad_job_report_host_windows(ULONG *m68k_results) {
     win=(JanusWin *) list_win->data;
     window=win->aroswin;
 
+
     if(!assert_window(window)){
+      goto NEXT;
+    }
+
+    /*
+     * WARNING: if we resize windows, which are not on the first screen, we
+     * get lockups. If we return all windows here, FinalWriter for example
+     * locks up, as soon as you click insige the window.
+     * Not sure, if this is really the reason, though.
+     */
+    if( !window ) {
+      JWLOG("aroswindow == NULL !?\n");
+      goto NEXT;
+    }
+      
+    if(window->WScreen != IntuitionBase->FirstScreen) {
+      JWLOG("goto NEXT: window %lx, window->WScreen %lx, IntuitionBase->FirstScreen %lx\n",
+                        window, window->WScreen, IntuitionBase->FirstScreen);
       goto NEXT;
     }
 
@@ -604,14 +622,14 @@ uae_u32 ad_job_report_host_windows(ULONG *m68k_results) {
       l=win->LeftEdge;
       l=(l*0x10000) + win->TopEdge;
       //JWLOG("report long x/y %lx\n",l);
-      put_long_p(m68k_results+i+1,l);
+      put_long(m68k_results+i+1, l);
 
       l=win->Width;
       l=l*0x10000 + win->Height;
       //JWLOG("report long w/h %lx\n",l);
       put_long_p(m68k_results+i+2, l);
-      put_long_p(m68k_results+i+3, 0);
-      put_long_p(m68k_results+i+4, 0);
+      put_long_p(m68k_results+i+3, 0); /* not used */
+      put_long_p(m68k_results+i+4, 0); /* not used */
       i=i+5;
     }
 NEXT:
