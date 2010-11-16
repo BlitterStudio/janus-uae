@@ -23,6 +23,8 @@
  *
  ************************************************************************/
 
+#include <strings.h>
+
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <proto/exec.h>

@@ -32,8 +32,6 @@
 #define LD_TEST             0
 #define LD_GET_JOB          1
 
-#define DebOut(...) PrintOut(__FILE__,__LINE__,__func__,__VA_ARGS__) 
-
 #define AROSTRAPBASE 0xF0FF90
 
 /* debug.c */

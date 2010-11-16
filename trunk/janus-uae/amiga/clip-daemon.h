@@ -38,8 +38,6 @@
 #define JD_CLIP_GET_AROS_LEN   4
 #define JD_CLIP_COPY_FROM_AROS 5
 
-#define DebOut(...) PrintOut(__FILE__,__LINE__,__func__,__VA_ARGS__) 
-
 #define AROSTRAPBASE 0xF0FF90
 
 #define REG(reg,arg) arg __asm(#reg)
