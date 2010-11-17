@@ -271,6 +271,8 @@ typedef struct {
   struct Image    *img[NUM_GADGETS];
   struct DrawInfo *dri;
 
+
+  struct SignalSemaphore gadget_access;
   JanusGadget     *jgad[NUM_GADGETS];
   
 #if 0
@@ -456,16 +458,17 @@ void gui_message_with_title (const char *title, const char *format,...);
 void unlock_jgui(void);
 
 /* j-win-gadgets.c */
-void move_horiz_prop_gadget(struct Process *thread, JanusWin *jwin);
-void move_vert_prop_gadget(struct Process *thread, JanusWin *jwin);
-void dump_prop_gadget(struct Process *thread, ULONG gadget);
-void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid);
+void  move_horiz_prop_gadget(struct Process *thread, JanusWin *jwin);
+void  move_vert_prop_gadget(struct Process *thread, JanusWin *jwin);
+void  dump_prop_gadget(struct Process *thread, ULONG gadget);
+void  handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid);
 ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin);
 struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin);
-void remove_gadgets(struct Process *thread, JanusWin* jwin);
+void  remove_gadgets(struct Process *thread, JanusWin* jwin);
 UWORD SetGadgetType(struct Gadget *gad, UWORD type);
-void my_setmousebuttonstate(int mouse, int button, int state);
-void de_init_border_gadgets(struct Process *thread, JanusWin* jwin);
+void  my_setmousebuttonstate(int mouse, int button, int state);
+void  de_init_border_gadgets(struct Process *thread, JanusWin* jwin);
+ULONG update_gadgets(struct Process *thread, JanusWin *jwin);
 
 /* window helper functions */
 void      set_window_titles(struct Process *thread, JanusWin *jwin);
