@@ -668,6 +668,9 @@ static void aros_win_thread (void) {
   JWLOG("aros_win_thread[%lx]: win->aos3win: %lx\n",thread,
                                                               jwin->aos3win);
 
+  /* init gadget access semaphore */
+  InitSemaphore(&(jwin->gadget_access));
+
   if(!jwin->custom) {
     /* now let's hope, the aos3 window is not closed already..? */
 
@@ -854,21 +857,23 @@ static void aros_win_thread (void) {
     }
     JWLOG("aros_win_thread[%lx]: locked Screen %s: lock %lx\n", thread, jwin->jscreen->pubname, lock);
 
-    /* check, if we have any border gadgets up to now
-     * ATTENTION: there *might* be a race condition, if amigaOS calls AddGadget/AddGList on this window
-     *            during our call to init_border_gadgets/make_gadgets.
-     *            If it is a problem, add a sem to protect our gadget list.
-     */
+    /* check, if we have any border gadgets already */
     jwin->firstgadget=NULL;
     if(care) {
+      update_gadgets(thread, jwin);
+#if 0
       if(init_border_gadgets(thread, jwin)) {
-	/* something changed (we did have any before), so now we need to create them */
+	JWLOG("aros_win_thread[%lx]: needs to add gadgets\n", thread);
+	/* something changed. as we did not have any before, we need to create them */
 	jwin->firstgadget=make_gadgets(thread, jwin);
-	if(!jwin->firstgadget) {
-	  JWLOG("aros_win_thread[%lx]: ERROR: could not create gadgets :(!\n", thread);
-	  /* goto EXIT; ? */
-	}
+#endif
+      if(!jwin->firstgadget) {
+	JWLOG("aros_win_thread[%lx]: ERROR: could not create gadgets :(!\n", thread);
+	/* goto EXIT; ? */
       }
+#if 0
+      }
+#endif
     }
     /* always care for those .. */
     idcmpflags=idcmpflags | IDCMP_GADGETDOWN | IDCMP_GADGETUP;
@@ -943,15 +948,6 @@ static void aros_win_thread (void) {
     }
 
     aroswin=jwin->aroswin; /* shorter to read..*/
-
-#if 0
-    if(jwin->firstgadget) {
-      AddGList(aroswin, jwin->firstgadget, -1, -1, NULL);
-      RefreshGList(jwin->firstgadget, aroswin, 0, -1);
-      //RefreshGadgets (jwin->firstgadget, aroswin, NULL);
-      //GT_RefreshWindow (aroswin, NULL);
-    }
-#endif
 
     JWLOG("aros_win_thread[%lx]: opened window: w,h: %d, %d\n", thread, jwin->aroswin->Width, jwin->aroswin->Height);
 #if 0
@@ -1090,86 +1086,68 @@ static void aros_win_thread (void) {
 	    break;
 	  }
 	  else {
-#if 0
-	  /* this stuff is now handled through ad_job_update_gadgets !! */
-	    if(jwin->gadget_update_count == 0) {
-	      jwin->gadget_update_count=9;
-	      /* check, if e have new border gadgets */
-	      if(init_border_gadgets(thread, jwin)) {
-		remove_gadgets(thread, jwin);
-		jwin->firstgadget=make_gadgets(thread, jwin);
-		if(jwin->firstgadget) {
-		  AddGList(aroswin, jwin->firstgadget, -1, -1, NULL);
-		  RefreshGList(jwin->firstgadget, aroswin, 0, -1);
-		}
-		else {
-		  RemoveGList(aroswin, aroswin->FirstGadget, -1);
-		  /* ? */
-		  RefreshGList(NULL, aroswin, 0, -1);
-		}
+	    /* might be, someone adds/removes gadgets */
+	    if(AttemptSemaphore(&(jwin->gadget_access))) {
 
-	      }
-	    }
-	    jwin->gadget_update_count--;
-#endif
+	      if(jwin->jgad[GAD_UPARROW] || jwin->jgad[GAD_LEFTARROW]) {
 
-	    if(jwin->jgad[GAD_UPARROW] || jwin->jgad[GAD_LEFTARROW]) {
+		JWLOG("[%lx] SpecialInfo: jwin->prop_update_count: %d\n", thread, jwin->prop_update_count);
+		if(jwin->prop_update_count == 0) {
+		  jwin->prop_update_count=5;
 
-	      JWLOG("[%lx] SpecialInfo: jwin->prop_update_count: %d\n", thread, jwin->prop_update_count);
-	      if(jwin->prop_update_count == 0) {
-		jwin->prop_update_count=5;
+		  if(jwin->jgad[GAD_VERTSCROLL]) {
+		    specialinfo=get_long(jwin->jgad[GAD_VERTSCROLL]->aos3gadget + 34);
+		    JWLOG("[%lx] SpecialInfo: HorizPot: %d\n", thread, get_word(specialinfo + 2));
+		    JWLOG("[%lx] SpecialInfo: VertPot: %d\n", thread, get_word(specialinfo + 4));
+		    JWLOG("[%lx] SpecialInfo: HorizBody: %d\n", thread, get_word(specialinfo + 6));
+		    JWLOG("[%lx] SpecialInfo: VertBody: %d\n", thread, get_word(specialinfo + 8));
+		    if( 
+		      ((struct PropInfo *)jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->HorizPot != get_word(specialinfo + 2) ||
+		      ((struct PropInfo *)jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->VertPot  != get_word(specialinfo + 4) ||
+		      ((struct PropInfo *)jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->HorizBody!= get_word(specialinfo + 6) ||
+		      ((struct PropInfo *)jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->VertBody != get_word(specialinfo + 8)
+		      ) {
 
-		if(jwin->jgad[GAD_VERTSCROLL]) {
-		  specialinfo=get_long(jwin->jgad[GAD_VERTSCROLL]->aos3gadget + 34);
-		  JWLOG("[%lx] SpecialInfo: HorizPot: %d\n", thread, get_word(specialinfo + 2));
-		  JWLOG("[%lx] SpecialInfo: VertPot: %d\n", thread, get_word(specialinfo + 4));
-		  JWLOG("[%lx] SpecialInfo: HorizBody: %d\n", thread, get_word(specialinfo + 6));
-		  JWLOG("[%lx] SpecialInfo: VertBody: %d\n", thread, get_word(specialinfo + 8));
-		  if( 
-		    ((struct PropInfo *)jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->HorizPot != get_word(specialinfo + 2) ||
-		    ((struct PropInfo *)jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->VertPot  != get_word(specialinfo + 4) ||
-		    ((struct PropInfo *)jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->HorizBody!= get_word(specialinfo + 6) ||
-		    ((struct PropInfo *)jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->VertBody != get_word(specialinfo + 8)
-		    ) {
+			JWLOG("[%lx] SpecialInfo: NewModifyProp horiz ..\n", thread);
 
-		      JWLOG("[%lx] SpecialInfo: NewModifyProp horiz ..\n", thread);
+			gadgettype=SetGadgetType(jwin->gad[GAD_VERTSCROLL], GTYP_PROPGADGET);
+			NewModifyProp(jwin->gad[GAD_VERTSCROLL], jwin->aroswin, NULL,
+				      jwin->jgad[GAD_VERTSCROLL]->flags, 
+				      get_word(specialinfo + 2), get_word(specialinfo + 4),
+				      get_word(specialinfo + 6), get_word(specialinfo + 8),
+				      1);
+			SetGadgetType(jwin->gad[GAD_VERTSCROLL], gadgettype);
+		    }
+		  }
+		  if(jwin->jgad[GAD_HORIZSCROLL]) {
+		    specialinfo=get_long(jwin->jgad[GAD_HORIZSCROLL]->aos3gadget + 34);
+		    JWLOG("[%lx] SpecialInfo: HorizPot: %d\n", thread, get_word(specialinfo + 2));
+		    JWLOG("[%lx] SpecialInfo: VertPot: %d\n", thread, get_word(specialinfo + 4));
+		    JWLOG("[%lx] SpecialInfo: HorizBody: %d\n", thread, get_word(specialinfo + 6));
+		    JWLOG("[%lx] SpecialInfo: VertBody: %d\n", thread, get_word(specialinfo + 8));
 
-		      gadgettype=SetGadgetType(jwin->gad[GAD_VERTSCROLL], GTYP_PROPGADGET);
-		      NewModifyProp(jwin->gad[GAD_VERTSCROLL], jwin->aroswin, NULL,
-				    jwin->jgad[GAD_VERTSCROLL]->flags, 
+		    if( 
+		      ((struct PropInfo *)jwin->gad[GAD_HORIZSCROLL]->SpecialInfo)->HorizPot != get_word(specialinfo + 2) ||
+		      ((struct PropInfo *)jwin->gad[GAD_HORIZSCROLL]->SpecialInfo)->VertPot  != get_word(specialinfo + 4) ||
+		      ((struct PropInfo *)jwin->gad[GAD_HORIZSCROLL]->SpecialInfo)->HorizBody!= get_word(specialinfo + 6) ||
+		      ((struct PropInfo *)jwin->gad[GAD_HORIZSCROLL]->SpecialInfo)->VertBody != get_word(specialinfo + 8)
+		      ) {
+
+		      JWLOG("SpecialInfo: NewModifyProp vert ..\n");
+
+		      gadgettype=SetGadgetType(jwin->gad[GAD_HORIZSCROLL], GTYP_PROPGADGET);
+		      NewModifyProp(jwin->gad[GAD_HORIZSCROLL], jwin->aroswin, NULL,
+				    jwin->jgad[GAD_HORIZSCROLL]->flags, 
 				    get_word(specialinfo + 2), get_word(specialinfo + 4),
 				    get_word(specialinfo + 6), get_word(specialinfo + 8),
 				    1);
-		      SetGadgetType(jwin->gad[GAD_VERTSCROLL], gadgettype);
+		      SetGadgetType(jwin->gad[GAD_HORIZSCROLL], gadgettype);
+		    }
 		  }
 		}
-		if(jwin->jgad[GAD_HORIZSCROLL]) {
-		  specialinfo=get_long(jwin->jgad[GAD_HORIZSCROLL]->aos3gadget + 34);
-		  JWLOG("[%lx] SpecialInfo: HorizPot: %d\n", thread, get_word(specialinfo + 2));
-		  JWLOG("[%lx] SpecialInfo: VertPot: %d\n", thread, get_word(specialinfo + 4));
-		  JWLOG("[%lx] SpecialInfo: HorizBody: %d\n", thread, get_word(specialinfo + 6));
-		  JWLOG("[%lx] SpecialInfo: VertBody: %d\n", thread, get_word(specialinfo + 8));
-
-		  if( 
-		    ((struct PropInfo *)jwin->gad[GAD_HORIZSCROLL]->SpecialInfo)->HorizPot != get_word(specialinfo + 2) ||
-		    ((struct PropInfo *)jwin->gad[GAD_HORIZSCROLL]->SpecialInfo)->VertPot  != get_word(specialinfo + 4) ||
-		    ((struct PropInfo *)jwin->gad[GAD_HORIZSCROLL]->SpecialInfo)->HorizBody!= get_word(specialinfo + 6) ||
-		    ((struct PropInfo *)jwin->gad[GAD_HORIZSCROLL]->SpecialInfo)->VertBody != get_word(specialinfo + 8)
-		    ) {
-
-		    JWLOG("SpecialInfo: NewModifyProp vert ..\n");
-
-		    gadgettype=SetGadgetType(jwin->gad[GAD_HORIZSCROLL], GTYP_PROPGADGET);
-		    NewModifyProp(jwin->gad[GAD_HORIZSCROLL], jwin->aroswin, NULL,
-				  jwin->jgad[GAD_HORIZSCROLL]->flags, 
-				  get_word(specialinfo + 2), get_word(specialinfo + 4),
-				  get_word(specialinfo + 6), get_word(specialinfo + 8),
-				  1);
-		    SetGadgetType(jwin->gad[GAD_HORIZSCROLL], gadgettype);
-		  }
-		}
+		jwin->prop_update_count--;
 	      }
-	      jwin->prop_update_count--;
+	      ReleaseSemaphore(&(jwin->gadget_access));
 	    }
 
 	    ReplyMsg ((struct Message *)msg);

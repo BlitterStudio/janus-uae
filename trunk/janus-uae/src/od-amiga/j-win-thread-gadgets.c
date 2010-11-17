@@ -73,7 +73,7 @@ static ULONG change_gadget(JanusWin *jwin, ULONG type, ULONG gadget) {
 
   ENTER
 
-  JWLOG("change_gadget(%lx, d, %lx)\n", jwin, type, gadget); 
+  JWLOG("change_gadget(%lx, %d, %lx)\n", jwin, type, gadget); 
 
   /* no new gadget ? */
   if(!gadget) {
@@ -803,7 +803,6 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
 
   }
 
-
 #if 0
 #if !defined ALWAYS_SHOW_GADGETS
   /* make space for gadgets in window border */
@@ -924,28 +923,14 @@ UWORD SetGadgetType(struct Gadget *gad, UWORD type) {
 }
 
 
-/*
- * ad_job_update_gadgets gets called after a AddGList/AddGadet in AmigaOS
- *
- * It is safe to travel the gadget list during this call, as the amigsOS
- * function gets blocked until we are done.
- */
-uae_u32 ad_job_update_gadgets(ULONG aos3win) {
 
-  JanusWin       *jwin    =NULL;
-  struct Process *thread  =(struct Process *) 0x68000; /* dummy thread, we are from m68k .. */
+ULONG update_gadgets(struct Process *thread, JanusWin *jwin) {
 
   ENTER
 
-  JWLOG("aos3win %lx\n", aos3win);
+  JWLOG("jwin: %lx\n", jwin);
 
-  jwin=get_jwin_from_aos3win_safe(thread, aos3win);
-
-  if(!jwin) {
-    JWLOG("ERROR: could not wait for aroswin of jwin %lx !?\n", jwin);
-    LEAVE
-    return TRUE;
-  }
+  ObtainSemaphore(&(jwin->gadget_access));
       
   /* check, if we have new border gadgets */
   if(init_border_gadgets(thread , jwin)) {
@@ -958,12 +943,39 @@ uae_u32 ad_job_update_gadgets(ULONG aos3win) {
     RefreshGList(jwin->firstgadget, jwin->aroswin, 0, -1);
   }
   else {
-      JWLOG("nothing to do !?\n");
+    JWLOG("nothing to do !?\n");
   }
 
-  JWLOG("left (aos3win %lx)\n", aos3win);
+  ReleaseSemaphore(&(jwin->gadget_access));
+
+  JWLOG("left (jwin %lx)\n", jwin);
 
   LEAVE
 
   return TRUE;
 }
+
+/*
+ * ad_job_update_gadgets gets called after a AddGList/AddGadet in AmigaOS
+ *
+ * It is safe to travel the gadget list during this call, as the amigsOS
+ * function gets blocked until we are done.
+ */
+uae_u32 ad_job_update_gadgets(ULONG aos3win) {
+  struct Process *thread  =(struct Process *) 0x68000; /* dummy thread, we are from m68k .. */
+  JanusWin       *jwin;
+
+  JWLOG("aos3win %lx\n", aos3win);
+
+  jwin=get_jwin_from_aos3win_safe(thread, aos3win);
+
+  if(!jwin) {
+    JWLOG("ERROR: could not wait for aroswin of jwin %lx !?\n", jwin);
+    LEAVE
+    return TRUE;
+  }
+
+  return (uae_u32) update_gadgets(thread, jwin);
+}
+
+
