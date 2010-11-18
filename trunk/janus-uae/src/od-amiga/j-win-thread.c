@@ -857,6 +857,7 @@ static void aros_win_thread (void) {
     }
     JWLOG("aros_win_thread[%lx]: locked Screen %s: lock %lx\n", thread, jwin->jscreen->pubname, lock);
 
+#if 0
     /* check, if we have any border gadgets already */
     jwin->firstgadget=NULL;
     if(care) {
@@ -875,6 +876,7 @@ static void aros_win_thread (void) {
       }
 #endif
     }
+#endif
     /* always care for those .. */
     idcmpflags=idcmpflags | IDCMP_GADGETDOWN | IDCMP_GADGETUP;
 
@@ -924,10 +926,11 @@ static void aros_win_thread (void) {
 				      WA_NewLookMenus, TRUE,
 				      WA_SizeBBottom, TRUE,
 				      WA_SizeBRight, TRUE,
-				      jwin->firstgadget ? WA_Gadgets : TAG_IGNORE, (IPTR) jwin->firstgadget,
+//				      jwin->firstgadget ? WA_Gadgets : TAG_IGNORE, (IPTR) jwin->firstgadget,
 				      TAG_DONE);
 
       set_window_titles(thread, jwin);
+      update_gadgets(thread, jwin);
 
     }
     else {
@@ -1236,7 +1239,6 @@ EXIT:
   if(title) {
     FreeVec(title);
   }
-
 
   if(jwin) {
     DeletePool(jwin->mempool);

@@ -26,7 +26,7 @@
 #include <dos/dostags.h>
 #include <proto/dos.h>
 
-//#define JWTRACING_ENABLED 1
+#define JWTRACING_ENABLED 1
 #include "j.h"
 
 BOOL init_done=FALSE;
@@ -494,7 +494,8 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
 	  JWLOG("AD_GET_JOB_MODIFY_IDCMP(%lx,%d)\n",(ULONG) m68k_areg(&context->regs, 0),  (ULONG) m68k_dreg(&context->regs, 3));
 	  return TRUE;
 	case AD_GET_JOB_UPDATE_GADGETS:
-       	  return ad_job_update_gadgets((ULONG) m68k_areg(&context->regs, 0));
+	  JWLOG("aroshack_helper: job: AD_GET_JOB_UPDATE_GADGETS\n");
+       	  return ad_job_update_gadgets((ULONG) m68k_areg(&context->regs, 3));
 	case AD_GET_JOB_SET_WINDOW_TITLES:
        	  return ad_job_set_window_titles((ULONG) m68k_areg(&context->regs, 0));
 	case AD_GET_JOB_WINDOW_LIMITS:

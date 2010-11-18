@@ -895,6 +895,8 @@ void close_all_janus_windows() {
 
 void close_all_janus_windows_wait() {
   unsigned int i;
+  JanusWin *jwin;
+  GSList   *list_win;
 
   ENTER
 
@@ -914,7 +916,17 @@ void close_all_janus_windows_wait() {
     Delay(10);
   }
   if(janus_windows) {
-    write_log ("Janus: not all janus_windows could be closed\n");
+    write_log ("Janus: not all janus_windows could be closed:\n");
+    ObtainSemaphore(&sem_janus_window_list);
+    list_win=janus_windows;
+    while(list_win) {
+      jwin=(JanusWin *) list_win->data;
+      if(jwin->aroswin) {
+	write_log("  still open: %lx (%s)\n", jwin->aroswin, jwin->aroswin->Title);
+      }
+    }
+    ReleaseSemaphore(&sem_janus_window_list);
+    write_log("WARNING: this will crash your system sooner or later!\n");
   }
 
   LEAVE

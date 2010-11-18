@@ -24,7 +24,7 @@
 #include <intuition/imageclass.h>
 #include <intuition/gadgetclass.h>
 
-//#define JWTRACING_ENABLED 1
+#define JWTRACING_ENABLED 1
 #include "j.h"
 #include "memory.h"
 
@@ -69,11 +69,11 @@ static gint xy_compare(gconstpointer a, gconstpointer b) {
  * the amigaos gadget, update/replace the 
  * janusgadget struct
  ********************************************************/
-static ULONG change_gadget(JanusWin *jwin, ULONG type, ULONG gadget) {
+static ULONG change_gadget(struct Process *thread, JanusWin *jwin, ULONG type, ULONG gadget) {
 
   ENTER
 
-  JWLOG("change_gadget(%lx, %d, %lx)\n", jwin, type, gadget); 
+  JWLOG("[%lx] change_gadget(%lx, %d, %lx)\n", thread, jwin, type, gadget); 
 
   /* no new gadget ? */
   if(!gadget) {
@@ -230,7 +230,7 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
  
 	  JWLOG("[%lx]   %lx => FREEHORIZ prop gadget: x %d y %d\n", thread, gadget, x, y);
 
-	  if(change_gadget(jwin, GAD_HORIZSCROLL , gadget)) {
+	  if(change_gadget(thread, jwin, GAD_HORIZSCROLL , gadget)) {
 	    jwin->jgad[GAD_HORIZSCROLL]->x=x;
 	    jwin->jgad[GAD_HORIZSCROLL]->y=y;
 	    jwin->jgad[GAD_HORIZSCROLL]->flags=get_word(specialinfo);
@@ -239,7 +239,7 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
 	}
 
 	if(spezial_info_flags & FREEVERT) {
-	  if(change_gadget(jwin, GAD_VERTSCROLL, gadget)) {
+	  if(change_gadget(thread, jwin, GAD_VERTSCROLL, gadget)) {
  
 	    JWLOG("[%lx]   %lx => FREEVERT prop gadget: x %d y %d\n", thread, gadget, x, y);
 
@@ -540,6 +540,8 @@ void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
 
   JWLOG("aros_win_thread[%lx]: jwin %lx, gadid %d\n", thread, jwin, gadid);
 
+  ObtainSemaphore(&(jwin->gadget_access));
+
   switch (gadid) {
     case GAD_DOWNARROW:
     case GAD_UPARROW:
@@ -549,7 +551,8 @@ void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
 
       /* !? */
       if(!jwin->jgad[GAD_UPARROW] && !jwin->jgad[GAD_LEFTARROW]) {
-	init_border_gadgets(thread, jwin);
+	JWLOG("aros_win_thread[%lx]: ERROR: got GADGET event on non existing gadgets \n", thread);
+	goto EXIT;
       }
 
 #if 0
@@ -565,7 +568,7 @@ void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
       if(!jgad) {
 	JWLOG("aros_win_thread[%lx]: jgad not matched??\n", thread);
 	/* should not happen */
-	break;
+	goto EXIT;
       }
 
       /* right border end of aos3 window */
@@ -618,6 +621,9 @@ void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
       JWLOG("aros_win_thread[%lx]: WARNING: gadid %d is not handled (yet?)\n", thread, gadid);
     break;
   }
+
+EXIT:
+  ReleaseSemaphore(&(jwin->gadget_access));
 
   LEAVE
 }
@@ -674,9 +680,9 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
 
   ENTER
  
- if(!jwin->dri) {
-  jwin->dri = GetScreenDrawInfo(jwin->jscreen->arosscreen);
- }
+  if(!jwin->dri) {
+    jwin->dri = GetScreenDrawInfo(jwin->jscreen->arosscreen);
+  }
 
   for(i = 0;i < NUM_IMAGES;i++) {
 
@@ -875,17 +881,19 @@ void de_init_border_gadgets(struct Process *thread, JanusWin *jwin) {
 
 void remove_gadgets(struct Process *thread, JanusWin* jwin) {
   ULONG i;
+  UWORD result;
 
   ENTER
 
   if(!jwin->aroswin || !jwin->firstgadget) {
     /* nothing to do */
+    JWLOG("[%lx] !jwin->aroswin || !jwin->firstgadget\n", thread);
     LEAVE
     return;
   }
 
-  JWLOG("[%lx] RemoveGList ..\n", thread);
-  RemoveGList( jwin->aroswin, jwin->firstgadget, -1 );
+  result=RemoveGList( jwin->aroswin, jwin->firstgadget, -1 );
+  JWLOG("[%lx] RemoveGList(%lx, %lx, %d) returned %d\n", thread, jwin->aroswin, jwin->firstgadget, -1, result);
 
   for(i=0; i<NUM_GADGETS; i++) {
     JWLOG("[%lx] DisposeObject(%lx)\n", thread, jwin->gad[i]);
@@ -922,33 +930,57 @@ UWORD SetGadgetType(struct Gadget *gad, UWORD type) {
   return oldtype;
 }
 
-
-
+/*
+ * update_gadgets
+ *
+ * If init_border_gadgets returns true (aos3 gadgets changed),
+ * remove all old gadgets and add new ones.
+ *
+ * If no new ones exist, manually redraw window frame,
+ * as aros does not do it for us (Bug)
+ *
+ * can safley be called from different threads/traps
+ */
 ULONG update_gadgets(struct Process *thread, JanusWin *jwin) {
+
+  BOOL need_refresh=FALSE;
 
   ENTER
 
-  JWLOG("jwin: %lx\n", jwin);
+  JWLOG("[%lx] jwin: %lx\n", thread, jwin);
 
   ObtainSemaphore(&(jwin->gadget_access));
       
   /* check, if we have new border gadgets */
   if(init_border_gadgets(thread , jwin)) {
+
+    if(jwin->firstgadget) {
+      need_refresh=TRUE;
+    }
+
     remove_gadgets(thread, jwin);
+
     jwin->firstgadget=make_gadgets(thread, jwin);
     if(jwin->firstgadget) {
-      JWLOG("add gadgets ..\n");
+      JWLOG("[%lx] add gadgets ..\n", thread);
       AddGList(jwin->aroswin, jwin->firstgadget, -1, -1, NULL);
+      need_refresh=FALSE; /* we have new gadgets, don't redraw frame */
     }
-    RefreshGList(jwin->firstgadget, jwin->aroswin, 0, -1);
+    RefreshGList(jwin->aroswin->FirstGadget, jwin->aroswin, NULL, -1);
+
+    /* removed gadgets stay visible => manual redraw*/
+    if(need_refresh) {
+      RefreshWindowFrame(jwin->aroswin);
+      JWLOG("[%lx] RefreshWindowFrame(%lx)\n", thread, jwin->aroswin);
+    }
   }
   else {
-    JWLOG("nothing to do !?\n");
+    JWLOG("[%lx] nothing to do !?\n", thread);
   }
 
   ReleaseSemaphore(&(jwin->gadget_access));
 
-  JWLOG("left (jwin %lx)\n", jwin);
+  JWLOG("[%lx] left (jwin %lx)\n", thread, jwin);
 
   LEAVE
 
@@ -966,6 +998,12 @@ uae_u32 ad_job_update_gadgets(ULONG aos3win) {
   JanusWin       *jwin;
 
   JWLOG("aos3win %lx\n", aos3win);
+
+  if(!aos3win) {
+    /* might be a requester .. */
+    JWLOG("do nothing.\n");
+    return TRUE;
+  }
 
   jwin=get_jwin_from_aos3win_safe(thread, aos3win);
 
