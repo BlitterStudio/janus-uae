@@ -91,6 +91,8 @@ APTR           old_AddGadget;
 APTR           old_AddGList;
 APTR           old_RemoveGadget;
 APTR           old_RemoveGList;
+APTR           old_RefreshGList;
+APTR           old_RefreshGadgets;
 APTR           old_SetWindowTitles;
 APTR           old_WindowLimits;
 
@@ -677,6 +679,44 @@ __asm__("_my_RemoveGList_SetFunc:\n"
 
         "rts\n");
 
+__asm__("_my_RefreshGList_SetFunc:\n"
+	"movem.l a0/a1/a3,-(SP)\n"  
+	"move.l _old_RefreshGList, a3\n"
+	"jsr (a3)\n"
+	"movem.l (SP)+,a0/a1/a3\n"  
+
+	"cmp.l #1,_state\n"
+	"blt refreshglist_patch_disabled\n"
+	PUSHSTACK
+	"move.l a1,a3\n" /* supply window parameter in a3 */
+	"moveq #11,d0\n"
+	"move.l #18,d1\n"
+	"move.l _calltrap,a1\n"
+	"jsr (a1)\n"
+	POPSTACK
+	"refreshglist_patch_disabled:\n"
+
+        "rts\n");
+
+__asm__("_my_RefreshGadgets_SetFunc:\n"
+	"movem.l a0/a1/a3,-(SP)\n"  
+	"move.l _old_RefreshGadgets, a3\n"
+	"jsr (a3)\n"
+	"movem.l (SP)+,a0/a1/a3\n"  
+
+	"cmp.l #1,_state\n"
+	"blt refreshgadgets_patch_disabled\n"
+	PUSHSTACK
+	"move.l a1,a3\n" /* supply window parameter in a3 */
+	"moveq #11,d0\n"
+	"move.l #18,d1\n"
+	"move.l _calltrap,a1\n"
+	"jsr (a1)\n"
+	POPSTACK
+	"refreshgadgets_patch_disabled:\n"
+
+        "rts\n");
+
 /*********************************************************************************
  * _my_SetWindowTitles_SetFunc
  *
@@ -802,6 +842,8 @@ void my_RemoveGadget_SetFunc();
 void my_RemoveGList_SetFunc();
 void my_SetWindowTitles_SetFunc();
 void my_WindowLimits_SetFunc();
+void my_RefreshGadgets_SetFunc();
+void my_RefreshGList_SetFunc();
 
 /* According to Ralph Babel: ".. as
  * of 2.0, SetFunction() calls Forbid()/Permit() 
@@ -846,6 +888,7 @@ void patch_functions() {
 			      (APTR) my_ModifyIDCMP_SetFunc);
 #endif
 
+#if 0
   old_AddGadget=SetFunction((struct Library *)IntuitionBase, 
                               -42, 
 			      (APTR) my_AddGadget_SetFunc);
@@ -861,6 +904,7 @@ void patch_functions() {
   old_RemoveGList=SetFunction((struct Library *)IntuitionBase, 
                               -444, 
 			      (APTR) my_RemoveGList_SetFunc);
+#endif
 
   old_SetWindowTitles=SetFunction((struct Library *)IntuitionBase, 
                               -276, 
@@ -869,6 +913,15 @@ void patch_functions() {
   old_WindowLimits=SetFunction((struct Library *)IntuitionBase, 
                               -318, 
 			      (APTR) my_WindowLimits_SetFunc);
+
+  old_RefreshGadgets=SetFunction((struct Library *)IntuitionBase, 
+                              -222, 
+			      (APTR) my_RefreshGadgets_SetFunc);
+
+  old_RefreshGList=SetFunction((struct Library *)IntuitionBase, 
+                              -432, 
+			      (APTR) my_RefreshGList_SetFunc);
+
 
 
   LEAVE
