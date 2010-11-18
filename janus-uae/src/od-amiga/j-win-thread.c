@@ -640,7 +640,7 @@ static void aros_win_thread (void) {
 
   ENTER
 
-  JWLOG("aros_win_thread[%lx]: thread running \n",thread);
+  JWLOG("aros_win_thread[%lx]: =============== thread %lx started ===============\n",thread, thread);
 
   /* 
    * deadlock sometimes..?
@@ -1052,8 +1052,8 @@ static void aros_win_thread (void) {
     JWLOG("aros_win_thread[%lx]: signals: %lx\n", thread, signals);
 
     if (signals & (1L << aroswin->UserPort->mp_SigBit)) {
-      JWLOG("aros_win_thread[%lx]: aroswin->UserPort->mp_SigBit received\n", thread);
-      JWLOG("aros_win_thread[%lx]: GetMsg(aroswin %lx ->UserPort %lx)\n", thread, aroswin, aroswin->UserPort);
+      //JWLOG("aros_win_thread[%lx]: aroswin->UserPort->mp_SigBit received\n", thread);
+      //JWLOG("aros_win_thread[%lx]: GetMsg(aroswin %lx ->UserPort %lx)\n", thread, aroswin, aroswin->UserPort);
 
       while ((msg = (struct IntuiMessage *) GetMsg(aroswin->UserPort))) {
 	//JWLOG("IDCMP msg for window %lx\n",aroswin);
@@ -1094,16 +1094,12 @@ static void aros_win_thread (void) {
 
 	      if(jwin->jgad[GAD_UPARROW] || jwin->jgad[GAD_LEFTARROW]) {
 
-		JWLOG("[%lx] SpecialInfo: jwin->prop_update_count: %d\n", thread, jwin->prop_update_count);
 		if(jwin->prop_update_count == 0) {
+		  JWLOG("[%lx] SpecialInfo: update_count==%d\n", thread, jwin->prop_update_count);
 		  jwin->prop_update_count=5;
 
 		  if(jwin->jgad[GAD_VERTSCROLL]) {
 		    specialinfo=get_long(jwin->jgad[GAD_VERTSCROLL]->aos3gadget + 34);
-		    JWLOG("[%lx] SpecialInfo: HorizPot: %d\n", thread, get_word(specialinfo + 2));
-		    JWLOG("[%lx] SpecialInfo: VertPot: %d\n", thread, get_word(specialinfo + 4));
-		    JWLOG("[%lx] SpecialInfo: HorizBody: %d\n", thread, get_word(specialinfo + 6));
-		    JWLOG("[%lx] SpecialInfo: VertBody: %d\n", thread, get_word(specialinfo + 8));
 		    if( 
 		      ((struct PropInfo *)jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->HorizPot != get_word(specialinfo + 2) ||
 		      ((struct PropInfo *)jwin->gad[GAD_VERTSCROLL]->SpecialInfo)->VertPot  != get_word(specialinfo + 4) ||
@@ -1112,6 +1108,10 @@ static void aros_win_thread (void) {
 		      ) {
 
 			JWLOG("[%lx] SpecialInfo: NewModifyProp horiz ..\n", thread);
+    			JWLOG("[%lx] SpecialInfo: HorizPot: %d\n", thread, get_word(specialinfo + 2));
+    			JWLOG("[%lx] SpecialInfo: VertPot: %d\n", thread, get_word(specialinfo + 4));
+    			JWLOG("[%lx] SpecialInfo: HorizBody: %d\n", thread, get_word(specialinfo + 6));
+    			JWLOG("[%lx] SpecialInfo: VertBody: %d\n", thread, get_word(specialinfo + 8));
 
 			gadgettype=SetGadgetType(jwin->gad[GAD_VERTSCROLL], GTYP_PROPGADGET);
 			NewModifyProp(jwin->gad[GAD_VERTSCROLL], jwin->aroswin, NULL,
@@ -1124,10 +1124,6 @@ static void aros_win_thread (void) {
 		  }
 		  if(jwin->jgad[GAD_HORIZSCROLL]) {
 		    specialinfo=get_long(jwin->jgad[GAD_HORIZSCROLL]->aos3gadget + 34);
-		    JWLOG("[%lx] SpecialInfo: HorizPot: %d\n", thread, get_word(specialinfo + 2));
-		    JWLOG("[%lx] SpecialInfo: VertPot: %d\n", thread, get_word(specialinfo + 4));
-		    JWLOG("[%lx] SpecialInfo: HorizBody: %d\n", thread, get_word(specialinfo + 6));
-		    JWLOG("[%lx] SpecialInfo: VertBody: %d\n", thread, get_word(specialinfo + 8));
 
 		    if( 
 		      ((struct PropInfo *)jwin->gad[GAD_HORIZSCROLL]->SpecialInfo)->HorizPot != get_word(specialinfo + 2) ||
@@ -1137,6 +1133,10 @@ static void aros_win_thread (void) {
 		      ) {
 
 		      JWLOG("SpecialInfo: NewModifyProp vert ..\n");
+  		      JWLOG("[%lx] SpecialInfo: HorizPot: %d\n", thread, get_word(specialinfo + 2));
+  		      JWLOG("[%lx] SpecialInfo: VertPot: %d\n", thread, get_word(specialinfo + 4));
+  		      JWLOG("[%lx] SpecialInfo: HorizBody: %d\n", thread, get_word(specialinfo + 6));
+  		      JWLOG("[%lx] SpecialInfo: VertBody: %d\n", thread, get_word(specialinfo + 8));
 
 		      gadgettype=SetGadgetType(jwin->gad[GAD_HORIZSCROLL], GTYP_PROPGADGET);
 		      NewModifyProp(jwin->gad[GAD_HORIZSCROLL], jwin->aroswin, NULL,
@@ -1244,7 +1244,7 @@ EXIT:
     DeletePool(jwin->mempool);
     FreeVec(jwin);
   }
-  JWLOG("aros_win_thread[%lx]: dies..\n", thread);
+  JWLOG("aros_win_thread[%lx]: =============== thread %lx dies ===============\n",thread, thread);
 
   LEAVE
 }

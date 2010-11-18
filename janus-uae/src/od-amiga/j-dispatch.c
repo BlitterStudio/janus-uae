@@ -26,7 +26,7 @@
 #include <dos/dostags.h>
 #include <proto/dos.h>
 
-#define JWTRACING_ENABLED 1
+//#define JWTRACING_ENABLED 1
 #include "j.h"
 
 BOOL init_done=FALSE;
