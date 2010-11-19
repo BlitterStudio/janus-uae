@@ -9,7 +9,7 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Janus-Daemon is distributed in the hope that it will be useful,
+ * Janus-UAE is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -17,8 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
  *
+ * $Id$
+ *
  ************************************************************************/
 
+//#define JWTRACING_ENABLED 1
+//#define JW_ENTER_ENABLED 1
 #include "j.h"
 
 extern UBYTE            *Line;
@@ -31,15 +35,19 @@ extern struct BitMap    *BitMap;
 BOOL aos3screen_is_custom(uaecptr aos3screen) {
   UWORD          flags;
 
+  ENTER
+
   JWLOG("screen: %lx\n",aos3screen);
 
   flags=get_word(aos3screen+20);
   flags=flags & 0xF;
   if(flags!=0xF) {
     JWLOG("  screen %lx is no custom screen\n", aos3screen);
+    LEAVE
     return FALSE;
   }
   JWLOG("  screen %lx is a custom screen\n", aos3screen);
+  LEAVE
   return TRUE;
 }
 
@@ -52,15 +60,18 @@ static void new_aros_cust_screen(JanusScreen *jscreen, uaecptr aos3screen) {
 
   struct Screen *arosscr;
 
+  ENTER
+
   JWLOG("aos3screen: %lx\n", aos3screen);
 
   jscreen->arosscreen= (struct Screen *) -1;
 
   aros_custom_screen_start_thread(jscreen); /* fills jscreen->arosscreen */
 
+  LEAVE
+
   return;
 }
-
 
 /************************************************************************
  * new_aros_pub_screen for an aos3screen
@@ -73,6 +84,8 @@ void new_aros_pub_screen(JanusScreen *jscreen, uaecptr aos3screen) {
 
   struct Screen *pub;
 
+  ENTER
+
   JWLOG("screen public name: >%s<\n",jscreen->pubname);
 
   /* search for already open screen by name */
@@ -80,6 +93,7 @@ void new_aros_pub_screen(JanusScreen *jscreen, uaecptr aos3screen) {
   if(pub) {
     JWLOG("screen %s already exists\n",jscreen->pubname);
     UnlockPubScreen(NULL, pub);
+    LEAVE
     return;
   }
 
@@ -99,12 +113,14 @@ void new_aros_pub_screen(JanusScreen *jscreen, uaecptr aos3screen) {
   }
 #endif
 
+  LEAVE
+
 }
 
 /************************************************************************
  * new_aros_screen(jscreen)
  *
- * fill in jscreen->arosscreen with an already existing poblic screen
+ * fill in jscreen->arosscreen with an already existing public screen
  * or a newly opened public/custom screen.
  *
  * It uses new_aros_pub_screen / new_aros_cust_screen, which have to
@@ -123,6 +139,8 @@ static void new_aros_screen(JanusScreen *jscreen) {
   ULONG i;
 
   const UBYTE preferred_depth[] = {24, 32, 16, 15, 8};
+
+  ENTER
 
   JWLOG("new_aros_screen(%lx)\n",jscreen);
 
@@ -151,6 +169,7 @@ static void new_aros_screen(JanusScreen *jscreen) {
     jscreen->ownscreen=TRUE;
     JWLOG("screen %lx is CUSTOMSCREEN\n",aos3screen);
     new_aros_cust_screen(jscreen, aos3screen);
+    LEAVE
     return;
 
   }
@@ -179,6 +198,7 @@ static void new_aros_screen(JanusScreen *jscreen) {
 	  switch_off_coherence();
 	  gui_message_with_title ("Sorry", "Your AmigaOS Workbench resolution does not\n\nmatch you AROS Wanderer resolution (%d,%d)\n\nSo I had to switch off coherency.", arosscr->Width, arosscr->Height);
 
+	  LEAVE
 	  return;
 	}
 
@@ -187,6 +207,7 @@ static void new_aros_screen(JanusScreen *jscreen) {
 	jscreen->ownscreen=FALSE;
 	JWLOG("return aros WBENCHSCREEN %lx\n",arosscr);
 	jscreen->arosscreen=arosscr;
+	LEAVE
 	return;
       }
       arosscr=arosscr->NextScreen;
@@ -203,6 +224,7 @@ static void new_aros_screen(JanusScreen *jscreen) {
     JWLOG("screen %lx is PUBLICSCREEN\n",aos3screen);
     //arosscr=new_aros_pub_screen(jscreen, aos3screen);
     new_aros_pub_screen(jscreen, aos3screen);
+    LEAVE
     return;
 
   }
@@ -211,6 +233,7 @@ static void new_aros_screen(JanusScreen *jscreen) {
 
 EXIT:
   JWLOG("ERROR ERROR: cleanup here / delete jscreen!!");
+  LEAVE
   return;
 }
 
@@ -229,7 +252,7 @@ uae_u32 ad_job_list_screens(ULONG *m68k_results) {
   JanusScreen *jscreen;
   char   *public_screen_name;
 
-  JWLOG("ad_job_list_screens()\n");
+  ENTER
 
   JWLOG("ObtainSemaphore(&sem_janus_screen_list)\n");
   ObtainSemaphore(&sem_janus_screen_list);
@@ -281,6 +304,8 @@ uae_u32 ad_job_list_screens(ULONG *m68k_results) {
 
   JWLOG("ad_job_list_screens() done\n");
 
+  LEAVE
+
   return TRUE;
 }
 
@@ -296,8 +321,12 @@ uae_u32 ad_job_list_screens(ULONG *m68k_results) {
  **********************************************************/
 uae_u32 ad_job_open_custom_screen(ULONG aos3screen) {
 
+  ENTER
+
   JWLOG("new aros screen: %lx, but we let sync screen handle it.\n", 
          aos3screen);
+
+  LEAVE
 
   return TRUE;
 
@@ -518,6 +547,8 @@ uae_u32 ad_job_close_screen(ULONG aos3screen) {
   JanusScreen   *jscreen;
   struct Screen *arosscreen;
 
+  ENTER
+
   JWLOG("screen: %lx\n",aos3screen);
 
   if(!aos3screen_is_custom(aos3screen)) {
@@ -536,6 +567,7 @@ uae_u32 ad_job_close_screen(ULONG aos3screen) {
     JWLOG(" screen %lx not found in janus_screens list\n", aos3screen);
     JWLOG("Release(&sem_janus_screen_list)\n");
     ReleaseSemaphore(&sem_janus_screen_list);
+    LEAVE
     return TRUE;
   }
 
@@ -545,6 +577,7 @@ uae_u32 ad_job_close_screen(ULONG aos3screen) {
     JWLOG(" jscreen %lx has no arosscreen !?\n", jscreen);
     JWLOG("Release(&sem_janus_screen_list)\n");
     ReleaseSemaphore(&sem_janus_screen_list);
+    LEAVE
     return FALSE;
   }
 
@@ -552,6 +585,7 @@ uae_u32 ad_job_close_screen(ULONG aos3screen) {
     JWLOG(" ERROR: jscreen %lx has no task !?\n", jscreen);
     JWLOG("Release(&sem_janus_screen_list)\n");
     ReleaseSemaphore(&sem_janus_screen_list);
+    LEAVE
     return FALSE;
   }
 
@@ -560,6 +594,7 @@ uae_u32 ad_job_close_screen(ULONG aos3screen) {
 
   JWLOG("Release(&sem_janus_screen_list)\n");
   ReleaseSemaphore(&sem_janus_screen_list);
+  LEAVE
   return TRUE;
 }
 
