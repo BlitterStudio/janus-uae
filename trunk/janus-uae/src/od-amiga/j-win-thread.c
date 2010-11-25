@@ -28,6 +28,7 @@
 
 
 #define JWTRACING_ENABLED 1
+#define JW_ENTER_ENABLED 1
 #include "j.h"
 #include "memory.h"
 
@@ -1090,7 +1091,9 @@ static void aros_win_thread (void) {
 	  }
 	  else {
 	    /* might be, someone adds/removes gadgets */
+	    kprintf("[%lx] AttemptSemaphore(&(jwin->gadget_access)) ... (aros_win_thread)\n", thread);
 	    if(AttemptSemaphore(&(jwin->gadget_access))) {
+	      kprintf("[%lx] AttemptSemaphore(&(jwin->gadget_access)) success (aros_win_thread)\n", thread);
 
 	      if(jwin->jgad[GAD_UPARROW] || jwin->jgad[GAD_LEFTARROW]) {
 
@@ -1151,6 +1154,7 @@ static void aros_win_thread (void) {
 		jwin->prop_update_count--;
 	      }
 	      ReleaseSemaphore(&(jwin->gadget_access));
+	      kprintf("[%lx] ReleaseSemaphore(&(jwin->gadget_access)) (aros_win_thread)\n", thread);
 	    }
 
 	    ReplyMsg ((struct Message *)msg);

@@ -22,7 +22,7 @@
  ************************************************************************/
 
 //#define JW_ENTER_ENABLED  1
-//#define JWTRACING_ENABLED  1
+#define JWTRACING_ENABLED  1
 
 #include "j.h"
 
@@ -387,14 +387,6 @@ uae_u32 ad_job_report_uae_windows(ULONG *m68k_results) {
       goto NEXT;
     }
 
-    /* win->resized is set by IDCMP_NEWSIZE */
-    if(!win->resized) {
-      JWLOG("win %lx: resize == FALSE, do nothing\n");
-      goto NEXT;
-    }
-    win->resized=FALSE;
-    JWLOG("win %lx: resize == TRUE!\n");
-
     if(!assert_window(window)) {
       JWLOG(" window assert failed\n");
       goto NEXT;
@@ -410,6 +402,15 @@ uae_u32 ad_job_report_uae_windows(ULONG *m68k_results) {
 
       need_resize=TRUE;
     }
+
+    /* win->resized is set by IDCMP_NEWSIZE */
+    if(!need_resize && !win->resized) {
+      JWLOG("win %lx: resize == FALSE, do nothing\n");
+      goto NEXT;
+    }
+    win->resized=FALSE;
+    JWLOG("win %lx: resize == TRUE!\n");
+
 
     if((win->Width  != get_hi_word(m68k_results+i+2)) ||
        (win->Height != get_lo_word(m68k_results+i+2))) { 
@@ -431,14 +432,14 @@ uae_u32 ad_job_report_uae_windows(ULONG *m68k_results) {
       win->Height  =get_lo_word(m68k_results+i+2);
 
       need_resize=TRUE;
-    }
-
-    if(need_resize) {
-      JWLOG(" change window %lx\n",window);
       win->delay=WIN_DEFAULT_DELAY * 4;  /* delay is set to 0, if
 					  * IDCMP_CHANGE is received
 					  * and delay > WIN_DEFAULT_DELAY
 					  */
+    }
+
+    if(need_resize) {
+      JWLOG(" change window %lx\n",window);
 
       /* You can detect that this operation has completed by receiving
        * the IDCMP_CHANGEWINDOW IDCMP message 
@@ -924,6 +925,7 @@ void close_all_janus_windows_wait() {
       if(jwin->aroswin) {
 	write_log("  still open: %lx (%s)\n", jwin->aroswin, jwin->aroswin->Title);
       }
+      list_win=g_slist_next(list_win);
     }
     ReleaseSemaphore(&sem_janus_window_list);
     write_log("WARNING: this will crash your system sooner or later!\n");

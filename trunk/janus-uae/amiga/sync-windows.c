@@ -29,6 +29,8 @@
 #include <intuition/intuitionbase.h>
 
 #include <proto/exec.h>
+#include <proto/layers.h>
+#include <proto/dos.h>
 
 #include "janus-daemon.h"
 
@@ -218,6 +220,8 @@ void report_uae_windows() {
   struct Window *win;
   ULONG         *command_mem;
   ULONG          i;
+  char          *pubname;
+  struct Screen *lock;
 
   ENTER
 
@@ -239,11 +243,15 @@ void report_uae_windows() {
     return;
   }
 
-  /* WARNING: Would be nice to lock the screen, but we would need to get the
+  /* Would be nice to lock the screen, but we would need to get the
    * screen name for that. Who invented this API !?
-   * We could lock IntuiBase, but it is all unsafe anyways..
    */
 
+  pubname=public_screen_name(screen);
+  if(pubname) {
+    lock=LockPubScreen(pubname);
+    DebOut("lock: %lx\n", lock);
+  }
   win=screen->FirstWindow;
 
   /* we are reporting for this screen! */
@@ -270,6 +278,10 @@ void report_uae_windows() {
 
     win=win->NextWindow;
     i=i+5;
+  }
+
+  if(lock) {
+    UnlockPubScreen(NULL, lock);
   }
 
   calltrap (AD_GET_JOB, AD_GET_JOB_REPORT_UAE_WINDOWS, command_mem);
@@ -304,6 +316,118 @@ static UWORD get_lo(ULONG l) {
   return (UWORD) (l&0xFFFF);
 }
 
+/*
+ * check, if at the given coordinates our window is visible 
+ */
+BOOL is_in_window(struct Window *win, UWORD x, UWORD y) {
+  struct Layer_Info *li = &(win->WScreen->LayerInfo);
+  struct Layer *layer;
+
+  ENTER
+
+  LockLayerInfo(li);
+  layer = WhichLayer(li, x, y);
+  UnlockLayerInfo(li);
+
+  DebOut("layer: %lx\n", layer);
+  if(layer == NULL) {
+    LEAVE
+    return FALSE;
+  }
+  
+  if(layer->Window == win) {
+    DebOut("layer->Window %lx == win %lx \n", layer->Window, win);
+    LEAVE
+    return TRUE;
+  }
+
+  DebOut("layer->Window %lx != win %lx \n", layer->Window, win);
+  LEAVE
+  return FALSE;
+}
+
+/*
+ * Some AmigaOS windows don't like it, when foreigners call ChangeWindowBox on them.
+ * FinalWriter Windows freeze, if you do a ChangeWindowBox and click inside.
+ * I am not sure, why this happens. So we better try to move it around
+ * with the mouse ;). This is only a problem, if the window is hidden, so that
+ * either the dragbar or the size gadget is hidden. In this case, we have to
+ * call ChangeWindowBox (and hope it has no harmful effects).
+ */
+void ChangeWindowBox_with_mouse(struct Window *win, WORD left, WORD top, WORD width, WORD height) {
+
+  WORD  dx, dy, dh, dw;
+  UWORD gadget_x;
+  UWORD gadget_y;
+  BOOL  delay=FALSE;
+
+  ENTER
+
+  DebOut("win %lx, left %d, top %d, width %d, height %d\n", win, left, top, width, height);
+
+  if(!window_exists(win)) {
+    DebOut("win %lx does not exist !?\n", win);
+    return;
+  }
+
+  dw=width  - win->Width;
+  dh=height - win->Height;
+
+  DebOut("dw: %d, dh: %d\n", dw, dh);
+
+  if( (dw != 0) || (dh != 0) ) {
+    gadget_x=win->LeftEdge + win->Width  - (win->BorderRight /2);
+    gadget_y=win->TopEdge  + win->Height - (win->BorderBottom/2);
+
+    DebOut("gadget_x: %d, gadget_y:%d\n", gadget_x, gadget_y);
+    if(!is_in_window(win, gadget_x, gadget_y)) {
+      DebOut("not inside window, sorry\n");
+      goto ChangeWindowBox_with_API;
+    }
+
+    /* place mouse on size gadget and click */
+    SetMouse(win->WScreen, gadget_x, gadget_y, IECODE_LBUTTON, TRUE, FALSE);
+
+    /* move it to new size and release*/
+    SetMouse(win->WScreen, gadget_x + dw, gadget_y + dh, IECODE_LBUTTON, FALSE, TRUE);
+
+    delay=TRUE;
+  }
+
+  dx=left - win->LeftEdge;
+  dy=top  - win->TopEdge;
+
+  DebOut("dx: %d, dy: %d\n", dx, dy);
+
+  if( (dx != 0) || (dy != 0) ) {
+    /* this should hit the dragbar */
+    gadget_x=win->LeftEdge + (win->Width     /2);
+    gadget_y=win->TopEdge  + (win->BorderTop /2);
+
+    DebOut("gadget_x: %d, gadget_y:%d\n", gadget_x, gadget_y);
+    if(!is_in_window(win, gadget_x, gadget_y)) {
+      DebOut("not inside window, sorry\n");
+      goto ChangeWindowBox_with_API;
+    }
+
+    /* place mouse on dragbar and click*/
+    SetMouse(win->WScreen, gadget_x, gadget_y, IECODE_LBUTTON, TRUE, FALSE);
+
+    /* move it to new position and release*/
+    SetMouse(win->WScreen, gadget_x + dx, gadget_y + dy, IECODE_LBUTTON, FALSE, TRUE);
+  }
+
+  LEAVE
+  return;
+
+ChangeWindowBox_with_API:
+  DebOut("WARNING: calling inutition ChangeWindowBox(%lx, %d, %d, %d, %d)\n", win, left, top, width, height);
+  ChangeWindowBox(win, left, top, width, height);
+
+  LEAVE
+  return;
+}
+
 /* care for screens here ?? 
  * no, because the AROS side may only return windows on the top screen.
  */
@@ -324,7 +448,7 @@ void report_host_windows() {
   calltrap (AD_GET_JOB, AD_GET_JOB_REPORT_HOST_WINDOWS, command_mem);
 
   i=0;
-  while(command_mem[i]) {
+  while(command_mem[i] && (i*4 < AD__MAXMEM) ) {
     win=(struct Window *)command_mem[i];
     DebOut("report_host_windows(): resize window %lx (%s)\n",(ULONG) win,win->Title);
 
@@ -337,14 +461,10 @@ void report_host_windows() {
       top   =get_lo(command_mem[i+1]) - win->BorderTop;
       width =get_hi(command_mem[i+2]) + win->BorderLeft + win->BorderRight;
       height=get_lo(command_mem[i+2]) + win->BorderTop + win->BorderBottom;
-      DebOut("report_host_windows(): ChangeWindowBox(%lx, %d, %d, %d, %d)\n", win, left, top, width, height);
-      ChangeWindowBox(win,
-		      get_hi(command_mem[i+1]) - win->BorderLeft,
-		      get_lo(command_mem[i+1]) - win->BorderTop,
-		      get_hi(command_mem[i+2]) +
-			win->BorderLeft + win->BorderRight,
-		      get_lo(command_mem[i+2]) +
-			win->BorderTop + win->BorderBottom);
+
+      //ChangeWindowBox(win, left, top, width, height);
+      ChangeWindowBox_with_mouse(win, left, top, width, height);
+
       if(window_exists(win)) {
    	DebOut("report_host_windows(): win %lx exists here too\n", win);
       }

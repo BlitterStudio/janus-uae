@@ -152,7 +152,8 @@ BOOL init_sync_mouse() {
 /* SetMouse is based on SetMouse (Freeware)
  * (C) 1994,1995, Ketil Hunn
  */
-void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button) {
+void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button, 
+                                     BOOL click, BOOL release) {
 
   ENTER
 
@@ -173,15 +174,20 @@ void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button) {
   DoIO((struct IORequest *)InputIO);
 
   if(button!=IECODE_NOBUTTON) {
-    /* BUTTON DOWN */
-    FakeEvent->ie_EventAddress=NULL;
-    FakeEvent->ie_Class=IECLASS_RAWMOUSE;
-    FakeEvent->ie_Code=button;
-    DoIO((struct IORequest *)InputIO);
+    if(click) {
+      /* BUTTON DOWN */
 
-    /* BUTTON UP */
-    FakeEvent->ie_Code=button|IECODE_UP_PREFIX;
-    DoIO((struct IORequest *)InputIO);
+      FakeEvent->ie_EventAddress=NULL;
+      FakeEvent->ie_Class=IECLASS_RAWMOUSE;
+      FakeEvent->ie_Code=button;
+      DoIO((struct IORequest *)InputIO);
+    }
+
+    if(release) {
+      /* BUTTON UP */
+      FakeEvent->ie_Code=button|IECODE_UP_PREFIX;
+      DoIO((struct IORequest *)InputIO);
+    }
   }
 
   LEAVE
@@ -462,7 +468,7 @@ void sync_mouse() {
 
   if(screen->MouseX != x || screen->MouseY != y) {
     DebOut("set mouse to: %d, %d\n",x,y);
-    SetMouse(screen, x, y, 0);
+    SetMouse(screen, x, y, 0, FALSE, FALSE);
   }
   else {
     DebOut("mouse already at: %d, %d\n",x,y);

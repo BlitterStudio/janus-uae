@@ -24,7 +24,7 @@
 #include <intuition/imageclass.h>
 #include <intuition/gadgetclass.h>
 
-//#define JWTRACING_ENABLED 1
+#define JWTRACING_ENABLED 1
 #include "j.h"
 #include "memory.h"
 
@@ -454,6 +454,7 @@ void move_vert_prop_gadget(struct Process *thread, JanusWin *jwin) {
   ULONG rulerheight;
   ULONG freeheight;
   ULONG specialinfo;
+  UWORD countdown;
   JanusGadget *jgad=NULL;
 
   ENTER
@@ -516,10 +517,19 @@ void move_vert_prop_gadget(struct Process *thread, JanusWin *jwin) {
 
   mice[0].enabled=FALSE; /* disable mouse emulation */
   manual_mouse=TRUE;
-  while(manual_mouse) {
+  countdown=200;
+  while(manual_mouse && countdown) {
     /* wait until the mouse is, where it should be */
     Delay(1);
+    countdown--;
   }
+
+  if(!countdown) {
+    JWLOG("ERROR: could not wait for manual_mouse!!!\n");
+    manual_mouse=FALSE;
+    mice[0].enabled=TRUE; 
+  }
+
   Delay(10);
 
   LEAVE
@@ -529,6 +539,8 @@ void move_vert_prop_gadget(struct Process *thread, JanusWin *jwin) {
  * handle_gadget
  *
  * react on border gadget clicks
+ *
+ * gadid must be valid!
  ********************************************************/
 void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
   UWORD x,y;
@@ -540,7 +552,9 @@ void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
 
   JWLOG("aros_win_thread[%lx]: jwin %lx, gadid %d\n", thread, jwin, gadid);
 
+  kprintf("[%lx] ObtainSemaphore(&(jwin->gadget_access)) ... (handle_gadget)\n", thread);
   ObtainSemaphore(&(jwin->gadget_access));
+  kprintf("[%lx] ObtainSemaphore(&(jwin->gadget_access)) success (handle_gadget)\n", thread);
 
   switch (gadid) {
     case GAD_DOWNARROW:
@@ -624,6 +638,7 @@ void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
 
 EXIT:
   ReleaseSemaphore(&(jwin->gadget_access));
+  kprintf("[%lx] ReleaseSemaphore(&(jwin->gadget_access)) (handle_gadget)\n", thread);
 
   LEAVE
 }
@@ -949,7 +964,9 @@ ULONG update_gadgets(struct Process *thread, JanusWin *jwin) {
 
   JWLOG("[%lx] jwin: %lx\n", thread, jwin);
 
+  kprintf("[%lx] ObtainSemaphore(&(jwin->gadget_access)) .. (update_gadgets)\n", thread);
   ObtainSemaphore(&(jwin->gadget_access));
+  kprintf("[%lx] ObtainSemaphore(&(jwin->gadget_access)) success (update_gadgets)\n", thread);
       
   /* check, if we have new border gadgets */
   if(init_border_gadgets(thread , jwin)) {
@@ -979,6 +996,7 @@ ULONG update_gadgets(struct Process *thread, JanusWin *jwin) {
   }
 
   ReleaseSemaphore(&(jwin->gadget_access));
+  kprintf("[%lx] ReleaseSemaphore(&(jwin->gadget_access)) (update_gadgets)\n", thread);
 
   JWLOG("[%lx] left (jwin %lx)\n", thread, jwin);
 
