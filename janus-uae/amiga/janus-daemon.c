@@ -35,6 +35,7 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/graphics.h>
+#include <proto/layers.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/preferences.h>
 #include <devices/input.h>
@@ -99,6 +100,11 @@ BOOL open_libs() {
    }
    if (!(UtilityBase=(struct UtilityBase *) OpenLibrary("utility.library",39))) {
      printf("unable to open utility.library\n");
+     LEAVE
+     return FALSE;
+   }
+   if (!(LayersBase=(struct LayersBase *) OpenLibrary("layers.library",0))) {
+     printf("unable to open layers.library\n");
      LEAVE
      return FALSE;
    }

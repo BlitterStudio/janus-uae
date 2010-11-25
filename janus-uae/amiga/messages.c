@@ -112,7 +112,7 @@ void closewin(struct Window *w) {
 
     m=w->BorderTop / 2; /* middle of close gadget */
 
-    SetMouse(w->WScreen, w->LeftEdge + m, w->TopEdge + m, IECODE_LBUTTON);
+    SetMouse(w->WScreen, w->LeftEdge + m, w->TopEdge + m, IECODE_LBUTTON, TRUE, TRUE);
   }
 
   LEAVE

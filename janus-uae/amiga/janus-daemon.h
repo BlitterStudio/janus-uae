@@ -29,8 +29,8 @@
 //#include <proto/exec.h>
 #include <clib/intuition_protos.h>
 
-//#define DebOut(...) PrintOut(__FILE__,__LINE__,__func__,__VA_ARGS__) 
-#define DebOut(...) 
+#define DebOut(...) PrintOut(__FILE__,__LINE__,__func__,__VA_ARGS__) 
+//#define DebOut(...) 
 
 #define AROSTRAPBASE 0xF0FF90
 
@@ -81,7 +81,7 @@ extern ULONG (*calltrap)(ULONG __asm("d0"),
 BOOL init_sync_mouse(void);
 void free_sync_mouse(void);
 void sync_mouse(void);
-void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button);
+void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button, BOOL click, BOOL release);
 BOOL is_cyber(struct Screen *screen);
 
 /* patch.c */
