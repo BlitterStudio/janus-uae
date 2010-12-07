@@ -1270,7 +1270,7 @@ int aros_win_start_thread (JanusWin *jwin) {
 				NP_Name, (ULONG) jwin->name,
 				NP_CloseOutput, FALSE,
 				NP_CloseInput, FALSE,
-				NP_StackSize, 4096,
+				NP_StackSize, 0x8000,
 				NP_Priority, 0,
 				NP_Entry, (ULONG) aros_win_thread,
 				TAG_DONE);
