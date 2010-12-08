@@ -353,9 +353,12 @@ BOOL is_in_window(struct Window *win, UWORD x, UWORD y) {
  * with the mouse ;). This is only a problem, if the window is hidden, so that
  * either the dragbar or the size gadget is hidden. In this case, we have to
  * call ChangeWindowBox (and hope it has no harmful effects).
+ *
+ * I removed this hack again, as I think those crashes had other reasons.
  */
-void ChangeWindowBox_with_mouse(struct Window *win, WORD left, WORD top, WORD width, WORD height) {
+static void ChangeWindowBox_safe(struct Window *win, WORD left, WORD top, WORD width, WORD height) {
 
+#if 0
   WORD  dx, dy, dh, dw;
   UWORD gadget_x;
   UWORD gadget_y;
@@ -421,7 +424,11 @@ void ChangeWindowBox_with_mouse(struct Window *win, WORD left, WORD top, WORD wi
   return;
 
 ChangeWindowBox_with_API:
-  DebOut("WARNING: calling inutition ChangeWindowBox(%lx, %d, %d, %d, %d)\n", win, left, top, width, height);
+  DebOut("WARNING: calling intuition ChangeWindowBox(%lx, %d, %d, %d, %d)\n", win, left, top, width, height);
+#endif
+
+  ENTER
+
   ChangeWindowBox(win, left, top, width, height);
 
   LEAVE
@@ -462,8 +469,7 @@ void report_host_windows() {
       width =get_hi(command_mem[i+2]) + win->BorderLeft + win->BorderRight;
       height=get_lo(command_mem[i+2]) + win->BorderTop + win->BorderBottom;
 
-      //ChangeWindowBox(win, left, top, width, height);
-      ChangeWindowBox_with_mouse(win, left, top, width, height);
+      ChangeWindowBox_safe(win, left, top, width, height);
 
       if(window_exists(win)) {
    	DebOut("report_host_windows(): win %lx exists here too\n", win);
