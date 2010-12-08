@@ -277,5 +277,11 @@ void aros_cli_kill_thread(void) {
     Permit();
     FreeVec(die_msg);
   }
+
+  if(back_port) {
+    DeleteMsgPort(back_port);
+    back_port=NULL;
+  }
+
   JWLOG("send DIE to %s done.\n", CLI_PORT_NAME);
 }
