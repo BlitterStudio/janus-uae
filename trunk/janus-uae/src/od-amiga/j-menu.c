@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
  *
+ * $Id$
+ *
  ************************************************************************/
 
 #include <libraries/gadtools.h>
 #include <proto/gadtools.h>
 
-//#define JWTRACING_ENABLED 1
+#define JWTRACING_ENABLED 1
 #include "j.h"
 
 static ULONG  count_items(uaecptr menu);
@@ -321,7 +323,8 @@ static BOOL wait_menu_mouse_pos(JanusWin *jwin, WORD MouseX, WORD MouseY) {
     i++;
     Delay(5);
   }
-  JWLOG("mouse not moved !!\n");
+
+  JWLOG("ERROR: mouse not moved to %d, %d!!\n", MouseX, MouseY);
   return FALSE;
 }
 
@@ -395,9 +398,12 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
       ry=ry+1;
       rx=get_word(aos3menustrip+4);
 
-      wait_menu_mouse_pos(jwin, menux, menuy);
+      if(!wait_menu_mouse_pos(jwin, menux, menuy)) {
+	JWLOG("ERROR: mouse not moved, do nothing\n");
+	return;
+      };
       if(!wait_menu_shown(aos3menustrip + 12)) {
-	JWLOG("menu not shown, do nothing\n");
+	JWLOG("ERROR: menu not shown, do nothing\n");
 	return;
       } 
 
@@ -425,12 +431,15 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
 	  JWLOG("menu item xy: %d %d\n\n",x,y);  /* ok */
 	  menux=x;
 	  menuy=y;
-	  wait_menu_mouse_pos(jwin, menux, menuy);
+	  if(!wait_menu_mouse_pos(jwin, menux, menuy)) {
+	      JWLOG("ERROR: mouse not moved!\n");
+	      return;
+	  };
 
 	  /* if we have a subitem, we need to wait until it opens */
 	  if(sub!=-1) {
 	    if(!wait_menuitem_shown(aos3item + 12)) {
-	      JWLOG("subitem not shown, ABORTED\n");
+	      JWLOG("ERROR: subitem not shown, ABORTED\n");
 	      return;
 	    };
 
