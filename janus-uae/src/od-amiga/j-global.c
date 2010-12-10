@@ -95,6 +95,9 @@ struct SignalSemaphore sem_janus_active_custom_screen;
 /* protect W access. use obtain_w/release_W instead of direct access */
 struct SignalSemaphore sem_janus_access_W;
 
+/* */
+struct SignalSemaphore sem_janus_win_handling;
+
 GSList *janus_windows =NULL;
 GSList *janus_screens =NULL;
 GSList *janus_messages=NULL;

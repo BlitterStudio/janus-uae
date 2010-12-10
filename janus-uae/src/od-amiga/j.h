@@ -17,6 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
  *
+ * $Id$
+ *
  ************************************************************************/
 #ifndef __J_H__
 #define __J_H__
@@ -58,7 +60,7 @@
 #define JWLOG(...)     do { ; } while(0)
 #endif
 
-//#define JW_ENTER_ENABLED 1
+#define JW_ENTER_ENABLED 1
 #if JW_ENTER_ENABLED
 #define ENTER  kprintf("%s:%d %s(): entered\n",__FILE__,__LINE__,__func__);
 #define LEAVE  kprintf("%s:%d %s(): left at line %d\n",__FILE__,__LINE__,__func__,__LINE__);
@@ -136,6 +138,7 @@ extern struct SignalSemaphore janus_messages_access;
 extern struct SignalSemaphore sem_janus_active_win;
 extern struct SignalSemaphore sem_janus_active_custom_screen;
 extern struct SignalSemaphore sem_janus_access_W;
+extern struct SignalSemaphore sem_janus_win_handling;
 
 /* clipd */
 extern ULONG aos3_clip_task;
