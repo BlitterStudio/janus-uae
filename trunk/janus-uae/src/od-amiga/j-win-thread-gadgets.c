@@ -24,7 +24,7 @@
 #include <intuition/imageclass.h>
 #include <intuition/gadgetclass.h>
 
-#define JWTRACING_ENABLED 1
+//#define JWTRACING_ENABLED 1
 #include "j.h"
 #include "memory.h"
 
@@ -552,9 +552,9 @@ void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
 
   JWLOG("aros_win_thread[%lx]: jwin %lx, gadid %d\n", thread, jwin, gadid);
 
-  kprintf("[%lx] ObtainSemaphore(&(jwin->gadget_access)) ... (handle_gadget)\n", thread);
+  JWLOG("[%lx] ObtainSemaphore(&(jwin->gadget_access)) ... (handle_gadget)\n", thread);
   ObtainSemaphore(&(jwin->gadget_access));
-  kprintf("[%lx] ObtainSemaphore(&(jwin->gadget_access)) success (handle_gadget)\n", thread);
+  JWLOG("[%lx] ObtainSemaphore(&(jwin->gadget_access)) success (handle_gadget)\n", thread);
 
   switch (gadid) {
     case GAD_DOWNARROW:
@@ -638,7 +638,7 @@ void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
 
 EXIT:
   ReleaseSemaphore(&(jwin->gadget_access));
-  kprintf("[%lx] ReleaseSemaphore(&(jwin->gadget_access)) (handle_gadget)\n", thread);
+  JWLOG("[%lx] ReleaseSemaphore(&(jwin->gadget_access)) (handle_gadget)\n", thread);
 
   LEAVE
 }
@@ -707,6 +707,7 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
 
     if (!jwin->img[i]) {
       JWLOG("aros_win_thread[%lx]: could not create image %d\n", thread, i);
+      LEAVE
       return NULL;
     }
 
@@ -770,6 +771,7 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
 	JWLOG("aros_win_thread[%lx]: gad[%d]=%lx\n", thread, i, jwin->gad[i]);
 	if (!jwin->gad[i]) {
 	  JWLOG("aros_win_thread[%lx]: ERROR: gad[%d]==NULL\n", thread, i);
+	  LEAVE
 	  return NULL;
 	}
     }
@@ -818,6 +820,7 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
     for(i = 3;i < NUM_GADGETS;i++) {
 	if (!jwin->gad[i]) {
 	  JWLOG("aros_win_thread[%lx]: ERROR: gad[%d]==NULL\n", thread, i);
+	  LEAVE
 	  return NULL;
 	}
     }
@@ -841,11 +844,11 @@ struct Gadget *make_gadgets(struct Process *thread, JanusWin* jwin) {
 #endif
 
   if(jwin->jgad[GAD_UPARROW]) {
+    LEAVE
     return vertgadget;
   }
 
   LEAVE
-
   return horizgadget;
 }
 
@@ -964,9 +967,9 @@ ULONG update_gadgets(struct Process *thread, JanusWin *jwin) {
 
   JWLOG("[%lx] jwin: %lx\n", thread, jwin);
 
-  kprintf("[%lx] ObtainSemaphore(&(jwin->gadget_access)) .. (update_gadgets)\n", thread);
+  JWLOG("[%lx] ObtainSemaphore(&(jwin->gadget_access)) .. (update_gadgets)\n", thread);
   ObtainSemaphore(&(jwin->gadget_access));
-  kprintf("[%lx] ObtainSemaphore(&(jwin->gadget_access)) success (update_gadgets)\n", thread);
+  JWLOG("[%lx] ObtainSemaphore(&(jwin->gadget_access)) success (update_gadgets)\n", thread);
       
   /* check, if we have new border gadgets */
   if(init_border_gadgets(thread , jwin)) {
@@ -996,7 +999,7 @@ ULONG update_gadgets(struct Process *thread, JanusWin *jwin) {
   }
 
   ReleaseSemaphore(&(jwin->gadget_access));
-  kprintf("[%lx] ReleaseSemaphore(&(jwin->gadget_access)) (update_gadgets)\n", thread);
+  JWLOG("[%lx] ReleaseSemaphore(&(jwin->gadget_access)) (update_gadgets)\n", thread);
 
   JWLOG("[%lx] left (jwin %lx)\n", thread, jwin);
 
