@@ -123,7 +123,7 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
 
   ENTER
 
-  JWLOG("aros_win_thread[%lx]: handle_input(jwin %lx, aros win %lx, class %lx, code %d)\n", thread, 
+  JWLOG("[%lx]: handle_input(jwin %lx, aros win %lx, class %lx, code %d)\n", thread, 
                                                                                             jwin, win, 
 											    class, code);
 
@@ -137,11 +137,11 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
 	if ((qualifier & IEQUALIFIER_REPEAT) == 0) {
 	    /* We just want key up/down events - not repeats */
 	    if ((ievent = match_hotkey_sequence (keycode, state)))
-	      JWLOG("aros_win_thread[%lx]: TODO: handle_hotkey_event\n", thread);
+	      JWLOG("[%lx]: TODO: handle_hotkey_event\n", thread);
 		//handle_hotkey_event (ievent, state);
 	    else
 
-	      JWLOG("aros_win_thread[%lx]: call inputdevice_do_keyboard(%d,%d)\n",thread,keycode,state);
+	      JWLOG("[%lx]: call inputdevice_do_keyboard(%d,%d)\n",thread,keycode,state);
 		inputdevice_do_keyboard (keycode, state);
 	}
 	break;
@@ -153,11 +153,11 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
 	  /* it seems, that sometimes (after a menucancel?) we get clicks from
 	   * other windows. Is this really correct AROS behaviour?
 	   */
-	  JWLOG("aros_win_thread[%lx]: IDCMP_MOUSEBUTTONS on foreign window !? (actwin%lx != mywin %lx): code %d\n", 
+	  JWLOG("[%lx]: IDCMP_MOUSEBUTTONS on foreign window !? (actwin%lx != mywin %lx): code %d\n", 
 	         IntuitionBase->ActiveWindow, win);
 	}
 	else {
-	  JWLOG("aros_win_thread[%lx]: IDCMP_MOUSEBUTTONS code %d\n", thread, code);
+	  JWLOG("[%lx]: IDCMP_MOUSEBUTTONS code %d\n", thread, code);
 	  if (code == SELECTDOWN) setmousebuttonstate (0, 0, 1);
 	  if (code == SELECTUP)   setmousebuttonstate (0, 0, 0);
 	  if (code == MIDDLEDOWN) setmousebuttonstate (0, 2, 1);
@@ -175,7 +175,7 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
 	 */
 
 	if(win) {
-	  JWLOG("aros_win_thread[%lx]: IDCMP_ACTIVEWINDOW(%lx, %s)\n", thread, win, win->Title);
+	  JWLOG("[%lx]: IDCMP_ACTIVEWINDOW(%lx, %s)\n", thread, win, win->Title);
 	}
 	inputdevice_acquire ();
 	inputdevice_release_all_keys ();
@@ -194,7 +194,7 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
 	janus_active_window=(JanusWin *) list_win->data;
 #endif 
 	janus_active_window=jwin;
-	JWLOG("aros_win_thread[%lx]: janus_active_window=%lx\n", thread, janus_active_window);
+	JWLOG("[%lx]: janus_active_window=%lx\n", thread, janus_active_window);
 	ReleaseSemaphore(&sem_janus_active_win);
 
 	break;
@@ -204,12 +204,16 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
 	JanusWin *old;
 
 	if(win) {
-	  JWLOG("aros_win_thread[%lx]: IDCMP_INACTIVEWINDOW(%lx, %s)\n", thread, win, win->Title);
+	  JWLOG("[%lx]: IDCMP_INACTIVEWINDOW(%lx, %s)\n", thread, win, win->Title);
 	}
+	JWLOG("bla..\n");
 	inputdevice_unacquire ();
+	JWLOG("bla..\n");
 
 	Delay(10);
+	JWLOG("bla..\n");
 	ObtainSemaphore(&sem_janus_active_win);
+	JWLOG("bla..\n");
 #if 0
 	ObtainSemaphore(&sem_janus_window_list);
 	list_win=g_slist_find_custom(janus_windows,
@@ -219,16 +223,20 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
 	old=(JanusWin *) list_win->data;
 #endif
 	old=jwin;
+	JWLOG("bla..\n");
 	if(old == janus_active_window) {
 	  janus_active_window=NULL;
-	  JWLOG("aros_win_thread[%lx]: janus_active_window=NULL\n", thread);
+	  JWLOG("[%lx]: janus_active_window=NULL\n", thread);
+	JWLOG("bla..\n");
 	  copy_clipboard_to_aros();
+	JWLOG("bla..\n");
 	}
+	JWLOG("bla..\n");
 	ReleaseSemaphore(&sem_janus_active_win);
 	break;
     }
   }
-  JWLOG("aros_win_thread[%lx]: handle_input(jwin %lx, ..) done\n", thread, jwin);
+  JWLOG("[%lx]: handle_input(jwin %lx, ..) done\n", thread, jwin);
   LEAVE
 }
 
@@ -256,7 +264,7 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
       break;
 
     case IDCMP_GADGETDOWN:
-      JWLOG("aros_win_thread[%lx]: IDCMP_GADGETDOWN\n", thread);
+      JWLOG("[%lx]: IDCMP_GADGETDOWN\n", thread);
       gadid = ((struct Gadget *)((struct IntuiMessage *)msg)->IAddress)->GadgetID;
       handle_gadget(thread, jwin, gadid);
       break;
@@ -280,14 +288,14 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
     case IDCMP_CLOSEWINDOW:
       if(!jwin->custom) {
 	/* fake IDCMP_CLOSEWINDOW to original aos3 window */
-	JWLOG("aros_win_thread[%lx]: CLOSEWINDOW received for jwin %lx (%s)\n", 
+	JWLOG("[%lx]: CLOSEWINDOW received for jwin %lx (%s)\n", 
 		thread, jwin, win->Title);
 
 	ObtainSemaphore(&janus_messages_access);
 	/* this gets freed in ad_job_fetch_message! */
 	jmsg=AllocVec(sizeof(JanusMsg), MEMF_CLEAR); 
 	if(!jmsg) {
-	  JWLOG("aros_win_thread[%lx]: ERROR: no memory (ignored message)\n", thread);
+	  JWLOG("[%lx]: ERROR: no memory (ignored message)\n", thread);
 	  break;
 	}
 	jmsg->jwin=jwin;
@@ -305,11 +313,11 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 	 * can detect that the operation has completed by receiving 
 	 * the IDCMP_CHANGEWINDOW IDCMP message
 	 */
-	JWLOG("aros_win_thread[%lx]: IDCMP_CHANGEWINDOW for jwin %lx : received\n", thread, jwin);
-	JWLOG("aros_win_thread[%lx]: jwin->delay %d\n", thread, jwin->delay);
+	JWLOG("[%lx]: IDCMP_CHANGEWINDOW for jwin %lx : received\n", thread, jwin);
+	JWLOG("[%lx]: jwin->delay %d\n", thread, jwin->delay);
 	if(jwin->delay > WIN_DEFAULT_DELAY) {
 	  jwin->delay=0;
-	  JWLOG("aros_win_thread[%lx]: => set jwin->delay to %d\n", thread, jwin->delay);
+	  JWLOG("[%lx]: => set jwin->delay to %d\n", thread, jwin->delay);
 	}
 	refresh_content(jwin);
 	activate_ticks(jwin, 0);
@@ -327,12 +335,12 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 #endif
       }
       else {
-	JWLOG("aros_win_thread[%lx]: IDCMP_CHANGEWINDOW: jwin->custom, do nothing\n", thread);
+	JWLOG("[%lx]: IDCMP_CHANGEWINDOW: jwin->custom, do nothing\n", thread);
       }
       break;
 
     case IDCMP_NEWSIZE:
-      JWLOG("aros_win_thread[%lx]: IDCMP_NEWSIZE: jwin %lx ->resize = TRUE\n", thread, jwin);
+      JWLOG("[%lx]: IDCMP_NEWSIZE: jwin %lx ->resize = TRUE\n", thread, jwin);
       jwin->resized=TRUE;
       break;
 
@@ -359,19 +367,19 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 
 	    if(layer == jwin->aroswin->WLayer) {
 	      /* inside ourselves */
-	      JWLOG("aros_win_thread[%lx]: IDCMP_MOUSEMOVE: inside\n", thread);
+	      JWLOG("[%lx]: IDCMP_MOUSEMOVE: inside\n", thread);
 	      if(!pointer_is_hidden) {
 		hide_pointer (jwin->aroswin);
-		JWLOG("aros_win_thread[%lx]: POINTER: hide\n", thread);
+		JWLOG("[%lx]: POINTER: hide\n", thread);
 		pointer_is_hidden=TRUE;
 	      }
 	    }
 	    else {
 
 	      found=FALSE;
-	      JWLOG("aros_win_thread[%lx]: ObtainSemaphore(&sem_janus_window_list);\n", thread);
+	      JWLOG("[%lx]: ObtainSemaphore(&sem_janus_window_list);\n", thread);
 	      ObtainSemaphore(&sem_janus_window_list);
-	      JWLOG("aros_win_thread[%lx]: obtained sem_janus_window_list sem \n",thread);
+	      JWLOG("[%lx]: obtained sem_janus_window_list sem \n",thread);
 
 	      /* if we are above one of our other windows, hide it too */
 	      list_win=janus_windows;
@@ -381,7 +389,7 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 		  found=TRUE;
 		  if(!pointer_is_hidden) {
 		    hide_pointer (jwin->aroswin);
-		    JWLOG("aros_win_thread[%lx]: POINTER: hide\n", thread);
+		    JWLOG("[%lx]: POINTER: hide\n", thread);
 		    pointer_is_hidden=TRUE;
 		  }
 		}
@@ -391,14 +399,14 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 	      if(!found) {
 		if(pointer_is_hidden) {
 		  show_pointer (jwin->aroswin);
-		  JWLOG("aros_win_thread[%lx]: POINTER: show\n", thread);
+		  JWLOG("[%lx]: POINTER: show\n", thread);
 		  pointer_is_hidden=FALSE;
 		}
 	      }
 
-	      JWLOG("aros_win_thread[%lx]: ReleaseSemaphore(&sem_janus_window_list)\n", thread);
+	      JWLOG("[%lx]: ReleaseSemaphore(&sem_janus_window_list)\n", thread);
 	      ReleaseSemaphore(&sem_janus_window_list);
-	      JWLOG("aros_win_thread[%lx]: released sem_janus_window_list sem \n",thread);
+	      JWLOG("[%lx]: released sem_janus_window_list sem \n",thread);
 	    }
 
 	  }
@@ -435,12 +443,12 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 	if(IntuitionBase->ActiveWindow != win) {
 	  /* this seems to be a bug in aros, why are we getting those messages at all !? */
 	  /* no, it is a feature. Any window on a screen gets those.. C=.. */
-	  JWLOG("aros_win_thread[%lx]: WARNING: foreign IDCMP message IDCMP_MENUVERIFY received\n", thread);
+	  JWLOG("[%lx]: WARNING: foreign IDCMP message IDCMP_MENUVERIFY received\n", thread);
 	}
 	else {
 	  struct IntuiMessage *im=(struct IntuiMessage *)msg;
 	  flags=get_long_p(jwin->aos3win + 24); 
-	  JWLOG("aros_win_thread[%lx]: IDCMP_MENUVERIFY flags: %lx\n", thread, flags);
+	  JWLOG("[%lx]: IDCMP_MENUVERIFY flags: %lx\n", thread, flags);
 
 	  /* depending on whether the original amigaOS window has WFLG_RMBTRAP set
 	   * or not, we need to show a menu or not. This is quite a brain damaged
@@ -450,12 +458,12 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 	   */
 
 	  if(flags & WFLG_RMBTRAP) {
-	    JWLOG("aros_win_thread[%lx]: IDCMP_MENUVERIFY => right click only\n", thread);
+	    JWLOG("[%lx]: IDCMP_MENUVERIFY => right click only\n", thread);
 	    im->Code = MENUCANCEL;
 	    my_setmousebuttonstate(0, 1, 1); /* MENUDOWN */
 	  }
 	  else {
-	    JWLOG("aros_win_thread[%lx]: IDCMP_MENUVERIFY => real IDCMP_MENUVERIFY\n", thread);
+	    JWLOG("[%lx]: IDCMP_MENUVERIFY => real IDCMP_MENUVERIFY\n", thread);
 	    /* show pointer. As long as the menus are displayed, we won't get any mousemove
 	     * events, so the pointer would not be shown, if moved.
 	     */
@@ -483,7 +491,7 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 
     case IDCMP_MENUPICK:
       if(!jwin->custom) {
-	JWLOG("aros_win_thread[%lx]: IDCMP_MENUPICK\n", thread);
+	JWLOG("[%lx]: IDCMP_MENUPICK\n", thread);
 
 	/* nothing selected, but this could mean, the user clicked twice very fast and
 	 * thus wanted to activate a DMRequest. So we remember/check the time of the last
@@ -491,10 +499,10 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 	 */
 	if(code==MENUNULL) {
 	  if(jwin->micros) {
-	    JWLOG("aros_win_thread[%lx]: MENUNULL difference: %d\n", thread,
+	    JWLOG("[%lx]: MENUNULL difference: %d\n", thread,
 	          olisecs(secs, micros) - olisecs(jwin->secs, jwin->micros));
 	    if(olisecs(secs, micros) - olisecs(jwin->secs, jwin->micros) < 1500) {
-	      JWLOG("aros_win_thread[%lx]: MENUNULL DOUBLE!!\n", thread);
+	      JWLOG("[%lx]: MENUNULL DOUBLE!!\n", thread);
 	      /* we already had one MENUDOWN up in MENUVERIFY */
 	      setmousebuttonstate(0, 1, 0); /* MENUUP */
 	      //Delay(1000);
@@ -573,7 +581,7 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 
 #endif
     case IDCMP_REFRESHWINDOW:
-      JWLOG("aros_win_thread[%lx]: IDCMP_REFRESHWINDOW!\n", thread);
+      JWLOG("[%lx]: IDCMP_REFRESHWINDOW!\n", thread);
 #if 0
 	if (use_delta_buffer) {
 	    /* hack: this forces refresh */
@@ -593,7 +601,7 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
       EndRefresh (win, TRUE);
       break;
     default:
-      JWLOG("aros_win_thread[%lx]: Unknown IDCMP class %lx received\n", thread, class);
+      JWLOG("[%lx]: Unknown IDCMP class %lx received\n", thread, class);
       break;
   }
 
@@ -641,32 +649,32 @@ static void aros_win_thread (void) {
 
   ENTER
 
-  JWLOG("aros_win_thread[%lx]: =============== thread %lx started ===============\n",thread, thread);
+  JWLOG("[%lx]: =============== thread %lx started ===============\n",thread, thread);
 
   /* 
    * deadlock sometimes..?
    */
-  JWLOG("aros_win_thread[%lx]: ObtainSemaphore(&sem_janus_window_list);\n", thread);
+  JWLOG("[%lx]: ObtainSemaphore(&sem_janus_window_list);\n", thread);
   ObtainSemaphore(&sem_janus_window_list);
-  JWLOG("aros_win_thread[%lx]: obtained sem_janus_window_list sem \n",thread);
+  JWLOG("[%lx]: obtained sem_janus_window_list sem \n",thread);
 
   /* who are we? */
   list_win=g_slist_find_custom(janus_windows, 
 			     	(gconstpointer) thread,
 			     	&aos3_process_compare);
 
-  JWLOG("aros_win_thread[%lx]: ReleaseSemaphore(&sem_janus_window_list)\n", thread);
+  JWLOG("[%lx]: ReleaseSemaphore(&sem_janus_window_list)\n", thread);
   ReleaseSemaphore(&sem_janus_window_list);
-  JWLOG("aros_win_thread[%lx]: released sem_janus_window_list sem \n",thread);
+  JWLOG("[%lx]: released sem_janus_window_list sem \n",thread);
 
   if(!list_win) {
-    JWLOG("aros_win_thread[%lx]: ERROR: window of this task not found in window list !?\n",thread);
+    JWLOG("[%lx]: ERROR: window of this task not found in window list !?\n",thread);
     goto EXIT; 
   }
 
   jwin=(JanusWin *) list_win->data;
-  JWLOG("aros_win_thread[%lx]: win: %lx \n",thread,jwin);
-  JWLOG("aros_win_thread[%lx]: win->aos3win: %lx\n",thread,
+  JWLOG("[%lx]: win: %lx \n",thread,jwin);
+  JWLOG("[%lx]: win->aos3win: %lx\n",thread,
                                                               jwin->aos3win);
 
   /* init gadget access semaphore */
@@ -681,7 +689,7 @@ static void aros_win_thread (void) {
 
     x=get_word((ULONG) jwin->aos3win +  4);
     y=get_word((ULONG) jwin->aos3win +  6);
-    JWLOG("aros_win_thread[%lx]: x,y: %d, %d\n",thread, x, y);
+    JWLOG("[%lx]: x,y: %d, %d\n",thread, x, y);
 
     /* idcmp flags we always need: */
     idcmpflags= IDCMP_NEWSIZE | 
@@ -700,9 +708,9 @@ static void aros_win_thread (void) {
     /* AROS and Aos3 use the same flags */
     flags     =get_long_p(jwin->aos3win + 24); 
 
-    JWLOG("aros_win_thread[%lx]: org flags: %lx \n", thread, flags);
+    JWLOG("[%lx]: org flags: %lx \n", thread, flags);
 
-    JWLOG("aros_win_thread[%lx]: WFLG_ACTIVATE: %lx \n", thread, flags & WFLG_ACTIVATE);
+    JWLOG("[%lx]: WFLG_ACTIVATE: %lx \n", thread, flags & WFLG_ACTIVATE);
 
     /* we are always WFLG_SMART_REFRESH and never BACKDROP! */
     flags=flags & 0xFFFFFEFF;  /* remove refresh bits and backdrop */
@@ -712,7 +720,7 @@ static void aros_win_thread (void) {
 
     flags=flags | WFLG_SMART_REFRESH | WFLG_GIMMEZEROZERO;
 
-    JWLOG("aros_win_thread[%lx]: new flags: %lx \n", thread, flags);
+    JWLOG("[%lx]: new flags: %lx \n", thread, flags);
     
     /* CHECKME: need borders here, too? */
     minw=get_word((ULONG) jwin->aos3win + 16); 
@@ -725,100 +733,100 @@ static void aros_win_thread (void) {
        * I did not find that anywhere, but for aos3 this seems to
        * be true. FIXME?
        */
-      JWLOG("aros_win_thread[%lx]: this is a WFLG_WBENCHWINDOW\n");
+      JWLOG("[%lx]: this is a WFLG_WBENCHWINDOW\n");
       maxw=0xF000;
       maxh=0xF000;
     }
 
     w=get_word((ULONG) jwin->aos3win +  8);
     h=get_word((ULONG) jwin->aos3win + 10);
-    JWLOG("aros_win_thread[%lx]: w,h: %d, %d\n",thread, w, h);
+    JWLOG("[%lx]: w,h: %d, %d\n",thread, w, h);
 
     bl=get_byte((ULONG) jwin->aos3win + 54);
     bt=get_byte((ULONG) jwin->aos3win + 55);
     br=get_byte((ULONG) jwin->aos3win + 56);
     bb=get_byte((ULONG) jwin->aos3win + 57);
-    JWLOG("aros_win_thread[%lx]: border left, right, top, bottom: %d, %d, %d, %d\n",thread, bl, br, bt, bb);
+    JWLOG("[%lx]: border left, right, top, bottom: %d, %d, %d, %d\n",thread, bl, br, bt, bb);
 
     gadget=get_long_p(jwin->aos3win + 62);
-    JWLOG("aros_win_thread[%lx]: ============= gadget =============\n",thread);
-    JWLOG("aros_win_thread[%lx]: gadget window: (%lx) %s\n", thread, title, title);
-    JWLOG("aros_win_thread[%lx]: gadget borderleft: %d\n",thread,bl);
-    JWLOG("aros_win_thread[%lx]: gadget borderright: %d\n",thread,br);
-    JWLOG("aros_win_thread[%lx]: gadget bordertop: %d\n",thread,bt);
-    JWLOG("aros_win_thread[%lx]: gadget borderbottom: %d\n",thread,bb);
+    JWLOG("[%lx]: ============= gadget =============\n",thread);
+    JWLOG("[%lx]: gadget window: (%lx) %s\n", thread, title, title);
+    JWLOG("[%lx]: gadget borderleft: %d\n",thread,bl);
+    JWLOG("[%lx]: gadget borderright: %d\n",thread,br);
+    JWLOG("[%lx]: gadget bordertop: %d\n",thread,bt);
+    JWLOG("[%lx]: gadget borderbottom: %d\n",thread,bb);
     while(gadget) {
       care=FALSE; /* we need to care for that gadget in respect to plusx/y */
 
-      JWLOG("aros_win_thread[%lx]: gadget: === %lx ===\n",thread, gadget);
-      JWLOG("aros_win_thread[%lx]: gadget: x y: %d x %d\n",thread, 
+      JWLOG("[%lx]: gadget: === %lx ===\n",thread, gadget);
+      JWLOG("[%lx]: gadget: x y: %d x %d\n",thread, 
 	       get_word(gadget + 4), get_word(gadget +  6));
-      JWLOG("aros_win_thread[%lx]: gadget: w h: %d x %d\n",thread, 
+      JWLOG("[%lx]: gadget: w h: %d x %d\n",thread, 
 	       get_word(gadget + 8), get_word(gadget + 10));
 
       gadget_flags=get_word(gadget + 12);
-      //JWLOG("aros_win_thread[%lx]: gadget: flags %x\n",thread, 
+      //JWLOG("[%lx]: gadget: flags %x\n",thread, 
 							     //gadget_flags);
       if(gadget_flags & 0x0010) {
-	JWLOG("aros_win_thread[%lx]: gadget: GACT_RIGHTBORDER\n",thread);
+	JWLOG("[%lx]: gadget: GACT_RIGHTBORDER\n",thread);
 	care=TRUE;
       }
       if(gadget_flags & 0x0020) {
-	JWLOG("aros_win_thread[%lx]: gadget: GACT_LEFTBORDER\n",thread);
+	JWLOG("[%lx]: gadget: GACT_LEFTBORDER\n",thread);
 	/* care=TRUE !? */;
       }
       if(gadget_flags & 0x0040) {
-	JWLOG("aros_win_thread[%lx]: gadget: GACT_TOPBORDER\n",thread);
+	JWLOG("[%lx]: gadget: GACT_TOPBORDER\n",thread);
 	/* care=TRUE !? */;
       }
       if(gadget_flags & 0x0080) {
-	JWLOG("aros_win_thread[%lx]: gadget: GACT_BOTTOMBORDER\n",thread);
+	JWLOG("[%lx]: gadget: GACT_BOTTOMBORDER\n",thread);
 	care=TRUE;
       }
 
       gadget_type =get_word(gadget + 16); 
-      //JWLOG("aros_win_thread[%lx]: gadget: type %x\n",thread, gadget_type);
+      //JWLOG("[%lx]: gadget: type %x\n",thread, gadget_type);
 
       if(gadget_type & 0x8000) {
-	JWLOG("aros_win_thread[%lx]: gadget: GTYP_SYSGADGET\n",thread);
+	JWLOG("[%lx]: gadget: GTYP_SYSGADGET\n",thread);
       }
       if(gadget_type & 0x0005) {
-	JWLOG("aros_win_thread[%lx]: gadget: GTYP_CUSTOMGADGET\n",thread);
+	JWLOG("[%lx]: gadget: GTYP_CUSTOMGADGET\n",thread);
       }
       else {
-	JWLOG("aros_win_thread[%lx]: gadget: UNKNOW TYPE: %d\n",thread,gadget_type);
+	JWLOG("[%lx]: gadget: UNKNOW TYPE: %d\n",thread,gadget_type);
       }
 
       if(gadget_type & 0x0010) {
-	JWLOG("aros_win_thread[%lx]: gadget: GTYP_SIZING\n",thread);
+	JWLOG("[%lx]: gadget: GTYP_SIZING\n",thread);
 	care=FALSE;
       }
       if(gadget_type & 0x0020) {
-	JWLOG("aros_win_thread[%lx]: gadget: GTYP_WDRAGGING\n",thread);
+	JWLOG("[%lx]: gadget: GTYP_WDRAGGING\n",thread);
 	care=FALSE;
       }
       if(gadget_type & 0x0040) {
-	JWLOG("aros_win_thread[%lx]: gadget: GTYP_WDEPTH\n",thread);
+	JWLOG("[%lx]: gadget: GTYP_WDEPTH\n",thread);
 	care=FALSE;
       }
       if(gadget_type & 0x0060) {
-	JWLOG("aros_win_thread[%lx]: gadget: GTYP_WZOOM\n",thread);
+	JWLOG("[%lx]: gadget: GTYP_WZOOM\n",thread);
 	care=FALSE;
       }
       if(gadget_type & 0x0080) {
-	JWLOG("aros_win_thread[%lx]: gadget: GTYP_CLOSE\n",thread);
+	JWLOG("[%lx]: gadget: GTYP_CLOSE\n",thread);
 	care=FALSE;
       }
 
       if((gadget_type & GTYP_GTYPEMASK) == GTYP_PROPGADGET) {
-	JWLOG("aros_win_thread[%lx]: gadget: GTYP_PROPGADGET\n",thread);
+	JWLOG("[%lx]: gadget: GTYP_PROPGADGET\n",thread);
 	dump_prop_gadget(thread, gadget);
       }
       if(care) {
-	JWLOG("aros_win_thread[%lx]: gadget: ==> ! CARE ! <==\n",thread);
+	JWLOG("[%lx]: gadget: ==> ! CARE ! <==\n",thread);
       }
       else {
-	JWLOG("aros_win_thread[%lx]: gadget: ==> NOT CARE <==\n",thread);
+	JWLOG("[%lx]: gadget: ==> NOT CARE <==\n",thread);
       }
 
       gadget=get_long(gadget); /* NextGadget */
@@ -841,9 +849,9 @@ static void aros_win_thread (void) {
       jwin->plusy=0;
     }
 
-    JWLOG("aros_win_thread[%lx]: jwin: %lx\n", thread, jwin);
-    JWLOG("aros_win_thread[%lx]: jwin->jscreen: %lx\n", thread, jwin->jscreen);
-    JWLOG("aros_win_thread[%lx]: jwin->jscreen->arosscreen: %lx\n", thread, jwin->jscreen->arosscreen);
+    JWLOG("[%lx]: jwin: %lx\n", thread, jwin);
+    JWLOG("[%lx]: jwin->jscreen: %lx\n", thread, jwin->jscreen);
+    JWLOG("[%lx]: jwin->jscreen->arosscreen: %lx\n", thread, jwin->jscreen->arosscreen);
 
     /* 
      * as we open our AROS screens in an own thread out of sync, it
@@ -851,12 +859,12 @@ static void aros_win_thread (void) {
      * the new screen, which is not yet opened on AROS
      */
     i=20;
-    JWLOG("aros_win_thread[%lx]: locking Screen %s ..\n", thread, jwin->jscreen->pubname);
+    JWLOG("[%lx]: locking Screen %s ..\n", thread, jwin->jscreen->pubname);
     while(!(jwin->jscreen->arosscreen && (lock=LockPubScreen(jwin->jscreen->pubname))) && i--) {
-      JWLOG("aros_win_thread[%lx]: #%d wait for jwin->jscreen->arosscreen ..\n", thread, i);
+      JWLOG("[%lx]: #%d wait for jwin->jscreen->arosscreen ..\n", thread, i);
       Delay(10);
     }
-    JWLOG("aros_win_thread[%lx]: locked Screen %s: lock %lx\n", thread, jwin->jscreen->pubname, lock);
+    JWLOG("[%lx]: locked Screen %s: lock %lx\n", thread, jwin->jscreen->pubname, lock);
 
 #if 0
     /* check, if we have any border gadgets already */
@@ -865,12 +873,12 @@ static void aros_win_thread (void) {
       update_gadgets(thread, jwin);
 #if 0
       if(init_border_gadgets(thread, jwin)) {
-	JWLOG("aros_win_thread[%lx]: needs to add gadgets\n", thread);
+	JWLOG("[%lx]: needs to add gadgets\n", thread);
 	/* something changed. as we did not have any before, we need to create them */
 	jwin->firstgadget=make_gadgets(thread, jwin);
 #endif
       if(!jwin->firstgadget) {
-	JWLOG("aros_win_thread[%lx]: ERROR: could not create gadgets :(!\n", thread);
+	JWLOG("[%lx]: ERROR: could not create gadgets :(!\n", thread);
 	/* goto EXIT; ? */
       }
 #if 0
@@ -935,25 +943,25 @@ static void aros_win_thread (void) {
 
     }
     else {
-      JWLOG("aros_win_thread[%lx]: ERROR: could not wait for my screen :(!\n", thread);
+      JWLOG("[%lx]: ERROR: could not wait for my screen :(!\n", thread);
       goto EXIT;
     }
-    JWLOG("aros_win_thread[%lx]: opened aroswin %lx (aroswin->WScreen %lx) on jwin->jscreen->arosscreen %lx!\n", thread, jwin->aroswin, jwin->aroswin->WScreen, jwin->jscreen->arosscreen);
+    JWLOG("[%lx]: opened aroswin %lx (aroswin->WScreen %lx) on jwin->jscreen->arosscreen %lx!\n", thread, jwin->aroswin, jwin->aroswin->WScreen, jwin->jscreen->arosscreen);
 
-    JWLOG("aros_win_thread[%lx]: x, y : %d, %d\n",thread,  
+    JWLOG("[%lx]: x, y : %d, %d\n",thread,  
            x - estimated_border_left + bl,
 	   y - estimated_border_top  + bt );
 
-    JWLOG("aros_win_thread[%lx]: opened aros window: %lx (%s)\n", thread, jwin->aroswin, title);
+    JWLOG("[%lx]: opened aros window: %lx (%s)\n", thread, jwin->aroswin, title);
 
     if(!jwin->aroswin) {
-      JWLOG("aros_win_thread[%lx]: ERROR: OpenWindow FAILED!\n",thread);
+      JWLOG("[%lx]: ERROR: OpenWindow FAILED!\n",thread);
       goto EXIT;
     }
 
     aroswin=jwin->aroswin; /* shorter to read..*/
 
-    JWLOG("aros_win_thread[%lx]: opened window: w,h: %d, %d\n", thread, jwin->aroswin->Width, jwin->aroswin->Height);
+    JWLOG("[%lx]: opened window: w,h: %d, %d\n", thread, jwin->aroswin->Width, jwin->aroswin->Height);
 #if 0
     /* resize now, as we need those damned windows borders added */
     ChangeWindowBox(aroswin,
@@ -980,7 +988,7 @@ static void aros_win_thread (void) {
      */
   else {
 
-    JWLOG("aros_win_thread[%lx]: open window on custom screen %lx\n", thread, jwin->jscreen->arosscreen);
+    JWLOG("[%lx]: open window on custom screen %lx\n", thread, jwin->jscreen->arosscreen);
 
     jwin->aroswin =  OpenWindowTags(NULL,
 				      WA_CustomScreen, jwin->jscreen->arosscreen,
@@ -1001,11 +1009,11 @@ static void aros_win_thread (void) {
 					 	IDCMP_REFRESHWINDOW,
 				      TAG_DONE);
 
-    JWLOG("aros_win_thread[%lx]: new aros window %lx\n", thread, jwin->aroswin);
+    JWLOG("[%lx]: new aros window %lx\n", thread, jwin->aroswin);
 
 
     if(!jwin->aroswin) {
-      JWLOG("aros_win_thread[%lx]: ERROR: unable to open window!!!\n", thread);
+      JWLOG("[%lx]: ERROR: unable to open window!!!\n", thread);
       goto EXIT;
     }
 
@@ -1030,31 +1038,33 @@ static void aros_win_thread (void) {
   done=FALSE;
   if(!aroswin->UserPort) {
     /* should not happen.. */
-    JWLOG("aros_win_thread[%lx]: ERROR: win %lx has no UserPort !?!\n", thread,aroswin);
+    JWLOG("[%lx]: ERROR: win %lx has no UserPort !?!\n", thread,aroswin);
     done=TRUE;
   }
 
   /* handle IDCMP stuff */
-  JWLOG("aros_win_thread[%lx]: jwin->task: %lx\n", thread, jwin->task);
-  JWLOG("aros_win_thread[%lx]: UserPort: %lx\n", thread, aroswin->UserPort);
+  JWLOG("[%lx]: jwin->task: %lx\n", thread, jwin->task);
+  JWLOG("[%lx]: UserPort: %lx\n", thread, aroswin->UserPort);
 
   /* refresh display in case we missed some updates, which happened between
    * the amigaOS OpenWindow and our OpenWindow
    */
   refresh_content(jwin);
 
-  JWLOG("aros_win_thread[%lx]: IDCMP loop for window %lx\n", thread, aroswin);
+  JWLOG("[%lx]: IDCMP loop for window %lx\n", thread, aroswin);
 
   while(!done && !jwin->dead) {
 
     /* wait either for a CTRL_C or a window signal */
-    JWLOG("aros_win_thread[%lx]: Wait(%lx)\n", thread, 1L << aroswin->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
+    JWLOG("[%lx]: Wait(%lx)\n", thread, 1L << aroswin->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
     signals = Wait(1L << aroswin->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
-    JWLOG("aros_win_thread[%lx]: signals: %lx\n", thread, signals);
+    JWLOG("[%lx]: signals: %lx\n", thread, signals);
+
+    ObtainSemaphore(&sem_janus_win_handling);
 
     if (signals & (1L << aroswin->UserPort->mp_SigBit)) {
-      //JWLOG("aros_win_thread[%lx]: aroswin->UserPort->mp_SigBit received\n", thread);
-      //JWLOG("aros_win_thread[%lx]: GetMsg(aroswin %lx ->UserPort %lx)\n", thread, aroswin, aroswin->UserPort);
+      //JWLOG("[%lx]: aroswin->UserPort->mp_SigBit received\n", thread);
+      //JWLOG("[%lx]: GetMsg(aroswin %lx ->UserPort %lx)\n", thread, aroswin, aroswin->UserPort);
 
       while ((msg = (struct IntuiMessage *) GetMsg(aroswin->UserPort))) {
 	//JWLOG("IDCMP msg for window %lx\n",aroswin);
@@ -1091,9 +1101,9 @@ static void aros_win_thread (void) {
 	  }
 	  else {
 	    /* might be, someone adds/removes gadgets */
-	    kprintf("[%lx] AttemptSemaphore(&(jwin->gadget_access)) ... (aros_win_thread)\n", thread);
+	    JWLOG("[%lx] AttemptSemaphore(&(jwin->gadget_access)) ... (aros_win_thread)\n", thread);
 	    if(AttemptSemaphore(&(jwin->gadget_access))) {
-	      kprintf("[%lx] AttemptSemaphore(&(jwin->gadget_access)) success (aros_win_thread)\n", thread);
+	      JWLOG("[%lx] AttemptSemaphore(&(jwin->gadget_access)) success (aros_win_thread)\n", thread);
 
 	      if(jwin->jgad[GAD_UPARROW] || jwin->jgad[GAD_LEFTARROW]) {
 
@@ -1154,7 +1164,7 @@ static void aros_win_thread (void) {
 		jwin->prop_update_count--;
 	      }
 	      ReleaseSemaphore(&(jwin->gadget_access));
-	      kprintf("[%lx] ReleaseSemaphore(&(jwin->gadget_access)) (aros_win_thread)\n", thread);
+	      JWLOG("[%lx] ReleaseSemaphore(&(jwin->gadget_access)) (aros_win_thread)\n", thread);
 	    }
 
 	    ReplyMsg ((struct Message *)msg);
@@ -1163,7 +1173,7 @@ static void aros_win_thread (void) {
 	      if(jwin->intui_tickskip++ > jwin->intui_tickspeed) {
 		jwin->intui_tickskip=0;
 		jwin->intui_tickcount--;
-		JWLOG("IDCMP_INTUITICKS %2d refresh_content(%lx)\n", jwin->intui_tickcount, jwin);
+		JWLOG("[%lx] IDCMP_INTUITICKS %2d refresh_content(%lx)\n", thread, jwin->intui_tickcount, jwin);
 		refresh_content(jwin);
 	      }
 	    }
@@ -1179,36 +1189,37 @@ static void aros_win_thread (void) {
     }
     if(signals & SIGBREAKF_CTRL_C) {
       /* Ctrl-C */
-      JWLOG("aros_win_thread[%lx]: SIGBREAKF_CTRL_C received\n", thread);
+      JWLOG("[%lx]: SIGBREAKF_CTRL_C received\n", thread);
       done=TRUE;
       /* from now on, don't touch it anymore, as it maybe invalid! */
       jwin->dead=TRUE;
     }
+    ReleaseSemaphore(&sem_janus_win_handling);
   }
 
   /* ... and a time to die. */
-  JWLOG("aros_win_thread[%lx]: time to die!\n", thread);
+  JWLOG("[%lx]: time to die!\n", thread);
 
 EXIT:
-  JWLOG("aros_win_thread[%lx]: ObtainSemaphore(&sem_janus_window_list)\n", thread);
+  JWLOG("[%lx]: ObtainSemaphore(&sem_janus_window_list)\n", thread);
   ObtainSemaphore(&sem_janus_window_list);
 
   if(aroswin) {
     if(jwin->firstgadget) {
-      JWLOG("aros_win_thread[%lx]: free gadgets of window %lx ..\n",thread,aroswin);
+      JWLOG("[%lx]: free gadgets of window %lx ..\n",thread,aroswin);
       remove_gadgets(thread, jwin);
       de_init_border_gadgets(thread, jwin);
     }
 
     if(jwin->dri) {
-      JWLOG("aros_win_thread[%lx]: FreeScreenDrawInfo ..\n",thread);
+      JWLOG("[%lx]: FreeScreenDrawInfo ..\n",thread);
       FreeScreenDrawInfo(jwin->aroswin->WScreen, jwin->dri);
       jwin->dri=NULL;
     }
 
-    JWLOG("aros_win_thread[%lx]: close window %lx ..\n",thread,aroswin);
+    JWLOG("[%lx]: close window %lx ..\n",thread,aroswin);
     CloseWindow(aroswin);
-    JWLOG("aros_win_thread[%lx]: closed window %lx\n",thread,aroswin);
+    JWLOG("[%lx]: closed window %lx\n",thread,aroswin);
 
     jwin->aroswin=NULL;
   }
@@ -1219,7 +1230,7 @@ EXIT:
     lock=NULL;
   }
 
-  JWLOG("aros_win_thread[%lx]: scan list_win..\n",thread);
+  JWLOG("[%lx]: remove list_win..\n",thread);
   if(list_win) {
     /*
     *if(list_win->data) {
