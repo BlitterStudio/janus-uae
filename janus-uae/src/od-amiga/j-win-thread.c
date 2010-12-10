@@ -27,8 +27,8 @@
 #include <intuition/gadgetclass.h>
 
 
-#define JWTRACING_ENABLED 1
-#define JW_ENTER_ENABLED 1
+//#define JWTRACING_ENABLED 1
+//#define JW_ENTER_ENABLED 1
 #include "j.h"
 #include "memory.h"
 
@@ -124,8 +124,8 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
   ENTER
 
   JWLOG("[%lx]: handle_input(jwin %lx, aros win %lx, class %lx, code %d)\n", thread, 
-                                                                                            jwin, win, 
-											    class, code);
+                                                                             jwin, win, 
+									     class, code);
 
   switch (class) {
       
@@ -296,6 +296,7 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 	jmsg=AllocVec(sizeof(JanusMsg), MEMF_CLEAR); 
 	if(!jmsg) {
 	  JWLOG("[%lx]: ERROR: no memory (ignored message)\n", thread);
+	  ReleaseSemaphore(&janus_messages_access);
 	  break;
 	}
 	jmsg->jwin=jwin;
