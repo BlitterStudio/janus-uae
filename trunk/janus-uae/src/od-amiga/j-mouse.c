@@ -120,7 +120,7 @@ static uae_u32 nonP96(struct Screen *screen, ULONG *m68k_results) {
 
 extern int visible_left_border;
 
-/* if TRUE, set mouse to thos (amigaos) mouse coordinates once! */
+/* if TRUE, set mouse to those (amigaos) mouse coordinates once! */
 BOOL manual_mouse=FALSE;
 WORD manual_mouse_x=0;
 WORD manual_mouse_y=0;
