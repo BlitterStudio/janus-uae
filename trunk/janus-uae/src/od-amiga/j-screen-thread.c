@@ -305,7 +305,7 @@ static void aros_screen_thread (void) {
   JWLOG("aros_scr_thread[%lx]: jscr: %lx \n",thread,jscr);
 
   signal=AllocSignal(-1);
-  if(!signal) {
+  if(signal == -1) {
     JWLOG("aros_scr_thread[%lx]: unable to alloc signal\n");
 
     JWLOG("aros_scr_thread[%lx]: ReleasedSemaphore(&sem_janus_screen_list)\n",thread);
@@ -380,7 +380,7 @@ EXIT:
     jscr->name=NULL;
   }
 
-  if(signal) {
+  if(signal != -1) {
     FreeSignal(signal);
   }
 
