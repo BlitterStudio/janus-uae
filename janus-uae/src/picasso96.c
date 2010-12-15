@@ -5,22 +5,24 @@
  * Copyright 1997-2001 Brian King <Brian_King@Mitel.com, Brian_King@Cloanto.com>
  * Copyright 2000-2001 Bernd Roesch
  * Copyright 2003-2005 Richard Drummond
- * Copyright 2009 Oliver Brunner - aros<at>oliver-brunner.de
+ * Copyright 2009-2010 Oliver Brunner <aros<at>oliver-brunner.de>
  *
  * This file is part of Janus-UAE.
  *
- * Janus-Daemon is free software: you can redistribute it and/or modify
+ * Janus-UAE is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Janus-Daemon is distributed in the hope that it will be useful,
+ * Janus-UAE is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * $Id$
  *
  ************************************************************************
  *
@@ -49,6 +51,7 @@
  *   programs started from a Picasso workbench.
  */
 
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -58,7 +61,8 @@
 #include "custom.h"
 #include "newcpu.h"
 #include "xwin.h"
-#include "picasso96.h"
+#include "cyber.h"
+#include "p96.h"
 #include "uae_endian.h"
 
 #ifdef JIT
@@ -77,7 +81,7 @@ int p96hsync_counter;
 
 int p96hack_vpos, p96hack_vpos2, p96refresh_active;
 
-#define P96TRACING_ENABLED 0
+#define P96TRACING_ENABLED 1
 #if P96TRACING_ENABLED
 #define P96TRACE(x)	do { kprintf x; } while(0)
 #define P96LOG(...)     do { kprintf("P96: ");kprintf(__VA_ARGS__); } while(0)
@@ -1359,29 +1363,42 @@ uae_u32 REGPARAM2 picasso_InitCard (struct regstruct *regs)
 	res.P96ID[3] = '-';
 	res.P96ID[4] = '0';
 	res.P96ID[5] = ':';
+
+	P96LOG("i %d: %dx%d\n", i, DisplayModes[i].res.width, DisplayModes[i].res.height);
 	strcpy  (res.Name, "uaegfx:");
 	strncat (res.Name, DisplayModes[i].name,
-		 strchr (DisplayModes[i].name, ',') - DisplayModes[i].name);
+      		strchr (DisplayModes[i].name, ',') - DisplayModes[i].name);
+	if(DisplayModes[i].name) {
+	  P96LOG("DisplayModes[i].name: %s\n", DisplayModes[i].name);
+	}
+
 	res.Modes[PLANAR] = 0;
 	res.Modes[CHUNKY] = 0;
 	res.Modes[HICOLOR] = 0;
 	res.Modes[TRUECOLOR] = 0;
 	res.Modes[TRUEALPHA] = 0;
 
-	do {
+	/*do*/ {
 	    /* Handle this display mode's depth */
 	    /* Only add the modes when there is enough P96 RTG memory to hold the bitmap */
 	    unsigned long required = DisplayModes[i].res.width * DisplayModes[i].res.height
 				     * DisplayModes[i].depth;
+	    P96LOG("required: %d\n", required);
 	    if (allocated_gfxmem - 32768 > required) {
+		P96LOG("required ok: %d\n", required);
+		P96LOG("ok %dx%d, %d-bit\n", DisplayModes[i].res.width, DisplayModes[i].res.height, DisplayModes[i].depth);
 		amigamemptr = gfxmem_start + allocated_gfxmem
 			      - (PSSO_ModeInfo_sizeof * ModeInfoStructureCount++);
 		FillBoardInfo (amigamemptr, &res, &DisplayModes[i]);
 	    }
+	    else {
+	      P96LOG("skipped %dx%d, %d-bit\n", DisplayModes[i].res.width, DisplayModes[i].res.height, DisplayModes[i].depth);
+	    }
 	    i++;
-	} while (i < mode_count
+	} /* while (i < mode_count
 		 && DisplayModes[i].res.width == DisplayModes[j].res.width
 		 && DisplayModes[i].res.height == DisplayModes[j].res.height);
+	*/
 
 	amigamemptr = gfxmem_start + allocated_gfxmem - 16384
 		      + (PSSO_LibResolution_sizeof * LibResolutionStructureCount++);
@@ -1529,7 +1546,7 @@ uae_u32 REGPARAM2 picasso_SetColorArray (struct regstruct *regs)
     uae_u16 start     = m68k_dreg (regs, 0);
     uae_u16 count     = m68k_dreg (regs, 1);
 
-    P96LOG("picasso_SetColorArray\n");
+    P96LOG("picasso_SetColorArray(bordinfo %lx, start %d, count %d)\n", boardinfo, start, count);
 
     uaecptr clut = boardinfo + PSSO_BoardInfo_CLUT + start * 3;
     int changed = 0;
@@ -1556,6 +1573,7 @@ uae_u32 REGPARAM2 picasso_SetColorArray (struct regstruct *regs)
 	if (start + count > last_color_changed)
 	    last_color_changed = start + count;
     }
+    P96LOG("picasso_SetColorArray(bordinfo %lx, start %d, count %d) => done\n", boardinfo, start, count);
     return 1;
 }
 
@@ -3116,10 +3134,11 @@ static int resolution_compare (const void *a, const void *b)
 /* Call this function first, near the beginning of code flow
  * NOTE: Don't stuff it in InitGraphics() which seems reasonable...
  * Instead, put it in customreset() for safe-keeping.  */
-void InitPicasso96 (void)
-{
-    static int first_time = 1;
+void InitPicasso96 (void) {
 
+    static int first_time = 1;
+    ULONG modeID;
+    struct Screen *hostscreen;
 
     memset (&picasso96_state, 0, sizeof (struct picasso96_state_struct));
 
@@ -3127,6 +3146,27 @@ void InitPicasso96 (void)
 	int i;
 
 	P96LOG("InitPicasso96 (first time)\n");
+
+	/* 
+	 * try to set host_pixel_format to native host format,
+	 * should fix the Noveau speed problems
+	 */
+	P96LOG("detect host pixel format\n");
+	hostscreen=LockPubScreen(NULL); /* get (and open if necessary default public screen */
+	if(hostscreen) {
+
+	  modeID=GetVPModeID(&(hostscreen->ViewPort));
+	  picasso96_pixel_format=GetCyberIDAttr(modeID, CYBRIDATTR_PIXFMT);
+	  P96LOG("modeID %lx -> host_pixel_format %lx\n", modeID, picasso96_pixel_format);
+
+	  UnlockPubScreen(NULL, hostscreen);
+	}
+	else {
+	  P96LOG("ERROR: unable to LockPubScreen\n");
+	  /* default format */
+	  picasso96_pixel_format=RGBFF_CHUNKY;
+	}
+
 	for (i = 0; i < 256; i++) {
 	    p2ctab[i][0] = (((i & 128) ? 0x01000000 : 0)
 			  | ((i & 64)  ? 0x010000 : 0)
@@ -3138,9 +3178,6 @@ void InitPicasso96 (void)
 			  | ((i & 1)   ? 0x01 : 0));
 	}
 	mode_count = DX_FillResolutions (&picasso96_pixel_format);
-
-        qsort (DisplayModes, mode_count, sizeof (struct PicassoResolution),
-	       resolution_compare);
 
         /* Work-around for possible P96 bug. A8R8G8B8 modes have
 	 * palette emulation issues. Tell the world we have a
@@ -3155,9 +3192,20 @@ void InitPicasso96 (void)
 	}
 
 	for (i = 0; i < mode_count; i++) {
+#if 0
+	  if(i != mode_count-1) {
+#endif
 	    sprintf (DisplayModes[i].name, "%dx%d, %d-bit, %d Hz",
 		     DisplayModes[i].res.width, DisplayModes[i].res.height,
 		     DisplayModes[i].depth * 8, DisplayModes[i].refresh);
+#if 0
+	  }
+	  else {
+	    /* make us recognizeable (x,y is never used, but the ','s are necessary) */
+	    sprintf (DisplayModes[i].name, "clone wanderer, (x), (y)");
+
+	  }
+#endif
 	    switch (DisplayModes[i].depth) {
 	    case 1:
 		if (DisplayModes[i].res.width > chunky.width)
@@ -3185,6 +3233,10 @@ void InitPicasso96 (void)
 		break;
 	    }
 	}
+
+        qsort (DisplayModes, mode_count, sizeof (struct PicassoResolution),
+	       resolution_compare);
+
 	ShowSupportedResolutions ();
 
 	first_time = 0;

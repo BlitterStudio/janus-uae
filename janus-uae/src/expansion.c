@@ -20,7 +20,7 @@
 #include "autoconf.h"
 #include "filesys.h"
 #include "xwin.h"
-#include "picasso96.h"
+#include "p96.h"
 #include "savestate.h"
 #include "zfile.h"
 #include "catweasel.h"

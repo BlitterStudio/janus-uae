@@ -133,7 +133,7 @@
 #include "version.h"
 
 #define BitMap Picasso96BitMap  /* Argh! */
-#include "picasso96.h"
+#include "p96.h"
 #undef BitMap
 
 #include "ami.h"
@@ -2186,6 +2186,8 @@ void clone_area(WORD x, WORD y, UWORD width, UWORD height) {
 	  ((JanusWin *)elem->data)->aos3win &&
 	  ((JanusWin *)elem->data)->aroswin) {
 
+	JWLOG("clone_area: jwin %lx ->delay %d\n", elem->data, ((JanusWin *)elem->data)->delay);
+
 	/* clone only windows on actual screen !? */
 	if(((JanusWin *)elem->data)->aroswin->WScreen == IntuitionBase->FirstScreen) {
   	  if(!clone_window_area((JanusWin *)elem->data, x, y, width, height)) {
@@ -2201,10 +2203,11 @@ void clone_area(WORD x, WORD y, UWORD width, UWORD height) {
 	/* debug only */
 	if(elem->data) {
 	  if(((JanusWin *)elem->data)->delay) {
-	    JWLOG("clone_area: jwin->data->delay %d\n",((JanusWin *)elem->data)->delay);
+	    JWLOG("clone_area: jwin %lx ->delay %d\n", elem->data, ((JanusWin *)elem->data)->delay);
 	  }
 	  else {
-	    JWLOG("clone_area: do nothing: delay %d, dead %d, aos3win %lx, aroswin %lx\n",
+	    JWLOG("clone_area: jwin %lx ->delay %d\n", elem->data, ((JanusWin *)elem->data)->delay);
+	    JWLOG("clone_area: => do nothing: delay %d, dead %d, aos3win %lx, aroswin %lx\n",
 		   ((JanusWin *)elem->data)->delay,
 		   ((JanusWin *)elem->data)->dead,
 		   ((JanusWin *)elem->data)->aos3win,
@@ -2816,6 +2819,8 @@ int DX_FillResolutions (uae_u16 *ppixel_format)
 
     };
 
+    static const int bpx2format[] = {0, RGBFF_CHUNKY, RGBFF_R5G6B5PC, 0, RGBFF_B8G8R8A8};
+
     screen=LockPubScreen(NULL);
 
     if(!screen) {
@@ -2837,7 +2842,6 @@ int DX_FillResolutions (uae_u16 *ppixel_format)
 
     for (j = 0; (j < (sizeof(modes)/sizeof(modes[0]))) && (j < MAX_PICASSO_MODES); j++)
     {
-        static const int bpx2format[] = {0, RGBFF_CHUNKY, RGBFF_R5G6B5PC, 0, RGBFF_B8G8R8A8};
 
 	if (modes[j].width > maxw || modes[j].height > maxh)
 	    continue;
@@ -2850,6 +2854,17 @@ int DX_FillResolutions (uae_u16 *ppixel_format)
         count++;
         *ppixel_format |= bpx2format[bpx];
     }
+
+    /* special "clone" monitor with host wb resolutions */
+#if 0
+    DisplayModes[count].res.width  = screen->Width;
+    DisplayModes[count].res.height = screen->Height;
+    DisplayModes[count].depth      = bpx;
+    DisplayModes[count].refresh    = 75;
+
+    count++;
+    *ppixel_format |= bpx2format[bpx];
+#endif
 
     UnlockPubScreen(NULL,screen);
     return count;
