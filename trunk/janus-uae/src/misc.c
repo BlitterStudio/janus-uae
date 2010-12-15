@@ -15,7 +15,7 @@
 #include "autoconf.h"
 #include "traps.h"
 #include "enforcer.h"
-#include "picasso96.h"
+#include "p96.h"
 
 static uae_u32 REGPARAM2 misc_demux (TrapContext *context)
 {

@@ -103,7 +103,8 @@ noinst_HEADERS = \
 	include/memory.h	\
 	include/native2amiga.h	include/newcpu.h	\
 	include/noflags.h	include/options.h	\
-	include/osemu.h		include/picasso96.h	\
+	include/osemu.h		include/p96.h	        \
+	include/cyber.h \
 	include/readcpu.h	include/savestate.h	\
 	include/scsidev.h	include/serial.h	\
 	include/sinctable.h				\

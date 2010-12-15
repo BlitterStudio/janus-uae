@@ -43,7 +43,7 @@
 #include "memory.h"
 #include "newcpu.h"
 #include "xwin.h"
-#include "picasso96.h"
+#include "p96.h"
 #include "traps.h"
 #include "uae_endian.h"
 #include "inputdevice.h"

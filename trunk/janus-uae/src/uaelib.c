@@ -25,7 +25,7 @@
 #include "disk.h"
 #include "debug.h"
 #include "audio.h"
-#include "picasso96.h"
+#include "p96.h"
 #include "version.h"
 
 /*

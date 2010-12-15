@@ -33,7 +33,7 @@
 #include "autoconf.h"
 #include "inputdevice.h"
 #include "uae.h"
-#include "picasso96.h"
+#include "p96.h"
 #include "catweasel.h"
 #include "debug.h"
 #include "ar.h"
@@ -1357,9 +1357,11 @@ void setbuttonstateall (struct uae_input_device *id, struct uae_input_device2 *i
     uae_u32 omask = id2->buttonmask & mask;
     uae_u32 nmask = (state ? 1 : 0) << button;
     char *custom;
+  //kprintf("FW: setmousebuttonstateall..\n");
 
     if (button >= ID_BUTTON_TOTAL)
 	return;
+  //kprintf("FW: setmousebuttonstateall.. 2\n");
     for (i = 0; i < MAX_INPUT_SUB_EVENT; i++) {
 	event = id->eventid[ID_BUTTON_OFFSET + button][sublevdir[state <= 0 ? 1 : 0][i]];
 	custom = id->custom[ID_BUTTON_OFFSET + button][sublevdir[state <= 0 ? 1 : 0][i]];
@@ -1380,6 +1382,7 @@ void setbuttonstateall (struct uae_input_device *id, struct uae_input_device2 *i
 	else
 	    id2->buttonmask &= ~mask;
     }
+  //kprintf("FW: setmousebuttonstateall.. exit\n");
 }
 
 
@@ -2224,6 +2227,7 @@ void setmousebuttonstateall (int mouse, uae_u32 buttonbits, uae_u32 buttonmask)
 
 void setmousebuttonstate (int mouse, int button, int state)
 {
+  //kprintf("FW: setmousebuttonstate..\n");
     if (!mice[mouse].enabled)
 	return;
     setbuttonstateall (&mice[mouse], &mice2[mouse], button, state);

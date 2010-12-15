@@ -4537,7 +4537,6 @@ static uae_u32 REGPARAM2 filesys_dev_storeinfo (TrapContext *context)
     return type;
 }
 
-/******************** o1i calltrap here !! ********************/
 void filesys_install (void)
 {
     uaecptr loop;

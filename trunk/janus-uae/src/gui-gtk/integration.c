@@ -54,7 +54,7 @@
 #include "debug.h"
 #include "inputdevice.h"
 #include "xwin.h"
-#include "picasso96.h"
+#include "p96.h"
 #include "version.h"
 
 #include "chooserwidget.h"

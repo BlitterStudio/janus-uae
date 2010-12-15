@@ -41,7 +41,7 @@
 #include "newcpu.h"
 #include "xwin.h"
 #include "gui.h"
-#include "picasso96.h"
+#include "p96.h"
 #include "drawing.h"
 #ifdef JIT
 # include "compemu.h"
