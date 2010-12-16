@@ -122,12 +122,12 @@ APTR           old_WindowLimits;
 __asm__("_my_CloseWindow_SetFunc:\n"
 	"cmp.l #1,_state\n"
 	"blt close_patch_disabled\n"
-	PUSHSTACK
+	PUSHFULLSTACK
 	"moveq #11,d0\n"
 	"moveq #7,d1\n"
 	"move.l _calltrap,a1\n"
 	"jsr (a1)\n"
-	POPSTACK
+	POPFULLSTACK
 	"close_patch_disabled:\n"
 	PUSHA3
 	"move.l _old_CloseWindow, a3\n"
