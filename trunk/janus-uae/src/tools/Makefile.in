@@ -53,8 +53,8 @@ genlinetoscr: genlinetoscr.o
 custom.o: blit.h
 drawing.o: linetoscr.c
 
-cpudefs.c: build68k @top_srcdir@/../table68k
-	./build68k <@top_srcdir@/../table68k >cpudefs.c
+cpudefs.c: build68k @top_srcdir@/table68k
+	./build68k <@top_srcdir@/table68k >cpudefs.c
 
 .c.o:
 	$(CC) $(INCLUDES) -c $(INCDIRS) $(CFLAGS) $(X_CFLAGS) $(DEBUGFLAGS) $(CFLAGS_$@) $< -o $@
