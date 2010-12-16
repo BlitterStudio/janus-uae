@@ -56,15 +56,15 @@ fi
 
 AC_CONFIG_FILES([Makefile])
 
-AC_CONFIG_LINKS([missing.c:../missing.c
-                 writelog.c:../writelog.c
-                 readcpu.c:../readcpu.c
-                 build68k.c:../build68k.c
-                 gencpu.c:../gencpu.c
-		 gencomp.c:../gencomp.c
-                 genblitter.c:../genblitter.c
-		 blitops.c:../blitops.c
-		 genlinetoscr.c:../genlinetoscr.c
+AC_CONFIG_LINKS([missing.c:./missing.c
+                  dnl writelog.c:tools/writelog.c
+                  dnl readcpu.c:tools/readcpu.c
+                  dnl build68k.c:tools/build68k.c
+                  dnl gencpu.c:tools/gencpu.c
+		  dnl gencomp.c:tools/gencomp.c
+                  dnl genblitter.c:tools/genblitter.c
+		  dnl blitops.c:tools/blitops.c
+		  dnl genlinetoscr.c:tools/genlinetoscr.c
 ])
 
 AC_OUTPUT
