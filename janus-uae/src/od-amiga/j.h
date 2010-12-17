@@ -53,7 +53,7 @@
 #include <gtk/gtk.h>
 #include "uae.h"
 
-//#define JWTRACING_ENABLED 1
+#define JWTRACING_ENABLED 1
 #if JWTRACING_ENABLED
 #define JWLOG(...)   do { kprintf("%s:%d  %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -346,9 +346,6 @@ void o1i_clone_windows_task(void);
 void o1i_clone_windows(void);
 
 void clone_area(WORD x, WORD y, UWORD width, UWORD height);
-BOOL clone_window_area(JanusWin *jwin, 
-                       WORD areax, WORD areay, 
-		       UWORD areawidth, UWORD areaheight);
 
 UWORD get_LeftEdge(ULONG m68kwin);
 UWORD get_TopEdge(ULONG m68kwin);
