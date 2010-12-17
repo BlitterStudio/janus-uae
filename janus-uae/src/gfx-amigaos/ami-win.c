@@ -228,6 +228,10 @@ static void set_screen_for_picasso_param(BOOL showme);
 
 static int get_BytesPerRow(struct Window *win);
 
+static BOOL clone_window_area(JanusWin *jwin, 
+                       WORD areax, WORD areay, 
+		       UWORD areawidth, UWORD areaheight);
+
 /****************************************************************************/
 
 void main_window_led(int led, int on);
@@ -2058,7 +2062,7 @@ UWORD get_BorderBottom(ULONG win) {
  *
  */
 
-BOOL clone_window_area(JanusWin *jwin, 
+static BOOL clone_window_area(JanusWin *jwin, 
                        WORD areax, WORD areay, 
 		       UWORD areawidth, UWORD areaheight) {
   WORD winx, winy, winxend, winyend, areaxend, areayend;
@@ -2234,6 +2238,7 @@ void clone_area(WORD x, WORD y, UWORD width, UWORD height) {
  * m68k_win needs to be on the picasso96 wb screen (otherwise not tested).
  *
  */
+#if 0
 void clone_window(ULONG m68k_win, struct Window *aros_win, 
                   int start, int lines) {
 
@@ -2326,6 +2331,7 @@ void clone_window(ULONG m68k_win, struct Window *aros_win,
   }
 
 }
+#endif
 
 /***************************************************************************/
 /* same as DoMethod(uaedisplay, MUIM_UAEDisplay_Update, start, i)
