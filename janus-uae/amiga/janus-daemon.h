@@ -29,8 +29,11 @@
 //#include <proto/exec.h>
 #include <clib/intuition_protos.h>
 
+#if defined DEBUG
 #define DebOut(...) PrintOut(__FILE__,__LINE__,__func__,__VA_ARGS__) 
-//#define DebOut(...) 
+#else
+#define DebOut(...) 
+#endif
 
 #define AROSTRAPBASE 0xF0FF90
 
@@ -107,6 +110,7 @@ char *public_screen_name(struct Screen *scr);
 /* lock-window.c */
 
 BOOL window_exists(struct Window *window);
+BOOL assert_window(struct Window *window);
 
 /* debug.c */
 void PrintOut(const char *file, unsigned int line, const char *func, const char *format, ...);

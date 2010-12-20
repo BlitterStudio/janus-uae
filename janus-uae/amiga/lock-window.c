@@ -69,7 +69,7 @@ static BOOL assert_window_on_screen(struct Screen *screen, struct Window *window
  *
  * ATT: you have to call LockIBase yourself!!
  ****************************************************/
-static BOOL assert_window(struct Window *window) {
+BOOL assert_window(struct Window *window) {
 
   struct Screen *i;
 
