@@ -96,7 +96,10 @@ BOOL assert_window(struct Window *window) {
  * - can't work 100%, sorry
  * - we are not allowed to call any high level system
  *   functions during LockIBase!
+ *
+ * OBSOLETE: use assert_window instead!
  ****************************************************/
+#if 0
 BOOL window_exists(struct Window *window) {
 
   ULONG lock;
@@ -126,4 +129,5 @@ BOOL window_exists(struct Window *window) {
 
   return result;
 }
+#endif
 

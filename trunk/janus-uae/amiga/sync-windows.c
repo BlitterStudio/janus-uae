@@ -358,6 +358,8 @@ BOOL is_in_window(struct Window *win, UWORD x, UWORD y) {
  */
 static void ChangeWindowBox_safe(struct Window *win, WORD left, WORD top, WORD width, WORD height) {
 
+  ULONG lock;
+
 #if 0
   WORD  dx, dy, dh, dw;
   UWORD gadget_x;
@@ -429,6 +431,18 @@ ChangeWindowBox_with_API:
 
   ENTER
 
+  DebOut("LockIBase()\n");
+  lock=LockIBase(0);
+  if(!assert_window(win)) {
+    DebOut("window %lx does not exist anymore, ChangeWindowBox ignored\n", win);
+    DebOut("UnlockIBase()\n");
+    UnlockIBase(lock);
+    LEAVE
+    return;
+  }
+
+  DebOut("UnlockIBase()\n");
+  UnlockIBase(lock);
   ChangeWindowBox(win, left, top, width, height);
 
   LEAVE
@@ -462,22 +476,13 @@ void report_host_windows() {
     DebOut("report_host_windows():   x/y: %d x %d\n",get_hi(command_mem[i+1]),get_lo(command_mem[i+1]));
     DebOut("report_host_windows():   w/h: %d x %d\n",get_hi(command_mem[i+2]),get_lo(command_mem[i+2]));
 
-    if(window_exists(win)) {
-      DebOut("report_host_windows(): win %lx exists here\n", win);
-      left  =get_hi(command_mem[i+1]) - win->BorderLeft;
-      top   =get_lo(command_mem[i+1]) - win->BorderTop;
-      width =get_hi(command_mem[i+2]) + win->BorderLeft + win->BorderRight;
-      height=get_lo(command_mem[i+2]) + win->BorderTop + win->BorderBottom;
+    left  =get_hi(command_mem[i+1]) - win->BorderLeft;
+    top   =get_lo(command_mem[i+1]) - win->BorderTop;
+    width =get_hi(command_mem[i+2]) + win->BorderLeft + win->BorderRight;
+    height=get_lo(command_mem[i+2]) + win->BorderTop + win->BorderBottom;
 
-      ChangeWindowBox_safe(win, left, top, width, height);
+    ChangeWindowBox_safe(win, left, top, width, height);
 
-      if(window_exists(win)) {
-   	DebOut("report_host_windows(): win %lx exists here too\n", win);
-      }
-      else {
-	DebOut("report_host_windows(): ERROR: win %lx exists here NO LONGER!!!\n", win);
-      }
-    }
     i=i+5;
   }
 
@@ -502,7 +507,6 @@ static void my_MoveWindowInFrontOf(struct Window *window,
                                    struct Window *behindWindow) {
 
   ULONG lock;
-  ULONG pri;
 
   ENTER
   //printf("my_MoveWindowInFrontOf enteren\n");
@@ -669,6 +673,7 @@ void sync_windows() {
 
 void sync_active_window() {
   struct Window *win;
+  ULONG          lock;
 
   ENTER
 
@@ -677,14 +682,20 @@ void sync_active_window() {
 
   DebOut("win: %lx\n", win);
 
-  if(window_exists(win)) {
-    DebOut("win %lx exists\n", win);
+  DebOut("LockIBase()\n");
+  lock=LockIBase(0);
 
-    ActivateWindow(win);
+  if(!assert_window(win)) {
+    DebOut("win %lx does not exist anymore\n", win);
+    DebOut("UnlockIBase()\n");
+    UnlockIBase(lock);
+    LEAVE
+    return;
   }
-  else {
-    DebOut("win %lx has been closed inbetween !??\n", win);
-  }
+
+  DebOut("UnlockIBase()\n");
+  UnlockIBase(lock);
+  ActivateWindow(win);
 
   LEAVE
 }
