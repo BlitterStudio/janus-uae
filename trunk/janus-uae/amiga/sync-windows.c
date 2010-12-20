@@ -501,6 +501,9 @@ void report_host_windows() {
 static void my_MoveWindowInFrontOf(struct Window *window, 
                                    struct Window *behindWindow) {
 
+  ULONG lock;
+  ULONG pri;
+
   ENTER
   //printf("my_MoveWindowInFrontOf enteren\n");
   if(window == old_MoveWindowInFront_Window &&
@@ -523,16 +526,31 @@ static void my_MoveWindowInFrontOf(struct Window *window,
 
   old_MoveWindowInFront_Window=window;
   old_MoveWindowInFront_BehindWindow=behindWindow;
-  
-  DebOut("MoveWindowInFrontOf(%lx - %s, %lx - %s)\n", (ULONG) window,       window->Title,
-                                                      (ULONG) behindWindow, behindWindow->Title); 
 
+  DebOut("LockIBase()\n");
+  lock=LockIBase(0);
+  
   /* we try to make sure, that nobody closes any of our windows inbetween .. */
-  if(!window_exists(window) || !window_exists(behindWindow)) {
+  if(!assert_window(window) || !assert_window(behindWindow)) {
+    DebOut("UnlockIBase()\n");
+    UnlockIBase(lock);
+    DebOut("window %lx or %lx is not available any more, MoveWindowInFrontOf ignored!\n", 
+           window, behindWindow);
     goto EXIT;
   }
 
+  /* hmm, we need to ensure, this window is not closed inbetween! 
+   * But we are forced to release the lock on intuitionbase.
+   *
+   * We are running at a very hight priority, so we hope, nobody closes them inbetween! 
+   */
+
+  DebOut("UnlockIBase()\n");
+  UnlockIBase(lock);
+ 
   MoveWindowInFrontOf(window,behindWindow);
+  DebOut("did a MoveWindowInFrontOf(%lx - %s, %lx - %s)\n", (ULONG) window,       window->Title,
+                                                            (ULONG) behindWindow, behindWindow->Title); 
 
 EXIT:
   LEAVE
