@@ -109,7 +109,6 @@ char *public_screen_name(struct Screen *scr);
 
 /* lock-window.c */
 
-BOOL window_exists(struct Window *window);
 BOOL assert_window(struct Window *window);
 
 /* debug.c */

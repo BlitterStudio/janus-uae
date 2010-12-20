@@ -103,17 +103,35 @@ void closewin(struct Window *w) {
 
 /* just "press" the button */
 void closewin(struct Window *w) {
-  UWORD  m;
+  UWORD m;
+  ULONG lock;
+  struct Screen *scr;
+  WORD  x,y;
 
   ENTER
 
   /* who knows, maybe window was closed inbetween already */
-  if(window_exists(w)) {
-
-    m=w->BorderTop / 2; /* middle of close gadget */
-
-    SetMouse(w->WScreen, w->LeftEdge + m, w->TopEdge + m, IECODE_LBUTTON, TRUE, TRUE);
+  DebOut("LockIBase()\n");
+  lock=LockIBase(0);
+  if(!assert_window(w)) {
+    DebOut("window %lx was already closed!\n", w);
+    DebOut("UnlockIBase()\n");
+    UnlockIBase(lock);
+    LEAVE
+    return;
   }
+
+  /* get all window attributes now, as long as we hold the intui lock */
+  m=w->BorderTop / 2; /* middle of close gadget */
+
+  x  =w->LeftEdge + m;
+  y  =w->TopEdge + m;
+  scr=w->WScreen;
+
+  DebOut("UnlockIBase()\n");
+  UnlockIBase(lock);
+
+  SetMouse(scr, x, y, IECODE_LBUTTON, TRUE, TRUE);
 
   LEAVE
 
