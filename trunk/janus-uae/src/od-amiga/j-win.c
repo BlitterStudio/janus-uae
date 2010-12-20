@@ -661,6 +661,7 @@ uae_u32 ad_job_mark_window_dead(ULONG aos_window) {
   GSList        *list_win;
   JanusWin      *jwin;
   uae_u32        result=TRUE;
+  ULONG          wait;
 
   ENTER
 
@@ -702,11 +703,36 @@ uae_u32 ad_job_mark_window_dead(ULONG aos_window) {
   JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
   ReleaseSemaphore(&sem_janus_window_list);
 
+
+  /* 
+   * this is not really necessary, as it just blocks the amigaOS CloseWindow call,
+   * but it should do no harm either.
+   */
+  JWLOG("wait until window is closed ..\n");
+  wait=100;
+  while(wait && list_win) {
+    wait--;
+    ObtainSemaphore(&sem_janus_window_list);
+
+    list_win=g_slist_find_custom(janus_windows,
+                               (gconstpointer) aos_window,
+                               &aos3_window_compare);
+    ReleaseSemaphore(&sem_janus_window_list);
+    if(list_win) {
+      JWLOG("wait for jwin %lx to close (#%d)\n", jwin, wait);
+      Delay(1);
+    }
+  }
+
+  if(list_win) {
+    JWLOG("ERROR: jwin %lx was not closed in time!!\n", jwin);
+    result=FALSE;
+  }
+
   LEAVE
 
   return result;
 }
-
 
 uae_u32 ad_job_switch_uae_window(ULONG *m68k_results) {
 

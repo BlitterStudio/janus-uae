@@ -27,8 +27,8 @@
 #include <intuition/gadgetclass.h>
 
 
-//#define JWTRACING_ENABLED 1
-//#define JW_ENTER_ENABLED 1
+#define JWTRACING_ENABLED 1
+#define JW_ENTER_ENABLED 1
 #include "j.h"
 #include "memory.h"
 
@@ -240,10 +240,70 @@ static void handle_input(struct Window *win, JanusWin *jwin, ULONG class, UWORD 
   LEAVE
 }
 
-
 /* semaphore protect this ? */
 BOOL  pointer_is_hidden=FALSE;
 ULONG pointer_skip=0;
+
+static void hide_or_show_pointer(struct Process *thread, JanusWin *jwin) {
+  struct Layer  *layer;
+  struct Screen *scr = jwin->aroswin->WScreen;
+  GSList        *list_win;
+  JanusWin      *swin;
+  BOOL           found;
+
+  if(!jwin->custom) {
+    /* hide pointer, if it is above us */
+    LockLayerInfo (&scr->LayerInfo);
+    layer = WhichLayer (&scr->LayerInfo, scr->MouseX, scr->MouseY);
+    UnlockLayerInfo (&scr->LayerInfo);
+
+    if(layer == jwin->aroswin->WLayer) {
+      /* inside ourselves */
+      JWLOG("[%lx]: inside\n", thread);
+      if(!pointer_is_hidden) {
+	hide_pointer (jwin->aroswin);
+	JWLOG("[%lx]: POINTER: hide\n", thread);
+	pointer_is_hidden=TRUE;
+      }
+    }
+    else {
+
+      found=FALSE;
+      JWLOG("[%lx]: ObtainSemaphore(&sem_janus_window_list);\n", thread);
+      ObtainSemaphore(&sem_janus_window_list);
+      JWLOG("[%lx]: obtained sem_janus_window_list sem \n",thread);
+
+      /* if we are above one of our other windows, hide it too */
+      list_win=janus_windows;
+      while(!found && list_win) {
+	swin=(JanusWin *) list_win->data;
+	if(swin && swin->aroswin && (layer == swin->aroswin->WLayer)) {
+	  found=TRUE;
+	  if(!pointer_is_hidden) {
+	    hide_pointer (jwin->aroswin);
+	    JWLOG("[%lx]: POINTER: hide\n", thread);
+	    pointer_is_hidden=TRUE;
+	  }
+	}
+	list_win=g_slist_next(list_win);
+      }
+
+      if(!found) {
+	if(pointer_is_hidden) {
+	  show_pointer (jwin->aroswin);
+	  JWLOG("[%lx]: POINTER: show\n", thread);
+	  pointer_is_hidden=FALSE;
+	}
+      }
+
+      JWLOG("[%lx]: ReleaseSemaphore(&sem_janus_window_list)\n", thread);
+      ReleaseSemaphore(&sem_janus_window_list);
+      JWLOG("[%lx]: released sem_janus_window_list sem \n",thread);
+    }
+
+  }
+}
+
 
 static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, ULONG secs, ULONG micros, BOOL *done) {
 
@@ -353,68 +413,12 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 	if(pointer_skip==0) {
 
 	  pointer_skip=3;
-
-	  if(!jwin->custom) {
-	    /* hide pointer, if it is above us */
-	    struct Layer  *layer;
-	    struct Screen *scr = jwin->aroswin->WScreen;
-	    GSList        *list_win;
-	    JanusWin      *swin;
-	    BOOL           found;
-
-	    LockLayerInfo (&scr->LayerInfo);
-	    layer = WhichLayer (&scr->LayerInfo, scr->MouseX, scr->MouseY);
-	    UnlockLayerInfo (&scr->LayerInfo);
-
-	    if(layer == jwin->aroswin->WLayer) {
-	      /* inside ourselves */
-	      JWLOG("[%lx]: IDCMP_MOUSEMOVE: inside\n", thread);
-	      if(!pointer_is_hidden) {
-		hide_pointer (jwin->aroswin);
-		JWLOG("[%lx]: POINTER: hide\n", thread);
-		pointer_is_hidden=TRUE;
-	      }
-	    }
-	    else {
-
-	      found=FALSE;
-	      JWLOG("[%lx]: ObtainSemaphore(&sem_janus_window_list);\n", thread);
-	      ObtainSemaphore(&sem_janus_window_list);
-	      JWLOG("[%lx]: obtained sem_janus_window_list sem \n",thread);
-
-	      /* if we are above one of our other windows, hide it too */
-	      list_win=janus_windows;
-	      while(!found && list_win) {
-		swin=(JanusWin *) list_win->data;
-		if(swin && swin->aroswin && (layer == swin->aroswin->WLayer)) {
-		  found=TRUE;
-		  if(!pointer_is_hidden) {
-		    hide_pointer (jwin->aroswin);
-		    JWLOG("[%lx]: POINTER: hide\n", thread);
-		    pointer_is_hidden=TRUE;
-		  }
-		}
-		list_win=g_slist_next(list_win);
-	      }
-
-	      if(!found) {
-		if(pointer_is_hidden) {
-		  show_pointer (jwin->aroswin);
-		  JWLOG("[%lx]: POINTER: show\n", thread);
-		  pointer_is_hidden=FALSE;
-		}
-	      }
-
-	      JWLOG("[%lx]: ReleaseSemaphore(&sem_janus_window_list)\n", thread);
-	      ReleaseSemaphore(&sem_janus_window_list);
-	      JWLOG("[%lx]: released sem_janus_window_list sem \n",thread);
-	    }
-
-	  }
+	  hide_or_show_pointer(thread, jwin);
 	}
 	else {
 	  pointer_skip--;
 	}
+
 	break;
 #if 0
 	/* dmx and dmy are relative to our window */
@@ -645,6 +649,7 @@ static void aros_win_thread (void) {
   UWORD           gadgettype;
   BOOL            public;
   struct Screen  *lock=NULL;
+  LONG            msgcount; /* assert */
 
   /* There's a time to live .. */
 
@@ -1054,6 +1059,10 @@ static void aros_win_thread (void) {
 
   JWLOG("[%lx]: IDCMP loop for window %lx\n", thread, aroswin);
 
+  /* update pointer visibility */
+  pointer_is_hidden=FALSE;
+  hide_or_show_pointer(thread, jwin);
+
   while(!done && !jwin->dead) {
 
     /* wait either for a CTRL_C or a window signal */
@@ -1069,6 +1078,8 @@ static void aros_win_thread (void) {
 
       while ((msg = (struct IntuiMessage *) GetMsg(aroswin->UserPort))) {
 	//JWLOG("IDCMP msg for window %lx\n",aroswin);
+
+	msgcount=1;
 
 	class     = msg->Class;
 	code      = msg->Code;
@@ -1098,6 +1109,7 @@ static void aros_win_thread (void) {
 	      move_vert_prop_gadget(thread, jwin);
 	    }
 	    ReplyMsg ((struct Message *)msg);
+	    msgcount--;
 	    break;
 	  }
 	  else {
@@ -1169,6 +1181,7 @@ static void aros_win_thread (void) {
 	    }
 
 	    ReplyMsg ((struct Message *)msg);
+	    msgcount--;
 
 	    if(jwin->intui_tickcount) {
 	      if(jwin->intui_tickskip++ > jwin->intui_tickspeed) {
@@ -1185,9 +1198,15 @@ static void aros_win_thread (void) {
 	  handle_msg((struct Message *) msg, aroswin, jwin, class, code, dmx, dmy, mx, my, qualifier, 
 		     thread, secs, micros, &done);
 	  ReplyMsg ((struct Message *)msg);
+	  msgcount--;
 	}
       }
     }
+
+    if(msgcount != 0) {
+      JWLOG("[%lx]: =====> ERROR: msgcount: %d <=========\n", msgcount, thread);
+    }
+
     if(signals & SIGBREAKF_CTRL_C) {
       /* Ctrl-C */
       JWLOG("[%lx]: SIGBREAKF_CTRL_C received\n", thread);
@@ -1243,13 +1262,13 @@ EXIT:
     *  list_win->data=NULL;
      } 
     */
-    JWLOG("aros_win_thread[%lx]: g_slist_remove(%lx)\n",thread,list_win);
+    JWLOG("[%lx]: g_slist_remove(%lx)\n",thread,list_win);
     //g_slist_remove(list_win); 
     janus_windows=g_slist_delete_link(janus_windows, list_win);
     list_win=NULL;
   }
 
-  JWLOG("aros_win_thread[%lx]: ReleaseSemaphore(&sem_janus_window_list);\n", thread);
+  JWLOG("[%lx]: ReleaseSemaphore(&sem_janus_window_list);\n", thread);
   ReleaseSemaphore(&sem_janus_window_list);
 
   if(title) {
@@ -1260,7 +1279,7 @@ EXIT:
     DeletePool(jwin->mempool);
     FreeVec(jwin);
   }
-  JWLOG("aros_win_thread[%lx]: =============== thread %lx dies ===============\n",thread, thread);
+  JWLOG("[%lx]: =============== thread %lx dies ===============\n",thread, thread);
 
   LEAVE
 }
