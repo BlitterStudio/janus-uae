@@ -35,8 +35,8 @@
 #include "catweasel.h"
 #endif
 
-//#define JW_ENTER_ENABLED  1
-//#define JWTRACING_ENABLED 1
+#define JW_ENTER_ENABLED  1
+#define JWTRACING_ENABLED 1
 
 #include "od-amiga/j.h"
 
@@ -63,6 +63,7 @@
 #endif
 //#define DEBUG
 
+#define MIN_BLIT_HEIGHT 64
 
 /****************************************************************************/
 
@@ -2071,6 +2072,8 @@ static BOOL clone_window_area(JanusWin *jwin,
   WORD width;
   struct Window* win;
   ULONG aos3win;
+  BOOL resize_done;
+  ULONG old_size;
 
   if(uae_no_display_update) {
     return TRUE;
@@ -2079,66 +2082,109 @@ static BOOL clone_window_area(JanusWin *jwin,
   win=jwin->aroswin;
   aos3win=(ULONG) jwin->aos3win;
 
-  JWLOG("clone_wia (%3d,%3d,%3d,%3d) (%lx)\n",
+  JWLOG("input y size: %d (start %d)\n", areaheight, areay);
+
+  JWLOG("(%3d,%3d,%3d,%3d) (%lx)\n",
            areax,areay,areawidth,areaheight, jwin);
 
   if(!win || !aos3win) {
-    JWLOG("clone_wia (%3d,%3d,%3d,%3d): win %lx||aos3win %lx is NULL!\n", 
+    JWLOG("(%3d,%3d,%3d,%3d): win %lx||aos3win %lx is NULL!\n", 
              areax,areay,areawidth,areaheight,win,aos3win);
     return FALSE;
   }
-
-  areaxend=areax+areawidth;
-  areayend=areay+areaheight;
 
   winy=get_TopEdge(aos3win)   + get_BorderTop(aos3win);
   winx=get_LeftEdge(aos3win)  + get_BorderLeft(aos3win);
   winyend=get_TopEdge(aos3win)+ get_Height(aos3win) - get_BorderBottom(aos3win);
   winxend=get_LeftEdge(aos3win) + get_Width(aos3win) - get_BorderRight(aos3win);
 
-  JWLOG("clone_wia window x,y,xe,ye: %3d,%3d,%3d,%3d\n",
-           winx,winy,winxend,winyend);
-  JWLOG("clone_wia area   x,y,xe,ye: %3d,%3d,%3d,%3d\n",
-           areax,areay,areaxend,areayend);
+  JWLOG("window x,y,xe,ye: %3d,%3d,%3d,%3d\n",
+	     winx,winy,winxend,winyend);
 
-  /* window is above or below our area */
-  if(winy > areayend || winyend < areay) {
-    JWLOG("clone_wia (%3d,%3d,%3d,%3d): y out of bounds\n", 
-             areax,areay,areawidth,areaheight);
+  /* x and width stay the same always */
 
-    return FALSE;
-  }
-
+  areaxend=areax+areawidth;
   /* window is left or right of our area */
   if(winx > areaxend || winxend < areax) {
-    JWLOG("clone_wia (%3d,%3d,%3d,%3d): x out of bounds\n", 
-             areax,areay,areawidth,areaheight);
+    JWLOG("(x %3d,.., width %3d,..): x out of bounds\n", areax,areawidth);
 
     return FALSE;
   }
-
-  /* seems, as if we have to do something.. */
-
   startx=MAX(areax, winx);
-  starty=MAX(areay, winy);
   endx=  MIN(areaxend, winxend);
-  endy=  MIN(areayend, winyend);
 
-  JWLOG("clone_wia: startx %3d starty %3d endx %3d endy %3d\n",
-           startx,starty,endx,endy);
-  JWLOG("clone_wia: WritePixelArray(x %3d y %3d  width %3d height %3d)\n",
-           startx-winx,starty-winy,endx-startx,endy-starty);
-
-  /* this can happen, if we only have a window top border and no
-   * window body at all..?
+  /* Noveau driver needs more than 64pixel height to be optimized.. */
+  /* areayend-areay ensures, that we can grow the area enough to break out of the while loop
+   * endy-starty is the size of the blit, which we increase step by step 
+   *
+   * We have to loop over all security checks and calculations, sorry.
    */
-  if((endx-startx < 0) || (endy-starty < 0)) {
-    JWLOG("WARNING: start - end < 0\n");
-    return TRUE;
+
+  resize_done=FALSE;
+  old_size   =0;
+
+  while(!resize_done) {
+
+    areayend=areay+areaheight;
+
+    JWLOG("area   x,y,xe,ye: %3d,%3d,%3d,%3d\n",
+	     areax,areay,areaxend,areayend);
+
+    /* window is above or below our area */
+    if(winy > areayend || winyend < areay) {
+      JWLOG("(%3d,%3d,%3d,%3d): y out of bounds\n", 
+	       areax,areay,areawidth,areaheight);
+
+      return FALSE;
+    }
+
+    /* seems, as if we have to do something.. */
+
+    starty=MAX(areay, winy);
+    endy=  MIN(areayend, winyend);
+
+    /* this can happen, if we only have a window top border and no
+     * window body at all..?
+     */
+    if((endx-startx < 0) || (endy-starty < 0)) {
+      JWLOG("WARNING: start - end < 0\n");
+      return TRUE;
+    }
+
+    /* if we are too small, start earlier, copy more */
+    if( (endy - starty + jwin->plusy < MIN_BLIT_HEIGHT) ) {
+      if(areay > 1) {
+	areay--;
+      }
+      areaheight++;
+    }
+    else {
+      resize_done=TRUE;
+    }
+
+    JWLOG("y size: %d\n", endy - starty + jwin->plusy);
+    if( (endy - starty + jwin->plusy) == old_size) {
+      resize_done=TRUE;
+    }
+    old_size=endy - starty + jwin->plusy;
   }
+
+  if(! ((endy - starty + jwin->plusy) < MIN_BLIT_HEIGHT) ) {
+    JWLOG("==> size ok now\n");
+  }
+  else {
+    JWLOG("==> size could not be increased (%d)\n", old_size);
+  }
+
+
+  JWLOG("startx %3d starty %3d endx %3d endy %3d\n",
+           startx,starty,endx,endy);
+  JWLOG("WritePixelArray(x %3d y %3d  width %3d height %3d)\n",
+           startx-winx,starty-winy,endx-startx,endy-starty);
 
   obtain_W();
 
+  /* ? obsolete ? */
   if(!uae_main_window_closed) {
     width= W->Width;
   }
@@ -2146,7 +2192,6 @@ static BOOL clone_window_area(JanusWin *jwin,
     width=picasso_vidinfo.width;
   }
 
-    JWLOG("FIND: WritePixelArray ..\n");
   WritePixelArray (
       picasso_memory, 
       startx, /* src x  */
@@ -2742,7 +2787,7 @@ int DX_FillResolutions (uae_u16 *ppixel_format)
     struct Screen *screen;
     ULONG j;
 
-    JWLOG("DX_FillResolutions(%d)\n",ppixel_format);
+    JWLOG("DX_FillResolutions(ppixel_format %lx)\n", *ppixel_format);
 
     /* keep in mind, if you add higher y resolutions, you might have to
      * increas picasso_invalid_lines array !! 
@@ -2856,6 +2901,8 @@ int DX_FillResolutions (uae_u16 *ppixel_format)
         DisplayModes[count].res.height = modes[j].height;
         DisplayModes[count].depth      = bpx;
         DisplayModes[count].refresh    = 75;
+
+	JWLOG("%2d: %dx%d, bpx %d (ppixel_format: %lx)\n", count, modes[j].width, modes[j].height, bpx, *ppixel_format);
 
         count++;
         *ppixel_format |= bpx2format[bpx];
