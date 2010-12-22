@@ -2354,7 +2354,7 @@ static void create_guidlg (void) {
     //DebOut ("Entered\n");
 
     gui_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title (GTK_WINDOW (gui_window), PACKAGE_NAME " control");
+    gtk_window_set_title (GTK_WINDOW (gui_window), PACKAGE_NAME " control: Hot Key = <ctrl alt j>");
     gtk_signal_connect (GTK_OBJECT(gui_window), "delete_event", GTK_SIGNAL_FUNC(did_guidlg_delete), NULL);
 
     vbox = gtk_vbox_new (FALSE, 5);
@@ -2461,6 +2461,8 @@ static void create_guidlg (void) {
      */
     DEBUG_LOG("create_guidlg: gtk_mui_application_iconify %d\n", !currprefs.start_gui);
     gtk_mui_application_iconify(!currprefs.start_gui);
+    DEBUG_LOG("create_guidlg: gtk_mui_application_gui_hotkey: ctrl alt j\n");
+    gtk_mui_application_gui_hotkey("ctrl alt j");
 #endif
 }
 
