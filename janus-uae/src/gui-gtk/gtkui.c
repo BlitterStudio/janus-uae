@@ -110,6 +110,11 @@ static GtkWidget *pause_uae_widget;
 static GtkWidget *reset_uae_widget;
 static GtkWidget *debug_uae_widget;
 
+static GtkWidget *config_load_widget;
+static GtkWidget *config_load_from_widget;
+static GtkWidget *config_save_widget;
+static GtkWidget *config_save_as_widget;
+
 extern GtkWidget  *chipsize_widget[6];
 static const char *chiplabels[] = { "512 KB", "1 MB", "2 MB", "4 MB", "8 MB", NULL };
 
@@ -2183,12 +2188,27 @@ static gint did_guidlg_delete (GtkWidget* window, GdkEventAny* e, gpointer data)
 }
 
 
+static BOOL load_config_possible() {
+  if (uae_get_state () == UAE_STATE_STOPPED) {
+    DEBUG_LOG ("possible!\n");
+    return TRUE;
+  }
+
+  DEBUG_LOG ("impossible!\n");
+
+  return FALSE;
+}
 /******************************
  * "Load Config"
  ******************************/
 static void on_menu_loadconfig (void) {
 
   DEBUG_LOG ("Load config ...\n");
+
+  if(!load_config_possible()) {
+    gui_message("Sorry, cannot load a new configuration,\nwhile UAE is not stopped!\n");
+    return;
+  }
 
   if (!quit_gui) {
     write_comm_pipe_int (&from_gui_pipe, UAECMD_LOAD_CONFIG, 1);
@@ -2438,9 +2458,11 @@ void unlock_jgui(void) {
 static void create_guidlg (void) {
 
     GtkWidget *window, *notebook;
-    GtkWidget *buttonbox, *vbox, *hbox;
+    GtkWidget *buttonbox, *buttonbox2, *vbox, *hbox;
     GtkWidget *thing;
+#if 0
     GtkWidget *menubar, *menuitem, *menuitem_menu;
+#endif
     unsigned int i;
     static const struct _pages {
 	const char *title;
@@ -2475,6 +2497,7 @@ static void create_guidlg (void) {
     gtk_container_add (GTK_CONTAINER (gui_window), vbox);
     gtk_container_set_border_width (GTK_CONTAINER (gui_window), 10);
 
+#if 0
     /* Quick and dirty menu bar */
     menubar = gtk_menu_bar_new();
     gtk_widget_show (menubar);
@@ -2518,6 +2541,12 @@ static void create_guidlg (void) {
     gtk_widget_show (thing);
     gtk_container_add (GTK_CONTAINER (menuitem_menu), thing);
     gtk_signal_connect (GTK_OBJECT(thing), "activate", GTK_SIGNAL_FUNC(on_quit_clicked), NULL);
+#endif
+
+    /* dummy */
+    thing = gtk_hseparator_new ();
+    gtk_box_pack_start (GTK_BOX (vbox), thing, FALSE, TRUE, 0);
+    gtk_widget_show (thing);
 
     /* First line - buttons and power LED */
     hbox = gtk_hbox_new (FALSE, 10);
@@ -2579,6 +2608,15 @@ static void create_guidlg (void) {
     gtk_widget_show (notebook);
     /* Put "about" screen first.  */
     gtk_notebook_set_page (GTK_NOTEBOOK (notebook), i - 1);
+
+    /* Configuration buttons */
+    buttonbox2 = gtk_hbox_new (TRUE, 4);
+    gtk_widget_show (buttonbox2);
+    gtk_box_pack_start (GTK_BOX (vbox), buttonbox2, TRUE, TRUE, 0);
+    config_load_widget      = make_button  ("Load",         buttonbox2, on_menu_loadconfig);
+    config_load_from_widget = make_button  ("Load from ..", buttonbox2, on_menu_loadconfigfrom);
+    config_save_widget      = make_button  ("Save",         buttonbox2, on_menu_saveconfig);
+    config_save_as_widget   = make_button  ("Save As ..",   buttonbox2, on_menu_saveconfigas);
 
     gtk_widget_show (vbox);
 
