@@ -2198,14 +2198,54 @@ static void on_menu_loadconfig (void) {
 /******************************
  * "Load Config From"
  ******************************/
-static void on_menu_loadconfigfrom (void) {
+static void did_close_config (gpointer gdata) {
+  DEBUG_LOG("cancel save!\n");
 
-  DEBUG_LOG ("Load config from ...\n");
+  return;
+}
+
+static void load_config_select (GtkObject *o) {
+
+  const char *s = gtk_file_selection_get_filename (GTK_FILE_SELECTION (o));
+
+  /* ? */
+  if (quit_gui) {
+    return;
+  }
+
+  DEBUG_LOG("old config name: %s\n", optionsfile);
+  DEBUG_LOG("new config name: %s\n", s);
+
+  uae_sem_wait (&gui_sem);
+
+  strncpy (optionsfile, s, 255);
+
+  uae_sem_post (&gui_sem);
+
+  gtk_widget_destroy (o);
 
   if (!quit_gui) {
     write_comm_pipe_int (&from_gui_pipe, UAECMD_LOAD_CONFIG, 1);
   }
 }
+
+static void on_menu_loadconfigfrom (void) {
+
+  GtkWidget *config_selector;
+  
+  DEBUG_LOG ("Load config from ...\n");
+
+  config_selector = make_file_selector ("Load configuration file from ..",load_config_select,did_close_config);
+
+  /* set old path and filename */
+  gtk_file_selection_set_filename(config_selector, optionsfile);
+
+  /* launch it */
+  gtk_widget_show(config_selector);
+
+  DEBUG_LOG ("exit\n");
+}
+
 
 /***********************************
  * "Save Config"
@@ -2221,12 +2261,6 @@ static void on_menu_saveconfig (void) {
 /***********************************
  * "Save Config As"
  ***********************************/
-static void did_close_config (gpointer gdata) {
-  DEBUG_LOG("cancel save!\n");
-
-  return;
-}
-
 static void did_config_select (GtkObject *o) {
 
   const char *s = gtk_file_selection_get_filename (GTK_FILE_SELECTION (o));
@@ -2254,7 +2288,6 @@ static void did_config_select (GtkObject *o) {
 
 static void on_menu_saveconfigas (void) {
   GtkWidget *config_selector;
-  ULONG pos;
   
   DEBUG_LOG ("Save config as ...\n");
 
