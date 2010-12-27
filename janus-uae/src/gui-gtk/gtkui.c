@@ -67,9 +67,9 @@
 #include "gui-gtk/display.h"
 #include "gui-gtk/integration.h"
 
-//#define GUI_DEBUG 1
+#define GUI_DEBUG 1
 #ifdef  GUI_DEBUG
-#define DEBUG_LOG(...) do { kprintf("GUI: %s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
+#define DEBUG_LOG(...) do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
 #define DEBUG_LOG(...) do ; while(0)
 #endif
@@ -269,7 +269,8 @@ enum uae_commands {
     UAECMD_EJECTDISK,
     UAECMD_INSERTDISK,
     UAECMD_SELECT_ROM,
-    UAECMD_SELECT_KEY
+    UAECMD_SELECT_KEY,
+    UAECMD_LOAD_CONFIG
 };
 
 
@@ -2181,11 +2182,90 @@ static gint did_guidlg_delete (GtkWidget* window, GdkEventAny* e, gpointer data)
     return FALSE;
 }
 
-static void on_menu_saveconfig (void)
-{
-    DEBUG_LOG ("Save config...\n");
+
+/******************************
+ * configuration file menu 
+ ******************************/
+static void on_menu_loadconfig (void) {
+
+    DEBUG_LOG ("Load config ...\n");
+    if (!quit_gui)
+	write_comm_pipe_int (&from_gui_pipe, UAECMD_LOAD_CONFIG, 1);
+}
+
+static void on_menu_loadconfigfrom (void) {
+
+    DEBUG_LOG ("Load config from ...\n");
+    if (!quit_gui)
+	write_comm_pipe_int (&from_gui_pipe, UAECMD_LOAD_CONFIG, 1);
+}
+
+
+/* from main.c */
+extern char optionsfile[256];
+
+static void did_close_config (gpointer gdata) {
+  DEBUG_LOG("cancel save!\n");
+
+  //  gtk_widget_set_sensitive (rom_change_widget, 1);
+}
+
+
+static void did_config_select (GtkObject *o) {
+
+    const char *s = gtk_file_selection_get_filename (GTK_FILE_SELECTION (o));
+
+    /* ? */
+    if (quit_gui) {
+      return;
+    }
+
+    DEBUG_LOG("new config name: %s\n", s);
+
+    uae_sem_wait (&gui_sem);
+
+    DEBUG_LOG("old config name: %s\n", optionsfile);
+
+    strncpy (optionsfile, s, 255);
+
+    uae_sem_post (&gui_sem);
+
+    gtk_widget_destroy (o);
+
+    if (!quit_gui) {
+      write_comm_pipe_int (&from_gui_pipe, UAECMD_SAVE_CONFIG, 1);
+    }
+}
+
+static void on_menu_saveconfig (void) {
+
+    DEBUG_LOG ("Save config ...\n");
     if (!quit_gui)
 	write_comm_pipe_int (&from_gui_pipe, UAECMD_SAVE_CONFIG, 1);
+}
+
+static void on_menu_saveconfigas (void) {
+  GtkWidget *config_selector;
+  ULONG pos;
+  
+  DEBUG_LOG ("Save config as ...\n");
+  /* select new optionsfile */
+
+  config_selector = make_file_selector ("Select a configuration file", did_config_select, did_close_config);
+  DEBUG_LOG ("Save config as 1 ...\n");
+
+  /* set old path and filename */
+  gtk_file_selection_set_filename(config_selector, optionsfile);
+
+  /* launch it */
+  gtk_widget_show(config_selector);
+  DEBUG_LOG ("Save config as 2 ...\n");
+  /*
+    DEBUG_LOG("rom_selector = %lx\n",rom_selector);
+    filesel_set_path (rom_selector, prefs_get_attr ("rom_path"));
+   */
+
+  DEBUG_LOG ("Save config as DONE!\n");
 }
 
 static void on_screen_changed (jDisplay *j) {
@@ -2373,10 +2453,26 @@ static void create_guidlg (void) {
     menuitem_menu = gtk_menu_new ();
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (menuitem), menuitem_menu);
 
-    thing = gtk_menu_item_new_with_mnemonic ("Save config");
+    thing = gtk_menu_item_new_with_mnemonic ("Load Config");
+    gtk_widget_show (thing);
+    gtk_container_add (GTK_CONTAINER (menuitem_menu), thing);
+    gtk_signal_connect (GTK_OBJECT(thing), "activate", GTK_SIGNAL_FUNC(on_menu_loadconfig), NULL);
+
+    thing = gtk_menu_item_new_with_mnemonic ("Load Config From ...");
+    gtk_widget_show (thing);
+    gtk_container_add (GTK_CONTAINER (menuitem_menu), thing);
+    gtk_signal_connect (GTK_OBJECT(thing), "activate", GTK_SIGNAL_FUNC(on_menu_loadconfigfrom), NULL);
+
+    thing = gtk_menu_item_new_with_mnemonic ("Save Config");
     gtk_widget_show (thing);
     gtk_container_add (GTK_CONTAINER (menuitem_menu), thing);
     gtk_signal_connect (GTK_OBJECT(thing), "activate", GTK_SIGNAL_FUNC(on_menu_saveconfig), NULL);
+
+    thing = gtk_menu_item_new_with_mnemonic ("Save Config As ...");
+    gtk_widget_show (thing);
+    gtk_container_add (GTK_CONTAINER (menuitem_menu), thing);
+    gtk_signal_connect (GTK_OBJECT(thing), "activate", GTK_SIGNAL_FUNC(on_menu_saveconfigas), NULL);
+
 
 #if !defined GTKMUI
     thing = gtk_separator_menu_item_new ();
@@ -2638,6 +2734,14 @@ void gui_handle_events (void)
 		uae_resume ();
 		break;
 	    case UAECMD_SAVE_CONFIG:
+		DEBUG_LOG("UAECMD_SAVE_CONFIG\n");
+		uae_sem_wait (&gui_sem);
+		uae_save_config ();
+		uae_sem_post (&gui_sem);
+		DEBUG_LOG("UAECMD_SAVE_CONFIG done\n");
+		break;
+	    case UAECMD_LOAD_CONFIG:
+	    /* TODO !!! */
 		uae_sem_wait (&gui_sem);
 		uae_save_config ();
 		uae_sem_post (&gui_sem);
