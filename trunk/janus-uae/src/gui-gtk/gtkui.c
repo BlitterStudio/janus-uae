@@ -621,6 +621,10 @@ static void update_buttons (int state)
 //	gtk_widget_set_sensitive (debug_uae_widget, running);
 	gtk_widget_set_sensitive (reset_uae_widget, running);
 
+	/* config stuff */
+	gtk_widget_set_sensitive (config_load_widget,      !running && !paused);
+	gtk_widget_set_sensitive (config_load_from_widget, !running && !paused);
+
         gtk_widget_set_sensitive (hdpanel,     !running && !paused);
         gtk_widget_set_sensitive (memorypanel, !running && !paused);
         gtk_widget_set_sensitive (rom_change_widget, !running && !paused);
