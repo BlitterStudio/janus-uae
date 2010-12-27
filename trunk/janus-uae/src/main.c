@@ -83,7 +83,7 @@ struct uae_prefs currprefs, changed_prefs;
 
 static int restart_program;
 static char restart_config[256];
-static char optionsfile[256];
+char optionsfile[256];
 
 int cloanto_rom = 0;
 
@@ -512,6 +512,39 @@ void uae_save_config (void)
     fclose (f);
 }
 
+/*
+ * (re-)load the current configuration.
+ */
+void uae_load_config (void) {
+
+  struct uae_prefs *backup_prefs;
+
+  backup_prefs=(struct uae_prefs *) AllocVec(sizeof(struct uae_prefs), MEMF_CLEAR);
+
+  write_log ("Load config '%s'\n", optionsfile);
+
+  *backup_prefs=currprefs;
+
+#ifdef FILESYS
+  free_mountinfo (currprefs.mountinfo);
+#endif
+  default_prefs (&currprefs, 0);
+
+  fix_options ();
+
+  if (! cfgfile_load (&currprefs, optionsfile, 0)) {
+    write_log ("failed to load config '%s'\n", optionsfile);
+    /* reset to last settings */
+    currprefs=*backup_prefs;
+  }
+
+  fix_options ();
+
+  gui_update();
+
+  FreeVec(backup_prefs);
+}
+
 
 /*
  * A first cut at better state management...
@@ -722,7 +755,7 @@ static int do_init_machine (void)
 	reset_frame_rate_hack ();
 	init_m68k(); /* must come after reset_frame_rate_hack (); */
 
-	gui_update ();
+	//gui_update ();
 
 	if (graphics_init ()) {
 

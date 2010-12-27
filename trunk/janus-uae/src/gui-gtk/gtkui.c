@@ -2184,64 +2184,72 @@ static gint did_guidlg_delete (GtkWidget* window, GdkEventAny* e, gpointer data)
 
 
 /******************************
- * configuration file menu 
+ * "Load Config"
  ******************************/
 static void on_menu_loadconfig (void) {
 
-    DEBUG_LOG ("Load config ...\n");
-    if (!quit_gui)
-	write_comm_pipe_int (&from_gui_pipe, UAECMD_LOAD_CONFIG, 1);
+  DEBUG_LOG ("Load config ...\n");
+
+  if (!quit_gui) {
+    write_comm_pipe_int (&from_gui_pipe, UAECMD_LOAD_CONFIG, 1);
+  }
 }
 
+/******************************
+ * "Load Config From"
+ ******************************/
 static void on_menu_loadconfigfrom (void) {
 
-    DEBUG_LOG ("Load config from ...\n");
-    if (!quit_gui)
-	write_comm_pipe_int (&from_gui_pipe, UAECMD_LOAD_CONFIG, 1);
+  DEBUG_LOG ("Load config from ...\n");
+
+  if (!quit_gui) {
+    write_comm_pipe_int (&from_gui_pipe, UAECMD_LOAD_CONFIG, 1);
+  }
 }
 
+/***********************************
+ * "Save Config"
+ ***********************************/
+static void on_menu_saveconfig (void) {
 
-/* from main.c */
-extern char optionsfile[256];
+  DEBUG_LOG ("Save config ...\n");
+  if (!quit_gui) {
+    write_comm_pipe_int (&from_gui_pipe, UAECMD_SAVE_CONFIG, 1);
+  }
+}
 
+/***********************************
+ * "Save Config As"
+ ***********************************/
 static void did_close_config (gpointer gdata) {
   DEBUG_LOG("cancel save!\n");
 
-  //  gtk_widget_set_sensitive (rom_change_widget, 1);
+  return;
 }
-
 
 static void did_config_select (GtkObject *o) {
 
-    const char *s = gtk_file_selection_get_filename (GTK_FILE_SELECTION (o));
+  const char *s = gtk_file_selection_get_filename (GTK_FILE_SELECTION (o));
 
-    /* ? */
-    if (quit_gui) {
-      return;
-    }
+  /* ? */
+  if (quit_gui) {
+    return;
+  }
 
-    DEBUG_LOG("new config name: %s\n", s);
+  DEBUG_LOG("old config name: %s\n", optionsfile);
+  DEBUG_LOG("new config name: %s\n", s);
 
-    uae_sem_wait (&gui_sem);
+  uae_sem_wait (&gui_sem);
 
-    DEBUG_LOG("old config name: %s\n", optionsfile);
+  strncpy (optionsfile, s, 255);
 
-    strncpy (optionsfile, s, 255);
+  uae_sem_post (&gui_sem);
 
-    uae_sem_post (&gui_sem);
+  gtk_widget_destroy (o);
 
-    gtk_widget_destroy (o);
-
-    if (!quit_gui) {
-      write_comm_pipe_int (&from_gui_pipe, UAECMD_SAVE_CONFIG, 1);
-    }
-}
-
-static void on_menu_saveconfig (void) {
-
-    DEBUG_LOG ("Save config ...\n");
-    if (!quit_gui)
-	write_comm_pipe_int (&from_gui_pipe, UAECMD_SAVE_CONFIG, 1);
+  if (!quit_gui) {
+    write_comm_pipe_int (&from_gui_pipe, UAECMD_SAVE_CONFIG, 1);
+  }
 }
 
 static void on_menu_saveconfigas (void) {
@@ -2249,23 +2257,16 @@ static void on_menu_saveconfigas (void) {
   ULONG pos;
   
   DEBUG_LOG ("Save config as ...\n");
-  /* select new optionsfile */
 
-  config_selector = make_file_selector ("Select a configuration file", did_config_select, did_close_config);
-  DEBUG_LOG ("Save config as 1 ...\n");
+  config_selector = make_file_selector ("Save configuration file as ..", did_config_select, did_close_config);
 
   /* set old path and filename */
   gtk_file_selection_set_filename(config_selector, optionsfile);
 
   /* launch it */
   gtk_widget_show(config_selector);
-  DEBUG_LOG ("Save config as 2 ...\n");
-  /*
-    DEBUG_LOG("rom_selector = %lx\n",rom_selector);
-    filesel_set_path (rom_selector, prefs_get_attr ("rom_path"));
-   */
 
-  DEBUG_LOG ("Save config as DONE!\n");
+  DEBUG_LOG ("exit\n");
 }
 
 static void on_screen_changed (jDisplay *j) {
@@ -2741,10 +2742,11 @@ void gui_handle_events (void)
 		DEBUG_LOG("UAECMD_SAVE_CONFIG done\n");
 		break;
 	    case UAECMD_LOAD_CONFIG:
-	    /* TODO !!! */
+		DEBUG_LOG("UAECMD_LOAD_CONFIG\n");
 		uae_sem_wait (&gui_sem);
-		uae_save_config ();
+		uae_load_config ();
 		uae_sem_post (&gui_sem);
+		DEBUG_LOG("UAECMD_LOAD_CONFIG done\n");
 		break;
 	    case UAECMD_SELECT_ROM:
 		uae_sem_wait (&gui_sem);
@@ -2778,15 +2780,14 @@ void gui_handle_events (void)
  * until it receives a message from the GUI telling it that the update
  * is complete.
  */
-int gui_update (void)
-{
-    DEBUG_LOG( "Entered\n" );
-    return 0;
-    if (gui_available) {
-        write_comm_pipe_int (&to_gui_pipe, GUICMD_UPDATE, 1);
-        uae_sem_wait (&gui_update_sem);
-    }
-    return 0;
+int gui_update (void) {
+  DEBUG_LOG( "Entered\n" );
+
+  if (gui_available) {
+    write_comm_pipe_int (&to_gui_pipe, GUICMD_UPDATE, 1);
+    uae_sem_wait (&gui_update_sem);
+  }
+  return 0;
 }
 
 

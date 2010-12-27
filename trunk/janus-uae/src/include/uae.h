@@ -3,8 +3,11 @@
   *
   * Prototypes for main.c
   *
-  * Copyright 1996 Bernd Schmidt
+  * Copyright 1996      Bernd Schmidt
   * Copyright 2006-2007 Richard Drummond
+  * Copyright 2010      Oliver Brunner
+  *
+  * $Id$
   */
 
 extern void real_main (int, char **);
@@ -21,8 +24,11 @@ extern void uae_quit (void);
 extern void uae_stop (void);
 extern void uae_restart (int, char*);
 extern void uae_save_config (void);
+extern void uae_load_config (void);
 
 extern void setup_brkhandler (void);
+
+extern char optionsfile[256];
 
 #ifdef WIN32
 extern char warning_buffer[256];
