@@ -514,6 +514,8 @@ void uae_save_config (void)
 
 /*
  * (re-)load the current configuration.
+ *
+ * don't push backup_prefs on the stack, it will exceed the limit .. :(
  */
 void uae_load_config (void) {
 
