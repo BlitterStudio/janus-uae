@@ -57,6 +57,10 @@
 #include <gdk/gdk.h>
 #include <gdk/gdkkeysyms.h>
 
+#ifdef __AROS__
+#include <proto/arossupport.h>
+#endif
+
 #include "gui-gtk/cputypepanel.h"
 #include "gui-gtk/cpuspeedpanel.h"
 #include "gui-gtk/floppyfileentry.h"
@@ -677,10 +681,6 @@ static int my_idle (void)
 	    }
 	    if (cmd == GUICMD_SHOW) {
 
-#if defined GTKMUI
-	      //gtk_mui_application_iconify(TRUE);
-#warning ==============> gtk_mui_application_iconify(TRUE); <========================
-#endif
 		gtk_widget_show (gui_window);
 #	    if GTK_MAJOR_VERSION >= 2
 		gtk_window_present (GTK_WINDOW (gui_window));
@@ -1399,6 +1399,7 @@ void uae_Signal (uaecptr task, uae_u32 mask);
 void show_uae_main_window(void);
 void hide_uae_main_window(void);
 void close_all_janus_windows(void);
+void switch_off_coherence(void);
 
 void switch_off_coherence(void) {
 
@@ -1729,7 +1730,7 @@ static void make_joy_widgets (GtkWidget *dvbox)
     catweasel_joystick_widget =gtk_check_button_new_with_label ("Use Catweasel Joystick");
     cat_frame                 =gtk_frame_new ("Catweasel");
 
-    gtk_toggle_button_set_active(catweasel_joystick_widget, currprefs.catweasel_joy);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(catweasel_joystick_widget), currprefs.catweasel_joy);
     gtk_container_add (GTK_CONTAINER (cat_frame), catweasel_joystick_widget);
 #endif
 
@@ -2192,27 +2193,12 @@ static gint did_guidlg_delete (GtkWidget* window, GdkEventAny* e, gpointer data)
 }
 
 
-static BOOL load_config_possible() {
-  if (uae_get_state () == UAE_STATE_STOPPED) {
-    DEBUG_LOG ("possible!\n");
-    return TRUE;
-  }
-
-  DEBUG_LOG ("impossible!\n");
-
-  return FALSE;
-}
 /******************************
  * "Load Config"
  ******************************/
 static void on_menu_loadconfig (void) {
 
   DEBUG_LOG ("Load config ...\n");
-
-  if(!load_config_possible()) {
-    gui_message("Sorry, cannot load a new configuration,\nwhile UAE is not stopped!\n");
-    return;
-  }
 
   if (!quit_gui) {
     write_comm_pipe_int (&from_gui_pipe, UAECMD_LOAD_CONFIG, 1);
@@ -2246,7 +2232,7 @@ static void load_config_select (GtkObject *o) {
 
   uae_sem_post (&gui_sem);
 
-  gtk_widget_destroy (o);
+  gtk_widget_destroy (GTK_WIDGET(o));
 
   if (!quit_gui) {
     write_comm_pipe_int (&from_gui_pipe, UAECMD_LOAD_CONFIG, 1);
@@ -2262,7 +2248,7 @@ static void on_menu_loadconfigfrom (void) {
   config_selector = make_file_selector ("Load configuration file from ..",load_config_select,did_close_config);
 
   /* set old path and filename */
-  gtk_file_selection_set_filename(config_selector, optionsfile);
+  gtk_file_selection_set_filename(GTK_FILE_SELECTION(config_selector), optionsfile);
 
   /* launch it */
   gtk_widget_show(config_selector);
@@ -2303,7 +2289,7 @@ static void did_config_select (GtkObject *o) {
 
   uae_sem_post (&gui_sem);
 
-  gtk_widget_destroy (o);
+  gtk_widget_destroy (GTK_WIDGET(o));
 
   if (!quit_gui) {
     write_comm_pipe_int (&from_gui_pipe, UAECMD_SAVE_CONFIG, 1);
@@ -2318,7 +2304,7 @@ static void on_menu_saveconfigas (void) {
   config_selector = make_file_selector ("Save configuration file as ..", did_config_select, did_close_config);
 
   /* set old path and filename */
-  gtk_file_selection_set_filename(config_selector, optionsfile);
+  gtk_file_selection_set_filename(GTK_FILE_SELECTION(config_selector), optionsfile);
 
   /* launch it */
   gtk_widget_show(config_selector);
