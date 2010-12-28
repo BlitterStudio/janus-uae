@@ -35,8 +35,8 @@
 #include "catweasel.h"
 #endif
 
-#define JW_ENTER_ENABLED  1
-#define JWTRACING_ENABLED 1
+//#define JW_ENTER_ENABLED  1
+//#define JWTRACING_ENABLED 1
 
 #include "od-amiga/j.h"
 
@@ -1627,6 +1627,7 @@ static void restore_prWindowPtr (void)
 #ifdef USE_CYBERGFX
 # ifdef USE_CYBERGFX_V41
 /* Allocate and set-up off-screen buffer for rendering Amiga display to
+ *
  * when using CGX V41 or better
  *
  * gfxinfo - the buffer description (which gets filled in by this routine)
@@ -2176,6 +2177,8 @@ static BOOL clone_window_area(JanusWin *jwin,
     JWLOG("==> size could not be increased (%d)\n", old_size);
   }
 
+  JWLOG("width: %d\n", endx - startx + jwin->plusx);
+
 
   JWLOG("startx %3d starty %3d endx %3d endy %3d\n",
            startx,starty,endx,endy);
@@ -2203,6 +2206,7 @@ static BOOL clone_window_area(JanusWin *jwin,
       endy - starty + jwin->plusy,
       RECTFMT_RAW
   );
+
 
   release_W();
 
