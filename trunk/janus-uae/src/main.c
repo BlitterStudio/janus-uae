@@ -499,7 +499,7 @@ void uae_save_config (void)
     write_log ("Writing new config file '%s'\n", optionsfile);
     f = fopen (optionsfile, "w");
     if (f == NULL) {
-	gui_message ("Error saving configuration file.!\n"); // FIXME - better error msg.
+	gui_message ("Error saving configuration file!\n"); // FIXME - better error msg.
 	return;
     }
 
@@ -1123,6 +1123,11 @@ void real_main (int argc, char **argv)
 		      */
     zfile_exit ();
   //set_logfile(NULL);
+
+    /* if we were never running before, nobody will stop this one.
+     * it is safe to stop it, even if it is not running
+     */
+    aros_launch_kill_thread();
 
     waitcount=0;
     while(waitcount<20 && (aros_cli_task || aros_launch_task || janus_windows || janus_screens)) {
