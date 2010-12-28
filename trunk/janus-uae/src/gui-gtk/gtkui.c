@@ -118,6 +118,7 @@ static GtkWidget *config_load_widget;
 static GtkWidget *config_load_from_widget;
 static GtkWidget *config_save_widget;
 static GtkWidget *config_save_as_widget;
+static GtkWidget *config_name_widget;
 
 extern GtkWidget  *chipsize_widget[6];
 static const char *chiplabels[] = { "512 KB", "1 MB", "2 MB", "4 MB", "8 MB", NULL };
@@ -589,28 +590,28 @@ static void set_floppy_state( void )
     floppyfileentry_set_filename (FLOPPYFILEENTRY (floppy_widget[3]), currprefs.df[3]);
 }
 
-static void update_state (void)
-{
-  //DebOut("entered\n");
-    set_cpu_state ();
-    set_joy_state ();
-    set_sound_state ();
+static void update_state (void) {
+
+  set_cpu_state ();
+  set_joy_state ();
+  set_sound_state ();
 #ifdef JIT
-    set_comp_state ();
+  set_comp_state ();
 #endif
-    set_mem_state ();
-    set_floppy_state ();
+  set_mem_state ();
+  set_floppy_state ();
 #ifdef FILESYS
-    set_hd_state ();
+  set_hd_state ();
 #endif
-    if(jdisp_panel) {
-      g_signal_emit_by_name(jdisp_panel,"read-prefs",NULL);
-    }
-    if(jint_panel) {
-      g_signal_emit_by_name(jint_panel, "read-prefs",NULL);
-    }
- 
-  //DebOut("done\n");
+  if(jdisp_panel) {
+    g_signal_emit_by_name(jdisp_panel,"read-prefs",NULL);
+  }
+  if(jint_panel) {
+    g_signal_emit_by_name(jint_panel, "read-prefs",NULL);
+  }
+
+  gtk_label_set_text (GTK_LABEL (config_name_widget), optionsfile);
+
 }
 
 static void update_buttons (int state)
@@ -2115,9 +2116,11 @@ static void make_hd_widgets (GtkWidget *dvbox)
 }
 #endif
 
-static void make_about_widgets (GtkWidget *dvbox)
-{
+
+static void make_about_widgets (GtkWidget *dvbox) {
+
     GtkWidget *thing;
+    GtkWidget *hbox;
 
 #if GTK_MAJOR_VERSION >= 2
     const char title[] = "<span font_desc=\"Sans 24\">" UAE_VERSION_STRING " </span>";
@@ -2182,6 +2185,12 @@ static void make_about_widgets (GtkWidget *dvbox)
 //#endif
 
     add_empty_vbox (dvbox);
+
+    hbox = make_file_container ("Current Config File", dvbox);
+    /* Current file display */
+    config_name_widget = make_file_widget (hbox);
+
+    add_centered_to_vbox (dvbox, hbox);
 }
 
 static gint did_guidlg_delete (GtkWidget* window, GdkEventAny* e, gpointer data)
@@ -2293,6 +2302,8 @@ static void did_config_select (GtkObject *o) {
 
   if (!quit_gui) {
     write_comm_pipe_int (&from_gui_pipe, UAECMD_SAVE_CONFIG, 1);
+    /* need to manually update the widget here, as no gui_update() is called on save */
+    gtk_label_set_text (GTK_LABEL (config_name_widget), optionsfile);
   }
 }
 
