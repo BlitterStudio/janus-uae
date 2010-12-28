@@ -81,7 +81,7 @@ int p96hsync_counter;
 
 int p96hack_vpos, p96hack_vpos2, p96refresh_active;
 
-#define P96TRACING_ENABLED 1
+//#define P96TRACING_ENABLED 1
 #if P96TRACING_ENABLED
 #define P96TRACE(x)	do { kprintf x; } while(0)
 #define P96LOG(...)     do { kprintf("P96: ");kprintf(__VA_ARGS__); } while(0)
@@ -1293,7 +1293,7 @@ static uae_u32 AssignModeID (int w, int h, unsigned int *non_standard_count)
 	    return 0x50001000 | (mi[i].id * 0x10000);
     }
     (*non_standard_count)++;
-    write_log ("P96: Non-stanard mode %dx%d\n", w, h);
+    write_log ("P96: Non-standard mode %dx%d\n", w, h);
     return 0x51001000 - (*non_standard_count) * 0x10000;
 }
 
@@ -3151,6 +3151,7 @@ void InitPicasso96 (void) {
 	 * try to set host_pixel_format to native host format,
 	 * should fix the Noveau speed problems
 	 */
+#if 0
 	P96LOG("detect host pixel format\n");
 	hostscreen=LockPubScreen(NULL); /* get (and open if necessary default public screen */
 	if(hostscreen) {
@@ -3163,9 +3164,12 @@ void InitPicasso96 (void) {
 	}
 	else {
 	  P96LOG("ERROR: unable to LockPubScreen\n");
+#endif
 	  /* default format */
 	  picasso96_pixel_format=RGBFF_CHUNKY;
+#if 0
 	}
+#endif
 
 	for (i = 0; i < 256; i++) {
 	    p2ctab[i][0] = (((i & 128) ? 0x01000000 : 0)
@@ -3177,7 +3181,9 @@ void InitPicasso96 (void) {
 			  | ((i & 2)   ? 0x0100 : 0)
 			  | ((i & 1)   ? 0x01 : 0));
 	}
+	P96LOG("picasso96_pixel_format (pre   DX_FillResolutions): %lx\n", picasso96_pixel_format);
 	mode_count = DX_FillResolutions (&picasso96_pixel_format);
+	P96LOG("picasso96_pixel_format (after DX_FillResolutions): %lx\n", picasso96_pixel_format);
 
         /* Work-around for possible P96 bug. A8R8G8B8 modes have
 	 * palette emulation issues. Tell the world we have a
