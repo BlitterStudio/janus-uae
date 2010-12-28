@@ -207,7 +207,7 @@ static int setup_vert_int(struct Task *task, ULONG signal) {
 
   vbint->is_Node.ln_Type = NT_INTERRUPT;
   vbint->is_Node.ln_Pri = 1;
-  vbint->is_Node.ln_Name = "JanusD Vertical Interrupt";
+  vbint->is_Node.ln_Name = "JanusD vbint";
   vbint->is_Data = (APTR)&intdata;
   vbint->is_Code = vert_int;
 
@@ -365,17 +365,7 @@ int main (int argc, char **argv) {
     exit(1);
   }
 
-  if(!init_sync_mouse()) {
-    DebOut("ERROR: init_sync_mouse failed\n");
-    printf("ERROR: init_sync_mouse failed\n");
-    LEAVE
-    exit(1);
-  }
-
-  init_sync_windows(); /* never fails */
-  init_sync_screens(); /* never fails */
-
-  /* try te get a signal */
+  /* try to get a signal */
   mysignal_bit=AllocSignal(-1);
   if(mysignal_bit == -1) {
     printf("no signal..!\n");
@@ -388,11 +378,23 @@ int main (int argc, char **argv) {
   mytask=FindTask(NULL);
   DebOut("task: %lx\n",mytask);
 
-  SetTaskPri(mytask, 55);
+  if(!init_sync_mouse()) {
+    DebOut("ERROR: init_sync_mouse failed\n");
+    printf("ERROR: init_sync_mouse failed\n");
+    LEAVE
+    exit(1);
+  }
+
+  init_sync_windows(); /* never fails, does nothing critical at all */
+  init_sync_screens(); /* never fails, does nothing critical at all */
 
   setup(mytask, mysignal, 0); /* init everything for the patches */
   patch_functions();
+
   setup_vert_int(mytask, mysignal);
+
+
+  SetTaskPri(mytask, 55);
 
   while(1) {
     runme(); /* as we patched the system, we will run (sleep) forever */
