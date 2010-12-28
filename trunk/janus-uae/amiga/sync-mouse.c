@@ -157,6 +157,11 @@ void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button,
 
   ENTER
 
+  if(!NeoPix || !FakeEvent || !InputIO || !screen) {
+    DebOut("ERROR: SetMouse assert failed!\n");
+    return;
+  }
+
   NeoPix->iepp_Screen=(struct Screen *)screen;
   NeoPix->iepp_Position.X=x;
   NeoPix->iepp_Position.Y=y;
