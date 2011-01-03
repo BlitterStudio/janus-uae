@@ -316,7 +316,7 @@ static void set_mem32_widgets_state (void)
 	gtk_widget_set_sensitive (z3size_widget[i], enable);
 
 # ifdef PICASSO96
-    for (i = 0; i < 7; i++)
+    for (i = 0; i < 10; i++)
 	gtk_widget_set_sensitive (p96size_widget[i], enable);
 #endif
 #endif
