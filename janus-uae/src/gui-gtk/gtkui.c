@@ -1104,6 +1104,16 @@ static void add_centered_to_vbox (GtkWidget *vbox, GtkWidget *w)
     gtk_box_pack_start (GTK_BOX (vbox), hbox, FALSE, TRUE, 0);
 }
 
+static void add_centered_to_hbox (GtkWidget *hbox, GtkWidget *w)
+{
+    GtkWidget *vbox = gtk_vbox_new (TRUE, 0);
+    gtk_widget_show (vbox);
+    gtk_box_pack_start (GTK_BOX (vbox), w, TRUE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (hbox), vbox, FALSE, TRUE, 0);
+}
+
+
+
 static GtkWidget *make_labelled_widget (const char *str, GtkWidget *thing)
 {
     GtkWidget *label = gtk_label_new (str);
@@ -1605,6 +1615,9 @@ static void make_comp_widgets (GtkWidget *vbox)
 {
     GtkWidget *newbox;
     GtkWidget *container;
+    GtkWidget *hbox;
+    GtkWidget *hbox_top;
+    GtkWidget *vbox_left;
 
     static const char *complabels1[] = {
 	"Direct", "Indirect", "Indirect for KS", "Direct after Picasso",
@@ -1656,21 +1669,36 @@ static void make_comp_widgets (GtkWidget *vbox)
     add_centered_to_vbox (vbox, newbox);
 #endif
 
-    newbox = make_radio_group_box ("Flags", complabels4, compnf_widget, 1, comp_changed);
-    gtk_widget_show (newbox);
-    add_centered_to_vbox (vbox, newbox);
+    //newbox = make_radio_group_box ("Flags", complabels4, compnf_widget, 1, comp_changed);
 
-    newbox = make_radio_group_box ("Icache flushes", complabels8, comp_hardflush_widget, 1, comp_changed);
-    gtk_widget_show (newbox);
-    add_centered_to_vbox (vbox, newbox);
+    hbox_top=gtk_hbox_new(0,5);
+    gtk_widget_show (hbox_top);
+    vbox_left=gtk_vbox_new(0,5);
+    gtk_widget_show (vbox_left);
 
-    newbox = make_radio_group_box ("Compile through uncond branch", complabels9, comp_constjump_widget, 1, comp_changed);
-    gtk_widget_show (newbox);
-    add_centered_to_vbox (vbox, newbox);
+    container=make_file_container("Flags", vbox_left);
+    make_radio_group_param (complabels4, container, compnf_widget, 1, 0, comp_changed, -1, NULL,NULL);
+    gtk_widget_show (container);
 
-    newbox = make_radio_group_box ("JIT FPU compiler", complabels7, compfpu_widget, 1, comp_changed);
-    gtk_widget_show (newbox);
-    add_centered_to_vbox (vbox, newbox);
+    container=make_file_container("Icache flushes", vbox_left);
+    make_radio_group_param (complabels8, container, comp_hardflush_widget, 1, 0, comp_changed, -1, NULL, NULL);
+    gtk_widget_show (container);
+
+    container=make_file_container("Compile through uncond branch", vbox_left);
+    make_radio_group_param (complabels9, container, comp_constjump_widget, 1, 0, comp_changed, -1, NULL, NULL);
+    gtk_widget_show (container);
+
+    container=make_file_container("JIT FPU compiler", vbox_left);
+    make_radio_group_param (complabels7, container, compfpu_widget, 1, 0, comp_changed, -1, NULL, NULL);
+    gtk_widget_show (container);
+
+    add_empty_vbox (vbox_left);
+    gtk_widget_show (vbox_left);
+
+    gtk_box_pack_start (GTK_BOX (hbox_top), vbox_left, FALSE, TRUE, 0);
+    add_empty_hbox(hbox_top);
+
+    gtk_box_pack_start (GTK_BOX (vbox), hbox_top, FALSE, TRUE, 0);
 
     /* Translation Buffer */
     container=make_file_container("Translation Buffer (kByte)", vbox);
