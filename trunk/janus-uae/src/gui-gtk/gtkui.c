@@ -2230,7 +2230,6 @@ static void make_about_widgets (GtkWidget *dvbox) {
     /* Current file display */
     config_name_widget = make_file_widget (hbox);
 
-    add_centered_to_vbox (dvbox, hbox);
 }
 
 static gint did_guidlg_delete (GtkWidget* window, GdkEventAny* e, gpointer data)
@@ -2642,7 +2641,6 @@ static void create_guidlg (void) {
 	/* gtk_mui_list_child_tree(thing);*/
 	gtk_notebook_append_page (GTK_NOTEBOOK (notebook), thing, gtk_label_new (pages[i].title));
     }
-
     gtk_box_pack_start (GTK_BOX (vbox), notebook, TRUE, TRUE, 0);
     gtk_widget_show (notebook);
     /* Put "about" screen first.  */
