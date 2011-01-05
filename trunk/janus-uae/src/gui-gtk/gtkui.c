@@ -71,7 +71,7 @@
 #include "gui-gtk/display.h"
 #include "gui-gtk/integration.h"
 
-//#define GUI_DEBUG 1
+#define GUI_DEBUG 1
 #ifdef  GUI_DEBUG
 #define DEBUG_LOG(...) do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -2440,20 +2440,18 @@ static void make_display_widgets (GtkWidget *vbox) {
 		      GTK_SIGNAL_FUNC (on_centering_changed),
      		      NULL);
 
-
   /* our child, the chipsetspeed_panel */
   gtk_signal_connect (GTK_OBJECT (chipsetspeed_panel), "framerate-changed",
 		      GTK_SIGNAL_FUNC (on_framerate_changed),
      		      NULL);
   gtk_signal_connect (GTK_OBJECT (chipsetspeed_panel), 
-                        "sprite-collisisons-changed",
+			"sprite-collisions-changed",
 		      GTK_SIGNAL_FUNC (on_collision_level_changed),
      		      NULL);
   gtk_signal_connect (GTK_OBJECT (chipsetspeed_panel), 
                         "immediate-blits-changed",
 		      GTK_SIGNAL_FUNC (on_immediate_blits_changed),
      		      NULL);
-
 
   gtk_widget_show_all(jdisp_panel);
 
