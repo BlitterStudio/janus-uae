@@ -429,6 +429,7 @@ static void set_mem_state (void)
 #ifdef JIT
 static void set_comp_state (void)
 {
+  gint cache;
 #ifdef NATMEM_OFFSET
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (compbyte_widget[currprefs.comptrustbyte]), 1);
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (compword_widget[currprefs.comptrustword]), 1);
@@ -440,6 +441,10 @@ static void set_comp_state (void)
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (comp_constjump_widget[currprefs.comp_constjump]), 1);
 
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (compfpu_widget[currprefs.compfpu]), 1);
+
+    /* round it */
+    cache=currprefs.cachesize / 1024;
+    gtk_adjustment_set_value(cachesize_adj, cache);
 }
 #endif
 
@@ -853,7 +858,7 @@ static void sound_changed (void)
 #ifdef JIT
 static void comp_changed (void)
 {
-    changed_prefs.cachesize=cachesize_adj->value;
+    changed_prefs.cachesize=cachesize_adj->value * 1024;
 #ifdef NATMEM_OFFSET
     changed_prefs.comptrustbyte = find_current_toggle (compbyte_widget, 4);
     changed_prefs.comptrustword = find_current_toggle (compword_widget, 4);
@@ -1696,8 +1701,9 @@ static void make_comp_widgets (GtkWidget *vbox)
     gtk_widget_show (vbox_left);
 
     /* Translation Buffer */
-    container=make_file_container("Translation Buffer (kByte)", vbox_left);
-    cachesize_adj = GTK_ADJUSTMENT (gtk_adjustment_new (currprefs.cachesize, 0.0, 16384.0, 1.0, 1.0, 1.0));
+    container=make_file_container("Cache Size (MB)", vbox_left);
+    /* actual value is updated later on anyways */
+    cachesize_adj = GTK_ADJUSTMENT (gtk_adjustment_new (8, 0.0, 8.0, 1.0, 1.0, 1.0));
     gtk_signal_connect (GTK_OBJECT (cachesize_adj), "value_changed",
 			GTK_SIGNAL_FUNC (comp_changed), NULL);
 
