@@ -1688,20 +1688,15 @@ static void make_comp_widgets (GtkWidget *vbox)
     make_radio_group_param (complabels9, container, comp_constjump_widget, 1, 0, comp_changed, -1, NULL, NULL);
     gtk_widget_show (container);
 
-    container=make_file_container("JIT FPU compiler", vbox_left);
+    container=make_file_container("FPU support", vbox_left);
     make_radio_group_param (complabels7, container, compfpu_widget, 1, 0, comp_changed, -1, NULL, NULL);
     gtk_widget_show (container);
 
     add_empty_vbox (vbox_left);
     gtk_widget_show (vbox_left);
 
-    gtk_box_pack_start (GTK_BOX (hbox_top), vbox_left, FALSE, TRUE, 0);
-    add_empty_hbox(hbox_top);
-
-    gtk_box_pack_start (GTK_BOX (vbox), hbox_top, FALSE, TRUE, 0);
-
     /* Translation Buffer */
-    container=make_file_container("Translation Buffer (kByte)", vbox);
+    container=make_file_container("Translation Buffer (kByte)", vbox_left);
     cachesize_adj = GTK_ADJUSTMENT (gtk_adjustment_new (currprefs.cachesize, 0.0, 16384.0, 1.0, 1.0, 1.0));
     gtk_signal_connect (GTK_OBJECT (cachesize_adj), "value_changed",
 			GTK_SIGNAL_FUNC (comp_changed), NULL);
@@ -1713,6 +1708,12 @@ static void make_comp_widgets (GtkWidget *vbox)
     //gtk_widget_set_usize (thing, 180, -1); // Hack!
     gtk_widget_show (thing);
     gtk_box_pack_start (GTK_BOX (container), thing, TRUE, TRUE, 0);
+
+    add_empty_hbox(hbox_top);
+    gtk_box_pack_start (GTK_BOX (hbox_top), vbox_left, FALSE, TRUE, 0);
+    add_empty_hbox(hbox_top);
+
+    gtk_box_pack_start (GTK_BOX (vbox), hbox_top, FALSE, TRUE, 0);
 
     add_empty_vbox (vbox);
 
