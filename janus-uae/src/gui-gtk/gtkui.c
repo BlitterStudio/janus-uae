@@ -13,7 +13,7 @@
  * Copyright 1997-1998 Bernd Schmidt
  * Copyright 1998      Michael Krause
  * Copyright 2003-2007 Richard Drummond
- * Copyright 2009-2010 Oliver Brunner - aros<at>oliver-brunner.de
+ * Copyright 2009-2011 Oliver Brunner - aros<at>oliver-brunner.de
  *
  * This file is part of Janus-UAE.
  *
@@ -1604,6 +1604,8 @@ static void make_mem_widgets (GtkWidget *vbox)
 static void make_comp_widgets (GtkWidget *vbox)
 {
     GtkWidget *newbox;
+    GtkWidget *container;
+
     static const char *complabels1[] = {
 	"Direct", "Indirect", "Indirect for KS", "Direct after Picasso",
 	NULL
@@ -1670,7 +1672,9 @@ static void make_comp_widgets (GtkWidget *vbox)
     gtk_widget_show (newbox);
     add_centered_to_vbox (vbox, newbox);
 
-    cachesize_adj = GTK_ADJUSTMENT (gtk_adjustment_new (currprefs.cachesize, 0.0, 16385.0, 1.0, 1.0, 1.0));
+    /* Translation Buffer */
+    container=make_file_container("Translation Buffer (kByte)", vbox);
+    cachesize_adj = GTK_ADJUSTMENT (gtk_adjustment_new (currprefs.cachesize, 0.0, 16384.0, 1.0, 1.0, 1.0));
     gtk_signal_connect (GTK_OBJECT (cachesize_adj), "value_changed",
 			GTK_SIGNAL_FUNC (comp_changed), NULL);
 
@@ -1678,8 +1682,9 @@ static void make_comp_widgets (GtkWidget *vbox)
     gtk_range_set_update_policy (GTK_RANGE (thing), GTK_UPDATE_DELAYED);
     gtk_scale_set_digits (GTK_SCALE (thing), 0);
     gtk_scale_set_value_pos (GTK_SCALE (thing), GTK_POS_RIGHT);
-    gtk_widget_set_usize (thing, 180, -1); // Hack!
-    add_labelled_widget_centered ("Translation buffer(kB):", thing, vbox);
+    //gtk_widget_set_usize (thing, 180, -1); // Hack!
+    gtk_widget_show (thing);
+    gtk_box_pack_start (GTK_BOX (container), thing, TRUE, TRUE, 0);
 
     add_empty_vbox (vbox);
 
