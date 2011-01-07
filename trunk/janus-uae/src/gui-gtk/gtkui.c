@@ -419,11 +419,19 @@ static void set_mem_state (void)
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (p96size_widget[t]), 1);
 #endif
 
-    gtk_label_set_text (GTK_LABEL (rom_text_widget), changed_prefs.romfile[0]!='\0' ?
-					changed_prefs.romfile : currprefs.romfile);
+    if(currprefs.romfile[0] != '\0') {
+      gtk_label_set_text (GTK_LABEL (rom_text_widget), currprefs.romfile);
+    }
+    else {
+      gtk_label_set_text (GTK_LABEL (rom_text_widget), changed_prefs.romfile);
+    }
 
-    gtk_label_set_text (GTK_LABEL (key_text_widget), changed_prefs.keyfile[0]!='\0' ?
-    					changed_prefs.keyfile : currprefs.keyfile);
+    if(currprefs.keyfile[0] != '\0') {
+      gtk_label_set_text (GTK_LABEL (key_text_widget), currprefs.keyfile);
+    }
+    else {
+      gtk_label_set_text (GTK_LABEL (key_text_widget), changed_prefs.keyfile);
+    }
 }
 
 #ifdef JIT
