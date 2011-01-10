@@ -24,8 +24,11 @@
  *
  ************************************************************************/
 
+
 #include "sysconfig.h"
 #include "sysdeps.h"
+
+#include <libraries/asl.h>
 
 #include "options.h"
 #include "uae.h"
@@ -61,6 +64,20 @@ unsigned int __stack_size = MIN_STACK_SIZE;
 # endif
 #endif
 
+struct IntuitionBase    *IntuitionBase = NULL;
+struct DosLibrary       *DOSBase = NULL;
+struct GfxBase          *GfxBase = NULL;
+struct Library          *LayersBase = NULL;
+struct Library          *AslBase = NULL;
+struct Library          *CyberGfxBase = NULL;
+struct Library          *GadToolsBase = NULL;
+
+struct AslIFace *IAsl;
+struct GraphicsIFace *IGraphics;
+struct LayersIFace *ILayers;
+struct IntuitionIFace *IIntuition;
+struct CyberGfxIFace *ICyberGfx;
+
 struct Device *TimerBase;
 #ifdef __amigaos4__
 struct Library *ExpansionBase;
@@ -68,61 +85,219 @@ struct TimerIFace *ITimer;
 struct ExpansionIFace *IExpansion;
 #endif
 
-static void free_libs (void)
-{
+extern int os39;
+
+/* close all libraries */
+static void free_libs (void) {
+
 #ifdef __amigaos4__
     if (ITimer)
 	DropInterface ((struct Interface *)ITimer);
     if (IExpansion)
 	DropInterface ((struct Interface *)IExpansion);
-    if (ExpansionBase)
+    if (ExpansionBase) {
 	CloseLibrary (ExpansionBase);
+	ExpansionBase=NULL;
+    }
 #endif
+
+    if (AslBase) {
+	CloseLibrary( (void*) AslBase);
+	AslBase = NULL;
+    }
+
+#if !defined GTKMUI
+    if (GadToolsBase) {
+	CloseLibrary( (void*) GadToolsBase);
+	GadToolsBase = NULL;
+    }
+
+    if (GfxBase) {
+	CloseLibrary ((void*)GfxBase);
+	GfxBase = NULL;
+    }
+#endif
+    if (LayersBase) {
+	CloseLibrary (LayersBase);
+	LayersBase = NULL;
+    }
+#if !defined GTKMUI
+    if (IntuitionBase) {
+	CloseLibrary ((void*)IntuitionBase);
+	IntuitionBase = NULL;
+    }
+#endif
+    if (CyberGfxBase) {
+	CloseLibrary((void*)CyberGfxBase);
+	CyberGfxBase = NULL;
+    }
 }
 
-static void init_libs (void)
-{
-    atexit (free_libs);
+static int init_libs (void) {
 
-    TimerBase = (struct Device *) FindName(&SysBase->DeviceList, "timer.device");
+  if (((struct ExecBase *)SysBase)->LibNode.lib_Version < 36) {
+    write_log ("UAE needs OS 2.0+ !\n");
+    return 0;
+  }
+  os39 = (((struct ExecBase *)SysBase)->LibNode.lib_Version >= 39);
+
+#if !defined GTKMUI
+  IntuitionBase = (void*) OpenLibrary ("intuition.library", 0L);
+#endif
+  if (!IntuitionBase) {
+    write_log ("No intuition.library ?\n");
+    return 0;
+  } else {
+#ifdef __amigaos4__
+    IIntuition = (struct IntuitionIFace *) GetInterface ((struct Library *) IntuitionBase, "main", 1, NULL);
+    if (!IIntuition) {
+      CloseLibrary ((struct Library *) IntuitionBase);
+      IntuitionBase = 0;
+      return 0;
+    }
+#endif
+  }
+
+#if !defined GTKMUI
+  GfxBase = (void*) OpenLibrary ("graphics.library", 0L);
+#endif
+  if (!GfxBase) {
+    write_log ("No graphics.library ?\n");
+    return 0;
+  } else {
+#ifdef __amigaos4__
+    IGraphics = (struct GraphicsIFace *) GetInterface ((struct Library *) GfxBase, "main", 1, NULL);
+    if (!IGraphics) {
+      CloseLibrary ((struct Library *) GfxBase);
+      GfxBase = 0;
+	return 0;
+      }
+#endif
+  }
+
+  LayersBase = OpenLibrary ("layers.library", 0L);
+  if (!LayersBase) {
+    write_log ("No layers.library\n");
+    return 0;
+  } else {
+#ifdef __amigaos4__
+    ILayers = (struct LayersIFace *) GetInterface (LayersBase, "main", 1, NULL);
+    if (!ILayers) {
+      CloseLibrary (LayersBase);
+      LayersBase = 0;
+      return 0;
+    }
+#endif
+  }
+
+#ifdef USE_CYBERGFX
+  if (!CyberGfxBase) {
+    CyberGfxBase = OpenLibrary ("cybergraphics.library", 40);
+#ifdef __amigaos4__
+    if (CyberGfxBase) {
+      ICyberGfx = (struct CyberGfxIFace *) GetInterface (CyberGfxBase, "main", 1, NULL);
+      if (!ICyberGfx) {
+	CloseLibrary (CyberGfxBase);
+	CyberGfxBase = 0;
+      }
+    }
+#endif
+  }
+#endif
+
+/* we should have an j-uae define .. */
+#if defined GTKMUI
+  GadToolsBase = OpenLibrary( "gadtools.library", 37L );
+  if(!GadToolsBase) {
+    write_log ("gadtools.library missing? Needed for j-uae menu support!\n");
+    return 0;
+  }
+#endif
+
+
+  TimerBase = (struct Device *) FindName(&SysBase->DeviceList, "timer.device");
 
 #ifdef __amigaos4__
-    ITimer = (struct TimerIFace *) GetInterface((struct Library *)TimerBase, "main", 1, 0);
+  ITimer = (struct TimerIFace *) GetInterface((struct Library *)TimerBase, "main", 1, 0);
 
-    ExpansionBase = OpenLibrary ("expansion.library", 0);
-    if (ExpansionBase)
-	IExpansion = (struct ExpansionIFace *) GetInterface(ExpansionBase, "main", 1, 0);
+  ExpansionBase = OpenLibrary ("expansion.library", 0);
+  if (ExpansionBase) {
+    IExpansion = (struct ExpansionIFace *) GetInterface(ExpansionBase, "main", 1, 0);
+  }
 
-    if(!ITimer || !IExpansion)
-	exit (20);
+  if(!ITimer || !IExpansion) {
+    return 0;
+  }
 #endif
+
+
+  if (!AslBase) {
+    AslBase = OpenLibrary (AslName, 36);
+    if (!AslBase) {
+      write_log ("Can't open asl.library v36.\n");
+      return 0;
+    } else {
+#ifdef __amigaos4__
+      IAsl = (struct AslIFace *) GetInterface ((struct Library *)AslBase, "main", 1, NULL);
+      if (!IAsl) {
+	CloseLibrary (AslBase);
+	AslBase = 0;
+	write_log ("Can't get asl.library interface\n");
+      }
+#endif
+    }
+#ifdef __amigaos4__
+  } else {
+    IAsl->Obtain ();
+#endif
+  }
+
+  /* success */
+  return 1;
 }
 
 static int fromWB;
 static FILE *logfile;
 
-/*
+/************************************************
+ *
+ * main()
+ *
+ ************************************************
+ *
  * Amiga-specific main entry
- */
-int main (int argc, char *argv[])
-{
-    fromWB = argc == 0;
+ *
+ * Open all libraries,
+ * Call real_main,
+ * Close all libraries again.
+ ************************************************/
+int main (int argc, char *argv[]) {
 
-    if (fromWB)
-	set_logfile ("T:J-UAE.log");
+  fromWB = argc == 0;
 
-    init_libs ();
+  if (fromWB) {
+    set_logfile ("T:J-UAE.log");
+  }
+
+  if(!init_libs ()) {
+    free_libs();
+    write_log("Unable to open required libraries. Sorry.\n");
+    exit(1);
+  }
 
 #ifdef USE_SDL
-    init_sdl ();
+  init_sdl ();
 #endif
 
-    real_main (argc, argv);
+  real_main (argc, argv);
 
-    if (fromWB)
-	set_logfile (0);
+  if (fromWB) {
+    set_logfile (0);
+  }
 
-    return 0;
+  free_libs();
+
+  return 0;
 }
 
 /*

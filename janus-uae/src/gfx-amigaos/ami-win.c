@@ -36,7 +36,7 @@
 #endif
 
 //#define JW_ENTER_ENABLED  1
-//#define JWTRACING_ENABLED 1
+#define JWTRACING_ENABLED 1
 
 #include "od-amiga/j.h"
 
@@ -171,21 +171,6 @@ int  picasso_invalid_end;
  * prototypes & global vars
  */
 
-struct IntuitionBase    *IntuitionBase = NULL;
-struct DosLibrary       *DOSBase = NULL;
-struct GfxBase          *GfxBase = NULL;
-struct Library          *LayersBase = NULL;
-struct Library          *AslBase = NULL;
-struct Library          *CyberGfxBase = NULL;
-struct Library          *GadToolsBase = NULL;
-
-struct AslIFace *IAsl;
-struct GraphicsIFace *IGraphics;
-struct LayersIFace *ILayers;
-struct IntuitionIFace *IIntuition;
-struct CyberGfxIFace *ICyberGfx;
-
-
 /*static*/ UBYTE            *Line;
 struct RastPort  *RP;
 struct Screen    *S;
@@ -202,7 +187,7 @@ static struct BitMap    *CybBitMap;
 struct ColorMap  *CM;
 int              XOffset,YOffset;
 
-static int os39;        /* kick 39 present */
+int os39;        /* kick 39 present */
 int usepub;      /* use public screen */
 static int is_halfbrite;
 static int is_ham;
@@ -1339,28 +1324,6 @@ static int setup_userscreen (void)
 
     JWLOG("entered\n");
 
-    if (!AslBase) {
-	AslBase = OpenLibrary (AslName, 36);
-	if (!AslBase) {
-	    write_log ("Can't open asl.library v36.\n");
-	    return 0;
-	} else {
-#ifdef __amigaos4__
-	    IAsl = (struct AslIFace *) GetInterface ((struct Library *)AslBase, "main", 1, NULL);
-	    if (!IAsl) {
-		CloseLibrary (AslBase);
-		AslBase = 0;
-		write_log ("Can't get asl.library interface\n");
-	    }
-#endif
-	}
-#ifdef __amigaos4__
-    } else {
-        IAsl->Obtain ();
-        release_asl = 1;
-#endif
-    }
-
     ScreenRequest = AllocAslRequest (ASL_ScreenModeRequest, NULL);
 
     if (!ScreenRequest) {
@@ -1513,6 +1476,9 @@ static int setup_userscreen (void)
 int graphics_setup (void)
 {
   JWLOG("graphics_setup\n");
+
+/* open libs moved to od-amiga/main.c */
+#if 0
     if (((struct ExecBase *)SysBase)->LibNode.lib_Version < 36) {
 	write_log ("UAE needs OS 2.0+ !\n");
 	return 0;
@@ -1592,6 +1558,7 @@ int graphics_setup (void)
     write_log ("gadtools.library missing? Needed for j-uae menu support!\n");
     return 0;
   }
+#endif
 #endif
 
     init_pointer ();
@@ -1947,6 +1914,9 @@ void graphics_leave (void)
 	S = NULL;
 	original_S=NULL;
     }
+
+    /* moved to free_libs in src/od-amiga/main.c */
+#if 0
     if (AslBase) {
 	CloseLibrary( (void*) AslBase);
 	AslBase = NULL;
@@ -1977,6 +1947,7 @@ void graphics_leave (void)
 	CloseLibrary((void*)CyberGfxBase);
 	CyberGfxBase = NULL;
     }
+#endif
 }
 
 /****************************************************************************/
