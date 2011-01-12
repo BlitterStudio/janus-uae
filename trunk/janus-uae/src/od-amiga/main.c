@@ -29,6 +29,13 @@
 #include "sysdeps.h"
 
 #include <libraries/asl.h>
+#include <libraries/mui.h>
+
+#define  __USE_BASETYPE__
+#include <proto/exec.h>
+#undef   __USE_BASETYPE__
+#include <exec/execbase.h>
+
 
 #include "options.h"
 #include "uae.h"
@@ -38,10 +45,21 @@
 
 #include "signal.h"
 
-#define  __USE_BASETYPE__
-#include <proto/exec.h>
-#undef   __USE_BASETYPE__
-#include <exec/execbase.h>
+
+#ifdef HAVE_LIBRARIES_CYBERGRAPHICS_H
+# define CGX_CGX_H <libraries/cybergraphics.h>
+# define USE_CYBERGFX           /* define this to have cybergraphics support */
+#else
+# ifdef HAVE_CYBERGRAPHX_CYBERGRAPHICS_H
+#  define USE_CYBERGFX
+#  define CGX_CGX_H <cybergraphx/cybergraphics.h>
+# endif
+#endif
+#ifdef USE_CYBERGFX
+# if defined __MORPHOS__ || defined __AROS__ || defined __amigaos4__
+#  define USE_CYBERGFX_V41
+# endif
+#endif
 
 #ifdef USE_SDL
 # include <SDL.h>
@@ -64,13 +82,15 @@ unsigned int __stack_size = MIN_STACK_SIZE;
 # endif
 #endif
 
-struct IntuitionBase    *IntuitionBase = NULL;
-struct DosLibrary       *DOSBase = NULL;
-struct GfxBase          *GfxBase = NULL;
-struct Library          *LayersBase = NULL;
-struct Library          *AslBase = NULL;
+//struct IntuitionBase    *IntuitionBase = NULL;
+//struct DosLibrary       *DOSBase = NULL;
+//struct GfxBase          *GfxBase = NULL;
+struct Library          *LayersBase   = NULL;
+struct Library          *AslBase      = NULL;
 struct Library          *CyberGfxBase = NULL;
 struct Library          *GadToolsBase = NULL;
+struct Library          *UtilityBase  = NULL;
+struct Library          *MUIMasterBase= NULL;
 
 struct AslIFace *IAsl;
 struct GraphicsIFace *IGraphics;
@@ -90,6 +110,8 @@ extern int os39;
 /* close all libraries */
 static void free_libs (void) {
 
+  JWLOG("free_libs()\n");
+
 #ifdef __amigaos4__
     if (ITimer)
 	DropInterface ((struct Interface *)ITimer);
@@ -102,38 +124,54 @@ static void free_libs (void) {
 #endif
 
     if (AslBase) {
-	CloseLibrary( (void*) AslBase);
+	CloseLibrary(AslBase);
 	AslBase = NULL;
     }
 
-#if !defined GTKMUI
     if (GadToolsBase) {
-	CloseLibrary( (void*) GadToolsBase);
+	CloseLibrary(GadToolsBase);
 	GadToolsBase = NULL;
     }
 
+    if (CyberGfxBase) {
+	CloseLibrary(CyberGfxBase);
+	CyberGfxBase = NULL;
+    }
+
     if (GfxBase) {
-	CloseLibrary ((void*)GfxBase);
+	CloseLibrary ((struct Library *)GfxBase);
 	GfxBase = NULL;
     }
-#endif
     if (LayersBase) {
 	CloseLibrary (LayersBase);
 	LayersBase = NULL;
     }
-#if !defined GTKMUI
     if (IntuitionBase) {
-	CloseLibrary ((void*)IntuitionBase);
+	CloseLibrary ((struct Library *)IntuitionBase);
 	IntuitionBase = NULL;
     }
-#endif
-    if (CyberGfxBase) {
-	CloseLibrary((void*)CyberGfxBase);
-	CyberGfxBase = NULL;
+    if (DOSBase) {
+	CloseLibrary ((struct Library *)DOSBase);
+	IntuitionBase = NULL;
     }
+
+  JWLOG("free_libs() done\n");
 }
 
+/**********************************************
+ * init_libs
+ *
+ * Init all amiga libraries here.
+ * Really do it here.
+ * We have a lot of threads running, they
+ * all depend on valid library pointers.
+ *
+ * Keep in mind: Prohibit gtk-mui
+ * from opening its own libraries!
+ ***********************************************/
 static int init_libs (void) {
+
+  ENTER
 
   if (((struct ExecBase *)SysBase)->LibNode.lib_Version < 36) {
     write_log ("UAE needs OS 2.0+ !\n");
@@ -141,9 +179,13 @@ static int init_libs (void) {
   }
   os39 = (((struct ExecBase *)SysBase)->LibNode.lib_Version >= 39);
 
-#if !defined GTKMUI
+  DOSBase = OpenLibrary ("dos.library", 36L);
+  if (!DOSBase) {
+    write_log ("No dos.library\n");
+    return 0;
+  }
+
   IntuitionBase = (void*) OpenLibrary ("intuition.library", 0L);
-#endif
   if (!IntuitionBase) {
     write_log ("No intuition.library ?\n");
     return 0;
@@ -158,9 +200,7 @@ static int init_libs (void) {
 #endif
   }
 
-#if !defined GTKMUI
   GfxBase = (void*) OpenLibrary ("graphics.library", 0L);
-#endif
   if (!GfxBase) {
     write_log ("No graphics.library ?\n");
     return 0;
@@ -205,14 +245,18 @@ static int init_libs (void) {
   }
 #endif
 
-/* we should have an j-uae define .. */
-#if defined GTKMUI
   GadToolsBase = OpenLibrary( "gadtools.library", 37L );
   if(!GadToolsBase) {
     write_log ("gadtools.library missing? Needed for j-uae menu support!\n");
     return 0;
   }
-#endif
+
+  UtilityBase = OpenLibrary( "utility.library", 0L );
+  if(!UtilityBase) {
+    write_log ("utility.library missing? Needed for gtk-mui!\n");
+    return 0;
+  }
+
 
 
   TimerBase = (struct Device *) FindName(&SysBase->DeviceList, "timer.device");
@@ -229,7 +273,6 @@ static int init_libs (void) {
     return 0;
   }
 #endif
-
 
   if (!AslBase) {
     AslBase = OpenLibrary (AslName, 36);
@@ -252,6 +295,14 @@ static int init_libs (void) {
 #endif
   }
 
+  MUIMasterBase = (struct Library *) OpenLibrary (MUIMASTER_NAME, 19L);
+  if (!MUIMasterBase) {
+    write_log ("No Zune? muimaster.library missing?\n");
+    return 0;
+  }
+
+
+  LEAVE
   /* success */
   return 1;
 }
@@ -295,8 +346,10 @@ int main (int argc, char *argv[]) {
     set_logfile (0);
   }
 
+kprintf("============ main call free_libs\n");
   free_libs();
 
+kprintf("============ main left\n");
   return 0;
 }
 
