@@ -1,10 +1,31 @@
-/*
+/************************************************************************ 
+ *
+ * UAE - The Un*x Amiga Emulator
+ *
  * floppyfileentry.c
  *
  * Copyright 2004 Martin Garton
  * Copyright 2004 Richard Drummond
- */
-
+ * Copyright 2012 Oliver Brunner - aros<at>oliver-brunner.de
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-UAE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-UAE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * $Id$
+ *
+ ************************************************************************/
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -16,6 +37,14 @@
 #include "util.h"
 #include "floppyfileentry.h"
 #include "led.h"
+
+
+//#define FLOPPY_TRACING_ENABLED 1
+#if FLOPPY_TRACING_ENABLED
+#define DebOut(...)   do { kprintf("%s:%d  %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
+#else
+#define DebOut(...)     do { ; } while(0)
+#endif
 
 static void floppyfileentry_init (FloppyFileEntry *ffe);
 static void floppyfileentry_class_init (FloppyFileEntryClass *class);
@@ -120,11 +149,13 @@ static void on_eject (GtkWidget *w, FloppyFileEntry *ffe)
 
 static void on_filesel_close (FloppyFileEntry *ffe, gpointer data)
 {
+  DebOut("Entered\n");
     gtk_widget_set_sensitive (ffe->insert_button, 1);
     if (ffe->filename && strlen(ffe->filename))
 	gtk_widget_set_sensitive (ffe->eject_button, 1);
 
     gtk_widget_destroy (ffe->filesel);
+  DebOut("Left\n");
 }
 
 static void on_filesel_ok (FloppyFileEntry *ffe, gpointer data)
