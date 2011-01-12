@@ -6,7 +6,7 @@
  *
  * Copyright 2004 Martin Garton
  * Copyright 2004 Richard Drummond
- * Copyright 2012 Oliver Brunner - aros<at>oliver-brunner.de
+ * Copyright 2011 Oliver Brunner - aros<at>oliver-brunner.de
  *
  * This file is part of Janus-UAE.
  *
