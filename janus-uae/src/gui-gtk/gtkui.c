@@ -912,18 +912,6 @@ static void on_debug_clicked (void)
 }
 #endif
 
-static void on_quit_clicked (void)
-{
-    DEBUG_LOG ("Quit button clicked (quit_gui: %d).\n",quit_gui);
-
-    if (!quit_gui) {
-	write_comm_pipe_int (&from_gui_pipe, UAECMD_QUIT, 1);
-#ifdef GTKMUI
-//olioli	gtk_main_quit ();
-#endif
-    }
-}
-
 static void on_pause_clicked (GtkWidget *widget, gpointer data)
 {
     DEBUG_LOG ("Called with %d\n", GTK_TOGGLE_BUTTON (widget)->active == TRUE );
@@ -2169,6 +2157,7 @@ static void make_about_widgets (GtkWidget *dvbox) {
 
     GtkWidget *thing;
     GtkWidget *hbox;
+    GtkWidget *config_name_hbox;
 
 #if GTK_MAJOR_VERSION >= 2
     const char title[] = "<span font_desc=\"Sans 24\">" UAE_VERSION_STRING " </span>";
@@ -2223,29 +2212,71 @@ static void make_about_widgets (GtkWidget *dvbox) {
 
 #endif
 /* TEST VERSION */
-#if 0
     thing = gtk_label_new ("*** THIS IS AN INTERNAL BETA TEST VERSION ***");
     gtk_widget_show (thing);
     add_centered_to_vbox (dvbox, thing);
     thing = gtk_label_new ("*** PLEASE DO NOT DISTRIBUTE ***");
     gtk_widget_show (thing);
     add_centered_to_vbox (dvbox, thing);
+
+#if 0
+    thing = gtk_label_new (currprefs.description);
+    gtk_widget_show (thing);
+    add_centered_to_vbox (dvbox, thing);
 #endif
+
 
     add_empty_vbox (dvbox);
 
+    /* vbox of Config File Frame */
+
+#if 0
+    thing = gtk_label_new (currprefs.description);
+    gtk_widget_show (thing);
+    gtk_box_pack_start (GTK_BOX (config_vbox), thing, TRUE, TRUE, 0);
+#endif
+
+    config_name_hbox = make_file_container ("Config File Description", dvbox);
     hbox = make_file_container ("Current Config File", dvbox);
     /* Current file display */
+
+    thing = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(thing), currprefs.description);
+    //gtk_signal_connect (GTK_OBJECT (thing), "changed", (GtkSignalFunc) dirdlg_on_change, (gpointer) NULL);
+    gtk_box_pack_start (GTK_BOX (hbox), thing, TRUE, TRUE, 0);
+    gtk_widget_show (thing);
+
+    //path_entry = thing;
+
     config_name_widget = make_file_widget (hbox);
 
 }
 
-static gint did_guidlg_delete (GtkWidget* window, GdkEventAny* e, gpointer data)
-{
-    if (!quit_gui)
-        write_comm_pipe_int (&from_gui_pipe, UAECMD_QUIT, 1);
-    gui_window = 0;
-    return FALSE;
+/******************************
+ * Quit hooks
+ ******************************/
+static void on_quit_clicked (void) {
+
+  DEBUG_LOG ("on_quit_clicked (quit_gui: %d).\n",quit_gui);
+
+  if (!quit_gui) {
+    write_comm_pipe_int (&from_gui_pipe, UAECMD_QUIT, 1);
+  }
+}
+
+
+static gint did_guidlg_delete (GtkWidget* window, GdkEventAny* e, gpointer data) {
+
+  DEBUG_LOG("did_guidlg_delete(%lx, %lx, %lx)\n", window, e, data);
+
+#if 0
+  if (!quit_gui) {
+    write_comm_pipe_int (&from_gui_pipe, UAECMD_QUIT, 1);
+  }
+#endif
+  on_quit_clicked();
+  gui_window = 0;
+  return FALSE;
 }
 
 
@@ -2690,8 +2721,8 @@ static void create_guidlg (void) {
 static void *gtk_gui_thread (void *dummy)
 {
     /* fake args for gtk_init() */
-    int argc = 1;
-    char *a[] = {"UAE"};
+    int argc = 2;
+    char *a[] = {"UAE", "WE_HAVE_OWN_LIBS", NULL};
     char **argv = a;
 
     DEBUG_LOG ("Started\n");
@@ -2928,7 +2959,7 @@ static
 #endif
 void gui_shutdown (void)
 {
-    DEBUG_LOG( "Entered\n" );
+    DEBUG_LOG( "entered\n" );
     //DebOut("entered\n");
 
     if (gui_available) {
@@ -2939,6 +2970,7 @@ void gui_shutdown (void)
 	    uae_sem_wait (&gui_quit_sem);
 	}
     }
+    DEBUG_LOG("left\n");
     //DebOut("left\n");
 }
 
