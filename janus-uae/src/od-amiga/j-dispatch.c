@@ -240,7 +240,6 @@ static uae_u32 jd_setup(TrapContext *context, ULONG *param) {
 
     if(!init_done) {
       JWLOG("AD_SETUP called first time => InitSemaphore etc\n");
-      kprintf("janusd running..\n");
 
       /* from now on (aos3_task && aos3_task_signal) the
        * aos3 aros-daemon is ready to take orders!

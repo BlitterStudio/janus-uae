@@ -346,10 +346,8 @@ int main (int argc, char *argv[]) {
     set_logfile (0);
   }
 
-kprintf("============ main call free_libs\n");
   free_libs();
 
-kprintf("============ main left\n");
   return 0;
 }
 
