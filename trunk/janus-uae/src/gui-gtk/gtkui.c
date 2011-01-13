@@ -3,7 +3,9 @@
  * gtkui.c
  *
  * Yet Another User Interface for the X11 version
+ * User Interface for the AROS version
  *
+ * X11:
  * The Tk GUI doesn't work.
  * The X Forms Library isn't available as source, and there aren't any
  * binaries compiled against glibc
@@ -54,6 +56,7 @@
 #include "version.h"
 
 #include <gtk/gtk.h>
+#include <gtk/gtkwidget.h>
 #include <gdk/gdk.h>
 #include <gdk/gdkkeysyms.h>
 
@@ -118,7 +121,8 @@ static GtkWidget *config_load_widget;
 static GtkWidget *config_load_from_widget;
 static GtkWidget *config_save_widget;
 static GtkWidget *config_save_as_widget;
-static GtkWidget *config_name_widget;
+static GtkWidget *config_path_widget;
+static GtkWidget *config_description_widget;
 
 extern GtkWidget  *chipsize_widget[6];
 static const char *chiplabels[] = { "512 KB", "1 MB", "2 MB", "4 MB", "8 MB", NULL };
@@ -623,8 +627,8 @@ static void update_state (void) {
     g_signal_emit_by_name(jint_panel, "read-prefs",NULL);
   }
 
-  gtk_label_set_text (GTK_LABEL (config_name_widget), optionsfile);
-
+  gtk_label_set_text (GTK_LABEL (config_path_widget),        optionsfile);
+  gtk_entry_set_text (GTK_ENTRY (config_description_widget), currprefs.description);
 }
 
 static void update_buttons (int state)
@@ -2152,12 +2156,40 @@ static void make_hd_widgets (GtkWidget *dvbox)
 }
 #endif
 
+/*******************************
+ * make_config_frame
+ *
+ * crate a vbox in the supplied
+ * box, which has a frame
+ * and uses up the complete
+ * horizontal space.
+ *******************************/
+static GtkWidget *make_config_frame (const char *title, GtkWidget *vbox) {
+
+    GtkWidget *thing = gtk_frame_new (title);
+    GtkWidget *buttonbox = gtk_vbox_new (TRUE, 4);
+
+    gtk_container_set_border_width (GTK_CONTAINER (buttonbox), 4);
+    gtk_container_add (GTK_CONTAINER (thing), buttonbox);
+    gtk_box_pack_start (GTK_BOX (vbox), thing, FALSE, TRUE, 0);
+    gtk_widget_show (buttonbox);
+    gtk_widget_show (thing);
+
+    return buttonbox;
+}
+
+static void config_descr_on_change (GtkObject *o, gpointer data) {
+
+  strncpy(changed_prefs.description, gtk_entry_get_text(GTK_ENTRY(config_description_widget)), 250);
+}
 
 static void make_about_widgets (GtkWidget *dvbox) {
 
-    GtkWidget *thing;
-    GtkWidget *hbox;
-    GtkWidget *config_name_hbox;
+    GtkWidget   *thing;
+    GtkWidget   *vbox;
+    GList       *childs;
+    GtkWidget   *filename;
+    GtkTooltips *tip;
 
 #if GTK_MAJOR_VERSION >= 2
     const char title[] = "<span font_desc=\"Sans 24\">" UAE_VERSION_STRING " </span>";
@@ -2228,28 +2260,26 @@ static void make_about_widgets (GtkWidget *dvbox) {
 
     add_empty_vbox (dvbox);
 
-    /* vbox of Config File Frame */
-
-#if 0
-    thing = gtk_label_new (currprefs.description);
-    gtk_widget_show (thing);
-    gtk_box_pack_start (GTK_BOX (config_vbox), thing, TRUE, TRUE, 0);
-#endif
-
-    config_name_hbox = make_file_container ("Config File Description", dvbox);
-    hbox = make_file_container ("Current Config File", dvbox);
     /* Current file display */
+    vbox = make_config_frame ("Current Configuration ", dvbox);
+    gtk_widget_show (vbox);
 
-    thing = gtk_entry_new();
-    gtk_entry_set_text(GTK_ENTRY(thing), currprefs.description);
-    //gtk_signal_connect (GTK_OBJECT (thing), "changed", (GtkSignalFunc) dirdlg_on_change, (gpointer) NULL);
-    gtk_box_pack_start (GTK_BOX (hbox), thing, TRUE, TRUE, 0);
-    gtk_widget_show (thing);
+    config_description_widget = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(config_description_widget), currprefs.description);
+    gtk_box_pack_start (GTK_BOX (vbox), config_description_widget, TRUE, TRUE, 0);
+    gtk_widget_show (config_description_widget);
 
-    //path_entry = thing;
+    gtk_signal_connect (GTK_OBJECT (config_description_widget), "changed", 
+                        (GtkSignalFunc) config_descr_on_change, (gpointer) NULL);
 
-    config_name_widget = make_file_widget (hbox);
+    /* config file path */
+    config_path_widget = make_file_widget (vbox);
 
+    tip=gtk_tooltips_new();
+
+    gtk_tooltips_set_tip (GTK_TOOLTIPS (tip), config_description_widget,
+				 "Description of the config file.\nRemember to leave this field with RETURN to really change the content!",
+				 "Description of the config file.\nRemember to leave this field with RETURN to really change the content!");
 }
 
 /******************************
@@ -2381,7 +2411,7 @@ static void did_config_select (GtkObject *o) {
   if (!quit_gui) {
     write_comm_pipe_int (&from_gui_pipe, UAECMD_SAVE_CONFIG, 1);
     /* need to manually update the widget here, as no gui_update() is called on save */
-    gtk_label_set_text (GTK_LABEL (config_name_widget), optionsfile);
+    gtk_label_set_text (GTK_LABEL (config_path_widget), optionsfile);
   }
 }
 
