@@ -74,7 +74,7 @@
 #include "gui-gtk/display.h"
 #include "gui-gtk/integration.h"
 
-//#define GUI_DEBUG 1
+#define GUI_DEBUG 1
 #ifdef  GUI_DEBUG
 #define DEBUG_LOG(...) do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -336,14 +336,17 @@ static void set_cpu_state (void)
     DEBUG_LOG ("set_cpu_state: %d %d %d\n", changed_prefs.cpu_level,
     changed_prefs.address_space_24, changed_prefs.m68k_speed);
 
+    DEBUG_LOG ("set_cpu_state: %d %d %d\n", currprefs.cpu_level,
+    currprefs.address_space_24, currprefs.m68k_speed);
+
+
     //DebOut ("%d %d %d\n", changed_prefs.cpu_level, changed_prefs.address_space_24, changed_prefs.m68k_speed);
 
-    cputypepanel_set_cpulevel      (CPUTYPEPANEL (ctpanel), changed_prefs.cpu_level);
-    cputypepanel_set_addr24bit     (CPUTYPEPANEL (ctpanel), changed_prefs.address_space_24);
-    cputypepanel_set_compatible    (CPUTYPEPANEL (ctpanel), changed_prefs.cpu_compatible);
-    cputypepanel_set_cycleexact    (CPUTYPEPANEL (ctpanel), changed_prefs.cpu_cycle_exact);
-    cpuspeedpanel_set_cpuspeed     (CPUSPEEDPANEL (cspanel), changed_prefs.m68k_speed);
-    cpuspeedpanel_set_cpuidle      (CPUSPEEDPANEL (cspanel), changed_prefs.cpu_idle);
+    cputypepanel_set_cpulevel      (CPUTYPEPANEL (ctpanel), currprefs.cpu_level);
+    cputypepanel_set_addr24bit     (CPUTYPEPANEL (ctpanel), currprefs.address_space_24);
+    cputypepanel_set_accuracy      (CPUTYPEPANEL (ctpanel), currprefs.cpu_compatible, currprefs.cpu_cycle_exact);
+    cpuspeedpanel_set_cpuspeed     (CPUSPEEDPANEL (cspanel), currprefs.m68k_speed);
+    cpuspeedpanel_set_cpuidle      (CPUSPEEDPANEL (cspanel), currprefs.cpu_idle);
 
     set_mem32_widgets_state ();
     //DebOut("exit\n");
@@ -1147,7 +1150,7 @@ static GtkWidget *add_labelled_widget_centered (const char *str, GtkWidget *thin
  * build radio group, maximum count entries. If count < 0,
  * build as many entries, as there are labels
  *************************************************************/
-static int make_radio_group_param (const char **label, GtkWidget *tobox,
+int make_radio_group_param (const char **label, GtkWidget *tobox,
 			      GtkWidget **saveptr, gint t1, gint t2,
 			      void (*sigfunc) (void), int count, GSList *group,
 			      GtkWidget *parameter) {
@@ -1310,7 +1313,8 @@ static void on_cputype_changed (void)
 
     DEBUG_LOG ("called\n");
 
-    changed_prefs.cpu_level       = cputypepanel_get_cpulevel (CPUTYPEPANEL (ctpanel));
+    //changed_prefs.cpu_level       = cputypepanel_get_cpulevel (CPUTYPEPANEL (ctpanel));
+    changed_prefs.cpu_level       = CPUTYPEPANEL (ctpanel)->cpulevel;
     changed_prefs.cpu_compatible  = CPUTYPEPANEL (ctpanel)->compatible;
     changed_prefs.cpu_cycle_exact = CPUTYPEPANEL (ctpanel)->cycleexact;
 
@@ -2922,6 +2926,7 @@ void gui_handle_events (void)
 		DEBUG_LOG("UAECMD_LOAD_CONFIG\n");
 		uae_sem_wait (&gui_sem);
 		uae_load_config ();
+
 		uae_sem_post (&gui_sem);
 		DEBUG_LOG("UAECMD_LOAD_CONFIG done\n");
 		break;
