@@ -64,7 +64,7 @@ guint cpuspeedpanel_get_type () {
     cpuspeedpanel_type = g_type_register_static (GTK_TYPE_FRAME, "CpuSpeedPanel", &cpuspeedpanel_info, 0);
   }
 
-  return cpuspeedpanel_type_1;
+  return cpuspeedpanel_type;
 }
 
 enum {
