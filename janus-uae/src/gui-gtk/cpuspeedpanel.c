@@ -77,7 +77,6 @@ static guint cpuspeedpanel_signals[LAST_SIGNAL];
 
 static void cpuspeedpanel_class_init (CpuSpeedPanelClass *class)
 {
-  kprintf("cpuspeedpanel_class_init..\n");
     gtkutil_add_signals_to_class ((GtkObjectClass *)class,
 				   GTK_STRUCT_OFFSET (CpuSpeedPanelClass, cpuspeedpanel),
 				   cpuspeedpanel_signals,
@@ -92,12 +91,10 @@ static void cpuspeedpanel_init (CpuSpeedPanel *cspanel)
     GtkWidget *table;
 /*    GtkWidget *hbuttonbox, *button1, *button2; */
 
-kprintf("cpuspeedpanel_init!\n");
     gtk_frame_set_label (GTK_FRAME(cspanel), "Emulation speed");
     gtk_container_set_border_width (GTK_CONTAINER (cspanel), PANEL_BORDER_WIDTH);
     gtk_frame_set_label_align (GTK_FRAME(cspanel), 0.01, 0.5);
 
-kprintf("y2..\n");
     gtkutil_add_table (GTK_WIDGET (cspanel),
 	make_label ("Speed"), 1, 1, GTK_FILL,
 	cspanel->speed_widget = make_chooser (3, "Maximum", "Approximate 7MHz 68000", "Adjustable"), 2, 1, GTK_EXPAND | GTK_FILL,
@@ -114,7 +111,6 @@ kprintf("y2..\n");
 
 	GTKUTIL_TABLE_END
     );
-kprintf("y3..\n");
 
     gtk_scale_set_digits (GTK_SCALE (cspanel->adjust_widget), 0);
     gtk_range_set_update_policy (GTK_RANGE (cspanel->adjust_widget), GTK_UPDATE_DISCONTINUOUS);
@@ -136,7 +132,6 @@ kprintf("y3..\n");
 			GTK_SIGNAL_FUNC (on_idlerate_changed),
 			cspanel);
 
-kprintf("y4..\n");
     update_state (cspanel);
 }
 
@@ -192,9 +187,7 @@ static void on_idlerate_changed (GtkWidget *w, CpuSpeedPanel *cspanel)
 
 GtkWidget *cpuspeedpanel_new (void)
 {
-  kprintf("y0..\n");
     CpuSpeedPanel *w = CPUSPEEDPANEL (gtk_type_new (cpuspeedpanel_get_type ()));
-  kprintf("y0 returns: %lx\n", w);
 
     return GTK_WIDGET (w);
 }
