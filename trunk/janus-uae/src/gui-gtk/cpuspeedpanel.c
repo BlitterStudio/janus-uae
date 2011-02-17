@@ -1,8 +1,28 @@
-/*
+/************************************************************************ 
+ *
  * cpuspeedpanel.c
  *
  * Copyright 2003-2005 Richard Drummond
- */
+ * Copyright 2011      Oliver Brunner - aros<at>oliver-brunner.de
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-UAE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-UAE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * $Id$
+ *
+ ************************************************************************/
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -24,24 +44,27 @@ static void on_adjust_changed   (GtkWidget *w, CpuSpeedPanel *cspanel);
 static void on_idleenabled_toggled (GtkWidget *w, CpuSpeedPanel *cspanel);
 static void on_idlerate_changed (GtkWidget *w, CpuSpeedPanel *cspanel);
 
-guint cpuspeedpanel_get_type ()
-{
-    static guint cpuspeedpanel_type = 0;
+guint cpuspeedpanel_get_type () {
 
-    if (!cpuspeedpanel_type) {
-	static const GtkTypeInfo cpuspeedpanel_info = {
-	    (char *) "CpuSpeedPanel",
-	    sizeof (CpuSpeedPanel),
-	    sizeof (CpuSpeedPanelClass),
-	    (GtkClassInitFunc) cpuspeedpanel_class_init,
-	    (GtkObjectInitFunc) cpuspeedpanel_init,
-	    /*(GtkArgSetFunc)*/ NULL,
-	    /*(GtkArgGetFunc)*/ NULL,
-	    (GtkClassInitFunc) NULL
-	};
-	cpuspeedpanel_type = gtk_type_unique (gtk_frame_get_type (), &cpuspeedpanel_info);
-    }
-    return cpuspeedpanel_type;
+  static guint cpuspeedpanel_type = 0;
+
+  if (!cpuspeedpanel_type) {
+    static const GTypeInfo cpuspeedpanel_info = {
+      sizeof (CpuSpeedPanelClass),
+      NULL,		/* base_init */
+      NULL,		/* base_finalize */
+      (GClassInitFunc) cpuspeedpanel_class_init,
+      NULL,		/* class_finalize */
+      NULL,		/* class_data */
+      sizeof (CpuSpeedPanel),
+      0,		/* n_preallocs */
+      (GInstanceInitFunc) cpuspeedpanel_init,
+      NULL,           /* value_table */
+    };
+    cpuspeedpanel_type = g_type_register_static (GTK_TYPE_FRAME, "CpuSpeedPanel", &cpuspeedpanel_info, 0);
+  }
+
+  return cpuspeedpanel_type_1;
 }
 
 enum {
@@ -54,6 +77,7 @@ static guint cpuspeedpanel_signals[LAST_SIGNAL];
 
 static void cpuspeedpanel_class_init (CpuSpeedPanelClass *class)
 {
+  kprintf("cpuspeedpanel_class_init..\n");
     gtkutil_add_signals_to_class ((GtkObjectClass *)class,
 				   GTK_STRUCT_OFFSET (CpuSpeedPanelClass, cpuspeedpanel),
 				   cpuspeedpanel_signals,
@@ -68,10 +92,12 @@ static void cpuspeedpanel_init (CpuSpeedPanel *cspanel)
     GtkWidget *table;
 /*    GtkWidget *hbuttonbox, *button1, *button2; */
 
+kprintf("cpuspeedpanel_init!\n");
     gtk_frame_set_label (GTK_FRAME(cspanel), "Emulation speed");
     gtk_container_set_border_width (GTK_CONTAINER (cspanel), PANEL_BORDER_WIDTH);
     gtk_frame_set_label_align (GTK_FRAME(cspanel), 0.01, 0.5);
 
+kprintf("y2..\n");
     gtkutil_add_table (GTK_WIDGET (cspanel),
 	make_label ("Speed"), 1, 1, GTK_FILL,
 	cspanel->speed_widget = make_chooser (3, "Maximum", "Approximate 7MHz 68000", "Adjustable"), 2, 1, GTK_EXPAND | GTK_FILL,
@@ -88,6 +114,7 @@ static void cpuspeedpanel_init (CpuSpeedPanel *cspanel)
 
 	GTKUTIL_TABLE_END
     );
+kprintf("y3..\n");
 
     gtk_scale_set_digits (GTK_SCALE (cspanel->adjust_widget), 0);
     gtk_range_set_update_policy (GTK_RANGE (cspanel->adjust_widget), GTK_UPDATE_DISCONTINUOUS);
@@ -109,6 +136,7 @@ static void cpuspeedpanel_init (CpuSpeedPanel *cspanel)
 			GTK_SIGNAL_FUNC (on_idlerate_changed),
 			cspanel);
 
+kprintf("y4..\n");
     update_state (cspanel);
 }
 
@@ -164,7 +192,9 @@ static void on_idlerate_changed (GtkWidget *w, CpuSpeedPanel *cspanel)
 
 GtkWidget *cpuspeedpanel_new (void)
 {
+  kprintf("y0..\n");
     CpuSpeedPanel *w = CPUSPEEDPANEL (gtk_type_new (cpuspeedpanel_get_type ()));
+  kprintf("y0 returns: %lx\n", w);
 
     return GTK_WIDGET (w);
 }
