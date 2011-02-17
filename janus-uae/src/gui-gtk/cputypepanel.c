@@ -1,6 +1,6 @@
 /************************************************************************ 
  *
- * cpuspeedpanel.c
+ * cputypepanel.c
  *
  * Copyright 2003-2004 Richard Drummond
  * Copyright 2011      Oliver Brunner - aros<at>oliver-brunner.de
@@ -32,6 +32,11 @@
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
 
+#include "sysconfig.h"
+#include "sysdeps.h"
+
+#include "options.h"
+
 #include "cputypepanel.h"
 #include "chooserwidget.h"
 #include "util.h"
@@ -42,23 +47,24 @@ static void cputypepanel_init (CpuTypePanel *pathent);
 static void cputypepanel_class_init (CpuTypePanelClass *class);
 static void update_state (CpuTypePanel *ctpanel);
 static void on_cputype_changed (GtkWidget *w, CpuTypePanel *ctpanel);
-static void on_addr24bit_toggled (GtkWidget *w, CpuTypePanel *ctpanel);
 static void on_fpuenabled_toggled (GtkWidget *w, CpuTypePanel *ctpanel);
 static void on_accuracy_changed (GtkWidget *w, CpuTypePanel *ctpanel);
+
+static void read_prefs (CpuTypePanel *ctpanel);
 
 /****************************************************************************************/
 
 enum {
     TYPE_CHANGE_SIGNAL,
     ADDR24_CHANGE_SIGNAL,
+    READ_PREFS,
     LAST_SIGNAL
 };
 
 static guint cputypepanel_signals[LAST_SIGNAL];
 
-static const char *cpulabels[] = { "68000", "68010", "68020", "68040", "68060", NULL };
+static const char *cpulabels[] = { "68000", "68010", "68ec020", "68020", "68040", "68060", NULL };
 static const char *fpulabels[] = { "None", "6888x/internal", NULL };
-static const char *bitlabels[] = { "24-bit", "32-bit", NULL };
 static const char *acclabels[] = { "Normal", "Compatible", "Cycle Exact", NULL };
 
 /****************************************************************************************/
@@ -78,7 +84,6 @@ guint cputypepanel_get_type () {
 	    NULL,
 	    (GtkClassInitFunc) NULL
 	};
-	//cputypepanel_type = gtk_type_unique (gtk_frame_get_type (), &cputypepanel_info);
 	cputypepanel_type = gtk_type_unique (gtk_box_get_type (), &cputypepanel_info);
     }
     return cputypepanel_type;
@@ -91,15 +96,20 @@ static void cputypepanel_class_init (CpuTypePanelClass *class) {
 				   cputypepanel_signals,
 				   "cputype-changed",
 				   "addr24bit-changed",
+				   "read-prefs",
 				   (void*)0);
     class->cputypepanel = NULL;
 }
 
 GtkWidget *cputypepanel_new (void) {
 
-    CpuTypePanel *w = CPUTYPEPANEL (gtk_type_new (cputypepanel_get_type ()));
+  CpuTypePanel *w = CPUTYPEPANEL (gtk_type_new (cputypepanel_get_type ()));
 
-    return GTK_WIDGET (w);
+  gtk_signal_connect (GTK_OBJECT (w), "read-prefs",
+			  GTK_SIGNAL_FUNC (read_prefs),
+			  NULL);
+
+  return GTK_WIDGET (w);
 }
 
 /****************************************************************************************/
@@ -117,78 +127,104 @@ GtkWidget *make_radio_group_box_param (const char *title, const char **labels,
 static void cputypepanel_init (CpuTypePanel *ctpanel) {
 
   GtkWidget *hbox;
+  GtkWidget *cpuframe;
+  GtkWidget *cpu_widget[10];
 
   /* hbox for the frames */
-  hbox=gtk_hbox_new(TRUE, 5);
+  hbox=gtk_hbox_new(FALSE, 5);
   gtk_box_pack_start (GTK_BOX (ctpanel), hbox, FALSE, TRUE, 0);
   gtk_widget_show(hbox);
 
-  /* 680x0 */
-  ctpanel->cpu_widget_type=make_radio_group_box_param("CPU", cpulabels, ctpanel->cpu_widgets, 0, (gpointer) on_cputype_changed, GTK_WIDGET(ctpanel));
-  gtk_widget_show(ctpanel->cpu_widget_type);
-  gtk_box_pack_start (GTK_BOX (hbox), ctpanel->cpu_widget_type, FALSE, TRUE, 0);
+  cpuframe=make_radio_group_box_1_param("CPU", cpulabels, ctpanel->cpu_widgets, 0, on_cputype_changed, 2, GTK_WIDGET(ctpanel));
+  gtk_widget_show(cpuframe);
+  gtk_box_pack_start (GTK_BOX (hbox), cpuframe, FALSE, TRUE, 0);
 
   /* FPU */
   ctpanel->cpu_widget_fpu=make_radio_group_box_param("FPU", fpulabels, ctpanel->cpu_fpu_widgets, 0, (gpointer) on_fpuenabled_toggled, GTK_WIDGET(ctpanel));
   gtk_widget_show(ctpanel->cpu_widget_fpu);
   gtk_box_pack_start (GTK_BOX (hbox), ctpanel->cpu_widget_fpu, FALSE, TRUE, 0);
 
-  /* Addressing */
-  ctpanel->cpu_widget_addr24bit=make_radio_group_box_param("Addressing", bitlabels, ctpanel->cpu_addr24bit_widgets, 0, (gpointer) on_addr24bit_toggled, GTK_WIDGET(ctpanel));
-  gtk_widget_show(ctpanel->cpu_widget_addr24bit);
-  gtk_box_pack_start (GTK_BOX (hbox), ctpanel->cpu_widget_addr24bit, FALSE, TRUE, 0);
-
   /* Accuracy */
   ctpanel->cpu_widget_accuracy=make_radio_group_box_param("Accuracy", acclabels, ctpanel->cpu_accuracy_widgets, 0, (gpointer) on_accuracy_changed, GTK_WIDGET(ctpanel));
   gtk_widget_show(ctpanel->cpu_widget_accuracy);
   gtk_box_pack_start (GTK_BOX (hbox), ctpanel->cpu_widget_accuracy, FALSE, TRUE, 0);
-
-  update_state (ctpanel);
 }
 
-/********************
+/****************************************************************************************/
+
+/* 
+ * read prefs
+ *
+ * update all widgets to the current prefs state
+ *
+ * called through the signal "read-prefs"
+ *
+ */
+static void read_prefs (CpuTypePanel *ctpanel) {
+
+  guint cpu;
+
+  kprintf("read_prefs..\n");
+
+  cpu=currprefs.cpu_level;
+
+  if(cpu > CPULEVEL_68040) {
+    cpu=5;
+  }
+
+  /* 
+   * reset all values, otherwise it may happen, that the new and the default value
+   * are the same and on_cputype_changed decides to do nothing. But it should 
+   * update all widgets nevertheless.
+   */
+  ctpanel->addr24bit  = -1;
+  ctpanel->cpulevel   = -1;
+  ctpanel->fpuenabled = -1;
+  //ctpanel->compatible = -1;
+  //ctpanel->cycleexact = -1;
+
+  /* set cpu state */
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (ctpanel->cpu_widgets[cpu]), TRUE);
+  on_cputype_changed (ctpanel->cpu_widgets[cpu], ctpanel);
+
+}
+
+/****************************************************************************************/
+/*
  * update_state
  *
- * updates fpu/addr
- * widgets
- *******************/
+ * updates fpu/accuracy widgets dependent on cpulevel
+ *
+ */
 static void update_state (CpuTypePanel *ctpanel) {
-  guint cpu    = ctpanel->cputype;
-  guint addr24 = ctpanel->addr24bit;
-  guint fpu    = ctpanel->fpuenabled;
+  gint fpu;
 
-  switch (cpu) {
-      case 0:
-      case 1:
-	  addr24 = 1;
-	  fpu    = 0;
-	  break;
-      case 3:
-      case 4:
-	  addr24 = 0;
-	  fpu    = 1;
-	  break;
+  kprintf("update_state: cpu %d \n", ctpanel->cpulevel);
+
+  /* force setting for all !CPULEVEL_680ec20 CPUs */
+  if(ctpanel->cpulevel < CPULEVEL_680ec20) {
+    fpu=FALSE;
+    gtk_widget_set_sensitive (ctpanel->cpu_widget_fpu, FALSE);
+  }
+  else if(ctpanel->cpulevel > CPULEVEL_680ec20) {
+    fpu=TRUE;
+    gtk_widget_set_sensitive (ctpanel->cpu_widget_fpu, FALSE);
+  }
+  else /* (ctpanel->cpulevel == CPULEVEL_680ec20) */ {
+    /* let user decide for fpu */
+    gtk_widget_set_sensitive (ctpanel->cpu_widget_fpu, TRUE);
+    fpu=ctpanel->fpuenabled;
+
+    gtk_signal_handler_block_by_data   (GTK_OBJECT        (ctpanel->cpu_fpu_widgets[fpu]), ctpanel );
+    gtk_toggle_button_set_active       (GTK_TOGGLE_BUTTON (ctpanel->cpu_fpu_widgets[fpu]), TRUE);
+    gtk_signal_handler_unblock_by_data (GTK_OBJECT        (ctpanel->cpu_fpu_widgets[fpu]), ctpanel );
   }
 
-  /* disable all widget, which are not possible for this CPU */
-  gtk_widget_set_sensitive (ctpanel->cpu_widget_addr24bit, cpu == 2);
-  gtk_widget_set_sensitive (ctpanel->cpu_widget_fpu, cpu == 2);
+  ctpanel->fpuenabled=fpu;
 
-  if (fpu != ctpanel->fpuenabled) {
-      ctpanel->fpuenabled = fpu;
-      gtk_signal_handler_block_by_data (GTK_OBJECT (ctpanel->cpu_fpu_widgets[fpu]), ctpanel );
-      gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (ctpanel->cpu_fpu_widgets[fpu]), TRUE);
-      gtk_signal_handler_unblock_by_data (GTK_OBJECT (ctpanel->cpu_fpu_widgets[fpu]), ctpanel );
-  }
+  kprintf("update_state: new fpu %d ctpanel->fpuenabled %d\n", fpu, ctpanel->fpuenabled);
 
-  if (addr24 != ctpanel->addr24bit) {
-      ctpanel->addr24bit  = addr24;
-      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ctpanel->cpu_addr24bit_widgets[addr24]), TRUE);
-      //gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (ctpanel->addr24bit_widget), addr24);
-  }
-
-  if(cpu==0) {
-    /* 68000 */
+  if(ctpanel->cpulevel == CPULEVEL_68000) {
     gtk_widget_set_sensitive (ctpanel->cpu_widget_accuracy, TRUE);
   }
   else {
@@ -199,54 +235,76 @@ static void update_state (CpuTypePanel *ctpanel) {
   }
 }
 
+/*
+ * on_cputype_changed
+ *
+ * user clicked on one of the cpu widgets
+ */
 static void on_cputype_changed (GtkWidget *me, CpuTypePanel *ctpanel) {
 
-  guint type;
+  gint type;
+  gint old_24bit;
+  gint old_cpulevel;
+
+  kprintf("on_cputype_changed\n");
 
   if(!ctpanel) {
     /* can happen durint init? */
+    kprintf("on_cputype_changed: ctpanel is NULL??\n");
     return;
   }
 
+  old_cpulevel=ctpanel->cpulevel;
+
+  kprintf("on_cputype_changed old_cpulevel: %d\n", old_cpulevel);
+
+  /* find clicked widget */
   type=0;
   while(ctpanel->cpu_widgets[type] && me!=ctpanel->cpu_widgets[type]) {
     type++;
   }
 
-  if(type == ctpanel->cputype) {
-    kprintf("on_cputype_changed: 1a --------> do nothing\n");
+  kprintf("on_cputype_changed type: %d\n", type);
+
+  if(type < 5) {
+    /* 68000, 68010, 680ec20, 68020, 68040 */
+    ctpanel->cpulevel = type;
+  }
+  else {
+    /* all above is 68060 */
+    ctpanel->cpulevel = CPULEVEL_68060;
+  }
+
+  kprintf("on_cputype_changed ctpanel->cpulevel: %d\n", ctpanel->cpulevel);
+
+  /* do we have a new CPU ? */
+  if(old_cpulevel == ctpanel->cpulevel) {
+    kprintf("on_cputype_changed do nothing\n");
     return;
   }
 
-  ctpanel->cputype=type;
+  old_24bit=ctpanel->addr24bit;
 
-  switch (ctpanel->cputype) {
-    case 0:  ctpanel->cpulevel = 0; break;
-    case 1:  ctpanel->cpulevel = 1; break;
-    case 2:  ctpanel->cpulevel = 2 + (ctpanel->fpuenabled!=0); break;
-    case 3:  ctpanel->cpulevel = 4 ; break;
-    case 4:
-    default: ctpanel->cpulevel = 6; break;
-  }
-
- //ctpanel->cputype = type;
-
-  update_state (ctpanel);
-  gtk_signal_emit_by_name (GTK_OBJECT(ctpanel), "cputype-changed");
-
-}
-
-static void on_addr24bit_toggled (GtkWidget *me, CpuTypePanel *ctpanel) {
-
-  if(me == ctpanel->cpu_addr24bit_widgets[0]) {
-    /* 24 bit */
-    ctpanel->addr24bit=1;
+  if(ctpanel->cpulevel < CPULEVEL_68020) {
+    ctpanel->addr24bit=TRUE;
   }
   else {
-    ctpanel->addr24bit=0;
+    ctpanel->addr24bit=FALSE;
   }
 
-  gtk_signal_emit_by_name (GTK_OBJECT(ctpanel), "addr24bit-changed");
+  kprintf("on_cputype_changed ctpanel->addr24bit: %d\n", ctpanel->addr24bit);
+
+  update_state (ctpanel);
+
+  /* we have a new cpu */
+  gtk_signal_emit_by_name (GTK_OBJECT(ctpanel), "cputype-changed");
+  kprintf("on_cputype_changed cputype-changed\n");
+
+  /* do we have a new 24bit mode ? */
+  if( old_24bit != ctpanel->addr24bit) {
+    gtk_signal_emit_by_name (GTK_OBJECT(ctpanel), "addr24bit-changed"); 
+    kprintf("on_cputype_changed addr24bit-changed\n");
+  }
 }
 
 /******************************
@@ -256,7 +314,7 @@ static void on_addr24bit_toggled (GtkWidget *me, CpuTypePanel *ctpanel) {
  ******************************/
 static void on_fpuenabled_toggled (GtkWidget *me, CpuTypePanel *ctpanel) {
 
-  guint old;
+  gint old;
 
   old=ctpanel->fpuenabled;
 
@@ -279,8 +337,8 @@ static void on_fpuenabled_toggled (GtkWidget *me, CpuTypePanel *ctpanel) {
  * changed
  ******************************/
 static void on_accuracy_changed (GtkWidget *me, CpuTypePanel *ctpanel) {
-  guint old_comp=ctpanel->compatible;
-  guint old_cycl=ctpanel->cycleexact;
+  gint old_comp=ctpanel->compatible;
+  gint old_cycl=ctpanel->cycleexact;
 
   if (me == ctpanel->cpu_accuracy_widgets[0]) {
     /* normal */
@@ -303,39 +361,22 @@ static void on_accuracy_changed (GtkWidget *me, CpuTypePanel *ctpanel) {
   }
 }
 
-void cputypepanel_set_cpulevel (CpuTypePanel *ctpanel, guint cpulevel) {
+void cputypepanel_set_cpulevel (CpuTypePanel *ctpanel, gint cpulevel) {
 
-    guint cputype; 
-    guint fpu = ctpanel->fpuenabled;
+  if(cpulevel > CPULEVEL_68040) {
+    cpulevel=CPULEVEL_68060;
+  }
 
-    ctpanel->cpulevel=cpulevel;
+  if(cpulevel == ctpanel->cpulevel) {
+    return;
+  }
 
-    switch (cpulevel) {
-      case 0:  cputype = 0; break;
-      case 1:  cputype = 1; break;
-      case 2:  cputype = 2; fpu = 0; break;
-      case 3:  cputype = 2; fpu = 1; break;
-      case 4:  cputype = 3; fpu = 1; break;
-      case 6:  cputype = 4; fpu = 1; break;
-      default: cputype = 0;
-    }
-
-    ctpanel->cputype = cputype;
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ctpanel->cpu_widgets[cputype]), TRUE);
-
-    if (fpu != ctpanel->fpuenabled) {
-      ctpanel->fpuenabled = fpu;
-      /* TODO?? */
-      if(!fpu) {
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ctpanel->cpu_widgets[0]), TRUE);
-      }
-      else {
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ctpanel->cpu_widgets[1]), TRUE);
-      }
-      //gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (ctpanel->fpuenabled_widget), fpu);
-    }
-
-    update_state (ctpanel);
+  if(ctpanel->cpulevel < CPULEVEL_68060)  {
+    on_cputype_changed (ctpanel->cpu_widgets[cpulevel], ctpanel);
+  }
+  else {
+    on_cputype_changed (ctpanel->cpu_widgets[5], ctpanel);
+  }
 }
 
 guint cputypepanel_get_addr24bit (CpuTypePanel *ctpanel) {
@@ -345,6 +386,9 @@ guint cputypepanel_get_addr24bit (CpuTypePanel *ctpanel) {
 
 void cputypepanel_set_addr24bit (CpuTypePanel *ctpanel, guint addr24bit) {
 
+  /* TODO */
+
+#if 0
   if (ctpanel->cputype != 2) {
     return;
   }
@@ -355,6 +399,7 @@ void cputypepanel_set_addr24bit (CpuTypePanel *ctpanel, guint addr24bit) {
   else {
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ctpanel->cpu_addr24bit_widgets[1]), TRUE);
   }
+#endif
 }
 
 /************************************************
