@@ -41,20 +41,20 @@ extern "C" {
 typedef struct _CpuTypePanel       CpuTypePanel;
 typedef struct _CpuTypePanelClass  CpuTypePanelClass;
 
-#define CPULEVEL_68000   0
-#define CPULEVEL_68010   1
-#define CPULEVEL_680ec20 2
-#define CPULEVEL_68020   3
-#define CPULEVEL_68040   4
-#define CPULEVEL_68060   6
+#define CPULEVEL_68000      0
+#define CPULEVEL_68010      1
+#define CPULEVEL_68020      2
+#define CPULEVEL_68020FPU   3
+#define CPULEVEL_68040      4
+#define CPULEVEL_68060      6
 
 struct _CpuTypePanel {
 
   /**** private ****/
   GtkFrame   frame;
 
-  GtkWidget *cpu_widget_fpu;
-  GtkWidget *cpu_fpu_widgets[4];
+  GtkWidget *cpu_widget_addr24bit;
+  GtkWidget *addr24bit_widgets[3];
 
   GtkWidget *cpu_widget_accuracy;
   GtkWidget *cpu_accuracy_widgets[4];
@@ -62,18 +62,16 @@ struct _CpuTypePanel {
   /**** private new ****/
   GtkWidget *cpu_widgets[8];
 
-  gint      fpuenabled;
-
   /**** public ****/
 
-  /* cpulevel:                (cputype)   (FPU)   
-   *  0: 68000                0           undef   
-   *  1: 68010                1           undef
-   *  2: 68020                2           FALSE
-   *  3: 68020+FPU            2           TRUE
-   *  4: 68040                3           TRUE
-   *  5: not used (68060)     4           TRUE
-   *  6: 68060                4           TRUE
+  /* cpulevel:                   (FPU)   
+   *  0: 68000                   undef   
+   *  1: 68010                   undef
+   *  2: 68020                   FALSE
+   *  3: 68020+FPU               TRUE
+   *  4: 68040                   TRUE
+   *  5: not used (68060)        TRUE
+   *  6: 68060                   TRUE
    */
   gint      cpulevel;
   gint      addr24bit;

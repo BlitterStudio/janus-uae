@@ -611,7 +611,7 @@ static void set_floppy_state( void )
 
 static void update_state (void) {
 
-set_cpu_state();
+//set_cpu_state();
   g_signal_emit_by_name(ctpanel, "read-prefs",NULL);
   set_joy_state ();
   set_sound_state ();
