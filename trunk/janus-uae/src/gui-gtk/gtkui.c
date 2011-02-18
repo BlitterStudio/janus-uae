@@ -76,7 +76,7 @@
 
 #include "od-amiga/j.h"
 
-#define GUI_DEBUG 1
+//#define GUI_DEBUG 1
 #ifdef  GUI_DEBUG
 #define DEBUG_LOG(...) do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -2183,19 +2183,14 @@ static void make_about_widgets (GtkWidget *dvbox) {
 
 #endif
 /* TEST VERSION */
+#if 0
     thing = gtk_label_new ("*** THIS IS AN INTERNAL BETA TEST VERSION ***");
     gtk_widget_show (thing);
     add_centered_to_vbox (dvbox, thing);
     thing = gtk_label_new ("*** PLEASE DO NOT DISTRIBUTE ***");
     gtk_widget_show (thing);
     add_centered_to_vbox (dvbox, thing);
-
-#if 0
-    thing = gtk_label_new (currprefs.description);
-    gtk_widget_show (thing);
-    add_centered_to_vbox (dvbox, thing);
 #endif
-
 
     add_empty_vbox (dvbox);
 
