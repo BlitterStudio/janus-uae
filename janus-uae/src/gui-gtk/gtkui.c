@@ -74,6 +74,8 @@
 #include "gui-gtk/display.h"
 #include "gui-gtk/integration.h"
 
+#include "od-amiga/j.h"
+
 #define GUI_DEBUG 1
 #ifdef  GUI_DEBUG
 #define DEBUG_LOG(...) do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
@@ -305,9 +307,6 @@ static GtkWidget *make_message_box (const gchar *title, const gchar *message, in
 void on_message_box_quit (GtkWidget *w, gpointer user_data);
 
 int find_current_toggle (GtkWidget **widgets, int count);
-GtkWidget *make_radio_group_box_param (const char *title, const char **labels, GtkWidget **saveptr, int horiz, void (*sigfunc) (void), GtkWidget *parameter);
-GtkWidget *make_radio_group_box (const char *title, const char **labels, GtkWidget **saveptr, int horiz, void (*sigfunc) (void));
-
 
 static void set_mem32_widgets_state (void) {
 
@@ -763,8 +762,15 @@ static int leds_callback (void)
 	    if (i > 0)
 		floppyfileentry_set_led (FLOPPYFILEENTRY (widget), on);
 	    else {
+#if !defined GTKMUI
 		static GdkColor red   = {0, 0xffff, 0x0000, 0x0000};
 		static GdkColor black = {0, 0x0000, 0x0000, 0x0000};
+#else
+		/* sorry, GTK-MUI uses some hacks here */
+		static GdkColor red   = {0, 0xffff, 0x0000, 0x0000, 0, 0};
+		static GdkColor black = {0, 0x0000, 0x0000, 0x0000, 0, 0};
+#endif
+
 		led_set_color (LED (widget), on ? red : black);
 	    }
 	}
@@ -1145,56 +1151,6 @@ static GtkWidget *add_labelled_widget_centered (const char *str, GtkWidget *thin
     return w;
 }
 
-/*************************************************************
- * make_radio_group_param
- *
- * build radio group, maximum count entries. If count < 0,
- * build as many entries, as there are labels
- *************************************************************/
-int make_radio_group_param (const char **label, GtkWidget *tobox,
-			      GtkWidget **saveptr, gint t1, gint t2,
-			      void (*sigfunc) (void), int count, GSList *group,
-			      GtkWidget *parameter) {
-
-  int        t = 0;
-  GtkWidget *thing;
-
-  if(count < 0) {
-    count=10000; /* max */
-  }
-
-  while (label[t] && (t < count)) {
-
-    DEBUG_LOG("label[%d]=%s\n", t, label[t]);
-
-    thing = gtk_radio_button_new_with_label (group, label[t]);
-    group = gtk_radio_button_group (GTK_RADIO_BUTTON (thing));
-
-    //kprintf("                        widget[%d](%lx):=%lx\n",t,&saveptr[t],thing);
-
-    saveptr[t] = thing;
-    gtk_widget_show (thing);
-    gtk_box_pack_start (GTK_BOX (tobox), thing, t1, t2, 0);
-    gtk_signal_connect (GTK_OBJECT (thing), "clicked", (GtkSignalFunc) sigfunc, parameter);
-    t++;
-  }
-  if(saveptr[t] != NULL) {
-    kprintf("make_radio_group_param: old widget[%d](%lx):=%lx\n",t,&saveptr[t],saveptr[t]);
-    kprintf("ERROR: saveptr[%d] is NOT NULL!\n",t);
-    DEBUG_LOG("make_radio_group_param: old widget[%d](%lx):=%lx\n",t,&saveptr[t],saveptr[t]);
-    DEBUG_LOG("ERROR: saveptr[%d] is NOT NULL!\n",t);
-  }
-  saveptr[t] = NULL; /* NULL terminate the list! */
-  return t;
-}
-
-static int make_radio_group (const char **labels, GtkWidget *tobox,
-			      GtkWidget **saveptr, gint t1, gint t2,
-			      void (*sigfunc) (void), int count, GSList *group)
-{
-  return make_radio_group_param(labels,tobox,saveptr,t1,t2,
-                                 sigfunc,count,group,NULL);
-}
 
 GtkWidget *make_radio_group_box_param (const char *title, const char **labels,
 					GtkWidget **saveptr, int horiz,
@@ -1217,62 +1173,6 @@ GtkWidget *make_radio_group_box (const char *title, const char **labels,
 					GtkWidget **saveptr, int horiz,
 					void (*sigfunc) (void)) {
   return make_radio_group_box_param(title,labels,saveptr,horiz,sigfunc,NULL);
-}
-
-
-GtkWidget *make_radio_group_box_1_param (const char *title, const char **labels,
-					  GtkWidget **saveptr, int horiz,
-					  void (*sigfunc) (void), int elts_per_column, GtkWidget *parameter)
-{
-    GtkWidget *frame, *newbox;
-    GtkWidget *column;
-    GSList *group = 0;
-
-    frame = gtk_frame_new (title);
-    column = (horiz ? gtk_vbox_new : gtk_hbox_new) (FALSE, 4);
-    gtk_container_add (GTK_CONTAINER (frame), column);
-    gtk_widget_show (column);
-
-    while (*labels) {
-	int count;
-	newbox = (horiz ? gtk_hbox_new : gtk_vbox_new) (FALSE, 4);
-	gtk_widget_show (newbox);
-	gtk_container_set_border_width (GTK_CONTAINER (newbox), 4);
-	gtk_container_add (GTK_CONTAINER (column), newbox);
-	count = make_radio_group_param (labels, newbox, saveptr, horiz, !horiz, sigfunc, elts_per_column, group, parameter);
-	labels += count;
-	saveptr += count;
-	group = gtk_radio_button_group (GTK_RADIO_BUTTON (saveptr[-1]));
-    }
-    return frame;
-}
-
-
-GtkWidget *make_radio_group_box_1 (const char *title, const char **labels,
-					  GtkWidget **saveptr, int horiz,
-					  void (*sigfunc) (void), int elts_per_column)
-{
-    GtkWidget *frame, *newbox;
-    GtkWidget *column;
-    GSList *group = 0;
-
-    frame = gtk_frame_new (title);
-    column = (horiz ? gtk_vbox_new : gtk_hbox_new) (FALSE, 4);
-    gtk_container_add (GTK_CONTAINER (frame), column);
-    gtk_widget_show (column);
-
-    while (*labels) {
-	int count;
-	newbox = (horiz ? gtk_hbox_new : gtk_vbox_new) (FALSE, 4);
-	gtk_widget_show (newbox);
-	gtk_container_set_border_width (GTK_CONTAINER (newbox), 4);
-	gtk_container_add (GTK_CONTAINER (column), newbox);
-	count = make_radio_group (labels, newbox, saveptr, horiz, !horiz, sigfunc, elts_per_column, group);
-	labels += count;
-	saveptr += count;
-	group = gtk_radio_button_group (GTK_RADIO_BUTTON (saveptr[-1]));
-    }
-    return frame;
 }
 
 
@@ -2499,14 +2399,6 @@ static void on_linemode_changed (jDisplay *j) {
   changed_prefs.gfx_linedbl  = j->gfx_linedbl;
 }
 
-/* Values for amiga_screen_type */
-enum {
-    UAESCREENTYPE_CUSTOM,
-    UAESCREENTYPE_PUBLIC,
-    UAESCREENTYPE_ASK,
-    UAESCREENTYPE_LAST
-};
-
 static void on_settings_changed (jDisplay *j) {
 
   changed_prefs.gfx_correct_aspect= j->gfx_correct_aspect;
@@ -3033,8 +2925,8 @@ void gui_exit (void)
 #ifndef GTKMUI
 static 
 #endif
-void gui_shutdown (void)
-{
+void gui_shutdown (void) {
+
     DEBUG_LOG( "entered\n" );
     //DebOut("entered\n");
 
@@ -3167,8 +3059,8 @@ static void do_message_box (const gchar *title, const gchar *message, gboolean m
     uae_sem_init (&msg_quit_sem, 0, 0);
 
     write_comm_pipe_int   (&to_gui_pipe, GUICMD_MSGBOX, 0);
-    write_comm_pipe_pvoid (&to_gui_pipe, (const void *) title, 0);
-    write_comm_pipe_pvoid (&to_gui_pipe, (const void *) message, 0);
+    write_comm_pipe_pvoid (&to_gui_pipe, (void *) title, 0);
+    write_comm_pipe_pvoid (&to_gui_pipe, (void *) message, 0);
     write_comm_pipe_int   (&to_gui_pipe, (int) modal, 0);
     write_comm_pipe_pvoid (&to_gui_pipe, wait?&msg_quit_sem:NULL, 1);
 

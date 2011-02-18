@@ -23,7 +23,12 @@ extern "C" {
 typedef struct _Led       Led;
 typedef struct _LedClass  LedClass;
 
+#if !defined GTKMUI
 static const GdkColor LED_OFF = {0, 0x1111, 0x1111, 0x1111};
+#else
+/* GTK-MUI hack required */
+static const GdkColor LED_OFF = {0, 0x1111, 0x1111, 0x1111, 0, 0};
+#endif
 
 struct _Led
 {
