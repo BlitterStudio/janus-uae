@@ -114,22 +114,12 @@ GtkWidget *cputypepanel_new (void) {
 
 /****************************************************************************************/
 
-int make_radio_group_param (const char **label, GtkWidget *tobox,
-			      GtkWidget **saveptr, gint t1, gint t2,
-			      void (*sigfunc) (void), int count, GSList *group,
-			      GtkWidget *parameter);
-
-GtkWidget *make_radio_group_box_param (const char *title, const char **labels,
-					GtkWidget **saveptr, int horiz,
-					void (*sigfunc) (void), 
-					GtkWidget *parameter);
-
 static void cputypepanel_init (CpuTypePanel *ctpanel) {
 
   GtkWidget *cpuframe;
   GtkWidget *table;
 
-  cpuframe=make_radio_group_box_1_param("CPU", cpulabels, ctpanel->cpu_widgets, 0, on_cputype_changed, 2, GTK_WIDGET(ctpanel));
+  cpuframe=make_radio_group_box_1_param("CPU", cpulabels, ctpanel->cpu_widgets, 0, (gpointer) on_cputype_changed, 2, GTK_WIDGET(ctpanel));
   gtk_widget_show(cpuframe);
 
   /* 24/32 bit */
