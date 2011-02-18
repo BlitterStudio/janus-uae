@@ -210,8 +210,8 @@ static void update_state (CpuTypePanel *ctpanel) {
     fpu=TRUE;
     gtk_widget_set_sensitive (ctpanel->cpu_widget_fpu, FALSE);
   }
-  else /* (ctpanel->cpulevel == CPULEVEL_680ec20) */ {
-    /* let user decide for fpu */
+  else {
+    /* CPULEVEL_680ec20: user can decide fpu */
     gtk_widget_set_sensitive (ctpanel->cpu_widget_fpu, TRUE);
     fpu=ctpanel->fpuenabled;
 

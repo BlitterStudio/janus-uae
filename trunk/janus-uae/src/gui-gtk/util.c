@@ -3,16 +3,16 @@
  * util.c
  *
  * Copyright 2003-2004 Richard Drummond
- * Copyright 2009      Oliver Brunner - aros<at>oliver-brunner.de
+ * Copyright 2009-2011 Oliver Brunner - aros<at>oliver-brunner.de
  *
  * This file is part of Janus-UAE.
  *
- * Janus-Daemon is free software: you can redistribute it and/or modify
+ * Janus-UAE is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Janus-Daemon is distributed in the hope that it will be useful,
+ * Janus-UAE is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -37,6 +37,16 @@
 #ifdef __AROS__
 #define GTKMUI
 #endif
+
+
+#define GUI_DEBUG 1
+#ifdef  GUI_DEBUG
+#define DEBUG_LOG(...) do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
+#else
+#define DEBUG_LOG(...) do ; while(0)
+#endif
+
+
 /*
  * Some utility functions to make building a GTK+ GUI easier
  * and more compact, to hide differences between GTK1.x and GTK2.x
@@ -269,4 +279,113 @@ GtkWidget *gtkutil_make_radio_group (GSList *group, GtkWidget **buttons, ...)
     gtk_widget_show (hbox);
 
     return hbox;
+}
+
+/************************** taken from gtkui.c *****************************/
+
+
+/*************************************************************
+ * make_radio_group_param
+ *
+ * build radio group, maximum count entries. If count < 0,
+ * build as many entries, as there are labels
+ *************************************************************/
+
+int make_radio_group (const char **labels, GtkWidget *tobox,
+		      GtkWidget **saveptr, gint t1, gint t2,
+		      void (*sigfunc) (void), int count, GSList *group) {
+
+  return make_radio_group_param(labels,tobox,saveptr,t1,t2,
+                                 sigfunc,count,group,NULL);
+}
+
+int make_radio_group_param (const char **label, GtkWidget *tobox,
+			      GtkWidget **saveptr, gint t1, gint t2,
+			      void (*sigfunc) (void), int count, GSList *group,
+			      GtkWidget *parameter) {
+
+  int        t = 0;
+  GtkWidget *thing;
+
+  if(count < 0) {
+    count=10000; /* max */
+  }
+
+  while (label[t] && (t < count)) {
+
+    DEBUG_LOG("label[%d]=%s\n", t, label[t]);
+
+    thing = gtk_radio_button_new_with_label (group, label[t]);
+    group = gtk_radio_button_group (GTK_RADIO_BUTTON (thing));
+
+    //kprintf("                        widget[%d](%lx):=%lx\n",t,&saveptr[t],thing);
+
+    saveptr[t] = thing;
+    gtk_widget_show (thing);
+    gtk_box_pack_start (GTK_BOX (tobox), thing, t1, t2, 0);
+    gtk_signal_connect (GTK_OBJECT (thing), "clicked", (GtkSignalFunc) sigfunc, parameter);
+    t++;
+  }
+  if(saveptr[t] != NULL) {
+    kprintf("make_radio_group_param: old widget[%d](%lx):=%lx\n",t,&saveptr[t],saveptr[t]);
+    kprintf("ERROR: saveptr[%d] is NOT NULL!\n",t);
+    DEBUG_LOG("make_radio_group_param: old widget[%d](%lx):=%lx\n",t,&saveptr[t],saveptr[t]);
+    DEBUG_LOG("ERROR: saveptr[%d] is NOT NULL!\n",t);
+  }
+  saveptr[t] = NULL; /* NULL terminate the list! */
+  return t;
+}
+
+
+GtkWidget *make_radio_group_box_1_param (const char *title, const char **labels,
+					  GtkWidget **saveptr, int horiz,
+					  void (*sigfunc) (void), int elts_per_column, GtkWidget *parameter) {
+  GtkWidget *frame, *newbox;
+  GtkWidget *column;
+  GSList *group = 0;
+
+  frame = gtk_frame_new (title);
+  column = (horiz ? gtk_vbox_new : gtk_hbox_new) (FALSE, 4);
+  gtk_container_add (GTK_CONTAINER (frame), column);
+  gtk_widget_show (column);
+
+  while (*labels) {
+    int count;
+    newbox = (horiz ? gtk_hbox_new : gtk_vbox_new) (FALSE, 4);
+    gtk_widget_show (newbox);
+    gtk_container_set_border_width (GTK_CONTAINER (newbox), 4);
+    gtk_container_add (GTK_CONTAINER (column), newbox);
+    count = make_radio_group_param (labels, newbox, saveptr, horiz, !horiz, sigfunc, elts_per_column, group, parameter);
+    labels += count;
+    saveptr += count;
+    group = gtk_radio_button_group (GTK_RADIO_BUTTON (saveptr[-1]));
+  }
+  return frame;
+}
+
+
+GtkWidget *make_radio_group_box_1 (const char *title, const char **labels,
+					  GtkWidget **saveptr, int horiz,
+					  void (*sigfunc) (void), int elts_per_column) {
+  GtkWidget *frame, *newbox;
+  GtkWidget *column;
+  GSList *group = 0;
+
+  frame = gtk_frame_new (title);
+  column = (horiz ? gtk_vbox_new : gtk_hbox_new) (FALSE, 4);
+  gtk_container_add (GTK_CONTAINER (frame), column);
+  gtk_widget_show (column);
+
+  while (*labels) {
+    int count;
+    newbox = (horiz ? gtk_hbox_new : gtk_vbox_new) (FALSE, 4);
+    gtk_widget_show (newbox);
+    gtk_container_set_border_width (GTK_CONTAINER (newbox), 4);
+    gtk_container_add (GTK_CONTAINER (column), newbox);
+    count = make_radio_group (labels, newbox, saveptr, horiz, !horiz, sigfunc, elts_per_column, group);
+    labels += count;
+    saveptr += count;
+    group = gtk_radio_button_group (GTK_RADIO_BUTTON (saveptr[-1]));
+  }
+  return frame;
 }

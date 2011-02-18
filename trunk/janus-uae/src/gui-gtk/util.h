@@ -1,8 +1,28 @@
-/*
+/************************************************************************ 
+ *
  * util.h
  *
  * Copyright 2003-2004 Richard Drummond
- */
+ * Copyright 2009-2011 Oliver Brunner - aros<at>oliver-brunner.de
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-UAE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-UAE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * $Id$
+ *
+ ************************************************************************/
 
 /*
  * Default spacing of widgets used in the
@@ -39,3 +59,32 @@ extern void add_to_table(GtkWidget *table, GtkWidget *widget, int x, int y, int 
 
 extern GtkWidget *gtkutil_add_table (GtkWidget *container, ...);
 extern GtkWidget *gtkutil_make_radio_group (GSList *group, GtkWidget **buttons, ...);
+
+
+int make_radio_group (const char **labels, GtkWidget *tobox,
+		      GtkWidget **saveptr, gint t1, gint t2,
+		      void (*sigfunc) (void), int count, GSList *group);
+
+int make_radio_group_param (const char **label, GtkWidget *tobox,
+			    GtkWidget **saveptr, gint t1, gint t2,
+			    void (*sigfunc) (void), int count, GSList *group,
+			    GtkWidget *parameter);
+
+
+GtkWidget *make_radio_group_box_1_param (const char *title, const char **labels,
+					 GtkWidget **saveptr, int horiz,
+					 void (*sigfunc) (void), 
+					 int elts_per_column, GtkWidget *parameter);
+GtkWidget *make_radio_group_box_1 (const char *title, const char **labels,
+				   GtkWidget **saveptr, int horiz,
+				   void (*sigfunc) (void), int elts_per_column);
+
+
+GtkWidget *make_radio_group_box_param (const char *title, const char **labels, 
+                                       GtkWidget **saveptr, int horiz, 
+				       void (*sigfunc) (void), GtkWidget *parameter);
+GtkWidget *make_radio_group_box (const char *title, const char **labels, 
+                                 GtkWidget **saveptr, int horiz, 
+				 void (*sigfunc) (void));
+
+
