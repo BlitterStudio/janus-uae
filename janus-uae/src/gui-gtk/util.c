@@ -318,8 +318,6 @@ int make_radio_group_param (const char **label, GtkWidget *tobox,
     thing = gtk_radio_button_new_with_label (group, label[t]);
     group = gtk_radio_button_group (GTK_RADIO_BUTTON (thing));
 
-    //kprintf("                        widget[%d](%lx):=%lx\n",t,&saveptr[t],thing);
-
     saveptr[t] = thing;
     gtk_widget_show (thing);
     gtk_box_pack_start (GTK_BOX (tobox), thing, t1, t2, 0);

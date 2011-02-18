@@ -76,7 +76,6 @@ static void chipsetspeedpanel_init (ChipsetSpeedPanel *panel)
     GtkWidget *table;
     GSList *group = NULL;
 
-  kprintf("x2 ..\n");
     gtk_frame_set_label (GTK_FRAME (panel), "Emulation speed");
     gtk_container_set_border_width (GTK_CONTAINER (panel), PANEL_BORDER_WIDTH);
     gtk_frame_set_label_align (GTK_FRAME (panel), 0.01, 0.5);
@@ -95,7 +94,6 @@ static void chipsetspeedpanel_init (ChipsetSpeedPanel *panel)
     gtk_scale_set_value_pos (GTK_SCALE (panel->framerate_widget), GTK_POS_TOP);
     gtk_scale_set_digits (GTK_SCALE (panel->framerate_widget), 0);
 
-  kprintf("x3 ..\n");
     gtk_signal_connect (GTK_OBJECT ( GTK_RANGE(panel->framerate_widget)->adjustment), "value-changed",
 			GTK_SIGNAL_FUNC (on_framerate_changed),
 			panel);
@@ -105,7 +103,6 @@ static void chipsetspeedpanel_init (ChipsetSpeedPanel *panel)
     gtk_signal_connect (GTK_OBJECT (panel->immediate_blits_widget), "toggled",
 			GTK_SIGNAL_FUNC (on_immediate_blits_changed),
 			panel);
-  kprintf("x4 ..\n");
 }
 
 static void on_framerate_changed (GtkWidget *w, ChipsetSpeedPanel *panel)
@@ -129,7 +126,6 @@ static void on_immediate_blits_changed (GtkWidget *w, ChipsetSpeedPanel *panel)
 
 GtkWidget *chipsetspeedpanel_new (void)
 {
-  kprintf("x1 ..\n");
     ChipsetSpeedPanel *w = CHIPSETSPEEDPANEL (gtk_type_new (chipsetspeedpanel_get_type ()));
 
     return GTK_WIDGET (w);

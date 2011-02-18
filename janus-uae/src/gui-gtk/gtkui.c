@@ -1300,7 +1300,6 @@ static void make_cpu_widgets (GtkWidget *vbox)
 
     ctpanel = cputypepanel_new();
 
-kprintf("1..\n");
     if(!ctpanel) {
       kprintf("ERROR: make_cpu_widgets: cputypepanel_new failed !?\n");
       printf("ERROR: make_cpu_widgets: cputypepanel_new failed !?\n");
@@ -1310,15 +1309,11 @@ kprintf("1..\n");
                      (GtkAttachOptions) (GTK_EXPAND | GTK_FILL), 0, 0);
     gtk_widget_show (ctpanel);
 
-kprintf("1..\n");
     cspanel = cpuspeedpanel_new();
-kprintf("cspanel: %lx\n", cspanel);
     gtk_table_attach (GTK_TABLE (table), cspanel, 1, 4, 3, 4,
                      (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
                      (GtkAttachOptions) (GTK_EXPAND | GTK_FILL), 0, 0);
-kprintf("2..\n");
     gtk_widget_show (cspanel);
-kprintf("1..\n");
 
 
     gtk_signal_connect (GTK_OBJECT (ctpanel), "cputype-changed",
@@ -1333,7 +1328,6 @@ kprintf("1..\n");
     gtk_signal_connect (GTK_OBJECT (cspanel), "cpuidle-changed",
                         GTK_SIGNAL_FUNC (on_cpuidle_changed),
                         NULL);
-kprintf("1..\n");
 }
 
 static void on_framerate_changed (void)
