@@ -133,12 +133,14 @@ static const char *bogolabels[] = { "None", "512 KB", "1 MB", "1.8 MB", NULL };
 extern GtkWidget  *fastsize_widget[5];
 static const char *fastlabels[] = { "None", "1 MB", "2 MB", "4 MB", "8 MB", NULL };
 
+static GtkWidget  *z3frame;
 static GtkWidget  *z3size_widget[16];
 static const char *z3labels[] = { "None", "1 MB", "2 MB", "4 MB", "8 MB",
 				  "16 MB", "32 MB", "64 MB", "128 MB", "256 MB", 
 				  "384 MB", "512 MB", "768 MB", "1 GB", "1.5 GB", NULL };
 
 #ifdef PICASSO96
+static GtkWidget  *p96frame;
 static GtkWidget  *p96size_widget[11];
 static const char *p96labels[] = { "None", "1 MB", "2 MB", "4 MB", "8 MB", 
                                    "16 MB", "32 MB", "64 MB", "128 MB", "256 MB", NULL };
@@ -307,25 +309,23 @@ GtkWidget *make_radio_group_box_param (const char *title, const char **labels, G
 GtkWidget *make_radio_group_box (const char *title, const char **labels, GtkWidget **saveptr, int horiz, void (*sigfunc) (void));
 
 
-static void set_mem32_widgets_state (void)
-{
-    int enable = changed_prefs.cpu_level >= 2 && ! changed_prefs.address_space_24;
+static void set_mem32_widgets_state (void) {
 
-    //D(bug("enable: %d\n",enable));
+  //D(bug("enable: %d\n",enable));
 
 #ifdef AUTOCONFIG
-    int i;
 
-    for (i = 0; i < 15; i++)
-	gtk_widget_set_sensitive (z3size_widget[i], enable);
+  int enable = changed_prefs.cpu_level >= 2 && ! changed_prefs.address_space_24;
 
+  gtk_widget_set_sensitive (z3frame, enable);
 # ifdef PICASSO96
-    for (i = 0; i < 10; i++)
-	gtk_widget_set_sensitive (p96size_widget[i], enable);
+  gtk_widget_set_sensitive (p96frame, enable);
 #endif
+
 #endif
+
 #ifdef JIT
-    gtk_widget_set_sensitive (jit_page, changed_prefs.cpu_level >= 2);
+  gtk_widget_set_sensitive (jit_page, changed_prefs.cpu_level >= 2);
 #endif
 }
 
@@ -612,7 +612,8 @@ static void set_floppy_state( void )
 
 static void update_state (void) {
 
-  set_cpu_state ();
+set_cpu_state();
+  g_signal_emit_by_name(ctpanel, "read-prefs",NULL);
   set_joy_state ();
   set_sound_state ();
 #ifdef JIT
@@ -1219,7 +1220,35 @@ GtkWidget *make_radio_group_box (const char *title, const char **labels,
 }
 
 
-static GtkWidget *make_radio_group_box_1 (const char *title, const char **labels,
+GtkWidget *make_radio_group_box_1_param (const char *title, const char **labels,
+					  GtkWidget **saveptr, int horiz,
+					  void (*sigfunc) (void), int elts_per_column, GtkWidget *parameter)
+{
+    GtkWidget *frame, *newbox;
+    GtkWidget *column;
+    GSList *group = 0;
+
+    frame = gtk_frame_new (title);
+    column = (horiz ? gtk_vbox_new : gtk_hbox_new) (FALSE, 4);
+    gtk_container_add (GTK_CONTAINER (frame), column);
+    gtk_widget_show (column);
+
+    while (*labels) {
+	int count;
+	newbox = (horiz ? gtk_hbox_new : gtk_vbox_new) (FALSE, 4);
+	gtk_widget_show (newbox);
+	gtk_container_set_border_width (GTK_CONTAINER (newbox), 4);
+	gtk_container_add (GTK_CONTAINER (column), newbox);
+	count = make_radio_group_param (labels, newbox, saveptr, horiz, !horiz, sigfunc, elts_per_column, group, parameter);
+	labels += count;
+	saveptr += count;
+	group = gtk_radio_button_group (GTK_RADIO_BUTTON (saveptr[-1]));
+    }
+    return frame;
+}
+
+
+GtkWidget *make_radio_group_box_1 (const char *title, const char **labels,
 					  GtkWidget **saveptr, int horiz,
 					  void (*sigfunc) (void), int elts_per_column)
 {
@@ -1315,6 +1344,7 @@ static void on_cputype_changed (void)
 
     //changed_prefs.cpu_level       = cputypepanel_get_cpulevel (CPUTYPEPANEL (ctpanel));
     changed_prefs.cpu_level       = CPUTYPEPANEL (ctpanel)->cpulevel;
+    changed_prefs.address_space_24= CPUTYPEPANEL (ctpanel)->addr24bit;
     changed_prefs.cpu_compatible  = CPUTYPEPANEL (ctpanel)->compatible;
     changed_prefs.cpu_cycle_exact = CPUTYPEPANEL (ctpanel)->cycleexact;
 
@@ -1369,16 +1399,26 @@ static void make_cpu_widgets (GtkWidget *vbox)
     gtk_box_pack_start (GTK_BOX (vbox), table, TRUE, TRUE, 0);
 
     ctpanel = cputypepanel_new();
+
+kprintf("1..\n");
+    if(!ctpanel) {
+      kprintf("ERROR: make_cpu_widgets: cputypepanel_new failed !?\n");
+      printf("ERROR: make_cpu_widgets: cputypepanel_new failed !?\n");
+    }
     gtk_table_attach (GTK_TABLE (table), ctpanel, 1, 4, 1, 2,
                      (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
                      (GtkAttachOptions) (GTK_EXPAND | GTK_FILL), 0, 0);
     gtk_widget_show (ctpanel);
 
+kprintf("1..\n");
     cspanel = cpuspeedpanel_new();
+kprintf("cspanel: %lx\n", cspanel);
     gtk_table_attach (GTK_TABLE (table), cspanel, 1, 4, 3, 4,
                      (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
                      (GtkAttachOptions) (GTK_EXPAND | GTK_FILL), 0, 0);
+kprintf("2..\n");
     gtk_widget_show (cspanel);
+kprintf("1..\n");
 
 
     gtk_signal_connect (GTK_OBJECT (ctpanel), "cputype-changed",
@@ -1393,6 +1433,7 @@ static void make_cpu_widgets (GtkWidget *vbox)
     gtk_signal_connect (GTK_OBJECT (cspanel), "cpuidle-changed",
                         GTK_SIGNAL_FUNC (on_cpuidle_changed),
                         NULL);
+kprintf("1..\n");
 }
 
 static void on_framerate_changed (void)
@@ -1606,14 +1647,14 @@ static void make_mem_widgets (GtkWidget *vbox)
     gtk_widget_show (frame);
     gtk_box_pack_start (GTK_BOX (hbox), frame, FALSE, TRUE, 0);
 
-    frame = make_radio_group_box_1 ("Z3 Mem", z3labels, z3size_widget, 0, z3size_changed, 5);
-    gtk_widget_show (frame);
-    gtk_box_pack_start (GTK_BOX (hbox), frame, FALSE, TRUE, 0);
+    z3frame = make_radio_group_box_1 ("Z3 Mem", z3labels, z3size_widget, 0, z3size_changed, 5);
+    gtk_widget_show (z3frame);
+    gtk_box_pack_start (GTK_BOX (hbox), z3frame, FALSE, TRUE, 0);
 
 #ifdef PICASSO96
-    frame = make_radio_group_box_1 ("P96 RAM", p96labels, p96size_widget, 0, p96size_changed, 5);
-    gtk_widget_show (frame);
-    gtk_box_pack_start (GTK_BOX (hbox), frame, FALSE, TRUE, 0);
+    p96frame = make_radio_group_box_1 ("P96 RAM", p96labels, p96size_widget, 0, p96size_changed, 5);
+    gtk_widget_show (p96frame);
+    gtk_box_pack_start (GTK_BOX (hbox), p96frame, FALSE, TRUE, 0);
 #endif
 
     memorypanel = hbox;
