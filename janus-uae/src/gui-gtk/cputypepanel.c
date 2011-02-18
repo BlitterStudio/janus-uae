@@ -217,19 +217,19 @@ static void update_state (CpuTypePanel *ctpanel) {
   kprintf("ctpanel->addr24bit: ct->addr24bit %d addr24bit %d old_addr24bit %d\n", ctpanel->addr24bit, addr24bit, old_addr24bit);
   ctpanel->addr24bit=addr24bit;
 
-  if(old_addr24bit != ctpanel->addr24bit) {
+  //if(old_addr24bit != ctpanel->addr24bit) {
     kprintf("ctpanel->addr24bit: old_addr24bit != ctpanel->addr24bit\n");
     gtk_signal_handler_block_by_data   (GTK_OBJECT (ctpanel->addr24bit_widgets[addr24bit]), ctpanel );
     if(addr24bit) {
       kprintf("ctpanel->addr24bit: ctpanel->addr24bit_widgets[0], TRUE\n");
-      gtk_widget_set_sensitive (ctpanel->addr24bit_widgets[0], TRUE);
+      gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (ctpanel->addr24bit_widgets[0]), TRUE);
     }
     else {
       kprintf("ctpanel->addr24bit: ctpanel->addr24bit_widgets[1], TRUE\n");
-      gtk_widget_set_sensitive (ctpanel->addr24bit_widgets[1], TRUE);
+      gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (ctpanel->addr24bit_widgets[1]), TRUE);
     }
     gtk_signal_handler_unblock_by_data (GTK_OBJECT (ctpanel->addr24bit_widgets[addr24bit]), ctpanel );
-  }
+  //}
 
   kprintf("update_state: new addr24: %d\n", addr24bit);
 
@@ -276,7 +276,7 @@ static void on_cputype_changed (GtkWidget *me, CpuTypePanel *ctpanel) {
   kprintf("on_cputype_changed type: %d\n", type);
 
   if(type < 5) {
-    /* 68000, 68010, 680ec20, 68020, 68040 */
+    /* 68000, 68010, 68020, 68020/FPU, 68040 */
     ctpanel->cpulevel = type;
   }
   else {
@@ -293,17 +293,6 @@ static void on_cputype_changed (GtkWidget *me, CpuTypePanel *ctpanel) {
   }
 
   old_24bit=ctpanel->addr24bit;
-
-#if 0
-  if(ctpanel->cpulevel < CPULEVEL_68020) {
-    ctpanel->addr24bit=TRUE;
-  }
-  else {
-    ctpanel->addr24bit=FALSE;
-  }
-
-  kprintf("on_cputype_changed ctpanel->addr24bit: %d\n", ctpanel->addr24bit);
-#endif
 
   /* update_state changes ctpanel->addr24bit, if necessary */
   update_state (ctpanel);
