@@ -39,8 +39,6 @@ Bounty Status:
 6. Done.
 7. Done.
 
-(a lot of bugs remaining in the done sections, of course)
-
 ============================================================
 Installation:
 ============================================================
@@ -74,6 +72,20 @@ s:user-startup.
 You can find janusd, clipd and launchd in the amiga 
 directory of this archive.
 
+ATTENTION:
+In order to test everything, it is a *good idea*,
+to have coherency switched off during boot. If
+everything works as expected, you can save
+coherency in your uae config. If coherency is
+on during boot, you can't see errors happening
+until janusd is started. So if you get a
+'please insert xy' requester before janusd
+is run, you are lost.
+
+If you get mouse trails, especially right after
+starting amigaOS 3.x, please replace the Picasso96
+rtg.library with the one in this package.
+
 AROS helpers:
 ================
 
@@ -106,14 +118,71 @@ of the amigaOS executeable.
 Configuration:
 ==============
 Janus-UAE uses a file uaerc.config whith the usual 
-uae config syntax. You can enable/disable the GUI with
-use_gui=yes or use_gui=no. The GUI can also be shown/hidden
-via exchange.
+uae config syntax. 
 
+You can show/hide the GUI at startup with use_gui=yes 
+or use_gui=no. The GUI can also be shown/hidden
+via exchange. The hotkey "ctrl alt j" toggles
+GUI visibility.
 
 ============================================================
 History
 ============================================================
+
+============================================================
+J-UAE 0.9 (24.02.2011)
+============================================================
+I've made the following changes compared to J-UAE 0.8:
+
+- GUI: configuration description is now displayed 
+       and can be changed in About tab
+- GUI: fixed p96 memory options, if 68000 is selected
+- GUI: JIT buffer size maximum changed, uses MB instead of 
+       bytes now (same as WinUAE)
+- GUI: ROM image names are now updated correctly, if you
+       load a new config file
+- GUI: crash on exit after floppy image has been changed
+       fixed 
+- Quit with window gadget does not crash juae any more
+- possible AmigaOS library close race condition fixed.
+- removed all debug and symbols, stripped executable
+  has now the promised 9MB size (this is the first
+  non debug build ever)
+
+Known possible bugs:
+====================
+- choppy sound (won't fix that)
+- format floppies does not work (might fix that)
+- touch screen support (AROS should care for that?)
+- pointer hide has problems in some configurations
+  (hope to fix that)
+- FinalWriter/FinalCalc problems (won't fix that?)
+
+============================================================
+J-UAE 0.8 (28.12.2010)
+============================================================
+There are way too many changes to the last version 0.7,
+so please excuse the incomplete list. New:
+
+- minimum blit size is increased to 64 bits whenever 
+  possible to avoid noveau slowdowns
+- window border gadgets are now done as AROS gadgets,
+  no more ugly os3 window border gadgets, wherever possible.
+- fixed a sound buffer overflow bug of e-uae
+- fixed mouse pointer hide bug
+- fixed many race conditions (I hope all of them)
+- fixed mouse pointer trails bug (use supplied rtg.library)
+- hotkey to show/hide GUI at any time
+- load/save different configurations
+- display current config file in about tab
+- removed ugly gtk menu
+- quit gui without running amigaos first, should 
+  not crash anymore
+
+Known Bugs:
+===========
+- This is a debug build, expect stripped version to be around 
+  9MB in size.
 
 ============================================================
 J-UAE 0.7 (27.04.2010)
