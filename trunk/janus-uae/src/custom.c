@@ -2772,6 +2772,26 @@ void INTREQ_0 (uae_u16 v)
     doint ();
 }
 
+
+void INTREQ_f (uae_u32 data)
+{
+    INTREQ_0 (data);
+    serial_check_irq ();
+    rethink_cias ();
+#ifdef A2091
+    rethink_a2091 ();
+#endif
+#ifdef CDTV
+    rethink_cdtv ();
+#endif
+#ifdef CD32
+    rethink_akiko ();
+#endif
+#if 0
+    rethink_gayle ();
+#endif
+}
+
 void INTREQ (uae_u16 v)
 {
     INTREQ_0 (v);

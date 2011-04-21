@@ -25,6 +25,15 @@ extern int zfile_zuncompress (void *dst, int dstsize, struct zfile *src, int src
 extern int zfile_gettype (struct zfile *z);
 extern uae_u32 zfile_crc32 (struct zfile *f);
 
+#define ZFD_NONE 0
+#define ZFD_ARCHIVE 1 //zip/lha..
+#define ZFD_ADF 2 //adf as a filesystem
+#define ZFD_HD 4 //rdb/hdf
+#define ZFD_UNPACK 8 //gzip,dms
+#define ZFD_RAWDISK 16  //fdi->adf,ipf->adf etc..
+#define ZFD_NORMAL (ZFD_ARCHIVE|ZFD_UNPACK)
+#define ZFD_ALL -1
+
 #define ZFILE_UNKNOWN 0
 #define ZFILE_CONFIGURATION 1
 #define ZFILE_DISKIMAGE 2
