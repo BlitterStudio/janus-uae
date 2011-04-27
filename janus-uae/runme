@@ -1,3 +1,0 @@
-#!/bin/sh
-./configure --host=i386-aros --enable-ui --without-x --oldincludedir=/home/ubuntu/AROS/AROS-20100421-source/bin/linux-i386/AROS/Development/include/ host_alias=i386-aros --no-create --no-recursion --with-zlib=/home/ubuntu/AROS/AROS-20100421-source/bin/linux-i386/AROS/Development/include/
-./fixMakefiles
