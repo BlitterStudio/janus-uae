@@ -213,3 +213,4 @@ uae_u16 customhack_get (struct customhack *ch, int hpos);
 extern void alloc_cycle_ext (int, int);
 extern bool ispal (void);
 extern int current_maxvpos (void);
+
