@@ -14,7 +14,7 @@
   *
   * Copyright 1996, 1997 Bernd Schmidt
   */
-#include <string>
+#include <string.h>
 using namespace std;
 #include <stdio.h>
 #include <stdlib.h>
@@ -118,6 +118,19 @@ struct utimbuf
 #else /* not(GCC & AMIGA) */
 #define REGPARAM2
 #endif
+
+#if defined(__GNUC__) && defined(__AROS__)
+/* == AROS == */
+#define REGPARAM
+#define REGPARAM2 
+#define REGPARAM3 
+
+/* AROS has no 64 bit */
+#define _stat64 stat
+#define FILEFLAG_WRITE S_IWUSR
+#define FILEFLAG_DIR S_IFDIR
+
+#endif /* AROS */
 
 /* sam: some definitions so that SAS/C can compile UAE */
 #if defined(__SASC) && defined(AMIGA)
