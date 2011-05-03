@@ -269,7 +269,7 @@ sync_m68k_pc (void)
 /* getv == 1: fetch data; getv != 0: check for odd address. If movem != 0,
  * the calling routine handles Apdi and Aipi modes. */
 static void
-genamode (amodes mode, char *reg, wordsizes size, char *name, int getv, int movem)
+genamode (unsigned int mode, char *reg, unsigned int size, char *name, int getv, int movem)
 {
     start_brace ();
     switch (mode)
@@ -508,7 +508,7 @@ genamode (amodes mode, char *reg, wordsizes size, char *name, int getv, int move
 }
 
 static void
-genastore (char *from, amodes mode, char *reg, wordsizes size, char *to)
+genastore (char *from, unsigned int mode, char *reg, unsigned int size, char *to)
 {
     switch (mode)
     {
@@ -895,7 +895,7 @@ flagtypes;
 
 
 static void
-genflags (flagtypes type, wordsizes size, char *value, char *src, char *dst)
+genflags (flagtypes type, unsigned int size, char *value, char *src, char *dst)
 {
     if (noflags) {
 	switch(type) {
@@ -1252,7 +1252,7 @@ genflags (flagtypes type, wordsizes size, char *value, char *src, char *dst)
 }
 
 static void
-force_range_for_rox (const char *var, wordsizes size)
+force_range_for_rox (const char *var, unsigned int size)
 {
     /* Could do a modulo operation here... which one is faster? */
     switch (size)
@@ -1273,7 +1273,7 @@ force_range_for_rox (const char *var, wordsizes size)
 }
 
 static const char *
-cmask (wordsizes size)
+cmask (unsigned int size)
 {
     switch (size)
     {
