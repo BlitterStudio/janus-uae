@@ -15,6 +15,9 @@
 #include "custom.h"
 #include "newcpu.h"
 #include "a2065.h"
+
+#ifndef __AROS__
+
 #include "win32_uaenet.h"
 #include "crc32.h"
 #include "savestate.h"
@@ -924,3 +927,7 @@ void a2065_init (void)
 	configured = 0;
 	a2065_config ();
 }
+
+#else
+#warning ============= enable A2065 again ===============
+#endif /* __AROS__ */
