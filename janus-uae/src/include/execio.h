@@ -51,11 +51,13 @@
 #define DRIVE_NEWSTYLE 0x4E535459L   /* 'NSTY' */
 #define NSCMD_DEVICEQUERY 0x4000
 
+#ifndef __AROS__
 #define TAG_DONE   0
 #define TAG_IGNORE 1
 #define TAG_MORE   2
 #define TAG_SKIP   3
 #define TAG_USER   (1 << 31)
+#endif
 
 #define NSDEVTYPE_UNKNOWN       0
 #define NSDEVTYPE_GAMEPORT      1
