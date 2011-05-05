@@ -141,7 +141,7 @@ COMMON_OBJS= \
 	#../zfile_archive.o 
 
 
-common: ../blitfunc.c ../blittable.c ../blit.h ../linetoscr.c $(COMMON_OBJS)
+common: ../blitfunc.cpp ../blittable.cpp ../blit.h ../linetoscr.cpp $(COMMON_OBJS)
 	@echo building common ..
 
 aros: $(AROS_OBJS)
@@ -153,17 +153,17 @@ aros: $(AROS_OBJS)
 ../blit.h:	../genblitter
 		../genblitter i >../blit.h
 
-../blitfunc.c: 	../genblitter ../blitfunc.h
-		../genblitter f >../blitfunc.c
+../blitfunc.cpp: 	../genblitter ../blitfunc.h
+		../genblitter f >../blitfunc.cpp
 
 ../blitfunc.h: 	../genblitter
 		../genblitter h >../blitfunc.h
 
-../blittable.c:	../genblitter ../blitfunc.h
-		../genblitter t >../blittable.c
+../blittable.cpp:	../genblitter ../blitfunc.h
+		../genblitter t >../blittable.cpp
 
-../linetoscr.c:    ../genlinetoscr
-		../genlinetoscr $(genlinetoscr_args) >../linetoscr.c
+../linetoscr.cpp:    ../genlinetoscr
+		../genlinetoscr $(genlinetoscr_args) >../linetoscr.cpp
 
 ../jit/compemu.c: ../gencomp
 		cd ..;./gencomp
