@@ -26,3 +26,4 @@ extern int log_scsi;
 #define UAESCSI_NEROASPI 4
 #define UAESCSI_FROGASPI 5
 #endif
+
