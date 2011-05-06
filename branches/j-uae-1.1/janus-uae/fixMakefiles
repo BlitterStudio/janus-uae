@@ -1,0 +1,20 @@
+#!/bin/bash
+# fix Makefiles after a configure run
+# not nice, but should work
+
+# get rid of -I/usr/include
+# get rid of -g debug ..
+find . -name Makefile >/tmp/out.$$
+for i in `cat /tmp/out.$$`; 
+do cp $i $i.bak; 
+  cat $i.bak|sed -e's/-I\/usr\/include//'|sed -e's/-L\/usr\/lib//' >$i;
+  #cp $i $i.bak;
+  #cat $i.bak|sed -e's/= -g /= /' >$i
+done
+rm /tmp/out.$$
+#find . -name Makefile.bak -exec rm -f {} \;
+
+# for some obscure (?) reason, aroswin.o gets built, but not linked
+#cat src/Makefile| sed -e 's/readcpu.\$(OBJEXT)/readcpu.\$(OBJEXT) aroswin.\$(OBJEXT)/' >/tmp/Makefile.$$
+
+#mv /tmp/Makefile.$$ src/Makefile
