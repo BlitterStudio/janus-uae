@@ -20,8 +20,8 @@
 #include "newcpu.h"
 #include "autoconf.h"
 #include "traps.h"
-#include "bsdsocket.h"
 #include "threaddep/thread.h"
+#include "bsdsocket.h"
 #include "native2amiga.h"
 
 #ifdef BSDSOCKET

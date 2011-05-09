@@ -130,6 +130,9 @@ struct utimbuf
 #define FILEFLAG_WRITE S_IWUSR
 #define FILEFLAG_DIR S_IFDIR
 
+int     kprintf      (const char * fmt, ...);
+#define TODO() kprintf("%s:%d: >>> TODO %s", __FILE__, __LINE__, __PRETTY_FUNCTION__)
+
 #endif /* AROS */
 
 /* sam: some definitions so that SAS/C can compile UAE */
