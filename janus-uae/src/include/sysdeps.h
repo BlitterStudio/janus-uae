@@ -130,8 +130,42 @@ struct utimbuf
 #define FILEFLAG_WRITE S_IWUSR
 #define FILEFLAG_DIR S_IFDIR
 
+#define _strdup strdup
+#define _vsnprintf vsnprintf 
+#define _stricmp stricmp 
+#define _tstol atol
+#define _tstof atof
+#define _tstoi atoi
+
 int     kprintf      (const char * fmt, ...);
 #define TODO() kprintf("%s:%d: >>> TODO %s", __FILE__, __LINE__, __PRETTY_FUNCTION__)
+
+/*
+ * "Microsoft Specific
+ * This is the default calling convention for C and C++ programs. Because the stack is 
+ * cleaned up by the caller, it can do vararg functions. The __cdecl calling convention 
+ * creates larger executables than __stdcall, because it requires each function call 
+ * to include stack cleanup code. "
+ *
+ * I have no idea, if this is correct here. I suppose, __cdecl is default for gcc anyways.
+ * Don't ask me, what _cdecl is ;)
+ */
+#define _cdecl
+#define __cdecl
+
+
+/************** Windows data types ****************************/
+/* DWORD - 32-bit unsigned integer. */
+#define DWORD  uint32_t
+#define UINT  uint32_t
+#define USHORT uint16_t
+
+typedef struct _RECT {
+  long left;
+  long top;
+  long right;
+  long bottom;
+} RECT, *PRECT;
 
 #endif /* AROS */
 
