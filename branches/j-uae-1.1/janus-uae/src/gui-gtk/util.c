@@ -91,19 +91,24 @@ void gtkutil_add_signals_to_class (GtkObjectClass *class, guint func_offset, gui
 GtkWidget *make_chooser (int count, ...)
 {
     GtkWidget *chooser;
-    GList     *list = 0;
+    GList     *list = NULL;
     va_list   choices;
     int       i;
+		char     *a;
 
-    chooser = chooserwidget_new ();
+    chooser = gtk_combo_new ();
 
     va_start (choices, count);
-    for (i=0; i<count; i++)
-	list = g_list_append (list, (gpointer) va_arg (choices, char *));
+    for (i=0; i<count; i++) {
+			a=va_arg (choices, char *);
+			list = g_list_append (list, (gpointer) a);
+			kprintf("chooser %lx: 1->%s\n", chooser, a);
+		}
     gtk_combo_set_popdown_strings (GTK_COMBO (chooser), list);
     g_list_free (list);
 
     gtk_widget_show (chooser);
+
     return chooser;
 }
 

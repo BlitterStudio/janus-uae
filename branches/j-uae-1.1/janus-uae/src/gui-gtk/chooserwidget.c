@@ -2,6 +2,7 @@
  * chooserwidget.c
  *
  * Copyright 2003-2004 Richard Drummond
+ * Copyright 2011      Oliver Brunner (removed)
  */
 
 #include <sys/types.h>
@@ -15,19 +16,13 @@
 #include "chooserwidget.h"
 #include "util.h"
 
-
-//#if defined GTKMUI
-//#define MGTK_DEBUG 1
-//#include "/home/oli/aros/gtk-mui/debug.h"
-//#endif
-//
-#define DebOut(...)
-
-
+#if 0
 static void chooserwidget_init (ChooserWidget *chooser);
 static void chooserwidget_class_init (ChooserWidgetClass *class);
 static guint chooser_get_choice_num (ChooserWidget *chooser);
 static void on_choice_changed (GtkWidget *w, ChooserWidget *chooser);
+
+#define DebOut(...) //do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 
 guint chooserwidget_get_type ()
 {
@@ -141,23 +136,47 @@ GtkWidget *chooserwidget_new (void)
 
 void chooserwidget_set_choice (ChooserWidget *chooser, guint choice_num)
 {
-  GtkWidget *list;
+  //GtkWidget *list;
   DebOut("entered\n");
 
-  list=GTK_COMBO(chooser)->list;
+  //list=GTK_COMBO(chooser)->list;
 
   DebOut("chooser: %lx\n",chooser);
-  DebOut("chooser->list: %lx\n",list);
-  DebOut("choice_num: %d\n",choice_num);
+  //DebOut("chooser->list: %lx\n",list);
+  DebOut("old choice: %d\n",chooser->choice);
+  DebOut("new choice: %d\n",choice_num);
 
-  gtk_list_select_item (GTK_LIST (list), choice_num);
-
-  DebOut("gtk_list_select_item done\n");
+  gtk_list_select_item (GTK_LIST (GTK_COMBO (chooser)->list), choice_num);
 
   /* Need to manually emit the change signal */
   /* o1i: why!? */
   if (chooser->choice != choice_num) {
-      chooser->choice = choice_num;
-      gtk_signal_emit_by_name ( GTK_OBJECT(chooser), "selection-changed");
+		DebOut("==> emit signal\n");
+		chooser->choice = choice_num;
+		gtk_signal_emit_by_name ( GTK_OBJECT(chooser), "selection-changed");
   }
+	else {
+		DebOut("==> NO NEED to emit signal\n");
+	}
+
+  DebOut("gtk_list_select_item done\n");
 }
+#endif
+
+guint combo_get_choice_num (GtkWidget *combo)
+{
+    GtkList *list   = GTK_LIST (GTK_COMBO (combo)->list);
+    GList   *choice = list->selection;
+
+    //printf("choice=%d\n",choice);
+    //D(bug("chooser_get_choice_num: choice: %lx\n",choice));
+
+    if (choice) {
+			return gtk_list_child_position (list, choice->data);
+		}
+    else {
+			return -1;
+		}
+}
+
+

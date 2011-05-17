@@ -95,14 +95,20 @@ static void chipsetspeedpanel_init (ChipsetSpeedPanel *panel)
     gtk_scale_set_digits (GTK_SCALE (panel->framerate_widget), 0);
 
     gtk_signal_connect (GTK_OBJECT ( GTK_RANGE(panel->framerate_widget)->adjustment), "value-changed",
-			GTK_SIGNAL_FUNC (on_framerate_changed),
-			panel);
+			                  GTK_SIGNAL_FUNC (on_framerate_changed),
+			                  panel);
+#if 0
     gtk_signal_connect (GTK_OBJECT (panel->collisions_widget), "selection-changed",
-			GTK_SIGNAL_FUNC (on_sprite_collisions_changed),
-			panel);
+			                  GTK_SIGNAL_FUNC (on_sprite_collisions_changed),
+			                  panel);
+#endif
+		gtk_signal_connect (GTK_OBJECT (GTK_COMBO(panel->collisions_widget)->popwin), "hide",
+			                  GTK_SIGNAL_FUNC (on_sprite_collisions_changed),
+			                  panel);
+		                   
     gtk_signal_connect (GTK_OBJECT (panel->immediate_blits_widget), "toggled",
-			GTK_SIGNAL_FUNC (on_immediate_blits_changed),
-			panel);
+			                  GTK_SIGNAL_FUNC (on_immediate_blits_changed),
+			                  panel);
 }
 
 static void on_framerate_changed (GtkWidget *w, ChipsetSpeedPanel *panel)
@@ -113,7 +119,8 @@ static void on_framerate_changed (GtkWidget *w, ChipsetSpeedPanel *panel)
 
 static void on_sprite_collisions_changed (GtkWidget *w, ChipsetSpeedPanel *panel)
 {
-    panel->collision_level = CHOOSERWIDGET (w)->choice;
+    //panel->collision_level = GTK_COMBO (w)->choice;
+    panel->collision_level = combo_get_choice_num(w);
     gtk_signal_emit_by_name (GTK_OBJECT (panel), "sprite-collisions-changed");
 }
 
@@ -138,7 +145,8 @@ void chipsetspeedpanel_set_framerate (ChipsetSpeedPanel *panel, guint framerate)
 
 void chipsetspeedpanel_set_collision_level (ChipsetSpeedPanel *panel, guint collision_level)
 {
-    chooserwidget_set_choice (CHOOSERWIDGET (panel->collisions_widget), collision_level);
+    //chooserwidget_set_choice (GTK_COMBO (panel->collisions_widget), collision_level);
+		gtk_list_select_item (GTK_LIST (GTK_COMBO (panel->collisions_widget)->list), collision_level);
 }
 
 void chipsetspeedpanel_set_immediate_blits (ChipsetSpeedPanel *panel, guint immediate_blits)

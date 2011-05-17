@@ -148,7 +148,8 @@ void chipsettypepanel_set_chipset_mask (ChipsetTypePanel *panel, guint chipset_m
     if (chipset_mask & CSMASK_AGA)
         choice = 3;
 #endif
-    chooserwidget_set_choice (CHOOSERWIDGET (panel->chipsettype_widget), choice);
+    //chooserwidget_set_choice (CHOOSERWIDGET (panel->chipsettype_widget), choice);
+    gtk_list_select_item(GTK_LIST (GTK_COMBO (panel->chipsettype_widget)->list), choice);
 }
 
 void chipsettypepanel_set_ntscmode (ChipsetTypePanel *panel, guint ntscmode)

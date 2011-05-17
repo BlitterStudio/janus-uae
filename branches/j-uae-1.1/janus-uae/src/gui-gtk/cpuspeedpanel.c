@@ -119,26 +119,36 @@ static void cpuspeedpanel_init (CpuSpeedPanel *cspanel)
     gtk_range_set_update_policy (GTK_RANGE (cspanel->idlerate_widget), GTK_UPDATE_DISCONTINUOUS);
 
 
+#if 0
     gtk_signal_connect (GTK_OBJECT (cspanel->speed_widget), "selection-changed",
-			GTK_SIGNAL_FUNC (on_speed_changed),
-			cspanel);
+												GTK_SIGNAL_FUNC (on_speed_changed),
+												cspanel);
+#endif
+
+    gtk_signal_connect (GTK_OBJECT (GTK_COMBO(cspanel->speed_widget)->popwin), "hide",
+												GTK_SIGNAL_FUNC (on_speed_changed),
+												cspanel);
+
     gtk_signal_connect (GTK_OBJECT ( GTK_RANGE(cspanel->adjust_widget)->adjustment), "value-changed",
-			GTK_SIGNAL_FUNC (on_adjust_changed),
-			cspanel);
+												GTK_SIGNAL_FUNC (on_adjust_changed),
+												cspanel);
     gtk_signal_connect (GTK_OBJECT (cspanel->idleenabled_widget), "toggled",
-			GTK_SIGNAL_FUNC (on_idleenabled_toggled),
-			cspanel);
+												GTK_SIGNAL_FUNC (on_idleenabled_toggled),
+												cspanel);
     gtk_signal_connect (GTK_OBJECT (GTK_RANGE (cspanel->idlerate_widget)->adjustment), "value-changed",
-			GTK_SIGNAL_FUNC (on_idlerate_changed),
-			cspanel);
+												GTK_SIGNAL_FUNC (on_idlerate_changed),
+												cspanel);
 
     update_state (cspanel);
 }
 
 static void update_state (CpuSpeedPanel *cspanel)
 {
-    guint speed = CHOOSERWIDGET (cspanel->speed_widget)->choice;
+    //guint speed = GTK_COMBO (cspanel->speed_widget)->choice;
+    guint speed = combo_get_choice_num(cspanel->speed_widget);
     guint idleenabled = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (cspanel->idleenabled_widget));
+
+		kprintf("update_state: GTK_COMBO (cspanel->speed_widget)->choice: %d\n", speed);
 
     gtk_widget_set_sensitive (cspanel->idleenabled_widget, speed != 1);
     gtk_widget_set_sensitive (cspanel->idlerate_widget, speed != 1 && idleenabled);
@@ -148,14 +158,18 @@ static void update_state (CpuSpeedPanel *cspanel)
 
 static void on_speed_changed (GtkWidget *w, CpuSpeedPanel *cspanel)
 {
-    int speed_choice = CHOOSERWIDGET(cspanel->speed_widget)->choice;
+    //int speed_choice = GTK_COMBO(cspanel->speed_widget)->choice;
+    int speed_choice = combo_get_choice_num(cspanel->speed_widget);
 
-    if (speed_choice == 0)
-	cspanel->cpuspeed = -1;
-    else if (speed_choice == 1)
-	cspanel->cpuspeed = 0;
-    else
-	cspanel->cpuspeed = (guint)GTK_ADJUSTMENT (GTK_RANGE (cspanel->adjust_widget)->adjustment)->value;
+    if (speed_choice == 0) {
+			cspanel->cpuspeed = -1;
+		}
+    else if (speed_choice == 1) {
+			cspanel->cpuspeed = 0;
+		}
+    else {
+			cspanel->cpuspeed = (guint)GTK_ADJUSTMENT (GTK_RANGE (cspanel->adjust_widget)->adjustment)->value;
+		}
 
     gtk_signal_emit_by_name (GTK_OBJECT(cspanel), "cpuspeed-changed");
 
@@ -192,24 +206,33 @@ GtkWidget *cpuspeedpanel_new (void)
     return GTK_WIDGET (w);
 }
 
-void cpuspeedpanel_set_cpuspeed (CpuSpeedPanel *cspanel, gint cpuspeed)
-{
-    int choice = 0;
+void cpuspeedpanel_set_cpuspeed (CpuSpeedPanel *cspanel, gint cpuspeed) {
 
-    if (cpuspeed == -1)
-	choice = 0;
-    else if (cpuspeed == 0)
-	choice = 1;
-    else
-	choice = 2;
+	int choice = 0;
 
-   chooserwidget_set_choice (CHOOSERWIDGET (cspanel->speed_widget), choice);
+	if (cpuspeed == -1)
+		choice = 0;
+	else if (cpuspeed == 0)
+		choice = 1;
+	else
+		choice = 2;
 
-   if (choice == 2)
-	gtk_adjustment_set_value (GTK_ADJUSTMENT
-		(GTK_RANGE (cspanel->adjust_widget)->adjustment), cpuspeed);
+	kprintf("cpuspeedpanel_set_cpuspeed: gtk_list_select_item(speed_widget %lx): %d\n",cspanel->speed_widget,choice);
 
-   update_state (cspanel);
+   //chooserwidget_set_choice (GTK_COMBO (cspanel->speed_widget), choice);
+	gtk_list_select_item (GTK_LIST (GTK_COMBO (cspanel->speed_widget)->list), choice);
+
+	/* manuall call it here, as gtk-mui seems to have problems detecting this change.
+	 * gtk-mui bug is in gtk_list.c:gtk_real_list_select_child() ..
+	 */
+	gtk_signal_emit_by_name (GTK_COMBO(cspanel->speed_widget)->list, "selection-changed");
+
+	if (choice == 2) {
+		/* update adjustable speed */
+		gtk_adjustment_set_value (GTK_ADJUSTMENT (GTK_RANGE (cspanel->adjust_widget)->adjustment), cpuspeed);
+	}
+
+	update_state (cspanel);
 }
 
 void cpuspeedpanel_set_cpuidle (CpuSpeedPanel *cspanel, guint cpuidle)
