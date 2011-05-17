@@ -61,6 +61,7 @@
 #include <gdk/gdkkeysyms.h>
 
 #ifdef __AROS__
+#include <dos/dos.h>
 #include <proto/arossupport.h>
 #endif
 
@@ -328,6 +329,7 @@ static void set_mem32_widgets_state (void) {
 #endif
 }
 
+/* o1i: HERE !! */
 static void set_cpu_state (void)
 {
     int i;
@@ -611,7 +613,7 @@ static void set_floppy_state( void )
 
 static void update_state (void) {
 
-//set_cpu_state();
+  set_cpu_state();
   g_signal_emit_by_name(ctpanel, "read-prefs",NULL);
   set_joy_state ();
   set_sound_state ();
@@ -1072,16 +1074,52 @@ static void did_close_key (gpointer gdata)
 static void did_key_select (GtkObject *o)
 {
     const char *s = gtk_file_selection_get_filename (GTK_FILE_SELECTION (key_selector));
+#ifdef __AROS__
+		BPTR lock;
+		struct FileInfoBlock *fib;
+		BOOL file=FALSE;
+#else
+		BOOL file=TRUE;
+#endif
 
     if (quit_gui)
 	return;
 
     gtk_widget_set_sensitive (key_change_widget, 1);
 
+#ifdef __AROS__
+		/* 
+		 * If you don't select a rom file, only a path/directory will be returned.
+		 * There is no way to select "nothing". So check, if it is a valid file.
+		 */
+		if((lock=Lock((CONST_STRPTR) s, ACCESS_READ))) {
+
+			if((fib=(struct FileInfoBlock *) AllocDosObject(DOS_FIB, NULL))) {
+				if(Examine(lock, fib)) {
+					if(fib->fib_EntryType < 0 ) {
+						file=TRUE;
+					}
+				}
+				FreeDosObject(DOS_FIB, fib);
+			};
+			UnLock(lock);
+		}
+#endif
+
     uae_sem_wait (&gui_sem);
-    gui_keyname = strdup (s);
+		if(file) {
+			gui_keyname = strdup (s);
+		}
+		else {
+			gui_keyname = strdup ("");
+		}
     uae_sem_post (&gui_sem);
-    gtk_label_set_text (GTK_LABEL (key_text_widget), gui_keyname);
+		if(file) {
+			gtk_label_set_text (GTK_LABEL (key_text_widget), gui_keyname);
+		}
+		else {
+			gtk_label_set_text (GTK_LABEL (key_text_widget), "");
+		}
     write_comm_pipe_int (&from_gui_pipe, UAECMD_SELECT_KEY, 0);
     gtk_widget_destroy (key_selector);
 }
@@ -2183,14 +2221,12 @@ static void make_about_widgets (GtkWidget *dvbox) {
 
 #endif
 /* TEST VERSION */
-#if 0
     thing = gtk_label_new ("*** THIS IS AN INTERNAL BETA TEST VERSION ***");
     gtk_widget_show (thing);
     add_centered_to_vbox (dvbox, thing);
     thing = gtk_label_new ("*** PLEASE DO NOT DISTRIBUTE ***");
     gtk_widget_show (thing);
     add_centered_to_vbox (dvbox, thing);
-#endif
 
     add_empty_vbox (dvbox);
 
