@@ -4,7 +4,7 @@ dnl
 dnl Updated, re-written and generally mauled 2003 Richard Drummond
 
 AC_PREREQ(2.55)
-AC_INIT(JANUS-UAE, 1.0, ,janus-uae)
+AC_INIT(JANUS-UAE, 1.1, ,janus-uae)
 AC_CONFIG_SRCDIR([bootstrap.sh])
 AM_CONFIG_HEADER([src/sysconfig.h])
 AC_CANONICAL_TARGET
@@ -55,11 +55,13 @@ dnl AC_CHECK_LIB(vga, vga_setmode, HAVE_SVGA_LIB=yes, HAVE_SVGA_LIB=no)
 AC_CHECK_LIB(ossaudio,_oss_ioctl, HAVE_LIBOSSAUDIO=yes, HAVE_LIBOSSAUDIO=no)
 
 dnl  Gtk2.x only
-if [[ "$HOST_OS" = "aros" ]];then
-  HAVE_GTK=yes
-else
-  AM_PATH_GTK_2_0(2.0.0,HAVE_GTK=yes,HAVE_GTK=no)
-fi
+dnl if [[ "$HOST_OS" = "aros" ]];then
+
+HAVE_GTK=yes
+
+dnl else
+dnl AM_PATH_GTK_2_0(2.0.0,HAVE_GTK=yes,HAVE_GTK=no)
+dnl fi
 
 dnl
 dnl  Checks for header files.
