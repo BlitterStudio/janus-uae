@@ -406,19 +406,21 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
       break;
 
     case IDCMP_MOUSEMOVE:
-	/* this might be a little bit expensive? Is it performat enough? 
-	 * so maybe we just do it every 3rd mouse move..
-	 */
+			/* 
+			 * this might be a little bit expensive? Is it performat enough? 
+			 * so maybe we just do it every 3rd mouse move..
+			 */
 
-	if(pointer_skip==0) {
+      JWLOG("[%lx]: IDCMP_MOUSEMOVE in %lx\n", thread, jwin);
+			if(pointer_skip==0) {
 
-	  pointer_skip=3;
-	  hide_or_show_pointer(thread, jwin);
-	}
-	else {
-	  pointer_skip--;
-	}
-
+				pointer_skip=3;
+				hide_or_show_pointer(thread, jwin);
+			}
+			else {
+				JWLOG("[%lx]: IDCMP_MOUSEMOVE in %lx => skipped\n", thread, jwin);
+				pointer_skip--;
+			}
 	break;
 #if 0
 	/* dmx and dmy are relative to our window */
@@ -702,14 +704,16 @@ static void aros_win_thread (void) {
 			    IDCMP_CLOSEWINDOW | 
 			    IDCMP_RAWKEY |
 			    IDCMP_MOUSEBUTTONS |
-			    IDCMP_MOUSEMOVE |
 			    IDCMP_ACTIVEWINDOW |
 			    IDCMP_CHANGEWINDOW |
 			    IDCMP_MENUPICK |
 			    IDCMP_MENUVERIFY |
 			    IDCMP_REFRESHWINDOW |
 			    IDCMP_INTUITICKS |
-			    IDCMP_INACTIVEWINDOW;
+			    IDCMP_INACTIVEWINDOW |
+					IDCMP_GADGETDOWN | 
+					IDCMP_GADGETUP | 
+					IDCMP_MOUSEMOVE;
 
     /* AROS and Aos3 use the same flags */
     flags     =get_long_p(jwin->aos3win + 24); 
@@ -724,7 +728,7 @@ static void aros_win_thread (void) {
     /* we always want to get a MENUVERIFY, if there is no menu, we will click right on our own*/
     flags=flags & ~WFLG_RMBTRAP;
 
-    flags=flags | WFLG_SMART_REFRESH | WFLG_GIMMEZEROZERO;
+    flags=flags | WFLG_SMART_REFRESH | WFLG_GIMMEZEROZERO | WFLG_REPORTMOUSE;
 
     JWLOG("[%lx]: new flags: %lx \n", thread, flags);
     
@@ -893,7 +897,6 @@ static void aros_win_thread (void) {
     }
 #endif
     /* always care for those .. */
-    idcmpflags=idcmpflags | IDCMP_GADGETDOWN | IDCMP_GADGETUP;
 
 
     if(jwin->dead) {
