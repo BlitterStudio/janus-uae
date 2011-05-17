@@ -21,17 +21,17 @@
  *
  ************************************************************************/
 
-//#define JWTRACING_ENABLED 1
+#define JWTRACING_ENABLED 1
 #include "j.h"
 
 /*m68k_results:
  * status (LONG)
- * position to path inside m68k_results (LONG)
- * position to filename inside m68k_results (LONG)
+ * position of path inside m68k_results (LONG)
+ * unused for CLI / position of filename inside m68k_results for WB
  * data (..)
  *
  * attention: jlaunch->args can be NULL in case there are no args,
- *            so every acces to jlaunch->args[] crashes
+ *            so every access to jlaunch->args[] crashes
  */
 #define NR_LONGS 4 /* status, offset of path, offset of filename and terminating 0 */
 
@@ -45,6 +45,8 @@ uae_u32 ld_job_get(ULONG *m68k_results) {
   ULONG        nr_args;
   ULONG        i;
   ULONG        target;
+	char         slash;
+	ULONG        skip;
 
   JWLOG("entered\n");
 
@@ -81,7 +83,7 @@ uae_u32 ld_job_get(ULONG *m68k_results) {
   put_long_p(m68k_results, jlaunch->type);
   JWLOG("type is %d\n", jlaunch->type);
 
-  /* start position of path */
+  /* start position of path/exe */
   put_long_p(m68k_results+1, (nr_args+NR_LONGS)*4);  
   JWLOG("DEBOUT: m68k_results[%d]=%d (%lx)\n", 1, get_long(m68k_results+1), get_long(m68k_results+1));
 
@@ -96,17 +98,24 @@ uae_u32 ld_job_get(ULONG *m68k_results) {
   strcpy(str_results, jlaunch->amiga_path);
   JWLOG("str_results: %s\n", str_results);
 
-  /* seperate path and filename */
-  sep=PathPart(str_results);
-  sep[0]=(char) 0;
-  JWLOG("path: %s\n", str_results);
+	 if(jlaunch->type==CLI_TYPE_WB_ASYNC) {
+			/* seperate path and filename 
+			*
+			* AutoDocs:
+			* PathPart("xxx:yyy/zzz/qqq") would return a pointer to the last '/'.
+			* PathPart("xxx:yyy") would return a pointer to the first 'y').
+			*/
+			sep=PathPart(str_results);
 
-  /* start of filename */
-  put_long_p(m68k_results+2, (nr_args+NR_LONGS)*4 + strlen(str_results) + 1);  
-  JWLOG("DEBOUT: m68k_results[%d]=%d (%lx)\n", 2, get_long(m68k_results+2), get_long(m68k_results+2));
-  JWLOG("DEBOUT: --\n");
-  JWLOG("filename: %s\n", results + (nr_args+NR_LONGS)*4 + strlen(str_results) + 1);
+		sep[0]=(char) 0;
+		JWLOG("path: %s\n", str_results);
 
+		/* start of filename */
+		put_long_p(m68k_results+2, (nr_args+NR_LONGS)*4 + strlen(str_results) + 1 /*skip*/);  
+		JWLOG("DEBOUT: m68k_results[%d]=%d (%lx)\n", 2, get_long(m68k_results+2), get_long(m68k_results+2));
+		JWLOG("DEBOUT: --\n");
+		JWLOG("filename: %s\n", results + (nr_args+NR_LONGS)*4 + strlen(str_results) + 1 /*skip*/);
+	 }
   /* copy arguments */
 
   /* there will be the first string of our arguments, if we have one */

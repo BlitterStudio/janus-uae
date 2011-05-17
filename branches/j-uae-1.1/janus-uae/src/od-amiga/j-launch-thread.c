@@ -25,7 +25,7 @@
 #include <workbench/workbench.h>
 #include <proto/utility.h>
 
-//#define JWTRACING_ENABLED 1
+#define JWTRACING_ENABLED 1
 #include "j.h"
 #include "memory.h"
 #include "include/filesys.h"
@@ -90,7 +90,11 @@ static char *check_and_convert_path(char *aros_exe_full_path,
   /* So the supplied executable is accessable inside of amigaOS */
 
   /* path without aros_path_mounted_real */
-  aros_exe_path=aros_exe_full_path + strlen(aros_path_mounted_real) + 1;
+  aros_exe_path=aros_exe_full_path + strlen(aros_path_mounted_real);
+	/* remove '/' if there is one at the end */
+	if(aros_exe_path[0] == '/') {
+		aros_exe_path++;
+	}
   JWLOG("aros/aos_path:          %s\n", aros_exe_path);
 
   /* now add the amigaOS prefix path */
