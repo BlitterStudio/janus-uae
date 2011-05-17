@@ -10,6 +10,8 @@
 # include <be/kernel/OS.h>
 #else
 # ifdef TARGET_AMIGAOS
+#  include <dos/dos.h>
+#  include <proto/exec.h>
 #  include <proto/dos.h>
 #  include <clib/alib_protos.h>
 # else
