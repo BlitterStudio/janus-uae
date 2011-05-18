@@ -168,6 +168,8 @@ aros: $(AROS_OBJS)
 ../jit/compemu.c: ../gencomp
 		cd ..;./gencomp
 
+../cpuemu_0.cpp: ../gencpu
+		cd ..;./gencpu
 # ============== clean ====================
 
 clean: 
