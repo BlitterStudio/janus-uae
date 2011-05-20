@@ -582,6 +582,11 @@ extern int picasso_is_special_read;
 
 extern int p96hack_vpos2;
 extern int p96refresh_active;
+
+extern void init_hz_p96 (void);
+extern void picasso_handle_hsync (void);
+extern void picasso_reset (void);
+
 #endif
 
 #endif
