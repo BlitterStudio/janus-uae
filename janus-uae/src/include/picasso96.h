@@ -541,7 +541,7 @@ extern int DX_FillResolutions (uae_u16 *);
 extern int DX_BitsPerCannon (void);
 extern void DX_Invalidate (int first, int last);
 extern void picasso_enablescreen (int on);
-extern void picasso_refresh (int call_setpalette);
+extern void picasso_refresh (void);
 extern void picasso_handle_vsync (void);
 
 extern uae_u8 *gfxmemory;
