@@ -40,6 +40,7 @@
 
 #ifdef __AROS__
 #define WCHAR TCHAR
+#include <ctype.h> /* toupper, isdigit etc. */
 #endif
 
 /*
@@ -228,6 +229,7 @@ typedef char	TCHAR;
 #define	_totlower	tolower
 #define	_ttoi		atoi
 #define _tcsftime	strftime
+
 
 #endif	/* Not _UNICODE */
 
