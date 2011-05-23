@@ -137,6 +137,9 @@ struct utimbuf
 #define _tstof atof
 #define _tstoi atoi
 
+/* wide char unlink */
+#define _wunlink unlink
+
 int     kprintf      (const char * fmt, ...);
 #define TODO() kprintf("%s:%d: >>> TODO %s", __FILE__, __LINE__, __PRETTY_FUNCTION__)
 
