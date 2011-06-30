@@ -77,7 +77,7 @@
 
 #include "od-amiga/j.h"
 
-//#define GUI_DEBUG 1
+#define GUI_DEBUG 1
 #ifdef  GUI_DEBUG
 #define DEBUG_LOG(...) do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -459,8 +459,11 @@ static void set_comp_state (void)
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (compfpu_widget[currprefs.compfpu]), 1);
 
     /* round it */
+		DEBUG_LOG("currprefs.cachesize: %lx\n", currprefs.cachesize);
+		DEBUG_LOG("old cachesize_adj->value: %d\n", (int) cachesize_adj->value);
     cache=currprefs.cachesize / 1024;
     gtk_adjustment_set_value(cachesize_adj, cache);
+		DEBUG_LOG("new cachesize_adj->value: %d\n", (int) cachesize_adj->value);
 }
 #endif
 
@@ -690,8 +693,11 @@ static int my_idle (void)
 	DEBUG_LOG ("GUI got command:%d\n", cmd);
 	switch (cmd) {
 	 case GUICMD_STATE_CHANGE: {
+			DEBUG_LOG ("GUICMD_STATE_CHANGE: read_comm_pipe_int_blocking ..\n");
 	     int state = read_comm_pipe_int_blocking (&to_gui_pipe);
+			DEBUG_LOG ("GUICMD_STATE_CHANGE: update_buttons ..\n");
 	     update_buttons (state);
+			DEBUG_LOG ("GUICMD_STATE_CHANGE: done (break)\n");
 	     break;
 	 }
 	 case GUICMD_SHOW:
@@ -704,7 +710,9 @@ static int my_idle (void)
 	    }
 	    if (cmd == GUICMD_SHOW) {
 
+DEBUG_LOG ("GUICMD_SHOW entered\n");
 		gtk_widget_show (gui_window);
+DEBUG_LOG ("GUICMD_SHOW 2\n");
 #	    if GTK_MAJOR_VERSION >= 2
 		gtk_window_present (GTK_WINDOW (gui_window));
 	        gui_active = 1;
@@ -712,6 +720,7 @@ static int my_idle (void)
 #if defined GTKMUI
 		gui_active = 1;
 #endif
+DEBUG_LOG ("GUICMD_SHOW 3\n");
 	    } else {
 		n = read_comm_pipe_int_blocking (&to_gui_pipe);
 		floppyfileentry_do_dialog (FLOPPYFILEENTRY (floppy_widget[n]));
@@ -882,7 +891,14 @@ static void sound_changed (void)
 #ifdef JIT
 static void comp_changed (void)
 {
+		DEBUG_LOG("old changed_prefs.cachesize: %lx\n", changed_prefs.cachesize);
+		DEBUG_LOG("old cachesize_adj->value: %d\n", (int) cachesize_adj->value);
+		/* WARNING: race condition!
+		 * if jit is already running and we resize the cache here, we *will* get
+		 * trashed memory ! (or not?)
+		 */
     changed_prefs.cachesize=cachesize_adj->value * 1024;
+		DEBUG_LOG("new changed_prefs.cachesize: %lx\n", changed_prefs.cachesize);
 #ifdef NATMEM_OFFSET
     changed_prefs.comptrustbyte = find_current_toggle (compbyte_widget, 4);
     changed_prefs.comptrustword = find_current_toggle (compword_widget, 4);
@@ -896,8 +912,8 @@ static void comp_changed (void)
 }
 #endif
 
-static void on_start_clicked (void)
-{
+void on_start_clicked (void) {
+
     DEBUG_LOG ("Start button clicked.\n");
 
     write_comm_pipe_int (&from_gui_pipe, UAECMD_START, 1);
@@ -1600,6 +1616,7 @@ static void make_comp_widgets (GtkWidget *vbox)
     GtkWidget *hbox;
     GtkWidget *hbox_top;
     GtkWidget *vbox_left;
+		gint       cache_mb;
 
     static const char *complabels1[] = {
 	"Direct", "Indirect", "Indirect for KS", "Direct after Picasso",
@@ -1679,10 +1696,12 @@ static void make_comp_widgets (GtkWidget *vbox)
 
     /* Translation Buffer */
     container=make_file_container("Cache Size (MB)", vbox_left);
-    /* actual value is updated later on anyways */
-    cachesize_adj = GTK_ADJUSTMENT (gtk_adjustment_new (8, 0.0, 8.0, 1.0, 1.0, 1.0));
-    gtk_signal_connect (GTK_OBJECT (cachesize_adj), "value_changed",
-			GTK_SIGNAL_FUNC (comp_changed), NULL);
+
+    /* use actual value here*/
+    cache_mb=currprefs.cachesize / 1024;
+		DEBUG_LOG("currprefs.cachesize %lx => %d MB\n", currprefs.cachesize, cache_mb);
+    cachesize_adj = GTK_ADJUSTMENT (gtk_adjustment_new ((gdouble) cache_mb, 0.0, 8.0, 1.0, 1.0, 1.0));
+    gtk_adjustment_set_value(cachesize_adj, cache_mb);
 
     thing = gtk_hscale_new (cachesize_adj);
     gtk_range_set_update_policy (GTK_RANGE (thing), GTK_UPDATE_DELAYED);
@@ -1702,6 +1721,11 @@ static void make_comp_widgets (GtkWidget *vbox)
 
     /* Kludge - remember pointer to JIT page, so that we can easily disable it */
     jit_page = vbox;
+
+		/* install hook for changes */
+
+    gtk_signal_connect (GTK_OBJECT (cachesize_adj), "value_changed",
+			GTK_SIGNAL_FUNC (comp_changed), NULL);
 }
 #endif
 
@@ -2695,6 +2719,8 @@ static void create_guidlg (void) {
     /* keep the GUI hidden, if !currprefs.start_gui 
      * use Exchange to show it
      */
+    //DEBUG_LOG("create_guidlg: gtk_mui_application_iconify FALSE \n");
+    gtk_mui_application_iconify(FALSE);
     DEBUG_LOG("create_guidlg: gtk_mui_application_iconify %d\n", !currprefs.start_gui);
     gtk_mui_application_iconify(!currprefs.start_gui);
     DEBUG_LOG("create_guidlg: gtk_mui_application_gui_hotkey: ctrl alt j\n");
@@ -3254,4 +3280,8 @@ void gui_init (int argc, char **argv)
 	uae_sem_wait (&gui_init_sem);
 	DEBUG_LOG ("Okay\n");
     }
+}
+
+BOOL gui_visible() {
+	return !gtk_mui_application_is_iconified();
 }
