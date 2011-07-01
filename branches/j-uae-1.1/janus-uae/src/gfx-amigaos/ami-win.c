@@ -2792,7 +2792,7 @@ int DX_FillResolutions (uae_u16 *ppixel_format)
     {  640, 480 },
     {  800, 600 },
     { 1024, 768 },
-    { 1152, 864 },
+    { 1152, 864 }, /* here */
     { 1280,1024 },
     { 1600,1280 },
 
@@ -2809,9 +2809,8 @@ int DX_FillResolutions (uae_u16 *ppixel_format)
     {  854, 480 },
     {  948, 576 },
     { 1024, 576 },
-    { 1024, 600 },
     { 1152, 768 },
-    { 1152, 864 },
+    { 1152,1024 }, /* was: 864, see "here" above !! */
     { 1280, 720 },
     { 1280, 768 },
     { 1280, 800 },
@@ -2842,8 +2841,11 @@ int DX_FillResolutions (uae_u16 *ppixel_format)
     {  640, 350 },
     { 1600, 900 },
     {  960, 600 },
-    { 1088, 612 }
+    { 1088, 612 },
 
+    /* even newer  modes */
+
+    { 1024, 600 }
     };
 
     static const int bpx2format[] = {0, RGBFF_CHUNKY, RGBFF_R5G6B5PC, 0, RGBFF_B8G8R8A8};
@@ -2878,7 +2880,7 @@ int DX_FillResolutions (uae_u16 *ppixel_format)
         DisplayModes[count].depth      = bpx;
         DisplayModes[count].refresh    = 75;
 
-	JWLOG("%2d: %dx%d, bpx %d (ppixel_format: %lx)\n", count, modes[j].width, modes[j].height, bpx, *ppixel_format);
+	JWLOG("%2d: %4dx%4d, bpx %d (ppixel_format: %3lx)\n", count, modes[j].width, modes[j].height, bpx, *ppixel_format);
 
         count++;
         *ppixel_format |= bpx2format[bpx];

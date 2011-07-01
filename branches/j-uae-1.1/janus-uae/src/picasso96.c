@@ -81,7 +81,7 @@ int p96hsync_counter;
 
 int p96hack_vpos, p96hack_vpos2, p96refresh_active;
 
-//#define P96TRACING_ENABLED 1
+#define P96TRACING_ENABLED 1
 #if P96TRACING_ENABLED
 #define P96TRACE(x)	do { kprintf x; } while(0)
 #define P96LOG(...)     do { kprintf("P96: ");kprintf(__VA_ARGS__); } while(0)
@@ -1226,7 +1226,7 @@ static const struct modeids mi[] =
     {  640, 480, 3 },
     {  800, 600, 4 },
     { 1024, 768, 5 },
-    { 1152, 864, 6 },
+    { 1152, 864, 6 }, /* here */
     { 1280,1024, 7 },
     { 1600,1280, 8 },
 
@@ -1244,7 +1244,7 @@ static const struct modeids mi[] =
     {  948, 576, 138 },
     { 1024, 576, 139 },
     { 1152, 768, 140 },
-    { 1152, 864, 141 },
+    { 1152,1024, 141 }, /* was: 864, see "here" above !! */
     { 1280, 720, 142 },
     { 1280, 768, 143 },
     { 1280, 800, 144 },
@@ -1287,14 +1287,20 @@ static const struct modeids mi[] =
 static uae_u32 AssignModeID (int w, int h, unsigned int *non_standard_count)
 {
     unsigned int i;
+		uae_u32 assigned_id;
 
     for (i = 0; mi[i].width > 0; i++) {
-	if (w == mi[i].width && h == mi[i].height)
-	    return 0x50001000 | (mi[i].id * 0x10000);
+			if (w == mi[i].width && h == mi[i].height) {
+				return 0x50001000 | (mi[i].id * 0x10000);
+			}
     }
     (*non_standard_count)++;
     write_log ("P96: Non-standard mode %dx%d\n", w, h);
-    return 0x51001000 - (*non_standard_count) * 0x10000;
+    assigned_id = 0x51001000 - (*non_standard_count) * 0x10000;
+
+		P96LOG("AssignModeID: %lx (%d x %d)\n", assigned_id, w, h);
+
+		return assigned_id;
 }
 
 
@@ -1365,11 +1371,12 @@ uae_u32 REGPARAM2 picasso_InitCard (struct regstruct *regs)
 	res.P96ID[5] = ':';
 
 	P96LOG("i %d: %dx%d\n", i, DisplayModes[i].res.width, DisplayModes[i].res.height);
+  P96LOG("  DisplayID[%02d] %lx\n", i, res.DisplayID);
 	strcpy  (res.Name, "uaegfx:");
 	strncat (res.Name, DisplayModes[i].name,
       		strchr (DisplayModes[i].name, ',') - DisplayModes[i].name);
 	if(DisplayModes[i].name) {
-	  P96LOG("DisplayModes[i].name: %s\n", DisplayModes[i].name);
+	  P96LOG("  DisplayModes[%02d].name: %s\n", i, DisplayModes[i].name);
 	}
 
 	res.Modes[PLANAR] = 0;
