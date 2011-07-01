@@ -77,7 +77,7 @@
 
 #include "od-amiga/j.h"
 
-#define GUI_DEBUG 1
+//#define GUI_DEBUG 1
 #ifdef  GUI_DEBUG
 #define DEBUG_LOG(...) do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -127,7 +127,7 @@ static GtkWidget *config_save_as_widget;
 static GtkWidget *config_path_widget;
 static GtkWidget *config_description_widget;
 
-extern GtkWidget  *chipsize_widget[6];
+GtkWidget  *chipsize_widget[6];
 static const char *chiplabels[] = { "512 KB", "1 MB", "2 MB", "4 MB", "8 MB", NULL };
 
 static GtkWidget  *bogosize_widget[5];
@@ -297,6 +297,8 @@ static uae_sem_t gui_sem;        // For mutual exclusion on various prefs settin
 static uae_sem_t gui_update_sem; // For synchronization between gui_update() and the GUI thread
 static uae_sem_t gui_init_sem;   // For the GUI thread to tell UAE that it's ready.
 static uae_sem_t gui_quit_sem;   // For the GUI thread to tell UAE that it's quitting.
+
+extern uae_sem_t gui_main_wait_sem;   // For the GUI thread to tell UAE/main that it's ready.
 
 static volatile int quit_gui = 0, quitted_gui = 0;
 
@@ -1212,6 +1214,8 @@ GtkWidget *make_radio_group_box_param (const char *title, const char **labels,
 					GtkWidget *parameter)
 {
     GtkWidget *frame, *newbox;
+
+		DEBUG_LOG("title: %s\n", title);
 
     frame = gtk_frame_new (title);
     //kprintf("==> %s\n",title);
@@ -2763,6 +2767,7 @@ static void *gtk_gui_thread (void *dummy)
 
 	/* We're ready - tell the world */
 	uae_sem_post (&gui_init_sem);
+	uae_sem_post (&gui_main_wait_sem);
 
 	/* Enter GTK+ main loop */
 	DEBUG_LOG ("Entering GTK+ main loop\n");
@@ -3273,7 +3278,7 @@ void gui_init (int argc, char **argv)
 	uae_sem_init (&gui_quit_sem, 0, 0);
 
 	/* Start GUI thread to construct GUI */
-	uae_start_thread (gtk_gui_thread, NULL, &tid);
+	uae_start_thread (gtk_gui_thread, NULL, &tid, "J-UAE gui");
 
 	/* Wait until GUI thread is ready */
 	DEBUG_LOG ("Waiting for GUI thread\n");

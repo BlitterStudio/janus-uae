@@ -108,7 +108,7 @@ static void settings_changed (GtkWidget *me, jDisplay *j);
 
 GtkWidget *chipsetspeed_panel;
 //GtkWidget *chipsettype_panel;
-GtkWidget *chipsize_widget[5];
+extern GtkWidget *chipsize_widget[];
 GtkWidget *fastsize_widget[5];
 
 /* local proto types */
