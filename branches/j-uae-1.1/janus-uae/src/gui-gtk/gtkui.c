@@ -77,7 +77,7 @@
 
 #include "od-amiga/j.h"
 
-//#define GUI_DEBUG 1
+#define GUI_DEBUG 1
 #ifdef  GUI_DEBUG
 #define DEBUG_LOG(...) do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -2590,6 +2590,17 @@ static void create_guidlg (void) {
     gtk_window_set_title (GTK_WINDOW (gui_window), PACKAGE_NAME " control: Hot Key = <ctrl alt j>");
     gtk_signal_connect (GTK_OBJECT(gui_window), "delete_event", GTK_SIGNAL_FUNC(did_guidlg_delete), NULL);
 
+    /* keep the GUI hidden, if !currprefs.start_gui 
+     * use Exchange to show it
+		 *
+		 * ATTENTION: according to the MUI autodocs the application remembers this state and
+		 *            hides all newly opened windows. This seems not to be the case for Zune,
+		 *            so we hide after we opened our window with gtk_window_new..
+     */
+    DEBUG_LOG("create_guidlg: gtk_mui_application_iconify %d\n", !currprefs.start_gui);
+    gtk_mui_application_iconify(!currprefs.start_gui);
+    DEBUG_LOG("create_guidlg: gtk_mui_application_is_iconified %d\n", gtk_mui_application_is_iconified());
+
     vbox = gtk_vbox_new (FALSE, 5);
     gtk_container_add (GTK_CONTAINER (gui_window), vbox);
     gtk_container_set_border_width (GTK_CONTAINER (gui_window), 10);
@@ -2720,13 +2731,6 @@ static void create_guidlg (void) {
     //DebOut("end\n");
     //
 #if defined GTKMUI
-    /* keep the GUI hidden, if !currprefs.start_gui 
-     * use Exchange to show it
-     */
-    //DEBUG_LOG("create_guidlg: gtk_mui_application_iconify FALSE \n");
-    gtk_mui_application_iconify(FALSE);
-    DEBUG_LOG("create_guidlg: gtk_mui_application_iconify %d\n", !currprefs.start_gui);
-    gtk_mui_application_iconify(!currprefs.start_gui);
     DEBUG_LOG("create_guidlg: gtk_mui_application_gui_hotkey: ctrl alt j\n");
     gtk_mui_application_gui_hotkey("ctrl alt j");
 #endif
@@ -2896,6 +2900,7 @@ void gui_handle_events (void)
 		break;
 #endif
 	    case UAECMD_QUIT:
+		uae_stop (); /* added 30.06.2011 on Paolo's request.. should not be necessary? */
 		uae_quit ();
 		break;
 	    case UAECMD_PAUSE:
@@ -3288,5 +3293,6 @@ void gui_init (int argc, char **argv)
 }
 
 BOOL gui_visible() {
+	DEBUG_LOG("call gtk_mui_application_is_iconified..\n");
 	return !gtk_mui_application_is_iconified();
 }

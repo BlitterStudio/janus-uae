@@ -79,6 +79,13 @@
 #include "od-amiga/j.h"
 #endif
 
+//#define MAIN_DEBUG 1
+#ifdef  MAIN_DEBUG
+#define DEBUG_LOG(...) do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
+#else
+#define DEBUG_LOG(...) do ; while(0)
+#endif
+
 struct uae_prefs currprefs, changed_prefs;
 
 static int restart_program;
@@ -91,6 +98,10 @@ int log_scsi;
 
 struct gui_info gui_data;
 
+uae_sem_t gui_main_wait_sem;   // For the GUI thread to tell UAE/main that it's ready.
+
+void on_start_clicked (void);
+BOOL gui_visible (void);
 
 /*
  * Random prefs-related junk that needs to go elsewhere.
@@ -136,6 +147,7 @@ static void fixup_prefs_joysticks (struct uae_prefs *prefs)
 static void fix_options (void)
 {
     int err = 0;
+		int foo;
 
     if ((currprefs.chipmem_size & (currprefs.chipmem_size - 1)) != 0
 	|| currprefs.chipmem_size < 0x40000
@@ -247,6 +259,9 @@ static void fix_options (void)
 	currprefs.comp_oldsegv = 1;
 	err = 1;
     }
+		/* round it */
+		foo=(int) currprefs.cachesize / 1024;
+		currprefs.cachesize=foo*1024;
     if (currprefs.cachesize < 0 || currprefs.cachesize > 16384) {
 	write_log ("Bad value for cachesize parameter: value must be within 0..16384\n");
 	currprefs.cachesize = 0;
@@ -709,6 +724,7 @@ static int do_preinit_machine (int argc, char **argv)
  */
 static int do_init_machine (void)
 {
+
 #ifdef JIT
     if (!(( currprefs.cpu_level >= 2 ) && ( currprefs.address_space_24 == 0 ) && ( currprefs.cachesize )))
 	canbang = 0;
@@ -736,7 +752,9 @@ static int do_init_machine (void)
     expansion_init ();
 #endif
     memory_init ();
+/* alive */
     memory_reset ();
+/* dead */
 
 #ifdef FILESYS
     filesys_install ();
@@ -921,9 +939,10 @@ void gui_shutdown (void);
  * Here's where all the action takes place!
  */
 
-void real_main (int argc, char **argv)
-{
-  ULONG waitcount;
+void real_main (int argc, char **argv) {
+	ULONG waitcount;
+	int err;
+	BOOL gui_initially_visible;
 
    /* j-uae writes to stdout, so if you want to
     * use 'T:uae.log' you better start it
@@ -935,101 +954,98 @@ void real_main (int argc, char **argv)
     set_logfile("T:uae.log");
 #endif
 
+	uae_sem_init (&gui_main_wait_sem, 0, 0);
 
-//#if defined GTKMUI
-    gui_init (argc, argv);
-//#endif
+	gui_init (argc, argv);
+	show_version ();
 
-   show_version ();
-
-    currprefs.mountinfo = changed_prefs.mountinfo = &options_mountinfo;
-    restart_program = 1;
+	currprefs.mountinfo = changed_prefs.mountinfo = &options_mountinfo;
+	restart_program = 1;
 #ifdef _WIN32
-    sprintf (restart_config, "%sConfigurations\\", start_path);
+	sprintf (restart_config, "%sConfigurations\\", start_path);
 #endif
-    strcat (restart_config, OPTIONSFILENAME);
+	strcat (restart_config, OPTIONSFILENAME);
 
-    /* Initial state is stopped */
-    uae_target_state = UAE_STATE_STOPPED;
+	/* Initial state is stopped */
+	uae_target_state = UAE_STATE_STOPPED;
 
-    while (uae_target_state != UAE_STATE_QUITTING) {
-	int want_gui;
+	/* when we first test for gui_visible it might not be in the correct state (race..) */
+	gui_initially_visible=currprefs.start_gui;
 
-	set_state (uae_target_state);
+	while (uae_target_state != UAE_STATE_QUITTING) {
 
-	do_preinit_machine (argc, argv);
+		set_state (uae_target_state);
+		do_preinit_machine (argc, argv);
 
-        /* Should we open the GUI? TODO: This mess needs to go away */
-	want_gui = currprefs.start_gui;
+		changed_prefs = currprefs;
 
-#if defined GTKMUI
-	/* we always open up the GUI, but with MUIA_Application_Iconified if !currprefs.start_gui
-	 * so the user can always switch it on with the help of Exchange
-	 */
-	want_gui = 1; 
-#endif
-        if (restart_program == 2)
-	    want_gui = 0;
-        else if (restart_program == 3)
-	    want_gui = 1;
-
-	changed_prefs = currprefs;
-
-
-#if defined GTKMUI
-	/* start launchd, if necessary */
-	if(currprefs.jlaunch) {
-	  aros_launch_start_thread();
-	}
-#endif
-
-	if (want_gui) {
-	    /* Handle GUI at start-up */
-	    int err = gui_open ();
-
-	    if (err >= 0) {
-#if defined GTKMUI
-	      if(currprefs.start_gui) {
-#endif
-		/* wait for state button to be pressed */
-		do {
-		    gui_handle_events ();
-
-		    uae_msleep (10);
-
-		} while (!uae_state_change_pending ());
-#if defined GTKMUI
-	      }
-#endif
-	    } else if (err == - 1) {
-
-		if (restart_program == 3) {
-		    restart_program = 0;
-
-		    uae_quit ();
+		/* start launchd, if necessary */
+		if(currprefs.jlaunch) {
+			aros_launch_start_thread();
 		}
-	    } else {
-		uae_quit ();
-	    }
 
-	    currprefs = changed_prefs;
-	    fix_options ();
-	    inputdevice_init ();
-	}
+		/* Handle GUI at start-up */
+		err = gui_open ();
 
-	restart_program = 0;
+		/* we always wait for the GUI! */
+		/* if we wait for the GUI here, a manual start with the START button hangs here of course! */
+		//DEBUG_LOG("waiting for gui_main_wait_sem ..\n");
+		//uae_sem_wait(&gui_main_wait_sem);
+		//DEBUG_LOG("got gui_main_wait_sem\n");
 
-	if (uae_target_state == UAE_STATE_QUITTING) {
-	    break;
-	}
+		if (err >= 0) {
+			/* GUI opened successfully */
 
-	uae_target_state = UAE_STATE_COLD_START;
+			//if(!currprefs.start_gui) {
+			if(!gui_initially_visible && !gui_visible() ) {
+				gui_initially_visible=TRUE;
+				DEBUG_LOG("GUI is invisible => start uae\n");
+				/* 
+				 * GUI will stay hidden, so we start UAE manually here: 
+				 */
+				uae_start();
+			}
+			else {
+				DEBUG_LOG("GUI is visible => let the user click on the start button\n");
+			}
+
+			/* wait for state button to be pressed */
+			do {
+				gui_handle_events ();
+
+				uae_msleep (10);
+			} while (!uae_state_change_pending ());
+
+		} else if (err == - 1) {
+			/* will this ever happen !? */
+
+			if (restart_program == 3) {
+				restart_program = 0;
+
+				uae_quit ();
+			}
+		} else {
+			/* fragg. No Gui, no fun */
+			uae_quit ();
+		}
+
+		currprefs = changed_prefs;
+		fix_options ();
+		inputdevice_init ();
+
+		restart_program = 0;
+
+		if (uae_target_state == UAE_STATE_QUITTING) {
+			break;
+		}
+
+		uae_target_state = UAE_STATE_COLD_START;
 
 	/* Start emulator proper. */
-	if (!do_init_machine ())
-	    break;
+		if (!do_init_machine ())
+				break;
 
-	while (uae_target_state != UAE_STATE_QUITTING && uae_target_state != UAE_STATE_STOPPED) {
+		while (uae_target_state != UAE_STATE_QUITTING && uae_target_state != UAE_STATE_STOPPED) {
 	    /* Reset */
 	    set_state (uae_target_state);
 	    do_reset_machine (uae_state == UAE_STATE_COLD_START);
