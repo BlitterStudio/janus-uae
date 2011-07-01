@@ -8,6 +8,9 @@
   * Inspired by code from UAE:
   * Copyright 1995, 1996 Bernd Schmidt
   * Copyright 1996 Ed Hanway
+	*
+	* $Id$
+	*
   */
 
 #include "sysconfig.h"
@@ -261,7 +264,7 @@ static void trap_HandleExtendedTrap (TrapHandler handler_func, int has_retval)
 	context->saved_regs = regs; /* Copy of regs to be restored when trap is done */
 
 	/* Start thread to handle new trap context. */
-	uae_start_thread (trap_thread, (void *)context, &context->thread);
+	uae_start_thread (trap_thread, (void *)context, &context->thread, "J-UAE trap thread");
 
 	/* Switch to trap context to begin execution of
 	 * trap handler function.

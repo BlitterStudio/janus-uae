@@ -46,6 +46,13 @@
  *
  */
 
+#define THREAD_DEBUG 1
+#ifdef  THREAD_DEBUG
+#define DEBUG_LOG(...) do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
+#else
+#define DEBUG_LOG(...) do ; while(0)
+#endif
+
 static struct Process *proxy_thread;
 static struct MsgPort *proxy_msgport;
 
@@ -465,17 +472,24 @@ static void do_thread (void)
    func (arg);
 }
 
-int uae_start_thread (void *(*f) (void *), void *arg, uae_thread_id *foo)
+int uae_start_thread (void *(*f) (void *), void *arg, uae_thread_id *foo, char *name)
 {
     struct MsgPort *replyport = CreateMsgPort();
+		char default_name[]="J-UAE thread";
+
+		DEBUG_LOG("start thread \"%s\" ..\n", name);
+
+		if(!name) {
+			name=default_name;
+		}
 
     if (replyport) {
-	*foo = (struct Task *)myCreateNewProcTags (NP_Output,		   Output (),
+			*foo = (struct Task *)myCreateNewProcTags (NP_Output,		   Output (),
 						   NP_Input,		   Input (),
-						   NP_Name,	   (ULONG) "UAE thread",
+						   NP_Name,	   (ULONG) name,
 						   NP_CloseOutput,	   FALSE,
 						   NP_CloseInput,	   FALSE,
-						   NP_StackSize,	   16384,
+						   NP_StackSize,	   16384*4,
 						   NP_Entry,	   (ULONG) do_thread,
 						   TAG_DONE);
 
@@ -491,6 +505,8 @@ int uae_start_thread (void *(*f) (void *), void *arg, uae_thread_id *foo)
 	}
 	DeleteMsgPort (replyport);
     }
+
+		DEBUG_LOG("thread \"%s\" started with id %lx\n", name, *foo);
 
     return *foo!=0;
 }

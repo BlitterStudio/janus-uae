@@ -79,7 +79,11 @@ int uae_sem_get_value (uae_sem_t *sem);
 typedef struct Task *uae_thread_id;
 #define BAD_THREAD NULL
 
+#ifdef __AROS__
+extern int uae_start_thread (void *(*f) (void *), void *arg, uae_thread_id *foo, char *name);
+#else
 extern int uae_start_thread (void *(*f) (void *), void *arg, uae_thread_id *foo);
+#endif
 
 extern void uae_set_thread_priority (int pri);
 
