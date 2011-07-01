@@ -35,8 +35,8 @@
 #include "catweasel.h"
 #endif
 
-//#define JW_ENTER_ENABLED  1
-//#define JWTRACING_ENABLED 1
+#define JW_ENTER_ENABLED  1
+#define JWTRACING_ENABLED 1
 
 #include "od-amiga/j.h"
 
@@ -2693,12 +2693,13 @@ static void un_set_screen_for_picasso(void) {
 
 void gfx_set_picasso_state (int on)
 {
-    JWLOG("gfx_set_picasso_state(%d)\n", on);
 
-    if (screen_is_picasso == on )
-	return;
+    if (screen_is_picasso == on ) {
+			JWLOG("screen_is_picasso == on: %d\n", on);
+			return;
+		}
 
-    JWLOG("gfx_set_picasso_state: screen_is_picasso != on\n");
+    JWLOG("screen_is_picasso != on\n");
     screen_is_picasso = on;
     if (on)
     {
