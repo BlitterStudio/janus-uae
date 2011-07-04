@@ -46,7 +46,7 @@
  *
  */
 
-#define THREAD_DEBUG 1
+//#define THREAD_DEBUG 1
 #ifdef  THREAD_DEBUG
 #define DEBUG_LOG(...) do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else

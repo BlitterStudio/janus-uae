@@ -102,7 +102,6 @@ GtkWidget *make_chooser (int count, ...)
     for (i=0; i<count; i++) {
 			a=va_arg (choices, char *);
 			list = g_list_append (list, (gpointer) a);
-			kprintf("chooser %lx: 1->%s\n", chooser, a);
 		}
     gtk_combo_set_popdown_strings (GTK_COMBO (chooser), list);
     g_list_free (list);
@@ -330,8 +329,6 @@ int make_radio_group_param (const char **label, GtkWidget *tobox,
     t++;
   }
   if(saveptr[t] != NULL) {
-    kprintf("make_radio_group_param: old widget[%d](%lx):=%lx\n",t,&saveptr[t],saveptr[t]);
-    kprintf("ERROR: saveptr[%d] is NOT NULL!\n",t);
     DEBUG_LOG("make_radio_group_param: old widget[%d](%lx):=%lx\n",t,&saveptr[t],saveptr[t]);
     DEBUG_LOG("ERROR: saveptr[%d] is NOT NULL!\n",t);
   }

@@ -148,8 +148,6 @@ static void update_state (CpuSpeedPanel *cspanel)
     guint speed = combo_get_choice_num(cspanel->speed_widget);
     guint idleenabled = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (cspanel->idleenabled_widget));
 
-		kprintf("update_state: GTK_COMBO (cspanel->speed_widget)->choice: %d\n", speed);
-
     gtk_widget_set_sensitive (cspanel->idleenabled_widget, speed != 1);
     gtk_widget_set_sensitive (cspanel->idlerate_widget, speed != 1 && idleenabled);
     gtk_widget_set_sensitive (cspanel->adjust_widget, speed == 2);
@@ -216,8 +214,6 @@ void cpuspeedpanel_set_cpuspeed (CpuSpeedPanel *cspanel, gint cpuspeed) {
 		choice = 1;
 	else
 		choice = 2;
-
-	kprintf("cpuspeedpanel_set_cpuspeed: gtk_list_select_item(speed_widget %lx): %d\n",cspanel->speed_widget,choice);
 
    //chooserwidget_set_choice (GTK_COMBO (cspanel->speed_widget), choice);
 	gtk_list_select_item (GTK_LIST (GTK_COMBO (cspanel->speed_widget)->list), choice);

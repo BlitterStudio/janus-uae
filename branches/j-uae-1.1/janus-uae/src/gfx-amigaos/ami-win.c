@@ -35,8 +35,8 @@
 #include "catweasel.h"
 #endif
 
-#define JW_ENTER_ENABLED  1
-#define JWTRACING_ENABLED 1
+//#define JW_ENTER_ENABLED  1
+//#define JWTRACING_ENABLED 1
 
 #include "od-amiga/j.h"
 
