@@ -930,4 +930,11 @@ void a2065_init (void)
 
 #else
 #warning ============= enable A2065 again ===============
+
+void a2065_init (void)
+{
+	TODO();
+}
+
+
 #endif /* __AROS__ */
