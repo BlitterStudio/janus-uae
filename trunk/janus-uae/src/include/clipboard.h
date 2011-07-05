@@ -7,3 +7,4 @@ extern uaecptr amiga_clipboard_proc_start (void);
 extern void amiga_clipboard_task_start (uaecptr);
 extern void clipboard_disable (bool);
 extern void clipboard_vsync (void);
+

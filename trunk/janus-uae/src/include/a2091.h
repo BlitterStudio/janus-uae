@@ -1,8 +1,9 @@
+
+extern void a2091_init (void);
 #ifdef A2091
 
 extern addrbank dmaca2091_bank;
 
-extern void a2091_init (void);
 extern void a2091_free (void);
 extern void a2091_reset (void);
 

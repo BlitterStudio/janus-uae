@@ -12,3 +12,4 @@ void uae_NotificationHack(uaecptr, uaecptr);
 #endif
 void uae_NewList(uaecptr list);
 int native2amiga_isfree (void);
+

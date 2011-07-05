@@ -35,6 +35,7 @@
 #define CPUEMU_0
 #define CPUEMU_20
 #define CPUEMU_20
+#define SUPPORT_THREADS
 
 
 #define MAX_PATH 255
