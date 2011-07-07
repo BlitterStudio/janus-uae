@@ -168,3 +168,4 @@ enum aks { AKS_ENTERGUI = 0x200, AKS_SCREENSHOT_FILE, AKS_SCREENSHOT_CLIPBOARD, 
 };
 
 extern int target_checkcapslock (int, int *);
+

@@ -54,3 +54,4 @@ extern int inprec_getposition (void);
 extern void inprec_setposition (int offset, int replaycounter);
 extern bool inprec_realtime (void);
 extern void inprec_getstatus (TCHAR*);
+
