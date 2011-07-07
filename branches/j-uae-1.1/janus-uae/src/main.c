@@ -942,7 +942,7 @@ void gui_shutdown (void);
 void real_main (int argc, char **argv) {
 	ULONG waitcount;
 	int err;
-	BOOL gui_initially_visible;
+	BOOL first_time=TRUE;
 
    /* j-uae writes to stdout, so if you want to
     * use 'T:uae.log' you better start it
@@ -969,10 +969,7 @@ void real_main (int argc, char **argv) {
 	/* Initial state is stopped */
 	uae_target_state = UAE_STATE_STOPPED;
 
-	/* when we first test for gui_visible it might not be in the correct state (race..) */
-	gui_initially_visible=currprefs.start_gui;
-
-	while (uae_target_state != UAE_STATE_QUITTING) {
+		while (uae_target_state != UAE_STATE_QUITTING) {
 
 		set_state (uae_target_state);
 		do_preinit_machine (argc, argv);
@@ -996,9 +993,19 @@ void real_main (int argc, char **argv) {
 		if (err >= 0) {
 			/* GUI opened successfully */
 
-			//if(!currprefs.start_gui) {
-			if(!gui_initially_visible && !gui_visible() ) {
-				gui_initially_visible=TRUE;
+		  DEBUG_LOG("currprefs.start_gui: %d gui_visible() %d\n", currprefs.start_gui, gui_visible());
+
+			if(first_time) {
+				DEBUG_LOG("first time ..\n");
+				/* skip hack for the next time */
+				first_time=FALSE;
+				/* when we first test for gui_visible it might not be in the correct state (race..) */
+				if(!currprefs.start_gui) {
+					DEBUG_LOG("no GUI is planned to open => start uae\n");
+					uae_start();
+				}
+			}
+			else if(!gui_visible()) {
 				DEBUG_LOG("GUI is invisible => start uae\n");
 				/* 
 				 * GUI will stay hidden, so we start UAE manually here: 
