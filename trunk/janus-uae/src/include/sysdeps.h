@@ -136,6 +136,7 @@ struct utimbuf
 #define _tstol atol
 #define _tstof atof
 #define _tstoi atoi
+#define _tfopen fopen
 
 /* wide char unlink */
 #define _wunlink unlink
