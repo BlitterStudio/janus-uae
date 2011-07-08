@@ -133,6 +133,7 @@ struct utimbuf
 #define _strdup strdup
 #define _vsnprintf vsnprintf 
 #define _stricmp stricmp 
+#define _strnicmp strnicmp 
 #define _tstol atol
 #define _tstof atof
 #define _tstoi atoi
