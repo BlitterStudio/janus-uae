@@ -1,4 +1,7 @@
-
+#ifdef __AROS__
+#undef STATIC_INLINE
+#define STATIC_INLINE
+#endif
 STATIC_INLINE uae_u32 get_word_prefetch (int o)
 {
 	uae_u32 v = regs.irc;
