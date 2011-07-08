@@ -1225,7 +1225,7 @@ static long int m68kpc_offset;
 #define get_iword_1(o) get_word (regs.pc + (regs.pc_p - regs.pc_oldp) + (o))
 #define get_ilong_1(o) get_long (regs.pc + (regs.pc_p - regs.pc_oldp) + (o))
 
-static uae_s32 ShowEA (void *f, uae_u16 opcode, int reg, amodes mode, wordsizes size, TCHAR *buf, uae_u32 *eaddr, int safemode)
+static uae_s32 ShowEA (void *f, uae_u16 opcode, int reg, unsigned int mode, unsigned int size, TCHAR *buf, uae_u32 *eaddr, int safemode)
 {
 	uae_u16 dp;
 	uae_s8 disp8;
