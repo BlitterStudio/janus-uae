@@ -48,21 +48,20 @@ all: uae
 uae: common aros
 	$(CC) $(CFLAGS) $(COMMON_OBJS) $(AROS_OBJS) -o ../janus-uae
 
-#	$(CC) $(CFLAGS) $(OBJS) -o uae
-
-
 # ============== common ====================
 
 AROS_OBJS= \
-	clipboard_aros.o \
-	ahidsound_dsonly.o \
-	ahidsound_new.o \
-	unicode.o \
-	writelog.o \
-	mman.o \
-	nogui.o \
-	aros.o \
-	scaler_more.o
+	gui.o
+
+	#clipboard_aros.o \
+	#ahidsound_dsonly.o \
+	#ahidsound_new.o \
+	#unicode.o \
+	#writelog.o \
+	#mman.o \
+	#nogui.o \
+	#aros.o \
+	#scaler_more.o
 
 COMMON_OBJS= \
 	../a2065.o \
