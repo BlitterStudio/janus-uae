@@ -165,7 +165,7 @@ aros: $(AROS_OBJS)
 ../linetoscr.cpp:    ../genlinetoscr
 		../genlinetoscr $(genlinetoscr_args) >../linetoscr.cpp
 
-../jit/compemu.c: ../gencomp
+../jit/compemu.cpp: ../gencomp
 		cd ..;./gencomp
 
 ../cpuemu_0.cpp: ../gencpu
