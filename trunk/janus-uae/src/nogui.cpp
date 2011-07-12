@@ -1,15 +1,14 @@
  /*
   * UAE - The Un*x Amiga Emulator
   *
-  * Interface to the Tcl/Tk GUI
-  *
+	* dummy GUI stubs
+	*
   * Copyright 1996 Bernd Schmidt
   */
 
 #include "sysconfig.h"
 #include "sysdeps.h"
 
-#include "config.h"
 #include "options.h"
 #include "gui.h"
 
