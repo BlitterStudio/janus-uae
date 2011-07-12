@@ -34,6 +34,7 @@
 #define CDTV
 #define CPUEMU_0
 #define CPUEMU_20
+#define CPUEMU_21
 #define SUPPORT_THREADS
 
 

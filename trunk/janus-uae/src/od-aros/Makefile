@@ -50,8 +50,7 @@ uae: common aros
 
 # ============== common ====================
 
-AROS_OBJS= \
-	gui.o
+AROS_OBJS= 
 
 	#clipboard_aros.o \
 	#ahidsound_dsonly.o \
@@ -87,6 +86,7 @@ COMMON_OBJS= \
 	../cpuemu_0.o \
 	../cpuemu_11.o \
 	../cpuemu_12.o \
+	../cpuemu_21.o \
 	../cpuemu_20.o \
 	../cpuemu_31.o \
 	../cpummu.o \
@@ -134,7 +134,8 @@ COMMON_OBJS= \
 	../jit/compemu.o \
 	../jit/compemu_fpp.o \
 	../jit/compemu_support.o \
-	../jit/compstbl.o
+	../jit/compstbl.o \
+	../nogui.o
 
 	#../zfile.o \
 	#../zfile_archive.o 
