@@ -1,6 +1,6 @@
 #ifdef __AROS__
 #undef STATIC_INLINE
-#define STATIC_INLINE
+#define STATIC_INLINE static inline
 #endif
 STATIC_INLINE uae_u32 get_word_prefetch (int o)
 {
@@ -521,3 +521,4 @@ STATIC_INLINE uae_u32 get_disp_ea_000 (uae_u32 base, uae_u32 dp)
 		regd = (uae_s32)(uae_s16)regd;
 	return base + (uae_s8)dp + regd;
 }
+
