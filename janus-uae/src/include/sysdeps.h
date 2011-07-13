@@ -138,6 +138,8 @@ struct utimbuf
 #define _tstof atof
 #define _tstoi atoi
 #define _tfopen fopen
+#define _fseeki64 fseek
+#define _ftelli64 ftell
 
 /* wide char unlink */
 #define _wunlink unlink

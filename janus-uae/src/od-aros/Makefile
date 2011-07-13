@@ -135,10 +135,9 @@ COMMON_OBJS= \
 	../jit/compemu_fpp.o \
 	../jit/compemu_support.o \
 	../jit/compstbl.o \
-	../nogui.o
-
-	#../zfile.o \
-	#../zfile_archive.o 
+	../nogui.o \
+	../zfile.o \
+	../zfile_archive.o 
 
 
 common: ../blitfunc.cpp ../blittable.cpp ../blit.h ../linetoscr.cpp $(COMMON_OBJS)
