@@ -39,6 +39,8 @@
 
 
 #define MAX_PATH 255
+#define MAX_DPATH 200
+#define FSDB_DIR_SEPARATOR_S _T("/")
 
 /* oli defines */
 #define NO_A2091_SCSI

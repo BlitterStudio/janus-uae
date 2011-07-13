@@ -14,6 +14,10 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
+#ifdef __AROS__
+#include <exec/types.h>
+#include "aros.h"
+#endif
 #include "options.h"
 #include "zfile.h"
 #include "disk.h"
@@ -1071,7 +1075,7 @@ static struct zfile *wrp (struct zfile *z, int *retcode)
 
 #include "7z/xz.h"
 #include "7z/lzmadec.h"
-#include "7z/7zcrc.h"
+#include "7z/7zCrc.h"
 
 static void *SzAlloc (void *p, size_t size)
 {
@@ -1950,7 +1954,7 @@ struct zfile *zfile_fopen_empty (struct zfile *prev, const TCHAR *name, uae_u64 
 {
 	struct zfile *l;
 	l = zfile_create (prev);
-	l->name = name ? my_strdup (name) : _T("");
+	l->name = name ? my_strdup (name) : (TCHAR *) _T("");
 	if (size) {
 		l->data = xcalloc (uae_u8, size);
 		if (!l->data)  {
@@ -2003,7 +2007,7 @@ struct zfile *zfile_fopen_data (const TCHAR *name, uae_u64 size, uae_u8 *data)
 	struct zfile *l;
 
 	l = zfile_create (NULL);
-	l->name = name ? my_strdup (name) : _T("");
+	l->name = name ? my_strdup (name) : (TCHAR *) _T("");
 	l->data = xmalloc (uae_u8, size);
 	l->size = size;
 	l->datasize = size;
