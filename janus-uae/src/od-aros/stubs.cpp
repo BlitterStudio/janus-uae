@@ -33,6 +33,14 @@
 #include "fsdb.h"
 #include "traps.h"
 #include "zfile.h"
+#include "archivers/zip/unzip.h"
+#include "archivers/dms/pfile.h"
+#include "archivers/wrp/warp.h"
+
+#include "7z/xz.h"
+#include "7z/lzmadec.h"
+#include "7z/7zCrc.h"
+
 
 #include "od-aros/aros_uaenet.h"
 #include "od-aros/threaddep/thread.h"
@@ -77,6 +85,13 @@ my_opendir_s *my_opendir (const TCHAR *name, const TCHAR *mask)
   TODO();
 }
 
+my_opendir_s *my_opendir (const TCHAR *name) 
+{
+  TODO();
+}
+
+
+
 int my_readdir (struct my_opendir_s *mod, TCHAR *name)
 {
   TODO();
@@ -106,6 +121,12 @@ void screenshot (int mode)
 {
   TODO();
 }
+
+void screenshot (int mode, int foo) 
+{
+  TODO();
+}
+
 
 void sound_mute (int newmute)
 {
@@ -176,6 +197,12 @@ int inprec_open(char *fname, int record)
 {
   TODO();
 }
+
+int inprec_open(const char *fname, const char *foo)
+{
+  TODO();
+}
+
 
 void my_closedir (struct my_opendir_s *mod)
 {
@@ -277,6 +304,12 @@ void inprec_close(void)
   TODO();
 }
 
+void inprec_close(bool foo)
+{
+  TODO();
+}
+
+
 int isfullscreen (void) 
 {
   TODO();
@@ -367,15 +400,58 @@ void uae_sem_init (uae_sem_t event, int manual_reset, int initial_state)
   TODO();
 }
 
+void uae_sem_init (uae_sem_t event, int manual_reset, unsigned int initial_state)
+{
+  TODO();
+}
+
+void uae_sem_init (void **foo, int manual_reset, int initial_state)
+{
+  TODO();
+}
+
+
+void uae_sem_init (uae_sem_t *foo, int manual_reset, int initial_state)
+{
+  TODO();
+}
+
+
+
 void uae_sem_post (uae_sem_t event)
 {
   TODO();
 }
 
+void uae_sem_post (uae_sem_t *event)
+{
+  TODO();
+}
+
+void uae_sem_post (void **foo)
+{
+  TODO();
+}
+
+
+
+
 void uae_sem_wait (uae_sem_t event)
 {
   TODO();
 }
+
+void uae_sem_wait (uae_sem_t *event)
+{
+  TODO();
+}
+
+void uae_sem_wait (void **foo)
+{
+  TODO();
+}
+
+
 
 
 void uaenet_close (void *vsd)
@@ -663,6 +739,28 @@ void uae_sem_destroy (uae_sem_t event)
 {
   TODO();
 }
+
+void uae_sem_destroy (uae_sem_t *event)
+{
+  TODO();
+}
+
+void uae_sem_destroy (void **foo)
+{
+  TODO();
+}
+
+int uae_sem_trywait (uae_sem_t *event) 
+{
+	TODO();
+}
+
+int uae_sem_trywait (void **foo) 
+{
+	TODO();
+}
+
+
 
 USHORT DMS_Process_File(struct zfile *fi, struct zfile *fo, USHORT cmd, USHORT opt, USHORT PCRC, USHORT pwd, int part, struct zfile **extra)
 {
@@ -1547,4 +1645,25 @@ void write_log (const TCHAR *format,...)
   TODO();
 }
 
+
+void CrcGenerateTable(void) 
+{
+	TODO();
+}
+
+SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
+    const Byte *src, SizeT *srcLen, /* int srcWasFinished, */ int finishMode,
+		    ECoderStatus *status) 
+{
+	TODO();
+}
+
+SRes XzUnpacker_Create(CXzUnpacker *p, ISzAlloc *alloc) 
+{
+	TODO();
+}
+void XzUnpacker_Free(CXzUnpacker *p) 
+{
+	TODO();
+}
 
