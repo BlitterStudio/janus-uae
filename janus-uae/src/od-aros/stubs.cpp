@@ -26,6 +26,16 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
+#include "options.h"
+#include "memory.h"
+#include "custom.h"
+#include "events.h"
+#include "fsdb.h"
+#include "traps.h"
+#include "zfile.h"
+
+#include "od-aros/aros_uaenet.h"
+#include "od-aros/threaddep/thread.h"
 
 WCHAR *au_fs_copy (TCHAR *dst, int maxlen, const char *src)
 {
@@ -72,7 +82,7 @@ int my_readdir (struct my_opendir_s *mod, TCHAR *name)
   TODO();
 }
 
-uae_u8 *restore_cd (int num, uae_u8 *src) uae_u8 *restore_cdtv (uae_u8 *src) void restore_cdtv_finish (void)
+uae_u8 *restore_cd (int num, uae_u8 *src)
 {
   TODO();
 }
@@ -262,7 +272,7 @@ void getgfxoffset (int *dxp, int *dyp, int *mxp, int *myp)
   TODO();
 }
 
-void inprec_close(void) void inprec_close (bool clear)
+void inprec_close(void)
 {
   TODO();
 }
@@ -272,7 +282,7 @@ int isfullscreen (void)
   TODO();
 }
 
-void logging_init (void) void logging_init( void )
+void logging_init (void)
 {
   TODO();
 }
@@ -282,7 +292,7 @@ void machdep_free (void)
   TODO();
 }
 
-int machdep_init (void) void machdep_init (void)
+int machdep_init (void)
 {
   TODO();
 }
@@ -433,11 +443,6 @@ void handle_events(void)
   TODO();
 }
 
-uae_u8 *mapped_malloc (size_t s, TCHAR *file) 
-{
-  TODO();
-}
-
 int my_existsfile (const TCHAR *name)
 {
   TODO();
@@ -488,11 +493,6 @@ uae_u32 get_long_ce030_prefetch (int o)
   TODO();
 }
 
-uae_u32 get_word_ce030_prefetch (int o)
-{
-  TODO();
-}
-
 struct romlist **getarcadiaroms (void)
 {
   TODO();
@@ -528,17 +528,17 @@ void inprec_startup (void)
   TODO();
 }
 
-void put_byte_ce030 (uaecptr addr, uae_u32 v);
+void put_byte_ce030 (uaecptr addr, uae_u32 v)
 {
   TODO();
 }
 
-void put_long_ce030 (uaecptr addr, uae_u32 v);
+void put_long_ce030 (uaecptr addr, uae_u32 v)
 {
   TODO();
 }
 
-void put_word_ce030 (uaecptr addr, uae_u32 v);
+void put_word_ce030 (uaecptr addr, uae_u32 v)
 {
   TODO();
 }
@@ -633,7 +633,7 @@ int hdf_read_target (struct hardfiledata *hfd, void *buffer, uae_u64 offset, int
   TODO();
 }
 
-static bool inprec_realtime (bool stopstart) bool inprec_realtime (void)
+bool inprec_realtime (void)
 {
   TODO();
 }
@@ -643,12 +643,13 @@ bool my_isfilehidden (const TCHAR *path)
   TODO();
 }
 
-static void picasso96_alloc2 (TrapContext *ctx);
+static void picasso96_alloc2 (TrapContext *ctx)
 {
   TODO();
 }
 
-void picasso_refresh (int call_setpalette) void picasso_refresh (void)
+void picasso_refresh (int call_setpalette) 
+//void picasso_refresh (void)
 {
   TODO();
 }
@@ -713,12 +714,12 @@ void my_setfilehidden (const TCHAR *path, bool hidden)
   TODO();
 }
 
-uae_u32 next_ilong_030ce (void);
+uae_u32 next_ilong_030ce (void)
 {
   TODO();
 }
 
-uae_u32 next_iword_030ce (void);
+uae_u32 next_iword_030ce (void)
 {
   TODO();
 }
@@ -748,7 +749,7 @@ void setmouseactivexy (int x, int y, int dir)
   TODO();
 }
 
-void setup_brkhandler(void) void setup_brkhandler (void) void setup_brkhandler (void)
+void setup_brkhandler(void) 
 {
   TODO();
 }
@@ -1205,7 +1206,7 @@ struct zvolume *archive_directory_plain (struct zfile *z)
   TODO();
 }
 
-int check_prefs_changed_gfx (void) int check_prefs_changed_gfx (void)
+int check_prefs_changed_gfx (void) 
 {
   TODO();
 }
@@ -1216,11 +1217,6 @@ void draw_status_line_single (uae_u8 *buf, int bpp, int y, int totalwidth, uae_u
 }
 
 void fetch_configurationpath (TCHAR *out, int size)
-{
-  TODO();
-}
-
-uae_u32 get_long_ce030_prefetch (int o);
 {
   TODO();
 }
@@ -1416,11 +1412,6 @@ struct my_openfile_s *my_open (const TCHAR *name, int flags)
   TODO();
 }
 
-FILE *my_opentext (const TCHAR *name)
-{
-  TODO();
-}
-
 uae_u8 *save_cd (int num, int *len) 
 {
   TODO();
@@ -1452,11 +1443,6 @@ int my_mkdir (const TCHAR *name)
 }
 
 int my_rmdir (const TCHAR *name)
-{
-  TODO();
-}
-
-unsigned int my_write (struct my_openfile_s *mos, void *b, unsigned int size)
 {
   TODO();
 }
@@ -1551,7 +1537,7 @@ uae_u8 *save_dmac (int *len, uae_u8 *dstptr)
   TODO();
 }
 
-void unlockscr (void) void unlockscr (void)
+void unlockscr (void) 
 {
   TODO();
 }
