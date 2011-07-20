@@ -1667,3 +1667,7 @@ void XzUnpacker_Free(CXzUnpacker *p)
 	TODO();
 }
 
+uae_u8 *mapped_malloc (size_t, const TCHAR*)
+{
+	TODO();
+}

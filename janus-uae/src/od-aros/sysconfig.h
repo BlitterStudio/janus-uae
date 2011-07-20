@@ -32,23 +32,33 @@
 #define SCSIEMU
 #define JIT
 #define CDTV
+#if 0
 #define CPUEMU_0
 #define CPUEMU_20
 #define CPUEMU_21
-#define SUPPORT_THREADS
+#endif
 
+
+#define CPUEMU_0 /* generic 680x0 emulation */
+#define CPUEMU_11 /* 68000+prefetch emulation */
+#define CPUEMU_12 /* 68000 cycle-exact cpu&blitter */
+#define CPUEMU_20 /* 68020 "cycle-exact" + blitter */
+#define CPUEMU_21 /* 68030 (040/060) "cycle-exact" + blitter */
+#define CPUEMU_31 /* 68040 Aranym MMU */
+#define SUPPORT_THREADS
 
 #define MAX_PATH 255
 #define MAX_DPATH 200
+/* string */
 #define FSDB_DIR_SEPARATOR_S _T("/")
+/* char */
+#define FSDB_DIR_SEPARATOR      '/'
 
 /* oli defines */
 #define NO_A2091_SCSI
 #define NO_WD_SCSI
 
 /* old */
-
-#define MAX_DPATH 255
 
 /* Define to 1 if you have the `alarm' function. */
 /* #undef HAVE_ALARM */

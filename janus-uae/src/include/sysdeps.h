@@ -134,6 +134,7 @@ struct utimbuf
 #define _vsnprintf vsnprintf 
 #define _stricmp stricmp 
 #define _strnicmp strnicmp 
+#define _strtoui64(x,y,z) strtoull(x,y,z)
 #define _tstol atol
 #define _tstof atof
 #define _tstoi atoi
