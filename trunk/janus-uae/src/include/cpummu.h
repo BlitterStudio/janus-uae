@@ -31,12 +31,15 @@
 #endif
 
 #define DUNUSED(x)
+#ifndef __AROS__
 #define D
 #if DEBUG
 #define bug write_log
 #else
 #define bug
 #endif
+#endif
+
 
 struct m68k_exception {
 	int prb;
