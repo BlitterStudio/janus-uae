@@ -16,7 +16,10 @@
 #endif
 
 /* AmigaOS errors */
+#ifndef __AROS__
+/* TODO!? ERROR_BAD_NUMBER is defined as 115 in AROS !? */
 #define ERROR_BAD_NUMBER			  6
+#endif
 #define ERROR_NO_FREE_STORE			103
 #define ERROR_OBJECT_IN_USE			202
 #define ERROR_OBJECT_EXISTS			203
