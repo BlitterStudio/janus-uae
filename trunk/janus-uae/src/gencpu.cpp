@@ -25,12 +25,6 @@
 #include "readcpu.h"
 
 
-#if !defined (WIN32)
-char *ua (const char *s) {
-	return strdup(s);
-}
-#endif
-
 #define BOOL_TYPE "int"
 /* Define the minimal 680x0 where NV flags are not affected by xBCD instructions.  */
 #define xBCD_KEEPS_NV_FLAGS 4
@@ -3646,7 +3640,7 @@ static char *outopcode (int opcode)
 			break;
 	}
 	{
-		char *s = ua (lookuptab[i].name);
+		char *s = (char *) ua (lookuptab[i].name);
 		strcpy (out, s);
 		xfree (s);
 	}
@@ -3688,7 +3682,7 @@ static void generate_one_opcode (int rp, char *extra)
 		return;
 
 	if (opcode_next_clev[rp] != cpu_level) {
-		char *name = ua (lookuptab[idx].name);
+		char *name = (char *) ua (lookuptab[idx].name);
 		if (generate_stbl)
 			fprintf (stblfile, "{ %sCPUFUNC(op_%04x_%d%s), %d }, /* %s */\n",
 			(using_ce || using_ce020) ? "(cpuop_func*)" : "",
@@ -3793,7 +3787,7 @@ static void generate_one_opcode (int rp, char *extra)
 	opcode_last_postfix[rp] = postfix;
 
 	if (generate_stbl) {
-		char *name = ua (lookuptab[idx].name);
+		char *name = (char *) ua (lookuptab[idx].name);
 		if (i68000)
 			fprintf (stblfile, "#ifndef CPUEMU_68000_ONLY\n");
 		fprintf (stblfile, "{ %sCPUFUNC(op_%04x_%d%s), %d }, /* %s */\n",
