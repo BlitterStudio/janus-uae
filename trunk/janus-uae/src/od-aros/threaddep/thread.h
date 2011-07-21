@@ -1,5 +1,6 @@
 
 #warning ==== sem_handle is TODO ====
+#if 0
 typedef struct {
 	int foo;
 	int foo2;
@@ -9,10 +10,11 @@ typedef struct {
 	int foo;
 	int foo2;
 } uae_thread_id;
+#endif
 
 
-//typedef sem_handle uae_sem_t;
-//typedef sem_handle uae_thread_id;
+typedef void *uae_sem_t;
+typedef void *uae_thread_id;
 
 extern void uae_sem_destroy (uae_sem_t*);
 extern int uae_sem_trywait (uae_sem_t*);

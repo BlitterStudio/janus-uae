@@ -3,7 +3,12 @@
 *
 * Various stuff missing in some OSes.
 *
+* These are functions are missing on the build host.
+*
 * Copyright 1997 Bernd Schmidt
+* Copyright 2011 Oliver Brunner
+*
+* $Id$
 */
 
 #include "sysconfig.h"
@@ -43,3 +48,12 @@ void xfree (const void *p)
 }
 
 #endif
+
+
+char *ua (const TCHAR *s) {
+	return strdup(s);
+}
+
+TCHAR *au (const char *s) {
+	return strdup(s);
+}

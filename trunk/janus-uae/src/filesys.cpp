@@ -710,10 +710,12 @@ struct hardfiledata *get_hardfile_data (int nr)
 #define MAXFILESIZE32 (0x7fffffff)
 
 /* Passed as type to Lock() */
+#ifndef __AROS__
 #define SHARED_LOCK		-2  /* File is readable by others */
 #define ACCESS_READ		-2  /* Synonym */
 #define EXCLUSIVE_LOCK	-1  /* No other access allowed  */
 #define ACCESS_WRITE	-1  /* Synonym */
+#endif
 
 /* packet types */
 #define ACTION_CURRENT_VOLUME	 7
@@ -885,7 +887,7 @@ typedef struct _unit {
 	bool newreadonly;
 	int newflags;
 
-} Unit;
+} uae_Unit;
 
 static uae_u32 a_uniq, key_uniq;
 
@@ -914,7 +916,7 @@ typedef uaecptr dpacket;
 #define GET_PCK64_ARG4(p) ((uae_s32)(get_long ((p) + dp64_Arg4)))
 #define GET_PCK64_ARG5(p) ( (((uae_s64)(get_long ((p) + dp64_Arg5))) << 32) | (((uae_s64)(get_long ((p) + dp64_Arg5 + 4))) << 0) )
 
-static int flush_cache (Unit *unit, int num);
+static int flush_cache (uae_Unit *unit, int num);
 
 static TCHAR *char1 (uaecptr addr)
 {
@@ -942,7 +944,7 @@ static TCHAR *bstr1 (uaecptr addr)
 	return au_fs_copy (bufx, sizeof (bufx) / sizeof (TCHAR), buf);
 }
 
-static TCHAR *bstr (Unit *unit, uaecptr addr)
+static TCHAR *bstr (uae_Unit *unit, uaecptr addr)
 {
 	int i;
 	int n = get_byte (addr);
@@ -956,7 +958,7 @@ static TCHAR *bstr (Unit *unit, uaecptr addr)
 	return unit->tmpbuf3;
 }
 
-static TCHAR *bstr_cut (Unit *unit, uaecptr addr)
+static TCHAR *bstr_cut (uae_Unit *unit, uaecptr addr)
 {
 	TCHAR *p = unit->tmpbuf3;
 	int i, colon_seen = 0, off;
@@ -976,12 +978,12 @@ static TCHAR *bstr_cut (Unit *unit, uaecptr addr)
 	return &p[off];
 }
 
-static Unit *units = 0;
+static uae_Unit *units = 0;
 
-static Unit*
+static uae_Unit*
 	find_unit (uaecptr port)
 {
-	Unit* u;
+	uae_Unit* u;
 	for (u = units; u; u = u->next)
 		if (u->port == port)
 			break;
@@ -989,7 +991,7 @@ static Unit*
 	return u;
 }
 
-static struct fs_dirhandle *fs_opendir (Unit *u, const TCHAR *nname)
+static struct fs_dirhandle *fs_opendir (uae_Unit *u, const TCHAR *nname)
 {
 	struct fs_dirhandle *fsd = xmalloc (struct fs_dirhandle, 1);
 	fsd->isarch = !!(u->volflags & MYVOLUMEINFO_ARCHIVE);
@@ -1017,7 +1019,7 @@ static void fs_closedir (struct fs_dirhandle *fsd)
 		my_closedir (fsd->od);
 	xfree (fsd);
 }
-static struct fs_filehandle *fs_open (Unit *unit, const TCHAR *name, int flags)
+static struct fs_filehandle *fs_open (uae_Unit *unit, const TCHAR *name, int flags)
 {
 	struct fs_filehandle *fsf = xmalloc (struct fs_filehandle, 1);
 	fsf->isarch = !!(unit->volflags & MYVOLUMEINFO_ARCHIVE);
@@ -1072,7 +1074,7 @@ static uae_u32 fs_lseek (struct fs_filehandle *fsf, uae_s32 offset, int whence)
 	else
 		return (uae_u32)my_lseek (fsf->of, (uae_s32)offset, whence);
 }
-static void set_volume_name (Unit *unit)
+static void set_volume_name (uae_Unit *unit)
 {
 	int namelen;
 	int i;
@@ -1090,12 +1092,12 @@ static void set_volume_name (Unit *unit)
 	unit->rootnode.mountcount = unit->mountcount;
 }
 
-static int filesys_isvolume (Unit *unit)
+static int filesys_isvolume (uae_Unit *unit)
 {
 	return get_byte (unit->volume + 44);
 }
 
-static void clear_exkeys (Unit *unit)
+static void clear_exkeys (uae_Unit *unit)
 {
 	int i;
 	a_inode *a;
@@ -1129,7 +1131,7 @@ static void clear_exkeys (Unit *unit)
 int filesys_eject (int nr)
 {
 	UnitInfo *ui = &mountinfo.ui[nr];
-	Unit *u = ui->self;
+	uae_Unit *u = ui->self;
 
 	if (!mountertask)
 		return 0;
@@ -1149,7 +1151,7 @@ int filesys_eject (int nr)
 	return 1;
 }
 
-static void filesys_delayed_change (Unit *u, int frames, const TCHAR *rootdir, const TCHAR *volume, bool readonly, int flags)
+static void filesys_delayed_change (uae_Unit *u, int frames, const TCHAR *rootdir, const TCHAR *volume, bool readonly, int flags)
 {
 	u->reinsertdelay = 50;
 	u->newflags = flags;
@@ -1166,7 +1168,7 @@ static void filesys_delayed_change (Unit *u, int frames, const TCHAR *rootdir, c
 
 int filesys_media_change (const TCHAR *rootdir, int inserted, struct uaedev_config_info *uci)
 {
-	Unit *u;
+	uae_Unit *u;
 	UnitInfo *ui;
 	int nr = -1;
 	TCHAR volname[MAX_DPATH], *volptr;
@@ -1276,7 +1278,7 @@ int filesys_insert (int nr, TCHAR *volume, const TCHAR *rootdir, bool readonly, 
 	struct uaedev_config_info *uci;
 	bool emptydrive = false;
 	UnitInfo *ui;
-	Unit *u;
+	uae_Unit *u;
 
 	if (!mountertask)
 		return 0;
@@ -1341,7 +1343,7 @@ int filesys_insert (int nr, TCHAR *volume, const TCHAR *rootdir, bool readonly, 
 }
 
 /* flags and comments supported? */
-static int fsdb_cando (Unit *unit)
+static int fsdb_cando (uae_Unit *unit)
 {
 	if (unit->volflags & MYVOLUMEINFO_ARCHIVE)
 		return 1;
@@ -1369,7 +1371,7 @@ static void prepare_for_open (TCHAR *name)
 #endif
 }
 
-static void de_recycle_aino (Unit *unit, a_inode *aino)
+static void de_recycle_aino (uae_Unit *unit, a_inode *aino)
 {
 	aino_test (aino);
 	if (aino->next == 0 || aino == &unit->rootnode)
@@ -1380,7 +1382,7 @@ static void de_recycle_aino (Unit *unit, a_inode *aino)
 	unit->aino_cache_size--;
 }
 
-static void dispose_aino (Unit *unit, a_inode **aip, a_inode *aino)
+static void dispose_aino (uae_Unit *unit, a_inode **aip, a_inode *aino)
 {
 	int hash = aino->uniq % MAX_AINO_HASH;
 	if (unit->aino_hash[hash] == aino)
@@ -1396,7 +1398,7 @@ static void dispose_aino (Unit *unit, a_inode **aip, a_inode *aino)
 	xfree (aino);
 }
 
-static void free_all_ainos (Unit *u, a_inode *parent)
+static void free_all_ainos (uae_Unit *u, a_inode *parent)
 {
 	a_inode *a;
 	while (a = parent->child) {
@@ -1405,7 +1407,7 @@ static void free_all_ainos (Unit *u, a_inode *parent)
 	}
 }
 
-static int flush_cache (Unit *unit, int num)
+static int flush_cache (uae_Unit *unit, int num)
 {
 	int i = 0;
 	int cnt = 100;
@@ -1463,7 +1465,7 @@ static int flush_cache (Unit *unit, int num)
 	return unit->aino_cache_size > 0 ? 0 : 1;
 }
 
-static void recycle_aino (Unit *unit, a_inode *new_aino)
+static void recycle_aino (uae_Unit *unit, a_inode *new_aino)
 {
 	aino_test (new_aino);
 	if (new_aino->dir || new_aino->shlock > 0
@@ -1501,7 +1503,7 @@ void filesys_flush_cache (void)
 {
 }
 
-static void update_child_names (Unit *unit, a_inode *a, a_inode *parent)
+static void update_child_names (uae_Unit *unit, a_inode *a, a_inode *parent)
 {
 	int l0 = _tcslen (parent->nname) + 2;
 
@@ -1528,7 +1530,7 @@ static void update_child_names (Unit *unit, a_inode *a, a_inode *parent)
 	}
 }
 
-static void move_aino_children (Unit *unit, a_inode *from, a_inode *to)
+static void move_aino_children (uae_Unit *unit, a_inode *from, a_inode *to)
 {
 	aino_test (from);
 	aino_test (to);
@@ -1537,7 +1539,7 @@ static void move_aino_children (Unit *unit, a_inode *from, a_inode *to)
 	update_child_names (unit, to->child, to);
 }
 
-static void delete_aino (Unit *unit, a_inode *aino)
+static void delete_aino (uae_Unit *unit, a_inode *aino)
 {
 	a_inode **aip;
 
@@ -1610,7 +1612,7 @@ static a_inode *lookup_sub (a_inode *dir, uae_u32 uniq)
 	return retval;
 }
 
-static a_inode *lookup_aino (Unit *unit, uae_u32 uniq)
+static a_inode *lookup_aino (uae_Unit *unit, uae_u32 uniq)
 {
 	a_inode *a;
 	int hash = uniq % MAX_AINO_HASH;
@@ -1649,7 +1651,7 @@ TCHAR *build_aname (const TCHAR *d, const TCHAR *n)
 
 /* This gets called to translate an Amiga name that some program used to
 * a name that we can use on the native filesystem.  */
-static TCHAR *get_nname (Unit *unit, a_inode *base, TCHAR *rel,
+static TCHAR *get_nname (uae_Unit *unit, a_inode *base, TCHAR *rel,
 	TCHAR **modified_rel)
 {
 	TCHAR *found;
@@ -1692,7 +1694,7 @@ static TCHAR *get_nname (Unit *unit, a_inode *base, TCHAR *rel,
 	return build_nname (base->nname, found);
 }
 
-static TCHAR *create_nname (Unit *unit, a_inode *base, TCHAR *rel)
+static TCHAR *create_nname (uae_Unit *unit, a_inode *base, TCHAR *rel)
 {
 	TCHAR *p;
 
@@ -1724,7 +1726,7 @@ oh_dear:
 	return p;
 }
 
-static int fill_file_attrs (Unit *u, a_inode *base, a_inode *c)
+static int fill_file_attrs (uae_Unit *u, a_inode *base, a_inode *c)
 {
 	if (u->volflags & MYVOLUMEINFO_ARCHIVE) {
 		int isdir, flags;
@@ -1753,12 +1755,12 @@ static int fill_file_attrs (Unit *u, a_inode *base, a_inode *c)
 * figure out that this is supposed to be the file "foobar.inf".
 * DOS sucks...
 */
-static TCHAR *get_aname (Unit *unit, a_inode *base, TCHAR *rel)
+static TCHAR *get_aname (uae_Unit *unit, a_inode *base, TCHAR *rel)
 {
 	return my_strdup (rel);
 }
 
-static void init_child_aino_tree (Unit *unit, a_inode *base, a_inode *aino)
+static void init_child_aino_tree (uae_Unit *unit, a_inode *base, a_inode *aino)
 {
 	/* Update tree structure */
 	aino->parent = base;
@@ -1769,7 +1771,7 @@ static void init_child_aino_tree (Unit *unit, a_inode *base, a_inode *aino)
 	aino->volflags = unit->volflags;
 }
 
-static void init_child_aino (Unit *unit, a_inode *base, a_inode *aino)
+static void init_child_aino (uae_Unit *unit, a_inode *base, a_inode *aino)
 {
 	aino->uniq = ++a_uniq;
 	if (a_uniq == 0xFFFFFFFF) {
@@ -1796,7 +1798,7 @@ static void init_child_aino (Unit *unit, a_inode *base, a_inode *aino)
 	aino_test (aino);
 }
 
-static a_inode *new_child_aino (Unit *unit, a_inode *base, TCHAR *rel)
+static a_inode *new_child_aino (uae_Unit *unit, a_inode *base, TCHAR *rel)
 {
 	TCHAR *modified_rel;
 	TCHAR *nn;
@@ -1835,7 +1837,7 @@ static a_inode *new_child_aino (Unit *unit, a_inode *base, TCHAR *rel)
 	return aino;
 }
 
-static a_inode *create_child_aino (Unit *unit, a_inode *base, TCHAR *rel, int isdir)
+static a_inode *create_child_aino (uae_Unit *unit, a_inode *base, TCHAR *rel, int isdir)
 {
 	a_inode *aino = xcalloc (a_inode, 1);
 	if (aino == 0)
@@ -1861,7 +1863,7 @@ static a_inode *create_child_aino (Unit *unit, a_inode *base, TCHAR *rel, int is
 	return aino;
 }
 
-static a_inode *lookup_child_aino (Unit *unit, a_inode *base, TCHAR *rel, int *err)
+static a_inode *lookup_child_aino (uae_Unit *unit, a_inode *base, TCHAR *rel, int *err)
 {
 	a_inode *c = base->child;
 	int l0 = _tcslen (rel);
@@ -1890,7 +1892,7 @@ static a_inode *lookup_child_aino (Unit *unit, a_inode *base, TCHAR *rel, int *e
 }
 
 /* Different version because for this one, REL is an nname.  */
-static a_inode *lookup_child_aino_for_exnext (Unit *unit, a_inode *base, TCHAR *rel, uae_u32 *err)
+static a_inode *lookup_child_aino_for_exnext (uae_Unit *unit, a_inode *base, TCHAR *rel, uae_u32 *err)
 {
 	a_inode *c = base->child;
 	int l0 = _tcslen (rel);
@@ -1939,7 +1941,7 @@ static a_inode *lookup_child_aino_for_exnext (Unit *unit, a_inode *base, TCHAR *
 	return c;
 }
 
-static a_inode *get_aino (Unit *unit, a_inode *base, const TCHAR *rel, int *err)
+static a_inode *get_aino (uae_Unit *unit, a_inode *base, const TCHAR *rel, int *err)
 {
 	TCHAR *tmp;
 	TCHAR *p;
@@ -2003,7 +2005,7 @@ static uae_u32 notifyhash (const TCHAR *s)
 	return hash % NOTIFY_HASH_SIZE;
 }
 
-static Notify *new_notify (Unit *unit, TCHAR *name)
+static Notify *new_notify (uae_Unit *unit, TCHAR *name)
 {
 	Notify *n = xmalloc (Notify, 1);
 	uae_u32 hash = notifyhash (name);
@@ -2020,7 +2022,7 @@ static void free_notify_item (Notify *n)
 	xfree (n);
 }
 
-static void free_notify (Unit *unit, int hash, Notify *n)
+static void free_notify (uae_Unit *unit, int hash, Notify *n)
 {
 	Notify *n1, *prev = 0;
 	for (n1 = unit->notifyhash[hash]; n1; n1 = n1->next) {
@@ -2035,7 +2037,7 @@ static void free_notify (Unit *unit, int hash, Notify *n)
 	}
 }
 
-static void startup_update_unit (Unit *unit, UnitInfo *uinfo)
+static void startup_update_unit (uae_Unit *unit, UnitInfo *uinfo)
 {
 	if (!unit)
 		return;
@@ -2050,12 +2052,12 @@ static void startup_update_unit (Unit *unit, UnitInfo *uinfo)
 	unit->ui.canremove = uinfo->canremove;
 }
 
-static Unit *startup_create_unit (UnitInfo *uinfo, int num)
+static uae_Unit *startup_create_unit (UnitInfo *uinfo, int num)
 {
 	int i;
-	Unit *unit, *u;
+	uae_Unit *unit, *u;
 
-	unit = xcalloc (Unit, 1);
+	unit = xcalloc (uae_Unit, 1);
 	/* keep list in insertion order */
 	u = units;
 	if (u) {
@@ -2150,7 +2152,7 @@ static uae_u32 REGPARAM2 startup_handler (TrapContext *context)
 	int i;
 	TCHAR *devname = bstr1 (get_long (pkt + dp_Arg1) << 2);
 	TCHAR *s;
-	Unit *unit;
+	uae_Unit *unit;
 	UnitInfo *uinfo;
 	int late = 0;
 	int ed, ef;
@@ -2240,7 +2242,7 @@ static uae_u32 REGPARAM2 startup_handler (TrapContext *context)
 }
 
 static void
-	do_info (Unit *unit, dpacket packet, uaecptr info)
+	do_info (uae_Unit *unit, dpacket packet, uaecptr info)
 {
 	struct fs_usage fsu;
 	int ret;
@@ -2267,20 +2269,20 @@ static void
 }
 
 static void
-	action_disk_info (Unit *unit, dpacket packet)
+	action_disk_info (uae_Unit *unit, dpacket packet)
 {
 	TRACE((_T("ACTION_DISK_INFO\n")));
 	do_info (unit, packet, GET_PCK_ARG1 (packet) << 2);
 }
 
 static void
-	action_info (Unit *unit, dpacket packet)
+	action_info (uae_Unit *unit, dpacket packet)
 {
 	TRACE((_T("ACTION_INFO\n")));
 	do_info (unit, packet, GET_PCK_ARG2 (packet) << 2);
 }
 
-static void free_key (Unit *unit, Key *k)
+static void free_key (uae_Unit *unit, Key *k)
 {
 	Key *k1;
 	Key *prev = 0;
@@ -2307,7 +2309,7 @@ static void free_key (Unit *unit, Key *k)
 	xfree(k);
 }
 
-static Key *lookup_key (Unit *unit, uae_u32 uniq)
+static Key *lookup_key (uae_Unit *unit, uae_u32 uniq)
 {
 	Key *k;
 	unsigned int total = 0;
@@ -2322,7 +2324,7 @@ static Key *lookup_key (Unit *unit, uae_u32 uniq)
 	return 0;
 }
 
-static Key *new_key (Unit *unit)
+static Key *new_key (uae_Unit *unit)
 {
 	Key *k = xcalloc (Key, 1);
 	k->uniq = ++key_uniq;
@@ -2335,7 +2337,7 @@ static Key *new_key (Unit *unit)
 }
 
 static void
-	dumplock (Unit *unit, uaecptr lock)
+	dumplock (uae_Unit *unit, uaecptr lock)
 {
 	a_inode *a;
 	TRACE((_T("LOCK: 0x%lx"), lock));
@@ -2356,7 +2358,7 @@ static void
 	TRACE((_T(" }\n")));
 }
 
-static a_inode *find_aino (Unit *unit, uaecptr lock, const TCHAR *name, int *err)
+static a_inode *find_aino (uae_Unit *unit, uaecptr lock, const TCHAR *name, int *err)
 {
 	a_inode *a;
 
@@ -2380,7 +2382,7 @@ static a_inode *find_aino (Unit *unit, uaecptr lock, const TCHAR *name, int *err
 	return a;
 }
 
-static uaecptr make_lock (Unit *unit, uae_u32 uniq, long mode)
+static uaecptr make_lock (uae_Unit *unit, uae_u32 uniq, long mode)
 {
 	/* allocate lock from the list kept by the assembly code */
 	uaecptr lock;
@@ -2411,7 +2413,7 @@ static uaecptr make_lock (Unit *unit, uae_u32 uniq, long mode)
 #define NRF_NOTIFY_INITIAL 16
 #define NRF_MAGIC (1 << 31)
 
-static void notify_send (Unit *unit, Notify *n)
+static void notify_send (uae_Unit *unit, Notify *n)
 {
 	uaecptr nr = n->notifyrequest;
 	int flags = get_long (nr + 12);
@@ -2427,7 +2429,7 @@ static void notify_send (Unit *unit, Notify *n)
 	}
 }
 
-static void notify_check (Unit *unit, a_inode *a)
+static void notify_check (uae_Unit *unit, a_inode *a)
 {
 	Notify *n;
 	int hash = notifyhash (a->aname);
@@ -2455,7 +2457,7 @@ static void notify_check (Unit *unit, a_inode *a)
 }
 
 static void
-	action_add_notify (Unit *unit, dpacket packet)
+	action_add_notify (uae_Unit *unit, dpacket packet)
 {
 	uaecptr nr = GET_PCK_ARG1 (packet);
 	int flags;
@@ -2508,7 +2510,7 @@ static void
 	PUT_PCK_RES1 (packet, DOS_TRUE);
 }
 static void
-	action_remove_notify (Unit *unit, dpacket packet)
+	action_remove_notify (uae_Unit *unit, dpacket packet)
 {
 	uaecptr nr = GET_PCK_ARG1 (packet);
 	Notify *n;
@@ -2531,7 +2533,7 @@ static void
 	PUT_PCK_RES1 (packet, DOS_TRUE);
 }
 
-static void free_lock (Unit *unit, uaecptr lock)
+static void free_lock (uae_Unit *unit, uaecptr lock)
 {
 	if (! lock)
 		return;
@@ -2559,7 +2561,7 @@ static void free_lock (Unit *unit, uaecptr lock)
 }
 
 static void
-	action_lock (Unit *unit, dpacket packet)
+	action_lock (uae_Unit *unit, dpacket packet)
 {
 	uaecptr lock = GET_PCK_ARG1 (packet) << 2;
 	uaecptr name = GET_PCK_ARG2 (packet) << 2;
@@ -2593,7 +2595,7 @@ static void
 	PUT_PCK_RES1 (packet, make_lock (unit, a->uniq, mode) >> 2);
 }
 
-static void action_free_lock (Unit *unit, dpacket packet)
+static void action_free_lock (uae_Unit *unit, dpacket packet)
 {
 	uaecptr lock = GET_PCK_ARG1 (packet) << 2;
 	a_inode *a;
@@ -2617,7 +2619,7 @@ static void action_free_lock (Unit *unit, dpacket packet)
 }
 
 static uaecptr
-	action_dup_lock_2 (Unit *unit, dpacket packet, uae_u32 uniq)
+	action_dup_lock_2 (uae_Unit *unit, dpacket packet, uae_u32 uniq)
 {
 	uaecptr out;
 	a_inode *a;
@@ -2644,7 +2646,7 @@ static uaecptr
 }
 
 static void
-	action_dup_lock (Unit *unit, dpacket packet)
+	action_dup_lock (uae_Unit *unit, dpacket packet)
 {
 	uaecptr lock = GET_PCK_ARG1 (packet) << 2;
 	TRACE((_T("ACTION_DUP_LOCK(0x%lx)\n"), lock));
@@ -2657,7 +2659,7 @@ static void
 
 
 static void
-	action_lock_from_fh (Unit *unit, dpacket packet)
+	action_lock_from_fh (uae_Unit *unit, dpacket packet)
 {
 	Key *k = lookup_key (unit, GET_PCK_ARG1 (packet));
 	TRACE((_T("ACTION_COPY_DIR_FH(0x%lx,'%s')\n"), GET_PCK_ARG1 (packet), k ? k->aino->aname : _T("<null>")));
@@ -2712,7 +2714,7 @@ static time_t
 	return t;
 }
 
-static void free_exkey (Unit *unit, ExamineKey *ek)
+static void free_exkey (uae_Unit *unit, ExamineKey *ek)
 {
 	if (--ek->aino->exnext_count == 0) {
 		TRACE ((_T("Freeing ExKey and reducing total_locked from %d by %d\n"),
@@ -2724,7 +2726,7 @@ static void free_exkey (Unit *unit, ExamineKey *ek)
 	ek->uniq = 0;
 }
 
-static ExamineKey *lookup_exkey (Unit *unit, uae_u32 uniq)
+static ExamineKey *lookup_exkey (uae_Unit *unit, uae_u32 uniq)
 {
 	ExamineKey *ek;
 	int i;
@@ -2740,7 +2742,7 @@ static ExamineKey *lookup_exkey (Unit *unit, uae_u32 uniq)
 }
 
 /* This is so sick... who invented ACTION_EXAMINE_NEXT? What did he THINK??? */
-static ExamineKey *new_exkey (Unit *unit, a_inode *aino)
+static ExamineKey *new_exkey (uae_Unit *unit, a_inode *aino)
 {
 	uae_u32 uniq;
 	uae_u32 oldest = 0xFFFFFFFE;
@@ -2780,7 +2782,7 @@ found:
 	return ek;
 }
 
-static void move_exkeys (Unit *unit, a_inode *from, a_inode *to)
+static void move_exkeys (uae_Unit *unit, a_inode *from, a_inode *to)
 {
 	int i;
 	unsigned long tmp = 0;
@@ -2802,7 +2804,7 @@ static void move_exkeys (Unit *unit, a_inode *from, a_inode *to)
 }
 
 static void
-	get_fileinfo (Unit *unit, dpacket packet, uaecptr info, a_inode *aino)
+	get_fileinfo (uae_Unit *unit, dpacket packet, uaecptr info, a_inode *aino)
 {
 	struct _stat64 statbuf;
 	long days, mins, ticks;
@@ -2911,7 +2913,7 @@ static struct lockrecord *new_record (uae_u32 packet, uae_u32 pos, uae_u32 len, 
 	return lr;
 }
 
-static bool record_hit (Unit *unit, Key *k, uae_u32 pos, uae_u32 len, uae_u32 mode)
+static bool record_hit (uae_Unit *unit, Key *k, uae_u32 pos, uae_u32 len, uae_u32 mode)
 {
 	bool exclusive = mode == REC_EXCLUSIVE || mode == REC_EXCLUSIVE_IMMED;
 	for (Key *k2 = unit->keys; k2; k2 = k2->next) {
@@ -2937,7 +2939,7 @@ static bool record_hit (Unit *unit, Key *k, uae_u32 pos, uae_u32 len, uae_u32 mo
 	return false;
 }
 
-static void record_timeout (Unit *unit)
+static void record_timeout (uae_Unit *unit)
 {
 	bool retry = true;
 	while (retry) {
@@ -2966,7 +2968,7 @@ static void record_timeout (Unit *unit)
 	}
 }
 
-static void record_check_waiting (Unit *unit)
+static void record_check_waiting (uae_Unit *unit)
 {
 	bool retry = true;
 	while (retry) {
@@ -2991,7 +2993,7 @@ static void record_check_waiting (Unit *unit)
 	}
 }
 
-static int action_lock_record (Unit *unit, dpacket packet, uae_u32 msg)
+static int action_lock_record (uae_Unit *unit, dpacket packet, uae_u32 msg)
 {
 	Key *k = lookup_key (unit, GET_PCK_ARG1 (packet));
 	uae_u32 pos = GET_PCK_ARG2 (packet);
@@ -3043,7 +3045,7 @@ static int action_lock_record (Unit *unit, dpacket packet, uae_u32 msg)
 	return 1;
 }
 
-static void action_free_record (Unit *unit, dpacket packet)
+static void action_free_record (uae_Unit *unit, dpacket packet)
 {
 	Key *k = lookup_key (unit, GET_PCK_ARG1 (packet));
 	uae_u32 pos = GET_PCK_ARG2 (packet);
@@ -3079,7 +3081,7 @@ static void action_free_record (Unit *unit, dpacket packet)
 #define EXALL_DEBUG 0
 #define EXALL_END 0xde1111ad
 
-static ExAllKey *getexall (Unit *unit, uaecptr control, int id)
+static ExAllKey *getexall (uae_Unit *unit, uaecptr control, int id)
 {
 	int i;
 	if (id < 0) {
@@ -3102,7 +3104,7 @@ static ExAllKey *getexall (Unit *unit, uaecptr control, int id)
 	return NULL;
 }
 
-static int exalldo (uaecptr exalldata, uae_u32 exalldatasize, uae_u32 type, uaecptr control, Unit *unit, a_inode *aino)
+static int exalldo (uaecptr exalldata, uae_u32 exalldatasize, uae_u32 type, uaecptr control, uae_Unit *unit, a_inode *aino)
 {
 	uaecptr exp = exalldata;
 	int i;
@@ -3220,7 +3222,7 @@ end:
 	return ret;
 }
 
-static int action_examine_all_do (Unit *unit, uaecptr lock, ExAllKey *eak, uaecptr exalldata, uae_u32 exalldatasize, uae_u32 type, uaecptr control)
+static int action_examine_all_do (uae_Unit *unit, uaecptr lock, ExAllKey *eak, uaecptr exalldata, uae_u32 exalldatasize, uae_u32 type, uaecptr control)
 {
 	a_inode *aino, *base;
 	int ok;
@@ -3261,7 +3263,7 @@ static int action_examine_all_do (Unit *unit, uaecptr lock, ExAllKey *eak, uaecp
 	return 1;
 }
 
-static int action_examine_all_end (Unit *unit, dpacket packet)
+static int action_examine_all_end (uae_Unit *unit, dpacket packet)
 {
 	uae_u32 id;
 	uae_u32 doserr = 0;
@@ -3294,7 +3296,7 @@ static int action_examine_all_end (Unit *unit, dpacket packet)
 	return 1;
 }
 
-static int action_examine_all (Unit *unit, dpacket packet)
+static int action_examine_all (uae_Unit *unit, dpacket packet)
 {
 	uaecptr lock = GET_PCK_ARG1 (packet) << 2;
 	uaecptr exalldata = GET_PCK_ARG2 (packet);
@@ -3414,7 +3416,7 @@ fail:
 static uae_u32 REGPARAM2 exall_helper (TrapContext *context)
 {
 	int i;
-	Unit *u;
+	uae_Unit *u;
 	uaecptr packet = m68k_areg (regs, 4);
 	uaecptr control = get_long (packet + dp_Arg5);
 	uae_u32 id = get_long (control + 4);
@@ -3434,7 +3436,7 @@ static uae_u32 REGPARAM2 exall_helper (TrapContext *context)
 	return 1;
 }
 
-static void action_examine_object (Unit *unit, dpacket packet)
+static void action_examine_object (uae_Unit *unit, dpacket packet)
 {
 	uaecptr lock = GET_PCK_ARG1 (packet) << 2;
 	uaecptr info = GET_PCK_ARG2 (packet) << 2;
@@ -3462,7 +3464,7 @@ We do this to avoid problems with the host OS: we don't want to
 leave the directory open on the host side until all ExNext()s have
 finished - they may never finish!  */
 
-static void populate_directory (Unit *unit, a_inode *base)
+static void populate_directory (uae_Unit *unit, a_inode *base)
 {
 	struct fs_dirhandle *d;
 	a_inode *aino;
@@ -3498,7 +3500,7 @@ static void populate_directory (Unit *unit, a_inode *base)
 	fs_closedir (d);
 }
 
-static void do_examine (Unit *unit, dpacket packet, ExamineKey *ek, uaecptr info)
+static void do_examine (uae_Unit *unit, dpacket packet, ExamineKey *ek, uaecptr info)
 {
 	for (;;) {
 		TCHAR *name;
@@ -3521,7 +3523,7 @@ static void do_examine (Unit *unit, dpacket packet, ExamineKey *ek, uaecptr info
 	PUT_PCK_RES2 (packet, ERROR_NO_MORE_ENTRIES);
 }
 
-static void action_examine_next (Unit *unit, dpacket packet)
+static void action_examine_next (uae_Unit *unit, dpacket packet)
 {
 	uaecptr lock = GET_PCK_ARG1 (packet) << 2;
 	uaecptr info = GET_PCK_ARG2 (packet) << 2;
@@ -3577,7 +3579,7 @@ no_more_entries:
 	PUT_PCK_RES2 (packet, ERROR_NO_MORE_ENTRIES);
 }
 
-static void do_find (Unit *unit, dpacket packet, int mode, int create, int fallback)
+static void do_find (uae_Unit *unit, dpacket packet, int mode, int create, int fallback)
 {
 	uaecptr fh = GET_PCK_ARG1 (packet) << 2;
 	uaecptr lock = GET_PCK_ARG2 (packet) << 2;
@@ -3705,7 +3707,7 @@ static void do_find (Unit *unit, dpacket packet, int mode, int create, int fallb
 }
 
 static void
-	action_fh_from_lock (Unit *unit, dpacket packet)
+	action_fh_from_lock (uae_Unit *unit, dpacket packet)
 {
 	uaecptr fh = GET_PCK_ARG1 (packet) << 2;
 	uaecptr lock = GET_PCK_ARG2 (packet) << 2;
@@ -3763,13 +3765,13 @@ static void
 }
 
 static void
-	action_find_input (Unit *unit, dpacket packet)
+	action_find_input (uae_Unit *unit, dpacket packet)
 {
 	do_find (unit, packet, A_FIBF_READ | A_FIBF_WRITE, 0, 1);
 }
 
 static void
-	action_find_output (Unit *unit, dpacket packet)
+	action_find_output (uae_Unit *unit, dpacket packet)
 {
 	if (unit->ui.readonly || unit->ui.locked) {
 		PUT_PCK_RES1 (packet, DOS_FALSE);
@@ -3780,7 +3782,7 @@ static void
 }
 
 static void
-	action_find_write (Unit *unit, dpacket packet)
+	action_find_write (uae_Unit *unit, dpacket packet)
 {
 	if (unit->ui.readonly || unit->ui.locked) {
 		PUT_PCK_RES1 (packet, DOS_FALSE);
@@ -3811,7 +3813,7 @@ static void updatedirtime (a_inode *a1, int now)
 }
 
 static void
-	action_end (Unit *unit, dpacket packet)
+	action_end (uae_Unit *unit, dpacket packet)
 {
 	Key *k;
 	TRACE((_T("ACTION_END(0x%lx)\n"), GET_PCK_ARG1 (packet)));
@@ -3834,7 +3836,7 @@ static void
 }
 
 static void
-	action_read (Unit *unit, dpacket packet)
+	action_read (uae_Unit *unit, dpacket packet)
 {
 	Key *k = lookup_key (unit, GET_PCK_ARG1 (packet));
 	uaecptr addr = GET_PCK_ARG2 (packet);
@@ -3916,7 +3918,7 @@ static void
 }
 
 static void
-	action_write (Unit *unit, dpacket packet)
+	action_write (uae_Unit *unit, dpacket packet)
 {
 	Key *k = lookup_key (unit, GET_PCK_ARG1 (packet));
 	uaecptr addr = GET_PCK_ARG2 (packet);
@@ -3975,7 +3977,7 @@ static void
 }
 
 static void
-	action_seek (Unit *unit, dpacket packet)
+	action_seek (uae_Unit *unit, dpacket packet)
 {
 	Key *k = lookup_key (unit, GET_PCK_ARG1 (packet));
 	long pos = (uae_s32)GET_PCK_ARG2 (packet);
@@ -4031,7 +4033,7 @@ static void
 }
 
 static void
-	action_set_protect (Unit *unit, dpacket packet)
+	action_set_protect (uae_Unit *unit, dpacket packet)
 {
 	uaecptr lock = GET_PCK_ARG2 (packet) << 2;
 	uaecptr name = GET_PCK_ARG3 (packet) << 2;
@@ -4068,7 +4070,7 @@ static void
 	gui_flicker_led (LED_HD, unit->unit, 2);
 }
 
-static void action_set_comment (Unit * unit, dpacket packet)
+static void action_set_comment (uae_Unit * unit, dpacket packet)
 {
 	uaecptr lock = GET_PCK_ARG2 (packet) << 2;
 	uaecptr name = GET_PCK_ARG3 (packet) << 2;
@@ -4126,7 +4128,7 @@ maybe_free_and_out:
 }
 
 static void
-	action_same_lock (Unit *unit, dpacket packet)
+	action_same_lock (uae_Unit *unit, dpacket packet)
 {
 	uaecptr lock1 = GET_PCK_ARG1 (packet) << 2;
 	uaecptr lock2 = GET_PCK_ARG2 (packet) << 2;
@@ -4142,7 +4144,7 @@ static void
 }
 
 static void
-	action_change_mode (Unit *unit, dpacket packet)
+	action_change_mode (uae_Unit *unit, dpacket packet)
 {
 #define CHANGE_LOCK 0
 #define CHANGE_FH 1
@@ -4205,7 +4207,7 @@ static void
 }
 
 static void
-	action_parent_common (Unit *unit, dpacket packet, unsigned long uniq)
+	action_parent_common (uae_Unit *unit, dpacket packet, unsigned long uniq)
 {
 	a_inode *olda = lookup_aino (unit, uniq);
 	if (olda == 0) {
@@ -4230,7 +4232,7 @@ static void
 }
 
 static void
-	action_parent_fh (Unit *unit, dpacket packet)
+	action_parent_fh (uae_Unit *unit, dpacket packet)
 {
 	Key *k = lookup_key (unit, GET_PCK_ARG1 (packet));
 	if (!k) {
@@ -4242,7 +4244,7 @@ static void
 }
 
 static void
-	action_parent (Unit *unit, dpacket packet)
+	action_parent (uae_Unit *unit, dpacket packet)
 {
 	uaecptr lock = GET_PCK_ARG1 (packet) << 2;
 
@@ -4258,7 +4260,7 @@ static void
 }
 
 static void
-	action_create_dir (Unit *unit, dpacket packet)
+	action_create_dir (uae_Unit *unit, dpacket packet)
 {
 	uaecptr lock = GET_PCK_ARG1 (packet) << 2;
 	uaecptr name = GET_PCK_ARG2 (packet) << 2;
@@ -4308,7 +4310,7 @@ static void
 }
 
 static void
-	action_examine_fh (Unit *unit, dpacket packet)
+	action_examine_fh (uae_Unit *unit, dpacket packet)
 {
 	Key *k;
 	a_inode *aino = 0;
@@ -4335,7 +4337,7 @@ static void
 * This implementation tries to mimic the behaviour of the Kick 3.1 ramdisk
 * (which seems to match the Autodoc description). */
 static void
-	action_set_file_size (Unit *unit, dpacket packet)
+	action_set_file_size (uae_Unit *unit, dpacket packet)
 {
 	Key *k, *k1;
 	off_t offset = GET_PCK_ARG2 (packet);
@@ -4388,7 +4390,7 @@ static void
 	PUT_PCK_RES2 (packet, 0);
 }
 
-static int relock_do(Unit *unit, a_inode *a1)
+static int relock_do(uae_Unit *unit, a_inode *a1)
 {
 	Key *k1, *knext;
 	int wehavekeys = 0;
@@ -4404,7 +4406,7 @@ static int relock_do(Unit *unit, a_inode *a1)
 	return wehavekeys;
 }
 
-static void relock_re (Unit *unit, a_inode *a1, a_inode *a2, int failed)
+static void relock_re (uae_Unit *unit, a_inode *a1, a_inode *a2, int failed)
 {
 	Key *k1, *knext;
 
@@ -4438,7 +4440,7 @@ static void relock_re (Unit *unit, a_inode *a1, a_inode *a2, int failed)
 }
 
 static void
-	action_delete_object (Unit *unit, dpacket packet)
+	action_delete_object (uae_Unit *unit, dpacket packet)
 {
 	uaecptr lock = GET_PCK_ARG1 (packet) << 2;
 	uaecptr name = GET_PCK_ARG2 (packet) << 2;
@@ -4498,7 +4500,7 @@ static void
 }
 
 static void
-	action_set_date (Unit *unit, dpacket packet)
+	action_set_date (uae_Unit *unit, dpacket packet)
 {
 	uaecptr lock = GET_PCK_ARG2 (packet) << 2;
 	uaecptr name = GET_PCK_ARG3 (packet) << 2;
@@ -4531,7 +4533,7 @@ static void
 }
 
 static void
-	action_rename_object (Unit *unit, dpacket packet)
+	action_rename_object (uae_Unit *unit, dpacket packet)
 {
 	uaecptr lock1 = GET_PCK_ARG1 (packet) << 2;
 	uaecptr name1 = GET_PCK_ARG2 (packet) << 2;
@@ -4637,7 +4639,7 @@ static void
 }
 
 static void
-	action_current_volume (Unit *unit, dpacket packet)
+	action_current_volume (uae_Unit *unit, dpacket packet)
 {
 	if (filesys_isvolume(unit))
 		PUT_PCK_RES1 (packet, unit->volume >> 2);
@@ -4646,7 +4648,7 @@ static void
 }
 
 static void
-	action_rename_disk (Unit *unit, dpacket packet)
+	action_rename_disk (uae_Unit *unit, dpacket packet)
 {
 	uaecptr name = GET_PCK_ARG1 (packet) << 2;
 
@@ -4667,14 +4669,14 @@ static void
 }
 
 static void
-	action_is_filesystem (Unit *unit, dpacket packet)
+	action_is_filesystem (uae_Unit *unit, dpacket packet)
 {
 	TRACE((_T("ACTION_IS_FILESYSTEM()\n")));
 	PUT_PCK_RES1 (packet, DOS_TRUE);
 }
 
 static void
-	action_flush (Unit *unit, dpacket packet)
+	action_flush (uae_Unit *unit, dpacket packet)
 {
 	TRACE((_T("ACTION_FLUSH()\n")));
 	PUT_PCK_RES1 (packet, DOS_TRUE);
@@ -4682,7 +4684,7 @@ static void
 }
 
 static void
-	action_more_cache (Unit *unit, dpacket packet)
+	action_more_cache (uae_Unit *unit, dpacket packet)
 {
 	TRACE((_T("ACTION_MORE_CACHE()\n")));
 	PUT_PCK_RES1 (packet, 50); /* bug but AmigaOS expects it */
@@ -4691,7 +4693,7 @@ static void
 }
 
 static void
-	action_inhibit (Unit *unit, dpacket packet)
+	action_inhibit (uae_Unit *unit, dpacket packet)
 {
 	PUT_PCK_RES1 (packet, DOS_TRUE);
 	flush_cache (unit, 0);
@@ -4700,7 +4702,7 @@ static void
 }
 
 static void
-	action_write_protect (Unit *unit, dpacket packet)
+	action_write_protect (uae_Unit *unit, dpacket packet)
 {
 	TRACE((_T("ACTION_WRITE_PROTECT()\n")));
 	PUT_PCK_RES1 (packet, DOS_TRUE);
@@ -4721,7 +4723,7 @@ static void
 	}
 }
 
-static void action_change_file_position64 (Unit *unit, dpacket packet)
+static void action_change_file_position64 (uae_Unit *unit, dpacket packet)
 {
 	Key *k = lookup_key (unit, GET_PCK64_ARG1 (packet));
 	uae_s64 pos = GET_PCK64_ARG2 (packet);
@@ -4777,7 +4779,7 @@ static void action_change_file_position64 (Unit *unit, dpacket packet)
 
 }
 
-static void action_get_file_position64 (Unit *unit, dpacket packet)
+static void action_get_file_position64 (uae_Unit *unit, dpacket packet)
 {
 	Key *k = lookup_key (unit, GET_PCK64_ARG1 (packet));
 
@@ -4793,7 +4795,7 @@ static void action_get_file_position64 (Unit *unit, dpacket packet)
 	PUT_PCK64_RES2 (packet, 0);
 }
 
-static void action_change_file_size64 (Unit *unit, dpacket packet)
+static void action_change_file_size64 (uae_Unit *unit, dpacket packet)
 {
 	Key *k, *k1;
 	uae_s64 offset = GET_PCK64_ARG2 (packet);
@@ -4845,7 +4847,7 @@ static void action_change_file_size64 (Unit *unit, dpacket packet)
 }
 
 
-static void action_get_file_size64 (Unit *unit, dpacket packet)
+static void action_get_file_size64 (uae_Unit *unit, dpacket packet)
 {
 	Key *k = lookup_key (unit, GET_PCK64_ARG1 (packet));
 	uae_s64 old, filesize;
@@ -4909,7 +4911,7 @@ static uae_u32 REGPARAM2 exter_int_helper (TrapContext *context)
 		*/
 #ifdef UAE_FILESYS_THREADS
 		{
-			Unit *unit = find_unit (m68k_areg (regs, 5));
+			uae_Unit *unit = find_unit (m68k_areg (regs, 5));
 			uaecptr msg = m68k_areg (regs, 4);
 			unit->cmds_complete = unit->cmds_acked;
 			while (comm_pipe_has_data (unit->ui.back_pipe)) {
@@ -5018,7 +5020,7 @@ static uae_u32 REGPARAM2 exter_int_helper (TrapContext *context)
 	return 0;
 }
 
-static int handle_packet (Unit *unit, dpacket pck, uae_u32 msg)
+static int handle_packet (uae_Unit *unit, dpacket pck, uae_u32 msg)
 {
 	uae_s32 type = GET_PCK_TYPE (pck);
 	PUT_PCK_RES2 (pck, 0);
@@ -5156,7 +5158,7 @@ static void *filesys_thread (void *unit_v)
 /* Talk about spaghetti code... */
 static uae_u32 REGPARAM2 filesys_handler (TrapContext *context)
 {
-	Unit *unit = find_unit (m68k_areg (regs, 5));
+	uae_Unit *unit = find_unit (m68k_areg (regs, 5));
 	uaecptr packet_addr = m68k_dreg (regs, 3);
 	uaecptr message_addr = m68k_areg (regs, 4);
 	if (! valid_address (packet_addr, 36) || ! valid_address (message_addr, 14)) {
@@ -5231,7 +5233,7 @@ void filesys_cleanup (void)
 
 void filesys_free_handles (void)
 {
-	Unit *u, *u1;
+	uae_Unit *u, *u1;
 	for (u = units; u; u = u1) {
 		Key *k1, *knext;
 		u1 = u->next;
@@ -5260,7 +5262,7 @@ void filesys_free_handles (void)
 
 static void filesys_reset2 (void)
 {
-	Unit *u, *u1;
+	uae_Unit *u, *u1;
 
 
 	filesys_free_handles ();
@@ -5285,7 +5287,7 @@ void filesys_reset (void)
 static void filesys_prepare_reset2 (void)
 {
 	UnitInfo *uip;
-	//    Unit *u;
+	//    uae_Unit *u;
 	int i;
 
 	uip = mountinfo.ui;
@@ -6029,7 +6031,7 @@ static uae_u32 REGPARAM2 mousehack_done (TrapContext *context)
 
 void filesys_vsync (void)
 {
-	Unit *u;
+	uae_Unit *u;
 
 	for (u = units; u; u = u->next) {
 		if (u->reinsertdelay > 0) {
@@ -6184,7 +6186,7 @@ static uae_u8 *save_filesys_hardfile (UnitInfo *ui, uae_u8 *dst)
 	return dst;
 }
 
-static a_inode *restore_filesys_get_base (Unit *u, TCHAR *npath)
+static a_inode *restore_filesys_get_base (uae_Unit *u, TCHAR *npath)
 {
 	TCHAR *path, *p, *p2;
 	a_inode *a;
@@ -6275,7 +6277,7 @@ static TCHAR *makenativepath (UnitInfo *ui, TCHAR *apath)
 	return pn;
 }
 
-static uae_u8 *restore_aino (UnitInfo *ui, Unit *u, uae_u8 *src)
+static uae_u8 *restore_aino (UnitInfo *ui, uae_Unit *u, uae_u8 *src)
 {
 	TCHAR *p, *p2, *pn;
 	uae_u32 flags;
@@ -6349,7 +6351,7 @@ static uae_u8 *restore_aino (UnitInfo *ui, Unit *u, uae_u8 *src)
 	return src;
 }
 
-static uae_u8 *restore_key (UnitInfo *ui, Unit *u, uae_u8 *src)
+static uae_u8 *restore_key (UnitInfo *ui, uae_Unit *u, uae_u8 *src)
 {
 	int savedsize, uniq;
 	TCHAR *p, *pn;
@@ -6428,7 +6430,7 @@ static uae_u8 *restore_key (UnitInfo *ui, Unit *u, uae_u8 *src)
 	return src;
 }
 
-static uae_u8 *restore_notify (UnitInfo *ui, Unit *u, uae_u8 *src)
+static uae_u8 *restore_notify (UnitInfo *ui, uae_Unit *u, uae_u8 *src)
 {
 	Notify *n = xcalloc (Notify, 1);
 	uae_u32 hash;
@@ -6452,7 +6454,7 @@ static uae_u8 *restore_notify (UnitInfo *ui, Unit *u, uae_u8 *src)
 	return src;
 }
 
-static uae_u8 *restore_exkey (UnitInfo *ui, Unit *u, uae_u8 *src)
+static uae_u8 *restore_exkey (UnitInfo *ui, uae_Unit *u, uae_u8 *src)
 {
 	restore_u64 ();
 	restore_u64 ();
@@ -6462,7 +6464,7 @@ static uae_u8 *restore_exkey (UnitInfo *ui, Unit *u, uae_u8 *src)
 
 static uae_u8 *restore_filesys_virtual (UnitInfo *ui, uae_u8 *src, int num)
 {
-	Unit *u = startup_create_unit (ui, num);
+	uae_Unit *u = startup_create_unit (ui, num);
 	int cnt;
 
 	u->dosbase = restore_u32 ();
@@ -6603,7 +6605,7 @@ static uae_u8 *save_exkey (uae_u8 *dst, ExamineKey *ek)
 
 static uae_u8 *save_filesys_virtual (UnitInfo *ui, uae_u8 *dst)
 {
-	Unit *u = ui->self;
+	uae_Unit *u = ui->self;
 	Key *k;
 	int cnt, i, j;
 

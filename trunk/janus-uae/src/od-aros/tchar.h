@@ -158,7 +158,6 @@ typedef char	TCHAR;
 #define	_TEXT(x)	x
 #define	_T(x)		x
 
-
 /*
  * Non-unicode (standard) functions
  */

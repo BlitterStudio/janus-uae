@@ -35,6 +35,10 @@ INCLUDES= -I. -I../include -I../md-i386-gcc -I..
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 CPPFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
+LINK_LIBS=-larossupport
+
+#-larossupport -lamiga -larosc  -larosm
+
 #OBJS= bla.o
 
 %.o: %.c
@@ -46,7 +50,7 @@ CPPFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 all: uae
 
 uae: common aros
-	$(CC) $(CFLAGS) $(COMMON_OBJS) $(AROS_OBJS) -o ../janus-uae
+	$(CC) $(CFLAGS) $(COMMON_OBJS) $(AROS_OBJS) -o ../janus-uae $(LINK_LIBS)
 
 # ============== common ====================
 
@@ -138,7 +142,7 @@ COMMON_OBJS= \
 	../jit/compstbl.o \
 	../nogui.o \
 	../zfile.o \
-	stubs.cpp
+	stubs.o
 
 #../zfile_archive.o 
 
@@ -172,8 +176,9 @@ aros: $(AROS_OBJS)
 
 ../cpuemu_0.cpp: ../gencpu
 		cd ..;./gencpu
-# ============== clean ====================
 
+# ============== clean ====================
 clean: 
 	rm -f $(COMMON_OBJS)
 
+# ============== depend ====================
