@@ -520,6 +520,12 @@ struct zfile *read_rom_name (const TCHAR *filename)
   TODO();
 }
 
+struct zfile *read_rom (struct romdata **prd) 
+{
+  TODO();
+}
+
+
 uae_u8 *restore_disk2 (int num,uae_u8 *src) 
 {
   TODO();
@@ -706,10 +712,15 @@ static void picasso96_alloc2 (TrapContext *ctx)
 }
 
 void picasso_refresh (int call_setpalette) 
-//void picasso_refresh (void)
 {
   TODO();
 }
+
+void picasso_refresh (void)
+{
+  TODO();
+}
+
 
 uae_u8 *restore_blitter (uae_u8 *src) 
 {
@@ -1010,7 +1021,11 @@ int fsdb_mode_supported (const a_inode *aino)
 }
 
 int fsdb_set_file_attrs (a_inode *aino, int mask) 
-//int fsdb_set_file_attrs (a_inode *aino)
+{
+  TODO();
+}
+
+int fsdb_set_file_attrs (a_inode *aino)
 {
   TODO();
 }
@@ -1642,4 +1657,28 @@ void XzUnpacker_Free(CXzUnpacker *p)
 uae_u8 *mapped_malloc (size_t, const TCHAR*)
 {
 	TODO();
+}
+
+void picasso96_alloc (TrapContext *ctx) 
+{
+	TODO();
+}
+
+int fsdb_fill_file_attrs (a_inode *base, a_inode *aino)
+{
+	TODO();
+}
+
+int fsdb_mode_representable_p (const a_inode *aino, int amigaos_mode)
+{
+	TODO();
+}
+
+
+char *ua (const TCHAR *s) {
+	return strdup(s);
+}
+
+TCHAR *au (const char *s) {
+	return strdup(s);
 }

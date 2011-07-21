@@ -1672,6 +1672,10 @@ void akiko_free (void)
 	akiko_cdrom_free ();
 }
 
+#ifdef __AROS__
+void uae_sem_init (void **foo, int manual_reset, int initial_state);
+#endif
+
 int akiko_init (void)
 {
 	if (!currprefs.cs_cd32cd)

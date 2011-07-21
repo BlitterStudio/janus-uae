@@ -145,8 +145,14 @@ struct utimbuf
 /* wide char unlink */
 #define _wunlink unlink
 
-int     kprintf      (const char * fmt, ...);
-#define TODO() kprintf("%s:%d: >>> TODO %s", __FILE__, __LINE__, __PRETTY_FUNCTION__)
+/* Exception is used both in AROS and in uae :(.. I don't like that! */
+#undef Exception
+#include <aros/debug.h>
+//int     kprintf      (const char * fmt, ...);
+//int     kprintf      (const char * fmt, ...);
+#define TODO() bug("%s:%d: >>> TODO %s", __FILE__, __LINE__, __PRETTY_FUNCTION__)
+#undef Exception
+extern void REGPARAM3 Exception (int) REGPARAM;
 
 /*
  * "Microsoft Specific

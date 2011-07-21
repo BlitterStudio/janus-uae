@@ -43,7 +43,7 @@ all: tools uae
 
 #	$(CC) $(CFLAGS) $(OBJS) -o uae
 
-clean: toolsclean
+clean: toolsclean uaeclean
 
 # ============== BUILD TOOLS ====================
 # Built with host compiler!
@@ -88,7 +88,7 @@ cpudefs.cpp: build68k table68k
 	./build68k <table68k >cpudefs.cpp
 
 toolsclean:
-	rm -f $(GENBLITTER_OBJS) $(BUILD68K_OBJS) $(GENCPU_OBJS) $(GENCOMP_OBJS) genlinetoscr.o cpudefs.cpp genblitter build68k gencpu gencomp genlinetoscr
+	rm -f $(GENBLITTER_OBJS) $(BUILD68K_OBJS) $(GENCPU_OBJS) $(GENCOMP_OBJS) genlinetoscr.o cpudefs.cpp blitfunc.cpp blittable.cpp cpuemu_0.cpp cpuemu_11.cpp cpuemu_12.cpp cpuemu_20.cpp cpuemu_21.cpp cpuemu_31.cpp cpustbl.cpp linetoscr.cpp genblitter build68k gencpu gencomp genlinetoscr
 
 # ============== UAE ====================
 # Built with target compiler!
@@ -96,4 +96,6 @@ toolsclean:
 uae:
 	cd od-aros;make
 
+uaeclean:
+	cd od-aros;make clean
 

@@ -87,9 +87,10 @@ STATIC_INLINE void set_sound_buffers (void)
 #endif
 }
 
-#if 0
 STATIC_INLINE void check_sound_buffers (void)
 {
+	TODO();
+#if 0
 #if SOUNDSTUFF > 1
 	int len;
 #endif
@@ -136,8 +137,8 @@ STATIC_INLINE void check_sound_buffers (void)
 		}
 	}
 #endif
-}
 #endif
+}
 
 STATIC_INLINE void clear_sound_buffers (void)
 {
