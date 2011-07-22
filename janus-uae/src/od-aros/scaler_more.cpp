@@ -29,7 +29,6 @@
 #include "sysdeps.h"
 
 #include "options.h"
-#include "filter.h"
 #include "custom.h"
 
 #include <math.h>
