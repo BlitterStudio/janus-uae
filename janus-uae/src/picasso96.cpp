@@ -54,6 +54,7 @@ int picasso_is_special_read = PIC_READ; /* ditto */
 #endif
 
 int p96hack_vpos, p96hack_vpos2, p96refresh_active;
+struct picasso96_state_struct picasso96_state;
 
 #ifdef PICASSO96
 #ifndef __AROS__
@@ -80,7 +81,6 @@ static void write_gfx_byte (uaecptr addr, uae_u8 value);
 
 static uae_u8 all_ones_bitmap, all_zeros_bitmap;
 
-struct picasso96_state_struct picasso96_state;
 struct picasso_vidbuf_description picasso_vidinfo;
 
 /* These are the maximum resolutions. They are filled in by GetSupportedResolutions() */
