@@ -142,6 +142,7 @@ COMMON_OBJS= \
 	../nogui.o \
 	../zfile.o \
 	scaler_more.o \
+	parser.o \
 	stubs.o
 
 #../zfile_archive.o 
