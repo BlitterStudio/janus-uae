@@ -118,6 +118,7 @@ COMMON_OBJS= \
 	../hardfile.o \
 	../identify.o \
 	../inputdevice.o \
+	../inputrecord.cpp \
 	../keybuf.o \
 	../main.o \
 	../memory.o \

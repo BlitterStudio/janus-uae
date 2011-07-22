@@ -193,17 +193,6 @@ void init_hz_p96 (void)
   TODO();
 }
 
-int inprec_open(char *fname, int record)
-{
-  TODO();
-}
-
-int inprec_open(const char *fname, const char *foo)
-{
-  TODO();
-}
-
-
 void my_closedir (struct my_opendir_s *mod)
 {
   TODO();
@@ -298,17 +287,6 @@ void getgfxoffset (int *dxp, int *dyp, int *mxp, int *myp)
 {
   TODO();
 }
-
-void inprec_close(void)
-{
-  TODO();
-}
-
-void inprec_close(bool foo)
-{
-  TODO();
-}
-
 
 int isfullscreen (void) 
 {
@@ -586,11 +564,6 @@ int hdf_dup_target (struct hardfiledata *dhfd, const struct hardfiledata *shfd)
   TODO();
 }
 
-void inprec_startup (void)
-{
-  TODO();
-}
-
 void put_byte_ce030 (uaecptr addr, uae_u32 v)
 {
   TODO();
@@ -696,11 +669,6 @@ int hdf_read_target (struct hardfiledata *hfd, void *buffer, uae_u64 offset, int
   TODO();
 }
 
-bool inprec_realtime (void)
-{
-  TODO();
-}
-
 bool my_isfilehidden (const TCHAR *path)
 {
   TODO();
@@ -776,11 +744,6 @@ void hdf_close_target (struct hardfiledata *hfd)
 }
 
 int hdf_write_target (struct hardfiledata *hfd, void *buffer, uae_u64 offset, int len)
-{
-  TODO();
-}
-
-bool inprec_playevent (int *nr, int *state, int *max, int *autofire)
 {
   TODO();
 }
@@ -931,21 +894,6 @@ struct zfile *archive_access_lzx (struct znode *zn)
 }
 
 void consolehook_config (struct uae_prefs *p)
-{
-  TODO();
-}
-
-int inprec_getposition (void)
-{
-  TODO();
-}
-
-void inprec_recordevent (int nr, int state, int max, int autofire)
-{
-  TODO();
-}
-
-void inprec_setposition (int offset, int replaycounter)
 {
   TODO();
 }
@@ -1111,16 +1059,6 @@ int consolehook_activate (void)
   TODO();
 }
 
-void inprec_playdebug_cia (uae_u32 v1, uae_u32 v2, uae_u32 v3)
-{
-  TODO();
-}
-
-void inprec_playdebug_cpu (int mode)
-{
-  TODO();
-}
-
 void picasso_enablescreen (int on) 
 {
   TODO();
@@ -1226,16 +1164,6 @@ void gfx_set_picasso_state (int on)
   TODO();
 }
 
-void inprec_playdiskchange (void)
-{
-  TODO();
-}
-
-bool inprec_prepare_record (const TCHAR *statefilename)
-{
-  TODO();
-}
-
 uae_u8 *restore_custom_sprite (int num, uae_u8 *src)
 {
   TODO();
@@ -1252,16 +1180,6 @@ int uae_start_thread_fast (void *(*f)(void *), void *arg, uae_thread_id *tid)
 }
 
 void uaenet_enumerate_free (struct netdriverdata *tcp)
-{
-  TODO();
-}
-
-void inprec_recorddebug_cia (uae_u32 v1, uae_u32 v2, uae_u32 v3)
-{
-  TODO();
-}
-
-void inprec_recorddebug_cpu (int mode)
 {
   TODO();
 }
@@ -1302,11 +1220,6 @@ void draw_status_line_single (uae_u8 *buf, int bpp, int y, int totalwidth, uae_u
 }
 
 void fetch_configurationpath (TCHAR *out, int size)
-{
-  TODO();
-}
-
-void inprec_recorddiskchange (int nr, const TCHAR *fname, bool writeprotected)
 {
   TODO();
 }
