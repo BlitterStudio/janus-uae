@@ -1089,12 +1089,12 @@ static void expamem_init_z3fastmem2 (void)
 	expamem_init_z3fastmem_2 (&z3fastmem2_bank, z3fastmem2_start, currprefs.z3fastmem2_size, allocated_z3fastmem2);
 }
 
+uaecptr p96ram_start;
+
 #ifdef PICASSO96
 /*
 *  Fake Graphics Card (ZORRO III) - BDK
 */
-
-uaecptr p96ram_start;
 
 static void expamem_map_gfxcard (void)
 {
