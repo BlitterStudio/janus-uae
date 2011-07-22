@@ -35,7 +35,7 @@ INCLUDES= -I. -I../include -I../md-i386-gcc -I..
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 CPPFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
-LINK_LIBS=-larossupport -lz
+LINK_LIBS=-larossupport -lz 
 
 #-larossupport -lamiga -larosc  -larosm
 
