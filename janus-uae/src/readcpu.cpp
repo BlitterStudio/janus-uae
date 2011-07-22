@@ -6,10 +6,15 @@
 * Copyright 1995,1996 Bernd Schmidt
 */
 
+
 #include "sysconfig.h"
 #include "sysdeps.h"
-#include <ctype.h>
 
+#ifndef __AROS__
+#include <ctype.h>
+#else
+#include "od-aros/tchar.h"
+#endif
 #include "readcpu.h"
 
 int nr_cpuop_funcs;
