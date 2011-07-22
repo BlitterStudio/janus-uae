@@ -143,6 +143,7 @@ COMMON_OBJS= \
 	../zfile.o \
 	scaler_more.o \
 	parser.o \
+	picasso96_aros.o \
 	stubs.o
 
 #../zfile_archive.o 
