@@ -24,6 +24,8 @@
 #include "bsdsocket.h"
 #include "native2amiga.h"
 
+volatile int bsd_int_requested;
+
 #ifdef BSDSOCKET
 
 struct socketbase *socketbases;
@@ -241,7 +243,6 @@ void releasesock (SB, int sd)
 /* @@@ TODO: ensure proper interlocking */
 #if 1
 struct socketbase *sbsigqueue;
-volatile int bsd_int_requested;
 #endif
 
 void addtosigqueue (SB, int events)
