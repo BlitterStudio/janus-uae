@@ -1674,3 +1674,12 @@ int fsdb_mode_representable_p (const a_inode *aino, int amigaos_mode)
 	TODO();
 }
 
+char *ua (const TCHAR *s) {
+	  return strdup(s);
+}
+
+TCHAR *au (const char *s) {
+	  return strdup(s);
+}
+
+
