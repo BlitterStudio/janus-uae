@@ -38,11 +38,11 @@
 #include "options.h"
 #include "threaddep/thread.h"
 #include "uae.h"
-#include "memory.h"
 #include "custom.h"
 #include "newcpu.h"
 #include "xwin.h"
 #endif
+#include "memory.h"
 #include "picasso96.h"
 
 #ifndef __AROS__
@@ -56,6 +56,22 @@ int picasso_is_special_read = PIC_READ; /* ditto */
 int p96hack_vpos, p96hack_vpos2, p96refresh_active;
 struct picasso96_state_struct picasso96_state;
 
+static uae_u32 gfxmem_lget (uaecptr) REGPARAM;
+static uae_u32 gfxmem_wget (uaecptr) REGPARAM;
+static uae_u32 gfxmem_bget (uaecptr) REGPARAM;
+static void gfxmem_lput (uaecptr, uae_u32) REGPARAM;
+static void gfxmem_wput (uaecptr, uae_u32) REGPARAM;
+static void gfxmem_bput (uaecptr, uae_u32) REGPARAM;
+static int gfxmem_check (uaecptr addr, uae_u32 size) REGPARAM;
+static uae_u8 *gfxmem_xlate (uaecptr addr) REGPARAM;
+
+addrbank gfxmem_bank = {
+    gfxmem_lget, gfxmem_wget, gfxmem_bget,
+    gfxmem_lput, gfxmem_wput, gfxmem_bput,
+    gfxmem_xlate, gfxmem_check, NULL
+};
+
+
 #ifdef PICASSO96
 #ifndef __AROS__
 
@@ -65,15 +81,6 @@ struct picasso96_state_struct picasso96_state;
 #else
 #define P96TRACE(x)     do { } while(0)
 #endif
-
-static uae_u32 gfxmem_lget (uaecptr) REGPARAM;
-static uae_u32 gfxmem_wget (uaecptr) REGPARAM;
-static uae_u32 gfxmem_bget (uaecptr) REGPARAM;
-static void gfxmem_lput (uaecptr, uae_u32) REGPARAM;
-static void gfxmem_wput (uaecptr, uae_u32) REGPARAM;
-static void gfxmem_bput (uaecptr, uae_u32) REGPARAM;
-static int gfxmem_check (uaecptr addr, uae_u32 size) REGPARAM;
-static uae_u8 *gfxmem_xlate (uaecptr addr) REGPARAM;
 
 static void write_gfx_long (uaecptr addr, uae_u32 value);
 static void write_gfx_word (uaecptr addr, uae_u16 value);
@@ -2717,10 +2724,13 @@ static void write_gfx_byte (uaecptr addr, uae_u8 value)
     wgfx_min = oldaddr;
     wgfx_max = oldaddr + 1;
 }
+#endif
 
 static uae_u32 REGPARAM2 gfxmem_lget (uaecptr addr)
 {
     uae_u32 *m;
+		TODO();
+#if 0
 
 #ifdef JIT
     special_mem |= picasso_is_special_read;
@@ -2729,12 +2739,15 @@ static uae_u32 REGPARAM2 gfxmem_lget (uaecptr addr)
     addr &= gfxmem_mask;
     m = (uae_u32 *) (gfxmemory + addr);
     return do_get_mem_long (m);
+#endif
 }
 
 static uae_u32 REGPARAM2 gfxmem_wget (uaecptr addr)
 {
     uae_u16 *m;
+		TODO();
 
+#if 0
 #ifdef JIT
     special_mem |= picasso_is_special_read;
 #endif
@@ -2742,22 +2755,28 @@ static uae_u32 REGPARAM2 gfxmem_wget (uaecptr addr)
     addr &= gfxmem_mask;
     m = (uae_u16 *) (gfxmemory + addr);
     return do_get_mem_word (m);
+#endif
 }
 
 static uae_u32 REGPARAM2 gfxmem_bget (uaecptr addr)
 {
+	TODO();
+#if 0
 #ifdef JIT
     special_mem |= picasso_is_special_read;
 #endif
     addr -= gfxmem_start;
     addr &= gfxmem_mask;
     return gfxmemory[addr];
+#endif
 }
 
 static void REGPARAM2 gfxmem_lput (uaecptr addr, uae_u32 l)
 {
     uae_u32 *m;
 
+TODO();
+#if 0
 #ifdef JIT
     special_mem |= picasso_is_special;
 #endif
@@ -2768,11 +2787,14 @@ static void REGPARAM2 gfxmem_lput (uaecptr addr, uae_u32 l)
 
     /* write the long-word to our displayable memory */
     write_gfx_long (addr, l);
+#endif
 }
 
 static void REGPARAM2 gfxmem_wput (uaecptr addr, uae_u32 w)
 {
     uae_u16 *m;
+		TODO();
+#if 0
 #ifdef JIT
     special_mem |= picasso_is_special;
 #endif
@@ -2783,10 +2805,13 @@ static void REGPARAM2 gfxmem_wput (uaecptr addr, uae_u32 w)
 
     /* write the word to our displayable memory */
     write_gfx_word (addr, (uae_u16) w);
+#endif
 }
 
 static void REGPARAM2 gfxmem_bput (uaecptr addr, uae_u32 b)
 {
+	TODO();
+#if 0
 #ifdef JIT
     special_mem |= picasso_is_special;
 #endif
@@ -2796,6 +2821,7 @@ static void REGPARAM2 gfxmem_bput (uaecptr addr, uae_u32 b)
 
     /* write the byte to our displayable memory */
     write_gfx_byte (addr, (uae_u8) b);
+#endif
 }
 
 static int REGPARAM2 gfxmem_check (uaecptr addr, uae_u32 size)
@@ -2812,12 +2838,7 @@ static uae_u8 REGPARAM2 *gfxmem_xlate (uaecptr addr)
     return gfxmemory + addr;
 }
 
-addrbank gfxmem_bank = {
-    gfxmem_lget, gfxmem_wget, gfxmem_bget,
-    gfxmem_lput, gfxmem_wput, gfxmem_bput,
-    gfxmem_xlate, gfxmem_check, NULL
-};
-
+#ifndef __AROS__
 int picasso_display_mode_index (uae_u32 x, uae_u32 y, uae_u32 d)
 {
     int i;
