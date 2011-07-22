@@ -1219,11 +1219,6 @@ void draw_status_line_single (uae_u8 *buf, int bpp, int y, int totalwidth, uae_u
   TODO();
 }
 
-void fetch_configurationpath (TCHAR *out, int size)
-{
-  TODO();
-}
-
 int input_get_default_mouse (struct uae_input_device *uid, int i, int port, int af)
 {
   TODO();
