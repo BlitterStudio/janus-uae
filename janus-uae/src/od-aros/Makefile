@@ -143,6 +143,7 @@ COMMON_OBJS= \
 	../jit/compstbl.o \
 	../nogui.o \
 	../zfile.o \
+	sounddep/sound.o \
 	serial.o \
 	scaler_more.o \
 	arosgfx.o \
