@@ -1595,4 +1595,13 @@ TCHAR *au (const char *s) {
 	  return strdup(s);
 }
 
+void refreshtitle (void)
+{
+	  TODO();
+}
+
+void fetch_inputfilepath (TCHAR *out, int size)
+{
+	  TODO();
+}
 
