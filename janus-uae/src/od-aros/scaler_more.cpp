@@ -33,6 +33,9 @@
 
 #include <math.h>
 
+uae_u32 redc[3 * 256], grec[3 * 256], bluc[3 * 256];
+static uae_u32 *predc, *pgrec, *pbluc;
+
 uae_s32 tyhrgb[65536];
 uae_s32 tylrgb[65536];
 uae_s32 tcbrgb[65536];
