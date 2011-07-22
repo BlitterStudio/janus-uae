@@ -142,6 +142,7 @@ COMMON_OBJS= \
 	../nogui.o \
 	../zfile.o \
 	scaler_more.o \
+	arosgfx.o \
 	parser.o \
 	picasso96_aros.o \
 	stubs.o
