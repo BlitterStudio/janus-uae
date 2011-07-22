@@ -141,7 +141,7 @@ COMMON_OBJS= \
 	../jit/compstbl.o \
 	../nogui.o \
 	../zfile.o \
-	../scaler_more.o \
+	scaler_more.o \
 	stubs.o
 
 #../zfile_archive.o 
