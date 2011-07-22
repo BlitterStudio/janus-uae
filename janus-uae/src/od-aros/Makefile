@@ -35,7 +35,7 @@ INCLUDES= -I. -I../include -I../md-i386-gcc -I..
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 CPPFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
-LINK_LIBS=-larossupport
+LINK_LIBS=-larossupport -lz
 
 #-larossupport -lamiga -larosc  -larosm
 
@@ -50,7 +50,7 @@ LINK_LIBS=-larossupport
 all: uae
 
 uae: common aros
-	$(CC) $(CFLAGS) $(COMMON_OBJS) $(AROS_OBJS) -o ../janus-uae $(LINK_LIBS)
+	$(CPP) $(CFLAGS) $(COMMON_OBJS) $(AROS_OBJS) -o ../janus-uae $(LINK_LIBS)
 
 # ============== common ====================
 
@@ -121,7 +121,6 @@ COMMON_OBJS= \
 	../keybuf.o \
 	../main.o \
 	../memory.o \
-	../missing.o \
 	../native2amiga.o \
 	../ncr_scsi.o \
 	../newcpu.o \
@@ -142,6 +141,7 @@ COMMON_OBJS= \
 	../jit/compstbl.o \
 	../nogui.o \
 	../zfile.o \
+	../scaler_more.o \
 	stubs.o
 
 #../zfile_archive.o 
