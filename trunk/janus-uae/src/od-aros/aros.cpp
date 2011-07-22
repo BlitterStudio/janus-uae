@@ -6,3 +6,6 @@ long _timezone=0;
 char tzname[2][4]={"PST", "PDT"};
 
 int pissoff_value = 25000;
+
+int log_scsi;
+int log_net;
