@@ -33,6 +33,7 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
+#ifndef __AROS__
 #include "config.h"
 #include "options.h"
 #include "threaddep/thread.h"
@@ -41,17 +42,21 @@
 #include "custom.h"
 #include "newcpu.h"
 #include "xwin.h"
+#endif
 #include "picasso96.h"
 
+#ifndef __AROS__
 #ifdef JIT
 int have_done_picasso = 0; /* For the JIT compiler */
 int picasso_is_special = PIC_WRITE; /* ditto */
 int picasso_is_special_read = PIC_READ; /* ditto */
 #endif
-
-#ifdef PICASSO96
+#endif
 
 int p96hack_vpos, p96hack_vpos2, p96refresh_active;
+
+#ifdef PICASSO96
+#ifndef __AROS__
 
 #define P96TRACING_ENABLED 0
 #if P96TRACING_ENABLED
@@ -960,7 +965,7 @@ STATIC_INLINE void do_blitrect_frame_buffer (struct RenderInfo *ri,
 	return;
     }
     // (mask != 0xFF && Bpp <= 1)
-    tmp3 = tmp2 = tmp = xmalloc (linewidth * height); /* allocate enough memory for the src-rect */
+    tmp3 = tmp2 = tmp = malloc (linewidth * height); /* allocate enough memory for the src-rect */
     if (!tmp)
 	return;
 
@@ -2903,4 +2908,5 @@ void InitPicasso96 (void)
     }
 }
 
+#endif
 #endif

@@ -124,6 +124,7 @@ COMMON_OBJS= \
 	../native2amiga.o \
 	../ncr_scsi.o \
 	../newcpu.o \
+	../picasso96.o \
 	../readcpu.o \
 	../sana2.o \
 	../savestate.o \
