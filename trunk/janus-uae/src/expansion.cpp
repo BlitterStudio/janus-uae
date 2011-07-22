@@ -612,6 +612,8 @@ static void expamem_init_catweasel (void)
 
 #endif
 
+uae_u8 *filesysory;
+
 #ifdef FILESYS
 
 /*
@@ -627,7 +629,6 @@ static void REGPARAM3 filesys_wput (uaecptr, uae_u32) REGPARAM;
 static void REGPARAM3 filesys_bput (uaecptr, uae_u32) REGPARAM;
 
 static uae_u32 filesys_start; /* Determined by the OS */
-uae_u8 *filesysory;
 
 static uae_u32 REGPARAM2 filesys_lget (uaecptr addr)
 {

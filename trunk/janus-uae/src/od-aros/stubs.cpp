@@ -1605,3 +1605,5 @@ void fetch_inputfilepath (TCHAR *out, int size)
 	  TODO();
 }
 
+uae_u8 veccode[256];
+
