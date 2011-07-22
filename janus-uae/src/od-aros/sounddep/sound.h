@@ -142,8 +142,11 @@ STATIC_INLINE void check_sound_buffers (void)
 
 STATIC_INLINE void clear_sound_buffers (void)
 {
+	TODO();
+#if 0
 	memset (paula_sndbuffer, 0, paula_sndbufsize);
 	paula_sndbufpt = paula_sndbuffer;
+#endif
 }
 
 #define PUT_SOUND_WORD(b) do { *(uae_u16 *)paula_sndbufpt = b; paula_sndbufpt = (uae_u16 *)(((uae_u8 *)paula_sndbufpt) + 2); } while (0)
