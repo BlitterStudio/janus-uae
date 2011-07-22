@@ -54,4 +54,4 @@
 
 #define PICASSO96_SUPPORTED
 
-#define NO_MAIN_IN_MAIN_C
+//#define NO_MAIN_IN_MAIN_C

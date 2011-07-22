@@ -150,7 +150,7 @@ struct utimbuf
 #include <aros/debug.h>
 //int     kprintf      (const char * fmt, ...);
 //int     kprintf      (const char * fmt, ...);
-#define TODO() bug("%s:%d: >>> TODO %s", __FILE__, __LINE__, __PRETTY_FUNCTION__)
+#define TODO() bug("==> %s:%d: %s\n", __FILE__, __LINE__, __PRETTY_FUNCTION__)
 #undef Exception
 extern void REGPARAM3 Exception (int) REGPARAM;
 
