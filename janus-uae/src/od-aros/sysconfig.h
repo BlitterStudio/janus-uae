@@ -32,6 +32,7 @@
 #define SCSIEMU
 #define JIT
 #define CDTV
+#define GFXFILTER
 #if 0
 #define CPUEMU_0
 #define CPUEMU_20
