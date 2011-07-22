@@ -142,6 +142,7 @@ COMMON_OBJS= \
 	../jit/compstbl.o \
 	../nogui.o \
 	../zfile.o \
+	serial.o \
 	scaler_more.o \
 	arosgfx.o \
 	aros_scaler.o \
