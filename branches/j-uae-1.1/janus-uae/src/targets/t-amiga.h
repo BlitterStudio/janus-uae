@@ -37,3 +37,5 @@
 #define PICASSO96_SUPPORTED
 
 #define NO_MAIN_IN_MAIN_C
+
+#define AROS_SERIAL_HACK

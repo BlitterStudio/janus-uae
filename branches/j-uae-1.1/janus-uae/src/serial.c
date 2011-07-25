@@ -1,12 +1,31 @@
- /*
-  * UAE - The Un*x Amiga Emulator
-  *
-  *  Serial Line Emulation
-  *
-  * (c) 1996, 1997 Stefan Reinauer <stepan@linux.de>
-  * (c) 1997 Christian Schmitt <schmitt@freiburg.linux.de>
-  *
-  */
+/************************************************************************ 
+ *
+ * UAE - The Un*x Amiga Emulator
+ *
+ *  Serial Line Emulation
+ *
+ * (c) 1996, 1997 Stefan Reinauer <stepan@linux.de>
+ * (c) 1997 Christian Schmitt <schmitt@freiburg.linux.de>
+ * (c) 2011 Krzysztof Smiechowicz
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-UAE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-UAE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * $Id$
+ *
+ ************************************************************************/
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -454,6 +473,7 @@ void serial_close (void)
 
 void serial_init (void)
 {
+#if !defined(AROS_SERIAL_HACK)
 #ifdef SERIAL_PORT
     if (!currprefs.use_serial)
 	return;
@@ -462,11 +482,16 @@ void serial_init (void)
 	serial_open ();
 
 #endif
+#else
+	/* patch to make AROS ROMs useable */
+	currprefs.use_serial = 1;
+	serdev = 1;
+#endif
 }
 
 void serial_exit (void)
 {
-#ifdef SERIAL_PORT
+#if defined SERIAL_PORT || defined AROS_SERIAL_HACK
     serial_close ();	/* serial_close can always be called because it	*/
 #endif
     dtr = 0;		/* just closes *opened* filehandles which is ok	*/

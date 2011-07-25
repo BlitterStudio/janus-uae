@@ -1,10 +1,29 @@
- /*
-  * UAE - The Un*x Amiga Emulator
-  *
-  * Memory management
-  *
-  * (c) 1995 Bernd Schmidt
-  */
+/************************************************************************ 
+ *
+ * UAE - The Un*x Amiga Emulator
+ *
+ * Memory management
+ *
+ * Copyright 1995 Bernd Schmidt
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-UAE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-UAE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * $Id$
+ *
+ ************************************************************************/
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -773,7 +792,7 @@ static uae_u32 extendedkickmem_start;
 #define EXTENDED_ROM_CD32 1
 #define EXTENDED_ROM_CDTV 2
 
-#if defined CDTV || defined CD32
+#if defined CDTV || defined CD32 || defined(__AROS__)
 
 static int extromtype (void)
 {
@@ -965,7 +984,7 @@ addrbank kickram_bank = {
     kickmem_xlate, kickmem_check, NULL
 };
 
-#if defined CDTV || defined CD32
+#if defined CDTV || defined CD32 || defined (__AROS__) 
 addrbank extendedkickmem_bank = {
     extendedkickmem_lget, extendedkickmem_wget, extendedkickmem_bget,
     extendedkickmem_lput, extendedkickmem_wput, extendedkickmem_bput,
@@ -1084,7 +1103,7 @@ static int read_kickstart (struct zfile *f, uae_u8 *mem, int size, int dochecksu
 }
 
 
-#if defined CDTV || defined CD32
+#if defined CDTV || defined CD32 || defined(__AROS__)
 static int load_extendedkickstart (void)
 {
     struct zfile *f;
@@ -1561,7 +1580,7 @@ void memory_reset (void)
 	    memcpy (currprefs.keyfile, changed_prefs.keyfile, sizeof currprefs.keyfile);
             if (savestate_state != STATE_RESTORE)
 		clearexec ();
-#if defined CDTV || defined CD32
+#if defined CDTV || defined CD32 || defined(__AROS__)
             load_extendedkickstart ();
 #endif
 	    if (!load_kickstart ()) {
@@ -1639,7 +1658,7 @@ void memory_reset (void)
     cd32_enabled = 0;
 #endif
 
-#if defined CDTV || CD32
+#if defined CDTV || CD32 || defined(__AROS__)
     switch (extromtype ()) {
 
 #ifdef CDTV
@@ -1648,10 +1667,12 @@ void memory_reset (void)
 	cdtv_enabled = 1;
 	break;
 #endif
-#ifdef CD32
+#if defined CD32 || defined(__AROS__)
     case EXTENDED_ROM_CD32:
 	map_banks (&extendedkickmem_bank, 0xE0, 8, 0);
+#ifdef CD32
 	cd32_enabled = 1;
+#endif
 	break;
 #endif
     default:

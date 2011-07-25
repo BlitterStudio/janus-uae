@@ -767,7 +767,7 @@ static int do_init_machine (void)
 #endif
 
     if (custom_init ()) { /* Must come after memory_init */
-#ifdef SERIAL_PORT
+#if defined SERIAL_PORT || defined AROS_SERIAL_HACK
 	serial_init ();
 #endif
 	DISK_init ();
@@ -909,7 +909,7 @@ static void do_exit_machine (void)
     DISK_free ();
     audio_close ();
     dump_counts ();
-#ifdef SERIAL_PORT
+#if defined SERIAL_PORT || defined AROS_SERIAL_HACK
     serial_exit ();
 #endif
 #ifdef CD32
