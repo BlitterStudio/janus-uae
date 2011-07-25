@@ -107,6 +107,7 @@
 #endif
 
 void chipsize_changed (void);
+static void did_extchange (GtkWidget *w, gpointer data);
 
 static int gui_active;
 
@@ -149,8 +150,8 @@ static const char *p96labels[] = { "None", "1 MB", "2 MB", "4 MB", "8 MB",
                                    "16 MB", "32 MB", "64 MB", "128 MB", "256 MB", NULL };
 #endif
 
-static GtkWidget *rom_text_widget, *key_text_widget;
-static GtkWidget *rom_change_widget, *key_change_widget;
+static GtkWidget *rom_text_widget, *key_text_widget, *ext_text_widget;
+static GtkWidget *rom_change_widget, *key_change_widget, *ext_change_widget;
 
 static GtkWidget *floppy_widget[5]; /* df0, df1, df2 ,df3, NULL */
 
@@ -435,6 +436,14 @@ static void set_mem_state (void)
     else {
       gtk_label_set_text (GTK_LABEL (rom_text_widget), changed_prefs.romfile);
     }
+
+    if(currprefs.romextfile[0] != '\0') {
+      gtk_label_set_text (GTK_LABEL (ext_text_widget), currprefs.romextfile);
+    }
+    else {
+      gtk_label_set_text (GTK_LABEL (ext_text_widget), changed_prefs.romextfile);
+    }
+
 
     if(currprefs.keyfile[0] != '\0') {
       gtk_label_set_text (GTK_LABEL (key_text_widget), currprefs.keyfile);
@@ -956,7 +965,7 @@ static void on_pause_clicked (GtkWidget *widget, gpointer data)
 }
 
 
-static char *gui_romname, *gui_keyname;
+static char *gui_romname, *gui_keyname, *gui_extname;
 
 static void disc_changed (FloppyFileEntry *ffe, gpointer p)
 {
@@ -1044,11 +1053,18 @@ static void filesel_set_path (GtkWidget *p, const char *path)
 }
 
 static GtkWidget *rom_selector;
+static GtkWidget *ext_selector;
 
 static void did_close_rom (gpointer gdata)
 {
     gtk_widget_set_sensitive (rom_change_widget, 1);
 }
+
+static void did_close_ext (gpointer gdata)
+{
+    gtk_widget_set_sensitive (ext_change_widget, 1);
+}
+
 
 static void did_rom_select (GtkObject *o)
 {
@@ -1067,6 +1083,56 @@ static void did_rom_select (GtkObject *o)
     gtk_widget_destroy (rom_selector);
 }
 
+
+static void did_ext_select (GtkObject *o)
+{
+    const char *s = gtk_file_selection_get_filename (GTK_FILE_SELECTION (ext_selector));
+#ifdef __AROS__
+		BPTR lock;
+		struct FileInfoBlock *fib;
+		BOOL file=FALSE;
+#else
+		BOOL file=TRUE;
+#endif
+
+    if (quit_gui)
+	return;
+
+    gtk_widget_set_sensitive (ext_change_widget, 1);
+
+#ifdef __AROS__
+		/* 
+		 * If you don't select a rom file, only a path/directory will be returned.
+		 * There is no way to select "nothing". So check, if it is a valid file.
+		 */
+		if((lock=Lock((CONST_STRPTR) s, ACCESS_READ))) {
+
+			if((fib=(struct FileInfoBlock *) AllocDosObject(DOS_FIB, NULL))) {
+				if(Examine(lock, fib)) {
+					if(fib->fib_EntryType < 0 ) {
+						file=TRUE;
+					}
+				}
+				FreeDosObject(DOS_FIB, fib);
+			};
+			UnLock(lock);
+		}
+#endif
+
+
+    uae_sem_wait (&gui_sem);
+		if(file) {
+			gui_extname = strdup (s);
+		}
+		else {
+			gui_extname = strdup ("");
+		}
+    uae_sem_post (&gui_sem);
+    gtk_label_set_text (GTK_LABEL (ext_text_widget), gui_extname);
+    write_comm_pipe_int (&from_gui_pipe, UAECMD_SELECT_ROM, 0);
+    gtk_widget_destroy (ext_selector);
+}
+
 static void did_romchange (GtkWidget *w, gpointer data)
 {
     gtk_widget_set_sensitive (rom_change_widget, 0);
@@ -1081,6 +1147,23 @@ static void did_romchange (GtkWidget *w, gpointer data)
     DEBUG_LOG("rom_selector = %lx\n",rom_selector);
     filesel_set_path (rom_selector, prefs_get_attr ("rom_path"));
 }
+
+static void did_extchange (GtkWidget *w, gpointer data)
+{
+    gtk_widget_set_sensitive (ext_change_widget, 0);
+
+    DEBUG_LOG("ext_selector = %lx\n", ext_selector);
+    ext_selector = make_file_selector ("Select a extended ROM file",
+				       did_ext_select, did_close_ext);
+#if defined GTKMUI
+        gtk_widget_show(ext_selector);
+#endif
+    
+    DEBUG_LOG("ext_selector = %lx\n",ext_selector);
+    filesel_set_path (ext_selector, prefs_get_attr ("rom_path"));
+}
+
+
 
 static GtkWidget *key_selector;
 
@@ -1557,7 +1640,7 @@ static void make_mem_widgets (GtkWidget *vbox)
     add_empty_vbox (vbox);
 
     {
-	GtkWidget *buttonbox = make_file_container ("Kickstart ROM file:", vbox);
+	GtkWidget *buttonbox = make_file_container ("Main ROM file:", vbox);
 	GtkWidget *thing = gtk_button_new_with_label ("Change");
 
 	/* Current file display */
@@ -1567,6 +1650,19 @@ static void make_mem_widgets (GtkWidget *vbox)
 	gtk_widget_show (thing);
 	rom_change_widget = thing;
 	gtk_signal_connect (GTK_OBJECT (thing), "clicked", (GtkSignalFunc) did_romchange, 0);
+    }
+
+    {
+	GtkWidget *buttonbox = make_file_container ("Extended ROM file:", vbox);
+	GtkWidget *thing = gtk_button_new_with_label ("Change");
+
+	/* Current file display */
+	ext_text_widget = make_file_widget (buttonbox);
+
+	gtk_box_pack_start (GTK_BOX (buttonbox), thing, FALSE, TRUE, 0);
+	gtk_widget_show (thing);
+	ext_change_widget = thing;
+	gtk_signal_connect (GTK_OBJECT (thing), "clicked", (GtkSignalFunc) did_extchange, 0);
     }
 
     {
@@ -1581,6 +1677,7 @@ static void make_mem_widgets (GtkWidget *vbox)
 	key_change_widget = thing;
 	gtk_signal_connect (GTK_OBJECT (thing), "clicked", (GtkSignalFunc) did_keychange, 0);
     }
+
 
     gtk_widget_show (hbox);
     add_centered_to_vbox (vbox, hbox);
@@ -2926,9 +3023,18 @@ void gui_handle_events (void)
 		break;
 	    case UAECMD_SELECT_ROM:
 		uae_sem_wait (&gui_sem);
-		strncpy (changed_prefs.romfile, gui_romname, 255);
-		changed_prefs.romfile[255] = '\0';
-		free (gui_romname);
+		if (gui_romname) {
+			strncpy (changed_prefs.romfile, gui_romname, 255);
+			changed_prefs.romfile[255] = '\0';
+			free (gui_romname);
+			gui_romname=NULL;
+		}
+		if (gui_extname) {
+			strncpy (changed_prefs.romextfile, gui_extname, 255);
+			changed_prefs.romextfile[255] = '\0';
+			free (gui_extname);
+			gui_extname=NULL;
+		}
 		uae_sem_post (&gui_sem);
 		break;
 	    case UAECMD_SELECT_KEY:
