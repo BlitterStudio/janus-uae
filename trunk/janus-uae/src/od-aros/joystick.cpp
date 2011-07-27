@@ -4,6 +4,7 @@
  *
  * Copyright 1996, 1997 Samuel Devulder
  * Copyright 2003-2005  Richard Drummond
+ * Copyright 2011       Oliver Brunner - aros<at>oliver-brunner.de
  *
  * This file is part of Janus-UAE.
  *
