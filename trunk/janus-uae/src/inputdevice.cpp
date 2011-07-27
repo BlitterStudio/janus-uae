@@ -4741,15 +4741,12 @@ struct inputdevice_functions idev[3];
 
 void inputdevice_init (void)
 {
-	TODO();
-#if 0
 	idev[IDTYPE_JOYSTICK] = inputdevicefunc_joystick;
 	idev[IDTYPE_JOYSTICK].init ();
 	idev[IDTYPE_MOUSE] = inputdevicefunc_mouse;
 	idev[IDTYPE_MOUSE].init ();
 	idev[IDTYPE_KEYBOARD] = inputdevicefunc_keyboard;
 	idev[IDTYPE_KEYBOARD].init ();
-#endif
 }
 
 void inputdevice_close (void)
