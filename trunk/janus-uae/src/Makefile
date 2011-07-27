@@ -19,6 +19,9 @@
 # along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
 #
 
+# you have to adjust this of course..
+TARGET     = /home/oli/svn/aros/AROS/bin/linux-i386/AROS/wuae
+
 CC         = i386-aros-gcc
 #RANLIB = 
 AR         = i386-aros-ar

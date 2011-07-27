@@ -1194,11 +1194,6 @@ void restore_blitter_finish (void)
   TODO();
 }
 
-void target_default_options (struct uae_prefs *p, int type)
-{
-  TODO();
-}
-
 int target_get_volume_name (struct uaedev_mount_info *mtinf, const TCHAR *volumepath, TCHAR *volumename, int size, bool inserted, bool fullcheck)
 {
   TODO();
