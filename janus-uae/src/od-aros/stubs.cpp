@@ -1255,11 +1255,6 @@ WCHAR *utf8u (const char *s)
   TODO();
 }
 
-char *uutf8 (const WCHAR *s)
-{
-  TODO();
-}
-
 void SERDAT (uae_u16 w)
 {
   TODO();
