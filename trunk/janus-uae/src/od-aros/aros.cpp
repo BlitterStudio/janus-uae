@@ -163,4 +163,21 @@ void fetch_datapath (TCHAR *out, int size)
 }
 #endif
 
+/* resides in win32gui.cpp normally 
+ *
+ * copies the text of message number msg to out (?)
+ */
+int translate_message (int msg, TCHAR *out) {
 
+	out[0] = (TCHAR) 0;
+	return 0;
+}
+
+/* resides in win32.cpp normally
+ *
+ * loads amigaforever keyfiles ..?
+ */
+uae_u8 *target_load_keyfile (struct uae_prefs *p, const TCHAR *path, int *sizep, TCHAR *name) {
+	bug("target_load_keyfile(,%s,%d,%s)\n", path, *sizep, name);
+	TODO();
+}
