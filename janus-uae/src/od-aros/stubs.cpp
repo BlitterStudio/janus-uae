@@ -60,17 +60,7 @@ int debuggable(void)
   TODO();
 }
 
-int decode_rom (uae_u8 *mem, int size, int mode, int real_size)
-{
-  TODO();
-}
-
 void flush_line(int y) 
-{
-  TODO();
-}
-
-void getromname (const struct romdata *rd, TCHAR *name)
 {
   TODO();
 }
@@ -98,11 +88,6 @@ int my_readdir (struct my_opendir_s *mod, TCHAR *name)
 }
 
 uae_u8 *restore_cd (int num, uae_u8 *src)
-{
-  TODO();
-}
-
-void romwarning (const int *ids)
 {
   TODO();
 }
@@ -453,11 +438,6 @@ void close_console (void)
   TODO();
 }
 
-int configure_rom (struct uae_prefs *p, const int *rom, int msg)
-{
-  TODO();
-}
-
 void console_flush (void)
 {
   TODO();
@@ -493,16 +473,6 @@ void picasso_reset (void)
   TODO();
 }
 
-struct zfile *read_rom_name (const TCHAR *filename) 
-{
-  TODO();
-}
-
-struct zfile *read_rom (struct romdata **prd) 
-{
-  TODO();
-}
-
 
 uae_u8 *restore_disk2 (int num,uae_u8 *src) 
 {
@@ -530,16 +500,6 @@ uae_u32 get_byte_ce030 (uaecptr addr)
 }
 
 uae_u32 get_long_ce030_prefetch (int o)
-{
-  TODO();
-}
-
-struct romlist **getarcadiaroms (void)
-{
-  TODO();
-}
-
-struct romdata *getromdatabyid (int id) 
 {
   TODO();
 }
@@ -649,16 +609,6 @@ int get_guid_target (uae_u8 *out)
   TODO();
 }
 
-struct romdata *getromdatabycrc (uae_u32 crc32)
-{
-  TODO();
-}
-
-struct romlist *getromlistbyids (const int *ids)
-{
-  TODO();
-}
-
 int hdf_open_target (struct hardfiledata *hfd, const TCHAR *pname)
 {
   TODO();
@@ -724,16 +674,6 @@ struct zfile *archive_getzfile (struct znode *zn, unsigned int id, int flags)
 }
 
 void fetch_ripperpath (TCHAR *out, int size)
-{
-  TODO();
-}
-
-struct romdata *getromdatabydata (uae_u8 *rom, int size)
-{
-  TODO();
-}
-
-struct romdata *getromdatabypath (const TCHAR *path)
 {
   TODO();
 }
@@ -828,16 +768,6 @@ int fsdb_name_invalid (const char *n)
   TODO();
 }
 
-struct romdata *getromdatabyzfile (struct zfile *f)
-{
-  TODO();
-}
-
-struct romlist **getromlistbyident (int ver, int rev, int subver, int subrev, const TCHAR *model, int romflags, bool all)
-{
-  TODO();
-}
-
 int hdf_resize_target (struct hardfiledata *hfd, uae_u64 newsize)
 {
   TODO();
@@ -894,11 +824,6 @@ struct zfile *archive_access_lzx (struct znode *zn)
 }
 
 void consolehook_config (struct uae_prefs *p)
-{
-  TODO();
-}
-
-int kickstart_checksum (uae_u8 *mem, int size)
 {
   TODO();
 }
@@ -978,22 +903,12 @@ int fsdb_set_file_attrs (a_inode *aino)
   TODO();
 }
 
-struct romlist *getromlistbyromdata (const struct romdata *rd)
-{
-  TODO();
-}
-
 void master_sound_volume (int dir)
 {
   TODO();
 }
 
 frame_time_t read_processor_time (void) 
-{
-  TODO();
-}
-
-struct zfile *read_rom_name_guess (const TCHAR *filename)
 {
   TODO();
 }
@@ -1180,11 +1095,6 @@ int uae_start_thread_fast (void *(*f)(void *), void *arg, uae_thread_id *tid)
 }
 
 void uaenet_enumerate_free (struct netdriverdata *tcp)
-{
-  TODO();
-}
-
-void kickstart_fix_checksum (uae_u8 *mem, int size)
 {
   TODO();
 }
@@ -1460,11 +1370,6 @@ void to_lower (TCHAR *s, int len)
   TODO();
 }
 
-void addkeydir (const TCHAR *path)
-{
-  TODO();
-}
-
 void ahi_hsync (void)
 {
   TODO();
@@ -1491,11 +1396,6 @@ int my_rename (const TCHAR *oldname, const TCHAR *newname)
 }
 
 int my_unlink (const TCHAR *name)
-{
-  TODO();
-}
-
-struct zfile *rom_fopen (const TCHAR *name, const TCHAR *mode, int mask)
 {
   TODO();
 }
