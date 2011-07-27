@@ -149,6 +149,7 @@ COMMON_OBJS= \
 	serial.o \
 	joystick.o \
 	keyboard.o \
+	mouse.o \
 	scaler_more.o \
 	arosgfx.o \
 	aros_scaler.o \
