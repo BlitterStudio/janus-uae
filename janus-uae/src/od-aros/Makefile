@@ -148,6 +148,7 @@ COMMON_OBJS= \
 	sounddep/sound.o \
 	serial.o \
 	joystick.o \
+	keyboard.o \
 	scaler_more.o \
 	arosgfx.o \
 	aros_scaler.o \
