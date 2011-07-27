@@ -19,6 +19,7 @@
 # along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
 #
 
+EXE        = /home/oli/svn/aros/AROS/bin/linux-i386/AROS/wuae
 
 CC         = i386-aros-gcc
 CPP        = i386-aros-g++
@@ -50,7 +51,7 @@ LINK_LIBS=-larossupport -lz
 all: uae
 
 uae: common aros
-	$(CPP) $(CFLAGS) $(COMMON_OBJS) $(AROS_OBJS) -o ../janus-uae $(LINK_LIBS)
+	$(CPP) $(CFLAGS) $(COMMON_OBJS) $(AROS_OBJS) -o $(EXE) $(LINK_LIBS)
 
 # ============== common ====================
 
