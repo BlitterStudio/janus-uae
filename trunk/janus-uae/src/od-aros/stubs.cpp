@@ -933,22 +933,6 @@ void serial_hsynchandler (void)
   TODO();
 }
 
-int target_cfgfile_load (struct uae_prefs *p, const TCHAR *filename, int type, int isdefault)
-{
-  TODO();
-}
-
-int target_parse_option (struct uae_prefs *p, const TCHAR *option, const TCHAR *value) 
-//int target_parse_option (struct uae_prefs *p, char *option, char *value)
-{
-  TODO();
-}
-
-void target_save_options (struct zfile *f, struct uae_prefs *p) 
-{
-  TODO();
-}
-
 void uaeser_clearbuffers (void *vsd)
 {
   TODO();
@@ -1010,11 +994,6 @@ uae_u8 *restore_custom_extra (uae_u8 *src)
 }
 
 int target_checkcapslock (int scancode, int *state)
-{
-  TODO();
-}
-
-void target_fixup_options (struct uae_prefs *p)
 {
   TODO();
 }

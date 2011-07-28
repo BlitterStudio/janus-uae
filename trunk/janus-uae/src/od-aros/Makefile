@@ -156,6 +156,7 @@ COMMON_OBJS= \
 	aros_scaler.o \
 	parser.o \
 	picasso96_aros.o \
+	options.o \
 	stubs.o
 
 #../zfile_archive.o 
