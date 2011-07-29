@@ -195,7 +195,11 @@ static const TCHAR *obsolete[] = {
 	NULL
 };
 
+#ifndef __AROS__
 #define UNEXPANDED _T("$(FILE_PATH)")
+#else
+#define UNEXPANDED _T("PROGDIR:")
+#endif
 
 static void trimwsa (char *s)
 {
@@ -217,6 +221,7 @@ static int match_string (const TCHAR *table[], const TCHAR *str)
 TCHAR *cfgfile_subst_path (const TCHAR *path, const TCHAR *subst, const TCHAR *file)
 {
 	/* @@@ use strcasecmp for some targets.  */
+	bug("cfgfile_subst_path(%s, %s, %s)\n", path, subst, file);
 	if (_tcslen (path) > 0 && _tcsncmp (file, path, _tcslen (path)) == 0) {
 		int l;
 		TCHAR *p2, *p = xmalloc (TCHAR, _tcslen (file) + _tcslen (subst) + 2);
@@ -231,8 +236,10 @@ TCHAR *cfgfile_subst_path (const TCHAR *path, const TCHAR *subst, const TCHAR *f
 		_tcscat (p, file + l);
 		p2 = target_expand_environment (p);
 		xfree (p);
+		bug("return p2=%s\n", p2);
 		return p2;
 	}
+	bug("file=%s\n", file);
 	TCHAR *s = target_expand_environment (file);
 	if (s) {
 		TCHAR tmp[MAX_DPATH];
@@ -241,6 +248,7 @@ TCHAR *cfgfile_subst_path (const TCHAR *path, const TCHAR *subst, const TCHAR *f
 		fullpath (tmp, sizeof tmp / sizeof (TCHAR));
 		s = my_strdup (tmp);
 	}
+	bug("return s=%s\n", s);
 	return s;
 }
 
@@ -396,9 +404,18 @@ void cfgfile_target_dwrite (struct zfile *f, const TCHAR *option, const TCHAR *f
 
 static void cfgfile_write_rom (struct zfile *f, const TCHAR *path, const TCHAR *romfile, const TCHAR *name)
 {
-	TCHAR *str = cfgfile_subst_path (path, UNEXPANDED, romfile);
+	TCHAR *str;
+	struct zfile *zf;
+	
+	bug("cfgfile_write_rom(%lx, %s, %s, %s)\n", f, path, romfile, name);
+
+	str = cfgfile_subst_path (path, UNEXPANDED, romfile);
+
+	bug("str=%s\n");
 	cfgfile_write_str (f, name, str);
-	struct zfile *zf = zfile_fopen (str, _T("rb"), ZFD_ALL);
+	zf = zfile_fopen (str, _T("rb"), ZFD_ALL);
+
+	bug("zf=%lx\n", zf);
 	if (zf) {
 		struct romdata *rd = getromdatabyzfile (zf);
 		if (rd) {
@@ -3693,9 +3710,16 @@ void default_prefs (struct uae_prefs *p, int type)
 	_tcscpy (p->flashfile, _T(""));
 	_tcscpy (p->cartfile, _T(""));
 
+#ifndef __AROS__
 	_tcscpy (p->path_rom.path[0], _T("./"));
 	_tcscpy (p->path_floppy.path[0], _T("./"));
 	_tcscpy (p->path_hardfile.path[0], _T("./"));
+#else
+	_tcscpy (p->path_rom.path[0], _T("PROGDIR:"));
+	_tcscpy (p->path_floppy.path[0], _T("PROGDIR:"));
+	_tcscpy (p->path_hardfile.path[0], _T("PROGDIR:"));
+
+#endif
 
 	p->prtname[0] = 0;
 	p->sername[0] = 0;
