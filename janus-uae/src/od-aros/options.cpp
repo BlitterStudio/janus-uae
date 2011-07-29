@@ -51,3 +51,10 @@ int target_parse_option (struct uae_prefs *p, const TCHAR *option, const TCHAR *
   TODO();
 }
 
+TCHAR *target_expand_environment (const TCHAR *path)
+{
+	bug("target_expand_environment(%s)\n", path);
+
+	return my_strdup(path);
+}
+
