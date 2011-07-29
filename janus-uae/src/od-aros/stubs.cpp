@@ -509,11 +509,6 @@ void graphics_leave(void)
   TODO();
 }
 
-int graphics_setup (void) 
-{
-  TODO();
-}
-
 int handle_msgpump (void)
 {
   TODO();
@@ -1160,11 +1155,6 @@ int custom_fsdb_used_as_nname (a_inode *base, const TCHAR *nname)
 
 int fsdb_mode_representable_p (const a_inode *aino) 
 //int fsdb_mode_representable_p (const a_inode *aino, int amigaos_mode)
-{
-  TODO();
-}
-
-TCHAR *target_expand_environment (const TCHAR *path)
 {
   TODO();
 }
