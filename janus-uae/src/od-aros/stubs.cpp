@@ -278,11 +278,6 @@ int isfullscreen (void)
   TODO();
 }
 
-void logging_init (void)
-{
-  TODO();
-}
-
 void machdep_free (void)
 {
   TODO();
@@ -1390,11 +1385,6 @@ uae_u8 *save_dmac (int *len, uae_u8 *dstptr)
 }
 
 void unlockscr (void) 
-{
-  TODO();
-}
-
-void write_log (const TCHAR *format,...)
 {
   TODO();
 }

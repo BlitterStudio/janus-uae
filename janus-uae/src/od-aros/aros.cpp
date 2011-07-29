@@ -78,7 +78,6 @@ int log_net;
 
 int pause_emulation;
 int sleep_resolution;
-TCHAR start_path_data[MAX_DPATH];
 int uaelib_debug;
 
 void fetch_configurationpath (TCHAR *out, int size)
@@ -127,3 +126,4 @@ uae_u8 *target_load_keyfile (struct uae_prefs *p, const TCHAR *path, int *sizep,
 	bug("target_load_keyfile(,%s,%d,%s)\n", path, *sizep, name);
 	TODO();
 }
+

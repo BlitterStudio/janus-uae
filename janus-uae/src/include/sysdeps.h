@@ -547,8 +547,13 @@ extern void gui_message (const TCHAR *,...);
 extern int gui_message_multibutton (int flags, const TCHAR *format,...);
 #define write_log_err write_log
 extern void logging_init (void);
+#ifndef __AROS__
 extern FILE *log_open (const TCHAR *name, int append, int bootlog);
 extern void log_close (FILE *f);
+#else
+extern BPTR log_open (const TCHAR *name, int append, int bootlog);
+extern void log_close (BPTR f);
+#endif
 
 
 #ifndef O_BINARY

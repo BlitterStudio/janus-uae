@@ -158,6 +158,7 @@ COMMON_OBJS= \
 	picasso96_aros.o \
 	options.o \
 	gfx.o \
+	writelog.o \
 	stubs.o
 
 #../zfile_archive.o 
