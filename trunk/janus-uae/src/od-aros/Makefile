@@ -157,6 +157,7 @@ COMMON_OBJS= \
 	parser.o \
 	picasso96_aros.o \
 	options.o \
+	gfx.o \
 	stubs.o
 
 #../zfile_archive.o 
