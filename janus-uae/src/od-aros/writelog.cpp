@@ -44,9 +44,6 @@ static void writeconsole (const TCHAR *buffer);
 
 BPTR debugfile;
 
-TCHAR VersionStr[256];
-TCHAR BetaStr[64];
-
 TCHAR start_path_data[MAX_DPATH];
 TCHAR start_path_exe[MAX_DPATH];
 TCHAR start_path_plugins[MAX_DPATH];
@@ -239,24 +236,6 @@ void write_log (const TCHAR *format, ...)
 	//LeaveCriticalSection (&cs);
 }
 
-
-static void makeverstr (TCHAR *s)
-{
-	if (_tcslen (WINUAEBETA) > 0) {
-		_stprintf (BetaStr, " (%sBeta %s, %d.%02d.%02d)", WINUAEPUBLICBETA > 0 ? "Public " : "", WINUAEBETA,
-			GETBDY(WINUAEDATE), GETBDM(WINUAEDATE), GETBDD(WINUAEDATE));
-		_stprintf (s, "janus-UAE %d.%d.%d%s%s",
-			UAEMAJOR, UAEMINOR, UAESUBREV, WINUAEREV, BetaStr);
-	} else {
-		_stprintf (s, "janus-UAE %d.%d.%d%s (%d.%02d.%02d)",
-			UAEMAJOR, UAEMINOR, UAESUBREV, WINUAEREV, GETBDY(WINUAEDATE), GETBDM(WINUAEDATE), GETBDD(WINUAEDATE));
-	}
-	if (_tcslen (WINUAEEXTRA) > 0) {
-		_tcscat (s, " ");
-		_tcscat (s, WINUAEEXTRA);
-	}
-}
-
 void logging_init (void)
 {
 	static int started;
@@ -285,9 +264,6 @@ void logging_init (void)
 	logging_started = 1;
 	first++;
 
-	if(VersionStr[0]==0) {
-		makeverstr(VersionStr);
-	}
 	write_log(_T("\n%s"), VersionStr);
 
 	write_log (_T("\n(c) 1995-2001 Bernd Schmidt   - Core UAE concept and implementation.")
