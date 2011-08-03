@@ -221,7 +221,6 @@ static int match_string (const TCHAR *table[], const TCHAR *str)
 TCHAR *cfgfile_subst_path (const TCHAR *path, const TCHAR *subst, const TCHAR *file)
 {
 	/* @@@ use strcasecmp for some targets.  */
-	bug("cfgfile_subst_path(%s, %s, %s)\n", path, subst, file);
 	if (_tcslen (path) > 0 && _tcsncmp (file, path, _tcslen (path)) == 0) {
 		int l;
 		TCHAR *p2, *p = xmalloc (TCHAR, _tcslen (file) + _tcslen (subst) + 2);
@@ -236,10 +235,8 @@ TCHAR *cfgfile_subst_path (const TCHAR *path, const TCHAR *subst, const TCHAR *f
 		_tcscat (p, file + l);
 		p2 = target_expand_environment (p);
 		xfree (p);
-		bug("return p2=%s\n", p2);
 		return p2;
 	}
-	bug("file=%s\n", file);
 	TCHAR *s = target_expand_environment (file);
 	if (s) {
 		TCHAR tmp[MAX_DPATH];
@@ -248,7 +245,6 @@ TCHAR *cfgfile_subst_path (const TCHAR *path, const TCHAR *subst, const TCHAR *f
 		fullpath (tmp, sizeof tmp / sizeof (TCHAR));
 		s = my_strdup (tmp);
 	}
-	bug("return s=%s\n", s);
 	return s;
 }
 
@@ -407,15 +403,11 @@ static void cfgfile_write_rom (struct zfile *f, const TCHAR *path, const TCHAR *
 	TCHAR *str;
 	struct zfile *zf;
 	
-	bug("cfgfile_write_rom(%lx, %s, %s, %s)\n", f, path, romfile, name);
-
 	str = cfgfile_subst_path (path, UNEXPANDED, romfile);
 
-	bug("str=%s\n");
 	cfgfile_write_str (f, name, str);
 	zf = zfile_fopen (str, _T("rb"), ZFD_ALL);
 
-	bug("zf=%lx\n", zf);
 	if (zf) {
 		struct romdata *rd = getromdatabyzfile (zf);
 		if (rd) {

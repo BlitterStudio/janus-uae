@@ -1279,11 +1279,6 @@ char *ua_copy (char *dst, int maxlen, const TCHAR *src)
   TODO();
 }
 
-void fullpath (TCHAR *path, int size)
-{
-  TODO();
-}
-
 void my_close (struct my_openfile_s *mos)
 {
   TODO();
