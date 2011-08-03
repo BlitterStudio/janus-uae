@@ -96,11 +96,8 @@ BPTR log_open (const TCHAR *name, int append, int bootlog)
 {
 	BPTR f = NULL;
 
-	bug("log_open(%s, %d, %d)\n", name, append, bootlog);
-
 	if (name != NULL) {
 		f = Open (name, MODE_NEWFILE);
-		bug("f=%lx\n",f);
 		bootlogmode = bootlog;
 	} else 
 	{//if (1) {
@@ -134,12 +131,10 @@ void logging_open (int bootlog, int append)
 	if (currprefs.win32_logfile)
 	{
 		_stprintf (debugfilename, _T("%s%s"), start_path_data, LOG_NORMAL);
-		bug("debugfilename normal %s\n", debugfilename);
 	}
 	if (bootlog)
 	{
 		_stprintf (debugfilename, _T("%s%s"), start_path_data, LOG_BOOT);
-		bug("debugfilename boot %s\n", debugfilename);
 	}
 	if (debugfilename[0]) 
 	{
@@ -183,7 +178,6 @@ void flush_log (void)
 
 static void writeconsole (const TCHAR *buffer)
 {
-	bug("writeconsole(%s)\n");
 	printf (buffer);
 	fflush (stdout);
 }
@@ -196,8 +190,6 @@ void write_log (const TCHAR *format, ...)
 	int bufsize = WRITE_LOG_BUF_SIZE;
 	TCHAR *bufp;
 	va_list parms;
-
-	bug("write_log(debugfile=%lx)\n", debugfile);
 
 	premsg ();
 
@@ -215,7 +207,6 @@ void write_log (const TCHAR *format, ...)
 		}
 		break;
 	}
-	bug("1....... bufsize %d bufp %lx\n", bufsize, bufp);
 	bufp[bufsize - 1] = 0;
 	if (!_tcsncmp (bufp, _T("write "), 6))
 		bufsize--;
@@ -223,22 +214,17 @@ void write_log (const TCHAR *format, ...)
 	if (bufp[0] == '*')
 		count++;
 	if (SHOW_CONSOLE || console_logging) {
-		bug("SHOW_CONSOLE || console_logging\n");
 		if (lfdetected && ts)
 			writeconsole (ts);
 		writeconsole (bufp);
 	}
-	bug("2.......\n");
 	if (debugfile) {
-		bug("2.1......\n");
 		if (lfdetected && ts) {
-			bug("2.2......\n");
 			sprintf (aros_buf, _T("%s"), ts);
 			Write(debugfile, aros_buf, strlen(aros_buf));
 		}
-		bug("fprintf(%s)\n", bufp);
+		bug("write_log(\n%s)\n", bufp);
 		sprintf (aros_buf, _T("%s"), bufp);
-		bug("aros_buf %s)\n", aros_buf);
 		Write(debugfile, aros_buf, strlen(aros_buf));
 	}
 	lfdetected = 0;
@@ -250,7 +236,6 @@ void write_log (const TCHAR *format, ...)
 		xfree (bufp);
 	if (always_flush_log)
 		flush_log ();
-	bug("3.......\n");
 	//LeaveCriticalSection (&cs);
 }
 
