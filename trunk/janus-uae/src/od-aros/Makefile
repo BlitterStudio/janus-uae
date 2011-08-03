@@ -145,6 +145,7 @@ COMMON_OBJS= \
 	../jit/compstbl.o \
 	../nogui.o \
 	../zfile.o \
+	main.o \
 	unicode.o \
 	sounddep/sound.o \
 	serial.o \
