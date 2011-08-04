@@ -50,11 +50,6 @@ WCHAR *au_fs_copy (TCHAR *dst, int maxlen, const char *src)
   TODO();
 }
 
-void cache_free (uae_u8 *cache) 
-{
-  TODO();
-}
-
 int debuggable(void) 
 {
   TODO();
@@ -131,11 +126,6 @@ char *ua_fs_copy (char *dst, int maxlen, const TCHAR *src, int defchar)
 }
 
 void write_dlog (const TCHAR *format, ...)
-{
-  TODO();
-}
-
-uae_u8 *cache_alloc (int size)
 {
   TODO();
 }

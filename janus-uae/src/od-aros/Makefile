@@ -159,6 +159,7 @@ COMMON_OBJS= \
 	options.o \
 	gfx.o \
 	fsdb.o \
+	mman.o \
 	writelog.o \
 	keyboard.o \
 	stubs.o
