@@ -118,8 +118,10 @@ void sound_mute (int newmute)
   TODO();
 }
 
+/* starts one command in the shell, before emulation starts ..? */
 void target_run (void)
 {
+	//shellexecute (currprefs.win32_commandpathstart);
   TODO();
 }
 
@@ -450,11 +452,6 @@ int graphics_init(void)
 }
 
 void handle_events(void) 
-{
-  TODO();
-}
-
-int my_existsfile (const TCHAR *name)
 {
   TODO();
 }

@@ -158,6 +158,7 @@ COMMON_OBJS= \
 	picasso96_aros.o \
 	options.o \
 	gfx.o \
+	fsdb.o \
 	writelog.o \
 	keyboard.o \
 	stubs.o
