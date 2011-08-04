@@ -150,7 +150,6 @@ COMMON_OBJS= \
 	sounddep/sound.o \
 	serial.o \
 	joystick.o \
-	keyboard.o \
 	mouse.o \
 	scaler_more.o \
 	arosgfx.o \
@@ -160,6 +159,7 @@ COMMON_OBJS= \
 	options.o \
 	gfx.o \
 	writelog.o \
+	keyboard.o \
 	stubs.o
 
 #../zfile_archive.o 

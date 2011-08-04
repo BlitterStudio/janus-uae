@@ -28,7 +28,8 @@
 
 #include "options.h"
 #include "inputdevice.h"
-
+#include "uae.h"
+#include "aros.h"
 
 static int get_kb_num (void)
 {
@@ -122,4 +123,22 @@ struct inputdevice_functions inputdevicefunc_keyboard =
     get_kb_widget_first,
 		get_kb_flags
 };
+
+static struct uae_input_device_kbr_default keytrans[] = {
+
+	/* TODO ?? */
+
+	{ -1, 0 }
+};
+
+static int kb_np[] = { -1, 0 };
+
+static int *kbmaps[] = {
+	kb_np
+};
+
+void keyboard_settrans (void)
+{
+	inputdevice_setkeytranslation (keytrans, kbmaps);
+}
 

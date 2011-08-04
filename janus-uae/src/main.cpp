@@ -765,6 +765,7 @@ void leave_program (void)
 
 static int real_main2 (int argc, TCHAR **argv)
 {
+	DebOut("entered\n");
 
 #ifdef USE_SDL
 	SDL_Init (SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_NOPARACHUTE);
@@ -911,9 +912,13 @@ void real_main (int argc, TCHAR **argv)
 {
 	restart_program = 1;
 
+	DebOut("entered\n");
+
 	fetch_configurationpath (restart_config, sizeof (restart_config) / sizeof (TCHAR));
 	_tcscat (restart_config, OPTIONSFILENAME);
 	default_config = 1;
+
+	DebOut("entering while..\n");
 
 	while (restart_program) {
 		int ret;
