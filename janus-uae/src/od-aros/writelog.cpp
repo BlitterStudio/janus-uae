@@ -68,11 +68,11 @@ struct Device *TimerBase=NULL;
 static int opentimer(ULONG unit){
 
 	if(got_timer) {
-		DebOut("we already opened our timer\n");
+		//DebOut("we already opened our timer\n");
 		return 1;
 	}
 
-	DebOut("entered(unit=%d)\n", unit);
+	//DebOut("entered(unit=%d)\n", unit);
 	timer_msgport = CreateMsgPort();
 	timer_ioreq = (timerequest *) CreateIORequest(timer_msgport, sizeof(*timer_ioreq));
 	if (timer_ioreq){
@@ -88,7 +88,7 @@ static int opentimer(ULONG unit){
 
 static void closetimer(void){
 
-	DebOut("entered\n");
+	//DebOut("entered\n");
 
 	if(!got_timer) {
 		return;
@@ -107,14 +107,14 @@ static void closetimer(void){
 		timer_msgport = NULL;
 	}
 	got_timer=FALSE;
-	DebOut("timer closed\n");
+	//DebOut("timer closed\n");
 }
 
 BPTR log_open (const TCHAR *name, int append, int bootlog)
 {
 	BPTR f = NULL;
 
-	DebOut("name=%s append=%d bootlog=%d\n", name, append, bootlog);
+	//DebOut("name=%s append=%d bootlog=%d\n", name, append, bootlog);
 
 	if (name != NULL) {
 		f = Open (name, MODE_NEWFILE);
@@ -178,11 +178,11 @@ static TCHAR *writets (void)
 	static TCHAR secs[20];
 	struct timeval acttime;
 
-	DebOut("entered (TimerBase %lx, timer_ioreq %lx, timer_msgport %lx\n", TimerBase, timer_ioreq, timer_msgport);
+	//DebOut("entered (TimerBase %lx, timer_ioreq %lx, timer_msgport %lx\n", TimerBase, timer_ioreq, timer_msgport);
 
 	GetSysTime(&acttime);
 
-	DebOut("got sys time..\n");
+	//DebOut("got sys time..\n");
 
 	snprintf(secs, 20, "%lu", acttime.tv_secs);
 
@@ -217,7 +217,7 @@ void write_log (const TCHAR *format, ...)
 	TCHAR *bufp;
 	va_list parms;
 
-	DebOut("entered\n");
+	//DebOut("entered\n");
 
 	premsg ();
 
@@ -276,7 +276,7 @@ void logging_init (void)
 	BPTR lock;
 	TCHAR sep[2];
 
-	DebOut("entered (first=%d)\n", first);
+	//DebOut("entered (first=%d)\n", first);
 
 	opentimer(UNIT_VBLANK);
 
@@ -284,21 +284,21 @@ void logging_init (void)
 		write_log (_T("** RESTART **\n"));
 		return;
 	}
-	DebOut("ping\n");
+	//DebOut("ping\n");
 	if (first == 1) {
 		write_log (_T("Log (%s): '%s%s'\n"), currprefs.win32_logfile ? _T("enabled") : _T("disabled"),
 			start_path_data, LOG_NORMAL);
 		if (debugfile) {
-			DebOut("log_close!!!!!!\n");
+			//DebOut("log_close!!!!!!\n");
 			log_close (debugfile);
 		}
 		debugfile = 0;
 	}
-	DebOut("ping\n");
+	//DebOut("ping\n");
 	logging_open (first ? 0 : 1, 0);
 	logging_started = 1;
 	first++;
-	DebOut("ping\n");
+	//DebOut("ping\n");
 
 	write_log(_T("\n%s"), VersionStr);
 
