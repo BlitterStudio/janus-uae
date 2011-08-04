@@ -1868,10 +1868,8 @@ err:
 	zfile_fclose (f);
 	return 0;
 }
-
 #ifndef NATMEM_OFFSET
-
-uae_u8 *mapped_malloc (size_t s, TCHAR *file)
+uae_u8 *mapped_malloc (size_t s, const TCHAR *file)
 {
 	return xmalloc (uae_u8, s);
 }

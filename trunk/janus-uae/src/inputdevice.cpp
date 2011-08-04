@@ -169,7 +169,11 @@ static struct uae_input_device *keyboards;
 static struct uae_input_device_kbr_default *keyboard_default;
 
 #define KBR_DEFAULT_MAP_FIRST 0
+#ifndef __AROS__
 #define KBR_DEFAULT_MAP_LAST 5
+#else
+#define KBR_DEFAULT_MAP_LAST 0
+#endif
 #define KBR_DEFAULT_MAP_CD32_FIRST 6
 #define KBR_DEFAULT_MAP_CD32_LAST 8
 
@@ -3607,7 +3611,7 @@ static void checkcompakb (int *kb, int *srcmap)
 	int found = 0, avail = 0;
 	int j, k;
 
-	DebOut("entered(%d, %d)\n", kb, srcmap);
+	DebOut("entered(%lx, %lx)\n", kb, srcmap);
 
 	k = j = 0;
 	while (kb[j] >= 0) {
@@ -4202,14 +4206,18 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 			checkcompakb (keyboard_default_kbmaps[i], ip_mouse1);
 		}
 			DebOut("pong..\n");
+#ifndef __AROS__
 		for (i = KBR_DEFAULT_MAP_CD32_FIRST; i <= KBR_DEFAULT_MAP_CD32_LAST; i++) {
+			DebOut("pong..KBR_DEFAULT_MAP_CD32_FIRST \n");
 			checkcompakb (keyboard_default_kbmaps[i], ip_joycd321);
 			checkcompakb (keyboard_default_kbmaps[i], ip_joycd322);
 		}
+#endif
 	}
 	DebOut("ping..\n");
 
 	for (i = 0; i < 2; i++) {
+		DebOut("prefs->jports[%d]\n", i);
 		if (prefs->jports[i].id >= 0) {
 			int *kb = NULL;
 			int mode = prefs->jports[i].mode;
