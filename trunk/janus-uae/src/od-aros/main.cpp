@@ -34,8 +34,13 @@ TCHAR VersionStr[256];
 TCHAR BetaStr[64];
 
 
-void makeverstr (TCHAR *s)
-{
+/************************************************************************ 
+ * makeverstr
+ * 
+ * create a nice version
+ ************************************************************************/
+void makeverstr (TCHAR *s) {
+
 	if (_tcslen (WINUAEBETA) > 0) {
 		_stprintf (BetaStr, " (%sBeta %s, %d.%02d.%02d)", WINUAEPUBLICBETA > 0 ? "Public " : "", WINUAEBETA,
 			GETBDY(WINUAEDATE), GETBDM(WINUAEDATE), GETBDD(WINUAEDATE));
@@ -51,13 +56,66 @@ void makeverstr (TCHAR *s)
 	}
 }
 
+/************************************************************************ 
+ * main
+ *
+ * the AROS main must init / deinit all stuff around real_main
+ ************************************************************************/
 int main (int argc, TCHAR **argv) {
+
+
+	//if (doquit)
+	//	return 0;
 
 	//getstartpaths ();
 
 	makeverstr(VersionStr);
+	DebOut("%s", VersionStr);
+	logging_init();
 
+
+#if 0
+	enumerate_sound_devices ();
+	for (i = 0; sound_devices[i].name; i++) {
+		int type = sound_devices[i].type;
+		write_log (L"%d:%s: %s\n", i, type == SOUND_DEVICE_DS ? L"DS" : (type == SOUND_DEVICE_AL ? L"AL" : (type == SOUND_DEVICE_WASAPI ? L"WA" : L"PA")), sound_devices[i].name);
+	}
+	write_log (L"Enumerating recording devices:\n");
+	for (i = 0; record_devices[i].name; i++) {
+		int type = record_devices[i].type;
+		write_log (L"%d:%s: %s\n", i, type == SOUND_DEVICE_DS ? L"DS" : (type == SOUND_DEVICE_AL ? L"AL" : (type == SOUND_DEVICE_WASAPI ? L"WA" : L"PA")), record_devices[i].name);
+	}
+	write_log (L"done\n");
+	memset (&devmode, 0, sizeof (devmode));
+	devmode.dmSize = sizeof (DEVMODE);
+	if (EnumDisplaySettings (NULL, ENUM_CURRENT_SETTINGS, &devmode)) {
+		default_freq = devmode.dmDisplayFrequency;
+		if (default_freq >= 70)
+			default_freq = 70;
+		else
+			default_freq = 60;
+	}
+#endif
+	//WIN32_InitLang ();
+	//WIN32_InitHtmlHelp ();
+	//DirectDraw_Release ();
+
+	DebOut("keyboard_settrans ..\n");
+	keyboard_settrans ();
+#ifdef CATWEASEL
+	//catweasel_init ();
+#endif
+#ifdef PARALLEL_PORT
+	//paraport_mask = paraport_init ();
+#endif
+	//globalipc = createIPC (L"WinUAE", 0);
+	//serialipc = createIPC (COMPIPENAME, 1);
+	//enumserialports ();
+	//enummidiports ();
+
+	DebOut("calling real_main..\n");
 	real_main (argc, argv);
+
 	return 0;
 }
 

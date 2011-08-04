@@ -3607,6 +3607,8 @@ static void checkcompakb (int *kb, int *srcmap)
 	int found = 0, avail = 0;
 	int j, k;
 
+	DebOut("entered(%d, %d)\n", kb, srcmap);
+
 	k = j = 0;
 	while (kb[j] >= 0) {
 		struct uae_input_device *uid = &keyboards[0];
@@ -4009,6 +4011,8 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 	int used[MAX_INPUT_DEVICES] = { 0 };
 	int i, joy;
 
+	DebOut("entered(%lx, %d)\n", prefs, gameports);
+
 	for (i = 0; i < MAX_JPORTS; i++) {
 		joymodes[i] = prefs->jports[i].mode;
 		joyinputs[i]= NULL;
@@ -4020,6 +4024,7 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 		remove_custom_config (prefs, prefs->jports[i].id == JPORT_CUSTOM, i);
 		setjoyinputs (prefs, i);
 	}
+	DebOut("ping..\n");
 
 	for (i = 0; i < 2; i++) {
 		int af = prefs->jports[i].autofire;
@@ -4088,6 +4093,7 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 			}
 		}
 	}
+	DebOut("ping..\n");
 
 	for (i = 2; i < MAX_JPORTS; i++) {
 		if (prefs->jports[i].id >= 0 && joymodes[i] <= 0) {
@@ -4101,6 +4107,7 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 			}
 		}
 	}
+	DebOut("ping..\n");
 
 	for (i = 0; i < 2; i++) {
 		int af = prefs->jports[i].autofire;
@@ -4127,6 +4134,7 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 			}
 		}
 	}
+	DebOut("ping..\n");
 
 	for (i = 1; i >= 0; i--) {
 		int af = prefs->jports[i].autofire;
@@ -4178,10 +4186,12 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 			}
 		}
 	}
+	DebOut("ping of death..\n");
 
 	if (gameports) {
 		// replace possible old mappings with default keyboard mapping
 		for (i = KBR_DEFAULT_MAP_FIRST; i <= KBR_DEFAULT_MAP_LAST; i++) {
+			DebOut("pong (%d)..\n",i);
 			checkcompakb (keyboard_default_kbmaps[i], ip_joy2);
 			checkcompakb (keyboard_default_kbmaps[i], ip_joy1);
 			checkcompakb (keyboard_default_kbmaps[i], ip_joypad2);
@@ -4191,11 +4201,13 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 			checkcompakb (keyboard_default_kbmaps[i], ip_mouse2);
 			checkcompakb (keyboard_default_kbmaps[i], ip_mouse1);
 		}
+			DebOut("pong..\n");
 		for (i = KBR_DEFAULT_MAP_CD32_FIRST; i <= KBR_DEFAULT_MAP_CD32_LAST; i++) {
 			checkcompakb (keyboard_default_kbmaps[i], ip_joycd321);
 			checkcompakb (keyboard_default_kbmaps[i], ip_joycd322);
 		}
 	}
+	DebOut("ping..\n");
 
 	for (i = 0; i < 2; i++) {
 		if (prefs->jports[i].id >= 0) {
@@ -4259,6 +4271,7 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 			}
 		}
 	}
+	DebOut("ping..\n");
 	if (arcadia_bios) {
 		setcompakb (keyboard_default_kbmaps[KBR_DEFAULT_MAP_ARCADIA], ip_arcadia, 0, 0);
 		if (JSEM_ISXARCADE1 (i, prefs) || JSEM_ISXARCADE2 (i, prefs))
@@ -4267,6 +4280,7 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 	if (0 && currprefs.cs_cdtvcd) {
 		setcompakb (keyboard_default_kbmaps[KBR_DEFAULT_MAP_CDTV], ip_mediacdtv, 0, 0);
 	}
+	DebOut("ping..\n");
 
 	// parport
 	for (i = 2; i < MAX_JPORTS; i++) {
@@ -4285,6 +4299,7 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 			}
 		}
 	}
+	DebOut("ping..\n");
 	for (i = 2; i < MAX_JPORTS; i++) {
 		if (prefs->jports[i].id >= 0) {
 			int *kb = NULL;
@@ -4308,11 +4323,13 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 			}
 		}
 	}
+	DebOut("ping..\n");
 
 	for (i = 0; i < MAX_JPORTS; i++) {
 		if (gameports)
 			setautofires (prefs, i, prefs->jports[i].autofire);
 	}
+	DebOut("ping..\n");
 
 	for (i = 0; i < MAX_JPORTS; i++) {
 		setjoyinputs (prefs, i);
@@ -4480,11 +4497,14 @@ void inputdevice_updateconfig (struct uae_prefs *prefs)
 {
 	int i;
 
+	DebOut("entered\n");
+
 	copyjport (&changed_prefs, &currprefs, 0);
 	copyjport (&changed_prefs, &currprefs, 1);
 	copyjport (&changed_prefs, &currprefs, 2);
 	copyjport (&changed_prefs, &currprefs, 3);
 
+	DebOut("ping\n");
 #ifdef RETROPLATFORM
 	rp_input_change (0);
 	rp_input_change (1);
@@ -4494,17 +4514,22 @@ void inputdevice_updateconfig (struct uae_prefs *prefs)
 		rp_update_gameport (i, -1, 0);
 #endif
 
+	DebOut("ping\n");
 	resetinput ();
 
+	DebOut("ping\n");
 	joysticks = prefs->joystick_settings[prefs->input_selected_setting];
 	mice = prefs->mouse_settings[prefs->input_selected_setting];
 	keyboards = prefs->keyboard_settings[prefs->input_selected_setting];
 
+	DebOut("ping\n");
 	matchdevices_all (prefs);
 
+	DebOut("ping\n");
 	memset (joysticks2, 0, sizeof joysticks2);
 	memset (mice2, 0, sizeof mice2);
 
+	DebOut("ping\n");
 	joysticks = prefs->joystick_settings[GAMEPORT_INPUT_SETTINGS];
 	mice = prefs->mouse_settings[GAMEPORT_INPUT_SETTINGS];
 	keyboards = prefs->keyboard_settings[GAMEPORT_INPUT_SETTINGS];
@@ -4512,6 +4537,7 @@ void inputdevice_updateconfig (struct uae_prefs *prefs)
 		joysticks[i].enabled = 0;
 		mice[i].enabled = 0;
 	}
+	DebOut("ping\n");
 	compatibility_copy (prefs, true);
 	joysticks = prefs->joystick_settings[prefs->input_selected_setting];
 	mice = prefs->mouse_settings[prefs->input_selected_setting];
@@ -4519,11 +4545,13 @@ void inputdevice_updateconfig (struct uae_prefs *prefs)
 	if (prefs->input_selected_setting != GAMEPORT_INPUT_SETTINGS) {
 		compatibility_copy (prefs, false);
 	}
+	DebOut("ping\n");
 
 	disableifempty (prefs);
 	scanevents (prefs);
 
 	config_changed = 1;
+	DebOut("pong\n");
 }
 
 /* called when devices get inserted or removed

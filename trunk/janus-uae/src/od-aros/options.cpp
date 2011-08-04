@@ -35,6 +35,8 @@ void target_fixup_options (struct uae_prefs *p) {
 }
 
 void target_default_options (struct uae_prefs *p, int type) {
+	/* TODO: we want janus-uae_log.txt */
+	currprefs.win32_logfile=TRUE;
 }
 
 void target_save_options (struct zfile *f, struct uae_prefs *p) {
