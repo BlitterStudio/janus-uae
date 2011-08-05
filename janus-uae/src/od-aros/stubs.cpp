@@ -275,12 +275,6 @@ void machdep_free (void)
   TODO();
 }
 
-int machdep_init (void)
-{
-  TODO();
-	return 1;
-}
-
 int my_existsdir (const TCHAR *name)
 {
   TODO();

@@ -158,6 +158,7 @@ COMMON_OBJS= \
 	picasso96_aros.o \
 	options.o \
 	gfx.o \
+	nogui.o \
 	fsdb.o \
 	mman.o \
 	writelog.o \
@@ -165,6 +166,7 @@ COMMON_OBJS= \
 	stubs.o
 
 #../zfile_archive.o 
+#gui.o \
 
 
 common: ../blitfunc.cpp ../blittable.cpp ../blit.h ../linetoscr.cpp $(COMMON_OBJS)
