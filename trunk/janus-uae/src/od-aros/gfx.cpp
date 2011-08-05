@@ -41,3 +41,19 @@ int graphics_setup (void) {
 	 * here */
 	return 1;
 }
+
+static void gfxmode_reset (void) {
+	TODO();
+}
+
+int graphics_init(void) {
+
+	DebOut("entered\n");
+
+	gfxmode_reset ();
+
+	DebOut("HERE WE ARE.. LOTS OF WORK TODO.......................\n");
+
+	return open_windows (1);
+}
+

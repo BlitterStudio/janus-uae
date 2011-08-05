@@ -341,46 +341,6 @@ void target_reset (void)
   TODO();
 }
 
-void uae_sem_init (uae_sem_t event, int manual_reset, int initial_state)
-{
-  TODO();
-}
-
-void uae_sem_init (uae_sem_t event, int manual_reset, unsigned int initial_state)
-{
-  TODO();
-}
-
-void uae_sem_init (void **foo, int manual_reset, int initial_state)
-{
-  TODO();
-}
-
-
-void uae_sem_post (uae_sem_t event)
-{
-  TODO();
-}
-
-void uae_sem_post (uae_sem_t *event)
-{
-  TODO();
-}
-
-
-
-
-void uae_sem_wait (uae_sem_t event)
-{
-  TODO();
-}
-
-void uae_sem_wait (uae_sem_t *event)
-{
-  TODO();
-}
-
-
 void uaenet_close (void *vsd)
 {
   TODO();
@@ -427,11 +387,6 @@ void console_flush (void)
 }
 
 void console_out_f (const TCHAR *format,...)
-{
-  TODO();
-}
-
-int graphics_init(void) 
 {
   TODO();
 }
@@ -617,23 +572,6 @@ uae_u8 *restore_blitter (uae_u8 *src)
 {
   TODO();
 }
-
-void uae_sem_destroy (uae_sem_t event)
-{
-  TODO();
-}
-
-void uae_sem_destroy (uae_sem_t *event)
-{
-  TODO();
-}
-
-int uae_sem_trywait (uae_sem_t *event) 
-{
-	TODO();
-}
-
-
 
 
 USHORT DMS_Process_File(struct zfile *fi, struct zfile *fo, USHORT cmd, USHORT opt, USHORT PCRC, USHORT pwd, int part, struct zfile **extra)

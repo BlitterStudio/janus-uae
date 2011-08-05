@@ -158,6 +158,7 @@ COMMON_OBJS= \
 	picasso96_aros.o \
 	options.o \
 	gfx.o \
+	thread.o \
 	nogui.o \
 	fsdb.o \
 	mman.o \
