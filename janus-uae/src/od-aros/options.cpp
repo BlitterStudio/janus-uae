@@ -42,9 +42,11 @@ void target_default_options (struct uae_prefs *p, int type) {
 void target_save_options (struct zfile *f, struct uae_prefs *p) {
 }
 
+/* don't load any config for now */
 int target_cfgfile_load (struct uae_prefs *p, const TCHAR *filename, int type, int isdefault)
 {
   TODO();
+	return 0;
 }
 
 int target_parse_option (struct uae_prefs *p, const TCHAR *option, const TCHAR *value) 
