@@ -28,6 +28,15 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
+
+/*
+ * do nothing without GUI
+ * TODO: if we have a GUI 
+ */
+int machdep_init (void) {
+	return 1;
+}
+
 void gui_display (int shortcut) {
 
 	TODO();
