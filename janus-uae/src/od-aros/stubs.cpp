@@ -225,9 +225,10 @@ uae_u8 *save_floppy (int *len, uae_u8 *dstptr)
   TODO();
 }
 
+/* disable sound for now */
 int setup_sound (void)
 {
-  TODO();
+	return 0;
 }
 
 void target_quit (void)
