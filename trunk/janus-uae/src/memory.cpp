@@ -1869,13 +1869,19 @@ err:
 	return 0;
 }
 #ifndef NATMEM_OFFSET
-uae_u8 *mapped_malloc (size_t s, const TCHAR *file)
-{
-	return xmalloc (uae_u8, s);
+uae_u8 *mapped_malloc (size_t s, const TCHAR *file) {
+	uae_u8 *alloc;
+
+	alloc=xmalloc (uae_u8, s);
+
+	DebOut("xmalloc(size %lx, %s)=%lx\n", s, file, alloc);
+	return alloc;
 }
 
-void mapped_free (uae_u8 *p)
-{
+void mapped_free (uae_u8 *p) {
+
+	DebOut("xfree(%lx)\n", p);
+
 	xfree (p);
 }
 
@@ -2626,28 +2632,43 @@ void memory_init (void)
 #endif
 }
 
-void memory_cleanup (void)
+void memory_cleanup (void) 
 {
+
+	DebOut("memory_cleanup\n");
+
 	if (a3000lmemory)
 		mapped_free (a3000lmemory);
+	DebOut("....................\n");
 	if (a3000hmemory)
 		mapped_free (a3000hmemory);
+	DebOut(".........v..........\n");
+#ifndef __AROS__
+	/* bogomemory is part of chipmem ..? */
 	if (bogomemory)
 		mapped_free (bogomemory);
+#endif
+	DebOut(".........^..........\n");
 	if (kickmemory)
 		mapped_free (kickmemory);
+	DebOut("....................\n");
 	if (a1000_bootrom)
 		xfree (a1000_bootrom);
+	DebOut("....................\n");
 	if (chipmemory)
 		mapped_free (chipmemory);
+	DebOut("....................\n");
 	if (cardmemory) {
 		cdtv_savecardmem (cardmemory, allocated_cardmem);
 		mapped_free (cardmemory);
+	DebOut("....................\n");
 	}
 	if (custmem1)
 		mapped_free (custmem1);
+	DebOut("....................\n");
 	if (custmem2)
 		mapped_free (custmem2);
+	DebOut("....................\n");
 
 	bogomemory = 0;
 	kickmemory = 0;
@@ -2665,6 +2686,8 @@ void memory_cleanup (void)
 #ifdef ARCADIA
 	arcadia_unmap ();
 #endif
+
+	DebOut("memory clean!\n");
 }
 
 void memory_hardreset (void)
