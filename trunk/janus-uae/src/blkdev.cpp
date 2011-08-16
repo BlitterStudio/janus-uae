@@ -237,7 +237,9 @@ void blkdev_fix_prefs (struct uae_prefs *p)
 
 static bool getsem (int unitnum, bool dowait)
 {
+#ifndef __AROS__
 	if (unitsem[unitnum] == (uae_sem_t) NULL)
+#endif
 		uae_sem_init (&unitsem[unitnum], 0, 1);
 	bool gotit = false;
 	if (dowait) {
@@ -277,14 +279,18 @@ static void sys_command_close_internal (int unitnum)
 	freesem (unitnum);
 	if (openlist[unitnum] == 0) {
 		uae_sem_destroy (&unitsem[unitnum]);
+#ifndef __AROS__
 		unitsem[unitnum] = NULL;
+#endif
 	}
 }
 
 static int sys_command_open_internal (int unitnum, const TCHAR *ident, cd_standard_unit csu)
 {
 	int ret = 0;
+#ifndef __AROS__
 	if (unitsem[unitnum] == NULL)
+#endif
 		uae_sem_init (&unitsem[unitnum], 0, 1);
 	getsem (unitnum, true);
 	if (openlist[unitnum])
@@ -508,7 +514,9 @@ static void check_changes (int unitnum)
 		changed = true;
 
 	if (changed) {
+#ifndef __AROS__
 		if (unitsem[unitnum])
+#endif
 			getsem (unitnum, true);
 		cdimagefileinuse[unitnum] = changed_prefs.cdslots[unitnum].inuse;
 		_tcscpy (newimagefiles[unitnum], changed_prefs.cdslots[unitnum].name);
@@ -531,7 +539,9 @@ static void check_changes (int unitnum)
 #ifdef RETROPLATFORM
 		rp_cd_image_change (unitnum, NULL); 
 #endif
+#ifndef __AROS__
 		if (unitsem[unitnum])
+#endif
 			freesem (unitnum);
 	}
 	if (imagechangetime[unitnum] == 0)
@@ -539,7 +549,9 @@ static void check_changes (int unitnum)
 	imagechangetime[unitnum]--;
 	if (imagechangetime[unitnum] > 0)
 		return;
+#ifndef __AROS__
 	if (unitsem[unitnum])
+#endif
 		getsem (unitnum, true);
 	_tcscpy (currprefs.cdslots[unitnum].name, newimagefiles[unitnum]);
 	_tcscpy (changed_prefs.cdslots[unitnum].name, newimagefiles[unitnum]);
@@ -562,7 +574,9 @@ static void check_changes (int unitnum)
 #ifdef RETROPLATFORM
 	rp_cd_image_change (unitnum, currprefs.cdslots[unitnum].name);
 #endif
+#ifndef __AROS__
 	if (unitsem[unitnum])
+#endif
 		freesem (unitnum);
 
 	config_changed = 1;
