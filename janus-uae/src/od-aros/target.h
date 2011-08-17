@@ -34,9 +34,10 @@
 #define TARGET_HARDFILE_PATH	"PROGDIR:HardFiles/"
 #define TARGET_SAVESTATE_PATH   "PROGDIR:SaveStates/"
 
+#define OPTIONSFILENAME "default.uae"
+
 #define UNSUPPORTED_OPTION_l
 
-#define OPTIONSFILENAME "uaerc.config"
 //#define OPTIONS_IN_HOME
 
 #define TARGET_SPECIAL_OPTIONS \

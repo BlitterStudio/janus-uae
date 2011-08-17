@@ -86,7 +86,7 @@ int quickstart = 1, configurationcache = 1, relativepaths = 0;
 
 void fetch_configurationpath (TCHAR *out, int size)
 {
-	strncpy(out, "configurations", size);
+	strncpy(out, "configurations/", size);
 }
 
 #if 0
