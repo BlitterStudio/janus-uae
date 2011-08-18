@@ -61,6 +61,8 @@ void makeverstr (TCHAR *s) {
  *
  * the AROS main must init / deinit all stuff around real_main
  ************************************************************************/
+
+extern int log_scsi;
 int main (int argc, TCHAR **argv) {
 
 
@@ -72,6 +74,7 @@ int main (int argc, TCHAR **argv) {
 	makeverstr(VersionStr);
 	DebOut("%s", VersionStr);
 	logging_init();
+	log_scsi=1;
 
 
 #if 0
