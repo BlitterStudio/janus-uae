@@ -23,6 +23,7 @@
  *
  ************************************************************************/
 
+#include <stdio.h>
 #include <proto/dos.h>
 
 #include "sysconfig.h"
@@ -55,4 +56,40 @@ int my_existsfile (const TCHAR *name) {
 
 	DebOut("my_existsfile(%s)=%d\n", name, res);
 	return res;
+}
+
+/* should open a textfile according to its encoding. (UTF-8, UTF-16LE or ascii)
+ * on AROS we do not support UTF
+ */
+FILE *my_opentext (const TCHAR *name) {
+
+	FILE *f;
+	uae_u8 tmp[5];
+	int v;
+
+	DebOut("open %s\n", name);
+
+	f = fopen (name, "rb");
+	if (!f) {
+		DebOut("unable to open %s\n", name);
+		return NULL;
+	}
+	v = fread (tmp, 1, 4, f);
+	fclose (f);
+	if (v == 4) {
+		if (tmp[0] == 0xef && tmp[1] == 0xbb && tmp[2] == 0xbf) {
+			/* return fopen (name, L"r, ccs=UTF-8"); */
+			DebOut("ERROR: tried to open UTF-8 file!\n");
+			fprintf(stderr, "ERROR: tried to open UTF-8 file %s!\n", name);
+			return NULL;
+		}
+		if (tmp[0] == 0xff && tmp[1] == 0xfe) {
+			/* return fopen (name, L"r, ccs=UTF-16LE"); */
+			DebOut("ERROR: tried to open UTF-16 file!\n");
+			fprintf(stderr, "ERROR: tried to open UTF-16LE file %s!\n", name);
+			return NULL;
+		}
+
+	}
+	return fopen (name, "r");
 }
