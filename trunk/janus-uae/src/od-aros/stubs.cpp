@@ -440,6 +440,7 @@ void graphics_leave(void)
 int handle_msgpump (void)
 {
   TODO();
+	return 0;
 }
 
 int hdf_dup_target (struct hardfiledata *dhfd, const struct hardfiledata *shfd)
