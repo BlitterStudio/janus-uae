@@ -175,11 +175,6 @@ void my_closedir (struct my_opendir_s *mod)
   TODO();
 }
 
-FILE *my_opentext (const TCHAR *name)
-{
-  TODO();
-}
-
 int my_truncate (const TCHAR *name, uae_u64 len)
 {
   TODO();
@@ -1135,11 +1130,6 @@ char *ua_fs (const WCHAR *s, int defchar)
   TODO();
 }
 
-WCHAR *utf8u (const char *s)
-{
-  TODO();
-}
-
 void SERDAT (uae_u16 w)
 {
   TODO();
@@ -1156,11 +1146,6 @@ struct zfile *unwarp(struct zfile *zf)
 }
 
 uae_u16 SERDATR (void)
-{
-  TODO();
-}
-
-WCHAR *au_copy (TCHAR *dst, int maxlen, const char *src)
 {
   TODO();
 }
