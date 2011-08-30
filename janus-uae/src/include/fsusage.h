@@ -18,11 +18,20 @@
 /* Space usage statistics for a filesystem.  Blocks are 512-byte. */
 struct fs_usage
 {
-  unsigned long fsu_blocks;		/* Total blocks. */
-  unsigned long fsu_bfree;		/* Free blocks available to superuser. */
-  unsigned long fsu_bavail;		/* Free blocks available to non-superuser. */
-  unsigned long fsu_files;		/* Total file nodes. */
-  unsigned long fsu_ffree;		/* Free file nodes. */
+  long fsu_blocks;		/* Total blocks. */
+  long fsu_bfree;		/* Free blocks available to superuser. */
+  long fsu_bavail;		/* Free blocks available to non-superuser. */
+  long fsu_files;		/* Total file nodes. */
+  long fsu_ffree;		/* Free file nodes. */
 };
 
-int get_fs_usage (const TCHAR *path, const TCHAR *disk, struct fs_usage *fsp);
+#ifndef __P
+#if defined (__GNUC__) || (defined (__STDC__) && __STDC__)
+#define __P(args) args
+#else
+#define __P(args) ()
+#endif  /* GCC.  */
+#endif  /* Not __P.  */
+
+int get_fs_usage __P ((const char *path, const char *disk,
+		       struct fs_usage *fsp));

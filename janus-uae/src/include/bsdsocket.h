@@ -1,22 +1,37 @@
- /*
-  * UAE - The Un*x Amiga Emulator
-  *
-  * bsdsocket.library emulation
-  *
-  * Copyright 1997,98 Mathias Ortmann
-  *
-  */
+/************************************************************************ 
+ *
+ * bsdsocket.library emulation
+ *
+ * Copyright 1997,98 Mathias Ortmann
+ * Copyright 2009 Oliver Brunner - aros<at>oliver-brunner.de
+ *
+ * This file is part of Janus-UAE.
+ *
+ * Janus-UAE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-UAE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * This file is based on a parts of cbio.c, (c) 1992 Commodore-Amiga.
+ *
+ * $Id$
+ *
+ ************************************************************************/
 
 //#define TRACING_ENABLED
 
-#ifdef __AROS__
-#include <exec/types.h>
-#endif
-
 #ifdef TRACING_ENABLED
-#define BSDTRACE(x) do { write_log x; } while(0)
+#define TRACE(x) do { write_log x; } while(0)
 #else
-#define BSDTRACE(x)
+#define TRACE(x)
 #endif
 
 extern int init_socket_layer (void);
@@ -31,12 +46,6 @@ extern void deinit_socket_layer (void);
 
 #define MAXADDRLEN 256
 
-#ifdef _WIN32
-#define SOCKET_TYPE SOCKET
-#else
-#define SOCKET_TYPE int
-#endif
-
 /* allocated and maintained on a per-task basis */
 struct socketbase {
     struct socketbase *next;
@@ -49,7 +58,7 @@ struct socketbase {
     uae_u32 errnoptr, herrnoptr;	/* pointers */
     uae_u32 errnosize, herrnosize;	/* pinter sizes */
     int dtablesize;		/* current descriptor/flag etc. table size */
-    SOCKET_TYPE *dtable;	/* socket descriptor table */
+    int *dtable;		/* socket descriptor table */
     int *ftable;		/* socket flags */
     int resultval;
     uae_u32 hostent;		/* pointer to the current hostent structure (Amiga mem) */
@@ -66,8 +75,8 @@ struct socketbase {
 
     /* host-specific fields below */
 #ifdef _WIN32
-    SOCKET_TYPE sockAbort;	/* for aborting WinSock2 select() (damn Microsoft) */
-    SOCKET_TYPE sockAsync;	/* for aborting WSBAsyncSelect() in window message handler */
+    unsigned int sockAbort;	/* for aborting WinSock2 select() (damn Microsoft) */
+    unsigned int sockAsync;	/* for aborting WSBAsyncSelect() in window message handler */
     int needAbort;		/* abort flag */
     void *hAsyncTask;		/* async task handle */
     void *hEvent;		/* thread event handle */
@@ -90,14 +99,15 @@ struct socketbase {
     uae_u32 timeout;
     uae_u32 sigmp;
 #endif
-};
+} *socketbases;
+
 
 #define LIBRARY_SIZEOF 36
 
 struct UAEBSDBase {
-    uae_u8 dummy[LIBRARY_SIZEOF];
+    char dummy[LIBRARY_SIZEOF];
     struct socketbase *sb;
-    uae_u8 scratchbuf[SCRATCHBUFSIZE];
+    char scratchbuf[SCRATCHBUFSIZE];
 };
 
 /* socket flags */
@@ -123,30 +133,26 @@ struct UAEBSDBase {
 #define SF_BLOCKING 0x80000000
 #define SF_BLOCKINGINPROGRESS 0x40000000
 
-uae_u32 addstr (uae_u32 * dst, const TCHAR *src);
-uae_u32 addstr_ansi (uae_u32 * dst, const uae_char *src);
-uae_u32 strncpyha (uae_u32 dst, const uae_char *src, int size);
-uae_u32 addmem (uae_u32 * dst, const uae_char *src, int len);
+
+extern uae_u32 addstr (uae_u32 *, const char *);
+extern uae_u32 addmem (uae_u32 *, const char *, int len);
+
+extern char *strncpyah (char *, uae_u32, int);
+extern char *strcpyah (char *, uae_u32);
+extern uae_u32 strcpyha (uae_u32, const char *);
+extern uae_u32 strncpyha (uae_u32, const char *, int);
 
 #define SB struct socketbase *sb
+
+#ifndef _WIN32
+typedef int SOCKET;
+#define INVALID_SOCKET -1
+#endif
 
 extern void bsdsocklib_seterrno (SB, int);
 extern void bsdsocklib_setherrno (SB, int);
 
-#ifdef __AROS__
-#warning WPARAM and LPARAM TODO!!
-typedef struct {
-	void get();
-	void set(int value);
-} WPARAM;
-
-typedef struct {
-	void get();
-	void set(int value);
-} LPARAM;
-#endif
-
-extern void sockmsg (unsigned int, WPARAM, LPARAM);
+extern void sockmsg (unsigned int, unsigned long, unsigned long);
 extern void sockabort (SB);
 
 extern void addtosigqueue (SB, int);
@@ -155,19 +161,20 @@ extern void sigsockettasks (void);
 extern void locksigqueue (void);
 extern void unlocksigqueue (void);
 
+#define BOOL int
 extern BOOL checksd(SB, int sd);
-extern void setsd(SB, int , SOCKET_TYPE);
-extern int getsd (SB, SOCKET_TYPE);
-extern SOCKET_TYPE getsock (SB, int);
+extern void setsd(SB, int ,int );
+extern int getsd (SB, int);
+extern int getsock (SB, int);
 extern void releasesock (SB, int);
 
 extern void waitsig (TrapContext *context, SB);
 extern void cancelsig (TrapContext *context, SB);
 
-extern int host_sbinit (TrapContext*, SB);
+extern int host_sbinit (TrapContext *, SB);
 extern void host_sbcleanup (SB);
 extern void host_sbreset (void);
-extern void host_closesocketquick (SOCKET_TYPE);
+extern void host_closesocketquick (int);
 
 extern int host_dup2socket (SB, int, int);
 extern int host_socket (SB, int, int, int);
@@ -181,9 +188,9 @@ extern void host_setsockopt (SB, uae_u32, uae_u32, uae_u32, uae_u32, uae_u32);
 extern uae_u32 host_getsockopt (SB, uae_u32, uae_u32, uae_u32, uae_u32, uae_u32);
 extern uae_u32 host_getsockname (SB, uae_u32, uae_u32, uae_u32);
 extern uae_u32 host_getpeername (SB, uae_u32, uae_u32, uae_u32);
-extern uae_u32 host_IoctlSocket (TrapContext *, SB, uae_u32, uae_u32, uae_u32);
+extern uae_u32 host_IoctlSocket (SB, uae_u32, uae_u32, uae_u32);
 extern uae_u32 host_shutdown (SB, uae_u32, uae_u32);
-extern int host_CloseSocket (TrapContext *, SB, int);
+extern int host_CloseSocket (SB, int);
 extern void host_connect (TrapContext *, SB, uae_u32, uae_u32, uae_u32);
 extern void host_WaitSelect (TrapContext *, SB, uae_u32, uae_u32, uae_u32, uae_u32, uae_u32, uae_u32);
 extern uae_u32 host_SetSocketSignals (void);
@@ -207,7 +214,6 @@ extern uae_u32 host_vsyslog (void);
 extern uae_u32 host_Dup2Socket (void);
 extern uae_u32 host_gethostname (uae_u32, uae_u32);
 
-extern uaecptr bsdlib_startup (uaecptr);
+
 extern void bsdlib_install (void);
 extern void bsdlib_reset (void);
-

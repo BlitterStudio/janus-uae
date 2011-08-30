@@ -42,7 +42,7 @@ launchd:  $(LOBJS)
 	cp launchd  $(TARGETDIR)
 
 clean:
-	@rm -f $(JOBJS) $(COBJS) janusd clipd
+	@rm -f $(JOBJS) $(COBJS) $(LOBJS) janusd clipd launchd
 
 %.o: %.c janus-daemon.h clip-daemon.h
 	$(CC) $(CFLAGS) -o $@ -c $*.c
