@@ -317,6 +317,7 @@ static void handle_launch_signal(void) {
   ULONG *command_mem;
   char  *command_string;
   char  *path;
+  char  *fullpath;
   char  *filename;
   struct WBArg *wbargs=NULL;
   void  *pool;
@@ -348,6 +349,7 @@ static void handle_launch_signal(void) {
     }
     else {
       if(command_mem[0]==1) {
+
 	/* WB == 1 */
 
 	command_string=(char *) command_mem;
@@ -371,11 +373,19 @@ static void handle_launch_signal(void) {
 	/* we get everything in path: path,filename and arguments */
 
 	command_string=(char *) command_mem;
-	path          =command_string + command_mem[1];
+	fullpath      =         command_string + command_mem[1];
+#if 0
+	filename      =         command_string + command_mem[2];
+#endif
 
-	DebOut("launchd: CLI cmd: >%s<\n", path);
+	DebOut("launchd: fullpath: >%s<\n", fullpath);
+#if 0
+	DebOut("launchd: cmd:  >%s<\n", filename);
+	sprintf(cli_cmd, "%s/%s\n", path, filename);
+	DebOut("cli_cmd: %s\n", cli_cmd);
+#endif
 
-	result=SystemTags(path,
+	result=SystemTags(fullpath,
 			      SYS_Asynch, TRUE,
 			      SYS_Input,  Open("CON://200/100/RunAmigaOs/CLOSE/AUTO/WAIT", MODE_OLDFILE),
 			      SYS_Output, NULL,
