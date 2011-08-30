@@ -557,6 +557,7 @@ void uae_load_config (void) {
 
   fix_options ();
 
+	changed_prefs=currprefs;
   gui_update();
 
   FreeVec(backup_prefs);
