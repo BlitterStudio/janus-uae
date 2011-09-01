@@ -113,13 +113,6 @@ void sound_mute (int newmute)
   TODO();
 }
 
-/* starts one command in the shell, before emulation starts ..? */
-void target_run (void)
-{
-	//shellexecute (currprefs.win32_commandpathstart);
-  TODO();
-}
-
 char *ua_fs_copy (char *dst, int maxlen, const TCHAR *src, int defchar)
 {
   TODO();
@@ -1152,11 +1145,6 @@ uae_u16 SERDATR (void)
 }
 
 TCHAR* buf_out (TCHAR *buffer, int *bufsize, const TCHAR *format, ...)
-{
-  TODO();
-}
-
-int lockscr (int fullupdate) 
 {
   TODO();
 }

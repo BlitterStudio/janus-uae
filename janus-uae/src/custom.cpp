@@ -2947,6 +2947,8 @@ static void calcdiw (void)
 /* display mode changed (lores, doubling etc..), recalculate everything */
 void init_custom (void)
 {
+	DebOut("entered\n");
+
 	update_mirrors();
 	create_cycle_diagram_table ();
 	reset_drawing ();
@@ -3086,9 +3088,12 @@ static void VPOSW (uae_u16 v)
 	if (M68K_GETPC < 0xf00000 || 1)
 		write_log (_T("VPOSW %04X PC=%08x\n"), v, M68K_GETPC);
 #endif
+
+	DebOut("v: %d\n",v);
 	if (lof_store != ((v & 0x8000) ? 1 : 0)) {
 		lof_changed = 1;
 		lof_store = (v & 0x8000) ? 1 : 0;
+		DebOut("new lof_store: %d\n", lof_store);
 	}
 	if (currprefs.chipset_mask & CSMASK_ECS_AGNUS) {
 		lol = (v & 0x0080) ? 1 : 0;
