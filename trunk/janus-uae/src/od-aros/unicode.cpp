@@ -32,7 +32,7 @@
 
 char *uutf8 (const WCHAR *s) {
 
-	DebOut("s=%s\n", s);
+	//DebOut("s=%s\n", s);
 
 	if(s==NULL) {
 		return NULL;
@@ -42,14 +42,14 @@ char *uutf8 (const WCHAR *s) {
 }
 
 WCHAR *au_copy (TCHAR *dst, int maxlen, const char *src) {
-	DebOut("src=%s\n", src);
+	//DebOut("src=%s\n", src);
 
 	return strncpy(dst, src, maxlen);
 }
 
 WCHAR *utf8u (const char *s) {
 
-	DebOut("s=%s\n", s);
+	//DebOut("s=%s\n", s);
 
 	if(s==NULL) {
 		return NULL;

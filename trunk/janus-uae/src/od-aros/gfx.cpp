@@ -49,7 +49,7 @@ struct Window *hAmigaWnd;
 
 int graphics_setup (void) {
 
-	TODO();
+	/* TODO(); */
 
 #ifdef PICASSO96
 	//InitPicasso96 ();
@@ -125,3 +125,21 @@ int graphics_init(void) {
 	return open_windows (1);
 }
 
+int isscreen (void)
+{
+	return hAmigaWnd ? 1 : 0;
+}
+
+/* not sure, what this does..
+ * winuae uses it to D3D_locktexture/DirectDraw_SurfaceLock stuff.
+ * I doubt, we need this on AROS !?
+ */
+int lockscr (int fullupdate) {
+	DebOut("fullupdate: %d\n", fullupdate);
+
+	if(!isscreen()) {
+		DebOut("no screen\n");
+		return 0;
+	}
+	return 1;
+}

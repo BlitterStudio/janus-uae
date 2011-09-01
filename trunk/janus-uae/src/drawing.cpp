@@ -1697,9 +1697,13 @@ static void init_aspect_maps (void)
 {
 	int i, maxl;
 
-	if (gfxvidinfo.height == 0)
+	DebOut("entered\n");
+
+	if (gfxvidinfo.height == 0) {
 		/* Do nothing if the gfx driver hasn't initialized the screen yet */
+		DebOut("Do nothing, gfx driver hasn't initialized the screen yet\n");
 		return;
+	}
 
 	linedbld = linedbl = currprefs.gfx_vresolution;
 	if (doublescan > 0 && interlace_seen <= 0) {
@@ -1714,7 +1718,9 @@ static void init_aspect_maps (void)
 
 	/* At least for this array the +1 is necessary. */
 	amiga2aspect_line_map = xmalloc (int, (MAXVPOS + 1) * 2 + 1);
+	DebOut("amiga2aspect_line_map: %lx\n", amiga2aspect_line_map);
 	native2amiga_line_map = xmalloc (int, gfxvidinfo.height);
+	DebOut("native2amiga_line_map: %lx\n", native2amiga_line_map);
 
 	maxl = (MAXVPOS + 1) << linedbld;
 	min_ypos_for_screen = minfirstline << linedbl;
@@ -1986,6 +1992,8 @@ static void pfield_draw_line (int lineno, int gfx_ypos, int follow_ypos)
 	int border = 0;
 	int do_double = 0;
 	enum double_how dh;
+
+	DebOut("lineno %d, gfx_ypos %d, follow_ypos %d\n", lineno, gfx_ypos, follow_ypos);
 
 	dp_for_drawing = line_decisions + lineno;
 	dip_for_drawing = curr_drawinfo + lineno;
@@ -2501,6 +2509,8 @@ void finish_drawing_frame (void)
 {
 	int i;
 
+	DebOut("entered\n");
+
 	if (! lockscr (false)) {
 		notice_screen_contents_lost ();
 		return;
@@ -2515,20 +2525,30 @@ void finish_drawing_frame (void)
 	return;
 #endif
 
+	DebOut("1..\n");
+
 	for (i = 0; i < max_ypos_thisframe; i++) {
 		int i1 = i + min_ypos_for_screen;
 		int line = i + thisframe_y_adjust_real;
 		int where2;
 
+		DebOut("i: %d\n", i);
+		DebOut("i1: %d\n", i1);
+		DebOut("amiga2aspect_line_map: %lx\n", amiga2aspect_line_map);
+
 		where2 = amiga2aspect_line_map[i1];
+
+		DebOut("i2: %d\n", i);
 		if (where2 >= gfxvidinfo.height)
 			break;
 		if (where2 < 0)
 			continue;
 		hposblank = 0;
+		DebOut("i3: %d\n", i);
 		pfield_draw_line (line, where2, amiga2aspect_line_map[i1 + 1]);
 	}
 
+	DebOut("2..\n");
 	/* clear possible old garbage at the bottom if emulated area become smaller */
 	for (i = last_max_ypos; i < gfxvidinfo.height; i++) {
 		int i1 = i + min_ypos_for_screen;
@@ -2551,6 +2571,7 @@ void finish_drawing_frame (void)
 		do_flush_line (where2);
 	}
 
+	DebOut("3..\n");
 	if (currprefs.leds_on_screen) {
 		for (i = 0; i < TD_TOTAL_HEIGHT; i++) {
 			int line = gfxvidinfo.height - TD_TOTAL_HEIGHT + i;
@@ -2566,10 +2587,13 @@ void finish_drawing_frame (void)
 		}
 	}
 
+	DebOut("4..\n");
 	if (lightpen_x > 0 || lightpen_y > 0)
 		lightpen_update ();
 
 	do_flush_screen (first_drawn_line, last_drawn_line);
+
+	DebOut("5..\n");
 
 #ifdef ECS_DENISE
 	if (brdblank_changed) {
@@ -2632,19 +2656,30 @@ void redraw_frame (void)
 
 void vsync_handle_redraw (int long_frame, int lof_changed)
 {
+	DebOut("long_frame %d, lof_changed %d\n", long_frame, lof_changed);
 	last_redraw_point++;
 	if (lof_changed || interlace_seen <= 0 || last_redraw_point >= 2 || long_frame || doublescan < 0) {
+		DebOut("entered if\n");
 		last_redraw_point = 0;
 
-		if (framecnt == 0)
+		if (framecnt == 0) {
+			DebOut("1-..\n");
 			finish_drawing_frame ();
+		}
+		DebOut("1a..\n");
 		if (interlace_seen > 0) {
+			DebOut("1b..\n");
 			interlace_seen = -1;
 		} else if (interlace_seen == -1) {
+			DebOut("1c..\n");
 			interlace_seen = 0;
-			if (currprefs.gfx_scandoubler && currprefs.gfx_vresolution)
+			if (currprefs.gfx_scandoubler && currprefs.gfx_vresolution) {
+				DebOut("1d..\n");
 				notice_screen_contents_lost ();
+			}
 		}
+
+		DebOut("1..\n");
 
 		if (quit_program < 0) {
 #ifdef SAVESTATE
@@ -2660,6 +2695,8 @@ void vsync_handle_redraw (int long_frame, int lof_changed)
 			set_special (SPCFLAG_BRK);
 			return;
 		}
+
+		DebOut("2..\n");
 
 		count_frame ();
 		check_picasso ();
@@ -2679,6 +2716,8 @@ void vsync_handle_redraw (int long_frame, int lof_changed)
 			notice_new_xcolors ();
 		}
 
+		DebOut("3..\n");
+
 		check_prefs_changed_audio ();
 		check_prefs_changed_custom ();
 		check_prefs_changed_cpu ();
@@ -2695,6 +2734,7 @@ void vsync_handle_redraw (int long_frame, int lof_changed)
 #ifdef AVIOUTPUT
 	frame_drawn ();
 #endif
+	DebOut("exit\n");
 }
 
 void hsync_record_line_state (int lineno, enum nln_how how, int changed)
@@ -2783,6 +2823,8 @@ void notice_interlace_seen (void)
 void reset_drawing (void)
 {
 	unsigned int i;
+
+	DebOut("entered\n");
 
 	max_diwstop = 0;
 

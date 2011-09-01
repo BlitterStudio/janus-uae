@@ -201,3 +201,12 @@ void fullpath (TCHAR *path, int size) {
 
 	DebOut("result: %s\n", path);
 }
+
+
+/* starts one command in the shell, before emulation starts ..? */
+void target_run (void)
+{
+	//shellexecute (currprefs.win32_commandpathstart);
+	/* TODO ? */
+}
+
