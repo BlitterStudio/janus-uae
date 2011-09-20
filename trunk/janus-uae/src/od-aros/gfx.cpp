@@ -131,8 +131,10 @@ static int create_windows_2 (void) {
 		return 1;
 	}
 
-	currentmode->amiga_width=600;
-	currentmode->amiga_height=400;
+	currentmode->amiga_width=currentmode->current_width;
+	currentmode->amiga_height=currentmode->current_height;
+
+	DebOut("opening window with %dx%d\n", currentmode->current_width, currentmode->current_height);
 
 	hAmigaWnd= OpenWindowTags (NULL,
 			  WA_Title,        (ULONG)PACKAGE_NAME,
@@ -188,6 +190,8 @@ static BOOL doInit (void) {
 
 	/* LOT's of stuff to do here! */
 
+	DebOut("LOT's of stuff to do here..\n");
+
 //OOPS:
 	if(!create_windows ()) {
 		DebOut("unable to open windows!\n");
@@ -195,6 +199,7 @@ static BOOL doInit (void) {
 	}
 
 	for(;;) {
+		DebOut("for(;;)..\n");
 		if(screen_is_picasso) {
 			break;
 		}
@@ -216,6 +221,8 @@ static BOOL doInit (void) {
 		}
 	} /* for */
 
+	return 1;
+
 OOPS:
 	close_windows();
 	return ret;
@@ -226,8 +233,12 @@ static void update_modes(void) {
 
 	DebOut("entered\n");
 
-DebOut("========================= WHY IS THIS ALL 0 ?? ========================\n");
-	DebOut("currentmode->native_width: %d\n", currentmode->native_width);
+	/* HACK: */
+	if(!currentmode->current_width) {
+		DebOut("hardsetting currentmode->current_width to currprefs.gfx_size.width..\n");
+		currentmode->current_width =currprefs.gfx_size.width;
+		currentmode->current_height=currprefs.gfx_size.height;
+	}
 #if 0
 	if (flags & DM_W_FULLSCREEN) {
 		RECT rc = getdisplay (&currprefs)->rect;
@@ -238,8 +249,9 @@ DebOut("========================= WHY IS THIS ALL 0 ?? ========================\
 	} else {
 #endif
 		currentmode->native_width = currentmode->current_width;
-		DebOut("currentmode->current_width: %d\n", currentmode->current_width);
 		currentmode->native_height = currentmode->current_height;
+		DebOut("currentmode->current_width: %d\n", currentmode->current_width);
+		DebOut("currentmode->native_width: %d\n", currentmode->native_width);
 #if 0
 	}
 #endif
@@ -263,6 +275,7 @@ static void update_gfxparams (void) {
 #endif
 		currentmode->current_width = currprefs.gfx_size.width;
 		DebOut("currprefs.gfx_size.width: %d\n", currprefs.gfx_size.width);
+		DebOut("currprefs.gfx_size.width_windowed: %d\n", currprefs.gfx_size_win.width);
 		currentmode->current_height = currprefs.gfx_size.height;
 		currentmode->frequency = abs (currprefs.gfx_refreshrate);
 		if (currprefs.gfx_avsync)
@@ -331,6 +344,7 @@ static int open_windows (int full) {
 	init_round = 0; /* ? */
 	ret = -2;
 	do {
+		DebOut("ret: %d, init_round: %d\n", ret, init_round);
 		if(ret < -1) {
 			update_modes ();
 			update_gfxparams ();
@@ -356,6 +370,12 @@ int graphics_init(void) {
 	DebOut("entered\n");
 
 	gfxmode_reset ();
+
+	/* in WinUAE a lot of stuff is configured by the GUI (read from PREFS->written to workin prefs etc.
+	 * we do this here for the moment:
+	 */
+	currprefs.gfx_size.width=currprefs.gfx_size_win.width;
+	currprefs.gfx_size.height=currprefs.gfx_size_win.height;
 
 	DebOut("HERE WE ARE.. LOTS OF WORK TODO.......................\n");
 
