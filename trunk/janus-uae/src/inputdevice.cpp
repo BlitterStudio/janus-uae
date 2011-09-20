@@ -5298,15 +5298,22 @@ void inputdevice_acquire (int allmode)
 {
 	int i;
 
+	DebOut("entered\n");
+
 	inputdevice_unacquire ();
+	DebOut("0\n");
 	for (i = 0; i < MAX_INPUT_DEVICES; i++) {
+		DebOut("0.%d\n",i);
 		if ((use_joysticks[i] && allmode >= 0) || (allmode && !idev[IDTYPE_JOYSTICK].get_flags (i)))
 			idev[IDTYPE_JOYSTICK].acquire (i, 0);
 	}
+
 	for (i = 0; i < MAX_INPUT_DEVICES; i++) {
+		DebOut("1.%d\n",i);
 		if ((use_mice[i] && allmode >= 0) || (allmode && !idev[IDTYPE_MOUSE].get_flags (i)))
 			idev[IDTYPE_MOUSE].acquire (i, allmode < 0);
 	}
+	DebOut("2\n");
 	for (i = 0; i < MAX_INPUT_DEVICES; i++) {
 		if ((use_keyboards[i] && allmode >= 0) || (allmode <  0 && !idev[IDTYPE_KEYBOARD].get_flags (i)))
 			idev[IDTYPE_KEYBOARD].acquire (i, allmode < 0);
@@ -5314,6 +5321,7 @@ void inputdevice_acquire (int allmode)
 	//    if (!input_acquired)
 	//	write_log (_T("input devices acquired (%s)\n"), allmode ? "all" : "selected only");
 	input_acquired = 1;
+	DebOut("done.\n");
 }
 
 void inputdevice_unacquire (void)
