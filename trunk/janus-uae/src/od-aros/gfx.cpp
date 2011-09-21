@@ -97,6 +97,8 @@ struct Window *hAmigaWnd;
 int screen_is_picasso = 0;
 static int scalepicasso;
 
+static uae_u8 scrlinebuf[4096 * 4]; /* this is too large, but let's rather play on the safe side here */
+
 static BOOL doInit (void);
 
 int graphics_setup (void) {
@@ -220,6 +222,8 @@ static BOOL doInit (void) {
 			break;
 		}
 	} /* for */
+
+	gfxvidinfo.emergmem = scrlinebuf; // memcpy from system-memory to video-memory
 
 	return 1;
 
