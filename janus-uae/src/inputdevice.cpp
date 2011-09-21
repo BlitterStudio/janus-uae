@@ -5301,7 +5301,9 @@ void inputdevice_acquire (int allmode)
 	DebOut("entered\n");
 
 	inputdevice_unacquire ();
-	DebOut("0\n");
+	DebOut("allmode: %d\n", allmode);
+
+	DebOut("0 (MAX_INPUT_DEVICES: %d)\n", MAX_INPUT_DEVICES);
 	for (i = 0; i < MAX_INPUT_DEVICES; i++) {
 		DebOut("0.%d\n",i);
 		if ((use_joysticks[i] && allmode >= 0) || (allmode && !idev[IDTYPE_JOYSTICK].get_flags (i)))
@@ -5310,6 +5312,9 @@ void inputdevice_acquire (int allmode)
 
 	for (i = 0; i < MAX_INPUT_DEVICES; i++) {
 		DebOut("1.%d\n",i);
+		DebOut("1.%d: use_mice[%d]=%d\n",i,i,use_mice[i]);
+		DebOut("1.%d: idev[IDTYPE_MOUSE]=%lx\n",i,idev[IDTYPE_MOUSE]);
+		DebOut("1.%d: idev[IDTYPE_MOUSE].get_flags (%d)=%d\n",i,i,idev[IDTYPE_MOUSE].get_flags (i));
 		if ((use_mice[i] && allmode >= 0) || (allmode && !idev[IDTYPE_MOUSE].get_flags (i)))
 			idev[IDTYPE_MOUSE].acquire (i, allmode < 0);
 	}
