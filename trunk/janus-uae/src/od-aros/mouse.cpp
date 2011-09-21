@@ -314,6 +314,12 @@ static TCHAR *get_mouse_uniquename (int mouse)
 	return get_mouse_name(mouse);
 }
 
+static int get_mouse_flags (int num) {
+	DebOut("num %d\n", num);
+	return 1;
+}
+
+
 struct inputdevice_functions inputdevicefunc_mouse = {
     init_mouse,
     close_mouse,
@@ -325,7 +331,8 @@ struct inputdevice_functions inputdevicefunc_mouse = {
 		get_mouse_uniquename,
     get_mouse_widget_num,
     get_mouse_widget_type,
-    get_mouse_widget_first
+    get_mouse_widget_first,
+		get_mouse_flags
 };
 
 #if 0
