@@ -189,6 +189,7 @@ static int create_windows (void) {
 
 static BOOL doInit (void) {
 	BOOL ret;
+	int size;
 
 	/* LOT's of stuff to do here! */
 
@@ -213,12 +214,16 @@ static BOOL doInit (void) {
 			DebOut("currentmode->amiga_height: %d\n", currentmode->amiga_height);
 
 			gfxvidinfo.pixbytes = currentmode->current_depth >> 3;
-			gfxvidinfo.bufmem = 0;
+			size = currentmode->amiga_width * currentmode->amiga_height * gfxvidinfo.pixbytes;
+			gfxvidinfo.realbufmem = xmalloc (uae_u8, size);;
+			gfxvidinfo.bufmem = gfxvidinfo.realbufmem;
+			gfxvidinfo.rowbytes = currentmode->amiga_width * gfxvidinfo.pixbytes;
+
 			gfxvidinfo.linemem = 0;
 			gfxvidinfo.width = (currentmode->amiga_width + 7) & ~7;
 			gfxvidinfo.height = currentmode->amiga_height;
 			gfxvidinfo.maxblocklines = 0; // flush_screen actually does everything
-			gfxvidinfo.rowbytes = currentmode->pitch;
+			//gfxvidinfo.rowbytes = currentmode->pitch;
 			break;
 		}
 	} /* for */

@@ -1693,15 +1693,23 @@ static void pfield_doline (int lineno)
 void init_row_map (void)
 {
 	int i, j;
+
+	DebOut("entered\n");
+
 	if (gfxvidinfo.height > MAX_VIDHEIGHT) {
 		write_log (_T("Resolution too high, aborting\n"));
 		abort ();
 	}
 	j = 0;
-	for (i = gfxvidinfo.height; i < MAX_VIDHEIGHT + 1; i++)
+	for (i = gfxvidinfo.height; i < MAX_VIDHEIGHT + 1; i++) {
 		row_map[i] = row_tmp;
-	for (i = 0; i < gfxvidinfo.height; i++, j += gfxvidinfo.rowbytes)
+		DebOut("row_map[%d]=%lx\n",i, row_tmp);
+	}
+	DebOut("--\n");
+	for (i = 0; i < gfxvidinfo.height; i++, j += gfxvidinfo.rowbytes) {
 		row_map[i] = gfxvidinfo.bufmem + j;
+		DebOut("row_map[%d]=%lx\n",i, gfxvidinfo.bufmem + j);
+	}
 }
 
 static void init_aspect_maps (void)
@@ -2183,7 +2191,10 @@ static void pfield_draw_line (int lineno, int gfx_ypos, int follow_ypos)
 
 		}
 
-		DebOut("border 1.4\n");
+		DebOut("memcpy to row_map %lx + gfx_ypos %d, size %d\n", row_map, gfx_ypos, gfxvidinfo.pixbytes * gfxvidinfo.width);
+		DebOut("from xlinebuffer %lx + linetoscr_x_adjust_bytes %d)\n", xlinebuffer, linetoscr_x_adjust_bytes);
+		DebOut("MAX_VIDHEIGHT: %d\n", MAX_VIDHEIGHT);
+		DebOut("memcpy(%lx, %lx, %d)\n", row_map[gfx_ypos], xlinebuffer + linetoscr_x_adjust_bytes, gfxvidinfo.pixbytes * gfxvidinfo.width);
 		if (dh == dh_emerg)
 			memcpy (row_map[gfx_ypos], xlinebuffer + linetoscr_x_adjust_bytes, gfxvidinfo.pixbytes * gfxvidinfo.width);
 
