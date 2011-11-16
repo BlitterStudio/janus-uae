@@ -48,6 +48,7 @@
 #include "serial.h"
 #include "gfxfilter.h"
 #include "sampler.h"
+#include "sounddep/sound.h"
 #ifdef RETROPLATFORM
 #include "rp.h"
 #endif
@@ -356,8 +357,10 @@ static int open_windows (int full) {
 
 	int ret;
 
+  DebOut("full: %d\n", full);
+
 	inputdevice_unacquire ();
-	//reset_sound ();
+	reset_sound ();
 
 	init_round = 0; /* ? */
 	ret = -2;
@@ -379,7 +382,8 @@ static int open_windows (int full) {
 
 	inputdevice_acquire (TRUE);
 
-	//return create_windows_2();
+  DebOut("result(success!): %d\n", ret);
+
 	return ret;
 }
 
@@ -403,10 +407,10 @@ static void flush_block_planar_nodither (struct vidbuf_description *gfxinfo, int
 }
 #endif
 
+/* graphics_init does not very much, just gfxmode_reset and open_windows */
 int graphics_init(void) {
 
 	DebOut("entered\n");
-
 
 	/* TODO: free it again */
 	TempRPort = (struct RastPort *) AllocVec (sizeof (struct RastPort), MEMF_ANY | MEMF_PUBLIC);
@@ -422,15 +426,6 @@ int graphics_init(void) {
 	 */
 	currprefs.gfx_size.width=currprefs.gfx_size_win.width;
 	currprefs.gfx_size.height=currprefs.gfx_size_win.height;
-
-#if 0
-  /* seems not be used anymore */
-	gfxvidinfo.flush_clear_screen = flush_clear_screen_gfxlib;
-	gfxvidinfo.flush_line  = flush_line_planar_nodither;
-	gfxvidinfo.flush_block = flush_block_planar_nodither;
-#endif
-
-	DebOut("HERE WE ARE.. LOTS OF WORK TODO.......................\n");
 
 	return open_windows (1);
 }

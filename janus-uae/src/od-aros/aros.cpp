@@ -172,7 +172,7 @@ void fullpath (TCHAR *path, int size) {
 	TCHAR   tmp1[MAX_DPATH], tmp2[MAX_DPATH];
 	BOOL    result;
 
-	DebOut("path %s, %d (relativepaths is %d)\n", path, size, relativepaths);
+	//DebOut("path %s, %d (relativepaths is %d)\n", path, size, relativepaths);
 
 	if (path[0] == 0) {
 		return;
@@ -180,48 +180,48 @@ void fullpath (TCHAR *path, int size) {
 
 	if (relativepaths) {
 		GetCurrentDirName(tmp1, MAX_DPATH);
-		DebOut("GetCurrentDirName: %s\n", tmp1);
+		//DebOut("GetCurrentDirName: %s\n", tmp1);
 
 		lock=Lock(path, SHARED_LOCK);
 		if(!lock) {
-			DebOut("failed to lock %s\n", path);
+			//DebOut("failed to lock %s\n", path);
 			return;
 		}
 		result=NameFromLock(lock, tmp2, MAX_DPATH);
 		UnLock(lock);
 		if(!result) {
-			DebOut("failed to NameFromLock(%s)\n", path);
+			//DebOut("failed to NameFromLock(%s)\n", path);
 			return;
 		}
-		DebOut("NameFromLock(%s): %s\n", path, tmp2);
+		//DebOut("NameFromLock(%s): %s\n", path, tmp2);
 
 
 		if (strnicmp (tmp1, tmp2, strlen (tmp1)) == 0) { // tmp2 is inside tmp1
-			DebOut("tmp2 (%s) is inside tmp1 (%s)\n", tmp2, tmp1);
+			//DebOut("tmp2 (%s) is inside tmp1 (%s)\n", tmp2, tmp1);
 			strcpy(path, tmp2 + strlen (tmp1));
 		}
 		else {
-			DebOut("tmp2 (%s) is not inside tmp1 (%s)\n", tmp2, tmp1);
+			//DebOut("tmp2 (%s) is not inside tmp1 (%s)\n", tmp2, tmp1);
 			strcpy(path, tmp2);
 		}
 	}
 	else {
 		lock=Lock(path, SHARED_LOCK);
 		if(!lock) {
-			DebOut("failed to lock %s\n", path);
+			//DebOut("failed to lock %s\n", path);
 			return;
 		}
 		result=NameFromLock(lock, tmp1, MAX_DPATH);
 		UnLock(lock);
 		if(!result) {
-			DebOut("failed to NameFromLock(%s)\n", path);
+			//DebOut("failed to NameFromLock(%s)\n", path);
 			return;
 		}
-		DebOut("NameFromLock(%s): %s\n", path, tmp1);
+		//DebOut("NameFromLock(%s): %s\n", path, tmp1);
 		strcpy(path, tmp1);
 	}
 
-	DebOut("result: %s\n", path);
+	//DebOut("result: %s\n", path);
 }
 
 
