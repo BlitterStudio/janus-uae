@@ -55,11 +55,6 @@ int debuggable(void)
   TODO();
 }
 
-void flush_line(int y) 
-{
-  TODO();
-}
-
 int init_sound (void)
 {
   TODO();
@@ -319,7 +314,7 @@ void sleep_millis (int ms)
   TODO();
 }
 
-void sound_volume (int dir) 
+void sound_volume (int dir) 
 {
   TODO();
 }
@@ -375,11 +370,6 @@ void console_flush (void)
 }
 
 void console_out_f (const TCHAR *format,...)
-{
-  TODO();
-}
-
-void handle_events(void) 
 {
   TODO();
 }
@@ -1119,7 +1109,7 @@ int isfat (uae_u8 *p)
   TODO();
 }
 
-char *ua_fs (const WCHAR *s, int defchar) 
+char *ua_fs (const WCHAR *s, int defchar) 
 {
   TODO();
 }

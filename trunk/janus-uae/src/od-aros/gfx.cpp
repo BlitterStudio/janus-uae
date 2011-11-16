@@ -23,14 +23,12 @@
  *
  ************************************************************************/
 
+
 #include <proto/intuition.h>
+#include <proto/graphics.h>
 
 #include "sysconfig.h"
 #include "sysdeps.h"
-
-#include "gfx.h"
-
-
 
 #include "options.h"
 #include "audio.h"
@@ -90,10 +88,13 @@ struct winuae_currentmode {
 	int vsync;
 };
 
+struct MultiDisplay Displays[MAX_DISPLAYS];
+
 static struct winuae_currentmode currentmodestruct;
 static struct winuae_currentmode *currentmode = &currentmodestruct;
 
 struct Window *hAmigaWnd;
+struct RastPort  *TempRPort;
 int screen_is_picasso = 0;
 static int scalepicasso;
 
@@ -214,12 +215,20 @@ static BOOL doInit (void) {
 			DebOut("currentmode->amiga_height: %d\n", currentmode->amiga_height);
 
 			gfxvidinfo.pixbytes = currentmode->current_depth >> 3;
+			gfxvidinfo.rowbytes = currentmode->amiga_width * gfxvidinfo.pixbytes;
+#if 0
 			size = currentmode->amiga_width * currentmode->amiga_height * gfxvidinfo.pixbytes;
 			gfxvidinfo.realbufmem = xmalloc (uae_u8, size);;
 			gfxvidinfo.bufmem = gfxvidinfo.realbufmem;
-			gfxvidinfo.rowbytes = currentmode->amiga_width * gfxvidinfo.pixbytes;
-
+			//oldpixbuf = xmalloc (uae_u8, size);
 			gfxvidinfo.linemem = 0;
+#endif
+			gfxvidinfo.realbufmem = 0;
+			gfxvidinfo.bufmem     = 0;
+			gfxvidinfo.emergmem   = 0;
+
+			gfxvidinfo.linemem    = xmalloc(uae_u8, gfxvidinfo.rowbytes);
+
 			gfxvidinfo.width = (currentmode->amiga_width + 7) & ~7;
 			gfxvidinfo.height = currentmode->amiga_height;
 			gfxvidinfo.maxblocklines = 0; // flush_screen actually does everything
@@ -374,9 +383,37 @@ static int open_windows (int full) {
 	return ret;
 }
 
+#if 0
+void flush_clear_screen_gfxlib(vidbuf_description *vidbuf) {
+	DebOut("entered\n");
+
+}
+
+static void flush_line_planar_nodither (struct vidbuf_description *gfxinfo, int line_no) {
+
+	DebOut("entered\n");
+
+}
+
+
+static void flush_block_planar_nodither (struct vidbuf_description *gfxinfo, int first_line, int last_line)
+{
+	int line_no;
+	DebOut("entered\n");
+}
+#endif
+
 int graphics_init(void) {
 
 	DebOut("entered\n");
+
+
+	/* TODO: free it again */
+	TempRPort = (struct RastPort *) AllocVec (sizeof (struct RastPort), MEMF_ANY | MEMF_PUBLIC);
+	if (!TempRPort) {
+		write_log ("Unable to allocate RastPort.\n");
+		return 0;
+	}
 
 	gfxmode_reset ();
 
@@ -385,6 +422,13 @@ int graphics_init(void) {
 	 */
 	currprefs.gfx_size.width=currprefs.gfx_size_win.width;
 	currprefs.gfx_size.height=currprefs.gfx_size_win.height;
+
+#if 0
+  /* seems not be used anymore */
+	gfxvidinfo.flush_clear_screen = flush_clear_screen_gfxlib;
+	gfxvidinfo.flush_line  = flush_line_planar_nodither;
+	gfxvidinfo.flush_block = flush_block_planar_nodither;
+#endif
 
 	DebOut("HERE WE ARE.. LOTS OF WORK TODO.......................\n");
 
@@ -408,4 +452,78 @@ int lockscr (int fullupdate) {
 		return 0;
 	}
 	return 1;
+}
+
+void enumeratedisplays (int multi) {
+
+  if (multi) {
+    /*
+    int cnt = 1;
+    DirectDraw_EnumDisplays (displaysCallback);
+    EnumDisplayMonitors (NULL, NULL, monitorEnumProc, (LPARAM)&cnt);
+    */
+    write_log (_T("ERROR: Multimonitor does not work!\n"));
+  }
+  write_log (_T("Multimonitor detection disabled\n"));
+  Displays[0].primary = 1;
+  Displays[0].name = _T("Display");
+  Displays[0].disabled = 0;
+}
+
+static void flushit (int line_no) {
+
+	int     xs      = 0;
+	int     len     = gfxvidinfo.width;
+	int     yoffset = line_no * gfxvidinfo.rowbytes;
+	uae_u8 *src;
+	uae_u8 *dst;
+	//uae_u8 *newp = gfxvidinfo.rowbytes.bufmem + yoffset;
+	//uae_u8 *oldp = oldpixbuf + yoffset;
+
+	DebOut("entered\n");
+
+#if 0
+	if(uae_no_display_update) {
+		return;
+	}
+
+	/* Find first pixel changed on this line */
+	while (*newp++ == *oldp++) {
+if (!--len)
+		return; /* line not changed - so don't draw it */
+	}
+	src   = --newp;
+	dst   = --oldp;
+	newp += len;
+	oldp += len;
+
+	/* Find last pixel changed on this line */
+	while (*--newp == *--oldp)
+;
+
+	len = 1 + (oldp - dst);
+	xs  = src - (uae_u8 *)(gfxinfo->bufmem + yoffset);
+
+#endif
+
+	/* Copy changed pixels to delta buffer */
+	//CopyMem (src, dst, len);
+
+
+
+	/* Blit changed pixels to the display */
+	DebOut("WritePixelLine8 ..\n");
+#if 0
+	WritePixelLine8 (hAmigaWnd->RPort, 0, line_no, len, gfxvidinfo.bufmem, TempRPort);
+#endif
+	WritePixelLine8 (hAmigaWnd->RPort, 0, line_no, len, gfxvidinfo.linemem, TempRPort);
+
+}
+
+void flush_line(int lineno) {
+
+/* TODO */
+	if(lineno >100 && lineno < 140) {
+		flushit (lineno);
+	}
 }
