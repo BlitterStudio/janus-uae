@@ -58,6 +58,8 @@ void makeverstr (TCHAR *s) {
 	}
 }
 
+extern int log_scsi;
+
 /************************************************************************ 
  * main
  *
@@ -65,10 +67,12 @@ void makeverstr (TCHAR *s) {
  *
  * This is the equivalent to WinMain2 in win32.cpp (hopefully)
  ************************************************************************/
-
-extern int log_scsi;
-
 int main (int argc, TCHAR **argv) {
+  /* win32:
+  DEVMODE devmode;
+   * The DEVMODE data structure contains information about the initialization 
+   * and environment of a printer or a display device. 
+   */
 
 	//if (doquit)
 	//	return 0;
@@ -86,8 +90,7 @@ int main (int argc, TCHAR **argv) {
   // some process_arg()/argv magic
 
   enumeratedisplays (FALSE /* multi_display*/);
-
-
+  // sortdisplays (); only for multi_display
 
 #if 0
 	enumerate_sound_devices ();
@@ -101,6 +104,10 @@ int main (int argc, TCHAR **argv) {
 		write_log (L"%d:%s: %s\n", i, type == SOUND_DEVICE_DS ? L"DS" : (type == SOUND_DEVICE_AL ? L"AL" : (type == SOUND_DEVICE_WASAPI ? L"WA" : L"PA")), record_devices[i].name);
 	}
 	write_log (L"done\n");
+#endif
+
+/* this tries to get the dmDisplayFrequency from Windows, we don't use that for now,
+   as only p96 needs it anyways
 	memset (&devmode, 0, sizeof (devmode));
 	devmode.dmSize = sizeof (DEVMODE);
 	if (EnumDisplaySettings (NULL, ENUM_CURRENT_SETTINGS, &devmode)) {
@@ -110,7 +117,8 @@ int main (int argc, TCHAR **argv) {
 		else
 			default_freq = 60;
 	}
-#endif
+*/
+
 	//WIN32_InitLang ();
 	//WIN32_InitHtmlHelp ();
 	//DirectDraw_Release ();

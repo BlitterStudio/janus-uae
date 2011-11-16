@@ -200,6 +200,7 @@ struct CLUTEntry {
 #define PSSO_BitMap_Planes 8
 #define PSSO_BitMap_sizeof 40
 
+#ifndef __AROS__
 struct BitMap
 {
     uae_u16 BytesPerRow;
@@ -209,6 +210,9 @@ struct BitMap
     uae_u16 pad;
     uae_u8 *Planes[8];
 };
+#else
+#include <graphics/gfx.h>
+#endif
 
 /************************************************************************/
 

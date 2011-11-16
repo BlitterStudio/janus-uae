@@ -61,6 +61,7 @@ extern int getvsyncrate (int hz);
 struct vidbuf_description
 {
     /* Function implemented by graphics driver */
+		/* this seems not to be used anymore? o1i */
     void (*flush_line)         (struct vidbuf_description *gfxinfo, int line_no);
     void (*flush_block)        (struct vidbuf_description *gfxinfo, int first_line, int end_line);
     void (*flush_screen)       (struct vidbuf_description *gfxinfo, int first_line, int end_line);
@@ -86,6 +87,10 @@ struct vidbuf_description
     uae_u8 *realbufmem;
     uae_u8 *linemem;
     uae_u8 *emergmem;
+#ifdef __AROS__
+		/* delta buffer, same size as bufmem */
+		//uae_u8 *oldpixbuf;
+#endif
     int rowbytes; /* Bytes per row in the memory pointed at by bufmem. */
     int pixbytes; /* Bytes per pixel. */
     int width;
