@@ -1,4 +1,24 @@
+
 #include <proto/dos.h>
+#include <intuition/intuition.h>
+
+#ifdef HAVE_LIBRARIES_CYBERGRAPHICS_H
+# define CGX_CGX_H <libraries/cybergraphics.h>
+# define USE_CYBERGFX           /* define this to have cybergraphics support */
+#else
+# ifdef HAVE_CYBERGRAPHX_CYBERGRAPHICS_H
+#  define USE_CYBERGFX
+#  define CGX_CGX_H <cybergraphx/cybergraphics.h>
+# endif
+#endif
+#ifdef USE_CYBERGFX
+# if defined __MORPHOS__ || defined __AROS__ || defined __amigaos4__
+#  define USE_CYBERGFX_V41
+# endif
+#endif
+
+#include <libraries/cybergraphics.h>
+#include <proto/cybergraphics.h>
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -64,6 +84,8 @@
 //#include "include/scsidev.h"
 
 #include "od-aros/tchar.h"
+
+extern struct Window *hAmigaWnd;
 
 /* visual C++ symbols ..*/
 
@@ -210,3 +232,80 @@ void target_run (void)
 	/* TODO ? */
 }
 
+
+#if 0
+static int get_BytesPerPix(struct Window *win) {
+  struct Screen *scr;
+  int res;
+
+  if(!win) {
+    DebOut("\nERROR: win is NULL\n");
+    write_log("ERROR: win is NULL\n");
+    return 0;
+  }
+
+  scr=win->WScreen;
+
+  if(!scr) {
+    DebOut("\nERROR: win->WScreen is NULL\n");
+    write_log("\nERROR: win->WScreen is NULL\n");
+    return 0;
+  }
+
+  if(!GetCyberMapAttr(scr->RastPort.BitMap, CYBRMATTR_ISCYBERGFX)) {
+    DebOut("\nERROR: !CYBRMATTR_ISCYBERGFX\n");
+    write_log("\nERROR: !CYBRMATTR_ISCYBERGFX\n");
+  }
+
+  res=GetCyberMapAttr(scr->RastPort.BitMap, CYBRMATTR_BPPIX);
+
+  return res;
+}
+
+
+static int get_BytesPerRow(struct Window *win) {
+  WORD width;
+
+#if 0
+  if(!uae_main_window_closed) {
+    width=W->Width;
+    JWLOG("1: %d * %d = %d\n",width,get_BytesPerPix(win),width*get_BytesPerPix(win));
+  }
+  else {
+#endif
+    width=gfxvidinfo.width;
+#if 0
+    JWLOG("2: %d * %d = %d\n",picasso_vidinfo.width,get_BytesPerPix(win),picasso_vidinfo.width*get_BytesPerPix(win));
+  }
+#endif
+
+  return width * get_BytesPerPix(win);
+}
+#endif
+
+void handle_events(void) {
+	DebOut("entered\n");
+
+
+/*
+    WritePixelArray (
+	picasso_memory, 0, start, get_BytesPerRow(W),
+	W->RPort, 
+	W->BorderLeft, W->BorderTop + start,
+	W->Width - W->BorderLeft - W->BorderRight, 
+	W->BorderTop + start + i,
+	RECTFMT_RAW
+    );
+*/
+#if 0
+	if(hAmigaWnd) {
+		WritePixelArray(gfxvidinfo.bufmem, 0, 0, get_BytesPerRow(hAmigaWnd),
+		                hAmigaWnd->RPort,
+										hAmigaWnd->BorderLeft, hAmigaWnd->BorderTop /* + start */,
+										hAmigaWnd->Width - hAmigaWnd->BorderLeft - hAmigaWnd->BorderLeft,
+										hAmigaWnd->Height - hAmigaWnd->BorderTop - hAmigaWnd->BorderBottom /*?*/,
+										RECTFMT_RAW);
+		                
+	}
+#endif
+}

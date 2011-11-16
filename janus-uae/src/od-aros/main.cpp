@@ -30,6 +30,8 @@
 #include "options.h"
 #include "aros.h"
 
+#include "gfx.h"
+
 TCHAR VersionStr[256];
 TCHAR BetaStr[64];
 
@@ -60,21 +62,31 @@ void makeverstr (TCHAR *s) {
  * main
  *
  * the AROS main must init / deinit all stuff around real_main
+ *
+ * This is the equivalent to WinMain2 in win32.cpp (hopefully)
  ************************************************************************/
 
 extern int log_scsi;
-int main (int argc, TCHAR **argv) {
 
+int main (int argc, TCHAR **argv) {
 
 	//if (doquit)
 	//	return 0;
 
 	//getstartpaths ();
 
+  DebOut("main(%d, ..)\n");
+
 	makeverstr(VersionStr);
 	DebOut("%s", VersionStr);
 	logging_init();
 	log_scsi=1;
+
+  // TODO: Command line parsing here!
+  // some process_arg()/argv magic
+
+  enumeratedisplays (FALSE /* multi_display*/);
+
 
 
 #if 0
