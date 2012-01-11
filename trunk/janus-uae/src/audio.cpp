@@ -825,7 +825,7 @@ void sample16ss_anti_handler (void)
 	check_sound_buffers ();
 }
 
-#ifndef __AROS
+#ifndef __AROS__
 static 
 #endif
 void sample16si_anti_handler (void)
