@@ -110,7 +110,7 @@ struct utimbuf
 };
 #endif
 
-#if defined(__GNUC__) && defined(AMIGA)
+#if defined(__GNUC__) && defined(AMIGA) && !defined(__AROS__)
 /* gcc on the amiga need that __attribute((regparm)) must */
 /* be defined in function prototypes as well as in        */
 /* function definitions !                                 */

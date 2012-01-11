@@ -83,6 +83,11 @@ struct vidbuf_description
      *   - set linemem to point at your buffer
      *   - implement flush_line to copy a single line to the screen
      */
+
+    /* o1i: flush_line seems to not be used anymore? what to do? 
+     *      maybe this means, that second option is not supported anymore?
+     */
+
     uae_u8 *bufmem, *bufmemend;
     uae_u8 *realbufmem;
     uae_u8 *linemem;
