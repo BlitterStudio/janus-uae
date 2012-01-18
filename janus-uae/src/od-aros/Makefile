@@ -19,13 +19,15 @@
 # along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
 #
 
+ABI        = AROS_v0
+
 EXE        = /home/oli/svn/aros/AROS/bin/linux-i386/AROS/wuae
 
-CC         = i386-aros-gcc
-CPP        = i386-aros-g++
+CC         = /home/oli/svn/aros/$(ABI)/bin/linux-i386/tools/crosstools/i386-aros-gcc
+CPP        = /home/oli/svn/aros/$(ABI)/bin/linux-i386/tools/crosstools/i386-aros-g++
 #RANLIB = 
-AR         = i386-aros-ar
-LD         = i386-aros-ld
+AR         = /home/oli/svn/aros/$(ABI)/bin/linux-i386/tools/crosstools/i386-aros-ar
+LD         = /home/oli/svn/aros/$(ABI)/bin/linux-i386/tools/crosstools/i386-aros-ld
 
 FLAGS      = -O2 #-Wall
 DEBUGFLAGS = -g
@@ -37,21 +39,6 @@ CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 CPPFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
 LINK_LIBS=-larossupport -lz 
-
-#-larossupport -lamiga -larosc  -larosm
-
-#OBJS= bla.o
-
-%.o: %.c
-	$(CC) $(CFLAGS) -o $@ -c $*.c
-
-%.o: %.cpp
-	$(CPP) $(CPPFLAGS) -o $@ -c $*.cpp
-
-all: uae
-
-uae: common aros
-	$(CPP) $(CFLAGS) $(COMMON_OBJS) $(AROS_OBJS) -o $(EXE) $(LINK_LIBS)
 
 # ============== common ====================
 
@@ -169,6 +156,29 @@ COMMON_OBJS= \
 #../zfile_archive.o 
 #gui.o \
 
+# build dependencies magic
+DEP_OBJS=$(COMMON_OBJS)
+
+%.dep: %.o
+	@echo "building dependency .." $(subst .o,.cpp,$<)
+	@$(CC) -M $(CPPFLAGS) $(subst .o,.cpp,$<) > $@.$$$$;                      \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@;     \
+	rm -f $@.$$$$
+
+-include $(subst .o,.dep,$(DEP_OBJS))
+
+%.o: %.c
+	$(CC) $(CFLAGS) -o $@ -c $*.c
+
+%.o: %.cpp
+	$(CPP) $(CPPFLAGS) -o $@ -c $*.cpp
+
+
+all: uae
+
+uae: common aros
+	$(CPP) $(CFLAGS) $(COMMON_OBJS) $(AROS_OBJS) -o $(EXE) $(LINK_LIBS)
+
 
 common: ../blitfunc.cpp ../blittable.cpp ../blit.h ../linetoscr.cpp $(COMMON_OBJS)
 	@echo building common ..
@@ -176,7 +186,6 @@ common: ../blitfunc.cpp ../blittable.cpp ../blit.h ../linetoscr.cpp $(COMMON_OBJ
 aros: $(AROS_OBJS)
 	@echo building aros objects ..
 	
-
 # ============== autogenerate some .c files ====================
 
 ../blit.h:	../genblitter
