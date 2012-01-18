@@ -168,7 +168,6 @@ DEP_OBJS=$(COMMON_OBJS)
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@;     \
 	rm -f $@.$$$$
 
--include $(subst .o,.dep,$(DEP_OBJS))
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $*.c
@@ -216,4 +215,5 @@ aros: $(AROS_OBJS)
 clean: 
 	rm -f $(COMMON_OBJS)
 
-# ============== end ====================
+# ============== dependencies ====================
+-include $(subst .o,.dep,$(DEP_OBJS))
