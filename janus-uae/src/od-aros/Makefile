@@ -162,17 +162,14 @@ COMMON_OBJS= \
 # build dependencies magic
 DEP_OBJS=$(COMMON_OBJS)
 
-%.dep: %.o
-	@echo "building dependency .." $(subst .o,.cpp,$<)
-	@$(CC) -M $(CPPFLAGS) $(subst .o,.cpp,$<) > $@.$$$$;                      \
-	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@;     \
-	rm -f $@.$$$$
-
-
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $*.c
 
 %.o: %.cpp
+	@echo "building dependency .." $(subst .o,.cpp,$<)
+	@$(CPP) -M $(CPPFLAGS) $(subst .o,.cpp,$<) > $@.$$$$;                      \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@;     \
+	rm -f $@.$$$$
 	$(CPP) $(CPPFLAGS) -o $@ -c $*.cpp
 
 
@@ -215,5 +212,7 @@ aros: $(AROS_OBJS)
 clean: 
 	rm -f $(COMMON_OBJS)
 
+
 # ============== dependencies ====================
 -include $(subst .o,.dep,$(DEP_OBJS))
+
