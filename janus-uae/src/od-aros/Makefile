@@ -19,6 +19,9 @@
 # along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
 #
 
+# to build for 
+# AROS ABI v0: ABI=AROS_v0
+# AROS ABI v1: ABI=AROS
 ABI        = AROS_v0
 
 EXE        = /home/oli/svn/aros/AROS/bin/linux-i386/AROS/wuae
@@ -213,4 +216,4 @@ aros: $(AROS_OBJS)
 clean: 
 	rm -f $(COMMON_OBJS)
 
-# ============== depend ====================
+# ============== end ====================
