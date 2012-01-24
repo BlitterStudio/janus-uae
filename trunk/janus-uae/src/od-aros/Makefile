@@ -167,9 +167,9 @@ DEP_OBJS=$(COMMON_OBJS)
 	$(CC) $(CFLAGS) -o $@ -c $*.c
 
 %.o: %.cpp
-	@echo "building dependency .." $(subst .o,.cpp,$<)
+	@echo "building dependency for "$(subst .o,.cpp,$<)" .."
 	@$(CPP) -M $(CPPFLAGS) $(subst .o,.cpp,$<) > $@.$$$$;                      \
-	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@;     \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $(subst .o,.dep,$@);     \
 	rm -f $@.$$$$
 	$(CPP) $(CPPFLAGS) -o $@ -c $*.cpp
 
