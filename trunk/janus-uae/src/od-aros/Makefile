@@ -1,7 +1,7 @@
 #
 # simple Makefile for uae AROS sources
 #
-# Copyright 2011 Oliver Brunner - aros<at>oliver-brunner.de
+# Copyright 2012 Oliver Brunner - aros<at>oliver-brunner.de
 #
 # This file is part of Janus-UAE.
 #
@@ -23,14 +23,15 @@
 # AROS ABI v0: ABI=AROS_v0
 # AROS ABI v1: ABI=AROS
 ABI        = AROS_v0
+SVN        = /home/oli/svn
 
-EXE        = /home/oli/svn/aros/AROS/bin/linux-i386/AROS/wuae
+EXE        = $(SVN)/aros/$(ABI)/bin/linux-i386/AROS/wuae
 
-CC         = /home/oli/svn/aros/$(ABI)/bin/linux-i386/tools/crosstools/i386-aros-gcc
-CPP        = /home/oli/svn/aros/$(ABI)/bin/linux-i386/tools/crosstools/i386-aros-g++
+CC         = $(SVN)/aros/$(ABI)/bin/linux-i386/tools/crosstools/i386-aros-gcc
+CPP        = $(SVN)/aros/$(ABI)/bin/linux-i386/tools/crosstools/i386-aros-g++
 #RANLIB = 
-AR         = /home/oli/svn/aros/$(ABI)/bin/linux-i386/tools/crosstools/i386-aros-ar
-LD         = /home/oli/svn/aros/$(ABI)/bin/linux-i386/tools/crosstools/i386-aros-ld
+AR         = $(SVN)/aros/$(ABI)/bin/linux-i386/tools/crosstools/i386-aros-ar
+LD         = $(SVN)/aros/$(ABI)/bin/linux-i386/tools/crosstools/i386-aros-ld
 
 FLAGS      = -O2 #-Wall
 DEBUGFLAGS = -g
