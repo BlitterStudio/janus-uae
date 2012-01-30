@@ -168,11 +168,6 @@ int my_truncate (const TCHAR *name, uae_u64 len)
   TODO();
 }
 
-void notify_user (int n)
-{
-  TODO();
-}
-
 void pause_sound (void)
 {
   TODO();
@@ -818,6 +813,7 @@ void restore_disk_finish (void)
   TODO();
 }
 
+/* seems to be necessary, calls ... => hsyncstuff ! */
 void serial_hsynchandler (void)
 {
   TODO();
