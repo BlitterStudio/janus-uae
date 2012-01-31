@@ -77,13 +77,8 @@ static s_table transla[] = {
 
 static const char *gettranslation (int msg)
 {
-	int i;
-
-  DebOut("entered\n");
-
-	i = 0;
+	int i = 0;
 	while (transla[i].idx != -1) {
-    DebOut("transla[%d]=%d => %lx\n", i, transla[i].idx, transla[i].msg);
 		if (transla[i].idx == msg)
 			return transla[i].msg;
 		i++;
@@ -109,9 +104,7 @@ void notify_user (int msg)
   req.es_GadgetFormat="Ok";
 
 
-  DebOut("===============> notify_user: %d ==============\n", msg);
-  write_log("notify_user(%d): %s\n", msg, gettranslation(msg));
+  DebOut("notify_user(%d): %s \n", msg, text);
   EasyRequestArgs(NULL, &req, NULL, NULL );
-  TODO();
 }
 
