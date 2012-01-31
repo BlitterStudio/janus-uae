@@ -209,11 +209,16 @@ aros: $(AROS_OBJS)
 ../cpuemu_0.cpp: ../gencpu
 		cd ..;./gencpu
 
+string_resource.h: ../od-win32/resources/winuae.rc
+		./parse_res.pl ../od-win32/resources/winuae.rc string_resource.h
+
 # ============== clean ====================
 clean: 
 	rm -f $(COMMON_OBJS)
 
 
 # ============== dependencies ====================
+
+nogui.o: string_resource.h
 -include $(subst .o,.dep,$(DEP_OBJS))
 
