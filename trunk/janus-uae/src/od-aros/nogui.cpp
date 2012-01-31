@@ -28,6 +28,15 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
+#include <intuition/intuition.h>
+#include <proto/intuition.h>
+
+/* used by AROS .. */
+#undef IDS_DISABLED
+
+#include "gui.h"
+#include "string_resource.h"
+
 
 /*
  * do nothing without GUI
@@ -37,21 +46,72 @@ int machdep_init (void) {
 	return 1;
 }
 
+typedef struct {
+  int idx;
+  const char *msg;
+} s_table;
+
+static s_table transla[] = {
+	NUMSG_NEEDEXT2, IDS_NUMSG_NEEDEXT2,
+	NUMSG_NOROMKEY,IDS_NUMSG_NOROMKEY,
+	NUMSG_NOROM,IDS_NUMSG_NOROM,
+	NUMSG_KSROMCRCERROR,IDS_NUMSG_KSROMCRCERROR,
+	NUMSG_KSROMREADERROR,IDS_NUMSG_KSROMREADERROR,
+	NUMSG_NOEXTROM,IDS_NUMSG_NOEXTROM,
+	NUMSG_MODRIP_NOTFOUND,IDS_NUMSG_MODRIP_NOTFOUND,
+	NUMSG_MODRIP_FINISHED,IDS_NUMSG_MODRIP_FINISHED,
+	NUMSG_MODRIP_SAVE,IDS_NUMSG_MODRIP_SAVE,
+	NUMSG_KS68EC020,IDS_NUMSG_KS68EC020,
+	NUMSG_KS68020,IDS_NUMSG_KS68020,
+	NUMSG_KS68030,IDS_NUMSG_KS68030,
+	NUMSG_ROMNEED,IDS_NUMSG_ROMNEED,
+	NUMSG_EXPROMNEED,IDS_NUMSG_EXPROMNEED,
+	//NUMSG_NOZLIB,IDS_NUMSG_NOZLIB,
+	NUMSG_STATEHD,IDS_NUMSG_STATEHD,
+	NUMSG_OLDCAPS, IDS_NUMSG_OLDCAPS,
+	NUMSG_NOCAPS, IDS_NUMSG_NOCAPS,
+	NUMSG_KICKREP, IDS_NUMSG_KICKREP,
+	NUMSG_KICKREPNO, IDS_NUMSG_KICKREPNO,
+	-1, NULL
+};
+
+static const char *gettranslation (int msg)
+{
+	int i;
+
+  DebOut("entered\n");
+
+	i = 0;
+	while (transla[i].idx != -1) {
+    DebOut("transla[%d]=%d => %lx\n", i, transla[i].idx, transla[i].msg);
+		if (transla[i].idx == msg)
+			return transla[i].msg;
+		i++;
+	}
+	return NULL;
+}
 
 void notify_user (int msg)
 {
-#if 0
-	TCHAR tmp[MAX_DPATH];
-	int c = 0;
+  struct EasyStruct req;
+  const char *text;
 
-	c = gettranslation (msg);
-	if (c < 0)
-		return;
-	WIN32GUI_LoadUIString (c, tmp, MAX_DPATH);
-	gui_message (tmp);
-#endif
+  text=gettranslation(msg);
+  if(!text) {
+    printf("unknown message %d!!\n", msg);
+    DebOut("unknown message %d!!\n", msg);
+    return;
+  }
+
+  req.es_StructSize=sizeof(struct EasyStruct);
+  req.es_TextFormat=text;
+  req.es_Title="Janus-UAE";
+  req.es_GadgetFormat="Ok";
+
+
   DebOut("===============> notify_user: %d ==============\n", msg);
-  write_log("==> notify_user: %d\n", msg);
+  write_log("notify_user(%d): %s\n", msg, gettranslation(msg));
+  EasyRequestArgs(NULL, &req, NULL, NULL );
   TODO();
 }
 
