@@ -1660,8 +1660,7 @@ STRINGTABLE
 BEGIN
     IDS_PRINTER_EPSON9      "Epson Matrix Printer Emulation, 9pin"
     IDS_PRINTER_POSTSCRIPT_DETECTION "PostScript (Passthrough)"
-    IDS_PRINTER_POSTSCRIPT_EMULATION 
-                            "PostScript (Emulation, GhostScript required)"
+    IDS_PRINTER_POSTSCRIPT_EMULATION "PostScript (Emulation, GhostScript required)"
     IDS_PRINTER_PASSTHROUGH "Passthrough"
     IDS_RES_LORES           "Lores"
     IDS_RES_HIRES           "Hires (normal)"
