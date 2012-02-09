@@ -27,6 +27,9 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 
+#include <libraries/cybergraphics.h>
+#include <proto/cybergraphics.h>
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -122,6 +125,33 @@ static void gfxmode_reset (void) {
 	TODO();
 }
 
+/* debug helper */
+
+void dump_description(vidbuf_description *vid) {
+  DebOut("----------------------\n");
+  DebOut("dump vidbuf_description %lx\n", vid);
+  DebOut("----------------------\n");
+  DebOut("flush_line: %lx\n", vid->flush_line);
+  DebOut("flush_block: %lx\n", vid->flush_block);
+  DebOut("flush_screen: %lx\n", vid->flush_screen);
+  DebOut("flush_clear_screen: %lx\n", vid->flush_clear_screen);
+  DebOut("lockscr: %lx\n", vid->lockscr);
+  DebOut("unlockscr: %lx\n", vid->unlockscr);
+  DebOut("----------------------\n");
+  DebOut("bufmem: %lx\n", vid->bufmem);
+  DebOut("realbufmem: %lx\n", vid->realbufmem);
+  DebOut("linemem: %lx\n", vid->linemem);
+  DebOut("emergmem: %lx\n", vid->emergmem);
+  DebOut("rowbytes: %d\n", vid->rowbytes);
+  DebOut("pixbytes: %d\n", vid->pixbytes);
+  DebOut("width: %d\n", vid->width);
+  DebOut("height: %d\n", vid->height);
+  DebOut("maxblocklines: %d\n", vid->maxblocklines);
+  DebOut("gfx_resolution_reserved: %d\n", vid->gfx_resolution_reserved);
+  DebOut("gfx_vresolution_reserved: %d\n", vid->gfx_vresolution_reserved);
+  DebOut("----------------------\n");
+}
+
 static int create_windows_2 (void) {
 	/* window borders */
 	int cy_top_border    = 10; /* TODO: get correct values!? */
@@ -191,7 +221,6 @@ static int create_windows (void) {
 
 static BOOL doInit (void) {
 	BOOL ret;
-	int size;
 
 	/* LOT's of stuff to do here! */
 
@@ -209,36 +238,79 @@ static BOOL doInit (void) {
 			break;
 		}
 		else {
+
+       /* quote from xwin.h:
+        *
+        * The graphics code has a choice whether it wants to use a large buffer
+        * for the whole display, or only a small buffer for a single line.
+        * If you use a large buffer:
+        *   - set bufmem to point at it
+        *   - set linemem to 0
+        *   - if memcpy within bufmem would be very slow, i.e. because bufmem is
+        *     in graphics card memory, also set emergmem to point to a buffer
+        *     that is large enough to hold a single line.
+        *   - implement flush_line to be a no-op.
+        * If you use a single line buffer:
+        *   - set bufmem and emergmem to 0
+        *   - set linemem to point at your buffer
+        *   - implement flush_line to copy a single line to the screen
+        */
 			currentmode->amiga_width = currentmode->current_width;
 			currentmode->amiga_height = currentmode->current_height;
 
 			DebOut("currentmode->amiga_width: %d\n", currentmode->amiga_width);
 			DebOut("currentmode->amiga_height: %d\n", currentmode->amiga_height);
 
-			gfxvidinfo.pixbytes = currentmode->current_depth >> 3;
-			gfxvidinfo.rowbytes = currentmode->amiga_width * gfxvidinfo.pixbytes;
-#if 0
-			size = currentmode->amiga_width * currentmode->amiga_height * gfxvidinfo.pixbytes;
-			gfxvidinfo.realbufmem = xmalloc (uae_u8, size);;
-			gfxvidinfo.bufmem = gfxvidinfo.realbufmem;
-			//oldpixbuf = xmalloc (uae_u8, size);
+      DebOut("hAmigaWnd: %lx\n", hAmigaWnd);
+      if(!hAmigaWnd) {
+        write_log("hAmigaWnd is NULL !?\n");
+        DebOut("hAmigaWnd is NULL !?\n");
+        return 0;
+      }
+
+			gfxvidinfo.width = (currentmode->amiga_width + 7) & ~7;
+			gfxvidinfo.height = currentmode->amiga_height;
+			gfxvidinfo.maxblocklines = 0; // flush_screen actually does everything
+
+      gfxvidinfo.pixbytes = GetCyberMapAttr (hAmigaWnd->RPort->BitMap, CYBRMATTR_BPPIX);
+      DebOut("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.pixbytes);
+			gfxvidinfo.rowbytes = GetCyberMapAttr (hAmigaWnd->RPort->BitMap, CYBRMATTR_XMOD);
+      DebOut("gfxvidinfo.rowbytes: %d\n", gfxvidinfo.rowbytes);
+
+			gfxvidinfo.bufmem = (uae_u8 *) AllocVec (gfxvidinfo.rowbytes * gfxvidinfo.height, MEMF_ANY);
+      /* TODO: We need to free it again!!! */
+      DebOut("gfxvidinfo.bufmem: %lx\n", gfxvidinfo.bufmem);
+      gfxvidinfo.realbufmem = gfxvidinfo.bufmem; // necessary !? TODO!
+
+      if(!gfxvidinfo.bufmem) {
+        write_log("could not alloc gfxvidinfo.bufmem!\n");
+        DebOut("could not alloc gfxvidinfo.bufmem!\n");
+        return 0;
+      }
+
 			gfxvidinfo.linemem = 0;
-#endif
+
+#if 0
+			oldpixbuf = xmalloc (uae_u8, size);
+      /* we use option 2! */
+      /* but D3D uses option one, so maybe we should, tpp ..?*/
 			gfxvidinfo.realbufmem = 0;
 			gfxvidinfo.bufmem     = 0;
 			gfxvidinfo.emergmem   = 0;
 
 			gfxvidinfo.linemem    = xmalloc(uae_u8, gfxvidinfo.rowbytes);
 
-			gfxvidinfo.width = (currentmode->amiga_width + 7) & ~7;
-			gfxvidinfo.height = currentmode->amiga_height;
-			gfxvidinfo.maxblocklines = 0; // flush_screen actually does everything
+#endif
 			//gfxvidinfo.rowbytes = currentmode->pitch;
 			break;
 		}
 	} /* for */
 
+/* disabled now:
 	gfxvidinfo.emergmem = scrlinebuf; // memcpy from system-memory to video-memory
+ */
+
+  dump_description(&gfxvidinfo);
 
 	return 1;
 
@@ -247,7 +319,7 @@ OOPS:
 	return ret;
 }
 
-static void update_modes(void) {
+static void updatemodes(void) {
 	WORD flags;
 
 	DebOut("entered\n");
@@ -271,6 +343,10 @@ static void update_modes(void) {
 		currentmode->native_height = currentmode->current_height;
 		DebOut("currentmode->current_width: %d\n", currentmode->current_width);
 		DebOut("currentmode->native_width: %d\n", currentmode->native_width);
+
+    /* TODO: is this a good idea: */
+    DebOut("setting currentmode->fullfill to 1 .. ??\n");
+    currentmode->fullfill = 1;
 #if 0
 	}
 #endif
@@ -365,9 +441,9 @@ static int open_windows (int full) {
 	init_round = 0; /* ? */
 	ret = -2;
 	do {
-		DebOut("ret: %d, init_round: %d\n", ret, init_round);
+		DebOut("loop while ret<0: ret: %d, init_round: %d\n", ret, init_round);
 		if(ret < -1) {
-			update_modes ();
+			updatemodes ();
 			update_gfxparams ();
 		}
 		ret = doInit ();
@@ -382,7 +458,7 @@ static int open_windows (int full) {
 
 	inputdevice_acquire (TRUE);
 
-  DebOut("result(success!): %d\n", ret);
+  DebOut("result: %d SUCCESS\n", ret);
 
 	return ret;
 }
@@ -508,10 +584,22 @@ if (!--len)
 
 	/* Blit changed pixels to the display */
 	DebOut("WritePixelLine8 ..\n");
-#if 0
 	WritePixelLine8 (hAmigaWnd->RPort, 0, line_no, len, gfxvidinfo.bufmem, TempRPort);
-#endif
+#if 0
 	WritePixelLine8 (hAmigaWnd->RPort, 0, line_no, len, gfxvidinfo.linemem, TempRPort);
+  DebOut("gfxvidinfo.linemem:\n");
+  for(xs=0; xs<len;xs++) {
+    kprintf(" 0x%02x", *(gfxvidinfo.linemem + line_no*gfxvidinfo.width + xs));
+  }
+  DebOut("\n");
+#endif
+  DebOut("gfxvidinfo.bufmem:\n");
+  for(xs=0; xs<len;xs++) {
+    kprintf(" 0x%02x", *(gfxvidinfo.bufmem + line_no*gfxvidinfo.rowbytes + xs));
+  }
+  DebOut("\n");
+
+
 
 }
 
