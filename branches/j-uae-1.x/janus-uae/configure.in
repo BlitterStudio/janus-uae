@@ -2,6 +2,7 @@ dnl Process this file with autoconf to produce a configure script.
 dnl Written 1996, 1997, 1998 Bernd Schmidt
 dnl
 dnl Updated, re-written and generally mauled 2003 Richard Drummond
+dnl Updated 2012 Oliver Brunner
 
 AC_PREREQ(2.55)
 AC_INIT(JANUS-UAE, 1.1, ,janus-uae)
@@ -1161,7 +1162,7 @@ typedef int BOOL;
     ],
     [
       AC_MSG_RESULT(no)
-      AC_MSG_CHECKING([for libscg and libschily in UAE source tree])
+      #AC_MSG_CHECKING([for libscg and libschily in UAE source tree])
       LIBSCG_CPPFLAGS="$OLDCPPFLAGS -I$srcdir/src/include"
       LIBSCG_LIBS="-L$srcdir/src $OLDLIBS $SCGLIBS"
       CPPFLAGS="$LIBSCG_CPPFLAGS"
@@ -1178,8 +1179,8 @@ typedef int BOOL;
         UAE_DEFINES="$UAE_DEFINES -DSCSIEMU"
         NEED_THREAD_SUPPORT=yes
         if [[ "$srcdir" != "." ]]; then
-          AC_CONFIG_LINKS(src/libscg.a:src/libscg.a)
-          AC_CONFIG_LINKS(src/libschily.a:src/libschily.a)
+          #AC_CONFIG_LINKS(src/libscg.a:src/libscg.a)
+          #AC_CONFIG_LINKS(src/libschily.a:src/libschily.a)
 	  UAE_LIBS="$UAE_LIBS $LIBSCG_LIBS"
         else
           UAE_LIBS="$UAE_LIBS -L. $SCGLIBS"
