@@ -127,10 +127,17 @@ static void writedir (directory * dir)
     directory *subdir;
     afile *f;
 
+#ifdef __AROS__
+    mkdir (dir->name, 0777); /* AROS seems to have no errno anymore?
+                              * we'll check later anyways for errors, so
+                              * just skip it here
+                              */
+#else
     if (mkdir (dir->name, 0777) < 0 && errno != EEXIST) {
 	write_log ("Could not create directory \"%s\". Giving up.\n", dir->name);
 	exit (20);
     }
+#endif
     if (chdir (dir->name) < 0) {
 	write_log ("Could not enter directory \"%s\". Giving up.\n", dir->name);
 	exit (20);
