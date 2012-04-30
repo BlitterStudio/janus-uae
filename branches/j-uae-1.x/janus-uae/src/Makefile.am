@@ -198,7 +198,7 @@ uae_LDADD = \
 
 
 readdisk_SOURCES = \
-	readdisk.c missing.c
+	readdisk.c missing.c writelog.c
 
 libcpuemu_a_SOURCES =
 libcpuemu_a_LIBADD =		@CPUOBJS@ @JITOBJS@
