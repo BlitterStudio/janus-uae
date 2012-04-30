@@ -1,7 +1,7 @@
 # $Id$
 
 INCLUDES = \
-	-I$(top_srcdir)/src/include -I$(top_builddir)/src -I$(top_srcdir)/src -I$(top_srcdir) -I/usr/local/aros -I/usr/local/aros/include/glib-2.0/glib -I/usr/local/aros/include/glib-2.0 
+	-I$(top_srcdir)/src/include -I$(top_builddir)/src -I$(top_srcdir)/src -I$(top_srcdir) -I/usr/local/aros/include -I/usr/local/aros/include/glib-2.0/glib -I/usr/local/aros/include/glib-2.0 
 
 SUBDIRS = \
 	tools @MACHDEP@ @THREADDEP@ @GFX_DEP@ @SND_DEP@ @JOY_DEP@ @GUI_DEP@ \
@@ -55,7 +55,7 @@ endif
 
 uae$(EXEEXT):	$(uae_OBJECTS) $(uae_DEPENDENCIES)
 		@rm -f uae$(EXEEXT)
-		$(LINK) $(uae_LDFLAGS) $(uae_OBJECTS) $(uae_LDADD) $(LIBS) -lgtk-mui -lgobject-2.0 -lglib-2.0 -liconv -lmui -larossupport -lamiga -larosc  -larosm
+		$(LINK) $(uae_LDFLAGS) $(uae_OBJECTS) $(uae_LDADD) $(LIBS) -L/usr/local/aros/lib -lgtk-mui -lgobject-2.0 -lglib-2.0 -liconv -lmui -larossupport -lamiga -larosc  -larosm
 if TARGET_BEOS
 		xres -o $@ @UAE_RSRCFILE@
 		mimeset -f $@
