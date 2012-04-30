@@ -1,7 +1,7 @@
 # $Id$
 
 INCLUDES = \
-	-I$(top_srcdir)/src/include -I$(top_builddir)/src -I$(top_srcdir)/src -I$(top_srcdir) -I/usr/local/amiga/i686-aros/include/glib-2.0/glib -I/usr/local/amiga/i686-aros/include/glib-2.0 -I/usr/local/amiga/i686-aros/lib/glib-2.0/include
+	-I$(top_srcdir)/src/include -I$(top_builddir)/src -I$(top_srcdir)/src -I$(top_srcdir) -I/usr/local/aros -I/usr/local/aros/include/glib-2.0/glib -I/usr/local/aros/include/glib-2.0 
 
 SUBDIRS = \
 	tools @MACHDEP@ @THREADDEP@ @GFX_DEP@ @SND_DEP@ @JOY_DEP@ @GUI_DEP@ \
