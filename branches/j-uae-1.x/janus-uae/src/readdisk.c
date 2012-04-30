@@ -11,11 +11,7 @@
 #include "sysdeps.h"
 
 #include "uae.h"
-
-void write_log (const char *s,...)
-{
-    fprintf (stderr, "%s", s);
-}
+#include "writelog.h"
 
 unsigned char filemem[901120];
 
