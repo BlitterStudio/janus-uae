@@ -1,4 +1,5 @@
-INCLUDES =  -I$(top_srcdir)/src/include -I$(top_builddir)/src -I$(top_srcdir)/src -I$(top_srcdir)
+INCLUDES =  -I$(top_srcdir)/src/include -I$(top_builddir)/src -I$(top_srcdir)/src -I$(top_srcdir) -I/usr/local/aros/include -I/usr/local/aros/include/glib-2.0/glib -I/usr/local/aros/include/glib-2.0
+
 
 noinst_LIBRARIES = libosdep.a
 
