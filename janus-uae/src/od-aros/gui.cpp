@@ -66,4 +66,19 @@ int get_guid_target (uae_u8 *out) {
 }
 
 
+void notify_user (int msg)
+{
+#if 0
+	TCHAR tmp[MAX_DPATH];
+	int c = 0;
+
+	c = gettranslation (msg);
+	if (c < 0)
+		return;
+	WIN32GUI_LoadUIString (c, tmp, MAX_DPATH);
+	gui_message (tmp);
+#endif
+  DebOut("===============> notify_user: %d ==============\n");
+  TODO();
+}
 
