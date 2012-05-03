@@ -2475,6 +2475,11 @@ void D3D_flushtexture (int miny, int maxy)
 	}
 }
 
+/* return pointer to texture content 
+ * pBits points to the colour in the top left of the texture
+ *
+ * pitch is set to the real width (including possible padding)
+ */
 uae_u8 *D3D_locktexture (int *pitch, int fullupdate)
 {
 	D3DLOCKED_RECT lock;
