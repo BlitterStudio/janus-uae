@@ -281,7 +281,7 @@ void logging_init (void)
 	opentimer(UNIT_VBLANK);
 
 	if (first > 1) {
-		write_log (_T("** RESTART **\n"));
+		write_log (_T("** LOGGING RESTART **\n"));
 		return;
 	}
 	//DebOut("ping\n");
