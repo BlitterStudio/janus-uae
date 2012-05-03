@@ -20,18 +20,18 @@
 #
 
 # to build for 
-# AROS ABI v0: ABI=AROS_v0
-# AROS ABI v1: ABI=AROS
-ABI        = AROS_v0
+# AROS ABI v0: ABI=v0
+# AROS ABI v1: ABI=v1
+ABI        = v0
 SVN        = /home/oli/svn
 
-EXE        = $(SVN)/aros/$(ABI)/bin/linux-i386/AROS/wuae
+EXE        = $(SVN)/$(ABI)/AROS/bin/linux-i386/AROS/wuae
 
-CC         = $(SVN)/aros/$(ABI)/bin/linux-i386/tools/crosstools/i386-aros-gcc
-CPP        = $(SVN)/aros/$(ABI)/bin/linux-i386/tools/crosstools/i386-aros-g++
+CC         = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-gcc
+CPP        = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-g++
 #RANLIB = 
-AR         = $(SVN)/aros/$(ABI)/bin/linux-i386/tools/crosstools/i386-aros-ar
-LD         = $(SVN)/aros/$(ABI)/bin/linux-i386/tools/crosstools/i386-aros-ld
+AR         = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-ar
+LD         = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-ld
 
 FLAGS      = -O2 #-Wall
 DEBUGFLAGS = -g
