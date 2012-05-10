@@ -177,6 +177,7 @@ static void on_speed_changed (GtkWidget *w, CpuSpeedPanel *cspanel)
 static void on_adjust_changed (GtkWidget *w, CpuSpeedPanel *cspanel)
 {
     cspanel->cpuspeed = (guint)GTK_ADJUSTMENT (GTK_RANGE (cspanel->adjust_widget)->adjustment)->value;
+  kprintf("==== on_adjust_changed: %d\n", cspanel->cpuspeed);
     gtk_signal_emit_by_name (GTK_OBJECT(cspanel), "cpuspeed-changed");
 }
 
@@ -215,7 +216,6 @@ void cpuspeedpanel_set_cpuspeed (CpuSpeedPanel *cspanel, gint cpuspeed) {
 	else
 		choice = 2;
 
-   //chooserwidget_set_choice (GTK_COMBO (cspanel->speed_widget), choice);
 	gtk_list_select_item (GTK_LIST (GTK_COMBO (cspanel->speed_widget)->list), choice);
 
 	/* manuall call it here, as gtk-mui seems to have problems detecting this change.
@@ -223,10 +223,10 @@ void cpuspeedpanel_set_cpuspeed (CpuSpeedPanel *cspanel, gint cpuspeed) {
 	 */
 	gtk_signal_emit_by_name (GTK_COMBO(cspanel->speed_widget)->list, "selection-changed");
 
-	if (choice == 2) {
+	//if (choice == 2) {
 		/* update adjustable speed */
 		gtk_adjustment_set_value (GTK_ADJUSTMENT (GTK_RANGE (cspanel->adjust_widget)->adjustment), cpuspeed);
-	}
+	//}
 
 	update_state (cspanel);
 }
