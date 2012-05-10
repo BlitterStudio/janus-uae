@@ -86,6 +86,7 @@
 #define DEBUG_LOG(...) do ; while(0)
 #endif
 
+extern struct Process *proxy_thread;
 struct uae_prefs currprefs, changed_prefs;
 
 static int restart_program;
@@ -1152,9 +1153,12 @@ void real_main (int argc, char **argv) {
      * it is safe to stop it, even if it is not running
      */
     aros_launch_kill_thread();
+    stop_proxy_thread();
 
     waitcount=0;
-    while(waitcount<20 && (aros_cli_task || aros_launch_task || janus_windows || janus_screens)) {
+    while(waitcount<20 && (aros_cli_task || aros_launch_task || 
+                           janus_windows || janus_screens ||
+                           proxy_thread) ) {
       waitcount++;
       sleep(1);
     }
