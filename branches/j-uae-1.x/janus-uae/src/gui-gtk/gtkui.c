@@ -2346,7 +2346,7 @@ static void make_about_widgets (GtkWidget *dvbox) {
 
 #endif
 /* TEST VERSION */
-#if 0
+#if 1
     thing = gtk_label_new ("*** THIS IS AN INTERNAL BETA TEST VERSION ***");
     gtk_widget_show (thing);
     add_centered_to_vbox (dvbox, thing);
