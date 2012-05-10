@@ -53,7 +53,7 @@
 #define DEBUG_LOG(...) do ; while(0)
 #endif
 
-static struct Process *proxy_thread;
+struct Process *proxy_thread;
 static struct MsgPort *proxy_msgport;
 
 static int sem_count;
@@ -188,144 +188,150 @@ static void handle_startup_msg (void)
     ReplyMsg (GetMsg (&self->pr_MsgPort));
 }
 
-static void proxy_thread_main (void)
-{
-    ULONG sigmask;
-    int dont_exit = 1;
-    struct ProxyMsg *msg = NULL;
+static void proxy_thread_main (void) {
 
-    proxy_msgport = CreateMsgPort ();
-    sigmask = SIGBREAKF_CTRL_C | (1 << proxy_msgport->mp_SigBit);
+  ULONG sigmask;
+  int dont_exit = 1;
+  struct ProxyMsg *msg = NULL;
 
-    /* Wait for and reply to startup msg */
-    handle_startup_msg ();
+  proxy_msgport = CreateMsgPort ();
+  sigmask = SIGBREAKF_CTRL_C | (1 << proxy_msgport->mp_SigBit);
 
-    while (dont_exit) {
-	ULONG sigs = Wait (sigmask);
+  /* Wait for and reply to startup msg */
+  handle_startup_msg ();
 
-	/*
-	 * Handle any semaphore message sent us
-	 */
-	while ((msg = (struct ProxyMsg *) GetMsg (proxy_msgport))) {
-	    struct PSemaphore *psem = msg->sem;
+  while (dont_exit) {
+    DEBUG_LOG("wait...\n");
+    ULONG sigs = Wait (sigmask);
 
-	    switch (msg->type) {
-		case PROXY_MSG_BLOCK:
-		    /* Block requesting task on semaphore.
-		     *
-		     * We effect the block by not replying to this message now. Just
-		     * put the request in the waiting list and reply to it when we
-		     * get an unblock request for this semaphore. The process requesting
-		     * the block will sleep until we do (unless it is interrupted). */
-		    AddTail ((struct List*)&psem->wait_queue, (struct Node *)msg);
-		    break;
+    /*
+      * Handle any semaphore message sent us
+      */
+    while ((msg = (struct ProxyMsg *) GetMsg (proxy_msgport))) {
+      struct PSemaphore *psem = msg->sem;
 
-		case PROXY_MSG_UNBLOCK:
-		    /* A request to unblock a task on semaphore. */
-		    {
-			struct ProxyMsg *wait_msg;
+      switch (msg->type) {
+        case PROXY_MSG_BLOCK:
+          /* Block requesting task on semaphore.
+            *
+            * We effect the block by not replying to this message now. Just
+            * put the request in the waiting list and reply to it when we
+            * get an unblock request for this semaphore. The process requesting
+            * the block will sleep until we do (unless it is interrupted). */
+          AddTail ((struct List*)&psem->wait_queue, (struct Node *)msg);
+          break;
 
-			Forbid ();
+        case PROXY_MSG_UNBLOCK:
+          /* A request to unblock a task on semaphore. */
+          {
+            struct ProxyMsg *wait_msg;
 
-			/* If there's a task blocking on the semaphore, remove
-			 * it from the waiting list */
-			wait_msg = (struct ProxyMsg *) RemHead ((struct List *)&psem->wait_queue);
+            Forbid ();
 
-			/* Reply to the unblock request */
-			do_proxy_reply (msg);
+            /* If there's a task blocking on the semaphore, remove
+              * it from the waiting list */
+            wait_msg = (struct ProxyMsg *) RemHead ((struct List *)&psem->wait_queue);
+            
+            /* Reply to the unblock request */
+            do_proxy_reply (msg);
 
-			/* Reply to the block request - this will wake up the
-			 * blocked task. */
-			if (wait_msg)
-			    do_proxy_reply (wait_msg);
+            /* Reply to the block request - this will wake up the
+              * blocked task. */
+            if (wait_msg)
+                do_proxy_reply (wait_msg);
 
-			Permit ();
-		    }
-		    break;
+            Permit ();
+          }
+          break;
 
-		case PROXY_MSG_DESTROY:
-		    Forbid ();
-		    {
-			struct ProxyMsg *wait_msg;
+        case PROXY_MSG_DESTROY:
+          Forbid ();
+          {
+            struct ProxyMsg *wait_msg;
+            
+            while ((wait_msg = (struct ProxyMsg *) RemHead ((struct List *)&psem->wait_queue))) {
+              /* Break the block for all tasks blocked on the semaphore */
+              Signal (wait_msg->reply_task, SIGBREAKF_CTRL_C);
+            }
+          }
+          do_proxy_reply (msg);
+          Permit ();
+          break;
+        } /* switch (msg->type) */
+      } /* while */
 
-			while ((wait_msg = (struct ProxyMsg *) RemHead ((struct List *)&psem->wait_queue))) {
-			    /* Break the block for all tasks blocked on the semaphore */
-			    Signal (wait_msg->reply_task, SIGBREAKF_CTRL_C);
-			}
-		    }
-		    do_proxy_reply (msg);
-		    Permit ();
-		    break;
-	    } /* switch (msg->type) */
-	} /* while */
+    /*
+     * Check for break signal and exit if received
+     */
+    if ((sigs & SIGBREAKF_CTRL_C) != 0) {
+      dont_exit = FALSE;
+      DEBUG_LOG("dont_exit=FALSE\n");
+    }
 
-	/*
-	 * Check for break signal and exit if received
-	 */
-	if ((sigs & SIGBREAKF_CTRL_C) != 0)
-	    dont_exit = FALSE;
-    } /* while (dont_exit) */
+  } /* while (dont_exit) */
 
    /*
     * Clean up and exit
     */
-   Forbid ();
-   {
-	struct ProxyMsg *rem_msg;
+  DEBUG_LOG("semaphore thread cleanup\n");
 
-	/* Reply to any unanswered requests */
-	while ((rem_msg = (struct ProxyMsg *) GetMsg (proxy_msgport)) != NULL)
-	    do_proxy_reply (rem_msg);
+  Forbid ();
+  {
+    struct ProxyMsg *rem_msg;
 
-	/* reply to the quit msg */
-	if (msg != NULL)
-	    do_proxy_reply (msg);
+    /* Reply to any unanswered requests */
+    while ((rem_msg = (struct ProxyMsg *) GetMsg (proxy_msgport)) != NULL)
+      do_proxy_reply (rem_msg);
 
-	DeleteMsgPort (proxy_msgport);
-	proxy_msgport = 0;
-	proxy_thread  = 0;
-   }
-   Permit ();
+    /* reply to the quit msg */
+    if (msg != NULL)
+      do_proxy_reply (msg);
+
+    DeleteMsgPort (proxy_msgport);
+    proxy_msgport = 0;
+    proxy_thread  = 0;
+  }
+  Permit ();
+
+  DEBUG_LOG("semaphore thread exit\n");
 }
 
-static void stop_proxy_thread (void)
-{
-    if (proxy_thread)
-	Signal ((struct Task *)proxy_thread, SIGBREAKF_CTRL_C);
+void stop_proxy_thread (void) {
+  if (proxy_thread)
+    Signal ((struct Task *)proxy_thread, SIGBREAKF_CTRL_C);
 }
 
 /*
  * Start proxy thread
  */
-static int start_proxy_thread (void)
-{
-    int result = -1;
-    struct MsgPort *replyport = CreateMsgPort();
-    struct Process *p;
+static int start_proxy_thread (void) {
+  int result = -1;
+  struct MsgPort *replyport = CreateMsgPort();
+  struct Process *p;
 
-    if (replyport) {
-	p = myCreateNewProcTags (NP_Name,	(ULONG) "j-uae semaphore proxy",
+  if (replyport) {
+    p = myCreateNewProcTags (NP_Name,	(ULONG) "j-uae semaphore proxy",
 				 NP_Priority,		10,
 				 NP_StackSize,		2048,
 				 NP_Entry,	(ULONG) proxy_thread_main,
 				 TAG_DONE);
-	if (p) {
-	    /* Send startup message */
-	    struct Message msg;
-	    msg.mn_ReplyPort = replyport;
-	    msg.mn_Length    = sizeof msg;
-	    PutMsg (&p->pr_MsgPort, (struct Message*)&msg);
-	    WaitPort (replyport);
-
-	    proxy_thread = p;
-
-	    atexit (stop_proxy_thread);
-
-	    result = 0;
-	}
-	DeleteMsgPort (replyport);
+    if (p) {
+      /* Send startup message */
+      struct Message msg;
+      msg.mn_ReplyPort = replyport;
+      msg.mn_Length    = sizeof msg;
+      PutMsg (&p->pr_MsgPort, (struct Message*)&msg);
+      WaitPort (replyport);
+      
+      proxy_thread = p;
+      
+      atexit (stop_proxy_thread);
+      
+      result = 0;
     }
-    return result;
+    DeleteMsgPort (replyport);
+  }
+  return result;
 }
 
 /**
@@ -353,19 +359,22 @@ int uae_sem_init (uae_sem_t *sem, int pshared, unsigned int value)
 
 int uae_sem_destroy (uae_sem_t *sem)
 {
-    ObtainSemaphore (&sem->mutex);
+  DEBUG_LOG("uae_sem_destroy(%lx)\n", sem);
+  ObtainSemaphore (&sem->mutex);
 
-    sem->live = 0;
-    Destroy (sem);
+  sem->live = 0;
+  Destroy (sem);
 
-    /* If this is the last semaphore to die,
-     * kill the proxy thread */
-    if (--sem_count == 0)
-	stop_proxy_thread ();
+  /* If this is the last semaphore to die,
+    * kill the proxy thread */
+  if (--sem_count == 0) {
+    stop_proxy_thread ();
+  }
 
-    ReleaseSemaphore (&sem->mutex);
+  DEBUG_LOG("uae_sem_destroy: %d sems left\n", sem_count);
+  ReleaseSemaphore (&sem->mutex);
 
-    return 0;
+  return 0;
 }
 
 int uae_sem_wait (uae_sem_t *sem)
@@ -472,43 +481,42 @@ static void do_thread (void)
    func (arg);
 }
 
-int uae_start_thread (void *(*f) (void *), void *arg, uae_thread_id *foo, char *name)
-{
-    struct MsgPort *replyport = CreateMsgPort();
-		char default_name[]="J-UAE thread";
+int uae_start_thread (void *(*f) (void *), void *arg, uae_thread_id *foo, char *name) {
+  struct MsgPort *replyport = CreateMsgPort();
+  char default_name[]="J-UAE thread";
 
-		DEBUG_LOG("start thread \"%s\" ..\n", name);
+  DEBUG_LOG("start thread \"%s\" ..\n", name);
 
-		if(!name) {
-			name=default_name;
-		}
+  if(!name) {
+    name=default_name;
+  }
 
-    if (replyport) {
-			*foo = (struct Task *)myCreateNewProcTags (NP_Output,		   Output (),
-						   NP_Input,		   Input (),
-						   NP_Name,	   (ULONG) name,
-						   NP_CloseOutput,	   FALSE,
-						   NP_CloseInput,	   FALSE,
-						   NP_StackSize,	   16384*4,
-						   NP_Entry,	   (ULONG) do_thread,
-						   TAG_DONE);
+  if (replyport) {
+    *foo = (struct Task *)myCreateNewProcTags (NP_Output,		   Output (),
+             NP_Input,		   Input (),
+             NP_Name,	   (ULONG) name,
+             NP_CloseOutput,	   FALSE,
+             NP_CloseInput,	   FALSE,
+             NP_StackSize,	   16384*4,
+             NP_Entry,	   (ULONG) do_thread,
+             TAG_DONE);
 
-	if(*foo) {
-	    struct startupmsg msg;
-
-	    msg.msg.mn_ReplyPort = replyport;
-	    msg.msg.mn_Length    = sizeof msg;
-	    msg.func             = f;
-	    msg.arg              = arg;
-	    PutMsg (&((struct Process*)*foo)->pr_MsgPort, (struct Message*)&msg);
-	    WaitPort (replyport);
-	}
-	DeleteMsgPort (replyport);
+    if(*foo) {
+      struct startupmsg msg;
+      
+      msg.msg.mn_ReplyPort = replyport;
+      msg.msg.mn_Length    = sizeof msg;
+      msg.func             = f;
+      msg.arg              = arg;
+      PutMsg (&((struct Process*)*foo)->pr_MsgPort, (struct Message*)&msg);
+      WaitPort (replyport);
     }
+    DeleteMsgPort (replyport);
+  }
 
-		DEBUG_LOG("thread \"%s\" started with id %lx\n", name, *foo);
+  DEBUG_LOG("thread \"%s\" started with id %lx\n", name, *foo);
 
-    return *foo!=0;
+  return *foo!=0;
 }
 
 extern void uae_set_thread_priority (int pri)

@@ -177,7 +177,6 @@ static void on_speed_changed (GtkWidget *w, CpuSpeedPanel *cspanel)
 static void on_adjust_changed (GtkWidget *w, CpuSpeedPanel *cspanel)
 {
     cspanel->cpuspeed = (guint)GTK_ADJUSTMENT (GTK_RANGE (cspanel->adjust_widget)->adjustment)->value;
-  kprintf("==== on_adjust_changed: %d\n", cspanel->cpuspeed);
     gtk_signal_emit_by_name (GTK_OBJECT(cspanel), "cpuspeed-changed");
 }
 

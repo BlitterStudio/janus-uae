@@ -322,6 +322,7 @@ static FILE *logfile;
  * Call real_main,
  * Close all libraries again.
  ************************************************/
+void stop_proxy_thread (void);
 int main (int argc, char *argv[]) {
 
   fromWB = argc == 0;
