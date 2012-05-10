@@ -359,13 +359,13 @@ void aros_launch_kill_thread(void) {
       die_msg=AllocVecPooled(pool, sizeof(struct JUAE_Launch_Message));
       die_msg->mempool=pool;
       if(die_msg) {
-	die_msg->ln_Name=AllocVecPooled(pool, strlen(DIE_STRING)+1);
-	strcpy(die_msg->ln_Name, DIE_STRING);
-	JWLOG("send DIE message..\n");
-	PutMsg(port, die_msg); /* one way */
+        die_msg->ln_Name=AllocVecPooled(pool, strlen(DIE_STRING)+1);
+        strcpy(die_msg->ln_Name, DIE_STRING);
+        JWLOG("send DIE message..\n");
+        PutMsg(port, die_msg); /* one way */
       }
       else {
-	DeletePool(pool);
+        DeletePool(pool);
       }
     }
   }
