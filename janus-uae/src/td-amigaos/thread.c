@@ -492,11 +492,11 @@ int uae_start_thread (void *(*f) (void *), void *arg, uae_thread_id *foo, char *
   }
 
   if (replyport) {
-    *foo = (struct Task *)myCreateNewProcTags (NP_Output,		   Output (),
-             NP_Input,		   Input (),
+    *foo = (struct Task *)myCreateNewProcTags (//NP_Output,		   Output (),
+             //NP_Input,		   Input (),
              NP_Name,	   (ULONG) name,
-             NP_CloseOutput,	   FALSE,
-             NP_CloseInput,	   FALSE,
+             //NP_CloseOutput,	   FALSE,
+             //NP_CloseInput,	   FALSE,
              NP_StackSize,	   16384*4,
              NP_Entry,	   (ULONG) do_thread,
              TAG_DONE);
