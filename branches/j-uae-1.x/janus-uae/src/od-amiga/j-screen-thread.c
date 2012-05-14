@@ -410,11 +410,11 @@ int aros_screen_start_thread (JanusScreen *screen) {
 
     ObtainSemaphore(&aos3_thread_start);
     screen->task = (struct Task *)
-	    myCreateNewProcTags ( NP_Output, Output (),
-				  NP_Input, Input (),
+	    myCreateNewProcTags ( //NP_Output, Output (),
+				  //NP_Input, Input (),
 				  NP_Name, (ULONG) screen->name,
-				  NP_CloseOutput, FALSE,
-				  NP_CloseInput, FALSE,
+				  //NP_CloseOutput, FALSE,
+				  //NP_CloseInput, FALSE,
 				  NP_StackSize, 4096,
 				  NP_Priority, 0,
 				  NP_Entry, (ULONG) aros_screen_thread,

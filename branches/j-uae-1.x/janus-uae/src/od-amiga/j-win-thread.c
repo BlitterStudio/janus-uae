@@ -1299,11 +1299,11 @@ int aros_win_start_thread (JanusWin *jwin) {
 
   ObtainSemaphore(&aos3_thread_start);
   jwin->task = (struct Task *)
-	  myCreateNewProcTags ( NP_Output, Output (),
-				NP_Input, Input (),
+	  myCreateNewProcTags ( //NP_Output, Output (),
+				//NP_Input, Input (),
 				NP_Name, (ULONG) jwin->name,
-				NP_CloseOutput, FALSE,
-				NP_CloseInput, FALSE,
+				//NP_CloseOutput, FALSE,
+				//NP_CloseInput, FALSE,
 				NP_StackSize, 0x8000,
 				NP_Priority, 0,
 				NP_Entry, (ULONG) aros_win_thread,

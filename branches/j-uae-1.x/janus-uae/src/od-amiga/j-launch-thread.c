@@ -322,11 +322,11 @@ int aros_launch_start_thread (void) {
     JWLOG("aros_launch_start_thread()\n");
 
     aros_launch_task = (struct Task *)
-	    myCreateNewProcTags ( NP_Output, Output (),
-				  NP_Input, Input (),
+	    myCreateNewProcTags ( //NP_Output, Output (),
+				  //NP_Input, Input (),
 				  NP_Name, (ULONG) "j-uae launch proxy",
-				  NP_CloseOutput, FALSE,
-				  NP_CloseInput, FALSE,
+				  //NP_CloseOutput, FALSE,
+				  //NP_CloseInput, FALSE,
 				  NP_StackSize, 4096,
 				  NP_Priority, 0,
 				  NP_Entry, (ULONG) aros_launch_thread,

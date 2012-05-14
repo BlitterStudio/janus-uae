@@ -218,11 +218,11 @@ int aros_cli_start_thread (void) {
 
   if(aos3_launch_task) {
     aros_cli_task = (struct Task *)
-	    myCreateNewProcTags ( NP_Output,      Output (),
-				  NP_Input,       Input (),
+	    myCreateNewProcTags ( //NP_Output,      Output (),
+				  //NP_Input,       Input (),
 				  NP_Name,        (ULONG) "j-uae cli proxy",
-				  NP_CloseOutput, FALSE,
-				  NP_CloseInput,  FALSE,
+				  //NP_CloseOutput, FALSE,
+				  //NP_CloseInput,  FALSE,
 				  NP_StackSize,   4096,
 				  NP_Priority,    0,
 				  NP_Entry,       (ULONG) aros_cli_thread,
