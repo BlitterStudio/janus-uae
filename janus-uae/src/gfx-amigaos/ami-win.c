@@ -1005,7 +1005,7 @@ static int setup_customscreen (void)
                    SA_Height,    height,
                    SA_Depth,     depth,
                    SA_DisplayID, mode,
-                   SA_Behind,    TRUE,
+              /*     SA_Behind,    TRUE, */
                    SA_ShowTitle, FALSE,
                    SA_Quiet,     TRUE,
                    SA_ErrorCode, (ULONG)&error,
@@ -1397,7 +1397,7 @@ static int setup_userscreen (void)
             SA_AutoScroll,             AutoScroll,
             SA_ShowTitle,             FALSE,
             SA_Quiet,             TRUE,
-            SA_Behind,             TRUE,
+            /* SA_Behind,             TRUE, */
             SA_PubName,             (ULONG)"UAE",
             /* v39 stuff here: */
             (os39 ? SA_BackFill : TAG_DONE), (ULONG)LAYERS_NOBACKFILL,
