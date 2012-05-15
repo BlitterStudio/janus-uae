@@ -4,8 +4,8 @@ Janus-UAE
 
 Janus-UAE is a fork of E-UAE 0.8.29-WIP4, so the same license(s)
 apply to it. I changed the name, as I have different goals than
-the e-uae develper. I only care for the AROS version and the
-main idea of Janus-UAE is the integration into AROS as described
+the e-uae developer. I only care for the AROS version and the
+main idea of Janus-UAE was the integration into AROS as described
 in http://www.power2people.org/bounty_001.html:
 
 UAE integration (basic/initial)
@@ -29,31 +29,36 @@ Objectives:
 
 ============================================================
 
-Bounty Status:
-==============
-1. Done.
-2. Done 
-3. Done.
-4. Done.
-5. Done.
-6. Done.
-7. Done.
+The bounty has been fulfilled and I want to thank all 
+sponsors and the poeple behind power2people.org.
+
+Sponsors:
+Emmanuel L, Charles D, Ivano G, Clayton S, Graham L,
+Alexander G, Dmitar B, Randy V, Gerd K, Martin H,
+Mads-Jorgen S M, Gareth Keith B, Francis K, Drew H,
+Frederic K, Robert C, Andreas H, Don C, David F, TA V,
+Daniel H, Olivier A, Manuel A, Antonis I, Christopher P,
+Nigel T, Robert W, Arnljot A, Paul B, George S, Troels E,
+Ben M, Martin R, Matthias R, Marc L, Fabien I, Ralph B,
+Brad M, Guillaume G, Fiona Bennett, Mike M, Georgios M,
+Dag E S J, Margaret H, Albert C, Girish N, Nicolas M,
+Chris F, Marcin W, Tibor E
 
 ============================================================
 Installation:
 ============================================================
 It should be enough, to copy the janus-uae file from
 the aros directory in this archive to your
-preferred location inside AROS. In the amiga
+preferred location inside AROS. In the Amiga
 directory you can find usefull applications
 for AmigaOS (transdisk and transrom are not
 built/tested by me). In the aros directory there
-is a small binary to start amigaOS applications.
+is a small binary to start AmigaOS applications.
 
-amigaOS helpers:
+AmigaOS helpers:
 ================
 
-You have to start some amigaos executables (preferable
+You have to start some AmigaOS executables (preferable
 from s:user-startup) to use the integration features:
 
 janusd
@@ -61,15 +66,15 @@ janusd
 - rootless mode (coherency)
 
 clipd
-- amigaOS <-> AROS clipboard sync
+- AmigaOS <-> AROS clipboard sync
 
 launchd
-- start amigaOS workbench executables from wanderer
-- run amigaOS CLI executables with amirun
+- start AmigaOS workbench executables from wanderer
+- run AmigaOS CLI executables with amirun
 
 Best way is to run them at the end of your 
 s:user-startup.
-You can find janusd, clipd and launchd in the amiga 
+You can find janusd, clipd and launchd in the Amiga 
 directory of this archive.
 
 ATTENTION:
@@ -83,7 +88,7 @@ until janusd is started. So if you get a
 is run, you are lost.
 
 If you get mouse trails, especially right after
-starting amigaOS 3.x, please replace the Picasso96
+starting AmigaOS 3.x, please replace the Picasso96
 rtg.library with the one in this package.
 
 AROS helpers:
@@ -91,29 +96,29 @@ AROS helpers:
 
 amirun
 
-With the AROS executable you can start any amigaOS
-executable, that is mounted somewhere in amigaOS.
+With the AROS executable you can start any AmigaOS
+executable, that is mounted somewhere in AmigaOS.
 
-Usage: amirun <amigaOS executable> [parameters]
+Usage: amirun <AmigaOS executable> [parameters]
 
 amirun will exit with the following error codes,
 if something goes wrong:
 
   121: j-uae/janusd not running
   103: out of AROS memory
-  205: amigaOS executable does not exist (in AROS filesystem)
+  205: AmigaOS executable does not exist (in AROS filesystem)
 
-At the moment, you get *no* return code from the amigaOS side.
-So you get *no* feedback, if the amigaOS executeable is
-within any mounted device, if it is an amigaOS executeable
-at all or if the amigaOS executable returned any error code.
+At the moment, you get *no* return code from the AmigaOS side.
+So you get *no* feedback, if the AmigaOS executeable is
+within any mounted device, if it is an AmigaOS executeable
+at all or if the AmigaOS executable returned any error code.
 This might change in the future, but most likely not for
 a v1.0.
 
-All output always happens in an amigaOS window, if there
-is no output of the amigaOS executable, no window is
+All output always happens in an AmigaOS window, if there
+is no output of the AmigaOS executable, no window is
 opened. There is no way, to redirect the input/output
-of the amigaOS executeable.
+of the AmigaOS executeable.
 
 Configuration:
 ==============
@@ -125,9 +130,65 @@ or use_gui=no. The GUI can also be shown/hidden
 via exchange. The hotkey "ctrl alt j" toggles
 GUI visibility.
 
+There might be a problem, if you don't setup your sound
+correctly. A linux music player may make the AmigaOS
+boot hang (Krzysztof).
+
 ============================================================
 History
 ============================================================
+
+============================================================
+J-UAE 1.2 (15.05.2012)
+============================================================
+There were some bug reports for v1.2, so this release
+tries to fix some of them:
+
+- J-UAE gui did not work well with updated Zune (commit 
+  r44336). For example, all memory selections were 
+  activated at the same time.
+- Slider gadgets in the gui are now working (save/load).
+- Opening the Amiga display on an own custom screen now
+  does not open screen behind all other screens anymore.
+- When started from CLI, CLI is not closed anymore
+  after exit.
+
+J-UAE is now built with i386-aros-gcc 4.2.4.
+
+============================================================
+J-UAE 1.1 (30.08.2011)
+============================================================
+New features:
+- thanks to Krzysztof Smiechowicz, this is the first 
+  version, which can run AROS/m68k
+- added extended rom selection possibility in the gui
+ 
+There were some bug reports for v1.0, so this release
+tries to fix them, mainly:
+- mouse pointer disappearance
+  If you move the mouse pointer outside a CLI window, the
+	mouse pointer disappeared in coherent mode.
+- Gui drop box state was not saved/restored correctly.
+- Startup output is STDOUT again.
+- You can remove a selected Amiga rom key in the GUI.
+- Amirun might work again.
+- Fixed long time undetected memory trashing in the GUI.
+- Stop J-UAE really stops J-UAE and does not restart 
+  anymore.
+- Pressing quit stops emulation before it quits.
+- Double p96 id error requester does not appear anymore.
+- 1920x1200 AmigaOS resolution should work (again)
+- Load config did not really work.
+ 
+============================================================
+J-UAE 1.0 (21.04.2011)
+============================================================
+As the bounty has been completed, I bumped version number
+to 1.0. This is just a clean non debug build of v0.9 with
+no new features/bug fixes. I have added a "coherency-guide"
+(PDF) in the "docs" folder of the archive, which tries
+to give you a step-by-step guide to get coherence mode
+up and running.
 
 ============================================================
 J-UAE 0.9 (24.02.2011)
@@ -143,7 +204,7 @@ I've made the following changes compared to J-UAE 0.8:
        load a new config file
 - GUI: crash on exit after floppy image has been changed
        fixed 
-- Quit with window gadget does not crash juae any more
+- Quit with window gadget does not crash J-UAE any more
 - possible AmigaOS library close race condition fixed.
 - removed all debug and symbols, stripped executable
   has now the promised 9MB size (this is the first
@@ -176,7 +237,7 @@ so please excuse the incomplete list. New:
 - load/save different configurations
 - display current config file in about tab
 - removed ugly gtk menu
-- quit gui without running amigaos first, should 
+- quit gui without running AmigaOS first, should 
   not crash anymore
 
 Known Bugs:
@@ -198,7 +259,7 @@ I've made the following changes compared to J-UAE 0.6:
 - destroyed uae window content is now restored correctly
 - uae integration now works, if you use assigns as hardfiles
 - 68k apps should be able to start from amidock etc.
-- added utility, to start amigaOS CLI commands from AROS (amirun)
+- added utility, to start AmigaOS CLI commands from AROS (amirun)
 - it has been reported, that sound works now
 - it has been reported, that joysticks work now
 
@@ -229,7 +290,7 @@ Known Bugs:
   not complete
 - This is a debug build, expect stripped version to be around 
   9MB in size.
-- amigaOS screen support is not finished (95% done). 
+- AmigaOS screen support is not finished (95% done). 
   Public screens won't work, custom screens should. 
   In classic mode they work of course.
 - sometimes the mousepointer leaves trails at the beginning.
@@ -242,7 +303,7 @@ J-UAE 0.5 (08.02.2010)
 I've made the following changes compared to J-UAE 0.4:
 
 - GUI tab integration updated
-- 68k amigaOS executables can be started from WB
+- 68k AmigaOS executables can be started from WB
 - custom screens are working
 
 ============================================================
@@ -254,7 +315,7 @@ I've made the following changes compared to J-UAE 0.3:
 - clipboard can now be shared
 - mouse can now be synced
 - janus daemon has experimental custom screen support
-- amigaOS screens are not draggable, if janusd is running
+- AmigaOS screens are not draggable, if janusd is running
 - lots of bugfixes
 
 Known Bugs:
@@ -263,7 +324,7 @@ Known Bugs:
   not complete
 - This is a debug build, expect stripped version to be around 
   9MB in size.
-- amigaOS screen support is not finished (80% done). 
+- AmigaOS screen support is not finished (80% done). 
   Public screens may work, custom screens not. 
   In classic mode they work of course.
 - sometimes the mousepointer leaves trails at the beginning.

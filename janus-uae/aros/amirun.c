@@ -89,6 +89,7 @@ int main (int argc, char **argv) {
   result=make_path_absolute((STRPTR) argv[1], (STRPTR) amiga_os_command);
   if(result) {
     PrintFault(result, (STRPTR) argv[1]);
+		DeleteMsgPort(back_port);
     return -1;
   }
 
@@ -103,6 +104,7 @@ int main (int argc, char **argv) {
   cmd=AllocVec(count, MEMF_PUBLIC|MEMF_CLEAR);
   if(!cmd) {
     PrintFault(103, (STRPTR) argv[0]);
+		DeleteMsgPort(back_port);
     return -1;
   }
 
@@ -131,6 +133,7 @@ int main (int argc, char **argv) {
   }
 
   FreeVec(cmd);
+	DeleteMsgPort(back_port);
 
   return 0;
 }
