@@ -2346,14 +2346,14 @@ static void make_about_widgets (GtkWidget *dvbox) {
 
 #endif
 /* TEST VERSION */
-#if 1
+//#if 0
     thing = gtk_label_new ("*** THIS IS AN INTERNAL BETA TEST VERSION ***");
     gtk_widget_show (thing);
     add_centered_to_vbox (dvbox, thing);
     thing = gtk_label_new ("*** PLEASE DO NOT DISTRIBUTE ***");
     gtk_widget_show (thing);
     add_centered_to_vbox (dvbox, thing);
-#endif
+//#endif
 
     add_empty_vbox (dvbox);
 
@@ -3391,7 +3391,7 @@ void gui_init (int argc, char **argv)
 	uae_sem_init (&gui_quit_sem, 0, 0);
 
 	/* Start GUI thread to construct GUI */
-	uae_start_thread (gtk_gui_thread, NULL, &tid, "J-UAE gui");
+	uae_start_thread (gtk_gui_thread, NULL, &tid, "j-uae gui");
 
 	/* Wait until GUI thread is ready */
 	DEBUG_LOG ("Waiting for GUI thread\n");
