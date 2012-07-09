@@ -74,10 +74,11 @@
 #include "gui-gtk/util.h"
 #include "gui-gtk/display.h"
 #include "gui-gtk/integration.h"
+#include "gui-gtk/splash.h"
 
 #include "od-amiga/j.h"
 
-//#define GUI_DEBUG 1
+#define GUI_DEBUG 1
 #ifdef  GUI_DEBUG
 #define DEBUG_LOG(...) do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -274,6 +275,7 @@ enum gui_commands {
     GUICMD_UPDATE,       // Refresh your state from changed preferences
     GUICMD_DISKCHANGE,   // Hey! A disk has been changed. Do something!
     GUICMD_MSGBOX,       // Display a message box for me, please
+    GUICMD_SPLASH,       // Display a splash screen
     GUICMD_FLOPPYDLG     // Open a floppy insert dialog
 };
 
@@ -308,6 +310,7 @@ static void create_guidlg (void);
 static void do_message_box (const gchar *title, const gchar *message, gboolean modal, gboolean wait);
 static void handle_message_box_request (smp_comm_pipe *msg_pipe);
 static GtkWidget *make_message_box (const gchar *title, const gchar *message, int modal, uae_sem_t *sem);
+static void open_splash_pipe (smp_comm_pipe *msg_pipe);
 void on_message_box_quit (GtkWidget *w, gpointer user_data);
 
 int find_current_toggle (GtkWidget **widgets, int count);
@@ -691,12 +694,12 @@ static void update_buttons (int state)
  * This function is added as a callback to the GTK+ mainloop
  * and is run every 250ms. It handles messages sent from UAE.
  */
-static int my_idle (void)
-{
-    if (quit_gui) {
-	gtk_main_quit ();
-	return 0;
-    }
+static int my_idle (void) {
+
+  if (quit_gui) {
+    gtk_main_quit ();
+    return 0;
+  }
 
     while (comm_pipe_has_data (&to_gui_pipe)) {
 	int cmd = read_comm_pipe_int_blocking (&to_gui_pipe);
@@ -753,6 +756,10 @@ DEBUG_LOG ("GUICMD_SHOW 3\n");
 	 case GUICMD_MSGBOX:
 	    handle_message_box_request(&to_gui_pipe);
 	    break;
+	 case GUICMD_SPLASH:
+	    open_splash_pipe(&to_gui_pipe);
+	    break;
+
 #if 0
 	 case GUICMD_FLOPPYDLG:
 	    n = read_comm_pipe_int_blocking (&to_gui_pipe);
@@ -2843,6 +2850,110 @@ static void create_guidlg (void) {
  * this calls the standard GTK+ event processing loop.
  *
  */
+
+static guint32 timer=0;
+static GtkWidget *splash = NULL;
+
+static gint gtk_splash_timer (GtkWidget *splash) {
+
+  DEBUG_LOG("entered!\n");
+
+  if(!splash) {
+    DEBUG_LOG("no splash window\n");
+    return FALSE;
+  }
+
+  DEBUG_LOG("hide window!\n");
+  gtk_widget_hide(splash);
+
+  if(timer) {
+    /* timer is automatically removed.. ? */
+//    gtk_timeout_remove (timer);
+    timer=0;
+  }
+
+  return FALSE;
+}
+
+void close_splash(void) {
+
+  DEBUG_LOG("timer %lx, splash %lx\n", timer, splash);
+
+  if(timer) {
+    DEBUG_LOG("call gtk_timeout_remove(%lx)\n", timer);
+    gtk_timeout_remove (timer);
+    timer=0;
+  }
+
+  if(splash) {
+    gtk_widget_hide(splash);
+  }
+
+  DEBUG_LOG("done.\n");
+}
+
+static void do_splash(char *text, int time) {
+
+  GtkWidget *button;
+
+  DEBUG_LOG("text %s, time %d\n", text, time);
+
+  if(!time || !text) {
+    close_splash();
+    return;
+  }
+
+  /* reset old timer */
+  if(timer) {
+    gtk_timeout_remove (timer);
+    timer=0;
+  }
+
+
+  if(!splash) {
+
+    splash = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+    gtk_container_border_width (GTK_CONTAINER (splash), 10);
+    
+    button = gtk_button_new_with_label (text);
+    gtk_container_add (GTK_CONTAINER (splash), button);
+    gtk_widget_show (button);
+  }
+
+  /* set it again */
+  timer = gtk_timeout_add (time*1000, (GtkFunction) gtk_splash_timer, (gpointer) splash);
+
+  gtk_widget_show (splash);
+}
+
+static void open_splash_pipe (smp_comm_pipe *msg_pipe) {
+
+  DEBUG_LOG("entered\n");
+
+  const gchar *text = (const gchar *)  read_comm_pipe_pvoid_blocking (msg_pipe);
+  const int   *time = (const int *  )  read_comm_pipe_pvoid_blocking (msg_pipe);
+
+  DEBUG_LOG("text %s, time %d\n", text, time);
+
+  do_splash(text, time);
+}
+
+void show_splash(char *text, int time) {
+
+  DEBUG_LOG("entered\n");
+
+  DEBUG_LOG("text %s, time %d\n", text, time);
+
+  if (gui_available) {
+    write_comm_pipe_int   (&to_gui_pipe, GUICMD_SPLASH, 0);
+    write_comm_pipe_pvoid (&to_gui_pipe, (void *) text, 0);
+    write_comm_pipe_int   (&to_gui_pipe, time, 0);
+  }
+  else {
+    DEBUG_LOG("gui not yet available!\n");
+  }
+}
+
 static void *gtk_gui_thread (void *dummy)
 {
     /* fake args for gtk_init() */
@@ -2876,6 +2987,19 @@ static void *gtk_gui_thread (void *dummy)
 	DEBUG_LOG ("Entering GTK+ main loop\n");
 	//DebOut ("Entering GTK+ main loop\n");
 
+  /* try again, if main was too early to display it */
+  if(!splash && currprefs.splash_time) {
+    show_splash(currprefs.splash_text, currprefs.splash_time);
+  }
+
+#if 0
+{
+  GtkWidget *splash=jsplash_new();
+kprintf("FOOOO=%lx\n", splash);
+  gtk_widget_show(splash);
+kprintf("FOOOO -------\n");
+}
+#endif
 
 	gtk_main ();
 	//DebOut ("gtk_main exit\n");
@@ -3096,19 +3220,19 @@ static
 #endif
 void gui_shutdown (void) {
 
-    DEBUG_LOG( "entered\n" );
-    //DebOut("entered\n");
+  DEBUG_LOG( "entered\n" );
 
-    if (gui_available) {
-	if (!quit_gui) {
-	    quit_gui = 1;
-	    DEBUG_LOG( "Waiting for GUI thread to quit.\n" );
-	    //DebOut( "Waiting for GUI thread to quit.\n" );
-	    uae_sem_wait (&gui_quit_sem);
-	}
+  if (gui_available) {
+    if (!quit_gui) {
+      close_splash();
+      quit_gui = 1;
+
+      DEBUG_LOG( "Waiting for GUI thread to quit.\n" );
+      uae_sem_wait (&gui_quit_sem);
     }
-    DEBUG_LOG("left\n");
-    //DebOut("left\n");
+  }
+
+  DEBUG_LOG("left\n");
 }
 
 void gui_hd_led (int led)

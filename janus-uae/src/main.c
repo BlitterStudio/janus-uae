@@ -104,6 +104,8 @@ uae_sem_t gui_main_wait_sem;   // For the GUI thread to tell UAE/main that it's 
 void on_start_clicked (void);
 BOOL gui_visible (void);
 
+extern show_splash(char *text, int time);
+
 /*
  * Random prefs-related junk that needs to go elsewhere.
  */
@@ -388,7 +390,7 @@ static void show_version_full (void)
 {
     write_log ("\n");
     show_version ();
-    write_log ("\nCopyright 2009-2010 Oliver Brunner and contributors.\n");
+    write_log ("\nCopyright 2009-2012 Oliver Brunner and contributors.\n");
     write_log ("Based on source code from:\n");
     write_log ("UAE    - copyright 1995-2002 Bernd Schmidt;\n");
     write_log ("WinUAE - copyright 1999-2007 Toni Wilen.\n");
@@ -436,9 +438,36 @@ static void parse_cmdline (int argc, char **argv)
 	} else if (strcmp (argv[i], "-version") == 0) {
 	    show_version_full ();
 	    exit (0);
-	} else if (strcmp (argv[i], "-scsilog") == 0) {
+	} 
+  else if (strcmp (argv[i], "-scsilog") == 0) {
 	    log_scsi = 1;
-	} else {
+	} 
+  else if (strcmp (argv[i], "-splash_text") == 0) {
+    if (i + 1 == argc) {
+      write_log ("Missing argument for '-splash_text' option.\n");
+    }
+    else {
+      kprintf("splash_text: %s\n",argv[i+1]);
+      strncpy(currprefs.splash_text, argv[++i], 250);
+      if(currprefs.splash_time) {
+        show_splash(currprefs.splash_text, currprefs.splash_time);
+      }
+    }
+	} 
+  else if (strcmp (argv[i], "-splash_timeout") == 0) {
+    if (i + 1 == argc) {
+      write_log ("Missing argument for '-splash_text' option.\n");
+    }
+    else {
+      currprefs.splash_time=atoi(argv[++i]);;
+      kprintf("splash_time: %d\n", currprefs.splash_time);
+      if(currprefs.splash_text) {
+        show_splash(currprefs.splash_text, currprefs.splash_time);
+      }
+    }
+
+	} 
+  else {
 	    if (argv[i][0] == '-' && argv[i][1] != '\0') {
 		const char *arg = argv[i] + 2;
 		int extra_arg = *arg == '\0';

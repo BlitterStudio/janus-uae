@@ -279,6 +279,9 @@ struct uae_prefs {
     int jclipboard;
     int jmouse;
     int jlaunch;
+
+    int  splash_time; /* splash screen timeout in seconds. -1 means no timeout, 0 means no splash screen */
+    char splash_text[256]; /* message to display */
 };
 
 extern void save_options (FILE *, const struct uae_prefs *, int);

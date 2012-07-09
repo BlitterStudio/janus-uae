@@ -119,16 +119,16 @@ BSDSOCKOBJS = bsdsocket.o
 CC = i386-aros-gcc
 CCAS = i386-aros-gcc
 CCASDEPMODE = depmode=gcc3
-CCASFLAGS = -g -O2
+CCASFLAGS = -O2
 CCDEPMODE = depmode=gcc3
 CDOBJS = 
-CFLAGS = -g -O2 -Wa,--execstack  -fomit-frame-pointer   -Wall -Wno-unused -Wno-format -W -Wmissing-prototypes -Wstrict-prototypes -Wstrict-aliasing -fno-strength-reduce -DREGPARAM="__attribute__((regparm(3)))"    
+CFLAGS = -O2 -Wa,--execstack  -fomit-frame-pointer   -Wall -Wno-unused -Wno-format -W -Wmissing-prototypes -Wstrict-prototypes -Wstrict-aliasing -fno-strength-reduce -DREGPARAM="__attribute__((regparm(3)))"    
 CPP = i386-aros-gcc -E
 CPPFLAGS =    -DCATWEASEL -DFPUEMU -DCPUEMU_0 -DCPUEMU_5 -DCPUEMU_6 -DUNALIGNED_PROFITABLE -DJIT -DAGA -DAUTOCONFIG -DFILESYS -DSUPPORT_THREADS -DFDI2RAW -DDEBUGGER -DSAVESTATE -DENFORCER -DACTION_REPLAY  
 CPUOBJS = cpuemu_0.o cpuemu_5.o cpuemu_6.o
 CXX = i386-aros-g++
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS = -g -O2
+CXXFLAGS = -O2
 CYGPATH_W = echo
 DEBUGOBJS = debug.o identify.o
 DEFS = -DHAVE_CONFIG_H
@@ -170,10 +170,10 @@ OSDEP = od-amiga
 PACKAGE = janus-uae
 PACKAGE_BUGREPORT = 
 PACKAGE_NAME = JANUS-UAE
-PACKAGE_STRING = JANUS-UAE 1.1
+PACKAGE_STRING = JANUS-UAE 1.3
 PACKAGE_TARNAME = janus-uae
 PACKAGE_URL = 
-PACKAGE_VERSION = 1.1
+PACKAGE_VERSION = 1.3
 PATH_SEPARATOR = :
 PTHREAD_CC = i386-aros-gcc
 PTHREAD_CFLAGS = 
@@ -192,7 +192,7 @@ STRIP = i386-aros-strip
 TARGET = amiga
 THREADDEP = td-amigaos
 UAE_RSRCFILE = 
-VERSION = 1.1
+VERSION = 1.3
 WRCPRG = not-found
 XMKMF = 
 X_CFLAGS = 

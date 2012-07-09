@@ -355,7 +355,7 @@ static void launch_changed(GtkWidget *me, jIntegration *j) {
  * small helper, to create a combo_box
  * with some seletections
  ***********************************************/
-static GtkWidget *make_combo(int count, ...) {
+GtkWidget *make_combo(int count, ...) {
   GtkWidget *combo;
   GList     *list = NULL;
   va_list   choices;
