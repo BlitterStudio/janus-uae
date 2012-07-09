@@ -323,6 +323,9 @@ static FILE *logfile;
  * Close all libraries again.
  ************************************************/
 void stop_proxy_thread (void);
+
+int aros_splash_start_thread (LONG time, char *text);
+
 int main (int argc, char *argv[]) {
 
   fromWB = argc == 0;
@@ -336,6 +339,8 @@ int main (int argc, char *argv[]) {
     write_log("Unable to open required libraries. Sorry.\n");
     exit(1);
   }
+
+//  aros_splash_start_thread(0, NULL);
 
 #ifdef USE_SDL
   init_sdl ();
