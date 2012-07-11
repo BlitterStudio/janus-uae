@@ -105,6 +105,7 @@ WORD get_hi_word(ULONG *field);
 #define AD_GET_JOB_UPDATE_GADGETS     18
 #define AD_GET_JOB_SET_WINDOW_TITLES  19
 #define AD_GET_JOB_WINDOW_LIMITS      20
+#define AD_GET_JOB_SPLASH             21
 #define AD_GET_JOB_DEBUG             999 
 
 #define AD_CLIP_SETUP 15
