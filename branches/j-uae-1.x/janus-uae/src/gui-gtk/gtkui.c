@@ -2853,6 +2853,7 @@ static void create_guidlg (void) {
 
 static guint32 timer=0;
 static GtkWidget *splash = NULL;
+static GtkWidget *splash_label = NULL;
 
 static gint gtk_splash_timer (GtkWidget *splash) {
 
@@ -2892,9 +2893,9 @@ void close_splash(void) {
   DEBUG_LOG("done.\n");
 }
 
-static void do_splash(char *text, int time) {
+void do_splash(char *text, int time) {
 
-  GtkWidget *button;
+  GtkWidget *frame;
 
   DEBUG_LOG("text %s, time %d\n", text, time);
 
@@ -2914,16 +2915,26 @@ static void do_splash(char *text, int time) {
 
     splash = gtk_window_new (GTK_WINDOW_TOPLEVEL);
     gtk_container_border_width (GTK_CONTAINER (splash), 10);
-    
-    button = gtk_button_new_with_label (text);
-    gtk_container_add (GTK_CONTAINER (splash), button);
-    gtk_widget_show (button);
+
+    frame=gtk_frame_new (NULL);
+    gtk_frame_set_shadow_type (GTK_FRAME (frame), GTK_SHADOW_IN);
+    gtk_container_add (GTK_CONTAINER (splash), frame);
+    gtk_widget_show (frame);
+  }
+
+  if(!splash_label) {
+    splash_label=gtk_label_new(text);
+    gtk_box_pack_end (GTK_BOX (frame), splash_label, 0, 0, 0);
+    gtk_widget_show (splash_label);
+  }
+  else {
+    gtk_label_set_text (GTK_LABEL (splash_label), text);
   }
 
   /* set it again */
   timer = gtk_timeout_add (time*1000, (GtkFunction) gtk_splash_timer, (gpointer) splash);
-
   gtk_widget_show (splash);
+
 }
 
 static void open_splash_pipe (smp_comm_pipe *msg_pipe) {
