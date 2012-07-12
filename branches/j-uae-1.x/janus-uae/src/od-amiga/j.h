@@ -479,4 +479,9 @@ JanusWin *get_jwin_from_aos3win_safe(struct Process *thread, ULONG aos3win);
 /* gtkui.c */
 void gui_shutdown (void);
 
+/* splash */
+void show_splash(void);
+void close_splash(void);
+void do_splash(char *text, int time);
+
 #endif

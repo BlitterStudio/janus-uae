@@ -451,6 +451,7 @@ static void parse_cmdline (int argc, char **argv)
       strncpy(currprefs.splash_text, argv[++i], 250);
       if(currprefs.splash_time) {
         do_splash(currprefs.splash_text, currprefs.splash_time);
+        show_splash();
       }
     }
 	} 
@@ -463,6 +464,7 @@ static void parse_cmdline (int argc, char **argv)
       kprintf("splash_time: %d\n", currprefs.splash_time);
       if(currprefs.splash_text) {
         do_splash(currprefs.splash_text, currprefs.splash_time);
+        show_splash();
       }
     }
 
