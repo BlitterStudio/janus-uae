@@ -324,8 +324,6 @@ static FILE *logfile;
  ************************************************/
 void stop_proxy_thread (void);
 
-int aros_splash_start_thread (LONG time, char *text);
-
 int main (int argc, char *argv[]) {
 
   fromWB = argc == 0;
@@ -340,7 +338,7 @@ int main (int argc, char *argv[]) {
     exit(1);
   }
 
-//  aros_splash_start_thread(0, NULL);
+  aros_splash_start_thread();
 
 #ifdef USE_SDL
   init_sdl ();
