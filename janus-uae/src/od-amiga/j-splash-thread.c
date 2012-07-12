@@ -47,13 +47,36 @@ static APTR    splash_win=NULL;
 static APTR    splash_app=NULL;
 static APTR    splash_txt=NULL;
 
+static char process_name[]="j-uae splash window";
+
 void close_splash(void) {
 
   JWLOG("send SIGBREAKF_CTRL_C to splash task\n");
 
+  if(!splash_window_task) {
+    JWLOG("no splash_window_task running\n");
+    return;
+  }
+
   Signal(splash_window_task, SIGBREAKF_CTRL_C);
+
+  while(splash_window_task || FindTask(process_name)) {
+    JWLOG("waiting for splash thread to die..\n");
+    Delay(50);
+  }
 }
 
+void show_splash(void) {
+
+  JWLOG("send SIGBREAKF_CTRL_D to splash task\n");
+
+  if(!splash_window_task) {
+    JWLOG("no splash_window_task running\n");
+    return;
+  }
+
+  Signal(splash_window_task, SIGBREAKF_CTRL_D);
+}
 
 static gint gtk_splash_timer (gpointer *task) {
 
@@ -136,15 +159,17 @@ static void aros_splash_window_thread (void) {
 
   DoMethod(splash_win, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
             splash_app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-  set(splash_win, MUIA_Window_Open, TRUE);
 
   while(DoMethod(splash_app, MUIM_Application_NewInput, &signals) != MUIV_Application_ReturnID_Quit) {
-    signals = Wait(signals | SIGBREAKF_CTRL_C);
+    signals = Wait(signals | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
     if (signals & SIGBREAKF_CTRL_C) {
       break;
     }
-  }
+    if (signals & SIGBREAKF_CTRL_D) {
+      set(splash_win, MUIA_Window_Open, TRUE);
+    }
 
+  }
 
   /* ... and a time to die. */
   JWLOG("closing splash window ..!\n");
@@ -165,16 +190,23 @@ EXIT:
 
   JWLOG(" === splash window thread dies ====\n");
 
+  /* we are going to die soon enough */
+  splash_window_task=NULL;
+
   LEAVE
 }
 
-static char process_name[]="j-uae splash window";
 
 int aros_splash_start_thread (void) {
 
   ENTER
 
   JWLOG("starting thread ..\n");
+
+  if(splash_window_task) {
+    JWLOG("splash window thread already running\n");
+    return TRUE;
+  }
 
   splash_window_task = (struct Task *)
 	  myCreateNewProcTags ( //NP_Output, Output (),
