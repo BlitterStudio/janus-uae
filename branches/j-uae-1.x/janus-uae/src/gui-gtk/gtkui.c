@@ -310,7 +310,9 @@ static void create_guidlg (void);
 static void do_message_box (const gchar *title, const gchar *message, gboolean modal, gboolean wait);
 static void handle_message_box_request (smp_comm_pipe *msg_pipe);
 static GtkWidget *make_message_box (const gchar *title, const gchar *message, int modal, uae_sem_t *sem);
+#if 0
 static void open_splash_pipe (smp_comm_pipe *msg_pipe);
+#endif
 void on_message_box_quit (GtkWidget *w, gpointer user_data);
 
 int find_current_toggle (GtkWidget **widgets, int count);
@@ -756,9 +758,11 @@ DEBUG_LOG ("GUICMD_SHOW 3\n");
 	 case GUICMD_MSGBOX:
 	    handle_message_box_request(&to_gui_pipe);
 	    break;
+#if 0
 	 case GUICMD_SPLASH:
 	    open_splash_pipe(&to_gui_pipe);
 	    break;
+#endif
 
 #if 0
 	 case GUICMD_FLOPPYDLG:
@@ -2851,21 +2855,27 @@ static void create_guidlg (void) {
  *
  */
 
+#if 0
 static guint32 timer=0;
 static GtkWidget *splash = NULL;
 static GtkWidget *splash_label = NULL;
+
+extern struct Task *splash_window_task;
 
 static gint gtk_splash_timer (GtkWidget *splash) {
 
   DEBUG_LOG("entered!\n");
 
-  if(!splash) {
+  if(!splash_window_task) {
     DEBUG_LOG("no splash window\n");
     return FALSE;
   }
 
-  DEBUG_LOG("hide window!\n");
+  DEBUG_LOG("close window!\n");
   gtk_widget_hide(splash);
+
+
+  Signal(splash_window_task, SIGBREAKF_CTRL_C);
 
   if(timer) {
     /* timer is automatically removed.. ? */
@@ -2964,6 +2974,7 @@ void show_splash(char *text, int time) {
     DEBUG_LOG("gui not yet available!\n");
   }
 }
+#endif
 
 static void *gtk_gui_thread (void *dummy)
 {
@@ -2998,10 +3009,12 @@ static void *gtk_gui_thread (void *dummy)
 	DEBUG_LOG ("Entering GTK+ main loop\n");
 	//DebOut ("Entering GTK+ main loop\n");
 
+#if 0
   /* try again, if main was too early to display it */
   if(!splash && currprefs.splash_time) {
     show_splash(currprefs.splash_text, currprefs.splash_time);
   }
+#endif
 
 #if 0
 {

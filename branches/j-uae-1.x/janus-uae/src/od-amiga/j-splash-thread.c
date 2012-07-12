@@ -38,12 +38,73 @@
 //#define JW_ENTER_ENABLED 1
 #include "j.h"
 
+struct Task *splash_window_task=NULL;
+
 static void aros_splash_window_thread (void);
 
+static guint32 timer     =0;
+static APTR    splash_win=NULL;
+static APTR    splash_app=NULL;
+static APTR    splash_txt=NULL;
 
-static APTR splash_win=NULL;
-static APTR splash_app=NULL;
-static APTR splash_txt=NULL;
+void close_splash(void) {
+
+  JWLOG("send SIGBREAKF_CTRL_C to splash task\n");
+
+  Signal(splash_window_task, SIGBREAKF_CTRL_C);
+}
+
+
+static gint gtk_splash_timer (gpointer *task) {
+
+  JWLOG("entered!\n");
+
+  if(!splash_window_task) {
+    JWLOG("no splash window\n");
+    return FALSE;
+  }
+
+  JWLOG("close window!\n");
+
+  close_splash();
+
+  if(timer) {
+    /* timer is automatically removed.. ? */
+//    gtk_timeout_remove (timer);
+    timer=0;
+  }
+
+  return FALSE;
+}
+
+void do_splash(char *text, int time) {
+
+  JWLOG("text %s, time %d\n", text, time);
+
+  if(!splash_window_task || !splash_app) {
+    JWLOG("splash window already closed\n");
+    return;
+  }
+
+  if(!time || !text) {
+    close_splash();
+    return;
+  }
+
+  /* reset old timer */
+  if(timer) {
+    gtk_timeout_remove (timer);
+    timer=0;
+  }
+
+  /* warning, race condition!!! */
+  if(splash_win) {
+    set(splash_txt, MUIA_Text_Contents, text);
+  }
+
+  /* set it again */
+  timer = gtk_timeout_add (time*1000, (GtkFunction) gtk_splash_timer, (gpointer) splash_window_task);
+}
 
 static void aros_splash_window_thread (void) {
 
@@ -108,7 +169,6 @@ EXIT:
 }
 
 static char process_name[]="j-uae splash window";
-struct Task *splash_window_task=NULL;
 
 int aros_splash_start_thread (void) {
 
