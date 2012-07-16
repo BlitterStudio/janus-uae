@@ -120,7 +120,7 @@ static void on_framerate_changed (GtkWidget *w, ChipsetSpeedPanel *panel)
 static void on_sprite_collisions_changed (GtkWidget *w, ChipsetSpeedPanel *panel)
 {
     //panel->collision_level = GTK_COMBO (w)->choice;
-    panel->collision_level = combo_get_choice_num(w);
+    panel->collision_level = combo_get_choice_num(panel->collisions_widget);
     gtk_signal_emit_by_name (GTK_OBJECT (panel), "sprite-collisions-changed");
 }
 

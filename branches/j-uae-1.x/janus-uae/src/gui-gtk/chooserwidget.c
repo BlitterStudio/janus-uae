@@ -3,6 +3,8 @@
  *
  * Copyright 2003-2004 Richard Drummond
  * Copyright 2011      Oliver Brunner (removed)
+ *
+ * $Id$
  */
 
 #include <sys/types.h>
@@ -16,13 +18,13 @@
 #include "chooserwidget.h"
 #include "util.h"
 
+#define DebOut(...) do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #if 0
 static void chooserwidget_init (ChooserWidget *chooser);
 static void chooserwidget_class_init (ChooserWidgetClass *class);
 static guint chooser_get_choice_num (ChooserWidget *chooser);
 static void on_choice_changed (GtkWidget *w, ChooserWidget *chooser);
 
-#define DebOut(...) //do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 
 guint chooserwidget_get_type ()
 {
@@ -163,20 +165,30 @@ void chooserwidget_set_choice (ChooserWidget *chooser, guint choice_num)
 }
 #endif
 
-guint combo_get_choice_num (GtkWidget *combo)
-{
-    GtkList *list   = GTK_LIST (GTK_COMBO (combo)->list);
-    GList   *choice = list->selection;
+guint combo_get_choice_num (GtkWidget *combo) {
 
+  GtkList *list;
+  GList   *choice;
+
+  g_return_if_fail (GTK_IS_COMBO (combo));
+
+  list=GTK_LIST (GTK_COMBO (combo)->list);
+
+  if(!list) {
+    DebOut("WARNING: GTK_COMBO(%lx)->list is NULL!\n", combo);
+    return -1;
+  }
+
+  choice=list->selection;
     //printf("choice=%d\n",choice);
     //D(bug("chooser_get_choice_num: choice: %lx\n",choice));
 
-    if (choice) {
-			return gtk_list_child_position (list, choice->data);
-		}
-    else {
-			return -1;
-		}
+  if (choice) {
+    return gtk_list_child_position (list, choice->data);
+  }
+  else {
+    return -1;
+  }
 }
 
 
