@@ -19,6 +19,25 @@
  *
  * $Id$
  *
+ ************************************************************************
+ *
+ * A janus pslash window is a small, own Zune Application, consisting 
+ * of just one, simple window. It is no own executeable, but a j-uae
+ * thread. 
+ *
+ * If there is a "janus.jpg" image, it is displayed in this window.
+ * 
+ * The text below the image can be controlled by a startup option for
+ * j-uae (-splash_text).
+ * 
+ * The image is displayed, as long as the timeout is set (-splash_timeout)
+ *
+ * Both text and timeout can also be changed by a small m68k utility,
+ * so you can show the user, at which step in the boot process he is at
+ * the moment.
+ * 
+ * The window can be closed with "ESC" or the close gadget.
+ *
  ************************************************************************/
 
 #include <exec/types.h>
@@ -34,7 +53,7 @@
 #include <proto/alib.h>
 #include <aros/debug.h>
 
-#define JWTRACING_ENABLED 1
+//#define JWTRACING_ENABLED 1
 //#define JW_ENTER_ENABLED 1
 #include "j.h"
 
@@ -131,27 +150,57 @@ void do_splash(char *text, int time) {
 
 static void aros_splash_window_thread (void) {
 
+  IPTR file;
   ULONG signals=0;
 
-  splash_app=ApplicationObject,
-          SubWindow, splash_win=WindowObject,
-            MUIA_Window_Borderless, TRUE,
-            MUIA_Window_Width, 200,
-            WindowContents, VGroup,
-              MUIA_InnerTop,    40,
-              MUIA_InnerBottom, 40,
-              MUIA_InnerLeft,   40,
-              MUIA_InnerRight,  40,
-              Child, TextObject,
-                MUIA_Text_Contents, "\33b\33cJanus-UAE\n\33n\n\33cVersion " PACKAGE_VERSION "\n",
-              End,
-              Child, splash_txt=TextObject,
-                MUIA_Text_PreParse, "\33c",
-                MUIA_Text_Contents, "starting...\n",
+  if(file=Open("janus.png", MODE_OLDFILE)) {
+    Close(file);
+
+    splash_app=ApplicationObject,
+            SubWindow, splash_win=WindowObject,
+              MUIA_Window_Borderless, TRUE,
+              MUIA_Window_Width, 200,
+              WindowContents, VGroup,
+                MUIA_InnerTop,    40,
+                MUIA_InnerBottom, 40,
+                MUIA_InnerLeft,   40,
+                MUIA_InnerRight,  40,
+                Child, ImageObject,
+                  MUIA_Image_Spec, "3:janus.png",
+                  End,
+                Child, TextObject,
+                  MUIA_Text_Contents, "\n\33b\33cJanus-UAE\n\33n\33cVersion " PACKAGE_VERSION "\n",
+                End,
+                Child, splash_txt=TextObject,
+                  MUIA_Text_PreParse, "\33c",
+                  MUIA_Text_Contents, "starting...\n",
+                End,
               End,
             End,
-          End,
-        End;
+          End;
+  }
+  else {
+    splash_app=ApplicationObject,
+            SubWindow, splash_win=WindowObject,
+              MUIA_Window_Borderless, TRUE,
+              MUIA_Window_Width, 200,
+              WindowContents, VGroup,
+                MUIA_InnerTop,    40,
+                MUIA_InnerBottom, 40,
+                MUIA_InnerLeft,   40,
+                MUIA_InnerRight,  40,
+                Child, TextObject,
+                  MUIA_Text_Contents, "\n\33b\33cJanus-UAE\n\33n\33cVersion " PACKAGE_VERSION "\n",
+                End,
+                Child, splash_txt=TextObject,
+                  MUIA_Text_PreParse, "\33c",
+                  MUIA_Text_Contents, "starting...\n",
+                End,
+              End,
+            End,
+          End;
+
+  }
 
   if(!splash_app || !splash_win) {
     goto EXIT;
