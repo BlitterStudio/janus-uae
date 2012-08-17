@@ -728,6 +728,7 @@ static int my_idle (void) {
 
 DEBUG_LOG ("GUICMD_SHOW entered\n");
 		gtk_widget_show (gui_window);
+    close_splash();
 DEBUG_LOG ("GUICMD_SHOW 2\n");
 #	    if GTK_MAJOR_VERSION >= 2
 		gtk_window_present (GTK_WINDOW (gui_window));

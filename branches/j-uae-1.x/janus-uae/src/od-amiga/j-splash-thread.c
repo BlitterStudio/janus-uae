@@ -21,7 +21,7 @@
  *
  ************************************************************************
  *
- * A janus pslash window is a small, own Zune Application, consisting 
+ * A janus splash window is a small, own Zune Application, consisting 
  * of just one, simple window. It is no own executeable, but a j-uae
  * thread. 
  *
@@ -36,7 +36,7 @@
  * so you can show the user, at which step in the boot process he is at
  * the moment.
  * 
- * The window can be closed with "ESC" or the close gadget.
+ * The window can be closed with "ESC" or the (invisible) close gadget.
  *
  ************************************************************************/
 
