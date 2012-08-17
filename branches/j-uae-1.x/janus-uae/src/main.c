@@ -401,85 +401,99 @@ static void show_version_full (void)
     write_log ("warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
 }
 
-static void parse_cmdline (int argc, char **argv)
-{
-    int i;
+static void parse_cmdline (int argc, char **argv) {
 
-    for (i = 1; i < argc; i++) {
-	if (strcmp (argv[i], "-cfgparam") == 0) {
-	    if (i + 1 < argc)
-		i++;
-	} else if (strncmp (argv[i], "-config=", 8) == 0) {
+  int i;
+
+  for (i = 1; i < argc; i++) {
+    if (strcmp (argv[i], "-cfgparam") == 0) {
+      if (i + 1 < argc) {
+        i++;
+      }
+    } else if (strncmp (argv[i], "-config=", 8) == 0) {
 #ifdef FILESYS
-	    free_mountinfo (currprefs.mountinfo);
+      //free_mountinfo (currprefs.mountinfo);
 #endif
-	    if (cfgfile_load (&currprefs, argv[i] + 8, 0))
-		strcpy (optionsfile, argv[i] + 8);
-	}
-	/* Check for new-style "-f xxx" argument, where xxx is config-file */
-	else if (strcmp (argv[i], "-f") == 0) {
-	    if (i + 1 == argc) {
-		write_log ("Missing argument for '-f' option.\n");
-	    } else {
-#ifdef FILESYS
-		free_mountinfo (currprefs.mountinfo);
-#endif
-		if (cfgfile_load (&currprefs, argv[++i], 0))
-		    strcpy (optionsfile, argv[i]);
-	    }
-	} else if (strcmp (argv[i], "-s") == 0) {
-	    if (i + 1 == argc)
-		write_log ("Missing argument for '-s' option.\n");
-	    else
-		cfgfile_parse_line (&currprefs, argv[++i], 0);
-	} else if (strcmp (argv[i], "-h") == 0 || strcmp (argv[i], "-help") == 0) {
-	    usage ();
-	    exit (0);
-	} else if (strcmp (argv[i], "-version") == 0) {
-	    show_version_full ();
-	    exit (0);
-	} 
-  else if (strcmp (argv[i], "-scsilog") == 0) {
-	    log_scsi = 1;
-	} 
-  else if (strcmp (argv[i], "-splash_text") == 0) {
-    if (i + 1 == argc) {
-      write_log ("Missing argument for '-splash_text' option.\n");
+      write_log("WARNING: -config= is DEPRECATED! please use -f!\n");
+
+      //if (cfgfile_load (&currprefs, argv[i] + 8, 0)) {
+        //strcpy (optionsfile, argv[i] + 8);
+      //}
     }
+    /* Check for new-style "-f xxx" argument, where xxx is config-file */
+    else if (strcmp (argv[i], "-f") == 0) {
+      if (i + 1 == argc) {
+        write_log ("Missing argument for '-f' option.\n");
+      } else {
+#ifdef FILESYS
+        free_mountinfo (currprefs.mountinfo);
+#endif
+        //uae_save_config_to_file("sys:pre.cfg");
+        i++;
+        if (cfgfile_load (&currprefs, argv[i], 0)) {
+          /* load both config files new! */
+          cfgfile_load (&changed_prefs, argv[i], 0);
+          strcpy (optionsfile, argv[i]);
+        }
+        //uae_save_config_to_file("sys:post.cfg");
+      }
+    } else if (strcmp (argv[i], "-s") == 0) {
+      if (i + 1 == argc) {
+        write_log ("Missing argument for '-s' option.\n");
+      }
+      else {
+        cfgfile_parse_line (&currprefs, argv[++i], 0);
+      }
+    } else if (strcmp (argv[i], "-h") == 0 || strcmp (argv[i], "-help") == 0) {
+      usage ();
+      exit (0);
+    } else if (strcmp (argv[i], "-version") == 0) {
+      show_version_full ();
+      exit (0);
+    } 
+    else if (strcmp (argv[i], "-scsilog") == 0) {
+      log_scsi = 1;
+    } 
+    else if (strcmp (argv[i], "-splash_text") == 0) {
+      if (i + 1 == argc) {
+        write_log ("Missing argument for '-splash_text' option.\n");
+      }
+      else {
+        kprintf("splash_text: %s\n",argv[i+1]);
+        strncpy(currprefs.splash_text, argv[++i], 250);
+        if(currprefs.splash_time) {
+          do_splash(currprefs.splash_text, currprefs.splash_time);
+          show_splash();
+        }
+      }
+    } 
+    else if (strcmp (argv[i], "-splash_timeout") == 0) {
+      if (i + 1 == argc) {
+        write_log ("Missing argument for '-splash_text' option.\n");
+      }
+      else {
+        currprefs.splash_time=atoi(argv[++i]);;
+        kprintf("splash_time: %d\n", currprefs.splash_time);
+        if(currprefs.splash_text) {
+          do_splash(currprefs.splash_text, currprefs.splash_time);
+          show_splash();
+        }
+      }
+
+    } 
     else {
-      kprintf("splash_text: %s\n",argv[i+1]);
-      strncpy(currprefs.splash_text, argv[++i], 250);
-      if(currprefs.splash_time) {
-        do_splash(currprefs.splash_text, currprefs.splash_time);
-        show_splash();
+      if (argv[i][0] == '-' && argv[i][1] != '\0') {
+        const char *arg = argv[i] + 2;
+        int extra_arg = *arg == '\0';
+        if (extra_arg) {
+          arg = i + 1 < argc ? argv[i + 1] : 0;
+        }
+        if (parse_cmdline_option (&currprefs, argv[i][1], (char*)arg) && extra_arg) {
+          i++;
+        }
       }
     }
-	} 
-  else if (strcmp (argv[i], "-splash_timeout") == 0) {
-    if (i + 1 == argc) {
-      write_log ("Missing argument for '-splash_text' option.\n");
-    }
-    else {
-      currprefs.splash_time=atoi(argv[++i]);;
-      kprintf("splash_time: %d\n", currprefs.splash_time);
-      if(currprefs.splash_text) {
-        do_splash(currprefs.splash_text, currprefs.splash_time);
-        show_splash();
-      }
-    }
-
-	} 
-  else {
-	    if (argv[i][0] == '-' && argv[i][1] != '\0') {
-		const char *arg = argv[i] + 2;
-		int extra_arg = *arg == '\0';
-		if (extra_arg)
-		    arg = i + 1 < argc ? argv[i + 1] : 0;
-		if (parse_cmdline_option (&currprefs, argv[i][1], (char*)arg) && extra_arg)
-		    i++;
-	    }
-	}
-    }
+  }
 }
 #endif
 
@@ -535,11 +549,11 @@ static void parse_cmdline_and_init_file (int argc, char **argv)
 void uae_save_config (void)
 {
     FILE *f;
-    char tmp[257];
+    char tmp[512];
 
     /* Back up the old file.  */
     strcpy (tmp, optionsfile);
-    strcat (tmp, "~");
+    strcat (tmp, ".backup");
     write_log ("Backing-up config file '%s' to '%s'\n", optionsfile, tmp);
     rename (optionsfile, tmp);
 
@@ -557,6 +571,39 @@ void uae_save_config (void)
 	save_options (f, &currprefs, 0);
 
     fclose (f);
+}
+
+static void uae_save_config_to_file (char *filename) {
+
+  FILE *f;
+  char changed[512];
+  char current[512];
+
+  strcpy (changed, filename);
+  strcat (changed, ".changed");
+  strcpy (current, filename);
+  strcat (current, ".current");
+
+  write_log ("Writing new config file '%s'\n", changed);
+  f = fopen (changed, "w");
+  if (f == NULL) {
+    gui_message ("Error saving configuration file!\n"); // FIXME - better error msg.
+    return;
+  }
+
+  save_options (f, &changed_prefs, 0);
+  fclose (f);
+
+
+  write_log ("Writing new config file '%s'\n", current);
+  f = fopen (current, "w");
+  if (f == NULL) {
+    gui_message ("Error saving configuration file!\n"); // FIXME - better error msg.
+    return;
+  }
+  save_options (f, &currprefs, 0);
+  fclose (f);
+
 }
 
 /*
