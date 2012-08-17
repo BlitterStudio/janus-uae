@@ -115,11 +115,11 @@ extern struct PicassoResolution DisplayModes[MAX_PICASSO_MODES];
 
 /* Types for RGBFormat used */
 typedef enum {
-    RGBFB_NONE,		/* no valid RGB format (should not happen) */
-    RGBFB_CLUT,		/* palette mode, set colors when opening screen using
-			   tags or use SetRGB32/LoadRGB32(...) */
-    RGBFB_R8G8B8,	/* TrueColor RGB (8 bit each) */
-    RGBFB_B8G8R8,	/* TrueColor BGR (8 bit each) */
+    /* 0 */ RGBFB_NONE,		/* no valid RGB format (should not happen) */
+    /* 1 */ RGBFB_CLUT,		/* palette mode, set colors when opening screen using
+			                       tags or use SetRGB32/LoadRGB32(...) */
+    /* 2 */ RGBFB_R8G8B8,	/* TrueColor RGB (8 bit each) */
+    /* 3 */ RGBFB_B8G8R8,	/* TrueColor BGR (8 bit each) */
     RGBFB_R5G6B5PC,	/* HiColor16 (5 bit R, 6 bit G, 5 bit B),
 			   format: gggbbbbbrrrrrggg */
     RGBFB_R5G5B5PC,	/* HiColor15 (5 bit each), format: gggbbbbb0rrrrrgg */
@@ -150,16 +150,16 @@ typedef enum {
     RGBFB_MaxFormats
 } RGBFTYPE;
 
-#define RGBFF_NONE	(1<<RGBFB_NONE)
-#define RGBFF_CLUT	(1<<RGBFB_CLUT)
-#define RGBFF_R8G8B8	(1<<RGBFB_R8G8B8)
-#define RGBFF_B8G8R8	(1<<RGBFB_B8G8R8)
-#define RGBFF_R5G6B5PC	(1<<RGBFB_R5G6B5PC)
-#define RGBFF_R5G5B5PC	(1<<RGBFB_R5G5B5PC)
-#define RGBFF_A8R8G8B8	(1<<RGBFB_A8R8G8B8)
-#define RGBFF_A8B8G8R8	(1<<RGBFB_A8B8G8R8)
-#define RGBFF_R8G8B8A8	(1<<RGBFB_R8G8B8A8)
-#define RGBFF_B8G8R8A8	(1<<RGBFB_B8G8R8A8)
+#define RGBFF_NONE	(1<<RGBFB_NONE)         /* 1 */
+#define RGBFF_CLUT	(1<<RGBFB_CLUT)         /* 2 */
+#define RGBFF_R8G8B8	(1<<RGBFB_R8G8B8)     /* 4 */
+#define RGBFF_B8G8R8	(1<<RGBFB_B8G8R8)     /* 8 */
+#define RGBFF_R5G6B5PC	(1<<RGBFB_R5G6B5PC) /* 16 */
+#define RGBFF_R5G5B5PC	(1<<RGBFB_R5G5B5PC) /* 32 */
+#define RGBFF_A8R8G8B8	(1<<RGBFB_A8R8G8B8) /* 64 */
+#define RGBFF_A8B8G8R8	(1<<RGBFB_A8B8G8R8) /* 128 */
+#define RGBFF_R8G8B8A8	(1<<RGBFB_R8G8B8A8) /* 256 */
+#define RGBFF_B8G8R8A8	(1<<RGBFB_B8G8R8A8) /* 512, 0x200 */
 #define RGBFF_R5G6B5	(1<<RGBFB_R5G6B5)
 #define RGBFF_R5G5B5	(1<<RGBFB_R5G5B5)
 #define RGBFF_B5G6R5PC	(1<<RGBFB_B5G6R5PC)
