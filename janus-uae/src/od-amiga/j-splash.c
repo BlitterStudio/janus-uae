@@ -34,25 +34,41 @@
 
 void do_splash(char *text, int time);
 
-static char text[1024];
+#define SPLASH_MAX_LENGTH 1023
+
+static char text[SPLASH_MAX_LENGTH+1];
 
 uae_u32 ad_job_splash_screen(ULONG *m68k_results) {
 
   LONG time;
+  ULONG len;
+  LONG close=0;
+  char *t;
 
   ENTER
 
-  time=get_long(m68k_results);
+  close=get_long(m68k_results+1);
+  if(close==1) {
+    kprintf("close! => close_splash()\n");
+    close_splash();
+    LEAVE
+    return TRUE;
+  }
 
-  kprintf("time: %d\n", time);
-  kprintf("ulong 1: %d\n", get_long(m68k_results+1)); /* reserved */
-  kprintf("ulong 2: %d (length)\n", get_long(m68k_results+2)); /* length */
-  kprintf("text: %s\n", get_real_address(get_long(m68k_results+3)));
+  time=get_long(m68k_results);
+  len =get_long(m68k_results+2);
+  t   =get_real_address(get_long(m68k_results+3));
+
+  kprintf("time:    %d\n", time);
+  kprintf("length:  %d\n", len);
+  kprintf("t:       %s\n", t);
+
+  len=get_long(m68k_results+2);
 
   /* just to be sure, limit length */
-  strncpy(text, get_real_address(get_long(m68k_results+3)), 1023);
+  strncpy(text, t, SPLASH_MAX_LENGTH);
 
-  kprintf("text: %s\n", text);
+  kprintf("text:    %s\n", text);
 
   do_splash(text, time);
 
