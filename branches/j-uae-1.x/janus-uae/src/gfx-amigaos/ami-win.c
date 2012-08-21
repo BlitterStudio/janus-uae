@@ -36,7 +36,7 @@
 #endif
 
 //#define JW_ENTER_ENABLED  1
-#define JWTRACING_ENABLED 1
+//#define JWTRACING_ENABLED 1
 
 #include "od-amiga/j.h"
 
@@ -1060,6 +1060,9 @@ static int setup_customscreen (void)
 void enable_uae_main_window(void) {
   JWLOG("enable_uae_main_window\n");
   uae_main_window_closed=FALSE;
+
+  /* if we have our mainwidow visible, we don't need a splash window anymore */
+  close_splash();
 }
 
 void show_uae_main_window(void) {
