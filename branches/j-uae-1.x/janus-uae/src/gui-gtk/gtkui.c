@@ -78,7 +78,7 @@
 
 #include "od-amiga/j.h"
 
-#define GUI_DEBUG 1
+//#define GUI_DEBUG 1
 #ifdef  GUI_DEBUG
 #define DEBUG_LOG(...) do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -728,7 +728,6 @@ static int my_idle (void) {
 
 DEBUG_LOG ("GUICMD_SHOW entered\n");
 		gtk_widget_show (gui_window);
-    close_splash();
 DEBUG_LOG ("GUICMD_SHOW 2\n");
 #	    if GTK_MAJOR_VERSION >= 2
 		gtk_window_present (GTK_WINDOW (gui_window));
@@ -1313,7 +1312,6 @@ GtkWidget *make_radio_group_box_param (const char *title, const char **labels,
 		DEBUG_LOG("title: %s\n", title);
 
     frame = gtk_frame_new (title);
-    //kprintf("==> %s\n",title);
     newbox = (horiz ? gtk_hbox_new : gtk_vbox_new) (FALSE, 4);
     gtk_widget_show (newbox);
     gtk_container_set_border_width (GTK_CONTAINER (newbox), 4);
@@ -2418,6 +2416,14 @@ static gint did_guidlg_delete (GtkWidget* window, GdkEventAny* e, gpointer data)
   return FALSE;
 }
 
+static gint guidlg_show (GtkWidget* window, GdkEventAny* e, gpointer data) {
+
+  DEBUG_LOG("guidlg_show(%lx)\n", window);
+
+  close_splash();
+
+  return FALSE;
+}
 
 /******************************
  * "Load Config"
@@ -2700,6 +2706,7 @@ static void create_guidlg (void) {
     gui_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title (GTK_WINDOW (gui_window), PACKAGE_NAME " control: Hot Key = <ctrl alt j>");
     gtk_signal_connect (GTK_OBJECT(gui_window), "delete_event", GTK_SIGNAL_FUNC(did_guidlg_delete), NULL);
+    gtk_signal_connect (GTK_MUI(gui_window), "commodity-show", GTK_SIGNAL_FUNC(guidlg_show), NULL);
 
     /* keep the GUI hidden, if !currprefs.start_gui 
      * use Exchange to show it
@@ -2845,6 +2852,9 @@ static void create_guidlg (void) {
     DEBUG_LOG("create_guidlg: gtk_mui_application_gui_hotkey: ctrl alt j\n");
     gtk_mui_application_gui_hotkey("ctrl alt j");
 #endif
+    if(currprefs.start_gui) {
+      close_splash();
+    }
 }
 
 /*
@@ -2855,128 +2865,6 @@ static void create_guidlg (void) {
  * this calls the standard GTK+ event processing loop.
  *
  */
-
-#if 0
-static guint32 timer=0;
-static GtkWidget *splash = NULL;
-static GtkWidget *splash_label = NULL;
-
-extern struct Task *splash_window_task;
-
-static gint gtk_splash_timer (GtkWidget *splash) {
-
-  DEBUG_LOG("entered!\n");
-
-  if(!splash_window_task) {
-    DEBUG_LOG("no splash window\n");
-    return FALSE;
-  }
-
-  DEBUG_LOG("close window!\n");
-  gtk_widget_hide(splash);
-
-
-  Signal(splash_window_task, SIGBREAKF_CTRL_C);
-
-  if(timer) {
-    /* timer is automatically removed.. ? */
-//    gtk_timeout_remove (timer);
-    timer=0;
-  }
-
-  return FALSE;
-}
-
-void close_splash(void) {
-
-  DEBUG_LOG("timer %lx, splash %lx\n", timer, splash);
-
-  if(timer) {
-    DEBUG_LOG("call gtk_timeout_remove(%lx)\n", timer);
-    gtk_timeout_remove (timer);
-    timer=0;
-  }
-
-  if(splash) {
-    gtk_widget_hide(splash);
-  }
-
-  DEBUG_LOG("done.\n");
-}
-
-void do_splash(char *text, int time) {
-
-  GtkWidget *frame;
-
-  DEBUG_LOG("text %s, time %d\n", text, time);
-
-  if(!time || !text) {
-    close_splash();
-    return;
-  }
-
-  /* reset old timer */
-  if(timer) {
-    gtk_timeout_remove (timer);
-    timer=0;
-  }
-
-
-  if(!splash) {
-
-    splash = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-    gtk_container_border_width (GTK_CONTAINER (splash), 10);
-
-    frame=gtk_frame_new (NULL);
-    gtk_frame_set_shadow_type (GTK_FRAME (frame), GTK_SHADOW_IN);
-    gtk_container_add (GTK_CONTAINER (splash), frame);
-    gtk_widget_show (frame);
-  }
-
-  if(!splash_label) {
-    splash_label=gtk_label_new(text);
-    gtk_box_pack_end (GTK_BOX (frame), splash_label, 0, 0, 0);
-    gtk_widget_show (splash_label);
-  }
-  else {
-    gtk_label_set_text (GTK_LABEL (splash_label), text);
-  }
-
-  /* set it again */
-  timer = gtk_timeout_add (time*1000, (GtkFunction) gtk_splash_timer, (gpointer) splash);
-  gtk_widget_show (splash);
-
-}
-
-static void open_splash_pipe (smp_comm_pipe *msg_pipe) {
-
-  DEBUG_LOG("entered\n");
-
-  const gchar *text = (const gchar *)  read_comm_pipe_pvoid_blocking (msg_pipe);
-  const int   *time = (const int *  )  read_comm_pipe_pvoid_blocking (msg_pipe);
-
-  DEBUG_LOG("text %s, time %d\n", text, time);
-
-  do_splash(text, time);
-}
-
-void show_splash(char *text, int time) {
-
-  DEBUG_LOG("entered\n");
-
-  DEBUG_LOG("text %s, time %d\n", text, time);
-
-  if (gui_available) {
-    write_comm_pipe_int   (&to_gui_pipe, GUICMD_SPLASH, 0);
-    write_comm_pipe_pvoid (&to_gui_pipe, (void *) text, 0);
-    write_comm_pipe_int   (&to_gui_pipe, time, 0);
-  }
-  else {
-    DEBUG_LOG("gui not yet available!\n");
-  }
-}
-#endif
-
 static void *gtk_gui_thread (void *dummy)
 {
     /* fake args for gtk_init() */
@@ -3020,9 +2908,7 @@ static void *gtk_gui_thread (void *dummy)
 #if 0
 {
   GtkWidget *splash=jsplash_new();
-kprintf("FOOOO=%lx\n", splash);
   gtk_widget_show(splash);
-kprintf("FOOOO -------\n");
 }
 #endif
 
