@@ -72,9 +72,9 @@ void usage() {
 int main (int argc, char **argv) {
 
   ULONG *command_mem=NULL;
-  LONG time;
-  ULONG len;
-  char *text;
+  LONG   time       =0;
+  ULONG  len        =0;
+  char  *text       =NULL;
 
   C_ENTER
 
@@ -86,40 +86,6 @@ int main (int argc, char **argv) {
     goto DONE;
   }
 
-  if(argc==2) {
-    if(strcmp(argv[1], "close")) {
-      usage();
-      goto DONE;
-    }
-    /* close */
-    time=0;
-    printf("TODO!\n");
-  }
-
-  printf("argv[1]: %s\n", argv[1]);
-  printf("argv[2]: %s\n", argv[2]);
-  printf("argv[3]: %s\n", argv[3]);
-
-  time=atoi(argv[2]);
-
-  printf("time: %d\n",time);
-
-  len=strlen(argv[3]);
-
-  /* own string buffer is not really necessary here, but I had troubles getting
-   * it to work without it. So I don't care about those few bytes here.
-   */
-  text=AllocVec(len+1, MEMF_CLEAR);
-
-  strncpy(text, argv[3], len);
-  printf("text: %s\n", text);
-  printf("text: %lx\n", text);
-
-  if(len>AD__MAXMEM-16) {
-    printf("ERROR: text length is limited to %d characters only!\n", AD__MAXMEM-16);
-    goto DONE;
-  }
-
   command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
 
   if(!command_mem) {
@@ -127,11 +93,51 @@ int main (int argc, char **argv) {
     goto DONE;
   }
 
+
+  if(argc==2) {
+    if(strcmp(argv[1], "close")) {
+      usage();
+      goto DONE;
+    }
+
+    printf("close window\n");
+
+    /* close */
+    command_mem[ 0]=(ULONG) time;
+    command_mem[ 1]=(ULONG) 1;    /* close */
+    goto SEND;
+  }
+
+  printf("argv[0]: %s\n", argv[0]);
+  printf("argv[1]: %s\n", argv[1]);
+  printf("argv[2]: %s\n", argv[2]);
+
+  time=atoi(argv[1]);
+
+  printf("time:   %d\n",time);
+
+  len=strlen(argv[2]);
+  printf("length: %d\n", len);
+
+  /* own string buffer is not really necessary here, but I had troubles getting
+   * it to work without it. So I don't care about those few bytes here.
+   */
+  text=AllocVec(len+1, MEMF_CLEAR);
+
+  strncpy(text, argv[2], len);
+  printf("text:   %s\n", text);
+
+  if(len>AD__MAXMEM-16) {
+    printf("ERROR: text length is limited to %d characters only!\n", AD__MAXMEM-16);
+    goto DONE;
+  }
+
   command_mem[ 0]=(ULONG) time;
-  command_mem[ 1]=(ULONG) 0; /* reserved */
-  command_mem[ 2]=(ULONG) strlen(argv[3]);
+  command_mem[ 1]=(ULONG) 0;    /* reserved */
+  command_mem[ 2]=(ULONG) strlen(argv[2]);
   command_mem[ 3]=(ULONG) text; /* pointer to string */
 
+SEND:
   printf ("==> send AD_GET_JOB_SPLASH\n");
 
   calltrap (AD_GET_JOB, AD_GET_JOB_SPLASH, command_mem);
