@@ -90,6 +90,27 @@ void handle_events(void) {
 }
 
 /***************************************************
+ * really_quit
+ *
+ * ask politely, if the user really wants to close 
+ * this window
+ ***************************************************/
+struct EasyStruct really_quit_req = {
+        sizeof(struct EasyStruct),
+        0,
+        "Janus-UAE",
+        "\nDo you relly want to quit Janus-UAE?\n",
+        "Yes|No"
+};
+
+static int really_quit(struct Window *win) {
+
+  /* EasyRequest returns 0 for No and 1 for Yes */
+
+  return EasyRequest(win, &really_quit_req, NULL, NULL);
+}
+ 
+/***************************************************
  * handle_events_W
  *
  * works with a local W, so it can be called
@@ -214,9 +235,11 @@ void handle_events_W(struct Window *W, BOOL customscreen) {
 		  EndRefresh (W, TRUE);
 		  break;
 
-	      case IDCMP_CLOSEWINDOW:
-		  uae_quit ();
-		  break;
+    case IDCMP_CLOSEWINDOW:
+      if(really_quit(W)) {
+        uae_quit ();
+      }
+      break;
 
 	      case IDCMP_RAWKEY: {
 		  int keycode = code & 127;
