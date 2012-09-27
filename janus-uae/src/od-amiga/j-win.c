@@ -850,16 +850,16 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
                                &aros_window_compare);
 
       if(list_win) {
-	win=(JanusWin *) list_win->data;
-	if(win->aos3win != last_window) {
-	  last_window=win->aos3win;
-	  //JWLOG("ad_job_sync_windows: win %lx added at %d\n",win->aos3win,i*4);
-	  if(!win->custom && !win->dead) { /* hmmm..?*/
-	    /* put_long cares for *4 ? */
-	    put_long_p(m68k_results+i, (ULONG) win->aos3win); 
-	  }
-	  i++;
-	}
+        win=(JanusWin *) list_win->data;
+        if(win->aos3win != last_window) {
+          last_window=win->aos3win;
+          //JWLOG("ad_job_sync_windows: win %lx added at %d\n",win->aos3win,i*4);
+          if(!win->custom && !win->dead) { /* hmmm..?*/
+            /* put_long cares for *4 ? */
+            put_long_p(m68k_results+i, (ULONG) win->aos3win); 
+          }
+        i++;
+        }
       }
     }
     layer=layer->back;
@@ -1024,6 +1024,7 @@ uae_u32 ad_job_modify_idcmp(ULONG aos3win, ULONG flags) {
 void set_window_titles(struct Process *thread, JanusWin *jwin) {
   UBYTE *window_title;
   UBYTE *screen_title;
+  ULONG  screen_title_m68k;
 
   ENTER
 
@@ -1036,10 +1037,19 @@ void set_window_titles(struct Process *thread, JanusWin *jwin) {
   }
 
   window_title=(UBYTE *) get_real_address(get_long_p(jwin->aos3win +  32));
-  screen_title=(UBYTE *) get_real_address(get_long_p(jwin->aos3win + 104));
-
   JWLOG("[%lx]: window title: %s\n", thread, window_title);
-  JWLOG("[%lx]: screen title: %s\n", thread, screen_title);
+
+  screen_title_m68k=get_long_p(jwin->aos3win + 104);
+  JWLOG("[%lx]: screen title 68k: (%lx)\n", thread, screen_title_m68k);
+  if(screen_title_m68k) {
+    screen_title=(UBYTE *) get_real_address(get_long_p(jwin->aos3win + 104));
+    JWLOG("[%lx]: screen title: %s\n", thread, screen_title);
+  }
+  else {
+    /* set it to (CONST_STRPTR)~0 ?? */
+    JWLOG("[%lx]: screen title: not set", thread);
+    screen_title=NULL;
+  }
 
   SetWindowTitles(jwin->aroswin, window_title, screen_title);
 
