@@ -1117,7 +1117,9 @@ void show_uae_main_window(void) {
 
 void disable_uae_main_window(void) {
   JWLOG("disable_uae_main_window\n");
+//#if ALWAYS_SHOW_MAIN_WINDOW
   uae_main_window_closed=TRUE;
+//#endif
 }
 
 void hide_uae_main_window(void) {
@@ -1134,6 +1136,7 @@ void hide_uae_main_window(void) {
     return;
   }
 
+//#if ALWAYS_SHOW_MAIN_WINDOW
   shape = NewRectRegion(0, 0, 0, 0);
   if(shape) {
     if(original_W != W) {
@@ -1144,6 +1147,7 @@ void hide_uae_main_window(void) {
     DisposeRegion(shape);
     disable_uae_main_window();
   }
+//#endif
 
   release_W();
 }
