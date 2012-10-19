@@ -222,10 +222,10 @@ void cpuspeedpanel_set_cpuspeed (CpuSpeedPanel *cspanel, gint cpuspeed) {
 	 */
 	gtk_signal_emit_by_name (GTK_COMBO(cspanel->speed_widget)->list, "selection-changed");
 
-	//if (choice == 2) {
+	if (choice == 2) {
 		/* update adjustable speed */
 		gtk_adjustment_set_value (GTK_ADJUSTMENT (GTK_RANGE (cspanel->adjust_widget)->adjustment), cpuspeed);
-	//}
+	}
 
 	update_state (cspanel);
 }
