@@ -3157,26 +3157,45 @@ void InitPicasso96 (void) {
 	/* 
 	 * try to set host_pixel_format to native host format,
 	 * should fix the Noveau speed problems
+   *
+   * not usefull ATM, as I don't know how to get the
+   * necessary host information..
+   *
 	 */
 #if 0
 	P96LOG("detect host pixel format\n");
+
+  picasso96_pixel_format=0;
+
 	hostscreen=LockPubScreen(NULL); /* get (and open if necessary default public screen */
 	if(hostscreen) {
 
 	  modeID=GetVPModeID(&(hostscreen->ViewPort));
-	  picasso96_pixel_format=GetCyberIDAttr(modeID, CYBRIDATTR_PIXFMT);
-	  P96LOG("modeID %lx -> host_pixel_format %lx\n", modeID, picasso96_pixel_format);
+	  picasso96_pixel_format=GetCyberIDAttr(CYBRIDATTR_PIXFMT, modeID);
+	  P96LOG("modeID %lx -> host_pixel_format %lx (RGBFF_CHUNKY is %lx, RGBFB_R8G8B8 is %lx)\n", modeID, picasso96_pixel_format, RGBFF_CHUNKY, RGBFB_CHUNKY);
 
 	  UnlockPubScreen(NULL, hostscreen);
 	}
-	else {
-	  P96LOG("ERROR: unable to LockPubScreen\n");
-#endif
+
+  if(picasso96_pixel_format == -1) {
 	  /* default format */
-	  picasso96_pixel_format=RGBFF_CHUNKY;
-#if 0
-	}
+    P96LOG("GetCyberIDAttr(CYBRIDATTR_PIXFMT, %lx) returned -1, unsing default\n", modeID);
+  }
 #endif
+
+  //picasso96_pixel_format=RGBFF_CHUNKY;
+  picasso96_pixel_format=RGBFB_CLUT;
+  P96LOG("RGBFF_NONE:   %lx (%d)\n", RGBFF_NONE, RGBFF_NONE); /* 1 */
+  P96LOG("RGBFB_NONE:   %lx (%d)\n", RGBFB_NONE, RGBFB_NONE); 
+  P96LOG("RGBFB_CHUNKY: %lx (%d)\n", RGBFB_CHUNKY, RGBFB_CHUNKY); /* 1 */
+  P96LOG("RGBFF_CHUNKY: %lx (%d)\n", RGBFF_CHUNKY, RGBFF_CHUNKY); /* 2 => %10 */
+  P96LOG("picasso96_pixel_format: %lx (%d)\n", picasso96_pixel_format, picasso96_pixel_format); 
+
+  /* picasso96_pixel_format==2 (RGBFB_R8G8B8): not working on hosted */
+  /* RGBFF_NONE works in hosted, vmware hangs with just workbench screen, no wanderer   */
+  /* RGBFF_B8G8R8A8 works in hosted, framewait overflows, black */
+  /* RGBMASK_32BIT works in hosted, vmware hangs with just workbench screen, no wanderer */
+  /* rgbff_b8g8r8   does not work in hosted, crashes on quit */
 
 	for (i = 0; i < 256; i++) {
 	    p2ctab[i][0] = (((i & 128) ? 0x01000000 : 0)
