@@ -52,7 +52,8 @@ ULONG (*calltrap)(ULONG __asm("d0"),
 
 
 void usage() {
-    printf("usage..\n");
+    fprintf(stderr, "usage: janus-splash <time in seconds> <text message> \n");
+    fprintf(stderr, "       janus-splash close\n");
 }
 
 
@@ -78,9 +79,6 @@ int main (int argc, char **argv) {
 
   C_ENTER
 
-  DebOut("janus-splash: started\n");
-  printf("argc: %d\n", argc);
-
   if(argc==1 || argc>4) {
     usage();
     goto DONE;
@@ -100,24 +98,14 @@ int main (int argc, char **argv) {
       goto DONE;
     }
 
-    printf("close window\n");
-
     /* close */
     command_mem[ 0]=(ULONG) time;
     command_mem[ 1]=(ULONG) 1;    /* close */
     goto SEND;
   }
 
-  printf("argv[0]: %s\n", argv[0]);
-  printf("argv[1]: %s\n", argv[1]);
-  printf("argv[2]: %s\n", argv[2]);
-
   time=atoi(argv[1]);
-
-  printf("time:   %d\n",time);
-
   len=strlen(argv[2]);
-  printf("length: %d\n", len);
 
   /* own string buffer is not really necessary here, but I had troubles getting
    * it to work without it. So I don't care about those few bytes here.
@@ -125,7 +113,6 @@ int main (int argc, char **argv) {
   text=AllocVec(len+1, MEMF_CLEAR);
 
   strncpy(text, argv[2], len);
-  printf("text:   %s\n", text);
 
   if(len>AD__MAXMEM-16) {
     printf("ERROR: text length is limited to %d characters only!\n", AD__MAXMEM-16);
@@ -138,7 +125,6 @@ int main (int argc, char **argv) {
   command_mem[ 3]=(ULONG) text; /* pointer to string */
 
 SEND:
-  printf ("==> send AD_GET_JOB_SPLASH\n");
 
   calltrap (AD_GET_JOB, AD_GET_JOB_SPLASH, command_mem);
 
@@ -150,8 +136,6 @@ DONE:
   if(text) {
     FreeVec(text);
   }
-
-  DebOut("janus-splash: exit\n");
 
   C_LEAVE
 }
