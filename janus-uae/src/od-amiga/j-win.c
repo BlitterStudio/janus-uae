@@ -26,6 +26,8 @@
 
 #include "j.h"
 
+BOOL uae_menu_shown=FALSE;
+
 static void new_aos3window(ULONG aos3win);
 
 /*********************************************************
@@ -97,6 +99,12 @@ static void new_aos3window(ULONG aos3win) {
 
   if(!aos3win) {
     /* OpenWindow failed !? */
+    LEAVE
+    return;
+  }
+
+  if(uae_menu_shown) {
+    /* do nothing here, as AROS menus are windows, and we don't want to clone them at all! */
     LEAVE
     return;
   }
@@ -344,6 +352,12 @@ uae_u32 ad_job_report_uae_windows(ULONG *m68k_results) {
    * }
    */
 
+  if(uae_menu_shown) {
+    /* do nothing here, as AROS menus are windows, and we don't want to clone the at all! */
+    LEAVE
+    return;
+  }
+
   ObtainSemaphore(&sem_janus_window_list);
 
   aos3screen=get_long_p(m68k_results);
@@ -360,6 +374,16 @@ uae_u32 ad_job_report_uae_windows(ULONG *m68k_results) {
     /* quite some sanity checks here */
     if(!list_win) {
       JWLOG("no Janus window found for aos3win %lx !?\n",aos3win);
+#if 0
+      /* create one? really a good idea? */
+      /* BUT: it requires sem_janus_window_list semaphore!! */
+      /* and it disturbs all our timings. Don't do it.
+      ReleaseSemaphore(&sem_janus_window_list);
+      new_aos3window(aos3win);
+      LEAVE
+      /* IMPORTANT: return here, we have released our sem_janus_window_list */
+      return;
+#endif
       goto NEXT;
     }
 
@@ -769,8 +793,8 @@ uae_u32 ad_job_switch_uae_window(ULONG *m68k_results) {
 /***************************************************
  * ad_job_sync_windows
  *
- * we have to return the order of all janus windows
- * from top window to bottom window
+ * we have to return the order of all janus AROS 
+ * windows from top window to bottom window
  ***************************************************/
 
 /* ATTENTION: *Always* ObtainSemaphore(&sem_janus_window_list)
@@ -1111,7 +1135,7 @@ JanusWin *get_jwin_from_aos3win_safe(struct Process *thread, ULONG aos3win) {
     return NULL;
   }
 
-  /* We might be called quickly after the amigaSO OpenWindow call.
+  /* We might be called quickly after the amigaOS OpenWindow call.
     * The AROS window might not be up until now, so we wait.
     * This might cause a deadlock, if we do not release the
     * sem_janus_window_list befor this wait.
