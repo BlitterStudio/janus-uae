@@ -223,8 +223,8 @@ void clone_menu(JanusWin *jwin) {
 	}
       }
       else {
-	/* ignore */
-	JWLOG("TODO: !aos3itemfill <==================\n");
+        /* ignore */
+        JWLOG("TODO: !aos3itemfill <==================\n");
       }
       aos3item=get_long(aos3item); /* NextItem */
     }
@@ -270,18 +270,63 @@ static BOOL wait_menu_shown(uaecptr menu_flags) {
   ULONG i;
   UWORD flags;
 
+  JWLOG("wait for menu to be drawn ..\n");
+
   i=0;
   while(i<20) {
     flags=get_word(menu_flags);
+    //JWLOG("flags: %x\n", flags);
+    //JWLOG("flags 2: %x\n", flags|MIDRAWN);
     if(flags & MIDRAWN) {
-      JWLOG("menu drawn (%d)\n",i);
+      JWLOG("menu drawn (after waiting %d delays(5))\n",i);
       return TRUE;
     }
     i++;
     Delay(5);
   }
-  JWLOG("menu not drawn !!\n");
+  JWLOG("ERROR: menu not drawn !!\n");
+
   return FALSE;
+}
+
+/* wait_menu_closed
+ *
+ * wait until all menus windows of this window are closed,
+ * so it is safe, to sync windows again, for example
+ */
+void wait_window_menu_closed(JanusWin *jwin) {
+  uaecptr          aos3win;
+  uaecptr          aos3menustrip;
+  uaecptr          menuflags;
+  ULONG            i;
+  UWORD            flags;
+
+  aos3win=(uaecptr) jwin->aos3win;
+  if(!aos3win) {
+    return;
+  }
+
+  aos3menustrip=get_long(aos3win + 28);
+  if(!aos3menustrip) {
+    JWLOG("aos3 window %lx has no menustrip\n",aos3win);
+    return;
+  }
+
+  menuflags=aos3menustrip + 12;
+
+  i=0;
+  while(i<20) {
+    flags=get_word(menuflags);
+    //JWLOG("flags: %x\n", flags);
+    //JWLOG("flags 2: %x\n", flags|MIDRAWN);
+    if(!(flags & MIDRAWN)) {
+      JWLOG("menu closed (after waiting %d delays(5))\n",i);
+      return;
+    }
+    i++;
+    Delay(5);
+  }
+  JWLOG("could not wait unti menu for aos3 window %lx was closed, sorry.\n",aos3win);
 }
 
 static BOOL wait_menuitem_shown(uaecptr menu_flags) {
@@ -355,7 +400,7 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
   WORD             rx, ry;
   int              i,j,l;
 
-  JWLOG("(%d, %d, %d)\n",menu, item, sub);
+  JWLOG("click menu %d, item %d, submenu %d\n",menu, item, sub);
 
   aos3win=(uaecptr) jwin->aos3win;
   if(!aos3win) {
@@ -382,7 +427,7 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
       JWLOG("screen barh:    %d\n",get_byte(aos3screen + 30));
 
       x=get_word(aos3menustrip+4) +    /* LeftEdge */
-	(get_word(aos3menustrip+8) /2);/* Width / 2 */
+        (get_word(aos3menustrip+8) /2);/* Width / 2 */
       /* "Currently", any values supplied for TopEdge and 
        * Height are ignored by Intuition, which uses instead 
        * the top of the screen for the TopEdge and the
@@ -399,12 +444,13 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
       rx=get_word(aos3menustrip+4);
 
       if(!wait_menu_mouse_pos(jwin, menux, menuy)) {
-	JWLOG("ERROR: mouse not moved, do nothing\n");
-	return;
+        JWLOG("ERROR: mouse not moved, do nothing\n");
+        return;
       };
+
       if(!wait_menu_shown(aos3menustrip + 12)) {
-	JWLOG("ERROR: menu not shown, do nothing\n");
-	return;
+        JWLOG("ERROR: menu not shown, do nothing\n");
+        return;
       } 
 
       /* menu drawn */
@@ -412,61 +458,62 @@ void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub) {
       aos3item=get_long(aos3menustrip + 18);
       j=0;
       while((item!=-1) && aos3item) {
-	if(j==item) {
-	  JWLOG("menu item left edge: %d\n",get_word(aos3item+4));
-	  JWLOG("menu item width:     %d\n",get_word(aos3item+8));
-	  JWLOG("menu item top edge:  %d\n",get_word(aos3item+6));
-	  JWLOG("menu item height:    %d\n",get_word(aos3item+10));
+        if(j==item) {
+          JWLOG("menu item left edge: %d\n",get_word(aos3item+4));
+          JWLOG("menu item width:     %d\n",get_word(aos3item+8));
+          JWLOG("menu item top edge:  %d\n",get_word(aos3item+6));
+          JWLOG("menu item height:    %d\n",get_word(aos3item+10));
 
-    	  x=get_word(aos3item+4) +    /* LeftEdge */
-    	    get_word(aos3item+8) /2 + /* Width / 2 */
-	    rx;                       /* The item LeftEdge is relative to the 
-				       * LeftEdge of the Menu*/
-       	  y=get_word(aos3item+6) +    /* TopEdge */
-    	    get_word(aos3item+10) /2 +/* Height / 2 */
-	    ry;
-	  rx=rx+get_word(aos3item+4);
-	  ry=ry+get_word(aos3item+6);
-       	  /* move to this item */
-	  JWLOG("menu item xy: %d %d\n\n",x,y);  /* ok */
-	  menux=x;
-	  menuy=y;
-	  if(!wait_menu_mouse_pos(jwin, menux, menuy)) {
-	      JWLOG("ERROR: mouse not moved!\n");
-	      return;
-	  };
+          x=get_word(aos3item+4) +    /* LeftEdge */
+            get_word(aos3item+8) /2 + /* Width / 2 */
+            rx;                       /* The item LeftEdge is relative to the 
+          * LeftEdge of the Menu*/
+            y=get_word(aos3item+6) +    /* TopEdge */
+            get_word(aos3item+10) /2 +/* Height / 2 */
+            ry;
+          rx=rx+get_word(aos3item+4);
+          ry=ry+get_word(aos3item+6);
+          /* move to this item */
+          JWLOG("menu item xy: %d %d\n\n",x,y);  /* ok */
+          menux=x;
+          menuy=y;
+          if(!wait_menu_mouse_pos(jwin, menux, menuy)) {
+            JWLOG("ERROR: mouse not moved!\n");
+            return;
+          };
 
-	  /* if we have a subitem, we need to wait until it opens */
-	  if(sub!=-1) {
-	    if(!wait_menuitem_shown(aos3item + 12)) {
-	      JWLOG("ERROR: subitem not shown, ABORTED\n");
-	      return;
-	    };
+          /* if we have a subitem, we need to wait until it opens */
+          if(sub!=-1) {
+            JWLOG("care for subitem\n");
+            if(!wait_menuitem_shown(aos3item + 12)) {
+              JWLOG("ERROR: subitem not shown, ABORTED\n");
+              return;
+            };
 
-	    aos3sub=get_long(aos3item+28);
-	    l=0;
-	    while(aos3sub) {
-	      if(l==sub) {
-		x=get_word(aos3sub+4) +    /* LeftEdge */
-		  get_word(aos3sub+8) /2 + /* Width / 2 */
-		  rx;
-		y=get_word(aos3sub+6) +    /* TopEdge */
-		  get_word(aos3sub+10) /2 +/* Height / 2 */
-		  ry;
-		/* move to this item */
-		menux=x;
-		menuy=y;
-		JWLOG("menu subitem xy: %d %d\n",x,y);
-		wait_menu_mouse_pos(jwin, menux, menuy);
-	      }
+            aos3sub=get_long(aos3item+28);
+            l=0;
+            while(aos3sub) {
+              if(l==sub) {
+                x=get_word(aos3sub+4) +    /* LeftEdge */
+                  get_word(aos3sub+8) /2 + /* Width / 2 */
+                  rx;
+                y=get_word(aos3sub+6) +    /* TopEdge */
+                  get_word(aos3sub+10) /2 +/* Height / 2 */
+                  ry;
+                /* move to this item */
+                menux=x;
+                menuy=y;
+                JWLOG("menu subitem xy: %d %d\n",x,y);
+                wait_menu_mouse_pos(jwin, menux, menuy);
+              }
 
-	      l++;
-	      aos3sub=get_long(aos3sub); /* Next */
-	    }
-	  }
-	}
-	j++;
-  	aos3item=get_long(aos3item); /* NextItem */
+              l++;
+              aos3sub=get_long(aos3sub); /* Next */
+            }
+          }
+        }
+        j++;
+        aos3item=get_long(aos3item); /* NextItem */
       }
     }
     i++;
