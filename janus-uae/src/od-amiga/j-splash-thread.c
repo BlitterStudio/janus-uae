@@ -79,7 +79,7 @@ void close_splash(void) {
 
   Signal(splash_window_task, SIGBREAKF_CTRL_C);
 
-  while(splash_window_task || FindTask(process_name)) {
+  while(splash_window_task || FindTask((STRPTR) process_name)) {
     JWLOG("waiting for splash thread to die..\n");
     Delay(50);
   }
@@ -119,7 +119,7 @@ static gint gtk_splash_timer (gpointer *task) {
   return FALSE;
 }
 
-void do_splash(char *text, int time) {
+void do_splash(APTR text, int time) {
 
   JWLOG("text %s, time %d\n", text, time);
 
@@ -150,13 +150,14 @@ void do_splash(char *text, int time) {
 
 static void aros_splash_window_thread (void) {
 
-  IPTR file;
+  BPTR file;
   ULONG signals=0;
 
-  if(file=Open("janus.png", MODE_OLDFILE)) {
+  if(( file=Open((STRPTR) "janus.png", MODE_OLDFILE) )) {
     Close(file);
 
     splash_app=ApplicationObject,
+            MUIA_Application_UseCommodities, FALSE,
             SubWindow, splash_win=WindowObject,
               MUIA_Window_Borderless, TRUE,
               MUIA_Window_Width, 200,
@@ -181,6 +182,7 @@ static void aros_splash_window_thread (void) {
   }
   else {
     splash_app=ApplicationObject,
+            MUIA_Application_UseCommodities, FALSE,
             SubWindow, splash_win=WindowObject,
               MUIA_Window_Borderless, TRUE,
               MUIA_Window_Width, 200,

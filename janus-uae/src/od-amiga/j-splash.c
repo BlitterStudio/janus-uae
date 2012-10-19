@@ -32,8 +32,6 @@
  *
  **********************************************************/
 
-void do_splash(char *text, int time);
-
 #define SPLASH_MAX_LENGTH 1023
 
 static char text[SPLASH_MAX_LENGTH+1];
