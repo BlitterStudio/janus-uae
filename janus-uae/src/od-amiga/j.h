@@ -187,6 +187,10 @@ extern BOOL uae_main_window_visible;
 /* disable *all* output to native aros window(s) */
 extern BOOL uae_no_display_update;
 
+/* we have a menu displayed, so don't create any new cloe windows,
+ * as AROS menus are windows.. */
+extern BOOL uae_menu_shown;
+
 extern WORD menux, menuy;
 
 extern struct Window   *original_W;
@@ -482,6 +486,6 @@ void gui_shutdown (void);
 /* splash */
 void show_splash(void);
 void close_splash(void);
-void do_splash(char *text, int time);
+void do_splash(APTR text, int time);
 
 #endif
