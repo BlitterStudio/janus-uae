@@ -74,7 +74,7 @@ static const struct cfg_lines opttable[] =
 #endif
     {"cpu_speed", "can be max, real, or a number between 1 and 20" },
     {"cpu_type", "Can be 68000, 68010, 68020, 68020/68881" },
-    {"cpu_compatible", "yes enables compatibility-mode" },
+    {"cpu_compatible", "true enables compatibility-mode" },
     {"cpu_24bit_addressing", "must be set to 'no' in order for Z3mem or P96mem to work" },
     {"log_illegal_mem", "print illegal memory access by Amiga software?" },
     {"fastmem_size", "Size in megabytes of fast-memory" },
@@ -568,10 +568,10 @@ void save_options (FILE *f, const struct uae_prefs *p, int type)
     cfgfile_write (f, "gfxcard_size=%d\n", p->gfxmem_size / 0x100000);
     cfgfile_write (f, "chipmem_size=%d\n", (p->chipmem_size == 0x40000) ? 0 : p->chipmem_size / 0x80000);
 
-    if (p->m68k_speed > 0)
-	cfgfile_write (f, "finegrain_cpu_speed=%d\n", p->m68k_speed);
-    else
-	cfgfile_write (f, "cpu_speed=%s\n", p->m68k_speed == -1 ? "max" : "real");
+  if (p->m68k_speed > 0)
+    cfgfile_write (f, "finegrain_cpu_speed=%d\n", p->m68k_speed);
+  else
+    cfgfile_write (f, "cpu_speed=%s\n", p->m68k_speed == -1 ? "max" : "real");
 
     cfgfile_write (f, "cpu_type=%s\n", cpumode[p->cpu_level * 2 + !p->address_space_24]);
     cfgfile_write (f, "cpu_compatible=%s\n", p->cpu_compatible ? "true" : "false");
