@@ -26,7 +26,7 @@
 #include <dos/dostags.h>
 #include <proto/dos.h>
 
-#define JWTRACING_ENABLED 1
+//#define JWTRACING_ENABLED 1
 #include "j.h"
 
 BOOL init_done=FALSE;
@@ -228,7 +228,7 @@ static uae_u32 jd_setup(TrapContext *context, ULONG *param) {
      *   2: demon wants to run again
      */
 
-    //JWLOG("jd_setup(.., task %lx, .., stop %d)\n",get_long_p(param),get_long_p(param+8));
+    JWLOG("jd_setup(.., task %lx, .., stop %d)\n",get_long_p(param),get_long_p(param+8));
 #if 0
     JWLOG("::::::::::::::AD_SETUP::::::::::::::::::::::::\n");
     JWLOG("AD__MAXMEM: %d\n", m68k_dreg(&context->regs, 1));
@@ -248,6 +248,7 @@ static uae_u32 jd_setup(TrapContext *context, ULONG *param) {
       aos3_task=get_long_p(param);
       aos3_task_signal=get_long_p(param+4);
 
+
       InitSemaphore(&sem_janus_window_list);
       InitSemaphore(&sem_janus_screen_list);
       InitSemaphore(&aos3_thread_start);
@@ -259,7 +260,6 @@ static uae_u32 jd_setup(TrapContext *context, ULONG *param) {
       init_done=TRUE;
 
       unlock_jgui();
-
     }
 
     want_to_die=get_long_p(param+8);
