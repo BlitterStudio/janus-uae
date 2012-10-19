@@ -92,6 +92,7 @@ struct uae_prefs currprefs, changed_prefs;
 static int restart_program;
 static char restart_config[256];
 char optionsfile[256];
+char default_optionsfile[256];
 
 int cloanto_rom = 0;
 
@@ -103,8 +104,6 @@ uae_sem_t gui_main_wait_sem;   // For the GUI thread to tell UAE/main that it's 
 
 void on_start_clicked (void);
 BOOL gui_visible (void);
-
-extern void do_splash(char *text, int time);
 
 /*
  * Random prefs-related junk that needs to go elsewhere.
@@ -401,6 +400,26 @@ static void show_version_full (void)
     write_log ("warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
 }
 
+static void parse_optionfile_parameter (int argc, char **argv) {
+  int i;
+
+  default_optionsfile[0]='\0';
+
+  for (i = 1; i < argc; i++) {
+    if (strcmp (argv[i], "-f") == 0) {
+      if (i + 1 == argc) {
+        write_log ("Missing argument for '-f' option.\n");
+      } else {
+        /* just in case, we need it */
+        strcpy (default_optionsfile, optionsfile);
+        /* use -f value */
+        strncpy(optionsfile, argv[i+1], 255);
+        return;
+      }
+    }
+  }
+}
+ 
 static void parse_cmdline (int argc, char **argv) {
 
   int i;
@@ -414,7 +433,7 @@ static void parse_cmdline (int argc, char **argv) {
 #ifdef FILESYS
       //free_mountinfo (currprefs.mountinfo);
 #endif
-      write_log("WARNING: -config= is DEPRECATED! please use -f!\n");
+      write_log("WARNING: -config= is GONE! please use -f!\n");
 
       //if (cfgfile_load (&currprefs, argv[i] + 8, 0)) {
         //strcpy (optionsfile, argv[i] + 8);
@@ -422,6 +441,13 @@ static void parse_cmdline (int argc, char **argv) {
     }
     /* Check for new-style "-f xxx" argument, where xxx is config-file */
     else if (strcmp (argv[i], "-f") == 0) {
+      if (i + 1 != argc) {
+        /* if there is a parameter (there should be one..), skip it */
+        i++;
+      }
+
+      /* we have handled that already! */
+#if 0
       if (i + 1 == argc) {
         write_log ("Missing argument for '-f' option.\n");
       } else {
@@ -437,6 +463,7 @@ static void parse_cmdline (int argc, char **argv) {
         }
         //uae_save_config_to_file("sys:post.cfg");
       }
+#endif
     } else if (strcmp (argv[i], "-s") == 0) {
       if (i + 1 == argc) {
         write_log ("Missing argument for '-s' option.\n");
@@ -497,50 +524,47 @@ static void parse_cmdline (int argc, char **argv) {
 }
 #endif
 
-static void parse_cmdline_and_init_file (int argc, char **argv)
-{
-    char *home;
-#ifdef _WIN32
-    extern char *start_path;
-#endif
+static void parse_cmdline_and_init_file (int argc, char **argv) {
 
-    strcpy (optionsfile, "");
+  strcpy (optionsfile, "");
+
+	strcpy (optionsfile, "PROGDIR:");
+  strcat (optionsfile, OPTIONSFILENAME);
+
+  /* if -f is supplied, overwrite optionsfile */
+  parse_optionfile_parameter(argc, argv);
+
+  if (! cfgfile_load (&currprefs, optionsfile, 0)) {
+    write_log ("failed to load config '%s'\n", optionsfile);
+    if(default_optionsfile[0] != '\0') {
+      /* -f was supplied but failed, so we load the default config file .. (?) *
+       * parse_optionfile_parameter backupped default_optionsfile for us       */
+      strcpy(optionsfile, default_optionsfile);
+      write_log ("ATTENTION: trying %s instead\n", optionsfile);
+      if(! cfgfile_load (&currprefs, optionsfile, 0)) {
+        write_log ("failed to load config '%s', too!\n", optionsfile);
+      }
+    }
 
 #ifdef OPTIONS_IN_HOME
-    home = getenv ("HOME");
-    if (home != NULL && strlen (home) < 240)
-    {
-	strcpy (optionsfile, home);
-	strcat (optionsfile, "/");
+    /* sam: if not found in $HOME then look in current directory */
+    char *saved_path = strdup (optionsfile);
+    strcpy (optionsfile, OPTIONSFILENAME);
+    if (! cfgfile_load (&currprefs, optionsfile, 0) ) {
+      /* If not in current dir either, change path back to home
+       * directory - so that a GUI can save a new config file there */
+      strcpy (optionsfile, saved_path);
     }
+
+    free (saved_path);
 #endif
+  }
 
-#ifdef _WIN32
-    sprintf( optionsfile, "%s\\Configurations\\", start_path );
-#endif
+  fix_options ();
 
-    strcat (optionsfile, OPTIONSFILENAME);
+  parse_cmdline (argc, argv);
 
-    if (! cfgfile_load (&currprefs, optionsfile, 0)) {
-//	write_log ("failed to load config '%s'\n", optionsfile);
-#ifdef OPTIONS_IN_HOME
-	/* sam: if not found in $HOME then look in current directory */
-        char *saved_path = strdup (optionsfile);
-	strcpy (optionsfile, OPTIONSFILENAME);
-	if (! cfgfile_load (&currprefs, optionsfile, 0) ) {
-	    /* If not in current dir either, change path back to home
-	     * directory - so that a GUI can save a new config file there */
-	    strcpy (optionsfile, saved_path);
-	}
-
-        free (saved_path);
-#endif
-    }
-    fix_options ();
-
-    parse_cmdline (argc, argv);
-
-    fix_options ();
+  fix_options ();
 }
 
 /*
@@ -783,8 +807,9 @@ static int do_preinit_machine (int argc, char **argv)
 
     if (restart_config[0])
         parse_cmdline_and_init_file (argc, argv);
-    else
+    else {
 	currprefs = changed_prefs;
+    }
 
     uae_inithrtimer ();
 
@@ -972,7 +997,7 @@ static void do_run_machine (void)
 /*
  * Exit emulator
  *
- * o1i: this in only called, if the uae window is open,
+ * o1i: this is only called, if the uae window is open,
  *      not if only the gui is active.
  */
 static void do_exit_machine (void)
