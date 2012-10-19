@@ -274,35 +274,35 @@ static void runme() {
   init=FALSE;
   while(!done) {
     DebOut("Wait() ..\n");
-    newsignals=Wait(mysignal | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
+    newsignals=Wait(mysignal | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D | SIGBREAKF_CTRL_F);
     set=setup(mytask, mysignal, 0);
     if(newsignals & mysignal) {
       if(set) {
-	/* we are active */
+        /* we are active */
 
-	if(!init) {
-	  /* disabled -> enabled */
-	  init=TRUE;
-	  DebOut("update screens ..\n");
-	  update_screens(); /* report all open screens once, 
-			     * updates again at every openwindow patch
-			     * call
-			     */
-	  DebOut("screens updated\n");
+        if(!init) {
+          /* disabled -> enabled */
+          init=TRUE;
+          DebOut("update screens ..\n");
+          update_screens(); /* report all open screens once, 
+                             * updates again at every openwindow patch
+                  			     * call
+                  			     */
+          DebOut("screens updated\n");
 
-	  DebOut("update windows ..\n");
-	  update_windows(); /* report all open windows once,
-			     * new windows will be handled by the patches
-			     */
-	  DebOut("windows updated\n");
-	}
+          DebOut("update windows ..\n");
+          update_windows(); /* report all open windows once,
+			                       * new windows will be handled by the patches
+			                       */
+          DebOut("windows updated\n");
+        }
 
-	update_top_screen();
-	sync_windows();
-	report_uae_windows();
-	report_host_windows(); /* bad! */
-	sync_active_window();
-	forward_messages();
+        update_top_screen();
+        sync_windows();
+        report_uae_windows();
+        report_host_windows(); /* bad! */
+        sync_active_window();
+        forward_messages();
       }
       sync_mouse();
     }
@@ -311,13 +311,13 @@ static void runme() {
       (!set && (newsignals & mysignal))) {
       DebOut("!set || got SIGBREAKF_CTRL_C..\n");
       if(init) {
-	DebOut("tell uae, that we received a SIGBREAKF_CTRL_C\n");
-	init=FALSE;
-	/* cose all windows */
+        DebOut("tell uae, that we received a SIGBREAKF_CTRL_C\n");
+        init=FALSE;
+        /* cose all windows */
       	command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
-	calltrap (AD_GET_JOB, AD_GET_JOB_LIST_WINDOWS, command_mem); /* this is a NOOP!!!*/
-	FreeVec(command_mem);
-	setup(mytask, mysignal, 1); /* we are tired */
+        calltrap (AD_GET_JOB, AD_GET_JOB_LIST_WINDOWS, command_mem); /* this is a NOOP!!!*/
+        FreeVec(command_mem);
+        setup(mytask, mysignal, 1); /* we are tired */
       }
       else {
 	DebOut("we are already inactive\n");
@@ -328,14 +328,24 @@ static void runme() {
       DebOut("got SIGBREAKF_CTRL_D..\n");
 //      switch_uae_window();
       if(!init) {
-	DebOut("janusd: tell uae, that we received a SIGBREAKF_CTRL_D\n");
-	setup(mytask, mysignal, 2); /* we are back again */
+        DebOut("janusd: tell uae, that we received a SIGBREAKF_CTRL_D\n");
+        setup(mytask, mysignal, 2); /* we are back again */
       }
       else {
-	DebOut("we are already active\n");
+        DebOut("we are already active\n");
       }
 
     }
+
+    /* force a manual update of all windows */
+    if(set && (newsignals & SIGBREAKF_CTRL_F)) {
+      DebOut("complete update of 68k windows ..\n");
+      update_windows(); /* report all open windows once,
+            * new windows will be handled by the patches
+            */
+      DebOut("windows updated\n");
+    }
+
   }
 
   /* never arrive here */
