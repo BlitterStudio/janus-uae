@@ -456,116 +456,115 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
       JWLOG("AD_GET_JOB: %d\n", job);
 
       switch(job) {
-    	case AD_GET_JOB_LIST_WINDOWS: 
-       	  return ad_job_update_janus_windows(m68k_results);
-    	case AD_TEST: 
-       	  return ad_test(m68k_results);
-    	case AD_GET_JOB_DEBUG: 
-       	  return ad_debug(m68k_results);
-    	case AD_GET_JOB_SYNC_WINDOWS: 
-       	  return ad_job_sync_windows(m68k_results);
-    	case AD_GET_JOB_REPORT_UAE_WINDOWS: 
-       	  return ad_job_report_uae_windows(m68k_results);
-    	case AD_GET_JOB_REPORT_HOST_WINDOWS: 
-       	  return ad_job_report_host_windows(m68k_results);
-    	case AD_GET_JOB_MARK_WINDOW_DEAD: 
-       	  return ad_job_mark_window_dead((ULONG) m68k_results);
-    	case AD_GET_JOB_GET_MOUSE: 
-       	  return ad_job_get_mouse(m68k_results);
-    	case AD_GET_JOB_SWITCH_UAE_WINDOW: 
-       	  return ad_job_switch_uae_window(m68k_results);
-    	case AD_GET_JOB_ACTIVE_WINDOW: 
-       	  return ad_job_active_window(m68k_results);
-    	case AD_GET_JOB_NEW_WINDOW: 
-       	  return ad_job_new_window((ULONG) m68k_results);
-    	case AD_GET_JOB_LIST_SCREENS: 
-       	  return ad_job_list_screens(m68k_results);
-    	case AD_GET_JOB_MESSAGES: 
-       	  return ad_job_fetch_message(m68k_results);
-    	case AD_GET_JOB_OPEN_CUSTOM_SCREEN: 
-       	  return ad_job_open_custom_screen(m68k_results);
-    	case AD_GET_JOB_CLOSE_SCREEN: 
-       	  return ad_job_close_screen(m68k_results);
-    	case AD_GET_JOB_TOP_SCREEN: 
-       	  return ad_job_top_screen(m68k_results);
-	case AD_GET_JOB_SCREEN_DEPTH:
-       	  return ad_job_screen_depth((ULONG) m68k_areg(&context->regs, 0), 
-	                             (ULONG) m68k_dreg(&context->regs, 3));
-	case AD_GET_JOB_MODIFY_IDCMP:
-	  JWLOG("AD_GET_JOB_MODIFY_IDCMP(%lx,%d)\n",(ULONG) m68k_areg(&context->regs, 0),  (ULONG) m68k_dreg(&context->regs, 3));
-	  return TRUE;
-	case AD_GET_JOB_UPDATE_GADGETS:
-	  JWLOG("aroshack_helper: job: AD_GET_JOB_UPDATE_GADGETS\n");
-       	  return ad_job_update_gadgets((ULONG) m68k_areg(&context->regs, 3));
-	case AD_GET_JOB_SET_WINDOW_TITLES:
-       	  return ad_job_set_window_titles((ULONG) m68k_areg(&context->regs, 0));
-	case AD_GET_JOB_WINDOW_LIMITS:
-       	  return ad_job_window_limits( (ULONG) m68k_areg(&context->regs, 0),
-	                               ( WORD) m68k_dreg(&context->regs, 2),
-	                               ( WORD) m68k_dreg(&context->regs, 3),
-	                               (UWORD) m68k_dreg(&context->regs, 4),
-	                               (UWORD) m68k_dreg(&context->regs, 5) );
-	case AD_GET_JOB_SPLASH:
-       	  return ad_job_splash_screen(m68k_results);
+            case AD_GET_JOB_LIST_WINDOWS: 
+                 return ad_job_update_janus_windows(m68k_results);
+            case AD_TEST: 
+                 return ad_test(m68k_results);
+            case AD_GET_JOB_DEBUG: 
+                 return ad_debug(m68k_results);
+            case AD_GET_JOB_SYNC_WINDOWS: 
+                 return ad_job_sync_windows(m68k_results);
+            case AD_GET_JOB_REPORT_UAE_WINDOWS: 
+                 return ad_job_report_uae_windows(m68k_results);
+            case AD_GET_JOB_REPORT_HOST_WINDOWS: 
+                 return ad_job_report_host_windows(m68k_results);
+            case AD_GET_JOB_MARK_WINDOW_DEAD: 
+                 return ad_job_mark_window_dead((ULONG) m68k_results);
+            case AD_GET_JOB_GET_MOUSE: 
+                 return ad_job_get_mouse(m68k_results);
+            case AD_GET_JOB_SWITCH_UAE_WINDOW: 
+                 return ad_job_switch_uae_window(m68k_results);
+            case AD_GET_JOB_ACTIVE_WINDOW: 
+                 return ad_job_active_window(m68k_results);
+            case AD_GET_JOB_NEW_WINDOW: 
+                 return ad_job_new_window((ULONG) m68k_results);
+            case AD_GET_JOB_LIST_SCREENS: 
+                 return ad_job_list_screens(m68k_results);
+            case AD_GET_JOB_MESSAGES: 
+                 return ad_job_fetch_message(m68k_results);
+            case AD_GET_JOB_OPEN_CUSTOM_SCREEN: 
+                 return ad_job_open_custom_screen(m68k_results);
+            case AD_GET_JOB_CLOSE_SCREEN: 
+                 return ad_job_close_screen(m68k_results);
+            case AD_GET_JOB_TOP_SCREEN: 
+                 return ad_job_top_screen(m68k_results);
+      case AD_GET_JOB_SCREEN_DEPTH:
+          return ad_job_screen_depth((ULONG) m68k_areg(&context->regs, 0), 
+                                     (ULONG) m68k_dreg(&context->regs, 3));
+      case AD_GET_JOB_MODIFY_IDCMP:
+          JWLOG("AD_GET_JOB_MODIFY_IDCMP(%lx,%d)\n",(ULONG) m68k_areg(&context->regs, 0),  (ULONG) m68k_dreg(&context->regs, 3));
+          return TRUE;
+      case AD_GET_JOB_UPDATE_GADGETS:
+                 return ad_job_update_gadgets((ULONG) m68k_areg(&context->regs, 3));
+      case AD_GET_JOB_SET_WINDOW_TITLES:
+                 return ad_job_set_window_titles((ULONG) m68k_areg(&context->regs, 0));
+      case AD_GET_JOB_WINDOW_LIMITS:
+                 return ad_job_window_limits( (ULONG) m68k_areg(&context->regs, 0),
+                                       ( WORD) m68k_dreg(&context->regs, 2),
+                                       ( WORD) m68k_dreg(&context->regs, 3),
+                                       (UWORD) m68k_dreg(&context->regs, 4),
+                                       (UWORD) m68k_dreg(&context->regs, 5) );
+      case AD_GET_JOB_SPLASH:
+          return ad_job_splash_screen(m68k_results);
 
-	default:
-	  JWLOG("ERROR!! aroshack_helper: unkown job: %d\n",m68k_dreg(&context->regs, 1));
-	  return FALSE;
+      default:
+          JWLOG("ERROR!! aroshack_helper: unkown job: %d\n",m68k_dreg(&context->regs, 1));
+          return FALSE;
       }
       case AD_CLIP_JOB: {
-	ULONG job=m68k_dreg(&context->regs, 1);
-	ULONG *m68k_results= (ULONG *) m68k_areg(&context->regs, 0);
-	switch(job) {
-	  case JD_AMIGA_CHANGED:
-	    /* remember clipboard change in amigaOS */
-	    if(changed_prefs.jclipboard) {
-	      clipboard_amiga_changed=get_long_p(m68k_results);
-	      JWLOG("JD_AMIGA_CHANGED: clipboard_amiga_changed %d\n", clipboard_amiga_changed);
-	      put_long((ULONG) (m68k_results), (ULONG) TRUE);
-	    }
-	    else {
-	      /* disabled */
-	      JWLOG("JD_CLIP_COPY_TO_AROS: clipboard disabled\n");
-	      put_long((ULONG) (m68k_results), (ULONG) FALSE);
-	    }
-	    return TRUE;
-	  case JD_CLIP_COPY_TO_AROS:
-	    if(changed_prefs.jclipboard) {
-	      /* clipd told us to take the amigaOS clipboard and copy it to AROS clipboard */
-	      copy_clipboard_to_aros_real(get_long(m68k_results + 4), get_long(m68k_results + 8));
-	      JWLOG("copy_clipboard_to_aros_real returned\n");
-	    }
-	    else {
-	      JWLOG("JD_CLIP_COPY_TO_AROS: clipboard disabled\n");
-	    }
-	    return TRUE;
-	  case JD_CLIP_GET_AROS_LEN:
-	    /* get clipboard len */
-	    put_long((ULONG) (m68k_results), aros_clipboard_len());
-	    return TRUE;
-	  case JD_CLIP_COPY_FROM_AROS:
-	    copy_clipboard_to_amigaos_real(get_long_p(m68k_results), get_long_p(m68k_results+4));
-	    return TRUE;
-  	  default:
-  	    JWLOG("ERROR!! CLIP_JOB: unkown job: %d\n",m68k_dreg(&context->regs, 1));
-  	    return FALSE;
-	}
+        ULONG job=m68k_dreg(&context->regs, 1);
+        ULONG *m68k_results= (ULONG *) m68k_areg(&context->regs, 0);
+        switch(job) {
+          case JD_AMIGA_CHANGED:
+            /* remember clipboard change in amigaOS */
+            if(changed_prefs.jclipboard) {
+              clipboard_amiga_changed=get_long_p(m68k_results);
+              JWLOG("JD_AMIGA_CHANGED: clipboard_amiga_changed %d\n", clipboard_amiga_changed);
+              put_long((ULONG) (m68k_results), (ULONG) TRUE);
+            }
+            else {
+              /* disabled */
+              JWLOG("JD_CLIP_COPY_TO_AROS: clipboard disabled\n");
+              put_long((ULONG) (m68k_results), (ULONG) FALSE);
+            }
+            return TRUE;
+          case JD_CLIP_COPY_TO_AROS:
+            if(changed_prefs.jclipboard) {
+              /* clipd told us to take the amigaOS clipboard and copy it to AROS clipboard */
+              copy_clipboard_to_aros_real(get_long(m68k_results + 4), get_long(m68k_results + 8));
+              JWLOG("copy_clipboard_to_aros_real returned\n");
+            }
+            else {
+              JWLOG("JD_CLIP_COPY_TO_AROS: clipboard disabled\n");
+            }
+            return TRUE;
+          case JD_CLIP_GET_AROS_LEN:
+            /* get clipboard len */
+            put_long((ULONG) (m68k_results), aros_clipboard_len());
+            return TRUE;
+          case JD_CLIP_COPY_FROM_AROS:
+            copy_clipboard_to_amigaos_real(get_long_p(m68k_results), get_long_p(m68k_results+4));
+            return TRUE;
+            default:
+              JWLOG("ERROR!! CLIP_JOB: unkown job: %d\n",m68k_dreg(&context->regs, 1));
+              return FALSE;
+        }
       }
       case AD_LAUNCH_JOB: {
-	ULONG job=m68k_dreg(&context->regs, 1);
-	ULONG *m68k_results= (ULONG *) m68k_areg(&context->regs, 0);
-	switch(job) {
-	  case LD_GET_JOB:
-	    return ld_job_get(m68k_results);
-	    break;
-  	  default:
-  	    JWLOG("ERROR!! LAUCH_JOB: unkown job: %d\n",m68k_dreg(&context->regs, 1));
-  	    return FALSE;
-	}
+        ULONG job=m68k_dreg(&context->regs, 1);
+        ULONG *m68k_results= (ULONG *) m68k_areg(&context->regs, 0);
+        switch(job) {
+          case LD_GET_JOB:
+            return ld_job_get(m68k_results);
+            break;
+            default:
+              JWLOG("ERROR!! LAUCH_JOB: unkown job: %d\n",m68k_dreg(&context->regs, 1));
+              return FALSE;
+        }
       }
    }
 
-    default:
+   default:
       JWLOG("ERROR!! aroshack_helper: unkown service %d\n",service);
       return FALSE;
   }
