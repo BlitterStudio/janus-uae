@@ -339,11 +339,11 @@ EXIT:
   }
 
   if(IntuitionBase) {
-    CloseLibrary(IntuitionBase);
+    CloseLibrary((struct Library *) IntuitionBase);
   }
 
   if(GfxBase) {
-    CloseLibrary(GfxBase);
+    CloseLibrary((struct Library *) GfxBase);
   }
 
   exit(err);
