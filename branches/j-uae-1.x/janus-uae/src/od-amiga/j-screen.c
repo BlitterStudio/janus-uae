@@ -21,7 +21,12 @@
  *
  ************************************************************************/
 
-//#define JWTRACING_ENABLED 1
+
+#include <graphics/displayinfo.h>
+#include <cybergraphx/cybergraphics.h>
+#include <proto/cybergraphics.h>
+
+#define JWTRACING_ENABLED 1
 //#define JW_ENTER_ENABLED 1
 #include "j.h"
 
@@ -80,7 +85,7 @@ static void new_aros_cust_screen(JanusScreen *jscreen, uaecptr aos3screen) {
  * - if yes, return that one
  * - if not, open new one
  ************************************************************************/
-void new_aros_pub_screen(JanusScreen *jscreen, uaecptr aos3screen) {
+static void new_aros_pub_screen(JanusScreen *jscreen, uaecptr aos3screen) {
 
   struct Screen *pub;
 
@@ -89,7 +94,7 @@ void new_aros_pub_screen(JanusScreen *jscreen, uaecptr aos3screen) {
   JWLOG("screen public name: >%s<\n",jscreen->pubname);
 
   /* search for already open screen by name */
-  pub=(struct Screen *) LockPubScreen(jscreen->pubname);
+  pub=LockPubScreen((UBYTE *)jscreen->pubname);
   if(pub) {
     JWLOG("screen %s already exists\n",jscreen->pubname);
     UnlockPubScreen(NULL, pub);
@@ -186,8 +191,8 @@ static void new_aros_screen(JanusScreen *jscreen) {
     while(arosscr) {
       if(arosscr->Flags & WBENCHSCREEN) {
 
-	if( (arosscr->Width != get_word(aos3screen+12)) ||
-	    (arosscr->Height!= get_word(aos3screen+14)) ) {
+	if( (arosscr->Width != (UWORD) get_word(aos3screen+12)) ||
+	    (arosscr->Height!= (UWORD) get_word(aos3screen+14)) ) {
 
 	  write_log("AROS Wanderer and AmigaOS Workbench Screen need to have the same size! Switching coherency off, sorry.\n");
 	  JWLOG("AROS Wanderer and AmigaOS Workbench Screen need to have the same size! Switching coherency off, sorry.\n");
@@ -751,5 +756,64 @@ void close_all_janus_screens_wait() {
 
   LEAVE
   return;
+}
+
+/**********************************************************
+ * ad_job_host_data
+ *
+ * not really fitting in here, but better than nothing.
+ * We return the host workbench screen resolution/depth,
+ * so AROS/m68k can sync the resolution.
+ *
+ **********************************************************/
+uae_u32 ad_job_host_data(ULONG *m68k_results) {
+  struct Screen   *scr;
+  ULONG  id;
+  ULONG  width;
+  ULONG  height;
+  ULONG  depth;
+  ULONG  res=TRUE;
+
+  ENTER
+
+  if(!(scr=LockPubScreen(NULL))) {
+
+    put_long_p(m68k_results, -1);
+    JWLOG("unable to lock screen !?\n");
+    return FALSE;
+  }
+
+  JWLOG("Locked screen: %lx\n", scr);
+
+  id=GetVPModeID(&scr->ViewPort);
+
+  if(id== (ULONG) INVALID_ID) {
+    JWLOG("INVALID_ID !?\n");
+    goto ERROR;
+  }
+
+  width= GetCyberIDAttr(CYBRIDATTR_WIDTH,  id);
+  height=GetCyberIDAttr(CYBRIDATTR_HEIGHT, id);
+  depth= GetCyberIDAttr(CYBRIDATTR_DEPTH,  id);
+
+  JWLOG("width %d, height %d, depth %d\n", width, height, depth);
+
+  put_long_p(m68k_results,   width);
+  put_long_p(m68k_results+1, height);
+  put_long_p(m68k_results+2, depth);
+  goto EXIT;
+
+ERROR:
+  put_long_p(m68k_results, -1);
+  res=FALSE;
+
+EXIT:
+  if(scr) {
+    UnlockPubScreen(NULL, scr);
+  }
+
+  LEAVE
+
+  return res;
 }
 

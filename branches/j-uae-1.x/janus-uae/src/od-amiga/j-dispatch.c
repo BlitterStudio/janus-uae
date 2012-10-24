@@ -506,6 +506,8 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
                                        (UWORD) m68k_dreg(&context->regs, 5) );
       case AD_GET_JOB_SPLASH:
           return ad_job_splash_screen(m68k_results);
+      case AD_GET_JOB_HOST_DATA:
+          return ad_job_host_data(m68k_results);
 
       default:
           JWLOG("ERROR!! aroshack_helper: unkown job: %d\n",m68k_dreg(&context->regs, 1));
