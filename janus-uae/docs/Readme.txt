@@ -2,6 +2,8 @@
 Janus-UAE
 =========
 
+FOR NEW FEATURES, PLEASE HAVE A LOOK INTO THE HISTORY SECTION!
+
 Janus-UAE is a fork of E-UAE 0.8.29-WIP4, so the same license(s)
 apply to it. I changed the name, as I have different goals than
 the e-uae developer. I only care for the AROS version and the
@@ -30,7 +32,7 @@ Objectives:
 ============================================================
 
 The bounty has been fulfilled and I want to thank all 
-sponsors and the poeple behind power2people.org.
+sponsors and the people behind power2people.org.
 
 Sponsors:
 Emmanuel L, Charles D, Ivano G, Clayton S, Graham L,
@@ -109,8 +111,8 @@ if something goes wrong:
   205: AmigaOS executable does not exist (in AROS filesystem)
 
 At the moment, you get *no* return code from the AmigaOS side.
-So you get *no* feedback, if the AmigaOS executeable is
-within any mounted device, if it is an AmigaOS executeable
+So you get *no* feedback, if the AmigaOS executable is
+within any mounted device, if it is an AmigaOS executable
 at all or if the AmigaOS executable returned any error code.
 This might change in the future, but most likely not for
 a v1.0.
@@ -118,7 +120,7 @@ a v1.0.
 All output always happens in an AmigaOS window, if there
 is no output of the AmigaOS executable, no window is
 opened. There is no way, to redirect the input/output
-of the AmigaOS executeable.
+of the AmigaOS executable.
 
 Configuration:
 ==============
@@ -137,6 +139,33 @@ boot hang (Krzysztof).
 ============================================================
 History
 ============================================================
+
+============================================================
+J-UAE 1.3 BETA 
+============================================================
+New features:
+
+- startup splash window controllable from 68k world added
+- clonescreenmode utility added
+- "Really Quit" requester, when uae main window is closed
+- backups of config files are now stored to *.backup files, 
+  not ~* anymore
+- default config file is now fetched from 
+  PROGDIR:uaerc.config no just from uaerc.config
+- default config file is not loaded anymore, if -f is 
+  specified
+- Beta versions contain build date in "About" window
+
+There were some bug reports for v1.2, so this release
+tries to fix some of them:
+
+- gui sprite collision settings fixed
+- loading config with -f caused sometimes a heavy slowdown
+  of the 68k machine. I hope, I fixed the race-condition 
+  between parsing the config file and the gui init, which
+  both run in parallel.. as nice as multithreading is, it
+  sometimes causes headaches. And I hope, this fixes the 
+  bug..
 
 ============================================================
 J-UAE 1.2 (15.05.2012)
