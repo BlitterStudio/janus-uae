@@ -47,9 +47,9 @@ ULONG (*calltrap)(ULONG __asm("d0"),
 
 /*********************************************************************************************/
 
-struct Library       *IFFParseBase;
-struct IntuitionBase *IntuitionBase;
-struct GfxBase       *GfxBase;
+struct Library       *IFFParseBase =NULL;
+struct IntuitionBase *IntuitionBase=NULL;
+struct GfxBase       *GfxBase      =NULL;
 
 struct ScreenModePrefs screenmodeprefs;
 
@@ -214,9 +214,49 @@ BOOL Prefs_Write(BPTR fh, WORD width, WORD height, WORD depth)
     return success;
 }
 
+void usage(void) {
+}
+
 int main(int argc, char **argv) {
-  BPTR fh;
-  ULONG *command_mem;
+  BPTR fh           =NULL;
+  ULONG *command_mem=NULL;
+  ULONG err         =1;
+  char prefsname[256];
+
+  /*
+   * valid parameters are:
+   *
+   * ENVARC  - save to PREFS_PATH_ENVARC "ENVARC:SYS/screenmode.prefs"
+   * ENV     - save to PREFS_PATH_ENV    "ENV:SYS/screenmode.prefs"
+   * PRETEND - just print resolution
+   *
+   */
+
+  printf("argc: %d\n", argc);
+
+  if(argc>2) {
+    printf("usage..\n");
+    usage();
+    goto EXIT;
+  }
+
+  if(argc==2) {
+    if(!stricmp(argv[1], "ENV")) {
+      strcpy(prefsname, PREFS_PATH_ENV);
+    }
+    else if((!stricmp(argv[1], "ENVARC"))) {
+      strcpy(prefsname, PREFS_PATH_ENVARC);
+    }
+    else if((!stricmp(argv[1], "PRETEND"))) {
+      prefsname[0]=(char) 0;
+    }
+    else {
+      usage();
+      goto EXIT;
+    }
+  }
+
+  printf("cont..\n");
 
   if (!(GfxBase = (struct GfxBase *) OpenLibrary ("graphics.library", 0L))) {
     printf("unable to open graphics.library!\n");
@@ -255,6 +295,13 @@ int main(int argc, char **argv) {
     goto EXIT;
   }
 
+  if(!prefsname[0]) {
+    /* pretend */
+    printf("width %ld, height %ld, depth %ld\n", command_mem[0], command_mem[1], command_mem[2]);
+    err=0;
+    goto EXIT;
+  }
+
   //printf("width %d, height %d, depth %d\n", command_mem[0], command_mem[1], command_mem[2]);
 
   if(!Prefs_Load(PREFS_PATH_ENVARC)) {
@@ -266,7 +313,10 @@ int main(int argc, char **argv) {
 
   Prefs_Write(fh, command_mem[0], command_mem[1], command_mem[2]);
 
+  err=0;
+
 EXIT:
+  printf("EXIT!\n");
 
   if(fh) {
     Close(fh);
@@ -279,5 +329,15 @@ EXIT:
   if(IFFParseBase) {
     CloseLibrary(IFFParseBase);
   }
+
+  if(IntuitionBase) {
+    CloseLibrary(IntuitionBase);
+  }
+
+  if(GfxBase) {
+    CloseLibrary(GfxBase);
+  }
+
+  exit(err);
 
 }
