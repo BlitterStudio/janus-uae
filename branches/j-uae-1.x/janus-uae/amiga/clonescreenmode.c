@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../janus-daemon.h"
+#include "janus-daemon.h"
 #include "prefs.h"
 
 #define GET_WORD(x) x

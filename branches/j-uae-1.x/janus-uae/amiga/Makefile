@@ -12,7 +12,8 @@
 
 CC        = m68k-amigaos-gcc
 
-TARGETDIR = /home/oli/svn/v0/AROS/bin/linux-i386/AROS/m68k/
+#TARGETDIR = /home/oli/svn/v0/AROS/bin/linux-i386/AROS/m68k/
+TARGETDIR = /home/oli/svn/v0/AROS/bin/linux-i386/AROS/aros_68k.icaros_wip1.5/
 
 FLAGS     = -Wall
 CDEFS     = 
@@ -27,6 +28,7 @@ JOBJS      = janus-daemon.o sync-mouse.o patch.o sync-windows.o sync-screens.o p
 COBJS      = clip-daemon.o debug.o
 LOBJS      = launch-daemon.o debug.o
 SOBJS      = splash.o debug.o
+SMOBJS     = clonescreenmode.o
 
 all: janusd clipd launchd janus-splash
 
@@ -45,6 +47,10 @@ launchd:  $(LOBJS)
 janus-splash: $(SOBJS)
 	$(CC) $(LD_FLAGS) $(SOBJS) -o janus-splash 
 	cp janus-splash  $(TARGETDIR)
+
+clonescreenmode: $(SMOBJS)
+	$(CC) $(LD_FLAGS) $(SMOBJS) -o clonescreenmode 
+	cp clonescreenmode  $(TARGETDIR)
 
 
 clean:
