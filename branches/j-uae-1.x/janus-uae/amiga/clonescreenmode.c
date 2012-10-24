@@ -3,9 +3,15 @@
 
     Desc:
     Lang: English
+
+    $Id$
 */
 
 #define DEBUG 0
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <intuition/preferences.h>
 #include <prefs/screenmode.h>
@@ -17,9 +23,6 @@
 #include <proto/iffparse.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
-
-#include <stdio.h>
-#include <string.h>
 
 #include "janus-daemon.h"
 #include "prefs.h"
@@ -98,7 +101,7 @@ BOOL Prefs_ImportFH(BPTR fh)
 
                 if (error < 0)
                 {
-                    printf("Error: ReadChunkBytes() returned %d!\n", error);
+                    printf("Error: ReadChunkBytes() returned %ld!\n", error);
                 }
                 else
                 {
@@ -112,13 +115,13 @@ BOOL Prefs_ImportFH(BPTR fh)
             }
             else
             {
-                printf("ParseIFF() failed, returncode %d!\n", error);
+                printf("ParseIFF() failed, returncode %ld!\n", error);
                 success = FALSE;
             }
         }
         else
         {
-            printf("StopChunk() failed, returncode %d!\n", error);
+            printf("StopChunk() failed, returncode %ld!\n", error);
             success = FALSE;
         }
 
@@ -178,7 +181,7 @@ BOOL Prefs_Write(BPTR fh, WORD width, WORD height, WORD depth)
 
             if (error != 0) // TODO: We need some error checking here!
             {
-                printf("error: PushChunk() = %d ", error);
+                printf("error: PushChunk() = %ld ", error);
             }
 
             error = WriteChunkBytes(handle, &saveprefs, sizeof(struct ScreenModePrefs));
@@ -186,7 +189,7 @@ BOOL Prefs_Write(BPTR fh, WORD width, WORD height, WORD depth)
 
             if (error != 0) // TODO: We need some error checking here!
             {
-                printf("error: PopChunk() = %d ", error);
+                printf("error: PopChunk() = %ld ", error);
             }
 
             // Terminate the FORM
