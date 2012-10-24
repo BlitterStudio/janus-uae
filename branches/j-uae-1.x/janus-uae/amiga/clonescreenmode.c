@@ -1,11 +1,20 @@
-/*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
-
-    Desc:
-    Lang: English
-
-    $Id$
-*/
+ /******************************************************************
+  * Copyright © 1995-2012, The AROS Development Team. 
+  * All rights reserved.
+  *******************************************************************
+  * clonescreenmode
+  *
+  * This file is part of janus-uae. It will *not* work on real
+  * Amiga hardware or any other emulator than janus-uae!
+  *
+  * Parts of this file have been taken from AROS Prefs/screenmode,
+  * so this file is APL, too.
+  *
+  *******************************************************************
+  *
+  * $Id$
+  *
+  */
 
 #define DEBUG 0
 
@@ -214,7 +223,19 @@ BOOL Prefs_Write(BPTR fh, WORD width, WORD height, WORD depth)
     return success;
 }
 
-void usage(void) {
+void usage(char *myname) {
+  printf("Usage: %s [ENV|ENVARC|PRETEND]\n", myname);
+  printf("       Clone host screen resolution to 68k ENV\n");
+  printf("       screenmode prefs file.\n");
+  printf("\n");
+  printf(" ENV:\n");
+  printf("  save AROS/x86 host default public screen\n");
+  printf("  settings to %s\n", PREFS_PATH_ENV);
+  printf(" ENVARC:\n");
+  printf("  save AROS/x86 host default public screen\n");
+  printf("  settings to %s\n", PREFS_PATH_ENVARC);
+  printf(" PRETEND:\n");
+  printf("  just print resolution and depth to STDOUT\n");
 }
 
 int main(int argc, char **argv) {
@@ -232,11 +253,8 @@ int main(int argc, char **argv) {
    *
    */
 
-  printf("argc: %d\n", argc);
-
   if(argc>2) {
-    printf("usage..\n");
-    usage();
+    usage(argv[0]);
     goto EXIT;
   }
 
@@ -251,12 +269,14 @@ int main(int argc, char **argv) {
       prefsname[0]=(char) 0;
     }
     else {
-      usage();
+      usage(argv[0]);
       goto EXIT;
     }
   }
-
-  printf("cont..\n");
+  else {
+    /* default */
+    strcpy(prefsname, PREFS_PATH_ENV);
+  }
 
   if (!(GfxBase = (struct GfxBase *) OpenLibrary ("graphics.library", 0L))) {
     printf("unable to open graphics.library!\n");
@@ -279,16 +299,7 @@ int main(int argc, char **argv) {
     goto EXIT;
   }
 
-
   calltrap (AD_GET_JOB, AD_GET_JOB_HOST_DATA, command_mem);
-
-#if 0
-  width= GetCyberIDAttr(CYBRIDATTR_WIDTH,  id);
-  height=GetCyberIDAttr(CYBRIDATTR_HEIGHT, id);
-  depth= GetCyberIDAttr(CYBRIDATTR_DEPTH,  id);
-
-  JWLOG("width %d, height %d, depth %d\n", width, height, depth);
-#endif
 
   if(command_mem[0] == (ULONG) -1) {
     printf("could not get host screen resolution!\n");
@@ -302,10 +313,8 @@ int main(int argc, char **argv) {
     goto EXIT;
   }
 
-  //printf("width %d, height %d, depth %d\n", command_mem[0], command_mem[1], command_mem[2]);
-
   if(!Prefs_Load(PREFS_PATH_ENVARC)) {
-    printf("ERROR1\n");
+    printf("Unable to load old prefs file.\n");
     exit(1);
   }
 
@@ -316,7 +325,6 @@ int main(int argc, char **argv) {
   err=0;
 
 EXIT:
-  printf("EXIT!\n");
 
   if(fh) {
     Close(fh);
