@@ -26,10 +26,11 @@
  *
  ************************************************************************/
 
-//#define TRACING_ENABLED
+#define TRACING_ENABLED
 
 #ifdef TRACING_ENABLED
-#define TRACE(x) do { write_log x; } while(0)
+//#define TRACE(x) do { write_log x; } while(0)
+#define TRACE(x) do { kprintf("%s:%d  %s(): ",__FILE__,__LINE__,__func__);kprintf(x);kprintf("\n"); } while(0)
 #else
 #define TRACE(x)
 #endif

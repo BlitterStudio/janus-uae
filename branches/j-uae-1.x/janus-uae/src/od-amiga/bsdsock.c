@@ -23,8 +23,13 @@
  *
  ************************************************************************/
 
-//#define BSDSOCKET 1
+#define BSDSOCKET 1
 #ifdef BSDSOCKET
+
+#include <proto/bsdsocket.h>
+#include <proto/exec.h>
+#include <netinet/in.h>
+#include <netdb.h>
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -55,6 +60,7 @@
 #define BSDLOG(...)     do { ; } while(0)
 #endif
 
+struct Library *SocketBase;
 #if 0
 
 static HWND hSockWnd;
@@ -179,61 +185,92 @@ static int mySockStartup( void )
     return result;
 }
 
+#endif
+
+static void seterrno (struct socketbase *sb, int err) {
+  sb->sb_errno=err;
+};
+
+struct Library *getsocketbase(void) {
+  SocketBase = OpenLibrary("bsdsocket.library", 0);
+  if(!SocketBase) {
+    kprintf("Unable to open bsdsocket.library!!\n");
+  }
+
+  BSDLOG("return SocketBase %lx\n", SocketBase);
+
+  return SocketBase;
+}
+
 static int socket_layer_initialized = 0;
-#endif
 
-int init_socket_layer(void)
-{
-  BSDLOG("NOT YET IMPLEMENTED!\n");
+int init_socket_layer(void) {
+
   
+  int result = 0;
+
 #if 0
-    int result = 0;
-
 #ifndef CAN_DO_STACK_MAGIC
-    currprefs.socket_emu = 0;
+  currprefs.socket_emu = 0;
 #endif
-    if( currprefs.socket_emu )
-    {
-	if( ( result = mySockStartup() ) )
-	{
-		InitializeCriticalSection(&csSigQueueLock);
 
-	    if( hSockThread == NULL )
-	    {
-	    WNDCLASS wc;    // Set up an invisible window and dummy wndproc
-		
-		InitializeCriticalSection( &SockThreadCS );
-		hSockReq = CreateEvent( NULL, FALSE, FALSE, NULL );
-		hSockReqHandled = CreateEvent( NULL, FALSE, FALSE, NULL );
+  if( currprefs.socket_emu ) {
+    SocketBase = OpenLibrary("bsdsocket.library", 0);
+    if(!SocketBase) {
+    kprintf("Unable to open bsdsocket.library\n");
+    BSDLOG("Unable to open bsdsocket.library\n");
+    result=0;
+  }
+  else {
+    BSDLOG("bsdsocket.library opened.\n");
+    result=1;
+  }
+#endif
 
-		wc.style = CS_BYTEALIGNCLIENT | CS_BYTEALIGNWINDOW;
-		wc.lpfnWndProc = SocketWindowProc;
-		wc.cbClsExtra = 0;
-		wc.cbWndExtra = 0;
-		wc.hInstance = 0;
-//		wc.hIcon = LoadIcon (GetModuleHandle (NULL), MAKEINTRESOURCE (IDI_APPICON));
-		wc.hCursor = LoadCursor (NULL, IDC_ARROW);
-		wc.hbrBackground = GetStockObject (BLACK_BRUSH);
-		wc.lpszMenuName = 0;
-		wc.lpszClassName = "SocketFun";
-		if( RegisterClass (&wc) )
-			{
-			hSockWnd = CreateWindowEx ( 0,
-				    "SocketFun", "WinUAE Socket Window",
-				    WS_POPUP,
-				    0, 0,
-				    1, 1, 
-				    NULL, NULL, 0, NULL);
-			hSockThread = (void *)THREAD(sock_thread,NULL);
-			}
-	    }
-	}
+#if 0
+
+    if( ( result = mySockStartup() ) ) {
+      InitializeCriticalSection(&csSigQueueLock);
+
+      if( hSockThread == NULL ) {
+
+        WNDCLASS wc;    // Set up an invisible window and dummy wndproc
+    
+        InitializeCriticalSection( &SockThreadCS );
+        hSockReq = CreateEvent( NULL, FALSE, FALSE, NULL );
+        hSockReqHandled = CreateEvent( NULL, FALSE, FALSE, NULL );
+        
+        wc.style = CS_BYTEALIGNCLIENT | CS_BYTEALIGNWINDOW;
+        wc.lpfnWndProc = SocketWindowProc;
+        wc.cbClsExtra = 0;
+        wc.cbWndExtra = 0;
+        wc.hInstance = 0;
+//      wc.hIcon = LoadIcon (GetModuleHandle (NULL), MAKEINTRESOURCE (IDI_APPICON));
+        wc.hCursor = LoadCursor (NULL, IDC_ARROW);
+        wc.hbrBackground = GetStockObject (BLACK_BRUSH);
+        wc.lpszMenuName = 0;
+        wc.lpszClassName = "SocketFun";
+        if( RegisterClass (&wc) ) {
+          hSockWnd = CreateWindowEx ( 0,
+            "SocketFun", "WinUAE Socket Window",
+            WS_POPUP,
+            0, 0,
+            1, 1, 
+            NULL, NULL, 0, NULL);
+          hSockThread = (void *)THREAD(sock_thread,NULL);
+        }
+      }
     }
-
-    socket_layer_initialized = result;
-
-    return result;
+  }
 #endif
+
+/* DEBUG! */
+  BSDLOG("return faked socket_layer_initialized=TRUE!\n");
+  result = 1;
+
+  socket_layer_initialized = result;
+
+  return result;
 }
 
 #if 0
@@ -309,8 +346,8 @@ int asyncindex;
 //#endif
 #endif
 
-int host_sbinit(TrapContext *context, SB)
-{
+int host_sbinit(TrapContext *context, struct socketbase *sb) {
+
   BSDLOG("NOT YET IMPLEMENTED!\n");
 #if 0
 	sb->sockAbort = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
@@ -339,7 +376,7 @@ void host_closesocketquick(int s)
 #endif
 }
 
-void host_sbcleanup(SB)
+void host_sbcleanup(struct socketbase *sb)
 {
   BSDLOG("NOT YET IMPLEMENTED!\n");
 #if 0
@@ -377,7 +414,7 @@ void host_sbreset(void)
 #if 0
 void sockmsg(unsigned int msg, unsigned long wParam, unsigned long lParam)
 {
-	SB;
+	struct socketbase *sb;
 	unsigned int index;
 	int sdi;
 
@@ -445,7 +482,7 @@ void sockmsg(unsigned int msg, unsigned long wParam, unsigned long lParam)
 	unlocksigqueue();
 }
 
-static unsigned int allocasyncmsg(SB,uae_u32 sd,SOCKET s)
+static unsigned int allocasyncmsg(struct socketbase *sb,uae_u32 sd,SOCKET s)
 {
 	int i;
 	locksigqueue();
@@ -483,7 +520,7 @@ static unsigned int allocasyncmsg(SB,uae_u32 sd,SOCKET s)
 
 static void cancelasyncmsg(unsigned int wMsg)
 {
-	SB;
+	struct socketbase *sb;
 	
 	wMsg = (wMsg-0xb000)/2;
 
@@ -497,7 +534,7 @@ static void cancelasyncmsg(unsigned int wMsg)
 }
 #endif
 
-void sockabort(SB)
+void sockabort(struct socketbase *sb)
 {	
   BSDLOG("NOT YET IMPLEMENTED!\n");
 #if 0
@@ -508,7 +545,7 @@ void sockabort(SB)
 }
 
 #if 0
-void setWSAAsyncSelect(SB, uae_u32 sd, SOCKET s, long lEvent )
+void setWSAAsyncSelect(struct socketbase *sb, uae_u32 sd, SOCKET s, long lEvent )
 	{
 	if (sb->mtable[sd-1])
 		{
@@ -537,13 +574,15 @@ void setWSAAsyncSelect(SB, uae_u32 sd, SOCKET s, long lEvent )
 		}
 	}
 
+#endif
 
 // address cleaning
-static void prephostaddr(SOCKADDR_IN *addr)
+static void prephostaddr(struct sockaddr_in *addr)
 {
     addr->sin_family = AF_INET;
 }
 
+#if 0
 static void prepamigaaddr(struct sockaddr *realpt, int len)
 {
     // little endian address family value to the byte sin_family member
@@ -555,7 +594,7 @@ static void prepamigaaddr(struct sockaddr *realpt, int len)
 #endif
 
 
-int host_dup2socket(SB, int fd1, int fd2)
+int host_dup2socket(struct socketbase *sb, int fd1, int fd2)
 	{
 
   BSDLOG("NOT YET IMPLEMENTED!\n");
@@ -599,11 +638,65 @@ int host_dup2socket(SB, int fd1, int fd2)
 #endif
 	}
 
-int host_socket(SB, int af, int type, int protocol)
-{
-  BSDLOG("NOT YET IMPLEMENTED!\n");
+int host_socket(struct socketbase *sb, int af, int type, int protocol) {
+  int s;
+  int sd;
+  int flags;
+
+  BSDLOG("================ %s -> %s ================\n", __FILE__,__func__);
+
+  BSDLOG("socket(%s,%s,%d) -> \n", af == AF_INET ? "AF_INET" : "AF_other", type == SOCK_STREAM ? "SOCK_STREAM" : type == SOCK_DGRAM ? "SOCK_DGRAM " : "SOCK_RAW", protocol);
+
+  if(!getsocketbase()) {
+    return -1;
+  }
+
+  if ((s = socket(af,type,protocol)) == INVALID_SOCKET) {
+    seterrno(sb, INVALID_SOCKET);
+    BSDLOG("INVALID_SOCKET\n");
+    return -1;
+  }
+
+  BSDLOG("s: %lx\n", s);
+
+  sd = getsd(sb, s);
+  BSDLOG("sb: %lx\n",sb);
+  BSDLOG("s:  %d\n",s);
+  BSDLOG("sd: %d\n",sd);
+
+  //ioctlsocket(s, FIONBIO, &nonblocking);
+  flags=fcntl(s, F_GETFL, 0);
+  fcntl(s, F_SETFL, flags | O_NONBLOCK);
+ 
+	if (type == SOCK_RAW) {
+
+		if (protocol==IPPROTO_UDP) {
+      BSDLOG("=> IPPROTO_UDP\n");
+	 		//sb->ftable[sd-1] |= SF_RAW_UDP;
+    }
+		if (protocol==IPPROTO_ICMP) {
+			struct sockaddr_in sin;
+
+      BSDLOG("=> IPPROTO_ICMP\n");
+
+			sin.sin_family = AF_INET;
+			sin.sin_addr.s_addr = INADDR_ANY;
+			bind(s,(struct sockaddr *)&sin,sizeof(sin)) ;
+    }
+ 		if (protocol==IPPROTO_RAW) {
+      BSDLOG("==> IPPROTO_RAW\n");
+	 		//sb->ftable[sd-1] |= SF_RAW_RAW;
+    }
+  }
+
+  BSDLOG("return: %lx\n", sd-1);
+	return sd-1;
+}
 
 #if 0
+
+int host_socket(struct socketbase *sb, int af, int type, int protocol)
+{
     int sd;
     SOCKET s;
     unsigned long nonblocking = 1;
@@ -643,10 +736,10 @@ int host_socket(SB, int af, int type, int protocol)
 			}
 		}
 	return sd-1;
-#endif
 }
+#endif
 
-uae_u32 host_bind(SB, uae_u32 sd, uae_u32 name, uae_u32 namelen)
+uae_u32 host_bind(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen)
 {
   BSDLOG("NOT YET IMPLEMENTED!\n");
 #if 0
@@ -683,7 +776,7 @@ uae_u32 host_bind(SB, uae_u32 sd, uae_u32 name, uae_u32 namelen)
 #endif
 }
 
-uae_u32 host_listen(SB, uae_u32 sd, uae_u32 backlog)
+uae_u32 host_listen(struct socketbase *sb, uae_u32 sd, uae_u32 backlog)
 {
   BSDLOG("NOT YET IMPLEMENTED!\n");
 #if 0
@@ -709,7 +802,7 @@ uae_u32 host_listen(SB, uae_u32 sd, uae_u32 backlog)
 #endif
 }
 
-void host_accept(TrapContext *context, SB, uae_u32 sd, uae_u32 name, uae_u32 namelen)
+void host_accept(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen)
 {
   BSDLOG("NOT YET IMPLEMENTED!\n");
 #if 0
@@ -878,13 +971,13 @@ struct threadsock_packet
         } abort_s;
     } params;
     SOCKET s;
-    SB;
+    struct socketbase *sb;
 } sockreq;
 
 BOOL HandleStuff( void )
 {
     BOOL quit = FALSE;
-    SB = NULL;
+    struct socketbase *sb = NULL;
     BOOL handled = TRUE;
     if( hSockReq )
     {
@@ -1023,7 +1116,7 @@ static unsigned int __stdcall sock_thread(void *blah)
 #endif
 
 
-void host_connect(TrapContext *context, SB, uae_u32 sd, uae_u32 name, uae_u32 namelen)
+void host_connect(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen)
 {
   BSDLOG("NOT YET IMPLEMENTED!\n");
 #if 0
@@ -1122,9 +1215,105 @@ void host_connect(TrapContext *context, SB, uae_u32 sd, uae_u32 name, uae_u32 na
 #endif
 }
 
-void host_sendto(TrapContext *context, SB, uae_u32 sd, uae_u32 msg, uae_u32 len, uae_u32 flags, uae_u32 to, uae_u32 tolen)
-{
-  BSDLOG("NOT YET IMPLEMENTED!\n");
+void host_sendto(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 msg, uae_u32 len, uae_u32 flags, uae_u32 to, uae_u32 tolen) {
+  int s; 
+  void *realmsg;
+  char buf[MAXADDRLEN];
+
+  BSDLOG("================ %s -> %s ================\n", __FILE__,__func__);
+
+  if(!getsocketbase()) {
+    seterrno(sb, 1);
+    return; /* TODO!*/
+  }
+
+  if (to)
+    BSDLOG("sendto(%d,msg 0x%lx, len %d, flags 0x%lx, to 0x%lx, tolen %d)\n",sd,msg,len,flags,to,tolen);
+  else
+    BSDLOG("send(%d,msg 0x%lx, len %d, flags %d)\n",sd,msg,len,flags);
+
+	sd++;
+  s = getsock(sb,sd);
+
+  BSDLOG("s: %lx\n", s);
+
+  if(s==INVALID_SOCKET) {
+    BSDLOG("s==INVALID_SOCKET!!\n");
+    sb->resultval=INVALID_SOCKET;
+    return;
+  }
+
+  realmsg = get_real_address(msg);
+  BSDLOG("realmsg: %lx\n", realmsg);
+  if (to) {
+    if (tolen > sizeof buf) {
+      write_log("BSDSOCK: WARNING - Target address in sendto() too large (%d)!\n",tolen);
+      BSDLOG("WARNING - Target address in sendto() too large (%d)!\n",tolen);
+    }
+    else {
+      memcpy(buf,get_real_address(to),tolen);
+      // some Amiga software sets this field to bogus values
+      prephostaddr((struct sockaddr_in *)buf);
+    }
+  }
+
+
+  BSDLOG("calling sendto..\n");
+  sb->resultval=sendto(s, realmsg, len, flags, buf, tolen);
+
+  if(sb->resultval == -1) {
+    BSDLOG("SOCKET_ERROR!\n");
+  }
+  else {
+    BSDLOG("sendto ok!\n");
+  }
+
+  BSDLOG("left: characters sent: %d\n", sb->resultval);
+
+  return;
+
+#if 0
+
+
+//	if (sb->ftable[sd-1]&SF_RAW_RAW)
+//		{
+
+  if (*(realpt+9) == 0x1) { // ICMP
+    struct sockaddr_in sin;
+    BSDLOG("RAW 0x1\n");
+    shutdown(s,1);
+    //closesocket(s);
+    s = socket(AF_INET,SOCK_RAW,IPPROTO_ICMP);
+
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = INADDR_ANY;
+    sin.sin_port = (unsigned short) (*(realpt+21)&0xff)*256 + (unsigned short) (*(realpt+20)&0xff);
+    bind(s,(struct sockaddr *)&sin,sizeof(sin)) ;
+
+    sb->dtable[sd-1] = s;
+    //sb->ftable[sd-1]&= ~SF_RAW_RAW;
+    //sb->ftable[sd-1]|= SF_RAW_RICMP;
+    }
+
+  if (*(realpt+9) == 0x11) { // UDP
+    struct sockaddr_in sin;
+    BSDLOG("RAW 0x11\n");
+    shutdown(s,1);
+    //closesocket(s);
+    s = socket(AF_INET,SOCK_RAW,IPPROTO_UDP);
+
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = INADDR_ANY;
+    sin.sin_port = (unsigned short) (*(realpt+21)&0xff)*256 + (unsigned short) (*(realpt+20)&0xff);
+    bind(s,(struct sockaddr *)&sin,sizeof(sin)) ;
+
+    sb->dtable[sd-1] = s;
+    //sb->ftable[sd-1]&= ~SF_RAW_RAW;
+    //sb->ftable[sd-1]|= SF_RAW_RUDP;
+    }
+//		}
+#endif
+	
 #if 0
     SOCKET s;
     char *realpt;
@@ -1305,9 +1494,50 @@ void host_sendto(TrapContext *context, SB, uae_u32 sd, uae_u32 msg, uae_u32 len,
 #endif
 }
 
-void host_recvfrom(TrapContext *context, SB, uae_u32 sd, uae_u32 msg, uae_u32 len, uae_u32 flags, uae_u32 addr, uae_u32 addrlen)
-{
-  BSDLOG("NOT YET IMPLEMENTED!\n");
+void host_recvfrom(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 msg, uae_u32 len, uae_u32 flags, uae_u32 addr, uae_u32 addrlen) {
+  int s;
+  char *realmsg;
+  struct sockaddr *rp_addr = NULL;
+  int hlen;
+  int res;
+  int i;
+
+  if(!getsocketbase()) {
+    seterrno(sb, 1);
+    return; /* TODO!*/
+  }
+
+  BSDLOG("================ %s -> %s ================\n", __FILE__,__func__);
+
+  if (addr)
+    BSDLOG("recvfrom(%d,0x%lx,%d,0x%lx,0x%lx,%d) ->\n",sd,msg,len,flags,addr,get_long(addrlen));
+  else
+    BSDLOG("recv(%d,0x%lx,%d,0x%lx) ->\n",sd,msg,len,flags);
+
+  sd++;
+  s = getsock(sb,sd);
+
+  BSDLOG("s: %lx\n", s);
+
+  if (s != INVALID_SOCKET) {
+    realmsg = get_real_address(msg);
+
+    if (addr) {
+      hlen = get_long(addrlen);
+      rp_addr = (struct sockaddr *)get_real_address(addr);
+    }
+
+    BSDLOG("rp_addr->sa_family: %d\n", rp_addr->sa_family);
+    for(i=0;i<14;i++) {
+      BSDLOG("rp_addr->sa_data[%d]: %lx\n", i, rp_addr->sa_data[i]);
+    }
+
+    res=recvfrom(s, realmsg, len, flags, rp_addr, &hlen);
+    BSDLOG("res: %d\n", res);
+  }
+
+
+
 #if 0
     SOCKET s;
     char *realpt;
@@ -1411,7 +1641,7 @@ void host_recvfrom(TrapContext *context, SB, uae_u32 sd, uae_u32 msg, uae_u32 le
 #endif
 }
 
-uae_u32 host_shutdown(SB, uae_u32 sd, uae_u32 how)
+uae_u32 host_shutdown(struct socketbase *sb, uae_u32 sd, uae_u32 how)
 {
   BSDLOG("NOT YET IMPLEMENTED!\n");
 #if 0
@@ -1439,9 +1669,85 @@ uae_u32 host_shutdown(SB, uae_u32 sd, uae_u32 how)
 #endif
 }
 
-void host_setsockopt(SB, uae_u32 sd, uae_u32 level, uae_u32 optname, uae_u32 optval, uae_u32 len)
-{
-  BSDLOG("NOT YET IMPLEMENTED!\n");
+void host_setsockopt(struct socketbase *sb, uae_u32 sd, uae_u32 level, uae_u32 optname, uae_u32 optval, uae_u32 len) {
+
+  struct Socket *s;
+  char buf[MAXADDRLEN];
+  BSDLOG("================ %s -> %s ================\n", __FILE__,__func__);
+
+  BSDLOG("host_setsockopt(0x%lx,%d,%lx,0x%lx,0x%lx,%d)\n", sb, sd, level,optname,optval,len);
+  if(level != SOL_SOCKET) {
+    BSDLOG("Warning: strange level %lx != SOL_SOCKET !?\n", level);
+  }
+  else {
+    BSDLOG("level: %lx (SOL_SOCKET)\n", level);
+  }
+
+  if(!getsocketbase()) {
+    seterrno(sb, 1);
+    return; /* TODO!*/
+  }
+
+	sd++;
+  s = getsock(sb,sd);
+
+  BSDLOG("s: %lx\n", s);
+
+  if (s == INVALID_SOCKET) {
+    BSDLOG("INVALID_SOCKET (EBADF returned)!\n");
+    seterrno(sb, EBADF); /* EBADF => The argument sockfd is not a valid descriptor. */
+    return;
+  }
+
+	if (len > sizeof buf) {
+	    write_log("BSDSOCK: WARNING - Excessive optlen in setsockopt() (%d)\n",len);
+	    BSDLOG("BSDSOCK: WARNING - Excessive optlen in setsockopt() (%d)\n",len);
+	    len = sizeof buf;
+	}	
+	
+	if (level == IPPROTO_IP && optname == IP_HDRINCL) {
+    /* The IPv4 layer generates an IP header when sending a packet unless 
+     * the IP_HDRINCL socket option is enabled on the socket. 
+     * When it is enabled, the packet must contain an IP header. 
+     * For receiving the IP header is always included in the packet. 
+     */
+    BSDLOG("Warning: IP_HDRINCL might NOT be implemented!\n");
+  }
+
+	if (level == SOL_SOCKET && optname == SO_LINGER) {
+    BSDLOG("Warning: SOL_SOCKET && SO_LINGER is TODO!\n");
+	    //((LINGER *)buf)->l_onoff = get_long(optval);
+	    //((LINGER *)buf)->l_linger = get_long(optval+4);
+	}
+	else {
+    if (len == 4) {
+      *(long *)buf = get_long(optval);
+    }
+    else {
+      if (len == 2) {
+        *(short *)buf = get_word(optval);
+      }
+      else {
+        write_log("BSDSOCK: ERROR - Unknown optlen (%d) in setsockopt(%d,%d)\n",level,optname);
+        BSDLOG("BSDSOCK: ERROR - Unknown optlen (%d) in setsockopt(%d,%d)\n",level,optname);
+      }
+    }
+	}
+
+  /* handle SO_EVENTMASK */
+	if (level == 0xffff && optname == 0x2001) {
+    BSDLOG("Warning: SO_EVENTMASK is TODO!\n");
+  }
+ 
+  BSDLOG("call setsockopt(s %d, level %lx, optname %lx, buf 0x%lx, len %d)\n", s, level, optname, buf,len);
+	sb->resultval = setsockopt(s, level, optname, buf, len);
+
+  if(sb->resultval) {
+    BSDLOG("ERROR!\n");
+  }
+
+  BSDLOG("result: %d\n", sb->resultval);
+
 #if 0
     SOCKET s;
     char buf[MAXADDRLEN];
@@ -1510,7 +1816,7 @@ void host_setsockopt(SB, uae_u32 sd, uae_u32 level, uae_u32 optname, uae_u32 opt
 #endif
 }
 
-uae_u32 host_getsockopt(SB, uae_u32 sd, uae_u32 level, uae_u32 optname, uae_u32 optval, uae_u32 optlen)
+uae_u32 host_getsockopt(struct socketbase *sb, uae_u32 sd, uae_u32 level, uae_u32 optname, uae_u32 optval, uae_u32 optlen)
 {
   BSDLOG("NOT YET IMPLEMENTED!\n");
 #if 0
@@ -1554,7 +1860,7 @@ uae_u32 host_getsockopt(SB, uae_u32 sd, uae_u32 level, uae_u32 optname, uae_u32 
 #endif
 }
 
-uae_u32 host_getsockname(SB, uae_u32 sd, uae_u32 name, uae_u32 namelen)
+uae_u32 host_getsockname(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen)
 {
   BSDLOG("NOT YET IMPLEMENTED!\n");
 #if 0
@@ -1592,7 +1898,7 @@ uae_u32 host_getsockname(SB, uae_u32 sd, uae_u32 name, uae_u32 namelen)
 #endif
 }
 
-uae_u32 host_getpeername(SB, uae_u32 sd, uae_u32 name, uae_u32 namelen)
+uae_u32 host_getpeername(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen)
 {
   BSDLOG("NOT YET IMPLEMENTED!\n");
 #if 0
@@ -1629,7 +1935,7 @@ uae_u32 host_getpeername(SB, uae_u32 sd, uae_u32 name, uae_u32 namelen)
 #endif
 }
 
-uae_u32 host_IoctlSocket(SB, uae_u32 sd, uae_u32 request, uae_u32 arg)
+uae_u32 host_IoctlSocket(struct socketbase *sb, uae_u32 sd, uae_u32 request, uae_u32 arg)
 {
   BSDLOG("NOT YET IMPLEMENTED!\n");
 #if 0
@@ -1700,7 +2006,7 @@ uae_u32 host_IoctlSocket(SB, uae_u32 sd, uae_u32 request, uae_u32 arg)
 #endif
 }
 
-int host_CloseSocket(SB, int sd)
+int host_CloseSocket(struct socketbase *sb, int sd)
 {
   BSDLOG("NOT YET IMPLEMENTED!\n");
 #if 0
@@ -1771,7 +2077,7 @@ int host_CloseSocket(SB, int sd)
 // For the sake of efficiency, we do not malloc() the fd_sets here.
 // 64 sockets should be enough for everyone.
 #if 0
-static void makesocktable(SB, uae_u32 fd_set_amiga, struct fd_set *fd_set_win, int nfds, SOCKET addthis)
+static void makesocktable(struct socketbase *sb, uae_u32 fd_set_amiga, struct fd_set *fd_set_win, int nfds, SOCKET addthis)
 {
 	int i, j;
 	uae_u32 currlong, mask;
@@ -1831,7 +2137,7 @@ static void makesocktable(SB, uae_u32 fd_set_amiga, struct fd_set *fd_set_win, i
 	fd_set_win->fd_array[fd_set_win->fd_count] = INVALID_SOCKET;
 }
 
-static void makesockbitfield(SB, uae_u32 fd_set_amiga, struct fd_set *fd_set_win, int nfds)
+static void makesockbitfield(struct socketbase *sb, uae_u32 fd_set_amiga, struct fd_set *fd_set_win, int nfds)
 {
 	int n, i, j, val, mask;
 	SOCKET currsock;
@@ -1879,7 +2185,7 @@ static unsigned int __stdcall thread_WaitSelect(void *index2)
     struct timeval tv;
     uae_u32 *args;
 
-    SB;
+    struct socketbase *sb;
 
     for (;;)
     {
@@ -1968,7 +2274,7 @@ static unsigned int __stdcall thread_WaitSelect(void *index2)
 }
 #endif
 
-void host_WaitSelect(TrapContext *context, SB, uae_u32 nfds, uae_u32 readfds, uae_u32 writefds, uae_u32 exceptfds, uae_u32 timeout, uae_u32 sigmp)
+void host_WaitSelect(TrapContext *context, struct socketbase *sb, uae_u32 nfds, uae_u32 readfds, uae_u32 writefds, uae_u32 exceptfds, uae_u32 timeout, uae_u32 sigmp)
 {
   BSDLOG("NOT YET IMPLEMENTED!\n");
 #if 0
@@ -2115,19 +2421,34 @@ void host_WaitSelect(TrapContext *context, SB, uae_u32 nfds, uae_u32 readfds, ua
 #endif
 }
 
-uae_u32 host_Inet_NtoA(TrapContext *context, SB, uae_u32 in)
-{
-  BSDLOG("NOT YET IMPLEMENTED!\n");
+uae_u32 host_Inet_NtoA(TrapContext *context, struct socketbase *sb, uae_u32 in) {
+
+  char *addr;
+	uae_u32 scratchbuf;
+  BSDLOG("================ %s -> %s ================\n", __FILE__,__func__);
+	BSDLOG("Inet_NtoA(%lx)\n",in);
+
+  if(!getsocketbase()) {
+    seterrno(sb, 1);
+    return 0;
+  }
+
+	if ((addr = Inet_NtoA(in)) != 0) {
+		scratchbuf = m68k_areg (&regs, 6)+offsetof(struct UAEBSDBase, scratchbuf);
+		BSDLOG("addr: %s\n",addr);
+		strncpyha(scratchbuf, addr, SCRATCHBUFSIZE);
+		return scratchbuf;
+  }
+	seterrno(sb, 1);
+  return 0;
+	
 #if 0
 	char *addr;
 	struct in_addr ina;
-	uae_u32 scratchbuf;
 
 	*(uae_u32 *)&ina = htonl(in);
 
-	TRACE(("Inet_NtoA(%lx) -> ",in));
 
-	if ((addr = inet_ntoa(ina)) != NULL)
 	{
 		scratchbuf = m68k_areg (&regs, 6)+offsetof(struct UAEBSDBase,scratchbuf);
 		strncpyha(scratchbuf,addr,SCRATCHBUFSIZE);
@@ -2144,24 +2465,30 @@ uae_u32 host_Inet_NtoA(TrapContext *context, SB, uae_u32 in)
 
 uae_u32 host_inet_addr(uae_u32 cp)
 {
-  BSDLOG("NOT YET IMPLEMENTED!\n");
-#if 0
 	uae_u32 addr;
 	char *cp_rp;
 
+  BSDLOG("================ %s -> %s ================\n", __FILE__,__func__);
+  if(!getsocketbase()) {
+    return NULL;
+  }
+
+  BSDLOG("cp: %lx\n", cp);
 	cp_rp = get_real_address(cp);
 
-	addr = htonl(inet_addr(cp_rp));
+  BSDLOG("cp_rp: %s\n", cp_rp);
 
-	TRACE(("inet_addr(%s) -> 0x%08lx\n",cp_rp,addr));
+	//addr = htonl(inet_addr(cp_rp));
+	addr = inet_addr(cp_rp);
+
+	BSDLOG("inet_addr(%s) -> 0x%08lx\n",cp_rp,addr);
 
 	return addr;
-#endif
 }
 
 #if 0
 int isfullscreen (void);
-BOOL CheckOnline(SB)
+BOOL CheckOnline(struct socketbase *sb)
 	{
 	DWORD dwFlags;
 	BOOL bReturn = TRUE;
@@ -2195,7 +2522,7 @@ static unsigned int __stdcall thread_get(void *index2)
 	char *buf;
 	
 	
-	SB;
+	struct socketbase *sb;
 
     for (;;)
     {
@@ -2325,7 +2652,7 @@ static unsigned int __stdcall thread_get(void *index2)
 #endif
 
 
-void host_gethostbynameaddr(TrapContext *context, SB, uae_u32 name, uae_u32 namelen, long addrtype)
+void host_gethostbynameaddr(TrapContext *context, struct socketbase *sb, uae_u32 name, uae_u32 namelen, long addrtype)
 {
   BSDLOG("NOT YET IMPLEMENTED!\n");
 #if 0
@@ -2490,25 +2817,75 @@ kludge:
 #endif
 }
 
-void host_getprotobyname(TrapContext *context, SB, uae_u32 name)
-{
-  BSDLOG("NOT YET IMPLEMENTED!\n");
-#if 0
-	PROTOENT *p;
+void host_getprotobyname(TrapContext *context, struct socketbase *sb, uae_u32 name) {
+	char *name_rp;
+  struct protoent *p;
+
 	int size, numaliases = 0;
 	uae_u32 aptr;
-	char *name_rp;
 	int i;
 
-	uae_u32 args[6];
+  BSDLOG("================ %s -> %s ================\n", __FILE__,__func__);
+  if(!getsocketbase()) {
+		seterrno(sb,1); /*???*/
+    return;
+  }
 
-
-	char buf[MAXGETHOSTSTRUCT];
+  BSDLOG("entered(name %lx, sb %lx)\n", name, sb);
 
 	name_rp = get_real_address(name);
 
-	TRACE(("getprotobyname(%s) -> ",name_rp));
+	BSDLOG("getprotobyname(%s)\n",name_rp);
 
+  p=getprotobyname(name_rp); /* this returns a static buffer, no need to free it */
+
+  if(!p) {
+    BSDLOG("getprotobyname ERROR!\n");
+    sb->sb_errno=1;
+		seterrno(sb,1); /*???*/
+    return;
+  }
+
+
+  // compute total size of protoent
+  size = 16;
+  if (p->p_name != NULL) size += strlen(p->p_name)+1;
+
+  if (p->p_aliases != NULL) {
+    while (p->p_aliases[numaliases]) {
+      size += strlen(p->p_aliases[numaliases++])+5;
+    }
+  }
+
+  if (sb->protoent) {
+    uae_FreeMem(context, sb->protoent, sb->protoentsize); /* free last protoent, necessary? */
+  }
+
+  sb->protoent = uae_AllocMem(context, size, 0); /* get amiga memory */
+
+  if (!sb->protoent) {
+    write_log("BSDSOCK: WARNING - getprotobyname() ran out of Amiga memory (couldn't allocate %ld bytes) while returning result of lookup for '%s'\n",size,(char *)name);
+    BSDLOG("BSDSOCK: WARNING - getprotobyname() ran out of Amiga memory (couldn't allocate %ld bytes) while returning result of lookup for '%s'\n",size,(char *)name);
+    seterrno(sb,12); // ENOMEM
+    return;
+  }
+
+  sb->protoentsize = size;
+  
+  aptr = sb->protoent+16+numaliases*4;
+
+  // transfer protoent to Amiga memory
+  put_long(sb->protoent+4,sb->protoent+12);
+  put_long(sb->protoent+8,p->p_proto);
+  
+  for (i = 0; i < numaliases; i++) put_long(sb->protoent+12+i*4,addstr(&aptr,p->p_aliases[i]));
+  put_long(sb->protoent+12+numaliases*4,0);
+  put_long(sb->protoent,aptr);
+  addstr(&aptr,p->p_name);
+  BSDLOG("OK (%s, %lx)\n",p->p_name,p->p_proto);
+  seterrno(sb,0);
+
+#if 0
 	args[0] = (uae_u32) sb;
 	args[1] = 1;
 	args[2] = name;
@@ -2606,12 +2983,12 @@ void host_getprotobyname(TrapContext *context, SB, uae_u32 name)
 	{
 		TRACE(("failed (%d)\n",sb->sb_errno));
 	}
-
 #endif
+
 }
 
 
-void host_getservbynameport(TrapContext *context, SB, uae_u32 nameport, uae_u32 proto, uae_u32 type)
+void host_getservbynameport(TrapContext *context, struct socketbase *sb, uae_u32 nameport, uae_u32 proto, uae_u32 type)
 {
   BSDLOG("NOT YET IMPLEMENTED!\n");
 #if 0
@@ -2753,7 +3130,7 @@ uae_u32 host_gethostname(uae_u32 name, uae_u32 namelen)
 #endif
 }
 
-void host_getprotobynumber (TrapContext *context, SB, uae_u32 any) {
+void host_getprotobynumber (TrapContext *context, struct socketbase *sb, uae_u32 any) {
   BSDLOG("NOT YET IMPLEMENTED!\n");
 }
 #endif

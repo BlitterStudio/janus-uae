@@ -43,8 +43,11 @@
 #include "threaddep/thread.h"
 #include "bsdsocket.h"
 
-//#define BSDSOCKET
+#define BSDSOCKET 1
 #ifdef BSDSOCKET
+
+/* oli hack */
+#define DebOut(...) do { kprintf("%s:%d  %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 
 #ifdef WIN32
 # include <winsock2.h>
@@ -133,7 +136,12 @@ uae_u32 addmem (uae_u32 * dst, const char *src, int len)
     return res;
 }
 
-/* Get current task */
+/* return name of task (task must be retrieved through gettask!) */
+static char *get_task_name(uae_u32 task) {
+  return get_real_address (get_long (task + 10));
+}
+
+/* Get current 68k task */
 static uae_u32 gettask (TrapContext *context)
 {
     uae_u32 currtask, a1 = m68k_areg (&context->regs, 1);
@@ -143,7 +151,7 @@ static uae_u32 gettask (TrapContext *context)
 
     m68k_areg (&context->regs, 1) = a1;
 
-    TRACE (("[%s] ", get_real_address (get_long (currtask + 10))));
+    DebOut ("[%s] \n", get_real_address (get_long (currtask + 10)));
     return currtask;
 }
 
@@ -217,38 +225,46 @@ void setsd (SB, int sd, int s)
 }
 
 /* Socket descriptor/opaque socket handle management */
-int getsd (SB, int s)
-{
-    int i;
-    int *dt = sb->dtable;
+int getsd (SB, int s) {
+  int i;
+  int *dt = sb->dtable;
 
-    /* return socket descriptor if already exists */
-    for (i = sb->dtablesize; i--;)
-	if (dt[i] == s)
-	    return i + 1;
+  /* return socket descriptor if already exists */
+  for (i = sb->dtablesize; i--;)
+    if (dt[i] == s) {
+      DebOut("socket descriptor found: %d\n", i+1);
+      return i + 1;
+    }
 
-    /* create new table entry */
-    for (i = 0; i < sb->dtablesize; i++)
-	if (dt[i] == -1) {
-	    dt[i] = s;
-	    sb->ftable[i] = SF_BLOCKING;
-		return i + 1;
-	}
-    /* descriptor table full. */
-    bsdsocklib_seterrno (sb, 24);		/* EMFILE */
+  DebOut("create new table entry\n");
 
-    return -1;
+  /* create new table entry */
+  for (i = 0; i < sb->dtablesize; i++) {
+    if (dt[i] == -1) {
+      dt[i] = s;
+      sb->ftable[i] = SF_BLOCKING;
+      DebOut("new table entry: %d\n", i+1);
+      return i + 1;
+    }
+  }
+
+  /* descriptor table full. */
+  bsdsocklib_seterrno (sb, 24);		/* EMFILE */
+
+  DebOut("descriptor table full!\n");
+
+  return -1;
 }
 
 int getsock (SB, int sd)
 {
-    if ((unsigned int) (sd - 1) >= (unsigned int) sb->dtablesize) {
-	TRACE (("Invalid Socket Descriptor (%d, %d)\n", sd - 1, sb->dtablesize));
-	bsdsocklib_seterrno (sb, 38);	/* ENOTSOCK */
+  if ((unsigned int) (sd - 1) >= (unsigned int) sb->dtablesize) {
+    DebOut("Invalid Socket Descriptor (%d, %d)\n", sd - 1, sb->dtablesize);
+    bsdsocklib_seterrno (sb, 38);	/* ENOTSOCK */
 
-	return -1;
-    }
-    return sb->dtable[sd - 1];
+    return -1;
+  }
+  return sb->dtable[sd - 1];
 }
 
 void releasesock (SB, int sd)
@@ -342,50 +358,63 @@ void cancelsig (TrapContext *context, SB)
 }
 
 /* Allocate and initialize per-task state structure */
-static struct socketbase *alloc_socketbase (TrapContext *context)
-{
-    struct socketbase *sb;
-    int i;
+static struct socketbase *alloc_socketbase (TrapContext *context) {
 
-    if ((sb = calloc (sizeof (struct socketbase), 1)) != NULL) {
-	sb->ownertask = gettask (context);
+  struct socketbase *sb;
+  int i;
 
-	m68k_dreg (&context->regs, 0) = -1;
-	sb->signal = CallLib (context, get_long (4), -0x14A);
+  DebOut("entered\n");
 
-	if (sb->signal == -1) {
-	    write_log ("bsdsocket: ERROR: Couldn't allocate signal for task 0x%lx.\n", sb->ownertask);
-	    free (sb);
-	    return NULL;
-	}
-	m68k_dreg (&context->regs, 0) = SCRATCHBUFSIZE;
-	m68k_dreg (&context->regs, 1) = 0;
+  if ((sb = calloc (sizeof (struct socketbase), 1)) != NULL) {
+    sb->ownertask = gettask (context);
 
-	sb->dtablesize = DEFAULT_DTABLE_SIZE;
-	/* @@@ check malloc() result */
-	sb->dtable = malloc (sb->dtablesize * sizeof (*sb->dtable));
-	sb->ftable = malloc (sb->dtablesize * sizeof (*sb->ftable));
+    m68k_dreg (&context->regs, 0) = -1;
+    sb->signal = CallLib (context, get_long (4), -0x14A);
 
-	for (i = sb->dtablesize; i--;)
-	    sb->dtable[i] = -1;
+    DebOut("sb: %lx\n", sb);
 
-	sb->eintrsigs = 0x1000;	/* SIGBREAKF_CTRL_C */
+    DebOut("allocated signal %lx\n", sb->signal);
 
-	if (!host_sbinit (context, sb)) {
-	    /* @@@ free everything   */
-	}
-
-	locksigqueue ();
-
-	if (socketbases)
-	    sb->next = socketbases;
-	socketbases = sb;
-
-	unlocksigqueue ();
-
-	return sb;
+    if (sb->signal == -1) {
+      write_log ("bsdsocket: ERROR: Couldn't allocate signal for task 0x%lx.\n", sb->ownertask);
+      free (sb);
+      return NULL;
     }
-    return NULL;
+
+    m68k_dreg (&context->regs, 0) = SCRATCHBUFSIZE;
+    m68k_dreg (&context->regs, 1) = 0;
+
+    sb->dtablesize = DEFAULT_DTABLE_SIZE;
+    /* @@@ check malloc() result */
+    sb->dtable = malloc (sb->dtablesize * sizeof (*sb->dtable));
+    sb->ftable = malloc (sb->dtablesize * sizeof (*sb->ftable));
+
+    for (i = sb->dtablesize; i--;) {
+      sb->dtable[i] = -1;
+    }
+
+    sb->eintrsigs = 0x1000;	/* SIGBREAKF_CTRL_C */
+
+    if (!host_sbinit (context, sb)) {
+      /* @@@ free everything   */
+    }
+  
+    locksigqueue ();
+
+    if (socketbases) {
+      sb->next = socketbases;
+    }
+    socketbases = sb;
+
+    unlocksigqueue ();
+
+    DebOut("alloc_socketbase returns sb %lx\n", sb);
+  
+    return sb;
+  }
+
+  DebOut("alloc_socketbase FAILED\n");
+  return NULL;
 }
 
 STATIC_INLINE struct socketbase *get_socketbase (TrapContext *context)
@@ -463,34 +492,36 @@ static uae_u32 REGPARAM2 bsdsocklib_Expunge (TrapContext *context)
 static uae_u32 functable, datatable, inittable;
 
 
-static uae_u32 REGPARAM2 bsdsocklib_Open (TrapContext *context)
-{
-    uae_u32 result = 0;
-    int opencount;
-    unsigned int i;
-    struct socketbase *sb;
-    uae_u32 p[sizeof (void*) / 4];
+static uae_u32 REGPARAM2 bsdsocklib_Open (TrapContext *context) {
+  
+  uae_u32 result = 0;
+  int opencount;
+  unsigned int i;
+  struct socketbase *sb;
+  uae_u32 p[sizeof (void*) / 4];
+  
+  TRACE (("OpenLibrary() -> "));
+  
+  if ((sb = alloc_socketbase (context)) != NULL) {
+    put_word (SockLibBase + 32, opencount = get_word (SockLibBase + 32) + 1);
+    
+    m68k_areg (&context->regs, 0) = functable;
+    m68k_areg (&context->regs, 1) = datatable;
+    m68k_areg (&context->regs, 2) = 0;
+    m68k_dreg (&context->regs, 0) = sizeof (struct UAEBSDBase);
+    m68k_dreg (&context->regs, 1) = 0;
+    result = CallLib (context, get_long (4), -0x54);
+    
+    put_pointer (result + offsetof (struct UAEBSDBase, sb), sb);
 
-    TRACE (("OpenLibrary() -> "));
-
-    if ((sb = alloc_socketbase (context)) != NULL) {
-	put_word (SockLibBase + 32, opencount = get_word (SockLibBase + 32) + 1);
-
-	m68k_areg (&context->regs, 0) = functable;
-	m68k_areg (&context->regs, 1) = datatable;
-	m68k_areg (&context->regs, 2) = 0;
-	m68k_dreg (&context->regs, 0) = sizeof (struct UAEBSDBase);
-	m68k_dreg (&context->regs, 1) = 0;
-	result = CallLib (context, get_long (4), -0x54);
-
-	put_pointer (result + offsetof (struct UAEBSDBase, sb), sb);
-
-	TRACE (("%0lx [%d]\n", result, opencount));
-    } else {
-	TRACE (("failed (out of memory)\n"));
-    }
-
-    return result;
+    DebOut("sb (socket base): %lx\n", sb);
+    
+    DebOut ("%0lx [%d]\n", result, opencount);
+  } else {
+    DebOut("failed (out of memory)\n");
+  }
+  
+  return result;
 }
 
 static uae_u32 REGPARAM2 bsdsocklib_Close (TrapContext *context)
@@ -822,22 +853,24 @@ static uae_u32 REGPARAM2 bsdsocklib_Errno (TrapContext *context)
 }
 
 /* SetErrnoPtr(errno_p, size)(a0/d0) */
-static uae_u32 REGPARAM2 bsdsocklib_SetErrnoPtr (TrapContext *context)
-{
-    struct socketbase *sb = get_socketbase (context);
-    uae_u32 errnoptr = m68k_areg (&context->regs, 0), size = m68k_dreg (&context->regs, 0);
+static uae_u32 REGPARAM2 bsdsocklib_SetErrnoPtr (TrapContext *context) {
 
-    TRACE (("SetErrnoPtr(0x%lx,%d) -> ", errnoptr, size));
+  struct socketbase *sb = get_socketbase (context);
+  uae_u32 errnoptr = m68k_areg (&context->regs, 0), size = m68k_dreg (&context->regs, 0);
 
-    if (size == 1 || size == 2 || size == 4) {
-	sb->errnoptr = errnoptr;
-	sb->errnosize = size;
-	TRACE (("OK\n"));
-	return 0;
-    }
-    bsdsocklib_seterrno (sb, 22);		/* EINVAL */
+  DebOut ("SetErrnoPtr(0x%lx,%d) ->\n", errnoptr, size);
 
-    return -1;
+  if (size == 1 || size == 2 || size == 4) {
+    sb->errnoptr = errnoptr;
+    sb->errnosize = size;
+    DebOut("OK\n");
+    return 0;
+  }
+
+  DebOut("ERROR! 22\n");
+  bsdsocklib_seterrno (sb, 22);		/* EINVAL */
+
+  return -1;
 }
 
 /* *------ inet library calls related to inet address manipulation */
@@ -1273,6 +1306,7 @@ static uae_u32 REGPARAM2 bsdsocklib_init (TrapContext *context)
     uae_u32 tmp1;
     int i;
     write_log ("Creating UAE bsdsocket.library 4.1\n");
+    TRACE (("Creating UAE bsdsocket.library 4.1"));
     if (SockLibBase)
 	bsdlib_reset ();
 
@@ -1413,13 +1447,16 @@ void bsdlib_install (void)
     if (currprefs.socket_emu == 0)
         return;
 
-    if (!init_socket_layer ())
-	return;
+  TRACE(("bsdlib_install .."));
+  if (!init_socket_layer ()) {
+    TRACE(("init_socket_layer failed!"));
+    return;
+  }
 
     memset (sockpoolids, UNIQUE_ID, sizeof (sockpoolids));
 
     resname = ds ("bsdsocket.library");
-    resid = ds ("UAE bsdsocket.library 4.1");
+    resid = ds ("J-UAE bsdsocket.library 4.1");
 
     begin = here ();
     dw (0x4AFC);		/* RT_MATCHWORD */
