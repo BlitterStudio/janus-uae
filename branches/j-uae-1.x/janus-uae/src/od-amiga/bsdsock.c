@@ -2479,7 +2479,7 @@ uae_u32 host_inet_addr(uae_u32 cp)
   BSDLOG("cp_rp: %s\n", cp_rp);
 
 	//addr = htonl(inet_addr(cp_rp));
-	addr = inet_addr(cp_rp);
+	addr = htonl(inet_addr(cp_rp));
 
 	BSDLOG("inet_addr(%s) -> 0x%08lx\n",cp_rp,addr);
 
