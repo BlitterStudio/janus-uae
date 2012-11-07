@@ -30,6 +30,7 @@
 #include <proto/exec.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <errno.h>
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -2652,9 +2653,84 @@ static unsigned int __stdcall thread_get(void *index2)
 #endif
 
 
-void host_gethostbynameaddr(TrapContext *context, struct socketbase *sb, uae_u32 name, uae_u32 namelen, long addrtype)
-{
-  BSDLOG("NOT YET IMPLEMENTED!\n");
+void host_gethostbynameaddr(TrapContext *context, struct socketbase *sb, uae_u32 name68k, uae_u32 namelen, long addrtype) {
+
+  char *name;
+  struct hostent *h;
+	int size, numaliases = 0, numaddr = 0;
+	uae_u32 aptr;
+	int i;
+
+  BSDLOG("================ %s -> %s ================\n", __FILE__,__func__);
+  if(!getsocketbase()) {
+		seterrno(sb,1); /*???*/
+    return;
+  }
+
+  name = get_real_address(name68k);
+  BSDLOG("name: %s\n", name);
+
+  h=gethostbyname(name);
+  BSDLOG("h: %lx\n", h);
+  if(!h) {
+			sb->resultval = -1;
+      return;
+  }
+
+  // compute total size of hostent
+  size = 28;
+  if (h->h_name != NULL) size += strlen(h->h_name)+1;
+
+  if (h->h_aliases != NULL)
+    while (h->h_aliases[numaliases])  {
+      BSDLOG("alias[%d]: %s\n", numaliases, h->h_aliases[numaliases]);
+      size += strlen(h->h_aliases[numaliases++])+5;
+    }
+
+  if (h->h_addr_list != NULL) {
+    while (h->h_addr_list[numaddr]) numaddr++;
+    size += numaddr*(h->h_length+4);
+  }
+
+  if (sb->hostent) {
+    uae_FreeMem(context, sb->hostent, sb->hostentsize );
+  }
+
+  sb->hostent = uae_AllocMem(context, size, 0 );
+
+  if (!sb->hostent) {
+    write_log("BSDSOCK: WARNING - gethostby%s() ran out of Amiga memory (couldn't allocate %ld bytes) while returning result of lookup for '%s'\n",addrtype == -1 ? "name" : "addr",size,(char *)name);
+    seterrno(sb,12); // ENOMEM
+    return;
+  }
+  
+  sb->hostentsize = size;
+  
+  aptr = sb->hostent+28+numaliases*4+numaddr*4;
+
+  // transfer hostent to Amiga memory
+  put_long(sb->hostent+4,sb->hostent+20);
+  put_long(sb->hostent+8,h->h_addrtype);
+  put_long(sb->hostent+12,h->h_length);
+  put_long(sb->hostent+16,sb->hostent+24+numaliases*4);
+  
+  for (i = 0; i < numaliases; i++) {
+    put_long(sb->hostent+20+i*4,addstr(&aptr,h->h_aliases[i]));
+  }
+
+  put_long(sb->hostent+20+numaliases*4,0);
+
+  for (i = 0; i < numaddr; i++) {
+    put_long(sb->hostent+24+(numaliases+i)*4,addmem(&aptr,h->h_addr_list[i],h->h_length));
+  }
+  put_long(sb->hostent+24+numaliases*4+numaddr*4,0);
+  put_long(sb->hostent,aptr);
+  addstr(&aptr,h->h_name);
+
+  BSDLOG("OK (%s)\n",h->h_name);
+  seterrno(sb,0);
+
+
 #if 0
 	HOSTENT *h;
 	int size, numaliases = 0, numaddr = 0;
