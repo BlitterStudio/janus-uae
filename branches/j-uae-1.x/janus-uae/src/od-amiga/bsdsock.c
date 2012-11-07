@@ -1117,9 +1117,66 @@ static unsigned int __stdcall sock_thread(void *blah)
 #endif
 
 
-void host_connect(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen)
-{
-  BSDLOG("NOT YET IMPLEMENTED!\n");
+void host_connect(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 addr68k, uae_u32 addrlen) {
+  struct Socket *s;
+  struct sockaddr_in sin;
+  int *addr;
+  unsigned int reorder;
+
+
+  BSDLOG("================ %s -> %s ================\n", __FILE__,__func__);
+  if(!getsocketbase()) {
+		seterrno(sb,1); /*???*/
+    return;
+  }
+
+  BSDLOG("addr68k: %lx\n", addr68k);
+  BSDLOG("namelen: %d\n",  addrlen);
+
+	sd++;
+  s = getsock(sb,(int)sd);
+
+  if (s == INVALID_SOCKET) {
+    BSDLOG("s is NULL!\n");
+    /* TODO: error handling !? */
+    return;
+  }
+
+	if (addrlen > MAXADDRLEN) {
+    write_log("BSDSOCK: WARNING - Excessive addrlen (%d) in connect()!\n",addrlen);
+    BSDLOG("BSDSOCK: WARNING - Excessive addrlen (%d) in connect()!\n",addrlen);
+    return;
+  }
+
+  addr=get_real_address(addr68k);
+
+  sin.sin_len   =sizeof(struct sockaddr);
+  sin.sin_family=AF_INET;
+  sin.sin_port  =htons(get_word(addr68k+2)); /* byte??*/
+  BSDLOG("port: %d\n", sin.sin_port);
+  sin.sin_addr.s_addr =  addr[1]; /* endianess ?? */
+#if 0
+  BSDLOG("addr: %lx\n", sin.sin_addr.s_addr);
+  sin.sin_addr.s_addr =  htonl(addr[1]);
+  BSDLOG("addr: %lx\n", sin.sin_addr.s_addr);
+  reorder=addr[1];
+  reorder = (reorder >> 24) | ((reorder<<8) & 0x00FF0000) | ((reorder>>8) & 0x0000FF00) | (reorder << 24);
+  BSDLOG("reorder: %lx\n", reorder);
+#endif
+  BSDLOG("port0: %lx\n", addr[0]);
+  BSDLOG("port1: %lx\n", addr[1]);
+  BSDLOG("port2: %lx\n", addr[2]);
+
+
+  BSDLOG("connecting..\n");
+
+  if(!connect(s, (struct sockaddr *) &sin, sin.sin_len)) {
+    BSDLOG("connect error!\n");
+    return;
+  }
+
+
+  BSDLOG("connected!\n");
 #if 0
 
     SOCKET s;
@@ -1502,13 +1559,16 @@ void host_recvfrom(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_
   int hlen;
   int res;
   int i;
+  int *addr_got;
+
+  struct sockaddr_in sin;
+
+  BSDLOG("================ %s -> %s ================\n", __FILE__,__func__);
 
   if(!getsocketbase()) {
     seterrno(sb, 1);
     return; /* TODO!*/
   }
-
-  BSDLOG("================ %s -> %s ================\n", __FILE__,__func__);
 
   if (addr)
     BSDLOG("recvfrom(%d,0x%lx,%d,0x%lx,0x%lx,%d) ->\n",sd,msg,len,flags,addr,get_long(addrlen));
@@ -1520,9 +1580,36 @@ void host_recvfrom(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_
 
   BSDLOG("s: %lx\n", s);
 
-  if (s != INVALID_SOCKET) {
-    realmsg = get_real_address(msg);
+  if (s == INVALID_SOCKET) {
+    BSDLOG("INVALID_SOCKET!\n");
+    sb->sb_errno=-1; /* TODO */
+    return;
+  }
 
+  addr_got=get_real_address(addr);
+  BSDLOG("addr0: %lx\n", addr_got[0]);
+  BSDLOG("addr1: %lx\n", addr_got[1]);
+  BSDLOG("addr2: %lx\n", addr_got[2]);
+  BSDLOG("addr3: %lx\n", addr_got[3]);
+
+
+  sin.sin_len   =sizeof(struct sockaddr);
+  sin.sin_family=AF_INET;
+  sin.sin_port  =htons(get_word(addr+2)); /* byte??*/
+  BSDLOG("port: %d\n", sin.sin_port);
+  sin.sin_addr.s_addr =  addr_got[1]; /* endianess ?? */
+  BSDLOG("addr: %lx\n", sin.sin_addr.s_addr);
+
+#if 0
+  sin.sin_family=AF_INET;
+  sin.sin_port  =htons(get_word(addr68k+2)); /* byte??*/
+  BSDLOG("port: %d\n", sin.sin_port);
+  sin.sin_addr.s_addr =  addr[1]; /* endianess ?? */
+#
+#endif
+  realmsg = get_real_address(msg);
+
+#if 0
     if (addr) {
       hlen = get_long(addrlen);
       rp_addr = (struct sockaddr *)get_real_address(addr);
@@ -1532,10 +1619,12 @@ void host_recvfrom(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_
     for(i=0;i<14;i++) {
       BSDLOG("rp_addr->sa_data[%d]: %lx\n", i, rp_addr->sa_data[i]);
     }
+#endif
 
-    res=recvfrom(s, realmsg, len, flags, rp_addr, &hlen);
+    //res=recvfrom(s, realmsg, len, flags, &sin, sizeof(struct sockaddr_in));
+    res=recvfrom(s, realmsg, len, flags, NULL, 0);
+
     BSDLOG("res: %d\n", res);
-  }
 
 
 
