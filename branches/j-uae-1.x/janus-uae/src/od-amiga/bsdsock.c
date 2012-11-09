@@ -1586,19 +1586,21 @@ void host_recvfrom(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_
     return;
   }
 
-  addr_got=get_real_address(addr);
-  BSDLOG("addr0: %lx\n", addr_got[0]);
-  BSDLOG("addr1: %lx\n", addr_got[1]);
-  BSDLOG("addr2: %lx\n", addr_got[2]);
-  BSDLOG("addr3: %lx\n", addr_got[3]);
+  if(addr) {
+    addr_got=get_real_address(addr);
+    BSDLOG("addr0: %lx\n", addr_got[0]);
+    BSDLOG("addr1: %lx\n", addr_got[1]);
+    BSDLOG("addr2: %lx\n", addr_got[2]);
+    BSDLOG("addr3: %lx\n", addr_got[3]);
 
 
-  sin.sin_len   =sizeof(struct sockaddr);
-  sin.sin_family=AF_INET;
-  sin.sin_port  =htons(get_word(addr+2)); /* byte??*/
-  BSDLOG("port: %d\n", sin.sin_port);
-  sin.sin_addr.s_addr =  addr_got[1]; /* endianess ?? */
-  BSDLOG("addr: %lx\n", sin.sin_addr.s_addr);
+    sin.sin_len   =sizeof(struct sockaddr);
+    sin.sin_family=AF_INET;
+    sin.sin_port  =htons(get_word(addr+2)); /* byte??*/
+    BSDLOG("port: %d\n", sin.sin_port);
+    sin.sin_addr.s_addr =  addr_got[1]; /* endianess ?? */
+    BSDLOG("addr: %lx\n", sin.sin_addr.s_addr);
+  }
 
 #if 0
   sin.sin_family=AF_INET;
@@ -1621,10 +1623,27 @@ void host_recvfrom(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_
     }
 #endif
 
+  if(addr) {
     //res=recvfrom(s, realmsg, len, flags, &sin, sizeof(struct sockaddr_in));
+    BSDLOG("recvfrom with addr: NOT YET IMPLEMENTED!\n");
+  }
+  else {
+    /* same as recv */
     res=recvfrom(s, realmsg, len, flags, NULL, 0);
+  }
 
-    BSDLOG("res: %d\n", res);
+  BSDLOG("byts received with recvfrom: %d\n", res);
+
+  sb->resultval = res;
+#if 0
+	if (addr) {
+	    prepamigaaddr(realmsg, hlen);
+	    put_long(addrlen, res);
+  }
+    }
+    else sb->resultval = -1;
+#endif
+
 
 
 
