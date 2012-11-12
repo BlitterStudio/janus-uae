@@ -67,7 +67,7 @@
 #include "SDL.h"
 #endif
 
-//#define BSDSOCKET
+#define BSDSOCKET 1
 
 #ifdef WIN32
 //FIXME: This shouldn't be necessary
@@ -922,7 +922,9 @@ static void reset_all_systems (void)
 
     memory_reset ();
 #ifdef BSDSOCKET
+#ifdef OLIOLI
     bsdlib_reset ();
+#endif
 #endif
 #ifdef FILESYS
     filesys_reset ();
