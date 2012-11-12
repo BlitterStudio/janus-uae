@@ -25,11 +25,19 @@
 #include <workbench/workbench.h>
 #include <proto/utility.h>
 
-//#define JWTRACING_ENABLED 1
 #include "j.h"
 #include "memory.h"
 #include "include/filesys.h"
 #include "include/filesys_internal.h"
+#include "bsdsocket.h"
+
+
+#define BSDLOG_ENABLED 1
+#if BSDLOG_ENABLED
+#define BSDLOG(...)   do { kprintf("[%lx]%s:%d %s(): ",FindTask(NULL),__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
+#else
+#define BSDLOG(...)     do { ; } while(0)
+#endif
 
 #if 0
 /* we get a JUAE_Sync_Launch_Message for a synchronous command  */
@@ -46,29 +54,89 @@ struct JUAE_Sync_Launch_Message {
 
 
 /***********************************************************
- * This is the process, which watches the BSD Execute
- * Port of J-UAE, so wanderer can send us messages.
+ * 
+ * 
  ***********************************************************/  
 static void aros_bsdsocket_thread (void) {
 
-  struct Process *thread = (struct Process *) FindTask (NULL);
-  BOOL            done   = FALSE;
-  ULONG           s;
-  struct MsgPort *port   = NULL;
-  char           *amiga_exe;
-  JanusLaunch    *jlaunch;
+  struct Process                *thread = (struct Process *) FindTask (NULL);
+  struct MsgPort                *port   = NULL;
+  struct JUAE_bsdsocket_Message *msg;
+  BOOL                           done   = FALSE;
+
   ULONG           error;
-  struct JUAE_Sync_Launch_Message *msg;
 
   /* There's a time to live .. */
 
-  JWLOG("aros_bsdsocket_thread[%lx]: thread running \n",thread);
+  BSDLOG("aros_bsdsocket_thread[%lx]: thread running \n",thread);
 
-  JWLOG("aros_bsdsocket_thread[%lx]: open port %s\n",thread, BSD_PORT_NAME);
+  port=(struct MsgPort *) &thread->pr_MsgPort;
+
+  while(!done) {
+    BSDLOG("while(!done)\n");
+    WaitPort(port);
+    while( (msg = (struct JUAE_bsdsocket_Message *) GetMsg(port)) ) {
+      BSDLOG("+++++++++++++++++++ got JUAE_bsdsocket_Message +++++++++++++++++++\n");
+      /* TODO */
+      switch (msg->cmd) {
+        case 1:
+          host_gethostbynameaddr_real((TrapContext *)msg->a, 
+                                      (struct socketbase *)msg->b,
+                                      (uae_u32) msg->c,
+                                      (uae_u32) msg->d,
+                                      (long) msg->e);
+          BSDLOG("host_gethostbynameaddr_real done!\n");
+          break;
+        case 2:
+          msg->ret=host_socket_real((struct socketbase *)msg->a,
+                                    (int)msg->b,
+                                    (int)msg->c,
+                                    (int)msg->d);
+          break;
+        case 3:
+          host_setsockopt_real((struct socketbase *)msg->a,
+                               (uae_u32)msg->b,
+                               (uae_u32)msg->c,
+                               (uae_u32)msg->d,
+                               (uae_u32)msg->e,
+                               (uae_u32)msg->f);
+          break;
+        case 4:
+          host_connect_real((TrapContext *)msg->a,
+                               (struct socketbase *)msg->b,
+                               (uae_u32)msg->c,
+                               (uae_u32)msg->d,
+                               (uae_u32)msg->e);
+          break;
+        case 5:
+          host_sendto_real((TrapContext *)msg->a,
+                           (struct socketbase *)msg->b,
+                           (uae_u32)msg->c,
+                           (uae_u32)msg->d,
+                           (uae_u32)msg->e,
+                           (uae_u32)msg->f,
+                           (uae_u32)msg->g,
+                           (uae_u32)msg->h);
+          break;
+
+
+
+
+
+
+      }
+
+      BSDLOG("ReplyMsg ..\n");
+      ReplyMsg ((struct Message *) msg);
+      BSDLOG("ReplyMsg done\n");
+    }
+  }
+#if 0
+  BSDLOG("aros_bsdsocket_thread[%lx]: open port %s\n",thread, BSD_PORT_NAME);
 
   port=CreateMsgPort();
   if(!port) {
-    JWLOG("aros_bsdsocket_thread[%lx]: ERROR: failed to open port \n",thread);
+    BSDLOG("aros_bsdsocket_thread[%lx]: ERROR: failed to open port \n",thread);
     goto EXIT;
   }
 
@@ -81,11 +149,11 @@ static void aros_bsdsocket_thread (void) {
   if( !FindPort(port->mp_Node.ln_Name) ) {
     AddPort(port);
     Permit();
-    JWLOG("aros_bsdsocket_thread[%lx]: new port %lx\n",thread, port);
+    BSDLOG("aros_bsdsocket_thread[%lx]: new port %lx\n",thread, port);
   }
   else {
     Permit();
-    JWLOG("aros_bsdsocket_thread[%lx]: port was already open (other j-uae running?)\n",thread);
+    BSDLOG("aros_bsdsocket_thread[%lx]: port was already open (other j-uae running?)\n",thread);
     goto EXIT;
   }
 
@@ -93,10 +161,12 @@ static void aros_bsdsocket_thread (void) {
   while(!done) {
 
     WaitPort(port);
-    JWLOG("aros_bsdsocket_thread[%lx]: WaitPort done\n",thread);
+    BSDLOG("aros_bsdsocket_thread[%lx]: WaitPort done\n",thread);
     while( (msg = (struct JUAE_Sync_Launch_Message *) GetMsg(port)) ) {
-      JWLOG("aros_bsdsocket_thread[%lx]: msg %lx received!\n", thread, msg);
-      JWLOG("aros_bsdsocket_thread[%lx]: msg->ln_Name: >%s< \n", thread, msg->ln_Name);
+#if 0
+      BSDLOG("aros_bsdsocket_thread[%lx]: msg %lx received!\n", thread, msg);
+      BSDLOG("aros_bsdsocket_thread[%lx]: msg->ln_Name: >%s< \n", thread, msg->ln_Name);
+#endif
       error=0;
 
 #if 0
@@ -118,17 +188,17 @@ static void aros_bsdsocket_thread (void) {
 	    }
     
 	    ReleaseSemaphore(&sem_janus_launch_list);
-	    JWLOG("aros_bsdsocket_thread[%lx]: uae_Signal(%lx, %lx)\n", thread, aos3_launch_task, aos3_launch_signal);
+	    BSDLOG("aros_bsdsocket_thread[%lx]: uae_Signal(%lx, %lx)\n", thread, aos3_launch_task, aos3_launch_signal);
 	    uae_Signal(aos3_launch_task, aos3_launch_signal);
 	  }
 	  else {
 	    msg->error=ERROR_OBJECT_NOT_FOUND;
-	    JWLOG(    "ERROR: not reachable from AmigaOS: %s\n", msg->ln_Name);
+	    BSDLOG(    "ERROR: not reachable from AmigaOS: %s\n", msg->ln_Name);
 	    write_log("ERROR: not reachable from AmigaOS: %s\n", msg->ln_Name);
 	  }
 	  break;
 	default:
-	  JWLOG("aros_bsdsocket_thread[%lx]: unknown message type %d\n", msg->type);
+	  BSDLOG("aros_bsdsocket_thread[%lx]: unknown message type %d\n", msg->type);
       }
 #endif
 
@@ -144,7 +214,7 @@ static void aros_bsdsocket_thread (void) {
   }
 
 
-  JWLOG("aros_bsdsocket_thread[%lx]: EXIT\n",thread);
+  BSDLOG("aros_bsdsocket_thread[%lx]: EXIT\n",thread);
   /* remove port */
   Forbid();
   /* We hope, there are no messages waiting anymore.
@@ -159,32 +229,32 @@ static void aros_bsdsocket_thread (void) {
   }
   port=NULL;
 
+#endif
   /* end thread */
 EXIT:
-  aros_cli_task=NULL;
-  JWLOG("aros_bsdsocket_thread[%lx]: dies..\n", thread);
+  BSDLOG("aros_bsdsocket_thread[%lx]: dies..\n", thread);
 }
 
 int aros_bsdsocket_start_thread (struct socketbase *sb) {
 
-  JWLOG("aros_bsdsocket_start_thread()\n");
+  BSDLOG("aros_bsdsocket_start_thread()\n");
 
   if(!sb) {
-    JWLOG("ERROR: sb is NULL !?\n");
+    BSDLOG("ERROR: sb is NULL !?\n");
     return 0;
   }
 
   sb->mempool=CreatePool(MEMF_CLEAR|MEMF_SEM_PROTECTED, 0xC000, 0x8000);
 
   if(!sb->mempool) {
-    JWLOG("ERROR: no memory for pool!?\n");
+    BSDLOG("ERROR: no memory for pool!?\n");
     return 0;
   }
 
   sb->name=AllocVecPooled(sb->mempool, 8+strlen(BSDSOCKET_PREFIX_NAME)+1);
   sprintf(sb->name,"%s%lx", BSDSOCKET_PREFIX_NAME, sb->ownertask);
 
-  sb->aros_task = (struct Task *)
+  sb->aros_task = (struct Process *)
 	    myCreateNewProcTags ( //NP_Output,      Output (),
 				  //NP_Input,       Input (),
 				  NP_Name,        (ULONG) sb->name,
@@ -196,35 +266,41 @@ int aros_bsdsocket_start_thread (struct socketbase *sb) {
 				  TAG_DONE);
 
   if(sb->aros_task) {
-    JWLOG("bsdsocket thread %lx created (%s)\n", sb->aros_task, sb->name);
+    BSDLOG("bsdsocket thread %lx created (%s)\n", sb->aros_task, sb->name);
+    sb->aros_port=(struct MsgPort *) &(sb->aros_task)->pr_MsgPort;
+    //sb->reply_port=CreateMsgPort(); /* TODO: check for error */
+    //BSDLOG("sb->reply_port=%lx\n", sb->reply_port);
   }
   else {
-    JWLOG("ERROR: failed to create new process!\n");
+    BSDLOG("ERROR: failed to create new process!\n");
   }
 
   return aros_launch_task != 0;
 }
 
-void aros_bsdsocket_kill_thread(void) {
+void aros_bsdsocket_kill_thread(struct socketbase *sb) {
+
+  BSDLOG("TODO: aros_bsdsocket_kill_thread(%lx) !\n", sb);
+#if 0
   struct JUAE_Sync_Launch_Message  *die_msg;
   struct Message                   *back_msg;
   struct MsgPort                   *port;
   struct MsgPort                   *back_port;
 
-  JWLOG("aros_cli_kill_thread()\n");
+  BSDLOG("aros_cli_kill_thread()\n");
 
   if(!aros_cli_task) {
-    JWLOG("no aos3 cli task\n");
+    BSDLOG("no aos3 cli task\n");
     return;
   }
 
   if(!FindPort((STRPTR) BSD_PORT_NAME)) {
-    JWLOG("port %s not open\n", BSD_PORT_NAME);
+    BSDLOG("port %s not open\n", BSD_PORT_NAME);
     return;
   }
 
   if(! ((back_port=CreateMsgPort() )) ) {
-    JWLOG("ERROR: could not create message port!\n");
+    BSDLOG("ERROR: could not create message port!\n");
     return;
   }
 
@@ -237,10 +313,10 @@ void aros_bsdsocket_kill_thread(void) {
       ((struct Message *) die_msg)->mn_ReplyPort=back_port;
       die_msg->type=BSD_TYPE_DIE;
 
-      JWLOG("send DIE message to %s..\n", BSD_PORT_NAME);
+      BSDLOG("send DIE message to %s..\n", BSD_PORT_NAME);
       PutMsg(port, die_msg); /* two way */
 
-      JWLOG("wait for answer from %s ..\n", BSD_PORT_NAME);
+      BSDLOG("wait for answer from %s ..\n", BSD_PORT_NAME);
       back_msg=WaitPort(back_port);
     }
     Permit();
@@ -253,5 +329,6 @@ void aros_bsdsocket_kill_thread(void) {
     back_port=NULL;
   }
 
-  JWLOG("send DIE to %s done.\n", BSD_PORT_NAME);
+#endif
+  BSDLOG("send DIE to %s done.\n", BSD_PORT_NAME);
 }

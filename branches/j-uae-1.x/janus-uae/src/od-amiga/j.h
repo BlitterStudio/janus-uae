@@ -50,6 +50,7 @@
 
 #include "threaddep/thread.h"
 
+#include "bsdsocket.h"
 #include <gtk/gtk.h>
 #include "uae.h"
 
@@ -78,6 +79,7 @@ WORD get_hi_word(ULONG *field);
 #define TASK_PREFIX_NAME               "AOS3 Window "
 #define SCREEN_TASK_PREFIX_NAME        "AOS3 Screen "
 #define CUSTOM_SCREEN_TASK_PREFIX_NAME "AOS3 Custom Screen "
+#define BSDSOCKET_PREFIX_NAME          "AOS3 bsdsocket.library "
 
 #define AD_SHUTDOWN    9
 
@@ -142,6 +144,7 @@ extern struct SignalSemaphore sem_janus_active_custom_screen;
 extern struct SignalSemaphore sem_janus_access_W;
 extern struct SignalSemaphore sem_janus_win_handling;
 
+
 /* clipd */
 extern ULONG aos3_clip_task;
 extern ULONG aos3_clip_signal;
@@ -152,12 +155,14 @@ extern BOOL clipboard_amiga_changed;
 extern BOOL clipboard_aros_changed;
 
 /* launchd */
-#define LAUNCH_PORT_NAME  "J-UAE Execute" /* wanderer  */
-#define CLI_PORT_NAME     "J-UAE Run"     /* all other */
+#define LAUNCH_PORT_NAME  "J-UAE Execute"    /* wanderer  */
+#define CLI_PORT_NAME     "J-UAE Run"        /* all other */
+#define BSD_PORT_NAME     "J-UAE Bsdsocket"  /* all other */
 
 #define CLI_TYPE_DIE      9999
 #define CLI_TYPE_WB_ASYNC    1
 #define CLI_TYPE_CLI_ASYNC   2
+
 
 extern ULONG   aros_launch_task;
 extern ULONG   aros_cli_task;
@@ -400,6 +405,7 @@ int aros_win_start_thread           (JanusWin *win);
 int aros_screen_start_thread        (JanusScreen *screen);
 int aros_custom_screen_start_thread (JanusScreen *screen);
 int aros_splash_start_thread        (void);
+int aros_bsdsocket_start_thread     (struct socketbase *sb);
 
 /* menu */
 void clone_menu(JanusWin *jwin);

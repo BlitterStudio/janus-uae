@@ -503,6 +503,13 @@ static uae_u32 REGPARAM2 bsdsocklib_Open (TrapContext *context) {
   TRACE (("OpenLibrary() -> "));
   
   if ((sb = alloc_socketbase (context)) != NULL) {
+    if(!aros_bsdsocket_start_thread(sb)) {
+      free_socketbase (context);
+      DebOut("failed to start thread!\n");
+      return 0;
+    }
+
+    DebOut("aros bsdsocket thread started!\n");
     put_word (SockLibBase + 32, opencount = get_word (SockLibBase + 32) + 1);
     
     m68k_areg (&context->regs, 0) = functable;
@@ -510,7 +517,7 @@ static uae_u32 REGPARAM2 bsdsocklib_Open (TrapContext *context) {
     m68k_areg (&context->regs, 2) = 0;
     m68k_dreg (&context->regs, 0) = sizeof (struct UAEBSDBase);
     m68k_dreg (&context->regs, 1) = 0;
-    result = CallLib (context, get_long (4), -0x54);
+    result = CallLib (context, get_long (4), -0x54); /* MakeLibrary */
     
     put_pointer (result + offsetof (struct UAEBSDBase, sb), sb);
 
@@ -527,11 +534,15 @@ static uae_u32 REGPARAM2 bsdsocklib_Open (TrapContext *context) {
 static uae_u32 REGPARAM2 bsdsocklib_Close (TrapContext *context)
 {
     int opencount;
+    struct socketbase *sb = get_socketbase (context);
 
     uae_u32 base = m68k_areg (&context->regs, 6);
     uae_u32 negsize = get_word (base + 16);
 
+    aros_bsdsocket_kill_thread(sb);
+
     free_socketbase (context);
+    sb=NULL;
 
     put_word (SockLibBase + 32, opencount = get_word (SockLibBase + 32) - 1);
 
@@ -539,7 +550,7 @@ static uae_u32 REGPARAM2 bsdsocklib_Close (TrapContext *context)
     m68k_dreg (&context->regs, 0) = negsize + get_word (base + 18);
     CallLib (context, get_long (4), -0xD2);	/* FreeMem */
 
-    TRACE (("CloseLibrary() -> [%d]\n", opencount));
+    DebOut ("CloseLibrary() -> [opencount %d]\n", opencount);
 
     return 0;
 }

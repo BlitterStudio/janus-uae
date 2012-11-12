@@ -26,6 +26,9 @@
  *
  ************************************************************************/
 
+#ifndef __BSDSOCKET__
+#define __BSDSOCKET__
+
 #define TRACING_ENABLED
 
 #ifdef TRACING_ENABLED
@@ -73,6 +76,16 @@ struct socketbase {
     uae_u32 eintrsigs;		/* EINTR sigmask */
     int eintr;			/* interrupted by eintrsigs? */
     int eventindex;		/* current socket looked at by GetSocketEvents() to prevent starvation */
+
+#ifdef __AROS__
+    struct SocketBase *bsdbase;
+    struct Process    *aros_task;
+    struct MsgPort    *aros_port;
+    struct MsgPort    *reply_port;
+    void              *mempool;   /* alloc everything here */
+    char              *taskname;  /* AllocPoolVec'ed */
+
+#endif
 
     /* host-specific fields below */
 #ifdef _WIN32
@@ -206,6 +219,11 @@ extern uae_u32 host_Inet_NetOf (void);
 extern uae_u32 host_Inet_MakeAddr (void);
 extern uae_u32 host_inet_network (void);
 extern void host_gethostbynameaddr (TrapContext *, SB, uae_u32, uae_u32, long);
+#ifdef __AROS__
+extern void host_gethostbynameaddr_real (TrapContext *, SB, uae_u32, uae_u32, long);
+extern int host_socket_real (SB, int, int, int);
+extern void host_setsockopt_real (SB, uae_u32, uae_u32, uae_u32, uae_u32, uae_u32);
+#endif
 extern uae_u32 host_getnetbyname (void);
 extern uae_u32 host_getnetbyaddr (void);
 extern void host_getservbynameport (TrapContext *, SB, uae_u32, uae_u32, uae_u32);
@@ -218,3 +236,24 @@ extern uae_u32 host_gethostname (uae_u32, uae_u32);
 
 extern void bsdlib_install (void);
 extern void bsdlib_reset (void);
+
+#ifdef __AROS__
+int  aros_bsdsocket_start_thread (struct socketbase *sb);
+void aros_bsdsocket_kill_thread(struct socketbase *sb);
+
+struct JUAE_bsdsocket_Message {
+  struct Message  ExecMessage;
+  ULONG           cmd;
+  ULONG           a;
+  ULONG           b;
+  ULONG           c;
+  ULONG           d;
+  ULONG           e;
+  ULONG           f;
+  ULONG           g;
+  ULONG           h;
+  ULONG           ret;
+};
+
+#endif
+#endif /* __BSDSOCKET__ */
