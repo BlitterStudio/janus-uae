@@ -128,6 +128,24 @@ static void aros_bsdsocket_thread (void) {
                            (uae_u32)msg->g,
                            (uae_u32)msg->h);
           break;
+        case BSD_inet_addr:
+          msg->ret=host_inet_addr_real((TrapContext *)msg->a,
+                                       (struct socketbase *)msg->b,
+                                       (uae_u32)msg->c);
+          break;
+        case BSD_getprotobyname:
+          host_getprotobyname_real((TrapContext *)msg->a,
+                           (struct socketbase *)msg->b,
+                           (uae_u32)msg->c);
+          break;
+        case BSD_Inet_NtoA:
+          msg->ret=host_Inet_NtoA_real((TrapContext *)msg->a,
+                                       (struct socketbase *)msg->b,
+                                       (uae_u32)msg->c);
+          break;
+
+
+
         case BSD_killme:
           aros_bsdsocket_kill_thread_real((struct socketbase *)msg->a);
           done=TRUE;

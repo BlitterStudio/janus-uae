@@ -903,7 +903,8 @@ static uae_u32 REGPARAM2 bsdsocklib_Inet_NtoA (TrapContext *context)
 /* inet_addr(cp)(a0) */
 static uae_u32 REGPARAM2 bsdsocklib_inet_addr (TrapContext *context)
 {
-    return host_inet_addr (m68k_areg (&context->regs, 0));
+  struct socketbase *sb = get_socketbase (context);
+  return host_inet_addr (context, sb, m68k_areg (&context->regs, 0));
 }
 
 /* Inet_LnaOf(in)(d0) */
@@ -930,7 +931,8 @@ static uae_u32 REGPARAM2 bsdsocklib_Inet_MakeAddr (TrapContext *context)
 /* inet_network(cp)(a0) */
 static uae_u32 REGPARAM2 bsdsocklib_inet_network (TrapContext *context)
 {
-    return host_inet_addr (m68k_areg (&context->regs, 0));
+    struct socketbase *sb = get_socketbase (context);
+    return host_inet_addr (context, sb, m68k_areg (&context->regs, 0));
 }
 
 /* *------ gethostbyname etc */

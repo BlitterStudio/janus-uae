@@ -78,7 +78,7 @@ struct socketbase {
     int eventindex;		/* current socket looked at by GetSocketEvents() to prevent starvation */
 
 #ifdef __AROS__
-    struct SocketBase *bsdbase;
+    struct SocketBase *bsdsocketbase;
     struct Process    *aros_task;
     struct MsgPort    *aros_port;
     struct MsgPort    *reply_port;
@@ -213,17 +213,12 @@ extern uae_u32 host_ObtainSocket (void);
 extern uae_u32 host_ReleaseSocket (void);
 extern uae_u32 host_ReleaseCopyOfSocket (void);
 extern uae_u32 host_Inet_NtoA (TrapContext *context, SB, uae_u32);
-extern uae_u32 host_inet_addr (uae_u32);
+extern uae_u32 host_inet_addr (TrapContext *context, SB, uae_u32);
 extern uae_u32 host_Inet_LnaOf (void);
 extern uae_u32 host_Inet_NetOf (void);
 extern uae_u32 host_Inet_MakeAddr (void);
 extern uae_u32 host_inet_network (void);
 extern void host_gethostbynameaddr (TrapContext *, SB, uae_u32, uae_u32, long);
-#ifdef __AROS__
-extern void host_gethostbynameaddr_real (TrapContext *, SB, uae_u32, uae_u32, long);
-extern int host_socket_real (SB, int, int, int);
-extern void host_setsockopt_real (SB, uae_u32, uae_u32, uae_u32, uae_u32, uae_u32);
-#endif
 extern uae_u32 host_getnetbyname (void);
 extern uae_u32 host_getnetbyaddr (void);
 extern void host_getservbynameport (TrapContext *, SB, uae_u32, uae_u32, uae_u32);
@@ -240,6 +235,13 @@ extern void bsdlib_reset (void);
 #ifdef __AROS__
 int  aros_bsdsocket_start_thread (struct socketbase *sb);
 void aros_bsdsocket_kill_thread(struct socketbase *sb);
+
+extern void host_gethostbynameaddr_real (TrapContext *, SB, uae_u32, uae_u32, long);
+extern int host_socket_real (SB, int, int, int);
+extern void host_setsockopt_real (SB, uae_u32, uae_u32, uae_u32, uae_u32, uae_u32);
+extern uae_u32 host_inet_addr_real(TrapContext *context, struct socketbase *sb, uae_u32 cp);
+void host_getprotobyname_real(TrapContext *context, struct socketbase *sb, uae_u32 name);
+uae_u32 host_Inet_NtoA_real(TrapContext *context, struct socketbase *sb, uae_u32 in);
 
 struct JUAE_bsdsocket_Message {
   struct Message  ExecMessage;
@@ -261,6 +263,9 @@ struct JUAE_bsdsocket_Message {
 #define BSD_connect           4
 #define BSD_sendto            5
 #define BSD_recvfrom          6
+#define BSD_inet_addr         7
+#define BSD_getprotobyname    8
+#define BSD_Inet_NtoA         9
 
 #define BSD_killme           -1
 
