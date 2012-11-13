@@ -422,65 +422,67 @@ STATIC_INLINE struct socketbase *get_socketbase (TrapContext *context)
     return get_pointer (m68k_areg (&context->regs, 6) + offsetof (struct UAEBSDBase, sb));
 }
 
-static void free_socketbase (TrapContext *context)
-{
-    struct socketbase *sb, *nsb;
+static void free_socketbase (TrapContext *context) {
 
-    if ((sb = get_socketbase (context)) != NULL) {
-	m68k_dreg (&context->regs, 0) = sb->signal;
-	CallLib (context, get_long (4), -0x150);		/* FreeSignal */
+  struct socketbase *sb, *nsb;
 
-	if (sb->hostent) {
-	    m68k_areg (&context->regs, 1) = sb->hostent;
-	    m68k_dreg (&context->regs, 0) = sb->hostentsize;
-	    CallLib (context, get_long (4), -0xD2);	/* FreeMem */
-	}
 
-	if (sb->protoent) {
-	    m68k_areg (&context->regs, 1) = sb->protoent;
-	    m68k_dreg (&context->regs, 0) = sb->protoentsize;
-	    CallLib (context, get_long (4), -0xD2);	/* FreeMem */
-	}
+  if ((sb = get_socketbase (context)) != NULL) {
+    DebOut("sb: %lx\n", sb);
+    m68k_dreg (&context->regs, 0) = sb->signal;
+    CallLib (context, get_long (4), -0x150);		/* FreeSignal */
 
-	if (sb->servent) {
-	    m68k_areg (&context->regs, 1) = sb->servent;
-	    m68k_dreg (&context->regs, 0) = sb->serventsize;
-	    CallLib (context, get_long (4), -0xD2);	/* FreeMem */
-	}
-
-	host_sbcleanup (sb);
-
-	free (sb->dtable);
-	free (sb->ftable);
-
-	locksigqueue ();
-
-	if (sb == socketbases)
-	    socketbases = sb->next;
-	else {
-	    for (nsb = socketbases; nsb; nsb = nsb->next) {
-		if (sb == nsb->next) {
-		    nsb->next = sb->next;
-		    break;
-		}
-	    }
-	}
-
-	if (sb == sbsigqueue)
-	    sbsigqueue = sb->next;
-	else {
-	    for (nsb = sbsigqueue; nsb; nsb = nsb->next) {
-		if (sb == nsb->next) {
-		    nsb->next = sb->next;
-		    break;
-		}
-	    }
-	}
-
-	unlocksigqueue ();
-
-	free (sb);
+    if (sb->hostent) {
+      m68k_areg (&context->regs, 1) = sb->hostent;
+      m68k_dreg (&context->regs, 0) = sb->hostentsize;
+      CallLib (context, get_long (4), -0xD2);	/* FreeMem */
     }
+
+    if (sb->protoent) {
+      m68k_areg (&context->regs, 1) = sb->protoent;
+      m68k_dreg (&context->regs, 0) = sb->protoentsize;
+      CallLib (context, get_long (4), -0xD2);	/* FreeMem */
+    }
+
+    if (sb->servent) {
+      m68k_areg (&context->regs, 1) = sb->servent;
+      m68k_dreg (&context->regs, 0) = sb->serventsize;
+      CallLib (context, get_long (4), -0xD2);	/* FreeMem */
+    }
+
+    host_sbcleanup (sb);
+
+    free (sb->dtable);
+    free (sb->ftable);
+    
+    locksigqueue ();
+    
+    if (sb == socketbases)
+	    socketbases = sb->next;
+    else {
+	    for (nsb = socketbases; nsb; nsb = nsb->next) {
+        if (sb == nsb->next) {
+          nsb->next = sb->next;
+          break;
+        }
+      }
+    }
+
+    if (sb == sbsigqueue)
+      sbsigqueue = sb->next;
+    else {
+      for (nsb = sbsigqueue; nsb; nsb = nsb->next) {
+        if (sb == nsb->next) {
+          nsb->next = sb->next;
+          break;
+        }
+      }
+    }
+
+    unlocksigqueue ();
+
+    free (sb);
+  }
 }
 
 static uae_u32 REGPARAM2 bsdsocklib_Expunge (TrapContext *context)
@@ -503,11 +505,13 @@ static uae_u32 REGPARAM2 bsdsocklib_Open (TrapContext *context) {
   TRACE (("OpenLibrary() -> "));
   
   if ((sb = alloc_socketbase (context)) != NULL) {
+    DebOut("sb: %lx\n", sb);
     if(!aros_bsdsocket_start_thread(sb)) {
       free_socketbase (context);
       DebOut("failed to start thread!\n");
       return 0;
     }
+
 
     DebOut("aros bsdsocket thread started!\n");
     put_word (SockLibBase + 32, opencount = get_word (SockLibBase + 32) + 1);
@@ -538,6 +542,10 @@ static uae_u32 REGPARAM2 bsdsocklib_Close (TrapContext *context)
 
     uae_u32 base = m68k_areg (&context->regs, 6);
     uae_u32 negsize = get_word (base + 16);
+
+    DebOut("CloseLibrary() ->\n");
+
+    DebOut("sb: %lx\n", sb);
 
     aros_bsdsocket_kill_thread(sb);
 

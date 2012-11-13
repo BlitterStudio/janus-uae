@@ -243,7 +243,7 @@ void aros_bsdsocket_kill_thread(struct socketbase *sb);
 
 struct JUAE_bsdsocket_Message {
   struct Message  ExecMessage;
-  ULONG           cmd;
+  LONG            cmd;
   ULONG           a;
   ULONG           b;
   ULONG           c;
@@ -254,6 +254,15 @@ struct JUAE_bsdsocket_Message {
   ULONG           h;
   ULONG           ret;
 };
+
+#define BSD_gethostbynameaddr 1
+#define BSD_socket            2
+#define BSD_setsockopt        3
+#define BSD_connect           4
+#define BSD_sendto            5
+#define BSD_recvfrom          6
+
+#define BSD_killme           -1
 
 #endif
 #endif /* __BSDSOCKET__ */
