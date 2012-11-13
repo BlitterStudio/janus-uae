@@ -79,7 +79,7 @@ static void aros_bsdsocket_thread (void) {
       BSDLOG("+++++++++++++++++++ got JUAE_bsdsocket_Message +++++++++++++++++++\n");
       /* TODO */
       switch (msg->cmd) {
-        case 1:
+        case BSD_gethostbynameaddr:
           host_gethostbynameaddr_real((TrapContext *)msg->a, 
                                       (struct socketbase *)msg->b,
                                       (uae_u32) msg->c,
@@ -87,13 +87,13 @@ static void aros_bsdsocket_thread (void) {
                                       (long) msg->e);
           BSDLOG("host_gethostbynameaddr_real done!\n");
           break;
-        case 2:
+        case BSD_socket:
           msg->ret=host_socket_real((struct socketbase *)msg->a,
                                     (int)msg->b,
                                     (int)msg->c,
                                     (int)msg->d);
           break;
-        case 3:
+        case BSD_setsockopt:
           host_setsockopt_real((struct socketbase *)msg->a,
                                (uae_u32)msg->b,
                                (uae_u32)msg->c,
@@ -101,14 +101,14 @@ static void aros_bsdsocket_thread (void) {
                                (uae_u32)msg->e,
                                (uae_u32)msg->f);
           break;
-        case 4:
+        case BSD_connect:
           host_connect_real((TrapContext *)msg->a,
                                (struct socketbase *)msg->b,
                                (uae_u32)msg->c,
                                (uae_u32)msg->d,
                                (uae_u32)msg->e);
           break;
-        case 5:
+        case BSD_sendto:
           host_sendto_real((TrapContext *)msg->a,
                            (struct socketbase *)msg->b,
                            (uae_u32)msg->c,
@@ -118,12 +118,24 @@ static void aros_bsdsocket_thread (void) {
                            (uae_u32)msg->g,
                            (uae_u32)msg->h);
           break;
+        case BSD_recvfrom:
+          host_recvfrom_real((TrapContext *)msg->a,
+                           (struct socketbase *)msg->b,
+                           (uae_u32)msg->c,
+                           (uae_u32)msg->d,
+                           (uae_u32)msg->e,
+                           (uae_u32)msg->f,
+                           (uae_u32)msg->g,
+                           (uae_u32)msg->h);
+          break;
+        case BSD_killme:
+          aros_bsdsocket_kill_thread_real((struct socketbase *)msg->a);
+          done=TRUE;
+          /* ATTENTION: don't touch anything now. Just replay the last message and exit at once! */
+          break;
 
-
-
-
-
-
+        default:
+          BSDLOG("ERROR: command %d NOT KNOWN TO ME!?\n",msg->cmd);
       }
 
       BSDLOG("ReplyMsg ..\n");
@@ -244,7 +256,10 @@ int aros_bsdsocket_start_thread (struct socketbase *sb) {
     return 0;
   }
 
+  BSDLOG("sb: %lx\n", sb);
+
   sb->mempool=CreatePool(MEMF_CLEAR|MEMF_SEM_PROTECTED, 0xC000, 0x8000);
+  BSDLOG("mempool: %lx\n", sb->mempool);
 
   if(!sb->mempool) {
     BSDLOG("ERROR: no memory for pool!?\n");
@@ -278,10 +293,10 @@ int aros_bsdsocket_start_thread (struct socketbase *sb) {
   return aros_launch_task != 0;
 }
 
+#if 0
 void aros_bsdsocket_kill_thread(struct socketbase *sb) {
 
   BSDLOG("TODO: aros_bsdsocket_kill_thread(%lx) !\n", sb);
-#if 0
   struct JUAE_Sync_Launch_Message  *die_msg;
   struct Message                   *back_msg;
   struct MsgPort                   *port;
@@ -329,6 +344,6 @@ void aros_bsdsocket_kill_thread(struct socketbase *sb) {
     back_port=NULL;
   }
 
-#endif
   BSDLOG("send DIE to %s done.\n", BSD_PORT_NAME);
 }
+#endif
