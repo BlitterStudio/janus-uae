@@ -30,7 +30,7 @@ LOBJS      = launch-daemon.o debug.o
 SOBJS      = splash.o debug.o
 SMOBJS     = clonescreenmode.o
 
-all: janusd clipd launchd janus-splash
+all: janusd clipd launchd janus-splash clonescreenmode
 
 janusd: $(JOBJS) 
 	$(CC) $(LD_FLAGS) $(JOBJS) -o janusd -lauto #-lc -lamiga -lauto
@@ -51,7 +51,6 @@ janus-splash: $(SOBJS)
 clonescreenmode: $(SMOBJS)
 	$(CC) $(LD_FLAGS) $(SMOBJS) -o clonescreenmode 
 	cp clonescreenmode  $(TARGETDIR)
-
 
 clean:
 	@rm -f $(JOBJS) $(COBJS) $(LOBJS) janusd clipd launchd
