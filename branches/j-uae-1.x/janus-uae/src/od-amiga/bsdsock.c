@@ -2835,7 +2835,10 @@ uae_u32 host_inet_addr_real(TrapContext *context, struct socketbase *sb, uae_u32
 
   BSDLOG("cp_rp: %s\n", cp_rp);
 
-	//addr = htonl(inet_addr(cp_rp));
+	addr = inet_addr(cp_rp);
+  if(addr == INADDR_NONE) {
+    BSDLOG("ERROR: inet_addr(%s) returned -1 (INADDR_NONE)!\n");
+  }
 	addr = htonl(inet_addr(cp_rp));
 
 	BSDLOG("inet_addr(%s) -> 0x%08lx\n",cp_rp,addr);

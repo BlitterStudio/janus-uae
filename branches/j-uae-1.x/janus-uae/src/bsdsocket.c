@@ -1176,33 +1176,34 @@ static uae_u32 REGPARAM2 bsdsocklib_SocketBaseTagList (TrapContext *context)
 
 	 default:
 	    if (currtag & TAG_USER) {
-		TRACE (("SBTM_"));
-		TRACE ((currtag & 0x0001 ? "SET" : "GET"));
-		TRACE ((currtag & 0x8000 ? "REF(" : "VAL("));
+		DebOut("SBTM_");
+		DebOut(currtag & 0x0001 ? "SET" : "GET");
+		DebOut(currtag & 0x8000 ? "REF(" : "VAL(");
 
+DebOut("(currtag >> 1) & SBTS_CODE: %lx\n", (currtag >> 1) & SBTS_CODE);
 		switch ((currtag >> 1) & SBTS_CODE) {
 		 case SBTC_BREAKMASK:
-		    TRACE (("SBTC_BREAKMASK),0x%lx", currval));
+		    DebOut("SBTC_BREAKMASK),0x%lx", currval);
 		    tagcopy (currtag, currval, tagptr, &sb->eintrsigs);
 		    break;
 		 case SBTC_SIGEVENTMASK:
-		    TRACE (("SBTC_SIGEVENTMASK),0x%lx", currval));
+		    DebOut("SBTC_SIGEVENTMASK),0x%lx", currval);
 		    tagcopy (currtag, currval, tagptr, &sb->eventsigs);
 		    break;
 		 case SBTC_SIGIOMASK:
-		    TRACE (("SBTC_SIGEVENTMASK),0x%lx", currval));
+		    DebOut("SBTC_SIGEVENTMASK),0x%lx", currval);
 		    tagcopy (currtag, currval, tagptr, &sb->eventsigs);
 		    break;
 		 case SBTC_ERRNO:
-		    TRACE (("SBTC_ERRNO),%d", currval));
+		    DebOut("SBTC_ERRNO),%d", currval);
 		    tagcopy (currtag, currval, tagptr, (uae_u32 *)&sb->sb_errno);
 		    break;
 		 case SBTC_HERRNO:
-		    TRACE (("SBTC_HERRNO),%d", currval));
+		    DebOut("SBTC_HERRNO),%d", currval);
 		    tagcopy (currtag, currval, tagptr, (uae_u32 *)&sb->sb_herrno);
 		    break;
 		 case SBTC_DTABLESIZE:
-		    TRACE (("SBTC_DTABLESIZE),0x%lx", currval));
+		    DebOut("SBTC_DTABLESIZE),0x%lx", currval);
 		    if (currtag & 1) {
 			bsdsocklib_SetDTableSize(sb, currval);
 		    } else {
@@ -1211,7 +1212,7 @@ static uae_u32 REGPARAM2 bsdsocklib_SocketBaseTagList (TrapContext *context)
 		    break;
 		 case SBTC_ERRNOSTRPTR:
 		    if (currtag & 1) {
-			TRACE (("ERRNOSTRPTR),invalid"));
+			DebOut("ERRNOSTRPTR),invalid");
 		    } else {
 			unsigned long ulTmp;
 			if (currtag & 0x8000)	/* SBTM_GETREF */
@@ -1219,7 +1220,7 @@ static uae_u32 REGPARAM2 bsdsocklib_SocketBaseTagList (TrapContext *context)
 			else			/* SBTM_GETVAL */
 			    ulTmp = currval;
 
-			TRACE (("ERRNOSTRPTR),%d", ulTmp));
+			DebOut("ERRNOSTRPTR),%d", ulTmp);
 
 			if (ulTmp < number_sys_error)
 			    tagcopy (currtag, currval, tagptr, &errnotextptrs[ulTmp]);
@@ -1229,7 +1230,7 @@ static uae_u32 REGPARAM2 bsdsocklib_SocketBaseTagList (TrapContext *context)
 		    break;
 		 case SBTC_HERRNOSTRPTR:
 		    if (currtag & 1) {
-			TRACE (("HERRNOSTRPTR),invalid"));
+			DebOut("HERRNOSTRPTR),invalid");
 		    } else {
 			unsigned long ulTmp;
 			if (currtag & 0x8000)	/* SBTM_GETREF */
@@ -1237,7 +1238,7 @@ static uae_u32 REGPARAM2 bsdsocklib_SocketBaseTagList (TrapContext *context)
 			else			/* SBTM_GETVAL */
 			    ulTmp = currval;
 
-			TRACE (("HERRNOSTRPTR),%d", ulTmp));
+			DebOut("HERRNOSTRPTR),%d", ulTmp);
 
 			if (ulTmp < number_host_error)
 			    tagcopy (currtag, currval, tagptr, &herrnotextptrs[ulTmp]);
@@ -1246,22 +1247,22 @@ static uae_u32 REGPARAM2 bsdsocklib_SocketBaseTagList (TrapContext *context)
 		    }
 		    break;
 		 case SBTC_ERRNOBYTEPTR:
-		    TRACE (("SBTC_ERRNOBYTEPTR),0x%lx", currval));
+		    DebOut("SBTC_ERRNOBYTEPTR),0x%lx", currval);
 		    tagcopy (currtag, currval, tagptr, &sb->errnoptr);
 		    sb->errnosize = 1;
 		    break;
 		 case SBTC_ERRNOWORDPTR:
-		    TRACE (("SBTC_ERRNOWORDPTR),0x%lx", currval));
+		    DebOut("SBTC_ERRNOWORDPTR),0x%lx", currval);
 		    tagcopy (currtag, currval, tagptr, &sb->errnoptr);
 		    sb->errnosize = 2;
 		    break;
 		 case SBTC_ERRNOLONGPTR:
-		    TRACE (("SBTC_ERRNOLONGPTR),0x%lx", currval));
+		    DebOut("SBTC_ERRNOLONGPTR),0x%lx", currval);
 		    tagcopy (currtag, currval, tagptr, &sb->errnoptr);
 		    sb->errnosize = 4;
 		    break;
 		 case SBTC_HERRNOLONGPTR:
-		    TRACE (("SBTC_HERRNOLONGPTR),0x%lx", currval));
+		    DebOut("SBTC_HERRNOLONGPTR),0x%lx", currval);
 		    tagcopy (currtag, currval, tagptr, &sb->herrnoptr);
 		    sb->herrnosize = 4;
 		    break;
@@ -1269,16 +1270,16 @@ static uae_u32 REGPARAM2 bsdsocklib_SocketBaseTagList (TrapContext *context)
 		    write_log ("bsdsocket: WARNING: Unsupported tag type (%x) in SocketBaseTagList()\n", currtag);
 		}
 	    } else {
-		TRACE (("TAG_UNKNOWN(0x%x)", currtag));
+		DebOut("TAG_UNKNOWN(0x%x)", currtag);
 	    }
 	}
 
-	TRACE ((","));
+	DebOut(",");
 	tagptr += 8;
     }
 
   done:
-    TRACE ((") -> %d\n", tagsprocessed));
+    DebOut(") -> %d\n", tagsprocessed);
 
     return tagsprocessed;
 }
