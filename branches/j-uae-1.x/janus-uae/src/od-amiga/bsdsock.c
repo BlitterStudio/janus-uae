@@ -61,7 +61,6 @@
 #define BSDLOG(...)     do { ; } while(0)
 #endif
 
-struct Library *SocketBase;
 #if 0
 
 static HWND hSockWnd;
@@ -213,7 +212,7 @@ struct Library *getsocketbase(struct socketbase *sb) {
 
   BSDLOG("return SocketBase %lx\n", sb->bsdsocketbase);
 
-  SocketBase=sb->bsdsocketbase;
+  //SocketBase=sb->bsdsocketbase;
 
   return sb->bsdsocketbase;
 }
@@ -655,6 +654,7 @@ int host_dup2socket(struct socketbase *sb, int fd1, int fd2)
 	}
 
 int host_socket_real(struct socketbase *sb, int af, int type, int protocol) {
+  struct Library *SocketBase;
   int s;
   int sd;
   int flags;
@@ -663,7 +663,7 @@ int host_socket_real(struct socketbase *sb, int af, int type, int protocol) {
 
   BSDLOG("socket(%s,%s,%d) -> \n", af == AF_INET ? "AF_INET" : "AF_other", type == SOCK_STREAM ? "SOCK_STREAM" : type == SOCK_DGRAM ? "SOCK_DGRAM " : "SOCK_RAW", protocol);
 
-  if(!getsocketbase(sb)) {
+  if(!(SocketBase=getsocketbase(sb))) {
     return -1;
   }
 
@@ -1161,6 +1161,7 @@ static unsigned int __stdcall sock_thread(void *blah)
 
 
 void host_connect_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 addr68k, uae_u32 addrlen) {
+  struct Library *SocketBase;
   struct Socket *s;
   struct sockaddr_in sin;
   int *addr;
@@ -1168,7 +1169,7 @@ void host_connect_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, 
 
 
   BSDLOG("======== %s -> %s ========\n", __FILE__,__func__);
-  if(!getsocketbase(sb)) {
+  if(!(SocketBase=getsocketbase(sb))) {
 		seterrno(sb,1); /*???*/
     return;
   }
@@ -1350,13 +1351,14 @@ void host_connect(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u
 
 
 void host_sendto_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 msg, uae_u32 len, uae_u32 flags, uae_u32 to, uae_u32 tolen) {
+  struct Library *SocketBase;
   int s; 
   void *realmsg;
   char buf[MAXADDRLEN];
 
   BSDLOG("======== %s -> %s ========\n", __FILE__,__func__);
 
-  if(!getsocketbase(sb)) {
+  if(!(SocketBase=getsocketbase(sb))) {
     seterrno(sb, 1);
     return; /* TODO!*/
   }
@@ -1661,6 +1663,7 @@ void host_sendto(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u3
 
 
 void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 msg, uae_u32 len, uae_u32 flags, uae_u32 addr, uae_u32 addrlen) {
+  struct Library *SocketBase;
   int s;
   char *realmsg;
   struct sockaddr *rp_addr = NULL;
@@ -1673,7 +1676,7 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
 
   BSDLOG("======== %s -> %s ========\n", __FILE__,__func__);
 
-  if(!getsocketbase(sb)) {
+  if(!(SocketBase=getsocketbase(sb))) {
     seterrno(sb, 1);
     return; /* TODO!*/
   }
@@ -1919,6 +1922,7 @@ uae_u32 host_shutdown(struct socketbase *sb, uae_u32 sd, uae_u32 how)
 
 void host_setsockopt_real(struct socketbase *sb, uae_u32 sd, uae_u32 level, uae_u32 optname, uae_u32 optval, uae_u32 len) {
 
+  struct Library *SocketBase;
   struct Socket *s;
   char buf[MAXADDRLEN];
   BSDLOG("======== %s -> %s ========\n", __FILE__,__func__);
@@ -1931,7 +1935,7 @@ void host_setsockopt_real(struct socketbase *sb, uae_u32 sd, uae_u32 level, uae_
     BSDLOG("level: %lx (SOL_SOCKET)\n", level);
   }
 
-  if(!getsocketbase(sb)) {
+  if(!(SocketBase=getsocketbase(sb))) {
     seterrno(sb, 1);
     return; /* TODO!*/
   }
@@ -2701,12 +2705,13 @@ void host_WaitSelect(TrapContext *context, struct socketbase *sb, uae_u32 nfds, 
 
 uae_u32 host_Inet_NtoA_real(TrapContext *context, struct socketbase *sb, uae_u32 in) {
 
+  struct Library *SocketBase;
   char *addr;
 	uae_u32 scratchbuf;
   BSDLOG("======== %s -> %s ========\n", __FILE__,__func__);
 	BSDLOG("Inet_NtoA(%lx)\n",in);
 
-  if(!getsocketbase(sb)) {
+  if(!(SocketBase=getsocketbase(sb))) {
     seterrno(sb, 1);
     return 0;
   }
@@ -2771,12 +2776,13 @@ uae_u32 host_Inet_NtoA(TrapContext *context, struct socketbase *sb, uae_u32 in) 
 
 uae_u32 host_inet_addr_real(TrapContext *context, struct socketbase *sb, uae_u32 cp) {
 
+  struct Library *SocketBase;
 	uae_u32 addr;
 	char *cp_rp;
 
   BSDLOG("======== %s -> %s ========\n", __FILE__,__func__);
 
-  if(!getsocketbase(sb)) {
+  if(!(SocketBase=getsocketbase(sb))) {
     return NULL;
   }
 
@@ -2989,6 +2995,7 @@ static unsigned int __stdcall thread_get(void *index2)
 
 void host_gethostbynameaddr_real(TrapContext *context, struct socketbase *sb, uae_u32 name68k, uae_u32 namelen, long addrtype) {
 
+  struct Library *SocketBase;
   char *name;
   struct hostent *h;
 	int size, numaliases = 0, numaddr = 0;
@@ -2996,7 +3003,7 @@ void host_gethostbynameaddr_real(TrapContext *context, struct socketbase *sb, ua
 	int i;
 
   BSDLOG("======== %s -> %s ========\n", __FILE__,__func__);
-  if(!getsocketbase(sb)) {
+  if(!(SocketBase=getsocketbase(sb))) {
 		seterrno(sb,1); /*???*/
     return;
   }
@@ -3260,6 +3267,7 @@ void host_gethostbynameaddr(TrapContext *context, struct socketbase *sb, uae_u32
 }
 
 void host_getprotobyname_real(TrapContext *context, struct socketbase *sb, uae_u32 name) {
+  struct Library *SocketBase;
 	char *name_rp;
   struct protoent *p;
 
@@ -3268,7 +3276,7 @@ void host_getprotobyname_real(TrapContext *context, struct socketbase *sb, uae_u
 	int i;
 
   BSDLOG("======== %s -> %s ========\n", __FILE__,__func__);
-  if(!getsocketbase(sb)) {
+  if(!(SocketBase=getsocketbase(sb))) {
 		seterrno(sb,1); /*???*/
     return;
   }
@@ -3634,6 +3642,7 @@ void aros_bsdsocket_kill_thread(struct socketbase *sb) {
 }
 
 void aros_bsdsocket_kill_thread_real(struct socketbase *sb) {
+  struct Library *SocketBase;
 
   BSDLOG("======== %s ========\n",__func__);
 
@@ -3645,7 +3654,7 @@ void aros_bsdsocket_kill_thread_real(struct socketbase *sb) {
     sb->mempool=NULL;
   }
 
-  if(SocketBase) {
+  if(SocketBase=getsocketbase(sb)) {
     BSDLOG("close library..\n");
     CloseLibrary(SocketBase);
     SocketBase=NULL;
