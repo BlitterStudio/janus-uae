@@ -2288,9 +2288,53 @@ uae_u32 host_IoctlSocket(struct socketbase *sb, uae_u32 sd, uae_u32 request, uae
 #endif
 }
 
-int host_CloseSocket(struct socketbase *sb, int sd)
-{
-  BSDLOG("NOT YET IMPLEMENTED!\n");
+int host_CloseSocket(struct socketbase *sb, int sd) {
+
+  struct JUAE_bsdsocket_Message msg;
+
+  BSDLOG("======== %s ========\n",__func__);
+
+  sb->reply_port=CreateMsgPort();
+  msg.ExecMessage.mn_Node.ln_Type=NT_MESSAGE;
+  msg.ExecMessage.mn_Length = sizeof(struct JUAE_bsdsocket_Message); 
+  msg.ExecMessage.mn_ReplyPort = sb->reply_port; 
+  BSDLOG("sb->reply_port: %lx\n", sb->reply_port);
+
+  msg.cmd=(ULONG) BSD_CloseSocket;
+  msg.a=(ULONG) sb;
+  msg.b=(ULONG) sd;
+
+  BSDLOG("PutMsg..\n");
+  PutMsg(sb->aros_port, &msg);
+  BSDLOG("WaitPort..\n");
+  WaitPort(sb->reply_port);
+  BSDLOG("done!\n");
+  DeleteMsgPort(sb->reply_port);
+
+  return msg.ret;
+}
+
+int host_CloseSocket_real(struct socketbase *sb, int sd) {
+
+  struct Library *SocketBase;
+  struct Socket *s;
+
+  BSDLOG("======== %s -> %s ========\n", __FILE__,__func__);
+
+  if(!(SocketBase=getsocketbase(sb))) {
+    seterrno(sb, 1);
+    return; /* TODO!*/
+  }
+
+	sd++;
+  s = getsock(sb,sd);
+
+  BSDLOG("call CloseSocket(%d)\n",s);
+
+  return CloseSocket(s);
+}
+
+ 
 #if 0
     unsigned int wMsg;
     SOCKET s;
@@ -2353,8 +2397,8 @@ int host_CloseSocket(struct socketbase *sb, int sd)
     TRACE(("failed (%d)\n",sb->sb_errno));
   
     return -1;
-#endif
 }
+#endif
 
 // For the sake of efficiency, we do not malloc() the fd_sets here.
 // 64 sockets should be enough for everyone.

@@ -143,8 +143,10 @@ static void aros_bsdsocket_thread (void) {
                                        (struct socketbase *)msg->b,
                                        (uae_u32)msg->c);
           break;
-
-
+        case BSD_CloseSocket:
+          msg->ret=host_CloseSocket_real((struct socketbase *)msg->a,
+                                         (int)msg->b);
+          break;
 
         case BSD_killme:
           aros_bsdsocket_kill_thread_real((struct socketbase *)msg->a);
