@@ -266,6 +266,8 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
 
   JWLOG("[%lx] g_list_length(aos3_gadget_list): %d\n", thread, g_list_length(aos3_gadget_list));
 
+  ObtainSemaphore(&(jwin->gadget_access));
+
   /* we check all border gadgets. We need to have either 2 arrow gadgets or 4 */
   if((g_list_length(aos3_gadget_list) == 4) || (g_list_length(aos3_gadget_list) == 2)) {
     /* otherwise don't even try */
@@ -359,6 +361,8 @@ ULONG init_border_gadgets(struct Process *thread, JanusWin *jwin) {
     changed += change_j_gadget(jwin, GAD_RIGHTARROW,  NULL);
     changed += change_j_gadget(jwin, GAD_HORIZSCROLL, NULL);
   }
+
+  ReleaseSemaphore(&(jwin->gadget_access));
 
   for(i=0; i<NUM_GADGETS; i++) {
     JWLOG("[%lx] new jgad[%d]=%lx\n", thread, i, jwin->jgad[i]);
