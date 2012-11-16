@@ -408,9 +408,10 @@ int aros_splash_start_thread        (void);
 int aros_bsdsocket_start_thread     (struct socketbase *sb);
 
 /* menu */
-void clone_menu(JanusWin *jwin);
-void click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub);
-void process_menu(JanusWin *jwin, UWORD selection);
+void    clone_menu(JanusWin *jwin);
+void    click_menu(JanusWin *jwin, WORD menu, WORD item, WORD sub);
+void    process_menu(JanusWin *jwin, UWORD selection);
+uaecptr get_aos3_menustrip(uaecptr aos3win);
 
 /* launch */
 int   aros_launch_start_thread(void);

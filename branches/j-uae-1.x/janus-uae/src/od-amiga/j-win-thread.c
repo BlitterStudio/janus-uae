@@ -465,7 +465,11 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
            * a gadget with or without intuition menu..
            */
 
-          if(flags & WFLG_RMBTRAP) {
+          /* the check for get_aos3_menustrip is not necessary in AmigaOS, it should
+           * work without even in AROS. But for some unknown reason, AROS doesn't have
+           * WFLG_RMBTRAP set here.
+           */
+          if((flags & WFLG_RMBTRAP) || !(get_aos3_menustrip((uaecptr) jwin->aos3win))) {
             JWLOG("[%lx]: IDCMP_MENUVERIFY => right click only\n", thread);
             im->Code = MENUCANCEL;
             my_setmousebuttonstate(0, 1, 1); /* MENUDOWN */
@@ -1164,19 +1168,25 @@ static void aros_win_thread (void) {
                       ((struct PropInfo *)jwin->gad[GAD_HORIZSCROLL]->SpecialInfo)->VertBody != get_word(specialinfo + 8)
                       ) {
 
+
                       JWLOG("SpecialInfo: NewModifyProp vert ..\n");
                         JWLOG("[%lx] SpecialInfo: HorizPot: %d\n", thread, get_word(specialinfo + 2));
                         JWLOG("[%lx] SpecialInfo: VertPot: %d\n", thread, get_word(specialinfo + 4));
                         JWLOG("[%lx] SpecialInfo: HorizBody: %d\n", thread, get_word(specialinfo + 6));
                         JWLOG("[%lx] SpecialInfo: VertBody: %d\n", thread, get_word(specialinfo + 8));
+                        JWLOG("[%lx] jwin->gad[GAD_HORIZSCROLL]: %lx\n", thread, jwin->gad[GAD_HORIZSCROLL]);
+                        JWLOG("[%lx] jwin->aroswin: %lx\n", thread, jwin->aroswin);
 
                       gadgettype=SetGadgetType(jwin->gad[GAD_HORIZSCROLL], GTYP_PROPGADGET);
+                      JWLOG("[%lx] gadgettype: %lx\n", thread, gadgettype);
                       NewModifyProp(jwin->gad[GAD_HORIZSCROLL], jwin->aroswin, NULL,
                                     jwin->jgad[GAD_HORIZSCROLL]->flags, 
                                     get_word(specialinfo + 2), get_word(specialinfo + 4),
                                     get_word(specialinfo + 6), get_word(specialinfo + 8),
                                     1);
+                      JWLOG("[%lx] restore gadgettype..\n", thread);
                       SetGadgetType(jwin->gad[GAD_HORIZSCROLL], gadgettype);
+                      JWLOG("[%lx] SetGadgetType, NewModifyProp done\n", thread);
                     }
                   }
                 }

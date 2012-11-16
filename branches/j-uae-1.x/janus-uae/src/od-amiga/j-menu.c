@@ -24,7 +24,7 @@
 #include <libraries/gadtools.h>
 #include <proto/gadtools.h>
 
-//#define JWTRACING_ENABLED 1
+#define JWTRACING_ENABLED 0
 #include "j.h"
 
 static ULONG  count_items(uaecptr menu);
@@ -103,8 +103,8 @@ static ULONG count_items(uaecptr menu) {
       i++;
       sub=get_long(item+28);
       while(sub) {
-	i++;
-	sub=get_long(sub);
+        i++;
+        sub=get_long(sub);
       }
       item=get_long(item);
     }
@@ -116,6 +116,19 @@ static ULONG count_items(uaecptr menu) {
   JWLOG("items counted: %d\n",i);
   return i;
 }
+
+uaecptr get_aos3_menustrip(uaecptr aos3win) {
+  uaecptr aos3menustrip;
+
+  aos3menustrip=get_long(aos3win + 28);
+  if(!aos3menustrip) {
+    JWLOG("aos3 window %lx has no menustrip\n",aos3win);
+    return NULL;
+  }
+  JWLOG("aos3menustrip: %lx\n",aos3menustrip);
+  return aos3menustrip;
+}
+
 
 /********************************
  * clone_menu
@@ -144,6 +157,7 @@ void clone_menu(JanusWin *jwin) {
     return;
   }
 
+  /* TODO: FreeVisualInfo.. why not already done ? */
   vi = GetVisualInfoA(jwin->jscreen->arosscreen, NULL);
   if(!vi) {
     JWLOG("ERROR: no vi (you have to use that editor!)\n");
@@ -157,12 +171,11 @@ void clone_menu(JanusWin *jwin) {
     ClearMenuStrip(jwin->aroswin);
   }
 
-  aos3menustrip=get_long(aos3win + 28);
+  aos3menustrip=get_aos3_menustrip(aos3win);
   if(!aos3menustrip) {
-    JWLOG("aos3 window %lx has no menustrip\n",aos3win);
+    JWLOG("no aos3menustrip => do nothing\n");
     return;
   }
-  JWLOG("aos3menustrip: %lx\n",aos3menustrip);
 
   nr_entries=count_items(aos3menustrip);
 
