@@ -607,6 +607,34 @@ static void prepamigaaddr(struct sockaddr *realpt, int len)
     *((char *)realpt) = len;
 }
 
+static ULONG execute_in_task(struct socketbase *sb, LONG cmd, ULONG a, ULONG b, ULONG c, ULONG d, ULONG e, ULONG f, ULONG g, ULONG h) {
+  struct JUAE_bsdsocket_Message msg;
+
+  sb->reply_port=CreateMsgPort();
+  msg.ExecMessage.mn_Node.ln_Type=NT_MESSAGE;
+  msg.ExecMessage.mn_Length = sizeof(struct JUAE_bsdsocket_Message); 
+  msg.ExecMessage.mn_ReplyPort = sb->reply_port; 
+
+  msg.cmd=cmd;
+  msg.a  =(ULONG) a;
+  msg.b  =(ULONG) b;
+  msg.c  =(ULONG) c;
+  msg.d  =(ULONG) d;
+  msg.e  =(ULONG) e;
+  msg.f  =(ULONG) f;
+  msg.g  =(ULONG) g;
+  msg.h  =(ULONG) h;
+
+  BSDLOG("PutMsg..\n");
+  PutMsg(sb->aros_port, (struct Message *) &msg);
+  BSDLOG("WaitPort..\n");
+  WaitPort(sb->reply_port);
+  BSDLOG("done!\n");
+  DeleteMsgPort(sb->reply_port);
+
+  return msg.ret;
+}
+
 
 /*
  * host_dup2socket
@@ -656,10 +684,13 @@ int host_dup2socket_real(struct socketbase *sb, int fd1, int fd2) {
 }
 
 int host_dup2socket(struct socketbase *sb, int fd1, int fd2) {
-  struct JUAE_bsdsocket_Message msg;
+  //struct JUAE_bsdsocket_Message msg;
 
   BSDLOG("======== %s ========\n",__func__);
 
+  return execute_in_task(sb, BSD_dup2socket, (ULONG) sb, (ULONG) fd1, (ULONG) fd2, 0,0,0,0,0);
+
+#if 0
   sb->reply_port=CreateMsgPort();
 
   msg.ExecMessage.mn_Node.ln_Type=NT_MESSAGE;
@@ -681,6 +712,7 @@ int host_dup2socket(struct socketbase *sb, int fd1, int fd2) {
   DeleteMsgPort(sb->reply_port);
 
   return (int) msg.ret;
+#endif
 
 }
 
@@ -741,10 +773,14 @@ int host_socket_real(struct socketbase *sb, int af, int type, int protocol) {
 }
 
 int host_socket(struct socketbase *sb, int af, int type, int protocol) {
-  struct JUAE_bsdsocket_Message msg;
+//  struct JUAE_bsdsocket_Message msg;
 
   BSDLOG("======== %s ========\n", __func__);
 
+  return execute_in_task(sb, BSD_socket, 
+                         (ULONG) sb, (ULONG) af, (ULONG) type, (ULONG) protocol, 0, 0, 0, 0);
+
+#if 0
   sb->reply_port=CreateMsgPort();
   msg.ExecMessage.mn_Node.ln_Type=NT_MESSAGE;
   msg.ExecMessage.mn_Length = sizeof(struct JUAE_bsdsocket_Message); 
@@ -766,6 +802,7 @@ int host_socket(struct socketbase *sb, int af, int type, int protocol) {
   DeleteMsgPort(sb->reply_port); 
 
   return msg.ret;
+#endif
 }
 
 #if 0
@@ -891,9 +928,14 @@ uae_u32 host_bind_real(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 
 }
 
 uae_u32 host_bind(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen) {
-  struct JUAE_bsdsocket_Message msg;
+  //struct JUAE_bsdsocket_Message msg;
 
   BSDLOG("======== %s ========\n", __func__);
+
+  return execute_in_task(sb, BSD_bind, 
+                         (ULONG) sb, (ULONG) sd, (ULONG) name, (ULONG) namelen, 0, 0, 0, 0);
+
+#if 0
 
   sb->reply_port=CreateMsgPort();
   msg.ExecMessage.mn_Node.ln_Type=NT_MESSAGE;
@@ -916,6 +958,7 @@ uae_u32 host_bind(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namel
   DeleteMsgPort(sb->reply_port); 
 
   return msg.ret;
+#endif
 }
 
 uae_u32 host_listen(struct socketbase *sb, uae_u32 sd, uae_u32 backlog)
@@ -1421,9 +1464,16 @@ void host_connect_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, 
 
 void host_connect(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 addr68k, uae_u32 addrlen) {
 
-  struct JUAE_bsdsocket_Message msg;
+  //struct JUAE_bsdsocket_Message msg;
 
   BSDLOG("======== %s ========\n",__func__);
+
+  execute_in_task(sb, BSD_connect, 
+                  (ULONG) context, (ULONG) sb, (ULONG) sd, (ULONG) addr68k, (ULONG) addrlen, 0, 0, 0);
+
+  return;
+
+#if 0
 
   sb->reply_port=CreateMsgPort();
   msg.ExecMessage.mn_Node.ln_Type=NT_MESSAGE;
@@ -1444,6 +1494,7 @@ void host_connect(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u
   WaitPort(sb->reply_port);
   BSDLOG("done!\n");
   DeleteMsgPort(sb->reply_port);
+#endif
 }
 
 
@@ -1734,6 +1785,14 @@ void host_sendto(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u3
 
   BSDLOG("======== %s ========\n",__func__);
 
+  execute_in_task(sb, BSD_sendto, 
+                  (ULONG) context, (ULONG) sb, (ULONG) sd, (ULONG) msg_in, (ULONG) len, 
+                  (ULONG) flags, (ULONG) to, (ULONG) tolen);
+
+  return;
+
+
+#if 0
   sb->reply_port=CreateMsgPort();
   msg.ExecMessage.mn_Node.ln_Type=NT_MESSAGE;
   msg.ExecMessage.mn_Length = sizeof(struct JUAE_bsdsocket_Message); 
@@ -1756,6 +1815,7 @@ void host_sendto(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u3
   WaitPort(sb->reply_port);
   BSDLOG("done!\n");
   DeleteMsgPort(sb->reply_port);
+#endif
 }
 
 
@@ -1808,7 +1868,7 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
     return;
   }
 
-  realpt = (char*)get_real_address (msg);
+  realpt = (uae_char*)get_real_address (msg);
   //flags &= ~0x40; /* ?? */
 
   if(addr) {
@@ -1833,10 +1893,18 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
 
 void host_recvfrom(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 msg_in, uae_u32 len, uae_u32 flags, uae_u32 addr, uae_u32 addrlen) {
 
-  struct JUAE_bsdsocket_Message msg;
+  //struct JUAE_bsdsocket_Message msg;
 
   BSDLOG("======== %s ========\n",__func__);
 
+  execute_in_task(sb, BSD_recvfrom, 
+                  (ULONG) context, (ULONG) sb, (ULONG) sd, (ULONG) msg_in, (ULONG) len, 
+                  (ULONG) flags, (ULONG) addr, (ULONG) addrlen);
+
+  return;
+
+
+#if 0
   sb->reply_port=CreateMsgPort();
   msg.ExecMessage.mn_Node.ln_Type=NT_MESSAGE;
   msg.ExecMessage.mn_Length = sizeof(struct JUAE_bsdsocket_Message); 
@@ -1859,6 +1927,7 @@ void host_recvfrom(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_
   WaitPort(sb->reply_port);
   BSDLOG("done!\n");
   DeleteMsgPort(sb->reply_port);
+#endif
 }
 
 
@@ -2041,10 +2110,17 @@ void host_setsockopt_real(struct socketbase *sb, uae_u32 sd, uae_u32 level, uae_
 
 void host_setsockopt(struct socketbase *sb, uae_u32 sd, uae_u32 level, uae_u32 optname, uae_u32 optval, uae_u32 len) {
 
-  struct JUAE_bsdsocket_Message msg;
+  //struct JUAE_bsdsocket_Message msg;
 
   BSDLOG("======== %s ========\n",__func__);
 
+  execute_in_task(sb, BSD_setsockopt, 
+                  (ULONG) sb, (ULONG) sd, (ULONG) level, (ULONG) optname, (ULONG) optval, 
+                  (ULONG) len, (ULONG) 0, (ULONG) 0);
+
+  return;
+
+#if 0
   sb->reply_port=CreateMsgPort();
   msg.ExecMessage.mn_Node.ln_Type=NT_MESSAGE;
   msg.ExecMessage.mn_Length = sizeof(struct JUAE_bsdsocket_Message); 
@@ -2065,6 +2141,7 @@ void host_setsockopt(struct socketbase *sb, uae_u32 sd, uae_u32 level, uae_u32 o
   WaitPort(sb->reply_port);
   BSDLOG("done!\n");
   DeleteMsgPort(sb->reply_port);
+#endif
 }
 
 
@@ -2261,9 +2338,15 @@ uae_u32 host_IoctlSocket(struct socketbase *sb, uae_u32 sd, uae_u32 request, uae
 
 int host_CloseSocket(struct socketbase *sb, int sd) {
 
-  struct JUAE_bsdsocket_Message msg;
+  //struct JUAE_bsdsocket_Message msg;
 
   BSDLOG("======== %s ========\n",__func__);
+
+  return execute_in_task(sb, BSD_CloseSocket, 
+                         (ULONG) sb, (ULONG) sd, 0, 0, 0,
+                         (ULONG) 0, (ULONG) 0, (ULONG) 0);
+
+#if 0
 
   sb->reply_port=CreateMsgPort();
   msg.ExecMessage.mn_Node.ln_Type=NT_MESSAGE;
@@ -2283,6 +2366,7 @@ int host_CloseSocket(struct socketbase *sb, int sd) {
   DeleteMsgPort(sb->reply_port);
 
   return msg.ret;
+#endif
 }
 
 int host_CloseSocket_real(struct socketbase *sb, int sd) {
@@ -2771,10 +2855,12 @@ uae_u32 host_Inet_NtoA_real(TrapContext *context, struct socketbase *sb, uae_u32
 
 uae_u32 host_Inet_NtoA(TrapContext *context, struct socketbase *sb, uae_u32 in) {
 
-  struct JUAE_bsdsocket_Message msg;
+  //struct JUAE_bsdsocket_Message msg;
 
   BSDLOG("======== %s ========\n",__func__);
 
+  return execute_in_task(sb, BSD_Inet_NtoA, (ULONG) context, (ULONG) sb, (ULONG) in, 0, 0, 0, 0, 0);
+#if 0
   sb->reply_port=CreateMsgPort();
   msg.ExecMessage.mn_Node.ln_Type=NT_MESSAGE;
   msg.ExecMessage.mn_Length = sizeof(struct JUAE_bsdsocket_Message); 
@@ -2794,6 +2880,7 @@ uae_u32 host_Inet_NtoA(TrapContext *context, struct socketbase *sb, uae_u32 in) 
   DeleteMsgPort(sb->reply_port);
 
   return msg.ret;
+#endif
 }
 
 uae_u32 host_inet_addr_real(TrapContext *context, struct socketbase *sb, uae_u32 cp) {
@@ -2826,11 +2913,15 @@ uae_u32 host_inet_addr_real(TrapContext *context, struct socketbase *sb, uae_u32
 	return addr;
 }
 
-
 uae_u32 host_inet_addr(TrapContext *context, struct socketbase *sb, uae_u32 cp) {
-  struct JUAE_bsdsocket_Message msg;
+
+  //struct JUAE_bsdsocket_Message msg;
 
   BSDLOG("======== %s ========\n",__func__);
+
+  return execute_in_task(sb, BSD_inet_addr, (ULONG) context, (ULONG) sb, (ULONG) cp, 0, 0, 0, 0, 0);
+
+#if 0
 
   sb->reply_port=CreateMsgPort();
   msg.ExecMessage.mn_Node.ln_Type=NT_MESSAGE;
@@ -2851,6 +2942,7 @@ uae_u32 host_inet_addr(TrapContext *context, struct socketbase *sb, uae_u32 cp) 
   DeleteMsgPort(sb->reply_port);
 
   return msg.ret;
+#endif
 }
 
 #if 0
@@ -3281,6 +3373,10 @@ void host_gethostbynameaddr(TrapContext *context, struct socketbase *sb, uae_u32
 
   BSDLOG("======== %s ========\n",__func__);
 
+  execute_in_task(sb, BSD_gethostbynameaddr, 
+                  (ULONG) context, (ULONG) sb, (ULONG) name68k, (ULONG) namelen, (ULONG) addrtype, 0, 0, 0);
+  return;
+#if 0
   BSDLOG("dummy host_gethostbynameaddr sending message ..\n");
 
   sb->reply_port=CreateMsgPort();
@@ -3304,6 +3400,7 @@ void host_gethostbynameaddr(TrapContext *context, struct socketbase *sb, uae_u32
   BSDLOG("done!\n");
 
   DeleteMsgPort(sb->reply_port);
+#endif
 
 }
 
@@ -3480,9 +3577,14 @@ void host_getprotobyname_real(TrapContext *context, struct socketbase *sb, uae_u
 
 
 void host_getprotobyname(TrapContext *context, struct socketbase *sb, uae_u32 name) {
-  struct JUAE_bsdsocket_Message msg;
+  //struct JUAE_bsdsocket_Message msg;
 
   BSDLOG("======== %s ========\n",__func__);
+
+  execute_in_task(sb, BSD_getprotobyname, 
+                  (ULONG) context, (ULONG) sb, (ULONG) name, 0, 0, 0, 0, 0);
+  return;
+#if 0
 
   sb->reply_port=CreateMsgPort();
 
@@ -3503,6 +3605,7 @@ void host_getprotobyname(TrapContext *context, struct socketbase *sb, uae_u32 na
   BSDLOG("done!\n");
 
   DeleteMsgPort(sb->reply_port);
+#endif
 
 }
 
@@ -3656,9 +3759,15 @@ void host_getprotobynumber (TrapContext *context, struct socketbase *sb, uae_u32
 
 void aros_bsdsocket_kill_thread(struct socketbase *sb) {
 
-  struct JUAE_bsdsocket_Message msg;
+  //struct JUAE_bsdsocket_Message msg;
 
   BSDLOG("======== %s ========\n",__func__);
+
+  execute_in_task(sb, BSD_killme, 
+                  (ULONG) sb, 0, 0, 0, 0, 0, 0, 0);
+  return;
+
+#if 0
 
   BSDLOG("sb: %lx\n", sb);
 
@@ -3679,6 +3788,7 @@ void aros_bsdsocket_kill_thread(struct socketbase *sb) {
   BSDLOG("done!\n");
 
   DeleteMsgPort(sb->reply_port);
+#endif
 
 }
 
