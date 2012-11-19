@@ -78,7 +78,7 @@ struct socketbase {
     int eventindex;		/* current socket looked at by GetSocketEvents() to prevent starvation */
 
 #ifdef __AROS__
-    struct SocketBase *bsdsocketbase;
+    struct Library    *bsdsocketbase;
     struct Process    *aros_task;
     struct MsgPort    *aros_port;
     struct MsgPort    *reply_port;
@@ -233,6 +233,8 @@ extern void bsdlib_install (void);
 extern void bsdlib_reset (void);
 
 #ifdef __AROS__
+struct Library *getsocketbase(struct socketbase *sb);
+
 int  aros_bsdsocket_start_thread (struct socketbase *sb);
 void aros_bsdsocket_kill_thread(struct socketbase *sb);
 
@@ -244,6 +246,11 @@ void host_getprotobyname_real(TrapContext *context, struct socketbase *sb, uae_u
 uae_u32 host_Inet_NtoA_real(TrapContext *context, struct socketbase *sb, uae_u32 in);
 int host_CloseSocket_real(struct socketbase *sb, int sd);
 int host_dup2socket_real(struct socketbase *sb, int fd1, int fd2);
+uae_u32 host_bind_real(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen);
+void host_connect_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 addr68k, uae_u32 addrlen);
+void host_sendto_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 msg, uae_u32 len, uae_u32 flags, uae_u32 to, uae_u32 tolen);
+void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 msg, uae_u32 len, uae_u32 flags, uae_u32 addr, uae_u32 addrlen);
+void aros_bsdsocket_kill_thread_real(struct socketbase *sb);
 
 struct JUAE_bsdsocket_Message {
   struct Message  ExecMessage;
@@ -270,6 +277,8 @@ struct JUAE_bsdsocket_Message {
 #define BSD_Inet_NtoA         9
 #define BSD_CloseSocket      10
 #define BSD_dup2socket       11
+#define BSD_bind             12
+
 
 #define BSD_killme           -1
 

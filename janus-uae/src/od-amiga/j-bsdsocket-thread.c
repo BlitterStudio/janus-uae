@@ -152,6 +152,15 @@ static void aros_bsdsocket_thread (void) {
                                          (int)msg->b,
                                          (int)msg->c);
           break;
+        case BSD_bind:
+          msg->ret=host_bind_real((struct socketbase *)msg->a,
+                                         (uae_u32)msg->b,
+                                         (uae_u32)msg->c,
+                                         (uae_u32)msg->d);
+          break;
+
+
+
 
 
         case BSD_killme:
