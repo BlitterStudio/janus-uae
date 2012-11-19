@@ -609,49 +609,46 @@ static void prepamigaaddr(struct sockaddr *realpt, int len)
 #endif
 
 
-int host_dup2socket(struct socketbase *sb, int fd1, int fd2)
-	{
+int host_dup2socket(struct socketbase *sb, int fd1, int fd2) {
 
-  BSDLOG("NOT YET IMPLEMENTED!\n");
-#if 0
-    SOCKET s1,s2;
+  struct Library *SocketBase;
+  int s1,s2;
 
-    TRACE(("dup2socket(%d,%d) -> ",fd1,fd2));
-	fd1++;
+  BSDLOG("======== %s ========\n", __FILE__);
 
-    s1 = getsock(sb, fd1);
-    if (s1 != INVALID_SOCKET)
-		{
-		if (fd2 != -1)
-			{
-		    if ((unsigned int) (fd2) >= (unsigned int) sb->dtablesize) 
-				{
-				TRACE (("Bad file descriptor (%d)\n", fd2));
-				seterrno (sb, 9);	/* EBADF */
-				}
-			fd2++;
-			s2 = getsock(sb,fd2);
-			if (s2 != INVALID_SOCKET)
-				{
-	            shutdown(s2,1);
-			    closesocket(s2);
-				}
-			setsd(sb,fd2,s1);
-		    TRACE(("0\n"));
-			return 0;
-			}
-		else
-			{
-			fd2 = getsd(sb, 1);
-			setsd(sb,fd2,s1);
-		    TRACE(("%d\n",fd2));
-			return (fd2 - 1);
-			}
-		}
-    TRACE(("-1\n"));
-	return -1;
-#endif
-	}
+  if(!(SocketBase=getsocketbase(sb))) {
+    return -1;
+  }
+
+  fd1++;
+
+  s1 = getsock(sb, fd1);
+  if (s1 != INVALID_SOCKET) {
+    if (fd2 != -1) {
+      if ((unsigned int) (fd2) >= (unsigned int) sb->dtablesize) {
+        BSDLOG("Bad file descriptor (%d)\n", fd2);
+        seterrno (sb, 9);	/* EBADF */
+      }
+      fd2++;
+      s2 = getsock(sb,fd2);
+      if (s2 != INVALID_SOCKET) {
+        shutdown(s2,1);
+        CloseSocket(s2);
+      }
+      setsd(sb,fd2,s1);
+      BSDLOG("0\n");
+      return 0;
+    }
+    else {
+      fd2 = getsd(sb, 1);
+      setsd(sb,fd2,s1);
+      BSDLOG("%d\n",fd2);
+      return (fd2 - 1);
+    }
+  }
+  BSDLOG("-1\n");
+  return -1;
+}
 
 int host_socket_real(struct socketbase *sb, int af, int type, int protocol) {
   struct Library *SocketBase;
@@ -1662,6 +1659,15 @@ void host_sendto(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u3
 
 
 
+/* 
+ * recvfrom 
+ *
+ * If addr!=NULL, we have to fill in the results of the recv call there.
+ * So len has to be the size of the struct sockaddr,
+ * and addr needs to be filled with the source, where the data came
+ * from!
+ *
+ */
 void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 msg, uae_u32 len, uae_u32 flags, uae_u32 addr, uae_u32 addrlen) {
   struct Library *SocketBase;
   int s;
@@ -1672,7 +1678,12 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
   int i;
   int *addr_got;
 
+  struct sockaddr result_addr;
+  socklen_t fromlen;
+
+#if 0
   struct sockaddr_in sin;
+#endif
 
   BSDLOG("======== %s -> %s ========\n", __FILE__,__func__);
 
@@ -1697,6 +1708,7 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
     return;
   }
 
+#if 0
   if(addr) {
     addr_got=get_real_address(addr);
     BSDLOG("addr0: %lx\n", addr_got[0]);
@@ -1712,6 +1724,7 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
     sin.sin_addr.s_addr =  addr_got[1]; /* endianess ?? */
     BSDLOG("addr: %lx\n", sin.sin_addr.s_addr);
   }
+#endif
 
 #if 0
   sin.sin_family=AF_INET;
@@ -1735,7 +1748,8 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
 #endif
 
   if(addr) {
-    res=recvfrom(s, realmsg, len, flags, &sin, sizeof(struct sockaddr_in));
+    fromlen=sizeof result_addr;
+    res=recvfrom(s, realmsg, len, flags, &result_addr, &fromlen);
   }
   else {
     /* same as recv */
