@@ -147,6 +147,12 @@ static void aros_bsdsocket_thread (void) {
           msg->ret=host_CloseSocket_real((struct socketbase *)msg->a,
                                          (int)msg->b);
           break;
+        case BSD_dup2socket:
+          msg->ret=host_dup2socket_real((struct socketbase *)msg->a,
+                                         (int)msg->b,
+                                         (int)msg->c);
+          break;
+
 
         case BSD_killme:
           aros_bsdsocket_kill_thread_real((struct socketbase *)msg->a);

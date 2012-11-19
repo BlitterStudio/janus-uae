@@ -243,6 +243,7 @@ extern uae_u32 host_inet_addr_real(TrapContext *context, struct socketbase *sb, 
 void host_getprotobyname_real(TrapContext *context, struct socketbase *sb, uae_u32 name);
 uae_u32 host_Inet_NtoA_real(TrapContext *context, struct socketbase *sb, uae_u32 in);
 int host_CloseSocket_real(struct socketbase *sb, int sd);
+int host_dup2socket_real(struct socketbase *sb, int fd1, int fd2);
 
 struct JUAE_bsdsocket_Message {
   struct Message  ExecMessage;
@@ -268,6 +269,7 @@ struct JUAE_bsdsocket_Message {
 #define BSD_getprotobyname    8
 #define BSD_Inet_NtoA         9
 #define BSD_CloseSocket      10
+#define BSD_dup2socket       11
 
 #define BSD_killme           -1
 

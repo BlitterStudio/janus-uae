@@ -609,7 +609,13 @@ static void prepamigaaddr(struct sockaddr *realpt, int len)
 #endif
 
 
-int host_dup2socket(struct socketbase *sb, int fd1, int fd2) {
+/*
+ * host_dup2socket
+ *
+ * WARNING: this has never been tested.
+ *
+ */
+int host_dup2socket_real(struct socketbase *sb, int fd1, int fd2) {
 
   struct Library *SocketBase;
   int s1,s2;
@@ -648,6 +654,35 @@ int host_dup2socket(struct socketbase *sb, int fd1, int fd2) {
   }
   BSDLOG("-1\n");
   return -1;
+}
+
+int host_dup2socket(struct socketbase *sb, int fd1, int fd2) {
+  struct JUAE_bsdsocket_Message msg;
+
+  BSDLOG("======== %s ========\n",__func__);
+
+  sb->reply_port=CreateMsgPort();
+
+  msg.ExecMessage.mn_Node.ln_Type=NT_MESSAGE;
+  msg.ExecMessage.mn_Length = sizeof(struct JUAE_bsdsocket_Message); 
+  msg.ExecMessage.mn_ReplyPort = sb->reply_port; 
+  BSDLOG("sb->reply_port: %lx\n", sb->reply_port);
+
+  msg.cmd=(ULONG) BSD_dup2socket;
+  msg.a=(ULONG) sb;
+  msg.b=(ULONG) fd1;
+  msg.c=(ULONG) fd2;
+
+  BSDLOG("PutMsg..\n");
+  PutMsg(sb->aros_port, &msg);
+  BSDLOG("WaitPort..\n");
+  WaitPort(sb->reply_port);
+  BSDLOG("done!\n");
+
+  DeleteMsgPort(sb->reply_port);
+
+  return (int) msg.ret;
+
 }
 
 int host_socket_real(struct socketbase *sb, int af, int type, int protocol) {
@@ -780,8 +815,8 @@ int host_socket(struct socketbase *sb, int af, int type, int protocol)
 }
 #endif
 
-uae_u32 host_bind(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen)
-{
+uae_u32 host_bind(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen) {
+
   BSDLOG("NOT YET IMPLEMENTED!\n");
 #if 0
     char buf[MAXADDRLEN];
