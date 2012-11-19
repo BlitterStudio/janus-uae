@@ -85,7 +85,6 @@ static void aros_bsdsocket_thread (void) {
                                       (uae_u32) msg->c,
                                       (uae_u32) msg->d,
                                       (long) msg->e);
-          BSDLOG("host_gethostbynameaddr_real done!\n");
           break;
         case BSD_socket:
           msg->ret=host_socket_real((struct socketbase *)msg->a,

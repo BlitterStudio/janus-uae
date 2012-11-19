@@ -598,7 +598,6 @@ static void prephostaddr(struct sockaddr_in *addr)
     addr->sin_family = AF_INET;
 }
 
-#if 0
 static void prepamigaaddr(struct sockaddr *realpt, int len)
 {
     // little endian address family value to the byte sin_family member
@@ -607,7 +606,6 @@ static void prepamigaaddr(struct sockaddr *realpt, int len)
     // set size of address
     *((char *)realpt) = len;
 }
-#endif
 
 
 /*
@@ -1774,13 +1772,10 @@ void host_sendto(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u3
 void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 msg, uae_u32 len, uae_u32 flags, uae_u32 addr, uae_u32 addrlen) {
   struct Library *SocketBase;
   int s;
-  char *realmsg;
   struct sockaddr *rp_addr = NULL;
+  uae_char *realpt;
   int hlen;
   int res;
-  int i;
-  int *addr_got;
-
   struct sockaddr result_addr;
   socklen_t fromlen;
 
@@ -1792,6 +1787,7 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
 
   if(!(SocketBase=getsocketbase(sb))) {
     seterrno(sb, 1);
+    sb->resultval = -1;
     return; /* TODO!*/
   }
 
@@ -1808,173 +1804,31 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
   if (s == INVALID_SOCKET) {
     BSDLOG("INVALID_SOCKET!\n");
     sb->sb_errno=-1; /* TODO */
+    sb->resultval = -1;
     return;
   }
 
-#if 0
-  if(addr) {
-    addr_got=get_real_address(addr);
-    BSDLOG("addr0: %lx\n", addr_got[0]);
-    BSDLOG("addr1: %lx\n", addr_got[1]);
-    BSDLOG("addr2: %lx\n", addr_got[2]);
-    BSDLOG("addr3: %lx\n", addr_got[3]);
-
-
-    sin.sin_len   =sizeof(struct sockaddr);
-    sin.sin_family=AF_INET;
-    sin.sin_port  =htons(get_word(addr+2)); /* byte??*/
-    BSDLOG("port: %d\n", sin.sin_port);
-    sin.sin_addr.s_addr =  addr_got[1]; /* endianess ?? */
-    BSDLOG("addr: %lx\n", sin.sin_addr.s_addr);
-  }
-#endif
-
-#if 0
-  sin.sin_family=AF_INET;
-  sin.sin_port  =htons(get_word(addr68k+2)); /* byte??*/
-  BSDLOG("port: %d\n", sin.sin_port);
-  sin.sin_addr.s_addr =  addr[1]; /* endianess ?? */
-#
-#endif
-  realmsg = (char *) get_real_address(msg);
-
-#if 0
-    if (addr) {
-      hlen = get_long(addrlen);
-      rp_addr = (struct sockaddr *)get_real_address(addr);
-    }
-
-    BSDLOG("rp_addr->sa_family: %d\n", rp_addr->sa_family);
-    for(i=0;i<14;i++) {
-      BSDLOG("rp_addr->sa_data[%d]: %lx\n", i, rp_addr->sa_data[i]);
-    }
-#endif
+  realpt = (char*)get_real_address (msg);
+  //flags &= ~0x40; /* ?? */
 
   if(addr) {
-    fromlen=sizeof result_addr;
-    res=recvfrom(s, realmsg, len, flags, &result_addr, (void *) &fromlen);
+    hlen = get_long (addrlen);
+    rp_addr = (struct sockaddr *)get_real_address (addr);
+    fromlen=sizeof(result_addr);
+
+    res=recvfrom(s, realpt, len, flags, rp_addr, &hlen);
+
+    prepamigaaddr(rp_addr,hlen);
+    put_long (addrlen,hlen);
   }
   else {
     /* same as recv */
-    res=recvfrom(s, realmsg, len, flags, NULL, 0);
+    res=recvfrom(s, realpt, len, flags, NULL, 0);
   }
 
   BSDLOG("byts received with recvfrom: %d\n", res);
 
   sb->resultval = res;
-#if 0
-	if (addr) {
-	    prepamigaaddr(realmsg, hlen);
-	    put_long(addrlen, res);
-  }
-    }
-    else sb->resultval = -1;
-#endif
-
-
-
-
-#if 0
-    SOCKET s;
-    char *realpt;
-    struct sockaddr *rp_addr = NULL;
-    int hlen;
-    unsigned int wMsg;
-
-#ifdef TRACING_ENABLED
-    if (addr)
-	TRACE(("recvfrom(%d,0x%lx,%d,0x%lx,0x%lx,%d) -> ",sd,msg,len,flags,addr,get_long(addrlen)));
-    else
-	TRACE(("recv(%d,0x%lx,%d,0x%lx) -> ",sd,msg,len,flags));
-#endif
-    sd++;
-    s = getsock(sb,sd);
-
-    if (s != INVALID_SOCKET)
-    {
-	realpt = get_real_address(msg);
-
-	if (addr)
-	{
-	    hlen = get_long(addrlen);
-	    rp_addr = (struct sockaddr *)get_real_address(addr);
-	}
-
-	BEGINBLOCKING;
-
-	for (;;)
-	{
-            PREPARE_THREAD;
-
-            sockreq.packet_type = recvfrom_req;
-            sockreq.s = s;
-            sockreq.sb = sb;
-            sockreq.params.recvfrom_s.addr = addr;
-            sockreq.params.recvfrom_s.flags = flags;
-            sockreq.params.recvfrom_s.hlen = &hlen;
-            sockreq.params.recvfrom_s.len = len;
-            sockreq.params.recvfrom_s.realpt = realpt;
-            sockreq.params.recvfrom_s.rp_addr = rp_addr;
-
-            TRIGGER_THREAD;
-	    if (sb->resultval == -1)
-	    {
-		if (sb->sb_errno == WSAEWOULDBLOCK-WSABASEERR && sb->ftable[sd-1] & SF_BLOCKING)
-		{
-		    if (sb->mtable[sd-1] || (wMsg = allocasyncmsg(sb,sd,s)) != 0)
-		    {
-			if (sb->mtable[sd-1] == 0)
-			{
-			    WSAAsyncSelect(s,hWndSelector ? hAmigaWnd : hSockWnd,wMsg,FD_READ|FD_CLOSE);
-			}
-			else
-			{
-			    setWSAAsyncSelect(sb,sd,s,FD_READ|FD_CLOSE);
-			}
-
-			WAITSIGNAL;
-		
-			if (sb->mtable[sd-1] == 0)
-			{
-			    cancelasyncmsg(wMsg);
-			}
-			else
-			{
-			    setWSAAsyncSelect(sb,sd,s,0);
-			}
-
-		
-			if (sb->eintr)
-			{
-			    TRACE(("[interrupted]\n"));
-			    return;
-			}
-		    }
-		    else break;
-		}
-		else break;
-	    }
-	    else break;
-	}
-	
-	ENDBLOCKING;
-
-	if (addr)
-	{
-	    prepamigaaddr(rp_addr,hlen);
-	    put_long(addrlen,hlen);
-	}
-    }
-    else sb->resultval = -1;
-
-#ifdef TRACING_ENABLED
-    if (sb->resultval == -1)
-	TRACE(("failed (%d)\n",sb->sb_errno));
-    else
-	TRACE(("%d\n",sb->resultval));
-#endif
-
-#endif
 }
 
 void host_recvfrom(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 msg_in, uae_u32 len, uae_u32 flags, uae_u32 addr, uae_u32 addrlen) {
@@ -2870,6 +2724,9 @@ uae_u32 host_Inet_NtoA_real(TrapContext *context, struct socketbase *sb, uae_u32
   struct Library *SocketBase;
   char *addr;
 	uae_u32 scratchbuf;
+  uae_u32 hin;
+
+
   BSDLOG("======== %s -> %s ========\n", __FILE__,__func__);
 	BSDLOG("Inet_NtoA(%lx)\n",in);
 
@@ -2878,7 +2735,10 @@ uae_u32 host_Inet_NtoA_real(TrapContext *context, struct socketbase *sb, uae_u32
     return 0;
   }
 
-	if ((addr = Inet_NtoA(in)) != 0) {
+	hin = htonl(in);
+
+	if ((addr = Inet_NtoA(hin)) != 0) {
+
 		scratchbuf = m68k_areg (&regs, 6)+offsetof(struct UAEBSDBase, scratchbuf);
 		BSDLOG("addr: %s\n",addr);
 		strncpyha(scratchbuf, addr, SCRATCHBUFSIZE);
@@ -2942,7 +2802,7 @@ uae_u32 host_inet_addr_real(TrapContext *context, struct socketbase *sb, uae_u32
 	uae_u32 addr;
 	char *cp_rp;
 
-  BSDLOG("======== %s -> %s ========\n", __FILE__,__func__);
+  BSDLOG("======== %s ========\n", __func__);
 
   if(!(SocketBase=getsocketbase(sb))) {
     return 0;
@@ -2955,7 +2815,9 @@ uae_u32 host_inet_addr_real(TrapContext *context, struct socketbase *sb, uae_u32
 
 	addr = inet_addr(cp_rp);
   if(addr == INADDR_NONE) {
-    BSDLOG("ERROR: inet_addr(%s) returned -1 (INADDR_NONE)!\n");
+    BSDLOG("ERROR: inet_addr(%s) returned -1 (INADDR_NONE)!\n", cp_rp);
+    sb->sb_errno=errno;
+    return -1;
   }
 	addr = htonl(inet_addr(cp_rp));
 
@@ -3162,6 +3024,7 @@ void host_gethostbynameaddr_real(TrapContext *context, struct socketbase *sb, ua
 
   struct Library *SocketBase;
   char *name;
+  long net;
   struct hostent *h;
 	int size, numaliases = 0, numaddr = 0;
 	uae_u32 aptr;
@@ -3173,14 +3036,27 @@ void host_gethostbynameaddr_real(TrapContext *context, struct socketbase *sb, ua
     return;
   }
 
-  name = (char *) get_real_address(name68k);
-  BSDLOG("name: %s\n", name);
+  BSDLOG("addrtype: %lx\n", addrtype);
 
-  h=gethostbyname(name);
+  name = (char *) get_real_address(name68k);
+
+  if(addrtype==-1) {
+    /* gethostbyname */
+    BSDLOG("gethostbyname(%s)\n", name);
+
+    h=gethostbyname(name);
+  }
+  else {
+    BSDLOG("gethostbyaddr(%lx)\n", (ULONG) name);
+    h=gethostbyaddr(name, namelen, addrtype);
+  }
+
   BSDLOG("h: %lx\n", h);
   if(!h) {
-			sb->resultval = -1;
-      return;
+    BSDLOG("error: h is NULL\n");
+    sb->sb_errno=errno;
+    sb->resultval = -1;
+    return;
   }
 
   // compute total size of hostent
