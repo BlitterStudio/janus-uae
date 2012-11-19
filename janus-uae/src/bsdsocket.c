@@ -1327,8 +1327,8 @@ static uae_u32 REGPARAM2 bsdsocklib_init (TrapContext *context)
 {
     uae_u32 tmp1;
     int i;
-    write_log ("Creating UAE bsdsocket.library 4.1\n");
-    TRACE (("Creating UAE bsdsocket.library 4.1"));
+    write_log ("Creating UAE bsdsocket.library 4.53\n");
+    TRACE (("Creating UAE bsdsocket.library 4.53"));
     if (SockLibBase)
 	bsdlib_reset ();
 
@@ -1478,7 +1478,7 @@ void bsdlib_install (void)
     memset (sockpoolids, UNIQUE_ID, sizeof (sockpoolids));
 
     resname = ds ("bsdsocket.library");
-    resid = ds ("J-UAE bsdsocket.library 4.1");
+    resid = ds ("J-UAE bsdsocket.library 4.53");
 
     begin = here ();
     dw (0x4AFC);		/* RT_MATCHWORD */
@@ -1528,7 +1528,7 @@ void bsdlib_install (void)
     dw (0x0004);
     dw (0xD000);
     dw (0x0016);		/* LIB_REVISION */
-    dw (0x0001);
+    dw (0x0035);
     dw (0xC000);
     dw (0x0018);		/* LIB_IDSTRING */
     dl (resid);
