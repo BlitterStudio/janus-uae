@@ -39,20 +39,6 @@
 #define BSDLOG(...)     do { ; } while(0)
 #endif
 
-#if 0
-/* we get a JUAE_Sync_Launch_Message for a synchronous command  */
-struct JUAE_Sync_Launch_Message {
-  struct Message  ExecMessage;
-  ULONG           type;
-  STRPTR          ln_Name;
-  struct TagItem *tags;
-  void           *mempool;
-  ULONG           error;
-};
-#endif
-
-
-
 /***********************************************************
  * 
  * 
@@ -77,7 +63,7 @@ static void aros_bsdsocket_thread (void) {
     WaitPort(port);
     while( (msg = (struct JUAE_bsdsocket_Message *) GetMsg(port)) ) {
       BSDLOG("+++++++++++++++++++ got JUAE_bsdsocket_Message +++++++++++++++++++\n");
-      /* TODO */
+
       switch (msg->cmd) {
         case BSD_gethostbynameaddr:
           host_gethostbynameaddr_real((TrapContext *)msg->a, 
@@ -177,106 +163,8 @@ static void aros_bsdsocket_thread (void) {
       BSDLOG("ReplyMsg done\n");
     }
   }
-#if 0
-  BSDLOG("aros_bsdsocket_thread[%lx]: open port %s\n",thread, BSD_PORT_NAME);
-
-  port=CreateMsgPort();
-  if(!port) {
-    BSDLOG("aros_bsdsocket_thread[%lx]: ERROR: failed to open port \n",thread);
-    goto EXIT;
-  }
-
-  port->mp_Node.ln_Name = AllocVec(strlen(BSD_PORT_NAME)+1, MEMF_PUBLIC);
-  strcpy(port->mp_Node.ln_Name, BSD_PORT_NAME);
-  port->mp_Node.ln_Type = NT_MSGPORT;
-  port->mp_Node.ln_Pri  = 1; /* not too quick search */
-
-  Forbid();
-  if( !FindPort(port->mp_Node.ln_Name) ) {
-    AddPort(port);
-    Permit();
-    BSDLOG("aros_bsdsocket_thread[%lx]: new port %lx\n",thread, port);
-  }
-  else {
-    Permit();
-    BSDLOG("aros_bsdsocket_thread[%lx]: port was already open (other j-uae running?)\n",thread);
-    goto EXIT;
-  }
-
-
-  while(!done) {
-
-    WaitPort(port);
-    BSDLOG("aros_bsdsocket_thread[%lx]: WaitPort done\n",thread);
-    while( (msg = (struct JUAE_Sync_Launch_Message *) GetMsg(port)) ) {
-#if 0
-      BSDLOG("aros_bsdsocket_thread[%lx]: msg %lx received!\n", thread, msg);
-      BSDLOG("aros_bsdsocket_thread[%lx]: msg->ln_Name: >%s< \n", thread, msg->ln_Name);
-#endif
-      error=0;
-
-#if 0
-      switch (msg->type) {
-	case BSD_TYPE_DIE:
-	  done=TRUE;
-	  break;
-	case BSD_TYPE_BSD_ASYNC:
-	  amiga_exe=aros_path_to_amigaos(msg->ln_Name);
-	  if(amiga_exe) {
-	    /* store it for the launchd to fetch and execute */
-	    ObtainSemaphore(&sem_janus_launch_list);
-	    jlaunch=(JanusLaunch *) AllocVec(sizeof(JanusLaunch),MEMF_CLEAR);
-	    if(jlaunch) {
-	      jlaunch->type      =BSD_TYPE_BSD_ASYNC;
-	      jlaunch->amiga_path=amiga_exe;
-	      jlaunch->args      =NULL;
-	      janus_launch       =g_slist_append(janus_launch,jlaunch);
-	    }
-    
-	    ReleaseSemaphore(&sem_janus_launch_list);
-	    BSDLOG("aros_bsdsocket_thread[%lx]: uae_Signal(%lx, %lx)\n", thread, aos3_launch_task, aos3_launch_signal);
-	    uae_Signal(aos3_launch_task, aos3_launch_signal);
-	  }
-	  else {
-	    msg->error=ERROR_OBJECT_NOT_FOUND;
-	    BSDLOG(    "ERROR: not reachable from AmigaOS: %s\n", msg->ln_Name);
-	    write_log("ERROR: not reachable from AmigaOS: %s\n", msg->ln_Name);
-	  }
-	  break;
-	default:
-	  BSDLOG("aros_bsdsocket_thread[%lx]: unknown message type %d\n", msg->type);
-      }
-#endif
-
-      ReplyMsg ((struct Message *) msg);
-
-      if(error) {
-#if 0
-	    gui_message_with_title("ERROR",
-				   "Failed to start \"%s\".\n\nThis path is not available inside of amigaOS.\n\nYou need to add the AROS directory\n\n(or one of its parents)\n\nas an amigaOS device.\n\nBest way to do this is the \"Harddisk\" tab in the J-UAE GUI.", msg->ln_Name);
-#endif
-      }
-    }
-  }
-
-
-  BSDLOG("aros_bsdsocket_thread[%lx]: EXIT\n",thread);
-  /* remove port */
-  Forbid();
-  /* We hope, there are no messages waiting anymore.
-   * As this port is not really busy, this is not unlikely (hopefully).
-   * Worst case is, that we loose the memory of the waiting messages?
-   */
-  RemPort(port);
-  Permit();
-
-  if(port->mp_Node.ln_Name) {
-    FreeVec(port->mp_Node.ln_Name);
-  }
-  port=NULL;
-
-#endif
   /* end thread */
+
 EXIT:
   BSDLOG("aros_bsdsocket_thread[%lx]: dies..\n", thread);
 }
@@ -327,57 +215,4 @@ int aros_bsdsocket_start_thread (struct socketbase *sb) {
   return aros_launch_task != 0;
 }
 
-#if 0
-void aros_bsdsocket_kill_thread(struct socketbase *sb) {
 
-  BSDLOG("TODO: aros_bsdsocket_kill_thread(%lx) !\n", sb);
-  struct JUAE_Sync_Launch_Message  *die_msg;
-  struct Message                   *back_msg;
-  struct MsgPort                   *port;
-  struct MsgPort                   *back_port;
-
-  BSDLOG("aros_cli_kill_thread()\n");
-
-  if(!aros_cli_task) {
-    BSDLOG("no aos3 cli task\n");
-    return;
-  }
-
-  if(!FindPort((STRPTR) BSD_PORT_NAME)) {
-    BSDLOG("port %s not open\n", BSD_PORT_NAME);
-    return;
-  }
-
-  if(! ((back_port=CreateMsgPort() )) ) {
-    BSDLOG("ERROR: could not create message port!\n");
-    return;
-  }
-
-#if 0
-  die_msg=AllocVec(sizeof(struct JUAE_Sync_Launch_Message), MEMF_CLEAR);
-  if(die_msg) {
-    Forbid();
-    if(( port=FindPort((STRPTR) BSD_PORT_NAME))) {
-
-      ((struct Message *) die_msg)->mn_ReplyPort=back_port;
-      die_msg->type=BSD_TYPE_DIE;
-
-      BSDLOG("send DIE message to %s..\n", BSD_PORT_NAME);
-      PutMsg(port, die_msg); /* two way */
-
-      BSDLOG("wait for answer from %s ..\n", BSD_PORT_NAME);
-      back_msg=WaitPort(back_port);
-    }
-    Permit();
-    FreeVec(die_msg);
-  }
-#endif
-
-  if(back_port) {
-    DeleteMsgPort(back_port);
-    back_port=NULL;
-  }
-
-  BSDLOG("send DIE to %s done.\n", BSD_PORT_NAME);
-}
-#endif
