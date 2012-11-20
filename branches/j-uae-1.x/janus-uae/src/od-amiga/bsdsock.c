@@ -42,6 +42,8 @@
 #include <process.h>
 #include <aros/debug.h>
 
+#include <sys/ioctl.h>
+
 #include "options.h"
 #include "include/memory.h"
 #include "custom.h"
@@ -116,11 +118,14 @@ CRITICAL_SECTION SockThreadCS;
 
 #define SOCKVER_MAJOR 2
 #define SOCKVER_MINOR 2
+#endif
 
 #define SF_RAW_UDP 0x10000000
 #define SF_RAW_RAW 0x20000000
 #define SF_RAW_RUDP 0x08000000
 #define SF_RAW_RICMP 0x04000000
+
+#if 0
 
 typedef struct ip_option_information {
     u_char Ttl;		/* Time To Live (used for traceroute) */
@@ -716,6 +721,7 @@ int host_socket_real(struct socketbase *sb, int af, int type, int protocol) {
   int s;
   int sd;
   int flags;
+  unsigned long nonblocking = 1;
 
   BSDLOG("======== %s -> %s ========\n", __FILE__,__func__);
 
@@ -726,7 +732,7 @@ int host_socket_real(struct socketbase *sb, int af, int type, int protocol) {
   }
 
   if ((s = socket(af,type,protocol)) == INVALID_SOCKET) {
-    seterrno(sb, INVALID_SOCKET);
+    sb->sb_errno=errno;
     BSDLOG("INVALID_SOCKET\n");
     return -1;
   }
@@ -738,7 +744,7 @@ int host_socket_real(struct socketbase *sb, int af, int type, int protocol) {
   BSDLOG("s:  %d\n",s);
   BSDLOG("sd: %d\n",sd);
 
-  //ioctlsocket(s, FIONBIO, &nonblocking);
+  IoctlSocket(s, FIONBIO, &nonblocking);
   flags=fcntl(s, F_GETFL, 0);
   fcntl(s, F_SETFL, flags | O_NONBLOCK);
  
@@ -746,7 +752,7 @@ int host_socket_real(struct socketbase *sb, int af, int type, int protocol) {
 
 		if (protocol==IPPROTO_UDP) {
       BSDLOG("=> IPPROTO_UDP\n");
-	 		//sb->ftable[sd-1] |= SF_RAW_UDP;
+	 		sb->ftable[sd-1] |= SF_RAW_UDP;
     }
 		if (protocol==IPPROTO_ICMP) {
 			struct sockaddr_in sin;
@@ -759,7 +765,7 @@ int host_socket_real(struct socketbase *sb, int af, int type, int protocol) {
     }
  		if (protocol==IPPROTO_RAW) {
       BSDLOG("==> IPPROTO_RAW\n");
-	 		//sb->ftable[sd-1] |= SF_RAW_RAW;
+	 		sb->ftable[sd-1] |= SF_RAW_RAW;
     }
   }
 
@@ -2743,6 +2749,10 @@ uae_u32 host_inet_addr_real(TrapContext *context, struct socketbase *sb, uae_u32
     return 0;
   }
 
+  if (!addr_valid ("host_inet_addr", cp, 4)) {
+    return 0;
+  }
+
   BSDLOG("cp: %lx\n", cp);
 	cp_rp = (char *) get_real_address(cp);
 
@@ -2756,7 +2766,7 @@ uae_u32 host_inet_addr_real(TrapContext *context, struct socketbase *sb, uae_u32
   }
 	addr = htonl(inet_addr(cp_rp));
 
-	BSDLOG("inet_addr(%s) -> 0x%08lx\n",cp_rp,addr);
+	BSDLOG("inet_addr(%s) returns 0x%08lx\n", cp_rp,addr);
 
 	return addr;
 }
@@ -2940,7 +2950,7 @@ static unsigned int __stdcall thread_get(void *index2)
 void host_gethostbynameaddr_real(TrapContext *context, struct socketbase *sb, uae_u32 name68k, uae_u32 namelen, long addrtype) {
 
   struct Library *SocketBase;
-  char *name;
+  char *name="";
   long net;
   struct hostent *h;
 	int size, numaliases = 0, numaddr = 0;
@@ -2955,7 +2965,12 @@ void host_gethostbynameaddr_real(TrapContext *context, struct socketbase *sb, ua
 
   BSDLOG("addrtype: %lx\n", addrtype);
 
-  name = (char *) get_real_address(name68k);
+  if(addr_valid ("host_gethostbynameaddr", name, 1)) {
+    name = (char *) get_real_address(name68k);
+  }
+  else {
+    BSDLOG("ERROR: addr_valid is not valid!\n");
+  }
 
   if(addrtype==-1) {
     /* gethostbyname */
@@ -3208,7 +3223,7 @@ void host_gethostbynameaddr(TrapContext *context, struct socketbase *sb, uae_u32
 
 void host_getprotobyname_real(TrapContext *context, struct socketbase *sb, uae_u32 name) {
   struct Library *SocketBase;
-	char *name_rp;
+	char *name_rp="";
   struct protoent *p;
 
 	int size, numaliases = 0;
@@ -3223,7 +3238,9 @@ void host_getprotobyname_real(TrapContext *context, struct socketbase *sb, uae_u
 
   BSDLOG("entered(name %lx, sb %lx)\n", name, sb);
 
-	name_rp = (char *) get_real_address(name);
+  if (addr_valid ("host_gethostbynameaddr", name, 1)) {
+    name_rp = (char *) get_real_address(name);
+  }
 
 	BSDLOG("getprotobyname(%s)\n",name_rp);
 
@@ -3231,11 +3248,9 @@ void host_getprotobyname_real(TrapContext *context, struct socketbase *sb, uae_u
 
   if(!p) {
     BSDLOG("getprotobyname ERROR!\n");
-    sb->sb_errno=1;
-		seterrno(sb,1); /*???*/
+    sb->sb_errno=errno;
     return;
   }
-
 
   // compute total size of protoent
   size = 16;
@@ -3275,106 +3290,7 @@ void host_getprotobyname_real(TrapContext *context, struct socketbase *sb, uae_u
   BSDLOG("OK (%s, %lx)\n",p->p_name,p->p_proto);
   seterrno(sb,0);
 
-#if 0
-	args[0] = (uae_u32) sb;
-	args[1] = 1;
-	args[2] = name;
-	args[5] = (uae_u32) &buf[0];
-
-	for (i = 0; i < MAX_GET_THREADS; i++) 
-		{
-		if (threadGetargs[i] == -1)
-			{
-			threadGetargs[i] = 0;
-			}
-		if (hGetThreads[i] && !threadGetargs[i]) break;
-		}
-	if (i >= MAX_GET_THREADS)
-	{
-	    for (i = 0; i < MAX_GET_THREADS; i++)
-	    {
-		if (!hGetThreads[i])
-		{
-		    if ((hGetEvents[i] = CreateEvent(NULL,FALSE,FALSE,NULL)) == NULL || (hGetThreads[i] = (void *)THREAD(thread_get,i)) == NULL)
-		    {
-			hGetThreads[i] = 0;
-			write_log("BSDSOCK: ERROR - Thread/Event creation failed - error code: %d\n",GetLastError());
-			seterrno(sb,12);	// ENOMEM
-			sb->resultval = -1;
-			return;
-		    }
-		    break;
-		}
-	    }
-	}
-	
-	if (i >= MAX_GET_THREADS) write_log("BSDSOCK: ERROR - Too many getprotobyname()s\n");
-	else
-	{
-		bsdsetpriority (hGetThreads[i]);
-
-		threadGetargs[i] = (uae_u32 *)&args[0];
-
-		SetEvent(hGetEvents[i]);
-		}
-
-	sb->eintr = 0;
-	while ( threadGetargs[i] != 0 && sb->eintr == 0) 
-		{	
-		WAITSIGNAL;
-		if (sb->eintr == 1)
-			threadGetargs[i] = -1;
-		}
-
-	CANCELSIGNAL;
-
-
-	if (!sb->sb_errno)
-	{
-		p = (PROTOENT *)buf;
-
-		// compute total size of protoent
-		size = 16;
-		if (p->p_name != NULL) size += strlen(p->p_name)+1;
-
-		if (p->p_aliases != NULL)
-			while (p->p_aliases[numaliases]) size += strlen(p->p_aliases[numaliases++])+5;
-
-		if (sb->protoent)
-		{
-            uae_FreeMem( sb->protoent, sb->protoentsize );
-		}
-
-		sb->protoent = uae_AllocMem( size, 0 );
-
-		if (!sb->protoent)
-		{
-			write_log("BSDSOCK: WARNING - getprotobyname() ran out of Amiga memory (couldn't allocate %ld bytes) while returning result of lookup for '%s'\n",size,(char *)name);
-			seterrno(sb,12); // ENOMEM
-			return;
-		}
-
-		sb->protoentsize = size;
-		
-		aptr = sb->protoent+16+numaliases*4;
-	
-		// transfer protoent to Amiga memory
-		put_long(sb->protoent+4,sb->protoent+12);
-		put_long(sb->protoent+8,p->p_proto);
-		
-		for (i = 0; i < numaliases; i++) put_long(sb->protoent+12+i*4,addstr(&aptr,p->p_aliases[i]));
-		put_long(sb->protoent+12+numaliases*4,0);
-		put_long(sb->protoent,aptr);
-		addstr(&aptr,p->p_name);
-		TRACE(("OK (%s, %d)\n",p->p_name,p->p_proto));
-		seterrno(sb,0);
-	}
-	else
-	{
-		TRACE(("failed (%d)\n",sb->sb_errno));
-	}
-#endif
-
+  return;
 }
 
 
