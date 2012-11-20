@@ -86,6 +86,17 @@ addrbank *mem_banks[MEMORY_BANKS];
 uae_u8 *baseaddr[MEMORY_BANKS];
 #endif
 
+
+int addr_valid (char *txt, uaecptr addr, uae_u32 len) {
+
+	addrbank *ab = &get_mem_bank(addr);
+	if (ab == 0 || addr < 0x100 || len < 0 || len > 16777215 || !valid_address (addr, len)) {
+		write_log ("corrupt %s pointer %x (%d) detected!\n", txt, addr, len);
+		return 0;
+	}
+	return 1;
+}
+
 uae_u32 chipmem_mask, kickmem_mask, extendedkickmem_mask, bogomem_mask, a3000mem_mask;
 
 static int illegal_count;
