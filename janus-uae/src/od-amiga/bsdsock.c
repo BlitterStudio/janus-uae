@@ -607,7 +607,22 @@ static void prepamigaaddr(struct sockaddr *realpt, int len)
     *((char *)realpt) = len;
 }
 
-static ULONG execute_in_task(struct socketbase *sb, LONG cmd, ULONG a, ULONG b, ULONG c, ULONG d, ULONG e, ULONG f, ULONG g, ULONG h) {
+/****************************************************************************
+ * execute_in_task
+ *
+ * pack command an parameters in a JUAE_bsdsocket_Message and send the 
+ * message to the port of the process, which handles our sb. The process has
+ * opened its own native bsdsocket.library, so the right socket with
+ * the right socketbase in the right task should be used.
+ *
+ * I am creating a fresh MsgPort for the answer each time, as I could
+ * not get reusing it working at all. Might not be preformant..
+ *
+ ****************************************************************************/
+static ULONG execute_in_task(struct socketbase *sb, 
+                             LONG cmd, 
+                             ULONG a, ULONG b, ULONG c, ULONG d, ULONG e, ULONG f, ULONG g, ULONG h) {
+
   struct JUAE_bsdsocket_Message msg;
 
   sb->reply_port=CreateMsgPort();
@@ -631,10 +646,10 @@ static ULONG execute_in_task(struct socketbase *sb, LONG cmd, ULONG a, ULONG b, 
   WaitPort(sb->reply_port);
   BSDLOG("done!\n");
   DeleteMsgPort(sb->reply_port);
+  sb->reply_port=NULL;
 
   return msg.ret;
 }
-
 
 /*
  * host_dup2socket
@@ -3437,15 +3452,39 @@ void host_getservbynameport(TrapContext *context, struct socketbase *sb, uae_u32
 }
 
 
+uae_u32 host_gethostname_real(struct socketbase *sb, uae_u32 name, uae_u32 namelen) {
+  struct Library *SocketBase;
+  int ret;
 
-uae_u32 host_gethostname(uae_u32 name, uae_u32 namelen)
-{
-  BSDLOG("NOT YET IMPLEMENTED!\n");
-#if 0
-	return gethostname(get_real_address(name),namelen);
-#endif
+  BSDLOG("======== %s -> %s ========\n", __FILE__,__func__);
+  if(!(SocketBase=getsocketbase(sb))) {
+		seterrno(sb,1); /*???*/
+    return -1;
+  }
+
+  ret=gethostname((char *) get_real_address(name),namelen);
+
+  if(!ret) {
+    sb->sb_errno=errno;
+    BSDLOG("ERROR: %d\n", errno);
+  }
+  else {
+    BSDLOG("name: %s\n", get_real_address(name));
+  }
+
+  return ret;
 }
 
+
+
+uae_u32 host_gethostname(struct socketbase *sb, uae_u32 name, uae_u32 namelen) {
+
+  BSDLOG("======== %s ========\n",__func__);
+
+  return execute_in_task(sb, BSD_gethostname, 
+                         (ULONG) sb, (ULONG) name, (ULONG) namelen, 0, 0, 0, 0, 0);
+}
+  
 void host_getprotobynumber (TrapContext *context, struct socketbase *sb, uae_u32 any) {
   BSDLOG("NOT YET IMPLEMENTED!\n");
 }

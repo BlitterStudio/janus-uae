@@ -1028,7 +1028,8 @@ static uae_u32 REGPARAM2 bsdsocklib_recvmsg (TrapContext *context)
 
 static uae_u32 REGPARAM2 bsdsocklib_gethostname (TrapContext *context)
 {
-    return host_gethostname (m68k_areg (&context->regs, 0), m68k_dreg (&context->regs, 0));
+    struct socketbase *sb = get_socketbase (context);
+    return host_gethostname (sb, m68k_areg (&context->regs, 0), m68k_dreg (&context->regs, 0));
 }
 
 static uae_u32 REGPARAM2 bsdsocklib_gethostid (TrapContext *context)

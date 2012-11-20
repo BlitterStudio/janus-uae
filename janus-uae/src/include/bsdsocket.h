@@ -226,7 +226,7 @@ extern void host_getprotobyname (TrapContext *, SB, uae_u32);
 extern void host_getprotobynumber (TrapContext *, SB, uae_u32);
 extern uae_u32 host_vsyslog (void);
 extern uae_u32 host_Dup2Socket (void);
-extern uae_u32 host_gethostname (uae_u32, uae_u32);
+extern uae_u32 host_gethostname (struct socketbase *sb,uae_u32, uae_u32);
 
 
 extern void bsdlib_install (void);
@@ -251,6 +251,7 @@ void host_connect_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, 
 void host_sendto_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 msg, uae_u32 len, uae_u32 flags, uae_u32 to, uae_u32 tolen);
 void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 msg, uae_u32 len, uae_u32 flags, uae_u32 addr, uae_u32 addrlen);
 void aros_bsdsocket_kill_thread_real(struct socketbase *sb);
+uae_u32 host_gethostname_real(struct socketbase *sb, uae_u32 name, uae_u32 namelen);
 
 struct JUAE_bsdsocket_Message {
   struct Message  ExecMessage;
@@ -278,6 +279,7 @@ struct JUAE_bsdsocket_Message {
 #define BSD_CloseSocket      10
 #define BSD_dup2socket       11
 #define BSD_bind             12
+#define BSD_gethostname      13
 
 
 #define BSD_killme           -1
