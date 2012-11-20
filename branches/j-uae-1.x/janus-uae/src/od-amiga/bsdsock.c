@@ -651,8 +651,9 @@ static ULONG execute_in_task(struct socketbase *sb,
   return msg.ret;
 }
 
-/*
+/***********************************
  * host_dup2socket
+ ***********************************
  *
  * WARNING: this has never been tested.
  *
@@ -663,6 +664,7 @@ int host_dup2socket_real(struct socketbase *sb, int fd1, int fd2) {
   int s1,s2;
 
   BSDLOG("======== %s ========\n", __FILE__);
+  BSDLOG("NOT YET TESTED!\n");
 
   if(!(SocketBase=getsocketbase(sb))) {
     return -1;
@@ -704,6 +706,10 @@ int host_dup2socket(struct socketbase *sb, int fd1, int fd2) {
 
   return execute_in_task(sb, BSD_dup2socket, (ULONG) sb, (ULONG) fd1, (ULONG) fd2, 0,0,0,0,0);
 }
+
+/***********************************
+ * socket
+ ***********************************/
 
 int host_socket_real(struct socketbase *sb, int af, int type, int protocol) {
   struct Library *SocketBase;
@@ -814,6 +820,10 @@ int host_socket(struct socketbase *sb, int af, int type, int protocol)
 	return sd-1;
 }
 #endif
+
+/***********************************
+ * bind
+ ***********************************/
 
 uae_u32 host_bind_real(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen) {
   struct Library *SocketBase;
@@ -1238,6 +1248,9 @@ static unsigned int __stdcall sock_thread(void *blah)
 }
 #endif
 
+/***********************************
+ * connect
+ ***********************************/
 
 void host_connect_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 addr68k, uae_u32 addrlen) {
   struct Library *SocketBase;
@@ -1410,7 +1423,9 @@ void host_connect(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u
   return;
 }
 
-
+/***********************************
+ * sendto
+ ***********************************/
 
 void host_sendto_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 msg, uae_u32 len, uae_u32 flags, uae_u32 to, uae_u32 tolen) {
   struct Library *SocketBase;
@@ -1703,10 +1718,9 @@ void host_sendto(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u3
   return;
 }
 
-
-
-/* 
- * recvfrom 
+/***********************************
+ * recfrom
+ ***********************************
  *
  * If addr!=NULL, we have to fill in the results of the recv call there.
  * So len has to be the size of the struct sockaddr,
@@ -1816,6 +1830,10 @@ uae_u32 host_shutdown(struct socketbase *sb, uae_u32 sd, uae_u32 how)
     return -1;
 #endif
 }
+
+/***********************************
+ * setsockopt
+ ***********************************/
 
 void host_setsockopt_real(struct socketbase *sb, uae_u32 sd, uae_u32 level, uae_u32 optname, uae_u32 optval, uae_u32 len) {
 
@@ -1976,7 +1994,9 @@ void host_setsockopt(struct socketbase *sb, uae_u32 sd, uae_u32 level, uae_u32 o
   return;
 }
 
-
+/***********************************
+ * getsockopt
+ ***********************************/
 
 uae_u32 host_getsockopt(struct socketbase *sb, uae_u32 sd, uae_u32 level, uae_u32 optname, uae_u32 optval, uae_u32 optlen)
 {
@@ -2021,6 +2041,10 @@ uae_u32 host_getsockopt(struct socketbase *sb, uae_u32 sd, uae_u32 level, uae_u3
 	return -1;
 #endif
 }
+
+/***********************************
+ * getsockname
+ ***********************************/
 
 uae_u32 host_getsockname_real(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen) {
 
@@ -2071,42 +2095,57 @@ uae_u32 host_getsockname(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u3
                          (ULONG) 0, (ULONG) 0, (ULONG) 0);
 }
 
-
-uae_u32 host_getpeername(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen)
-{
-  BSDLOG("NOT YET IMPLEMENTED!\n");
-#if 0
-	SOCKET s;
-	int len;
+/***********************************
+ * getpeername
+ ***********************************/
+uae_u32 host_getpeername_real(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen) {
+  struct Library *SocketBase;
+  int s;
+  int len;
 	struct sockaddr *rp_name;
-	
+
+  BSDLOG("======== %s ========\n",__func__);
+  BSDLOG("NOT YET TESTED!\n");
+
+  if(!(SocketBase=getsocketbase(sb))) {
+    seterrno(sb, 1);
+    return -1; /* TODO!*/
+  }
+
 	sd++;
 	len = get_long(namelen);
 	
-	TRACE(("getpeername(%d,0x%lx,%d) -> ",sd,name,len));
+	BSDLOG("sd %d, name 0x%lx, len %d\n", sd, name, len);
 	
 	s = getsock(sb,sd);
 	
-	if (s != INVALID_SOCKET)
-	{
-		rp_name = (struct sockaddr *)get_real_address(name);
-		
-		if (getpeername(s,rp_name,&len))
-		{
-			SETERRNO;
-			TRACE(("failed (%d)\n",sb->sb_errno));
-		}
-		else
-		{
-			TRACE(("%d\n",len));
-			prepamigaaddr(rp_name,len);
-			put_long(namelen,len);
-			return 0;
-		}
-	}	
+	if (s == INVALID_SOCKET) {
+    BSDLOG("ERROR: INVALID_SOCKET\n");
+    return -1;
+  }
 
-	return -1;
-#endif
+  rp_name = (struct sockaddr *)get_real_address(name);
+		
+  if (getpeername(s,rp_name,&len)) {
+			sb->sb_errno=errno;
+			BSDLOG("ERROR: failed (%d)\n",sb->sb_errno);
+      return -1;
+  }
+  
+  BSDLOG("received len: %d\n",len);
+  prepamigaaddr(rp_name,len);
+  put_long(namelen,len);
+
+  return 0;
+}
+
+uae_u32 host_getpeername(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen) {
+
+  BSDLOG("======== %s ========\n",__func__);
+
+  return execute_in_task(sb, BSD_getpeername, 
+                         (ULONG) sb, (ULONG) sd, (ULONG) name, (ULONG) namelen, (ULONG) 0, 
+                         (ULONG) 0, (ULONG) 0, (ULONG) 0);
 }
 
 uae_u32 host_IoctlSocket(struct socketbase *sb, uae_u32 sd, uae_u32 request, uae_u32 arg)
@@ -2179,6 +2218,10 @@ uae_u32 host_IoctlSocket(struct socketbase *sb, uae_u32 sd, uae_u32 request, uae
 	return success;
 #endif
 }
+
+/***********************************
+ * CloseSocket
+ ***********************************/
 
 int host_CloseSocket(struct socketbase *sb, int sd) {
 
@@ -2623,6 +2666,10 @@ void host_WaitSelect(TrapContext *context, struct socketbase *sb, uae_u32 nfds, 
 #endif
 }
 
+/***********************************
+ * Inet_NtoA
+ ***********************************/
+
 uae_u32 host_Inet_NtoA_real(TrapContext *context, struct socketbase *sb, uae_u32 in) {
 
   struct Library *SocketBase;
@@ -2679,6 +2726,10 @@ uae_u32 host_Inet_NtoA(TrapContext *context, struct socketbase *sb, uae_u32 in) 
 
   return execute_in_task(sb, BSD_Inet_NtoA, (ULONG) context, (ULONG) sb, (ULONG) in, 0, 0, 0, 0, 0);
 }
+
+/***********************************
+ * inet_addr
+ ***********************************/
 
 uae_u32 host_inet_addr_real(TrapContext *context, struct socketbase *sb, uae_u32 cp) {
 
@@ -2882,7 +2933,9 @@ static unsigned int __stdcall thread_get(void *index2)
 }
 #endif
 
-
+/***********************************
+ * gethostbynameaddr
+ ***********************************/
 
 void host_gethostbynameaddr_real(TrapContext *context, struct socketbase *sb, uae_u32 name68k, uae_u32 namelen, long addrtype) {
 
@@ -3148,6 +3201,10 @@ void host_gethostbynameaddr(TrapContext *context, struct socketbase *sb, uae_u32
                   (ULONG) context, (ULONG) sb, (ULONG) name68k, (ULONG) namelen, (ULONG) addrtype, 0, 0, 0);
   return;
 }
+
+/***********************************
+ * getprotobyname
+ ***********************************/
 
 void host_getprotobyname_real(TrapContext *context, struct socketbase *sb, uae_u32 name) {
   struct Library *SocketBase;
@@ -3463,6 +3520,9 @@ void host_getservbynameport(TrapContext *context, struct socketbase *sb, uae_u32
 #endif
 }
 
+/***********************************
+ * gethostname
+ ***********************************/
 
 uae_u32 host_gethostname_real(struct socketbase *sb, uae_u32 name, uae_u32 namelen) {
   struct Library *SocketBase;

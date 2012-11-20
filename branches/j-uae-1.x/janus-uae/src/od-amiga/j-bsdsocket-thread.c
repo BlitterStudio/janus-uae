@@ -154,8 +154,12 @@ static void aros_bsdsocket_thread (void) {
                                          (uae_u32)msg->c,
                                          (uae_u32)msg->d);
           break;
-
-
+        case BSD_getpeername:
+          msg->ret=host_getpeername_real((struct socketbase *)msg->a,
+                                         (uae_u32)msg->b,
+                                         (uae_u32)msg->c,
+                                         (uae_u32)msg->d);
+          break;
 
 
         case BSD_killme:
