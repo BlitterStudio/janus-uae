@@ -2022,43 +2022,55 @@ uae_u32 host_getsockopt(struct socketbase *sb, uae_u32 sd, uae_u32 level, uae_u3
 #endif
 }
 
-uae_u32 host_getsockname(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen)
-{
-  BSDLOG("NOT YET IMPLEMENTED!\n");
-#if 0
+uae_u32 host_getsockname_real(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen) {
 
-	SOCKET s;
-	int len;
+  struct Library *SocketBase;
+  int s;
+  int len;
 	struct sockaddr *rp_name;
+
+  BSDLOG("======== %s ========\n",__func__);
+  BSDLOG("NOT YET TESTED!\n");
+
+  if(!(SocketBase=getsocketbase(sb))) {
+    seterrno(sb, 1);
+    return -1; /* TODO!*/
+  }
 
 	sd++;
 	len = get_long(namelen);
-	
-	TRACE(("getsockname(%d,0x%lx,%d) -> ",sd,name,len));
-	
-	s = getsock(sb,sd);
-	
-	if (s != INVALID_SOCKET)
-	{
-		rp_name = (struct sockaddr *)get_real_address(name);
-		
-		if (getsockname(s,rp_name,&len))
-		{
-			SETERRNO;
-			TRACE(("failed (%d)\n",sb->sb_errno));
-		}
-		else
-		{
-			TRACE(("%d\n",len));
-			prepamigaaddr(rp_name,len);
-			put_long(namelen,len);
-			return 0;
-		}
-	}	
+  BSDLOG("len: %d\n", len);
 
-	return -1;
-#endif
+	s = getsock(sb, sd);
+  if(s==INVALID_SOCKET) {
+    BSDLOG("ERROR: could not get socket!\n");
+    return -1;
+  }
+
+  rp_name = (struct sockaddr *) get_real_address(name);
+
+  if (getsockname(s, rp_name, &len)) {
+    sb->sb_errno=errno;
+    BSDLOG("ERROR: failed (%d)\n", sb->sb_errno);
+    return -1;
+  }
+  
+  BSDLOG("result len: %d\n", len);
+  prepamigaaddr(rp_name, len);
+  put_long(namelen, len);
+
+  return 0;
 }
+
+uae_u32 host_getsockname(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen) {
+
+  BSDLOG("======== %s ========\n",__func__);
+
+  return execute_in_task(sb, BSD_setsockopt, 
+                         (ULONG) sb, (ULONG) sd, (ULONG) name, (ULONG) namelen, (ULONG) 0, 
+                         (ULONG) 0, (ULONG) 0, (ULONG) 0);
+}
+
 
 uae_u32 host_getpeername(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen)
 {
@@ -3456,7 +3468,9 @@ uae_u32 host_gethostname_real(struct socketbase *sb, uae_u32 name, uae_u32 namel
   struct Library *SocketBase;
   int ret;
 
-  BSDLOG("======== %s -> %s ========\n", __FILE__,__func__);
+  BSDLOG("======== %s ========\n", __func__);
+  BSDLOG("NOT YET TESTED!\n");
+
   if(!(SocketBase=getsocketbase(sb))) {
 		seterrno(sb,1); /*???*/
     return -1;
@@ -3475,8 +3489,6 @@ uae_u32 host_gethostname_real(struct socketbase *sb, uae_u32 name, uae_u32 namel
   return ret;
 }
 
-
-
 uae_u32 host_gethostname(struct socketbase *sb, uae_u32 name, uae_u32 namelen) {
 
   BSDLOG("======== %s ========\n",__func__);
@@ -3488,7 +3500,6 @@ uae_u32 host_gethostname(struct socketbase *sb, uae_u32 name, uae_u32 namelen) {
 void host_getprotobynumber (TrapContext *context, struct socketbase *sb, uae_u32 any) {
   BSDLOG("NOT YET IMPLEMENTED!\n");
 }
-#endif
 
 void aros_bsdsocket_kill_thread(struct socketbase *sb) {
 
@@ -3521,4 +3532,4 @@ void aros_bsdsocket_kill_thread_real(struct socketbase *sb) {
   BSDLOG("SocketBase closed, mempool deleted\n");
 }
 
-
+#endif /* BSDSOCKET */
