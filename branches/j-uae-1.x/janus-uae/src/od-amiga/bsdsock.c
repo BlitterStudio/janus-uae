@@ -612,6 +612,28 @@ static void prepamigaaddr(struct sockaddr *realpt, int len)
     *((char *)realpt) = len;
 }
 
+/* debug */
+static void debug_socket(struct socketbase *sb, int s) {
+  struct Library *SocketBase;
+  struct sockaddr_in debug_sockaddr;
+  socklen_t debug_len;
+
+  if(!(SocketBase=getsocketbase(sb))) {
+    return;
+  }
+
+  debug_len=sizeof(struct sockaddr_in);
+
+  if(getpeername(s, &debug_sockaddr, &debug_len)==-1) {
+    BSDLOG("WARNING: getpeername on socket %d failed with errno %d ..\n", s, errno);
+    
+  }
+  else {
+     BSDLOG("socket %d Peer's IP address is: %s\n", s, inet_ntoa(debug_sockaddr.sin_addr));
+     BSDLOG("socket %d Peer's port is: %d\n", s, (int) ntohs(debug_sockaddr.sin_port));
+  }
+}
+
 /****************************************************************************
  * execute_in_task
  *
@@ -712,6 +734,7 @@ int host_dup2socket(struct socketbase *sb, int fd1, int fd2) {
   return execute_in_task(sb, BSD_dup2socket, (ULONG) sb, (ULONG) fd1, (ULONG) fd2, 0,0,0,0,0);
 }
 
+
 /***********************************
  * socket
  ***********************************/
@@ -731,9 +754,18 @@ int host_socket_real(struct socketbase *sb, int af, int type, int protocol) {
     return -1;
   }
 
-  if ((s = socket(af,type,protocol)) == INVALID_SOCKET) {
+  {
+    /* debug */
+    struct protoent *p;
+    if(protocol >0) {
+      p=getprotobynumber(protocol);
+      BSDLOG("protocol: %s\n", p->p_name);
+    }
+  }
+
+  if ((s = socket(af, type, protocol)) == INVALID_SOCKET) {
     sb->sb_errno=errno;
-    BSDLOG("INVALID_SOCKET\n");
+    BSDLOG("ERROR: could not open socket: %d\n", sb->sb_errno);
     return -1;
   }
 
@@ -744,9 +776,21 @@ int host_socket_real(struct socketbase *sb, int af, int type, int protocol) {
   BSDLOG("s:  %d\n",s);
   BSDLOG("sd: %d\n",sd);
 
-  IoctlSocket(s, FIONBIO, &nonblocking);
-  flags=fcntl(s, F_GETFL, 0);
-  fcntl(s, F_SETFL, flags | O_NONBLOCK);
+  if(0) {
+    /* the type argument may serve a second purpose: 
+     * in addition to specifying a socket type, it may include 
+     * the bitwise OR of any of the following values, to modify the behavior of socket():
+     * SOCK_NONBLOCK   Set the O_NONBLOCK file status flag on the new open file description.  
+     * SOCK_CLOEXEC    Set the close-on-exec (FD_CLOEXEC) flag on the new file descriptor.  
+     *
+     * But I am not sure, why WinUAE does this. Should not be necessary, as native 
+     * socket connect should have cared already ..
+     */
+    BSDLOG("WARNING: we set port to nonblocking, NOT TESTED!\n");
+    IoctlSocket(s, FIONBIO, (char *) &nonblocking);
+    flags=fcntl(s, F_GETFL, 0);
+    fcntl(s, F_SETFL, flags | O_NONBLOCK);
+  }
  
 	if (type == SOCK_RAW) {
 
@@ -1311,7 +1355,16 @@ void host_connect_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, 
   BSDLOG("port2: %lx\n", addr[2]);
 
 
-  BSDLOG("connecting..\n");
+  {
+    /* debug 
+     * check, if all arguments are in right byte order!
+     */
+    char *debug_ip=inet_ntoa(sin.sin_addr);
+    //BSDLOG("socket %d: Peer IP address is: %s\n", s, debug_ip);
+    //BSDLOG("socket %d: Peer's port is: %d\n", s, (int) ntohs(sin.sin_port));
+    BSDLOG("connecting to %s:%d ..\n", debug_ip, (int) ntohs(sin.sin_port));
+  }
+ 
 
   sb->resultval=connect(s, (struct sockaddr *) &sin, sin.sin_len);
 
@@ -1436,8 +1489,11 @@ void host_connect(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u
 void host_sendto_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 msg, uae_u32 len, uae_u32 flags, uae_u32 to, uae_u32 tolen) {
   struct Library *SocketBase;
   int s; 
-  void *realmsg;
+  char *realmsg;
+  char *send_realmsg;
+  int send_len;
   char buf[MAXADDRLEN];
+  int iCut;
 
   BSDLOG("======== %s -> %s ========\n", __FILE__,__func__);
 
@@ -1462,7 +1518,7 @@ void host_sendto_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, u
     return;
   }
 
-  realmsg = get_real_address(msg);
+  realmsg = (char *) get_real_address(msg);
   BSDLOG("realmsg: %lx\n", realmsg);
   if (to) {
     if (tolen > sizeof buf) {
@@ -1477,15 +1533,109 @@ void host_sendto_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, u
   }
 
 
-  BSDLOG("calling sendto..\n");
-  sb->resultval=sendto(s, realmsg, len, flags, (const struct sockaddr *) buf, tolen);
+  if (sb->ftable[sd-1] & SF_RAW_RAW) {
+    BSDLOG("switch to SF_RAW_RAW\n");
 
-  if(sb->resultval == -1) {
-    BSDLOG("SOCKET_ERROR!\n");
+    if (*(realmsg+9) == 0x1) { // ICMP
+      struct sockaddr_in sin;
+
+      BSDLOG("ICMP (RAW 0x1\n)");
+      shutdown(s,1);
+      CloseSocket(s);
+      s = socket(AF_INET,SOCK_RAW, IPPROTO_ICMP);
+
+      sin.sin_family = AF_INET;
+      sin.sin_addr.s_addr = INADDR_ANY;
+      sin.sin_port = (unsigned short) (*(realmsg+21)&0xff)*256 + (unsigned short) (*(realmsg+20)&0xff);
+      bind(s,(struct sockaddr *)&sin,sizeof(sin)) ;
+
+      sb->dtable[sd-1] = s;
+      sb->ftable[sd-1]&= ~SF_RAW_RAW;
+      sb->ftable[sd-1]|= SF_RAW_RICMP;
+    }
+
+    if (*(realmsg+9) == 0x11) { // UDP
+      struct sockaddr_in sin;
+
+      BSDLOG("UDP (RAW 0x11)\n");
+      shutdown(s,1);
+      CloseSocket(s);
+      s = socket(AF_INET,SOCK_RAW,IPPROTO_UDP);
+
+      sin.sin_family = AF_INET;
+      sin.sin_addr.s_addr = INADDR_ANY;
+      sin.sin_port = (unsigned short) (*(realmsg+21)&0xff)*256 + (unsigned short) (*(realmsg+20)&0xff);
+      bind(s,(struct sockaddr *)&sin,sizeof(sin)) ;
+
+      sb->dtable[sd-1] = s;
+      sb->ftable[sd-1]&= ~SF_RAW_RAW;
+      sb->ftable[sd-1]|= SF_RAW_RUDP;
+    }
   }
-  else {
-    BSDLOG("sendto ok!\n");
-  }
+
+//  for(;;) {
+    //send_realmsg=realmsg;
+    //send_len=len;
+
+#if 0
+    if (sb->ftable[sd - 1] & SF_RAW_UDP) {
+      *(buf+2) = *(realmsg+2);
+      *(buf+3) = *(realmsg+3);
+      // Copy DST-Port
+      iCut = 8;
+      send_realmsg += iCut;
+      send_len -= iCut;
+    }
+    if (sb->ftable[sd - 1] & SF_RAW_RUDP) {
+      int iTTL;
+      iTTL = (int) *(realmsg+8)&0xff;
+      setsockopt(s,IPPROTO_IP,4,(char*) &iTTL,sizeof(iTTL));
+      *(buf+2) = *(realmsg+22);
+      *(buf+3) = *(realmsg+23);
+      // Copy DST-Port
+      iCut = 28;
+      send_realmsg += iCut;
+      send_len -= iCut;
+    }
+    if (sb->ftable[sd - 1] & SF_RAW_RICMP) {
+      int iTTL;
+      iTTL = (int) *(realmsg+8)&0xff;
+      setsockopt(s,IPPROTO_IP,4,(char*) &iTTL,sizeof(iTTL));
+      iCut = 20;
+      send_realmsg += iCut;
+      send_len -= iCut;
+    }
+#endif
+
+    
+    BSDLOG("calling sendto..\n");
+    sb->resultval=sendto(s, realmsg, len, flags, (const struct sockaddr *) buf, tolen);
+
+#if 0
+    if ((sb->ftable[sd - 1] & SF_RAW_UDP) || (sb->ftable[sd - 1] & SF_RAW_RUDP) || (sb->ftable[sd-1] & SF_RAW_RICMP)) {
+      sb->resultval += iCut;
+    }
+    if (sb->resultval == -1) {
+      if (sb->sb_errno != WSAEWOULDBLOCK - WSABASEERR || !(sb->ftable[sd - 1] & SF_BLOCKING))
+        break;
+    } else {
+      realpt += sb->resultval;
+      len -= sb->resultval;
+      if (len <= 0)
+        break;
+      else
+        continue;
+    }
+#endif
+
+
+    if(sb->resultval == -1) {
+      BSDLOG("SOCKET_ERROR!\n");
+    }
+    else {
+      BSDLOG("sendto ok!\n");
+    }
+  //}
 
   BSDLOG("left: characters sent: %d\n", sb->resultval);
 
@@ -1884,11 +2034,11 @@ void host_setsockopt_real(struct socketbase *sb, uae_u32 sd, uae_u32 level, uae_
      * When it is enabled, the packet must contain an IP header. 
      * For receiving the IP header is always included in the packet. 
      */
-    BSDLOG("Warning: IP_HDRINCL might NOT be implemented!\n");
+    BSDLOG("WARNING: IP_HDRINCL might NOT be implemented!\n");
   }
 
 	if (level == SOL_SOCKET && optname == SO_LINGER) {
-    BSDLOG("Warning: SOL_SOCKET && SO_LINGER is TODO!\n");
+    BSDLOG("WARNING: SOL_SOCKET && SO_LINGER is TODO!\n");
 	    //((LINGER *)buf)->l_onoff = get_long(optval);
 	    //((LINGER *)buf)->l_linger = get_long(optval+4);
 	}
@@ -1909,7 +2059,7 @@ void host_setsockopt_real(struct socketbase *sb, uae_u32 sd, uae_u32 level, uae_
 
   /* handle SO_EVENTMASK */
 	if (level == 0xffff && optname == 0x2001) {
-    BSDLOG("Warning: SO_EVENTMASK is TODO!\n");
+    BSDLOG("WARNING: SO_EVENTMASK is TODO!\n");
   }
  
   BSDLOG("call setsockopt(s %d, level %lx, optname %lx, buf 0x%lx, len %d)\n", s, level, optname, buf,len);
@@ -1917,76 +2067,11 @@ void host_setsockopt_real(struct socketbase *sb, uae_u32 sd, uae_u32 level, uae_
 
   if(sb->resultval) {
     BSDLOG("ERROR!\n");
+    sb->sb_errno=errno;
   }
 
   BSDLOG("result: %d\n", sb->resultval);
-
-#if 0
-    SOCKET s;
-    char buf[MAXADDRLEN];
-
-    TRACE(("setsockopt(%d,%d,0x%lx,0x%lx,%d) -> ",sd,(short)level,optname,optval,len));
-	sd++;
-    s = getsock(sb,sd);
-
-    if (s != INVALID_SOCKET)
-    {
-	if (len > sizeof buf)
-	{
-	    write_log("BSDSOCK: WARNING - Excessive optlen in setsockopt() (%d)\n",len);
-	    len = sizeof buf;
-	}	
-	if (level == IPPROTO_IP && optname == 2)
-		{ // IP_HDRINCL emulated by icmp.dll
-		sb->resultval = 0;
-		return;
-		}
-	if (level == SOL_SOCKET && optname == SO_LINGER)
-	{
-	    ((LINGER *)buf)->l_onoff = get_long(optval);
-	    ((LINGER *)buf)->l_linger = get_long(optval+4);
-	}
-	else
-	{
-	    if (len == 4) *(long *)buf = get_long(optval);
-	    else if (len == 2) *(short *)buf = get_word(optval);
-	    else write_log("BSDSOCK: ERROR - Unknown optlen (%d) in setsockopt(%d,%d)\n",level,optname);
-	}
-
-	// handle SO_EVENTMASK
-	if (level == 0xffff && optname == 0x2001)
-	{
-	    long wsbevents = 0;
-	    uae_u32 eventflags = get_long(optval);
-
-	    sb->ftable[sd-1] = (sb->ftable[sd-1] & ~REP_ALL) | (eventflags & REP_ALL);
-
-	    if (eventflags & REP_ACCEPT) wsbevents |= FD_ACCEPT;
-	    if (eventflags & REP_CONNECT) wsbevents |= FD_CONNECT;
-	    if (eventflags & REP_OOB) wsbevents |= FD_OOB;
-	    if (eventflags & REP_READ) wsbevents |= FD_READ;
-	    if (eventflags & REP_WRITE) wsbevents |= FD_WRITE;
-	    if (eventflags & REP_CLOSE) wsbevents |= FD_CLOSE;
-	    
-	    if (sb->mtable[sd-1] || (sb->mtable[sd-1] = allocasyncmsg(sb,sd,s)))
-	    {
-		    WSAAsyncSelect(s,hWndSelector ? hAmigaWnd : hSockWnd,sb->mtable[sd-1],wsbevents);
-		    sb->resultval = 0;
-	    }
-	    else sb->resultval = -1;
-	}
-	else sb->resultval = setsockopt(s,level,optname,buf,len);
-		
-	if (!sb->resultval)
-	{
-	    TRACE(("OK\n"));
-	    return;
-	}
-	else SETERRNO;
-		
-	TRACE(("failed (%d)\n",sb->sb_errno));
-    }
-#endif
+  return;
 }
 
 void host_setsockopt(struct socketbase *sb, uae_u32 sd, uae_u32 level, uae_u32 optname, uae_u32 optval, uae_u32 len) {
@@ -2701,7 +2786,7 @@ uae_u32 host_Inet_NtoA_real(TrapContext *context, struct socketbase *sb, uae_u32
 		strncpyha(scratchbuf, addr, SCRATCHBUFSIZE);
 		return scratchbuf;
   }
-	seterrno(sb, 1);
+	sb->sb_errno=errno;
   return 0;
 	
 #if 0
