@@ -194,11 +194,11 @@ static void new_aros_screen(JanusScreen *jscreen) {
 	if( (arosscr->Width != (UWORD) get_word(aos3screen+12)) ||
 	    (arosscr->Height!= (UWORD) get_word(aos3screen+14)) ) {
 
+    UnlockIBase(lock);
+    JWLOG("UnlockIBase done.\n");
+
 	  write_log("AROS Wanderer and AmigaOS Workbench Screen need to have the same size! Switching coherency off, sorry.\n");
 	  JWLOG("AROS Wanderer and AmigaOS Workbench Screen need to have the same size! Switching coherency off, sorry.\n");
-
-  	  JWLOG("UnlockIBase\n");
-  	  UnlockIBase(lock);
 
 	  switch_off_coherence();
 	  gui_message_with_title ("Sorry", "Your AmigaOS Workbench resolution does not\n\nmatch you AROS Wanderer resolution (%d,%d)\n\nSo I had to switch off coherency.", arosscr->Width, arosscr->Height);
