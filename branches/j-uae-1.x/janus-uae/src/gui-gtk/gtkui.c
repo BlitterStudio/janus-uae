@@ -2709,6 +2709,7 @@ static void create_guidlg (void) {
 
     gui_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title (GTK_WINDOW (gui_window), PACKAGE_NAME " control: Hot Key = <ctrl alt j>");
+    gtk_mui_application_icon("PROGDIR:janus-uae");
     gtk_signal_connect (GTK_OBJECT(gui_window), "delete_event", GTK_SIGNAL_FUNC(did_guidlg_delete), NULL);
     gtk_signal_connect (GTK_MUI(gui_window), "commodity-show", GTK_SIGNAL_FUNC(guidlg_show), NULL);
 
