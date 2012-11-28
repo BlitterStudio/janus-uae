@@ -110,7 +110,7 @@ BOOL Prefs_ImportFH(BPTR fh)
 
                 if (error < 0)
                 {
-                    printf("Error: ReadChunkBytes() returned %ld!\n", error);
+                    fprintf(stderr, "error: ReadChunkBytes() returned %ld!\n", error);
                 }
                 else
                 {
@@ -124,13 +124,13 @@ BOOL Prefs_ImportFH(BPTR fh)
             }
             else
             {
-                printf("ParseIFF() failed, returncode %ld!\n", error);
+                fprintf(stderr, "error: ParseIFF() failed, returncode %ld!\n", error);
                 success = FALSE;
             }
         }
         else
         {
-            printf("StopChunk() failed, returncode %ld!\n", error);
+            fprintf(stderr, "error: StopChunk() failed, returncode %ld!\n", error);
             success = FALSE;
         }
 
@@ -159,6 +159,11 @@ BOOL Prefs_Write(BPTR fh, WORD width, WORD height, WORD depth)
 
     id=BestModeID(BIDTAG_DesiredWidth, width,
                    BIDTAG_DesiredHeight, height);
+
+    if(id == INVALID_ID) {
+      fprintf(stderr, "error: Resolution %dx%d not supported in the 68k environment", width, height);
+      return FALSE;
+    }
 
     CopyMemQuick(screenmodeprefs.smp_Reserved, saveprefs.smp_Reserved, sizeof(screenmodeprefs.smp_Reserved));
     saveprefs.smp_DisplayID =id; 
@@ -190,7 +195,7 @@ BOOL Prefs_Write(BPTR fh, WORD width, WORD height, WORD depth)
 
             if (error != 0) // TODO: We need some error checking here!
             {
-                printf("error: PushChunk() = %ld ", error);
+                fprintf(stderr, "error: PushChunk() = %ld ", error);
             }
 
             error = WriteChunkBytes(handle, &saveprefs, sizeof(struct ScreenModePrefs));
@@ -198,7 +203,7 @@ BOOL Prefs_Write(BPTR fh, WORD width, WORD height, WORD depth)
 
             if (error != 0) // TODO: We need some error checking here!
             {
-                printf("error: PopChunk() = %ld ", error);
+                fprintf(stderr, "error: PopChunk() = %ld ", error);
             }
 
             // Terminate the FORM
@@ -279,30 +284,30 @@ int main(int argc, char **argv) {
   }
 
   if (!(GfxBase = (struct GfxBase *) OpenLibrary ("graphics.library", 0L))) {
-    printf("unable to open graphics.library!\n");
+    fprintf(stderr, "error: Unable to open graphics.library!\n");
     goto EXIT;
   }
 
   if (!(IntuitionBase = (struct IntuitionBase *) OpenLibrary ("intuition.library", 0L))) {
-    printf("unable to open intuition.library!\n");
+    fprintf(stderr, "error: Unable to open intuition.library!\n");
     goto EXIT;
   }
 
   if (!(IFFParseBase = OpenLibrary ("iffparse.library", 0L))) {
-    printf("unable to open iffparse.library!\n");
+    fprintf(stderr, "error: Unable to open iffparse.library!\n");
     goto EXIT;
   }
 
   command_mem=AllocVec(AD__MAXMEM, MEMF_CLEAR);
   if(!command_mem) {
-    printf("unable to allocate memory!\n");
+    fprintf(stderr, "error: Unable to allocate memory!\n");
     goto EXIT;
   }
 
   calltrap (AD_GET_JOB, AD_GET_JOB_HOST_DATA, command_mem);
 
   if(command_mem[0] == (ULONG) -1) {
-    printf("could not get host screen resolution!\n");
+    fprintf(stderr, "error: Could not get host screen resolution!\n");
     goto EXIT;
   }
 
@@ -314,15 +319,20 @@ int main(int argc, char **argv) {
   }
 
   if(!Prefs_Load(PREFS_PATH_ENVARC)) {
-    printf("Unable to load old prefs file.\n");
-    exit(1);
+    fprintf(stderr, "error: Unable to load old prefs file.\n");
+    goto EXIT;
   }
 
-  fh = Open(PREFS_PATH_ENVARC, MODE_NEWFILE);
+  fh = Open(prefsname, MODE_NEWFILE);
 
-  Prefs_Write(fh, command_mem[0], command_mem[1], command_mem[2]);
-
-  err=0;
+  if(fh) {
+    if( Prefs_Write(fh, command_mem[0], command_mem[1], command_mem[2]) ) {
+      err=0;
+    }
+  }
+  else {
+    fprintf(stderr, "error: Unable to write to %s\n", prefsname);
+  }
 
 EXIT:
 
