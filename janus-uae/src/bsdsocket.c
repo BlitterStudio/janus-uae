@@ -325,23 +325,24 @@ static uae_u32 REGPARAM2 bsdsock_int_handler (TrapContext *context)
     return 0;
 }
 
-void waitsig (TrapContext *context, SB)
-{
-    long sigs;
-    m68k_dreg (&context->regs, 0) = (((uae_u32) 1) << sb->signal) | sb->eintrsigs;
+void waitsig (TrapContext *context, SB) {
 
-    if ((sigs = CallLib (context, get_long (4), -0x13e)) & sb->eintrsigs) {
-	sockabort (sb);
-	bsdsocklib_seterrno (sb, 4);	/* EINTR */
+  long sigs;
+  m68k_dreg (&context->regs, 0) = (((uae_u32) 1) << sb->signal) | sb->eintrsigs;
 
-	// Set signal
-	m68k_dreg (&context->regs, 0) = sigs;
-	m68k_dreg (&context->regs, 1) = sb->eintrsigs;
-	sigs = CallLib (context, get_long (4), -0x132);	/* SetSignal() */
+  if ((sigs = CallLib (context, get_long (4), -0x13e)) & sb->eintrsigs) { /* Wait(signalset in d0) */
+    sockabort (sb);
+    bsdsocklib_seterrno (sb, 4);	/* EINTR */
 
-	sb->eintr = 1;
-    } else
-	sb->eintr = 0;
+    // Set signal
+    m68k_dreg (&context->regs, 0) = sigs;           /* new signals */
+    m68k_dreg (&context->regs, 1) = sb->eintrsigs;  /* signal Mask */
+    sigs = CallLib (context, get_long (4), -0x132);	/* SetSignal() */
+
+    sb->eintr = 1;
+  } else {
+    sb->eintr = 0;
+  }
 }
 
 void cancelsig (TrapContext *context, SB)
@@ -369,7 +370,7 @@ static struct socketbase *alloc_socketbase (TrapContext *context) {
     sb->ownertask = gettask (context);
 
     m68k_dreg (&context->regs, 0) = -1;
-    sb->signal = CallLib (context, get_long (4), -0x14A);
+    sb->signal = CallLib (context, get_long (4), -0x14A); /* AllocSignal */
 
     DebOut("sb: %lx\n", sb);
 

@@ -259,6 +259,7 @@ uae_u32 host_getpeername_real(struct socketbase *sb, uae_u32 sd, uae_u32 name, u
 struct JUAE_bsdsocket_Message {
   struct Message  ExecMessage;
   LONG            cmd;
+  LONG            block;
   ULONG           a;
   ULONG           b;
   ULONG           c;
