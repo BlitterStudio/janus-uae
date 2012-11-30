@@ -815,57 +815,61 @@ uae_u32 bsdthr_SendRecvAcceptConnect (uae_u32 (*tryfunc)(SB), SB)
 
 uae_u32 bsdthr_blockingstuff (uae_u32 (*tryfunc)(SB), SB)
 {
-    int done = 0, foo;
-    long flags;
-    int nonblock;
-    if ((flags = fcntl (sb->s, F_GETFL)) == -1)
-	flags = 0;
-    nonblock = (flags & O_NONBLOCK);
-    fcntl (sb->s, F_SETFL, flags | O_NONBLOCK);
-    while (!done) {
-	done = 1;
-	foo = tryfunc (sb);
-	if (foo < 0 && !nonblock) {
-	    if ((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINPROGRESS)) {
-		fd_set readset, writeset, exceptset;
-		int maxfd = (sb->s > sb->sockabort[0]) ? sb->s : sb->sockabort[0];
-		int num;
+  int done = 0, foo;
+  long flags;
+  int nonblock;
+  if ((flags = fcntl (sb->s, F_GETFL)) == -1)
+    flags = 0;
+  nonblock = (flags & O_NONBLOCK);
+  fcntl (sb->s, F_SETFL, flags | O_NONBLOCK);
 
-		FD_ZERO (&readset);
-		FD_ZERO (&writeset);
-		FD_ZERO (&exceptset);
+  while (!done) {
+    done = 1;
+    foo = tryfunc (sb);
+    if (foo < 0 && !nonblock) {
+      if ((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINPROGRESS)) {
+        fd_set readset, writeset, exceptset;
+        int maxfd = (sb->s > sb->sockabort[0]) ? sb->s : sb->sockabort[0];
+        int num;
 
-		if (sb->action == 3 || sb->action == 6)
-		    FD_SET (sb->s, &readset);
-		if (sb->action == 2 || sb->action == 1 || sb->action == 4)
-		    FD_SET (sb->s, &writeset);
-		FD_SET (sb->sockabort[0], &readset);
+        FD_ZERO (&readset);
+        FD_ZERO (&writeset);
+        FD_ZERO (&exceptset);
+        
+        if (sb->action == 3 || sb->action == 6)
+            FD_SET (sb->s, &readset);
 
-		num = select (maxfd + 1, &readset, &writeset, &exceptset, NULL);
-		if (num == -1) {
-		    DEBUG_LOG ("Blocking select(%d) returns -1,errno is %d\n", sb->sockabort[0],errno);
-		    fcntl (sb->s, F_SETFL, flags);
-		   return -1;
-		}
+        if (sb->action == 2 || sb->action == 1 || sb->action == 4)
+            FD_SET (sb->s, &writeset);
 
-		if (FD_ISSET (sb->sockabort[0], &readset) || FD_ISSET (sb->sockabort[0], &writeset)) {
-		    /* reset sock abort pipe */
-		    /* read from the pipe to reset it */
-		    DEBUG_LOG ("select aborted from signal\n");
+        FD_SET (sb->sockabort[0], &readset);
 
-		    clearsockabort (sb);
-		    DEBUG_LOG ("Done read\n");
-		    errno = EINTR;
-		    done = 1;
-		} else {
-		    done = 0;
-		}
-	    } else if (errno == EINTR)
-		done = 1;
-	}
+        num = select (maxfd + 1, &readset, &writeset, &exceptset, NULL);
+        if (num == -1) {
+            DEBUG_LOG ("Blocking select(%d) returns -1,errno is %d\n", sb->sockabort[0],errno);
+            fcntl (sb->s, F_SETFL, flags);
+            return -1;
+        }
+
+        if (FD_ISSET (sb->sockabort[0], &readset) || FD_ISSET (sb->sockabort[0], &writeset)) {
+            /* reset sock abort pipe */
+            /* read from the pipe to reset it */
+            DEBUG_LOG ("select aborted from signal\n");
+
+            clearsockabort (sb);
+            DEBUG_LOG ("Done read\n");
+            errno = EINTR;
+            done = 1;
+        } else {
+            done = 0;
+        }
+    } else if (errno == EINTR) {
+        done = 1;
+      }
     }
-    fcntl (sb->s, F_SETFL, flags);
-    return foo;
+  }
+  fcntl (sb->s, F_SETFL, flags);
+  return foo;
 }
 
 

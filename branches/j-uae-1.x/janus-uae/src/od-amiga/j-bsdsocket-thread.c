@@ -48,7 +48,9 @@ static void aros_bsdsocket_thread (void) {
   struct Process                *thread = (struct Process *) FindTask (NULL);
   struct MsgPort                *port   = NULL;
   struct JUAE_bsdsocket_Message *msg;
+  struct JUAE_bsdsocket_Message msg2;
   BOOL                           done   = FALSE;
+  BOOL                           replied= FALSE;
 
   ULONG           error;
 
@@ -63,6 +65,9 @@ static void aros_bsdsocket_thread (void) {
     WaitPort(port);
     while( (msg = (struct JUAE_bsdsocket_Message *) GetMsg(port)) ) {
       BSDLOG("+++++++++++++++++++ got JUAE_bsdsocket_Message +++++++++++++++++++\n");
+
+      /* backup msg content in case of non-blocking ReplyMsg leads to loss of msg data */
+      memcpy(&msg2, msg, sizeof(struct JUAE_bsdsocket_Message));
 
       switch (msg->cmd) {
         case BSD_gethostbynameaddr:
@@ -87,11 +92,19 @@ static void aros_bsdsocket_thread (void) {
                                (uae_u32)msg->f);
           break;
         case BSD_connect:
-          host_connect_real((TrapContext *)msg->a,
-                               (struct socketbase *)msg->b,
-                               (uae_u32)msg->c,
-                               (uae_u32)msg->d,
-                               (uae_u32)msg->e);
+
+          if(msg->block) { /* host blocks, we must work */
+            BSDLOG("BSD_connect ReplyMsg ..\n");
+            ReplyMsg ((struct Message *) msg);
+            BSDLOG("BSD_connect ReplyMsg done\n");
+            replied=TRUE;
+          }
+
+          host_connect_real((TrapContext *)msg2.a,
+                               (struct socketbase *)msg2.b,
+                               (uae_u32)msg2.c,
+                               (uae_u32)msg2.d,
+                               (uae_u32)msg2.e);
           break;
         case BSD_sendto:
           host_sendto_real((TrapContext *)msg->a,
@@ -172,9 +185,12 @@ static void aros_bsdsocket_thread (void) {
           BSDLOG("ERROR: command %d NOT KNOWN TO ME!?\n",msg->cmd);
       }
 
-      BSDLOG("ReplyMsg ..\n");
-      ReplyMsg ((struct Message *) msg);
-      BSDLOG("ReplyMsg done\n");
+      if(!replied) {
+        BSDLOG("ReplyMsg ..\n");
+        ReplyMsg ((struct Message *) msg);
+        BSDLOG("ReplyMsg done\n");
+      }
+      replied=0;
     }
   }
   /* end thread */
