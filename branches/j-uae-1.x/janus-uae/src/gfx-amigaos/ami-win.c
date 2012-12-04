@@ -36,7 +36,7 @@
 #endif
 
 //#define JW_ENTER_ENABLED  1
-//#define JWTRACING_ENABLED 1
+#define JWTRACING_ENABLED 1
 
 #include "od-amiga/j.h"
 
@@ -162,7 +162,7 @@ extern xcolnr xcolors[4096];
 uae_u8 *oldpixbuf;
 
 int  screen_is_picasso;
-char picasso_invalid_lines[1600];
+char picasso_invalid_lines[2048];
 int  picasso_invalid_start;
 int  picasso_invalid_end;
 
@@ -2764,18 +2764,24 @@ void DX_SetPalette (int start, int count)
 
 /* TODO: sync this with picasso96.c !! */
 
+void get_host_resolution(LONG *width, LONG *height, LONG  *depth); /* from j-screen.c */
+
 int DX_FillResolutions (uae_u16 *ppixel_format)
 {
     int count = 0;
     struct Screen *screen;
     ULONG j;
+    LONG host_w, host_h, host_d;
+    ULONG found=0;
+
+    get_host_resolution(&host_w, &host_h, &host_d);
 
     JWLOG("DX_FillResolutions(ppixel_format %lx)\n", *ppixel_format);
 
     /* keep in mind, if you add higher y resolutions, you might have to
      * increas picasso_invalid_lines array !! 
      * */
-    static struct
+    struct
     {
         int width, height;
     } modes [] =
@@ -2852,7 +2858,9 @@ int DX_FillResolutions (uae_u16 *ppixel_format)
 
     /* even newer  modes */
 
-    { 1024, 600 }
+    { 1024, 600 },
+    { 999999, 999999 } /* space for host resolution, will be ignored, if not overwritten with
+                        * usefull information */
     };
 
     static const int bpx2format[] = {0, RGBFF_CHUNKY, RGBFF_R5G6B5PC, 0, RGBFF_B8G8R8A8};
@@ -2876,33 +2884,44 @@ int DX_FillResolutions (uae_u16 *ppixel_format)
     write_log("maxwidth  = %d\n", maxw);
 
 
-    for (j = 0; (j < (sizeof(modes)/sizeof(modes[0]))) && (j < MAX_PICASSO_MODES); j++)
-    {
+    for (j = 0; (j < (sizeof(modes)/sizeof(modes[0]))) && (j < MAX_PICASSO_MODES); j++) {
 
-    if (modes[j].width > maxw || modes[j].height > maxh)
-        continue;
+      if(modes[j].width == host_w && modes[j].height == host_h) {
+        JWLOG("host resolution %d x %d already in modes array\n", host_w, host_h);
+        found=1;
+      }
 
-    DisplayModes[count].res.width  = modes[j].width;
-        DisplayModes[count].res.height = modes[j].height;
-        DisplayModes[count].depth      = bpx;
-        DisplayModes[count].refresh    = 75;
+      if (modes[j].width > maxw || modes[j].height > maxh)
+          continue;
 
-    JWLOG("%2d: %4dx%4d, bpx %d (ppixel_format: %3lx)\n", count, modes[j].width, modes[j].height, bpx, *ppixel_format);
+      DisplayModes[count].res.width  = modes[j].width;
+      DisplayModes[count].res.height = modes[j].height;
+      DisplayModes[count].depth      = bpx;
+      DisplayModes[count].refresh    = 75;
 
-        count++;
-        *ppixel_format |= bpx2format[bpx];
+      JWLOG("%2d: %4dx%4d, bpx %d (ppixel_format: %3lx)\n", count, modes[j].width, modes[j].height, bpx, *ppixel_format);
+
+      count++;
+      *ppixel_format |= bpx2format[bpx];
     }
 
     /* special "clone" monitor with host wb resolutions */
-#if 0
-    DisplayModes[count].res.width  = screen->Width;
-    DisplayModes[count].res.height = screen->Height;
-    DisplayModes[count].depth      = bpx;
-    DisplayModes[count].refresh    = 75;
 
-    count++;
+    if(!found) {
+      JWLOG("add host resolution %d x %d to P96 modes\n", host_w, host_h);
+      modes[count].width =host_w;
+      modes[count].height=host_h;
+
+      DisplayModes[count].res.width  = host_w;
+      DisplayModes[count].res.height = host_h;
+      DisplayModes[count].depth      = bpx;
+      DisplayModes[count].refresh    = 75;
+    
+      count++;
+      write_log("added host resolution %d x %d to P96 modes\n", host_w, host_h);
+    }
+
     *ppixel_format |= bpx2format[bpx];
-#endif
 
     UnlockPubScreen(NULL,screen);
     return count;

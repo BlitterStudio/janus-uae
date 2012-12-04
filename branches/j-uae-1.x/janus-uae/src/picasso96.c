@@ -81,7 +81,7 @@ int p96hsync_counter;
 
 int p96hack_vpos, p96hack_vpos2, p96refresh_active;
 
-//#define P96TRACING_ENABLED 1
+#define P96TRACING_ENABLED 1
 #if P96TRACING_ENABLED
 #define P96TRACE(x)	do { kprintf x; } while(0)
 #define P96LOG(...)     do { kprintf("P96: ");kprintf(__VA_ARGS__); } while(0)
@@ -1216,7 +1216,8 @@ struct modeids {
     int width, height;
     int id;
 };
-static const struct modeids mi[] =
+
+static struct modeids mi[] =
 {
     /* "original" modes */
 
@@ -1281,8 +1282,42 @@ static const struct modeids mi[] =
 
     { 1024, 600, 200 },
 
+    {   -1,  -1, 0 }, /* space for host resolution */
     {   -1,  -1, 0 }
 };
+
+void get_host_resolution(LONG *width, LONG *height, LONG  *depth); /* from j-screen.c */
+
+static void add_host_resolution(void) {
+  LONG w, h, d;
+  unsigned int i;
+
+  P96LOG("add_host_resolution()\n");
+
+  get_host_resolution(&w, &h, &d);
+
+  if(!w) {
+    P96LOG("Error getting host resolution\n");
+    return;
+  }
+
+  for (i = 0; mi[i].width > 0; i++) {
+    if(w == mi[i].width && h == mi[i].height) {
+      /* resolution already in our list */
+      P96LOG("host resolution %d x %d already in mi list\n", w, h);
+      return;
+    }
+  }
+  
+  P96LOG("add %d x %d to standard resolutions\n", w, h);
+  P96LOG("mi[i].width: %d\n", mi[i].width);
+
+  mi[i].width=w;
+  mi[i].height=h;
+  mi[i].id=mi[i-1].id+1;
+
+  write_log("added resolution %d x %d to standard resolutions\n", w, h);
+}
 
 static uae_u32 AssignModeID (int w, int h, unsigned int *non_standard_count)
 {
@@ -1352,6 +1387,8 @@ uae_u32 REGPARAM2 picasso_InitCard (struct regstruct *regs) {
   put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxVerResolution + 4, hicolour.height);
   put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxVerResolution + 6, truecolour.height);
   put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxVerResolution + 8, alphacolour.height);
+
+  add_host_resolution();
 
   for (i = 0; i < mode_count;) {
     int j = i;
