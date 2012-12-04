@@ -1327,96 +1327,96 @@ static uae_u32 AssignModeID (int w, int h, unsigned int *non_standard_count)
 * gbi_MaxVerResolution: fill this in for all modes (even if you don't support
 *     them).
 */
-uae_u32 REGPARAM2 picasso_InitCard (struct regstruct *regs)
-{
-    struct LibResolution res;
-    int i;
-    unsigned int non_standard_count = 0;
-    int ModeInfoStructureCount = 1, LibResolutionStructureCount = 0;
-    uaecptr amigamemptr = 0;
-    uaecptr AmigaBoardInfo = m68k_areg (regs, 2);
+uae_u32 REGPARAM2 picasso_InitCard (struct regstruct *regs) {
 
-    P96LOG("picasso_InitCard\n");
+  struct LibResolution res;
+  int i;
+  unsigned int non_standard_count = 0;
+  int ModeInfoStructureCount = 1, LibResolutionStructureCount = 0;
+  uaecptr amigamemptr = 0;
+  uaecptr AmigaBoardInfo = m68k_areg (regs, 2);
 
-    put_word (AmigaBoardInfo + PSSO_BoardInfo_BitsPerCannon,	    DX_BitsPerCannon ());
-    put_word (AmigaBoardInfo + PSSO_BoardInfo_RGBFormats,	    picasso96_pixel_format);
-    put_word (AmigaBoardInfo + PSSO_BoardInfo_SoftSpriteFlags,	    picasso96_pixel_format);
-    put_long (AmigaBoardInfo + PSSO_BoardInfo_BoardType,	    BT_uaegfx);
-    put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxHorResolution + 0, planar.width);
-    put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxHorResolution + 2, chunky.width);
-    put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxHorResolution + 4, hicolour.width);
-    put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxHorResolution + 6, truecolour.width);
-    put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxHorResolution + 8, alphacolour.width);
-    put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxVerResolution + 0, planar.height);
-    put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxVerResolution + 2, chunky.height);
-    put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxVerResolution + 4, hicolour.height);
-    put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxVerResolution + 6, truecolour.height);
-    put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxVerResolution + 8, alphacolour.height);
+  P96LOG("picasso_InitCard\n");
 
-    for (i = 0; i < mode_count;) {
-	int j = i;
-	/* Add a LibResolution structure to the ResolutionsList MinList in our BoardInfo */
-	res.DisplayID = AssignModeID (DisplayModes[i].res.width,  
-	                              DisplayModes[i].res.height, 
-				      &non_standard_count);
-	res.BoardInfo = AmigaBoardInfo;
-	res.Width     = DisplayModes[i].res.width;
-	res.Height    = DisplayModes[i].res.height;
-	res.Flags     = P96F_PUBLIC;
-	res.P96ID[0] = 'P';
-	res.P96ID[1] = '9';
-	res.P96ID[2] = '6';
-	res.P96ID[3] = '-';
-	res.P96ID[4] = '0';
-	res.P96ID[5] = ':';
+  put_word (AmigaBoardInfo + PSSO_BoardInfo_BitsPerCannon,	    DX_BitsPerCannon ());
+  put_word (AmigaBoardInfo + PSSO_BoardInfo_RGBFormats,	    picasso96_pixel_format);
+  put_word (AmigaBoardInfo + PSSO_BoardInfo_SoftSpriteFlags,	    picasso96_pixel_format);
+  put_long (AmigaBoardInfo + PSSO_BoardInfo_BoardType,	    BT_uaegfx);
+  put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxHorResolution + 0, planar.width);
+  put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxHorResolution + 2, chunky.width);
+  put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxHorResolution + 4, hicolour.width);
+  put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxHorResolution + 6, truecolour.width);
+  put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxHorResolution + 8, alphacolour.width);
+  put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxVerResolution + 0, planar.height);
+  put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxVerResolution + 2, chunky.height);
+  put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxVerResolution + 4, hicolour.height);
+  put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxVerResolution + 6, truecolour.height);
+  put_word (AmigaBoardInfo + PSSO_BoardInfo_MaxVerResolution + 8, alphacolour.height);
 
-	P96LOG("i %d: %dx%d\n", i, DisplayModes[i].res.width, DisplayModes[i].res.height);
-  P96LOG("  DisplayID[%02d] %lx\n", i, res.DisplayID);
-	strcpy  (res.Name, "uaegfx:");
-	strncat (res.Name, DisplayModes[i].name,
-      		strchr (DisplayModes[i].name, ',') - DisplayModes[i].name);
-	if(DisplayModes[i].name) {
-	  P96LOG("  DisplayModes[%02d].name: %s\n", i, DisplayModes[i].name);
-	}
+  for (i = 0; i < mode_count;) {
+    int j = i;
+    /* Add a LibResolution structure to the ResolutionsList MinList in our BoardInfo */
+    res.DisplayID = AssignModeID (DisplayModes[i].res.width,  
+                                  DisplayModes[i].res.height, 
+                &non_standard_count);
+    res.BoardInfo = AmigaBoardInfo;
+    res.Width     = DisplayModes[i].res.width;
+    res.Height    = DisplayModes[i].res.height;
+    res.Flags     = P96F_PUBLIC;
+    res.P96ID[0] = 'P';
+    res.P96ID[1] = '9';
+    res.P96ID[2] = '6';
+    res.P96ID[3] = '-';
+    res.P96ID[4] = '0';
+    res.P96ID[5] = ':';
 
-	res.Modes[PLANAR] = 0;
-	res.Modes[CHUNKY] = 0;
-	res.Modes[HICOLOR] = 0;
-	res.Modes[TRUECOLOR] = 0;
-	res.Modes[TRUEALPHA] = 0;
-
-	/*do*/ {
-	    /* Handle this display mode's depth */
-	    /* Only add the modes when there is enough P96 RTG memory to hold the bitmap */
-	    unsigned long required = DisplayModes[i].res.width * DisplayModes[i].res.height
-				     * DisplayModes[i].depth;
-	    P96LOG("required: %d\n", required);
-	    if (allocated_gfxmem - 32768 > required) {
-		P96LOG("required ok: %d\n", required);
-		P96LOG("ok %dx%d, %d-bit\n", DisplayModes[i].res.width, DisplayModes[i].res.height, DisplayModes[i].depth);
-		amigamemptr = gfxmem_start + allocated_gfxmem
-			      - (PSSO_ModeInfo_sizeof * ModeInfoStructureCount++);
-		FillBoardInfo (amigamemptr, &res, &DisplayModes[i]);
-	    }
-	    else {
-	      P96LOG("skipped %dx%d, %d-bit\n", DisplayModes[i].res.width, DisplayModes[i].res.height, DisplayModes[i].depth);
-	    }
-	    i++;
-	} /* while (i < mode_count
-		 && DisplayModes[i].res.width == DisplayModes[j].res.width
-		 && DisplayModes[i].res.height == DisplayModes[j].res.height);
-	*/
-
-	amigamemptr = gfxmem_start + allocated_gfxmem - 16384
-		      + (PSSO_LibResolution_sizeof * LibResolutionStructureCount++);
-
-	CopyLibResolutionStructureU2A (&res, amigamemptr);
-	DumpLibResolutionStructure (amigamemptr);
-
-	AmigaListAddTail (AmigaBoardInfo + PSSO_BoardInfo_ResolutionsList, amigamemptr);
+    P96LOG("i %d: %dx%d\n", i, DisplayModes[i].res.width, DisplayModes[i].res.height);
+    P96LOG("  DisplayID[%02d] %lx\n", i, res.DisplayID);
+    strcpy  (res.Name, "uaegfx:");
+    strncat (res.Name, DisplayModes[i].name,
+            strchr (DisplayModes[i].name, ',') - DisplayModes[i].name);
+    if(DisplayModes[i].name) {
+      P96LOG("  DisplayModes[%02d].name: %s\n", i, DisplayModes[i].name);
     }
 
-    return 0;
+    res.Modes[PLANAR] = 0;
+    res.Modes[CHUNKY] = 0;
+    res.Modes[HICOLOR] = 0;
+    res.Modes[TRUECOLOR] = 0;
+    res.Modes[TRUEALPHA] = 0;
+
+    /*do*/ {
+      /* Handle this display mode's depth */
+      /* Only add the modes when there is enough P96 RTG memory to hold the bitmap */
+      unsigned long required = DisplayModes[i].res.width * DisplayModes[i].res.height
+           * DisplayModes[i].depth;
+      P96LOG("required: %d\n", required);
+      if (allocated_gfxmem - 32768 > required) {
+        P96LOG("required ok: %d\n", required);
+        P96LOG("ok %dx%d, %d-bit\n", DisplayModes[i].res.width, DisplayModes[i].res.height, DisplayModes[i].depth);
+        amigamemptr = gfxmem_start + allocated_gfxmem
+                    - (PSSO_ModeInfo_sizeof * ModeInfoStructureCount++);
+        FillBoardInfo (amigamemptr, &res, &DisplayModes[i]);
+      }
+      else {
+        P96LOG("skipped %dx%d, %d-bit\n", DisplayModes[i].res.width, DisplayModes[i].res.height, DisplayModes[i].depth);
+      }
+      i++;
+    } /* while (i < mode_count
+    && DisplayModes[i].res.width == DisplayModes[j].res.width
+    && DisplayModes[i].res.height == DisplayModes[j].res.height);
+    */
+
+    amigamemptr = gfxmem_start + allocated_gfxmem - 16384
+      + (PSSO_LibResolution_sizeof * LibResolutionStructureCount++);
+
+    CopyLibResolutionStructureU2A (&res, amigamemptr);
+    DumpLibResolutionStructure (amigamemptr);
+
+    AmigaListAddTail (AmigaBoardInfo + PSSO_BoardInfo_ResolutionsList, amigamemptr);
+  }
+
+  return 0;
 }
 
 extern int x_size, y_size;
