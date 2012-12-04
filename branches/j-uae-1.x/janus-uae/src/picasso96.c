@@ -81,7 +81,7 @@ int p96hsync_counter;
 
 int p96hack_vpos, p96hack_vpos2, p96refresh_active;
 
-#define P96TRACING_ENABLED 1
+//#define P96TRACING_ENABLED 1
 #if P96TRACING_ENABLED
 #define P96TRACE(x)	do { kprintf x; } while(0)
 #define P96LOG(...)     do { kprintf("P96: ");kprintf(__VA_ARGS__); } while(0)
