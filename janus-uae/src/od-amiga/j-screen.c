@@ -766,16 +766,61 @@ void close_all_janus_screens_wait() {
  * so AROS/m68k can sync the resolution.
  *
  **********************************************************/
+
+void get_host_resolution(LONG *width, LONG *height, LONG  *depth) {
+  struct Screen   *scr;
+  ULONG  id;
+
+  ENTER
+
+  if(!(scr=LockPubScreen(NULL))) {
+
+    JWLOG("unable to lock screen !?\n");
+    goto ERROR;
+  }
+
+  JWLOG("Locked screen: %lx\n", scr);
+
+  id=GetVPModeID(&scr->ViewPort);
+
+  if(id== (ULONG) INVALID_ID) {
+    JWLOG("INVALID_ID !?\n");
+    goto ERROR;
+  }
+
+  *width =GetCyberIDAttr(CYBRIDATTR_WIDTH,  id);
+  *height=GetCyberIDAttr(CYBRIDATTR_HEIGHT, id);
+  *depth =GetCyberIDAttr(CYBRIDATTR_DEPTH,  id);
+
+  JWLOG("width %d, height %d, depth %d\n", *width, *height, *depth);
+
+  goto EXIT;
+
+ERROR:
+  *width=0;
+  *height=0;
+  *depth=0;
+
+EXIT:
+  if(scr) {
+    UnlockPubScreen(NULL, scr);
+  }
+  LEAVE
+}
+
 uae_u32 ad_job_host_data(ULONG *m68k_results) {
   struct Screen   *scr;
   ULONG  id;
-  ULONG  width;
-  ULONG  height;
-  ULONG  depth;
+  LONG  width;
+  LONG  height;
+  LONG  depth;
   ULONG  res=TRUE;
 
   ENTER
 
+  get_host_resolution(&width, &height, &depth);
+
+#if 0
   if(!(scr=LockPubScreen(NULL))) {
 
     put_long_p(m68k_results, -1);
@@ -795,8 +840,13 @@ uae_u32 ad_job_host_data(ULONG *m68k_results) {
   width= GetCyberIDAttr(CYBRIDATTR_WIDTH,  id);
   height=GetCyberIDAttr(CYBRIDATTR_HEIGHT, id);
   depth= GetCyberIDAttr(CYBRIDATTR_DEPTH,  id);
+#endif
 
   JWLOG("width %d, height %d, depth %d\n", width, height, depth);
+  if(!width) {
+    goto ERROR;
+  }
+
 
   put_long_p(m68k_results,   width);
   put_long_p(m68k_results+1, height);
@@ -808,9 +858,11 @@ ERROR:
   res=FALSE;
 
 EXIT:
+#if 0
   if(scr) {
     UnlockPubScreen(NULL, scr);
   }
+#endif
 
   LEAVE
 
