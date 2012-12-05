@@ -229,6 +229,32 @@ static int copysockaddr_a2n (struct sockaddr_in *addr, uae_u32 a_addr, unsigned 
   return 0;
 }
 
+
+/*
+ * Copy a sockaddr object from native space to amiga space
+ */
+static int copysockaddr_n2a (uae_u32 a_addr, const struct sockaddr_in *addr, unsigned int len) {
+
+  if (len < 8) {
+    return 1;
+  }
+
+  if (a_addr == 0) {
+    return 0;
+  }
+
+  put_byte (a_addr, 0);                       /* Anyone use this field? */
+  put_byte (a_addr + 1, addr->sin_family);
+  put_word (a_addr + 2, ntohs (addr->sin_port));
+  put_long (a_addr + 4, ntohl (addr->sin_addr.s_addr));
+  
+  if (len > 8) {
+    memset (get_real_address (a_addr + 8), 0, len - 8);
+  }
+
+  return 0;
+}
+
 static LONG get_errno(struct socketbase *sb) {
 
   struct Library *SocketBase;
@@ -243,7 +269,7 @@ static LONG get_errno(struct socketbase *sb) {
     return ENOENT; 
   }
 
-  BSDLOG("SocketBaseTagList(SBTC_ERRNO): %d\n", connerr);
+  //BSDLOG("SocketBaseTagList(SBTC_ERRNO): %d\n", connerr);
 
   return connerr;
 }
@@ -286,7 +312,7 @@ struct Library *getsocketbase(struct socketbase *sb) {
   }
 
   if(sb->bsdsocketbase) {
-    BSDLOG("return already opened SocketBase for sb %lx: %lx\n", sb, sb->bsdsocketbase);
+    //BSDLOG("return already opened SocketBase for sb %lx: %lx\n", sb, sb->bsdsocketbase);
     return sb->bsdsocketbase;
   }
 
@@ -296,7 +322,7 @@ struct Library *getsocketbase(struct socketbase *sb) {
     kprintf("Unable to open bsdsocket.library!!\n");
   }
 
-  BSDLOG("return SocketBase %lx\n", sb->bsdsocketbase);
+  //BSDLOG("return SocketBase %lx\n", sb->bsdsocketbase);
 
   //SocketBase=sb->bsdsocketbase;
 
@@ -2047,9 +2073,11 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
   int hlen;
   int res;
   struct sockaddr result_addr;
+  struct sockaddr_in host_addr;
   socklen_t fromlen;
   LONG error;
   ULONG done=0;
+  int nonblock=1;
 
 #if 0
   struct sockaddr_in sin;
@@ -2061,6 +2089,10 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
     seterrno(sb, ENETDOWN);
     sb->resultval = -1;
     return; 
+  }
+
+  if(sb->ftable[sd-1] & SF_BLOCKING) {
+    nonblock=0;
   }
 
   if (addr)
@@ -2086,132 +2118,105 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
   /* native socket to nonblocking */
   set_blocking(sb, s, 0);
 
-  if(addr) {
-    hlen = get_long (addrlen);
-    rp_addr = (struct sockaddr *)get_real_address (addr);
-    fromlen=sizeof(result_addr);
-
-    res=recvfrom(s, realpt, len, flags, rp_addr, &hlen);
-
-    prepamigaaddr(rp_addr, hlen);
-    put_long (addrlen,hlen);
-  }
-  else {
-    /* same as recv */
-    res=recvfrom(s, realpt, len, flags, NULL, 0);
-  }
-  error=get_errno(sb);
-
-  if(res==0 || !(sb->ftable[sd-1] & SF_BLOCKING) ) {
-    /* non blocking, return result at once */
-    /* The return value will be 0 when the peer has performed an orderly shutdown. */
-    BSDLOG("hosted is in non blocking mode -> return result at once.. res is %d, errno is %d\n", res, errno);
-    seterrno(sb, error);
-    return;
-  }
-
-  /* blocking still sux */
-
-  if(res>0) {
-    realpt        = realpt+res;
-    len           = len-res;
-    sb->resultval = res;
-    BSDLOG("res 0: %d, realpt %lx, len %d, resultval %d\n", res, realpt, len, sb->resultval);
-  }
-
-  while(!done && len) {
+  while(!done) {
     BSDLOG("===> while(!done) <===\n");
-    if(addr) {
-
-      res=recvfrom(s, realpt, len, flags, rp_addr, &hlen);
-
-      prepamigaaddr(rp_addr,hlen);
-      put_long (addrlen,hlen);
-    }
-    else {
+    if(!addr) {
       /* same as recv */
       res=recvfrom(s, realpt, len, flags, NULL, 0);
+      BSDLOG("recv returned %d \n", res);
     }
+    else {
+      socklen_t l;
+      LONG i;
+      l = sizeof (struct sockaddr_in);
+      i = get_long (addrlen);
+      copysockaddr_a2n (&host_addr, addr, i);
 
+      res=recvfrom(s, realpt, len, flags/*|MSG_NOSIGNAL*/, (struct sockaddr *) &host_addr, (void *) &l);
+      BSDLOG("recvfrom returned %d \n", res);
+      if(res>0) {
+        copysockaddr_n2a(addr, &host_addr, l);
+        put_long(addrlen, l);
+      }
+
+      //prepamigaaddr(rp_addr,hlen);
+      //put_long (addrlen,hlen);
+    }
     error=get_errno(sb);
     BSDLOG("error: %d\n", error);
 
-#if 0
-    if(res==-1 || res==0) {
-      BSDLOG("res == %d\n", res);
-      sb->sb_errno=error;
-      goto RECEIVED;
+    if(!(res<0 /*&& !nonblock*/ )) {
+      BSDLOG("successfuly received %d bytes\n", res);
+      kprintf("GOT:\n%s\n", (char *) realpt);
+      done=1;
     }
-#endif
-    if(res > 0) {
-      BSDLOG("res 1: %d, realpt %lx, len %d, resultval %d\n", res, realpt, len, sb->resultval);
-      realpt        = realpt+res;
-      len           = len-res;
-      sb->resultval = sb->resultval + res;
-      BSDLOG("res 2: %d, realpt %lx, len %d, resultval %d\n", res, realpt, len, sb->resultval);
-    }
+    else {
 
-    if ((error == EAGAIN) || (error == EWOULDBLOCK) || (error == EINPROGRESS) || (error == EALREADY)) {
+      BSDLOG("res<0 /* && !nonblock */\n");
 
-      BSDLOG("EAGAIN, EWOULDBLOCK, EINPROGRESS..\n");
+      if ((error == EAGAIN) || (error == EWOULDBLOCK) || (error == EINPROGRESS) || (error == EALREADY)) {
 
-      fd_set readset, writeset, exceptset;
-      int maxfd = (sb->s > sb->sockabort[0]) ? sb->s : sb->sockabort[0];
-      int num;
+        BSDLOG("EAGAIN, EWOULDBLOCK, EINPROGRESS..\n");
 
-      BSDLOG("maxfd: %d\n", maxfd);
+        fd_set readset, writeset, exceptset;
+        int maxfd = (sb->s > sb->sockabort[0]) ? sb->s : sb->sockabort[0];
+        int num;
 
-      FD_ZERO (&readset);
-      FD_ZERO (&writeset);
-      FD_ZERO (&exceptset);
+        BSDLOG("maxfd: %d\n", maxfd);
 
-      FD_SET (sb->s, &readset);
-      FD_SET (sb->sockabort[0], &readset);
+        FD_ZERO (&readset);
+        FD_ZERO (&writeset);
+        FD_ZERO (&exceptset);
 
-      BSDLOG("calling select..\n");
-      num = select (maxfd + 1, &readset, &writeset, &exceptset, NULL);
-      BSDLOG("select returned %d\n", num);
-      if (num == -1) {
-          BSDLOG ("Blocking select(%d) returns -1,errno is %d\n", sb->sockabort[0],errno);
-          //TODO: fcntl (sb->s, F_SETFL, flags);
-          BSDLOG("================>>>>>>>>>>> TODO!\n");
-          return;
-      }
+        FD_SET (sb->s, &readset);
+        FD_SET (sb->sockabort[0], &readset);
+
+        BSDLOG("calling select..\n");
+        num = select (maxfd + 1, &readset, &writeset, &exceptset, NULL);
+        BSDLOG("select returned %d\n", num);
+        if (num == -1) {
+            BSDLOG ("Blocking select(%d) returns -1,errno is %d\n", sb->sockabort[0],errno);
+            //TODO: fcntl (sb->s, F_SETFL, flags);
+            BSDLOG("================>>>>>>>>>>> TODO!\n");
+            sb->resultval=-1;
+            return;
+        }
 
 #warning sockabort NEEDS TO BE DONE IN host_sbinit!!??
-      if (FD_ISSET (sb->sockabort[0], &readset)) {
+        if (FD_ISSET (sb->sockabort[0], &readset)) {
           /* reset sock abort pipe */
           /* read from the pipe to reset it */
           BSDLOG ("select aborted from signal\n");
 
           //TODO: clearsockabort (sb);
           BSDLOG ("Done read\n");
-          errno = EINTR;
+          error = EINTR;
           done = 1;
-      } else {
-        done = 0;
-      }
-    } else if (error == EINTR) {
+        } else {
+          done = 0;
+        }
+      } else if (error == EINTR) {
         done = 1;
-    }
-    else {
-      /* real error, we are done! */
-      sb->sb_errno=error;
-      done=1;
+      }
+      else {
+        /* real error, we are done! */
+        sb->sb_errno=error;
+        done=1;
+      }
     }
 
   }
 
   BSDLOG("bytes received with recvfrom: %d\n", res);
 
-  //sb->resultval = res;
+  sb->resultval = res;
+  sb->sb_errno  = error;
 
 RECEIVED:
   BSDLOG("received!\n");
 
   BSDLOG("signal waiting task..\n");
   uae_Signal (sb->ownertask, sb->sigstosend | ((uae_u32) 1) << sb->signal); 
-
 }
 
 void host_recvfrom(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 msg_in, uae_u32 len, uae_u32 flags, uae_u32 addr, uae_u32 addrlen) {

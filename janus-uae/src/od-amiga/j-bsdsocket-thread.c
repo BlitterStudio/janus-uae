@@ -48,11 +48,9 @@ static void aros_bsdsocket_thread (void) {
   struct Process                *thread = (struct Process *) FindTask (NULL);
   struct MsgPort                *port   = NULL;
   struct JUAE_bsdsocket_Message *msg;
-  struct JUAE_bsdsocket_Message msg2;
-  BOOL                           done   = FALSE;
-  BOOL                           replied= FALSE;
-
-  ULONG           error;
+  struct JUAE_bsdsocket_Message msg2; /* backup */
+  BOOL                          done   = FALSE;
+  ULONG                         error;
 
   /* There's a time to live .. */
 
@@ -66,40 +64,38 @@ static void aros_bsdsocket_thread (void) {
     while( (msg = (struct JUAE_bsdsocket_Message *) GetMsg(port)) ) {
       BSDLOG("+++++++++++++++++++ got JUAE_bsdsocket_Message +++++++++++++++++++\n");
 
-      /* backup msg content in case of non-blocking ReplyMsg leads to loss of msg data */
+      /* backup msg content in case of immediate ReplyMsg leads to loss of msg data */
       memcpy(&msg2, msg, sizeof(struct JUAE_bsdsocket_Message));
 
-      switch (msg->cmd) {
+      if(msg2.block) { /* host blocks, we must work */
+        BSDLOG("BSD_connect ReplyMsg ..\n");
+        ReplyMsg ((struct Message *) msg);
+        BSDLOG("BSD_connect ReplyMsg done\n");
+      }
+
+      switch (msg2.cmd) {
         case BSD_gethostbynameaddr:
-          host_gethostbynameaddr_real((TrapContext *)msg->a, 
-                                      (struct socketbase *)msg->b,
-                                      (uae_u32) msg->c,
-                                      (uae_u32) msg->d,
-                                      (long) msg->e);
+          host_gethostbynameaddr_real((TrapContext *)msg2.a, 
+                                      (struct socketbase *)msg2.b,
+                                      (uae_u32) msg2.c,
+                                      (uae_u32) msg2.d,
+                                      (long) msg2.e);
           break;
         case BSD_socket:
-          msg->ret=host_socket_real((struct socketbase *)msg->a,
-                                    (int)msg->b,
-                                    (int)msg->c,
-                                    (int)msg->d);
+          msg2.ret=host_socket_real((struct socketbase *)msg2.a,
+                                    (int)msg2.b,
+                                    (int)msg2.c,
+                                    (int)msg2.d);
           break;
         case BSD_setsockopt:
-          host_setsockopt_real((struct socketbase *)msg->a,
-                               (uae_u32)msg->b,
-                               (uae_u32)msg->c,
-                               (uae_u32)msg->d,
-                               (uae_u32)msg->e,
-                               (uae_u32)msg->f);
+          host_setsockopt_real((struct socketbase *)msg2.a,
+                               (uae_u32)msg2.b,
+                               (uae_u32)msg2.c,
+                               (uae_u32)msg2.d,
+                               (uae_u32)msg2.e,
+                               (uae_u32)msg2.f);
           break;
         case BSD_connect:
-
-          if(msg->block) { /* host blocks, we must work */
-            BSDLOG("BSD_connect ReplyMsg ..\n");
-            ReplyMsg ((struct Message *) msg);
-            BSDLOG("BSD_connect ReplyMsg done\n");
-            replied=TRUE;
-          }
-
           host_connect_real((TrapContext *)msg2.a,
                                (struct socketbase *)msg2.b,
                                (uae_u32)msg2.c,
@@ -107,90 +103,90 @@ static void aros_bsdsocket_thread (void) {
                                (uae_u32)msg2.e);
           break;
         case BSD_sendto:
-          host_sendto_real((TrapContext *)msg->a,
-                           (struct socketbase *)msg->b,
-                           (uae_u32)msg->c,
-                           (uae_u32)msg->d,
-                           (uae_u32)msg->e,
-                           (uae_u32)msg->f,
-                           (uae_u32)msg->g,
-                           (uae_u32)msg->h);
+          host_sendto_real((TrapContext *)msg2.a,
+                           (struct socketbase *)msg2.b,
+                           (uae_u32)msg2.c,
+                           (uae_u32)msg2.d,
+                           (uae_u32)msg2.e,
+                           (uae_u32)msg2.f,
+                           (uae_u32)msg2.g,
+                           (uae_u32)msg2.h);
           break;
         case BSD_recvfrom:
-          host_recvfrom_real((TrapContext *)msg->a,
-                           (struct socketbase *)msg->b,
-                           (uae_u32)msg->c,
-                           (uae_u32)msg->d,
-                           (uae_u32)msg->e,
-                           (uae_u32)msg->f,
-                           (uae_u32)msg->g,
-                           (uae_u32)msg->h);
+          host_recvfrom_real((TrapContext *)msg2.a,
+                           (struct socketbase *)msg2.b,
+                           (uae_u32)msg2.c,
+                           (uae_u32)msg2.d,
+                           (uae_u32)msg2.e,
+                           (uae_u32)msg2.f,
+                           (uae_u32)msg2.g,
+                           (uae_u32)msg2.h);
           break;
         case BSD_inet_addr:
-          msg->ret=host_inet_addr_real((TrapContext *)msg->a,
-                                       (struct socketbase *)msg->b,
-                                       (uae_u32)msg->c);
+          msg2.ret=host_inet_addr_real((TrapContext *)msg2.a,
+                                       (struct socketbase *)msg2.b,
+                                       (uae_u32)msg2.c);
           break;
         case BSD_getprotobyname:
-          host_getprotobyname_real((TrapContext *)msg->a,
-                           (struct socketbase *)msg->b,
-                           (uae_u32)msg->c);
+          host_getprotobyname_real((TrapContext *)msg2.a,
+                           (struct socketbase *)msg2.b,
+                           (uae_u32)msg2.c);
           break;
         case BSD_Inet_NtoA:
-          msg->ret=host_Inet_NtoA_real((TrapContext *)msg->a,
-                                       (struct socketbase *)msg->b,
-                                       (uae_u32)msg->c);
+          msg2.ret=host_Inet_NtoA_real((TrapContext *)msg2.a,
+                                       (struct socketbase *)msg2.b,
+                                       (uae_u32)msg2.c);
           break;
         case BSD_CloseSocket:
-          msg->ret=host_CloseSocket_real((struct socketbase *)msg->a,
-                                         (int)msg->b);
+          msg2.ret=host_CloseSocket_real((struct socketbase *)msg2.a,
+                                         (int)msg2.b);
           break;
         case BSD_dup2socket:
-          msg->ret=host_dup2socket_real((struct socketbase *)msg->a,
-                                         (int)msg->b,
-                                         (int)msg->c);
+          msg2.ret=host_dup2socket_real((struct socketbase *)msg2.a,
+                                         (int)msg2.b,
+                                         (int)msg2.c);
           break;
         case BSD_bind:
-          msg->ret=host_bind_real((struct socketbase *)msg->a,
-                                         (uae_u32)msg->b,
-                                         (uae_u32)msg->c,
-                                         (uae_u32)msg->d);
+          msg2.ret=host_bind_real((struct socketbase *)msg2.a,
+                                         (uae_u32)msg2.b,
+                                         (uae_u32)msg2.c,
+                                         (uae_u32)msg2.d);
           break;
         case BSD_gethostname:
-          msg->ret=host_gethostname_real((struct socketbase *)msg->a,
-                                         (uae_u32)msg->b,
-                                         (uae_u32)msg->c);
+          msg2.ret=host_gethostname_real((struct socketbase *)msg2.a,
+                                         (uae_u32)msg2.b,
+                                         (uae_u32)msg2.c);
           break;
         case BSD_getsockname:
-          msg->ret=host_getsockname_real((struct socketbase *)msg->a,
-                                         (uae_u32)msg->b,
-                                         (uae_u32)msg->c,
-                                         (uae_u32)msg->d);
+          msg2.ret=host_getsockname_real((struct socketbase *)msg2.a,
+                                         (uae_u32)msg2.b,
+                                         (uae_u32)msg2.c,
+                                         (uae_u32)msg2.d);
           break;
         case BSD_getpeername:
-          msg->ret=host_getpeername_real((struct socketbase *)msg->a,
-                                         (uae_u32)msg->b,
-                                         (uae_u32)msg->c,
-                                         (uae_u32)msg->d);
+          msg2.ret=host_getpeername_real((struct socketbase *)msg2.a,
+                                         (uae_u32)msg2.b,
+                                         (uae_u32)msg2.c,
+                                         (uae_u32)msg2.d);
           break;
 
 
         case BSD_killme:
-          aros_bsdsocket_kill_thread_real((struct socketbase *)msg->a);
+          aros_bsdsocket_kill_thread_real((struct socketbase *)msg2.a);
           done=TRUE;
           /* ATTENTION: don't touch anything now. Just replay the last message and exit at once! */
           break;
 
         default:
-          BSDLOG("ERROR: command %d NOT KNOWN TO ME!?\n",msg->cmd);
+          BSDLOG("ERROR: command %d NOT KNOWN TO ME!?\n",msg2.cmd);
       }
 
-      if(!replied) {
+      if(!msg2.block) {
         BSDLOG("ReplyMsg ..\n");
-        ReplyMsg ((struct Message *) msg);
+        msg->ret=msg2.ret;
+        ReplyMsg ((struct Message *) msg); /* we reply the original message */
         BSDLOG("ReplyMsg done\n");
       }
-      replied=0;
     }
   }
   /* end thread */
