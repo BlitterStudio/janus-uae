@@ -255,26 +255,17 @@ static char *get_errno_str(struct socketbase *sb, LONG error) {
   ULONG str;
 
   if(!(SocketBase=getsocketbase(sb))) {
-    return ENOENT; /* should not happen.. */
+    return (char *) ENOENT; /* should not happen.. */
   }
 
   str=error;
 
   if(SocketBaseTags(SBTM_GETREF(SBTC_ERRNOSTRPTR), &str, TAG_END)) {
     BSDLOG("ERROR on calling SocketBaseTags..\n");
-    return ENOENT; 
+    return (char *) ENOENT; 
   }
 
   return (char *) str;
-}
-static void clearsockabort (SB) {
-  int chr;
-  int num;
-
-  while ((num = read (sb->sockabort[0], &chr, sizeof(chr))) >= 0) {
-    BSDLOG ("Sockabort got %d bytes\n", num);
-    ;
-  }
 }
 
 static void seterrno (struct socketbase *sb, int err) {
@@ -291,7 +282,7 @@ struct Library *getsocketbase(struct socketbase *sb) {
 
   if(!sb) {
     BSDLOG("===================> ERROR ERROR ERROR: sb is NULL !?!?!?\n");
-    return;
+    return NULL;
   }
 
   if(sb->bsdsocketbase) {
@@ -300,7 +291,7 @@ struct Library *getsocketbase(struct socketbase *sb) {
   }
 
   BSDLOG("OpenLibrary(\"bsdsocket.library\", 0) ..\n");;
-  sb->bsdsocketbase = OpenLibrary("bsdsocket.library", 0);
+  sb->bsdsocketbase = OpenLibrary((STRPTR) "bsdsocket.library", 0);
   if(!sb->bsdsocketbase) {
     kprintf("Unable to open bsdsocket.library!!\n");
   }
@@ -311,6 +302,52 @@ struct Library *getsocketbase(struct socketbase *sb) {
 
   return sb->bsdsocketbase;
 }
+
+static void clearsockabort (SB) {
+
+  BSDLOG("NOT YET DONE (needed for sockabort!!)\n");
+
+#if 0
+  int buffer[256];
+  ULONG done=0;
+  int num=0;
+  int res=0;
+  struct Library *SocketBase;
+
+  if(!(SocketBase=getsocketbase(sb))) {
+    return;
+  }
+
+
+  set_blocking(sb, sb->sockabort[0], FALSE);
+
+  while (!done) {
+    res=recv(sb->sockabort[0], buffer, sizeof(buffer-1),0);
+    if(res<0) {
+      done=1;
+    }
+    else {
+      num=num+res;
+    }
+  }
+  BSDLOG ("Sockabort got %d bytes\n", num);
+#endif
+}
+
+
+
+#if 0
+void clearsockabort (SB)
+{
+    int chr;
+    int num;
+
+    while ((num = read (sb->sockabort[0], &chr, sizeof(chr))) >= 0) {
+	DEBUG_LOG ("Sockabort got %d bytes\n", num);
+	;
+    }
+}
+#endif
 
 static int socket_layer_initialized = 0;
 
@@ -467,8 +504,8 @@ int host_sbinit(TrapContext *context, struct socketbase *sb) {
 
 	sb->mtable = calloc(sb->dtablesize,sizeof(*sb->mtable));
 	
-	return 1;
 #endif
+	return 1;
 }
 
 void host_closesocketquick(int s)
@@ -705,7 +742,7 @@ static void prepamigaaddr(struct sockaddr *realpt, int len)
 static void debug_socket(struct socketbase *sb, int s) {
   struct Library *SocketBase;
   struct sockaddr_in debug_sockaddr;
-  socklen_t debug_len;
+  int debug_len;
 
   if(!(SocketBase=getsocketbase(sb))) {
     return;
@@ -713,7 +750,7 @@ static void debug_socket(struct socketbase *sb, int s) {
 
   debug_len=sizeof(struct sockaddr_in);
 
-  if(getpeername(s, &debug_sockaddr, &debug_len)==-1) {
+  if(getpeername(s, (struct sockaddr *) &debug_sockaddr, &debug_len)==-1) {
     BSDLOG("WARNING: getpeername on socket %d failed with errno %d ..\n", s, errno);
     
   }
@@ -1070,10 +1107,10 @@ uae_u32 host_bind(struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namel
 uae_u32 host_listen(struct socketbase *sb, uae_u32 sd, uae_u32 backlog)
 {
   BSDLOG("NOT YET IMPLEMENTED!\n");
-#if 0
-    SOCKET s;
-    uae_u32 success = -1;
+  SOCKET s;
+  uae_u32 success = -1;
 	
+#if 0
 	sd++;
     TRACE(("listen(%d,%d) -> ",sd,backlog));
     s = getsock(sb, sd);
@@ -1089,8 +1126,8 @@ uae_u32 host_listen(struct socketbase *sb, uae_u32 sd, uae_u32 backlog)
             TRACE(("OK\n"));
     }
 		    
-    return success;
 #endif
+  return success;
 }
 
 void host_accept(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 name, uae_u32 namelen)
@@ -1410,7 +1447,8 @@ static unsigned int __stdcall sock_thread(void *blah)
  * connect
  *
  * - we are now in the right socket thread
- * - we need to connect with a non-blocking socket, independently from the fact, that
+ * - we need to connect with a non-blocking socket, 
+ *   independently from the fact, that
  *   our guest call was blocking or not.
  ***********************************/
 
@@ -1528,7 +1566,7 @@ void host_connect_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, 
           BSDLOG ("Blocking select(%d) returns -1,errno is %d\n", sb->sockabort[0],errno);
           //TODO: fcntl (sb->s, F_SETFL, flags);
           BSDLOG("================>>>>>>>>>>> TODO!\n");
-          return -1;
+          return;
       }
 
       if (FD_ISSET (sb->sockabort[0], &readset) || FD_ISSET (sb->sockabort[0], &writeset)) {
@@ -1536,19 +1574,19 @@ void host_connect_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, 
           /* read from the pipe to reset it */
           BSDLOG ("select aborted from signal\n");
 
-          //TODO: clearsockabort (sb);
+          clearsockabort (sb);
           BSDLOG ("Done read\n");
-          errno = EINTR;
+          error = EINTR;
           done = 1;
       } else {
         done = 0;
       }
-    } else if (errno == EINTR) {
+    } else if (error == EINTR) {
         done = 1;
     }
     else {
       /* real error, we are done! */
-      sb->sb_errno=errno;
+      sb->sb_errno=error;
       done=1;
     }
 
@@ -1570,13 +1608,11 @@ void host_connect(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u
 
   BSDLOG("======== %s ========\n",__func__);
 
-  /* ATTENTION: sb->ftable[sd-1] is not valid here. Use it only inside thread. */
-
-  BSDLOG("sd: %d;sb->ftable[sd]: %lx; SF_BLOCKING: %lx; sb->ftable[sd] & SF_BLOCKING: %lx => block is %d\n", sd, sb->ftable[sd], SF_BLOCKING, sb->ftable[sd] & SF_BLOCKING, block);
-
   if(sb->ftable[sd] & SF_BLOCKING) {
     block=1;
   }
+
+  BSDLOG("sd: %d;sb->ftable[sd]: %lx; SF_BLOCKING: %lx; sb->ftable[sd] & SF_BLOCKING: %lx => block is %d\n", sd, sb->ftable[sd], SF_BLOCKING, sb->ftable[sd] & SF_BLOCKING, block);
 
   execute_in_task(sb, BSD_connect, block,
                   (ULONG) context, (ULONG) sb, (ULONG) sd, (ULONG) addr68k, (ULONG) addrlen, 0, 0, 0);
@@ -2012,6 +2048,8 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
   int res;
   struct sockaddr result_addr;
   socklen_t fromlen;
+  LONG error;
+  ULONG done=0;
 
 #if 0
   struct sockaddr_in sin;
@@ -2037,13 +2075,16 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
 
   if (s == INVALID_SOCKET) {
     BSDLOG("INVALID_SOCKET!\n");
-    sb->sb_errno=-1; /* TODO */
-    sb->resultval = -1;
+    sb->sb_errno =EBADF;
+    sb->resultval=-1;
     return;
   }
 
-  realpt = (uae_char*)get_real_address (msg);
+  realpt = (uae_char*) get_real_address (msg);
   //flags &= ~0x40; /* ?? */
+
+  /* native socket to nonblocking */
+  set_blocking(sb, s, 0);
 
   if(addr) {
     hlen = get_long (addrlen);
@@ -2052,88 +2093,35 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
 
     res=recvfrom(s, realpt, len, flags, rp_addr, &hlen);
 
-    prepamigaaddr(rp_addr,hlen);
+    prepamigaaddr(rp_addr, hlen);
     put_long (addrlen,hlen);
   }
   else {
     /* same as recv */
     res=recvfrom(s, realpt, len, flags, NULL, 0);
   }
+  error=get_errno(sb);
 
-  BSDLOG("byts received with recvfrom: %d\n", res);
-
-  sb->resultval = res;
-}
-#if JUST_A_TEST
-void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 msg, uae_u32 len, uae_u32 flags, uae_u32 addr, uae_u32 addrlen) {
-  struct Library *SocketBase;
-  int s;
-  struct sockaddr *rp_addr = NULL;
-  uae_char *realpt;
-  int hlen;
-  int res;
-  struct sockaddr result_addr;
-  socklen_t fromlen;
-
-  int nonblock;
-  int done=0;
-  int remember_blocking;
-
-#if 0
-  struct sockaddr_in sin;
-#endif
-
-  BSDLOG("======== %s -> %s ========\n", __FILE__,__func__);
-
-  if(!(SocketBase=getsocketbase(sb))) {
-    seterrno(sb, ENETDOWN);
-    sb->resultval = -1;
-    return; /* TODO!*/
-  }
-
-  if (addr)
-    BSDLOG("recvfrom(%d,0x%lx,%d,0x%lx,0x%lx,%d) ->\n",sd,msg,len,flags,addr,get_long(addrlen));
-  else
-    BSDLOG("recv(%d,0x%lx,%d,0x%lx) ->\n",sd,msg,len,flags);
-
-  sd++;
-  s = getsock(sb,sd);
-  BSDLOG("s: %lx\n", s);
-
-  if (s == INVALID_SOCKET) {
-    BSDLOG("INVALID_SOCKET!\n");
-    sb->sb_errno  = EBADF; 
-    sb->resultval =-1;
+  if(res==0 || !(sb->ftable[sd-1] & SF_BLOCKING) ) {
+    /* non blocking, return result at once */
+    /* The return value will be 0 when the peer has performed an orderly shutdown. */
+    BSDLOG("hosted is in non blocking mode -> return result at once.. res is %d, errno is %d\n", res, errno);
+    seterrno(sb, error);
     return;
   }
 
-#if 0
-  /* backup old socket flags */
-  if((org_flags = fcntl (s, F_GETFL)) == -1) {
-    BSDLOG("WARNING: could not get flags of s %lx\n", s);
-    org_flags=0;
+  /* blocking still sux */
+
+  if(res>0) {
+    realpt        = realpt+res;
+    len           = len-res;
+    sb->resultval = res;
+    BSDLOG("res 0: %d, realpt %lx, len %d, resultval %d\n", res, realpt, len, sb->resultval);
   }
-  nonblock = (org_flags & O_NONBLOCK);
-  /* set nonblocking */
-  BSDLOG("old flags: %lx\n", flags);
-  fcntl (s, F_SETFL, org_flags | O_NONBLOCK); 
-  BSDLOG("new flags: %lx\n", fcntl (s, F_GETFL));
-  nonblocking=1;
-  IoctlSocket(s, FIONBIO, (char *) &nonblocking);
-#endif
 
-  remember_blocking=read_blocking(sb, s);
-  set_blocking(sb, s, 0);
-
-  realpt = (uae_char*)get_real_address (msg);
-  //flags &= ~0x40; /* ?? */
-
-  while(!done) {
-    BSDLOG("while !done\n");
+  while(!done && len) {
+    BSDLOG("===> while(!done) <===\n");
     if(addr) {
-      hlen = get_long (addrlen);
-      rp_addr = (struct sockaddr *)get_real_address (addr);
-      fromlen=sizeof(result_addr);
 
       res=recvfrom(s, realpt, len, flags, rp_addr, &hlen);
 
@@ -2145,79 +2133,110 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
       res=recvfrom(s, realpt, len, flags, NULL, 0);
     }
 
-    //if(res<0 && !nonblock) {
-    nonblock=!read_blocking(sb, s);
-    BSDLOG("res: %d, blocking: %d\n", res, nonblock);
-    if(res<0 && !nonblock ) {
-      BSDLOG("res<0 && !nonblock\n");
-      if ((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINPROGRESS)) {
-        BSDLOG("EAGAIN, EWOULDBLOCK or EINPROGRESS..\n");
+    error=get_errno(sb);
+    BSDLOG("error: %d\n", error);
 
-        fd_set readset, writeset, exceptset;
-        int maxfd = (sb->s > sb->sockabort[0]) ? sb->s : sb->sockabort[0];
-        int num;
+#if 0
+    if(res==-1 || res==0) {
+      BSDLOG("res == %d\n", res);
+      sb->sb_errno=error;
+      goto RECEIVED;
+    }
+#endif
+    if(res > 0) {
+      BSDLOG("res 1: %d, realpt %lx, len %d, resultval %d\n", res, realpt, len, sb->resultval);
+      realpt        = realpt+res;
+      len           = len-res;
+      sb->resultval = sb->resultval + res;
+      BSDLOG("res 2: %d, realpt %lx, len %d, resultval %d\n", res, realpt, len, sb->resultval);
+    }
 
-        FD_ZERO (&readset);
-        FD_ZERO (&writeset);
-        FD_ZERO (&exceptset);
+    if ((error == EAGAIN) || (error == EWOULDBLOCK) || (error == EINPROGRESS) || (error == EALREADY)) {
 
-        FD_SET (s, &readset);
+      BSDLOG("EAGAIN, EWOULDBLOCK, EINPROGRESS..\n");
 
-        FD_SET (sb->sockabort[0], &readset);
+      fd_set readset, writeset, exceptset;
+      int maxfd = (sb->s > sb->sockabort[0]) ? sb->s : sb->sockabort[0];
+      int num;
 
-        /* NULL -> not timeout */
-        num = select (maxfd + 1, &readset, &writeset, &exceptset, NULL);
+      BSDLOG("maxfd: %d\n", maxfd);
 
-        if (num == -1) {
-          BSDLOG("Blocking select(%d) returns -1,errno is %d\n", sb->sockabort[0],errno);
-          //fcntl (sb->s, F_SETFL, flags);
-          set_blocking(sb, s, remember_blocking);
+      FD_ZERO (&readset);
+      FD_ZERO (&writeset);
+      FD_ZERO (&exceptset);
 
-          sb->sb_errno=errno;
-          sb->resultval=-1;
+      FD_SET (sb->s, &readset);
+      FD_SET (sb->sockabort[0], &readset);
+
+      BSDLOG("calling select..\n");
+      num = select (maxfd + 1, &readset, &writeset, &exceptset, NULL);
+      BSDLOG("select returned %d\n", num);
+      if (num == -1) {
+          BSDLOG ("Blocking select(%d) returns -1,errno is %d\n", sb->sockabort[0],errno);
+          //TODO: fcntl (sb->s, F_SETFL, flags);
+          BSDLOG("================>>>>>>>>>>> TODO!\n");
           return;
-        }
+      }
 
-        if(FD_ISSET (sb->sockabort[0], &readset) || FD_ISSET (sb->sockabort[0], &writeset)) {
+#warning sockabort NEEDS TO BE DONE IN host_sbinit!!??
+      if (FD_ISSET (sb->sockabort[0], &readset)) {
           /* reset sock abort pipe */
           /* read from the pipe to reset it */
           BSDLOG ("select aborted from signal\n");
-          
-          clearsockabort (sb);
+
+          //TODO: clearsockabort (sb);
           BSDLOG ("Done read\n");
           errno = EINTR;
           done = 1;
-          BSDLOG("done=1");
-        }
-        else {
-          done=0;
-          BSDLOG("done=0");
-        }
+      } else {
+        done = 0;
       }
-      else {
-        BSDLOG("done=1");
-        done=1;
-      }
-
+    } else if (error == EINTR) {
+        done = 1;
     }
+    else {
+      /* real error, we are done! */
+      sb->sb_errno=error;
+      done=1;
+    }
+
   }
 
-  /* restore original flags*/
-  //fcntl (s, F_SETFL, org_flags);
-  set_blocking(sb, s, remember_blocking);
-  BSDLOG("byts received with recvfrom: %d\n", res);
+  BSDLOG("bytes received with recvfrom: %d\n", res);
 
-  sb->resultval = res;
+  //sb->resultval = res;
+
+RECEIVED:
+  BSDLOG("received!\n");
+
+  BSDLOG("signal waiting task..\n");
+  uae_Signal (sb->ownertask, sb->sigstosend | ((uae_u32) 1) << sb->signal); 
+
 }
-#endif
 
 void host_recvfrom(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 msg_in, uae_u32 len, uae_u32 flags, uae_u32 addr, uae_u32 addrlen) {
 
+  ULONG block=0;
+
   BSDLOG("======== %s ========\n",__func__);
 
-  execute_in_task(sb, BSD_recvfrom, 0,
+  BSDLOG("sd: %d;sb->ftable[sd]: %lx; SF_BLOCKING: %lx; sb->ftable[sd] & SF_BLOCKING: %lx => block is %d\n", sd, sb->ftable[sd], SF_BLOCKING, sb->ftable[sd] & SF_BLOCKING, block);
+
+  if(sb->ftable[sd] & SF_BLOCKING) {
+    block=1;
+  }
+
+  execute_in_task(sb, BSD_recvfrom, block,
                   (ULONG) context, (ULONG) sb, (ULONG) sd, (ULONG) msg_in, (ULONG) len, 
                   (ULONG) flags, (ULONG) addr, (ULONG) addrlen);
+
+  /* amiga side wants to wait for results.. */
+  if(sb->ftable[sd] & SF_BLOCKING) {
+    BSDLOG("calling WAITSIGNAL..\n");
+    WAITSIGNAL;
+  }
+
+  BSDLOG("SIGNAL received => leave!\n");
 
   return;
 }
@@ -2248,8 +2267,8 @@ uae_u32 host_shutdown(struct socketbase *sb, uae_u32 sd, uae_u32 how)
 	}
     }
 	
-    return -1;
 #endif
+  return -1;
 }
 
 /***********************************
@@ -2394,8 +2413,8 @@ uae_u32 host_getsockopt(struct socketbase *sb, uae_u32 sd, uae_u32 level, uae_u3
 		}
 	}
 
-	return -1;
 #endif
+	return -1;
 }
 
 /***********************************
@@ -2625,6 +2644,7 @@ uae_u32 host_IoctlSocket(struct socketbase *sb, uae_u32 sd, uae_u32 request, uae
 	
 	return success;
 #endif
+  return -1;
 }
 
 /***********************************
@@ -3367,7 +3387,7 @@ void host_gethostbynameaddr_real(TrapContext *context, struct socketbase *sb, ua
 
   BSDLOG("addrtype: %lx\n", addrtype);
 
-  if(addr_valid ("host_gethostbynameaddr", name, 1)) {
+  if(addr_valid ("host_gethostbynameaddr", name68k, 1)) {
     name = (char *) get_real_address(name68k);
   }
   else {
