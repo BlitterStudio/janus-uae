@@ -1144,146 +1144,148 @@ static void tagcopy (uae_u32 currtag, uae_u32 currval, uae_u32 tagptr, uae_u32 *
     }
 }
 
-static uae_u32 REGPARAM2 bsdsocklib_SocketBaseTagList (TrapContext *context)
-{
-    struct socketbase *sb = get_socketbase (context);
-    uae_u32 tagptr = m68k_areg (&context->regs, 0);
-    uae_u32 tagsprocessed = 1;
-    uae_u32 currtag;
-    uae_u32 currval;
+static uae_u32 REGPARAM2 bsdsocklib_SocketBaseTagList (TrapContext *context) {
+  struct socketbase *sb = get_socketbase (context);
+  uae_u32 tagptr = m68k_areg (&context->regs, 0);
+  uae_u32 tagsprocessed = 1;
+  uae_u32 currtag;
+  uae_u32 currval;
 
-    TRACE (("SocketBaseTagList("));
+  DebOut ("==== SocketBaseTagList ====\n");
 
-    for (;;) {
-	currtag = get_long (tagptr);
-	currval = get_long (tagptr + 4);
-	tagsprocessed++;
+  for (;;) {
+    currtag = get_long (tagptr);
+    currval = get_long (tagptr + 4);
+    tagsprocessed++;
 
-	switch (currtag) {
-	 case TAG_DONE:
-	    TRACE (("TAG_DONE"));
-	    tagsprocessed = 0;
-	    goto done;
-	 case TAG_IGNORE:
-	    TRACE (("TAG_IGNORE"));
-	    break;
-	 case TAG_MORE:
-	    TRACE (("TAG_MORE(0x%lx)", currval));
-	    tagptr = currval;
-	    break;
-	 case TAG_SKIP:
-	    TRACE (("TAG_SKIP(%d)", currval));
-	    tagptr += currval * 8;
-	    break;
+    switch (currtag) {
+      case TAG_DONE:
+        TRACE (("TAG_DONE"));
+        tagsprocessed = 0;
+        goto done;
+      case TAG_IGNORE:
+        TRACE (("TAG_IGNORE"));
+        break;
+      case TAG_MORE:
+        TRACE (("TAG_MORE(0x%lx)", currval));
+        tagptr = currval;
+        break;
+      case TAG_SKIP:
+        TRACE (("TAG_SKIP(%d)", currval));
+        tagptr += currval * 8;
+        break;
 
-	 default:
-	    if (currtag & TAG_USER) {
-		DebOut("SBTM_");
-		DebOut(currtag & 0x0001 ? "SET" : "GET");
-		DebOut(currtag & 0x8000 ? "REF(" : "VAL(");
+      default:
+        if (currtag & TAG_USER) {
+          DebOut("TAG_USER\n");
+          DebOut(currtag & 0x0001 ? "SBTM_SET\n" : "SBTM_GET\n");
+          DebOut(currtag & 0x8000 ? "SBTM_REF\n" : "SBTM_VAL\n");
 
-DebOut("(currtag >> 1) & SBTS_CODE: %lx\n", (currtag >> 1) & SBTS_CODE);
-		switch ((currtag >> 1) & SBTS_CODE) {
-		 case SBTC_BREAKMASK:
-		    DebOut("SBTC_BREAKMASK),0x%lx", currval);
-		    tagcopy (currtag, currval, tagptr, &sb->eintrsigs);
-		    break;
-		 case SBTC_SIGEVENTMASK:
-		    DebOut("SBTC_SIGEVENTMASK),0x%lx", currval);
-		    tagcopy (currtag, currval, tagptr, &sb->eventsigs);
-		    break;
-		 case SBTC_SIGIOMASK:
-		    DebOut("SBTC_SIGEVENTMASK),0x%lx", currval);
-		    tagcopy (currtag, currval, tagptr, &sb->eventsigs);
-		    break;
-		 case SBTC_ERRNO:
-		    DebOut("SBTC_ERRNO),%d", currval);
-		    tagcopy (currtag, currval, tagptr, (uae_u32 *)&sb->sb_errno);
-		    break;
-		 case SBTC_HERRNO:
-		    DebOut("SBTC_HERRNO),%d", currval);
-		    tagcopy (currtag, currval, tagptr, (uae_u32 *)&sb->sb_herrno);
-		    break;
-		 case SBTC_DTABLESIZE:
-		    DebOut("SBTC_DTABLESIZE),0x%lx", currval);
-		    if (currtag & 1) {
-			bsdsocklib_SetDTableSize(sb, currval);
-		    } else {
-			put_long(tagptr + 4, sb->dtablesize);
-		    }
-		    break;
-		 case SBTC_ERRNOSTRPTR:
-		    if (currtag & 1) {
-			DebOut("ERRNOSTRPTR),invalid");
-		    } else {
-			unsigned long ulTmp;
-			if (currtag & 0x8000)	/* SBTM_GETREF */
-			    ulTmp = get_long(currval);
-			else			/* SBTM_GETVAL */
-			    ulTmp = currval;
+          DebOut("(currtag >> 1) & SBTS_CODE: %lx\n", (currtag >> 1) & SBTS_CODE);
+          switch ((currtag >> 1) & SBTS_CODE) {
+            case SBTC_BREAKMASK:
+              DebOut("SBTC_BREAKMASK),0x%lx\n", currval);
+              tagcopy (currtag, currval, tagptr, &sb->eintrsigs);
+              break;
+            case SBTC_SIGEVENTMASK:
+              DebOut("SBTC_SIGEVENTMASK),0x%lx\n", currval);
+              tagcopy (currtag, currval, tagptr, &sb->eventsigs);
+              break;
+            case SBTC_SIGIOMASK:
+              DebOut("SBTC_SIGEVENTMASK),0x%lx\n", currval);
+              tagcopy (currtag, currval, tagptr, &sb->eventsigs);
+              break;
+            case SBTC_ERRNO:
+              DebOut("SBTC_ERRNO),%d\n", currval);
+              tagcopy (currtag, currval, tagptr, (uae_u32 *)&sb->sb_errno);
+              break;
+            case SBTC_HERRNO:
+              DebOut("SBTC_HERRNO),%d\n", currval);
+              tagcopy (currtag, currval, tagptr, (uae_u32 *)&sb->sb_herrno);
+              break;
+            case SBTC_DTABLESIZE:
+              DebOut("SBTC_DTABLESIZE),0x%lx\n", currval);
+              if (currtag & 1) {
+                bsdsocklib_SetDTableSize(sb, currval);
+              } else {
+                put_long(tagptr + 4, sb->dtablesize);
+              }
+              break;
+            case SBTC_ERRNOSTRPTR:
+                if (currtag & 1) {
+                  DebOut("ERRNOSTRPTR),invalid\n");
+                } else {
+                  unsigned long ulTmp;
+                  if (currtag & 0x8000)	/* SBTM_GETREF */
+                    ulTmp = get_long(currval);
+                  else			/* SBTM_GETVAL */
+                    ulTmp = currval;
 
-			DebOut("ERRNOSTRPTR),%d", ulTmp);
+                  DebOut("ERRNOSTRPTR),%d\n", ulTmp);
 
-			if (ulTmp < number_sys_error)
-			    tagcopy (currtag, currval, tagptr, &errnotextptrs[ulTmp]);
-			else
-			    tagcopy (currtag, currval, tagptr, &strErrptr);
-		    }
-		    break;
-		 case SBTC_HERRNOSTRPTR:
-		    if (currtag & 1) {
-			DebOut("HERRNOSTRPTR),invalid");
-		    } else {
-			unsigned long ulTmp;
-			if (currtag & 0x8000)	/* SBTM_GETREF */
-			    ulTmp = get_long(currval);
-			else			/* SBTM_GETVAL */
-			    ulTmp = currval;
+                  if (ulTmp < number_sys_error)
+                    tagcopy (currtag, currval, tagptr, &errnotextptrs[ulTmp]);
+                  else
+                    tagcopy (currtag, currval, tagptr, &strErrptr);
+                }
+                break;
+              case SBTC_HERRNOSTRPTR:
+                if (currtag & 1) {
+                  DebOut("HERRNOSTRPTR),invalid\n");
+                } else {
+                  unsigned long ulTmp;
+                  if (currtag & 0x8000)	/* SBTM_GETREF */
+                    ulTmp = get_long(currval);
+                  else			/* SBTM_GETVAL */
+                    ulTmp = currval;
 
-			DebOut("HERRNOSTRPTR),%d", ulTmp);
+                  DebOut("HERRNOSTRPTR),%d\n", ulTmp);
 
-			if (ulTmp < number_host_error)
-			    tagcopy (currtag, currval, tagptr, &herrnotextptrs[ulTmp]);
-			else
-			    tagcopy (currtag, currval, tagptr, &strErrptr);
-		    }
-		    break;
-		 case SBTC_ERRNOBYTEPTR:
-		    DebOut("SBTC_ERRNOBYTEPTR),0x%lx", currval);
-		    tagcopy (currtag, currval, tagptr, &sb->errnoptr);
-		    sb->errnosize = 1;
-		    break;
-		 case SBTC_ERRNOWORDPTR:
-		    DebOut("SBTC_ERRNOWORDPTR),0x%lx", currval);
-		    tagcopy (currtag, currval, tagptr, &sb->errnoptr);
-		    sb->errnosize = 2;
-		    break;
-		 case SBTC_ERRNOLONGPTR:
-		    DebOut("SBTC_ERRNOLONGPTR),0x%lx", currval);
-		    tagcopy (currtag, currval, tagptr, &sb->errnoptr);
-		    sb->errnosize = 4;
-		    break;
-		 case SBTC_HERRNOLONGPTR:
-		    DebOut("SBTC_HERRNOLONGPTR),0x%lx", currval);
-		    tagcopy (currtag, currval, tagptr, &sb->herrnoptr);
-		    sb->herrnosize = 4;
-		    break;
-		 default:
-		    write_log ("bsdsocket: WARNING: Unsupported tag type (%x) in SocketBaseTagList()\n", currtag);
-		}
-	    } else {
-		DebOut("TAG_UNKNOWN(0x%x)", currtag);
-	    }
-	}
-
-	DebOut(",");
-	tagptr += 8;
+                  if (ulTmp < number_host_error)
+                    tagcopy (currtag, currval, tagptr, &herrnotextptrs[ulTmp]);
+                  else
+                    tagcopy (currtag, currval, tagptr, &strErrptr);
+                }
+                break;
+              case SBTC_ERRNOBYTEPTR:
+                DebOut("SBTC_ERRNOBYTEPTR),0x%lx\n", currval);
+                tagcopy (currtag, currval, tagptr, &sb->errnoptr);
+                sb->errnosize = 1;
+                break;
+              case SBTC_ERRNOWORDPTR:
+                DebOut("SBTC_ERRNOWORDPTR),0x%lx\n", currval);
+                tagcopy (currtag, currval, tagptr, &sb->errnoptr);
+                sb->errnosize = 2;
+                break;
+              case SBTC_ERRNOLONGPTR:
+                DebOut("SBTC_ERRNOLONGPTR),0x%lx\n", currval);
+                tagcopy (currtag, currval, tagptr, &sb->errnoptr);
+                sb->errnosize = 4;
+                break;
+              case SBTC_HERRNOLONGPTR:
+                DebOut("SBTC_HERRNOLONGPTR),0x%lx\n", currval);
+                tagcopy (currtag, currval, tagptr, &sb->herrnoptr);
+                sb->herrnosize = 4;
+                break;
+              default:
+                write_log ("bsdsocket: WARNING: Unsupported tag type (%x) in SocketBaseTagList()\n", currtag);
+            }
+            DebOut("\n");
+            } else {
+              DebOut("TAG_UNKNOWN(0x%x)\n", currtag);
+            }
     }
 
-  done:
-    DebOut(") -> %d\n", tagsprocessed);
+    DebOut("--next tag--\n");
+    tagptr += 8;
+  }
 
-    return tagsprocessed;
+done:
+  DebOut("---\n");
+  DebOut("tagsprocessed -> %d\n", tagsprocessed);
+  DebOut("---\n");
+  
+  return 0; /* tagsprocessed is always 0.. */
 }
 
 static uae_u32 REGPARAM2 bsdsocklib_GetSocketEvents (TrapContext *context)
