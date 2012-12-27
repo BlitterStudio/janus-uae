@@ -486,7 +486,7 @@ static void parse_cmdline (int argc, char **argv) {
         write_log ("Missing argument for '-splash_text' option.\n");
       }
       else {
-        kprintf("splash_text: %s\n",argv[i+1]);
+        //kprintf("splash_text: %s\n",argv[i+1]);
         strncpy(currprefs.splash_text, argv[++i], 250);
         if(currprefs.splash_time) {
           do_splash(currprefs.splash_text, currprefs.splash_time);
@@ -500,7 +500,7 @@ static void parse_cmdline (int argc, char **argv) {
       }
       else {
         currprefs.splash_time=atoi(argv[++i]);;
-        kprintf("splash_time: %d\n", currprefs.splash_time);
+        //kprintf("splash_time: %d\n", currprefs.splash_time);
         if(currprefs.splash_text) {
           do_splash(currprefs.splash_text, currprefs.splash_time);
           show_splash();
