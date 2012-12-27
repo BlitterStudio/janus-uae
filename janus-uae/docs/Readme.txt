@@ -57,20 +57,23 @@ for AmigaOS (transdisk and transrom are not
 built/tested by me). In the aros directory there
 is a small binary to start AmigaOS applications.
 
-AmigaOS helpers:
-================
+m68k helpers:
+=============
 
 You have to start some AmigaOS executables (preferable
 from s:user-startup) to use the integration features:
 
 janusd
+------
 - mouse sync
 - rootless mode (coherency)
 
 clipd
+-----
 - AmigaOS <-> AROS clipboard sync
 
 launchd
+-------
 - start AmigaOS workbench executables from wanderer
 - run AmigaOS CLI executables with amirun
 
@@ -93,10 +96,46 @@ If you get mouse trails, especially right after
 starting AmigaOS 3.x, please replace the Picasso96
 rtg.library with the one in this package.
 
-AROS helpers:
-================
+clonescreenmode
+---------------
+If started, it sets the default host screen
+resolution as the default m68k screen resolution.
+So it is a wise idea, to do this at a very
+early monent in your m68k s:startup-sequence
+
+Usage: clonescreenmode [ENV|ENVARC|PRETEND]
+
+ENV: use AROS/x86 host default public screen
+     resolution (patch ENV:SYS/screenmode.prefs)
+ENVARC: save AROS/x86 host default public screen
+     resolution (patch ENVARC:SYS/screenmode.prefs)
+PRETEND: just print resolution and depth to STDOUT
+
+janus-splash
+------------
+Usage: janus-splash <time in seconds> <text message>
+       janus-splash close
+
+You can start janus-uae with -splash_text text and
+-splash_timeout seconds, then a small splash window
+will be displayed.
+
+It closes either when the GUI or the janus-uae main
+window is displayed (coherency off) or when you
+call "janus-splash close". As long as it is
+displayed, you can controll the text with
+janus-splash <time in seconds> <text message>.
+
+WARNING:
+
+All those helpers only work with janus-uae. They
+won't work with WinUAE etc.
+
+AROS x86 helpers:
+=================
 
 amirun
+------
 
 With the AROS executable you can start any AmigaOS
 executable, that is mounted somewhere in AmigaOS.
@@ -141,13 +180,19 @@ History
 ============================================================
 
 ============================================================
-J-UAE 1.3 BETA 
+J-UAE 1.3 (27.12.2012) 
 ============================================================
 New features:
 
-- startup splash window controllable from 68k world added
-- clonescreenmode utility added
+- startup splash window (controllable from 68k) world added
+  (static picture + dynamic texts)
 - "Really Quit" requester, when uae main window is closed
+- iconified icon can now be loaded from 
+  PROGDIR:janus-uae.info (no ugly "Z" icon anymore)
+- dynamically add host workbench screen resolution to 
+  m68k picasso96 modes
+- sync host and guest resolutions possible 
+  (clonescreenmode utility)
 - backups of config files are now stored to *.backup files, 
   not ~* anymore
 - default config file is now fetched from 
@@ -166,6 +211,7 @@ tries to fix some of them:
   both run in parallel.. as nice as multithreading is, it
   sometimes causes headaches. And I hope, this fixes the 
   bug..
+- fixed AROS screen titles of windows, which don't have one
 
 ============================================================
 J-UAE 1.2 (15.05.2012)
