@@ -54,6 +54,8 @@ ULONG (*calltrap)(ULONG __asm("d0"),
 #define PREFS_PATH_ENVARC "ENVARC:SYS/screenmode.prefs"
 #define PREFS_PATH_ENV    "ENV:SYS/screenmode.prefs"
 
+char verstag[] = "\0$VER: clonescreenmode 1.0";
+
 /*********************************************************************************************/
 
 struct Library       *IFFParseBase =NULL;
