@@ -43,7 +43,7 @@
 #include "threaddep/thread.h"
 #include "bsdsocket.h"
 
-#define BSDSOCKET 1
+//#define BSDSOCKET 1
 #ifdef BSDSOCKET
 
 /* oli hack */
@@ -330,7 +330,10 @@ void waitsig (TrapContext *context, SB) {
   long sigs;
   m68k_dreg (&context->regs, 0) = (((uae_u32) 1) << sb->signal) | sb->eintrsigs;
 
+  DebOut("[%lx] m68k Wait(signalset in d0) ..\n", sb->aros_task);
   if ((sigs = CallLib (context, get_long (4), -0x13e)) & sb->eintrsigs) { /* Wait(signalset in d0) */
+    DebOut("[%lx] m68k signal received\n", sb->aros_task);
+    DebOut("[%lx] calling sockabort..\n", sb->aros_task);
     sockabort (sb);
     bsdsocklib_seterrno (sb, 4);	/* EINTR */
 

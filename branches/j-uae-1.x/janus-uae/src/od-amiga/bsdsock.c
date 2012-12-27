@@ -23,7 +23,7 @@
  *
  ************************************************************************/
 
-#define BSDSOCKET 1
+//#define BSDSOCKET 1
 #ifdef BSDSOCKET
 
 #include <proto/bsdsocket.h>
@@ -57,7 +57,7 @@
 #include "threaddep/thread.h"
 #include "native2amiga.h"
 
-#define BSDLOG_ENABLED 1
+//#define BSDLOG_ENABLED 1
 #if BSDLOG_ENABLED
 #define BSDLOG(...)   do { kprintf("[%lx]%s:%d %s(): ",FindTask(NULL),__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
 #else
@@ -312,17 +312,18 @@ struct Library *getsocketbase(struct socketbase *sb) {
   }
 
   if(sb->bsdsocketbase) {
-    //BSDLOG("return already opened SocketBase for sb %lx: %lx\n", sb, sb->bsdsocketbase);
+    BSDLOG("return already opened SocketBase for sb %lx: %lx\n", sb, sb->bsdsocketbase);
     return sb->bsdsocketbase;
   }
 
-  BSDLOG("OpenLibrary(\"bsdsocket.library\", 0) ..\n");;
+  BSDLOG("OpenLibrary(\"bsdsocket.library\", 0) ..\n");
   sb->bsdsocketbase = OpenLibrary((STRPTR) "bsdsocket.library", 0);
   if(!sb->bsdsocketbase) {
-    kprintf("Unable to open bsdsocket.library!!\n");
+    write_log("Unable to open bsdsocket.library.\n");
+    BSDLOG("Unable to open bsdsocket.library!!\n");
   }
 
-  //BSDLOG("return SocketBase %lx\n", sb->bsdsocketbase);
+  BSDLOG("return NEW SocketBase %lx\n", sb->bsdsocketbase);
 
   //SocketBase=sb->bsdsocketbase;
 
@@ -332,6 +333,7 @@ struct Library *getsocketbase(struct socketbase *sb) {
 static void clearsockabort (SB) {
 
   BSDLOG("NOT YET DONE (needed for sockabort!!)\n");
+#warning TODOTODOTODOTODOTODOTODOT!!!!!!!!!!!11
 
 #if 0
   int buffer[256];
@@ -438,7 +440,7 @@ int init_socket_layer(void) {
 #endif
 
 /* DEBUG! */
-  BSDLOG("return faked socket_layer_initialized=TRUE!\n");
+  //BSDLOG("return faked socket_layer_initialized=TRUE!\n");
   result = 1;
 
   socket_layer_initialized = result;
@@ -521,16 +523,35 @@ int asyncindex;
 
 int host_sbinit(TrapContext *context, struct socketbase *sb) {
 
-  BSDLOG("NOT YET IMPLEMENTED!\n");
+  BSDLOG("TEST: NOT YET TESTED!\n");
+  sb->abort_signal=AllocSignal(-1);
+
+  if(sb->abort_signal < 0) {
+    write_log("ERROR: no free signal!!\n");
+    BSDLOG("ERROR: no free signal!!\n");
+    return 0;
+  }
+
+
+  /* this needs to be run in the real thread...!!*/
 #if 0
-	sb->sockAbort = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
+  struct Library *SocketBase;
+
+
+  if(!(SocketBase=getsocketbase(sb))) {
+    return 0;
+  }
+
+#warning NEEDS SOME TESTING..
+
+	sb->sockAbort = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	
 	if (sb->sockAbort == INVALID_SOCKET) return 0;
-	if ((sb->hEvent = CreateEvent(NULL,FALSE,FALSE,NULL)) == NULL) return 0;
+	//if ((sb->hEvent = CreateEvent(NULL,FALSE,FALSE,NULL)) == NULL) return 0;
 
-	sb->mtable = calloc(sb->dtablesize,sizeof(*sb->mtable));
-	
+	//sb->mtable = calloc(sb->dtablesize,sizeof(*sb->mtable));
 #endif
+	
 	return 1;
 }
 
@@ -707,13 +728,69 @@ static void cancelasyncmsg(unsigned int wMsg)
 }
 #endif
 
-void sockabort(struct socketbase *sb)
-{	
-  BSDLOG("NOT YET IMPLEMENTED!\n");
+void sockabort(struct socketbase *sb) {	
+
+  ULONG sig;
+
+  BSDLOG("Sock abort (sb->abort_signal %d (%lx), sb->abort_task %lx)!!\n", sb->abort_signal, 1L << sb->abort_signal,sb->aros_task);
+
+  sig=1L << sb->abort_signal;
+
+  Signal((struct Task *) sb->aros_task, sig);
 #if 0
+
+  char chr = " ";
+  int count;
+  struct Library *SocketBase;
+  struct sockaddr_in pin;
+  int socket;
+
+  BSDLOG("TEST: NOT YET IMPLEMENTED!\n");
+
+  if(!(SocketBase=getsocketbase(sb))) {
+    return;
+  }
+
+  if(!sb->sockAbort) {
+    BSDLOG("ERROR: sb->sockAbort is NULL!!\n");
+    return;
+  }
+
+  BSDLOG("Sock abort!!\n");
+  BSDLOG("TODO NOW ==================\n");
+
+  pin.sin_family=AF_INET;
+  pin.sin_addr.s_addr=inet_addr("127.0.0.1");
+  pin.sin_port=htons(sb->sockAbortPort);
+
+  socket=socket(AF_INET, SOCK_STREAM, 0);
+  if ((socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+    BSDLOG("ERROR: no socket, no fun!\n");
+    return;
+  }
+
+  BSDLOG("socket: %d\n", socket); 
+  if (connect(socket, (void *)&pin, sizeof(pin)) == -1) {
+    BSDLOG("ERROR: connecting to socket\n");
+    return;
+  }
+
+  BSDLOG("sending char to sb->sockAbort %d\n", sb->sockAbort);
+
+  count=send(sb->sockAbort, (const void *) chr, sizeof(chr), 0);
+
+  if(count == -1) {
+    BSDLOG("ERROR: could not send data: %d\n", get_errno(sb));
+  }
+
+  BSDLOG("sent char to sb->sockAbort\n");
+#if 0
+    write (sb->sockabort[1], &chr, sizeof (chr));
     locksigqueue();
 
     unlocksigqueue();
+#endif
+    /* TODO: close socket! */
 #endif
 }
 
@@ -1568,8 +1645,10 @@ void host_connect_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, 
       BSDLOG("EAGAIN, EWOULDBLOCK, EINPROGRESS..\n");
 
       fd_set readset, writeset, exceptset;
-      int maxfd = (sb->s > sb->sockabort[0]) ? sb->s : sb->sockabort[0];
+      //int maxfd = (sb->s > sb->sockAbort) ? sb->s : sb->sockAbort;
+      int maxfd=s;
       int num;
+      ULONG signals;
 
       BSDLOG("maxfd: %d\n", maxfd);
 
@@ -1583,19 +1662,22 @@ void host_connect_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, 
       //if (sb->action == 2 || sb->action == 1 || sb->action == 4)
           FD_SET (sb->s, &writeset);
 
-      FD_SET (sb->sockabort[0], &readset);
+      //FD_SET (sb->sockAbort, &readset);
 
-      BSDLOG("calling select..\n");
-      num = select (maxfd + 1, &readset, &writeset, &exceptset, NULL);
-      BSDLOG("select returned %d\n", num);
+      BSDLOG("calling WaitSelect..\n");
+      //num = select (maxfd + 1, &readset, &writeset, &exceptset, NULL);
+      signals=1L <<  sb->abort_signal;
+      num = WaitSelect (maxfd + 1, &readset, &writeset, &exceptset, NULL, &signals);
+      BSDLOG("WaitSelect returned %d\n", num);
       if (num == -1) {
-          BSDLOG ("Blocking select(%d) returns -1,errno is %d\n", sb->sockabort[0],errno);
+          BSDLOG ("Blocking WaitSelect() returns -1,errno is %d\n", errno); /* TODO: errno! */
           //TODO: fcntl (sb->s, F_SETFL, flags);
           BSDLOG("================>>>>>>>>>>> TODO!\n");
           return;
       }
 
-      if (FD_ISSET (sb->sockabort[0], &readset) || FD_ISSET (sb->sockabort[0], &writeset)) {
+      //if (FD_ISSET (sb->sockAbort, &readset) || FD_ISSET (sb->sockAbort, &writeset)) {
+      if(num == 0) {
           /* reset sock abort pipe */
           /* read from the pipe to reset it */
           BSDLOG ("select aborted from signal\n");
@@ -1705,7 +1787,7 @@ void host_sendto_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, u
   }
 
 
-  BSDLOG("sd: %d; sb->ftable[sd-1]: 0x%lx\n", sb->ftable[sd-1]);
+  BSDLOG("sd: %d; sb->ftable[sd-1]: 0x%lx\n", sd, sb->ftable[sd-1]);
   if (sb->ftable[sd-1] & SF_RAW_RAW) {
     BSDLOG("SF_RAW_RAW\n");
 
@@ -1789,6 +1871,8 @@ void host_sendto_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, u
     
     BSDLOG("calling sendto..\n");
     sb->resultval=sendto(s, realmsg, len, flags, (const struct sockaddr *) buf, tolen);
+
+    BSDLOG("sent:\n-----------------\n%s\n-----------------\n", realmsg);
 
 #if 0
     if ((sb->ftable[sd - 1] & SF_RAW_UDP) || (sb->ftable[sd - 1] & SF_RAW_RUDP) || (sb->ftable[sd-1] & SF_RAW_RICMP)) {
@@ -2065,6 +2149,12 @@ void host_sendto(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u3
  * Can be blocking..
  */
 
+char a(char c) {
+  if(c>31 && c<126) {
+    return c;
+  }
+  return '.';
+}
 void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_u32 msg, uae_u32 len, uae_u32 flags, uae_u32 addr, uae_u32 addrlen) {
   struct Library *SocketBase;
   int s;
@@ -2146,8 +2236,19 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
     BSDLOG("error: %d\n", error);
 
     if(!(res<0 /*&& !nonblock*/ )) {
+      int i=0;
       BSDLOG("successfuly received %d bytes\n", res);
-      kprintf("GOT:\n%s\n", (char *) realpt);
+      //kprintf("GOT:\n%s\n", (char *) realpt);
+      kprintf("GOT (%d): \n===========================================\n\n",res );
+      /* dump first 160 chars */
+      while(i+8<res && i<160) {
+        kprintf("%02x %02x %02x %02x  %02x %02x %02x %02x   %c%c%c%c %c%c%c%c\n", realpt[i], realpt[i+1], realpt[i+2], realpt[i+3], realpt[i+4], realpt[i+5], realpt[i+6], realpt[i+7], a(realpt[i]), a(realpt[i+1]), a(realpt[i+2]), a(realpt[i+3]), a(realpt[i+4]), a(realpt[i+5]), a(realpt[i+6]), a(realpt[i+7]));
+
+        i=i+8;
+      }
+      kprintf("\n... and so on ...\n");
+      kprintf("\n===========================================\n\n",res );
+
       done=1;
     }
     else {
@@ -2159,7 +2260,9 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
         BSDLOG("EAGAIN, EWOULDBLOCK, EINPROGRESS..\n");
 
         fd_set readset, writeset, exceptset;
-        int maxfd = (sb->s > sb->sockabort[0]) ? sb->s : sb->sockabort[0];
+        //int maxfd = (sb->s > sb->sockAbort) ? sb->s : sb->sockAbort;
+        ULONG signals;
+        int maxfd = sb->s;
         int num;
 
         BSDLOG("maxfd: %d\n", maxfd);
@@ -2169,13 +2272,14 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
         FD_ZERO (&exceptset);
 
         FD_SET (sb->s, &readset);
-        FD_SET (sb->sockabort[0], &readset);
+        //FD_SET (sb->sockAbort, &readset);
 
-        BSDLOG("calling select..\n");
-        num = select (maxfd + 1, &readset, &writeset, &exceptset, NULL);
+        BSDLOG("calling WaitSelect(maxfd %d, readset %lx, writeset %lx, exceptset %lx, NULL, %lx) ..\n", maxfd + 1, &readset, &writeset, &exceptset, 1 << sb->abort_signal);
+        signals=1L << sb->abort_signal;
+        num = WaitSelect (maxfd + 1, &readset, &writeset, &exceptset, NULL, &signals);
         BSDLOG("select returned %d\n", num);
         if (num == -1) {
-            BSDLOG ("Blocking select(%d) returns -1,errno is %d\n", sb->sockabort[0],errno);
+            BSDLOG ("Blocking select() returns -1,errno is %d\n", errno); /* errno TODO! */
             //TODO: fcntl (sb->s, F_SETFL, flags);
             BSDLOG("================>>>>>>>>>>> TODO!\n");
             sb->resultval=-1;
@@ -2183,7 +2287,8 @@ void host_recvfrom_real(TrapContext *context, struct socketbase *sb, uae_u32 sd,
         }
 
 #warning sockabort NEEDS TO BE DONE IN host_sbinit!!??
-        if (FD_ISSET (sb->sockabort[0], &readset)) {
+        //if (FD_ISSET (sb->sockAbort, &readset)) {
+        if (num == 0) {
           /* reset sock abort pipe */
           /* read from the pipe to reset it */
           BSDLOG ("select aborted from signal\n");
@@ -2225,23 +2330,34 @@ void host_recvfrom(TrapContext *context, struct socketbase *sb, uae_u32 sd, uae_
 
   BSDLOG("======== %s ========\n",__func__);
 
-  BSDLOG("sd: %d;sb->ftable[sd]: %lx; SF_BLOCKING: %lx; sb->ftable[sd] & SF_BLOCKING: %lx => block is %d\n", sd, sb->ftable[sd], SF_BLOCKING, sb->ftable[sd] & SF_BLOCKING, block);
-
   if(sb->ftable[sd] & SF_BLOCKING) {
     block=1;
   }
+
+  BSDLOG("sd: %d;sb->ftable[sd]: %lx; SF_BLOCKING: %lx; sb->ftable[sd] & SF_BLOCKING: %lx => block is %d\n", sd, sb->ftable[sd], SF_BLOCKING, sb->ftable[sd] & SF_BLOCKING, block);
 
   execute_in_task(sb, BSD_recvfrom, block,
                   (ULONG) context, (ULONG) sb, (ULONG) sd, (ULONG) msg_in, (ULONG) len, 
                   (ULONG) flags, (ULONG) addr, (ULONG) addrlen);
 
   /* amiga side wants to wait for results.. */
+#if 0
   if(sb->ftable[sd] & SF_BLOCKING) {
-    BSDLOG("calling WAITSIGNAL..\n");
+#endif
+    BSDLOG("calling m68k WAITSIGNAL ..\n");
     WAITSIGNAL;
+    BSDLOG("m68k Signal received => WAITSIGNAL left!\n");
+#if 0
+    sockabort (sb); /* good idea? */
   }
+#endif
 
-  BSDLOG("SIGNAL received => leave!\n");
+  /* set errno's .. */
+
+  if(sb->errnoptr) {
+    BSDLOG("set guest errno %lx to %d\n", sb->errnoptr, sb->sb_errno);
+    put_long(sb->errnoptr, sb->sb_errno);
+  }
 
   return;
 }
@@ -2577,7 +2693,7 @@ static void set_blocking(struct socketbase *sb, int s, int value) {
     }
   }
 
-  BSDLOG("ERROR on IoctlSocket call: %d\n", errno);
+  BSDLOG("ERROR on IoctlSocket call: %d\n", errno); /* errno TODO */
 }
 
 uae_u32 host_IoctlSocket(struct socketbase *sb, uae_u32 sd, uae_u32 request, uae_u32 arg)
@@ -3914,7 +4030,6 @@ void aros_bsdsocket_kill_thread(struct socketbase *sb) {
 }
 
 void aros_bsdsocket_kill_thread_real(struct socketbase *sb) {
-  struct Library *SocketBase;
 
   BSDLOG("======== %s ========\n",__func__);
 
@@ -3926,10 +4041,11 @@ void aros_bsdsocket_kill_thread_real(struct socketbase *sb) {
     sb->mempool=NULL;
   }
 
-  if( (SocketBase=getsocketbase(sb)) ) {
+  /* don't use getsocketbase here. It will open the library, if it was not opened before. */
+  if( sb->bsdsocketbase ) {
     BSDLOG("close library..\n");
-    CloseLibrary(SocketBase);
-    SocketBase=NULL;
+    CloseLibrary(sb->bsdsocketbase);
+    sb->bsdsocketbase=NULL;
   }
 
   BSDLOG("SocketBase closed, mempool deleted\n");
