@@ -70,6 +70,8 @@
 #define AD_GET_JOB_UPDATE_GADGETS     18
 #define AD_GET_JOB_SET_WINDOW_TITLES  19
 #define AD_GET_JOB_WINDOW_LIMITS      20
+#define AD_GET_JOB_SPLASH             21
+#define AD_GET_JOB_HOST_DATA          22 /* resolution .. */
 #define AD_GET_JOB_DEBUG             999
 
 #define J_MSG_CLOSE                    1
