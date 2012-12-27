@@ -21,8 +21,8 @@
  *
  ************************************************************************/
 
-#define JWTRACING_ENABLED 1
-#define JW_ENTER_ENABLED 1
+//#define JWTRACING_ENABLED 1
+//#define JW_ENTER_ENABLED 1
 #include "j.h"
 
 /**********************************************************
@@ -47,7 +47,7 @@ uae_u32 ad_job_splash_screen(ULONG *m68k_results) {
 
   close=get_long(m68k_results+1);
   if(close==1) {
-    kprintf("close! => close_splash()\n");
+    //kprintf("close! => close_splash()\n");
     close_splash();
     LEAVE
     return TRUE;
@@ -57,16 +57,16 @@ uae_u32 ad_job_splash_screen(ULONG *m68k_results) {
   len =get_long(m68k_results+2);
   t   =get_real_address(get_long(m68k_results+3));
 
-  kprintf("time:    %d\n", time);
-  kprintf("length:  %d\n", len);
-  kprintf("t:       %s\n", t);
+  //kprintf("time:    %d\n", time);
+  //kprintf("length:  %d\n", len);
+  //kprintf("t:       %s\n", t);
 
   len=get_long(m68k_results+2);
 
   /* just to be sure, limit length */
   strncpy(text, t, SPLASH_MAX_LENGTH);
 
-  kprintf("text:    %s\n", text);
+  //kprintf("text:    %s\n", text);
 
   do_splash(text, time);
 

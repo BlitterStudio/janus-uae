@@ -25,6 +25,10 @@
 #include <workbench/workbench.h>
 #include <proto/utility.h>
 
+#include <proto/bsdsocket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+
 #include "j.h"
 #include "memory.h"
 #include "include/filesys.h"
@@ -39,6 +43,48 @@
 #define BSDLOG(...)     do { ; } while(0)
 #endif
 
+#ifdef BSDSOCKET
+int abort_port_count=55555;
+
+#if 0
+int sockabort_init(struct socketbase *sb) {
+  struct Library *SocketBase;
+  struct sockaddr_in sin;
+
+  BSDLOG("TEST: NOT YET TESTED!\n");
+
+  if(!(SocketBase=getsocketbase(sb))) {
+    return 0;
+  }
+
+#warning NEEDS SOME TESTING..
+
+	sb->sockAbort = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (sb->sockAbort == INVALID_SOCKET) {
+    BSDLOG("ERROR: unable to create socket sb->sockAbort!\n");
+    return 0;
+  }
+
+  sb->sockAbortPort=abort_port_count;
+  BSDLOG("bind to 127.0.0.1:%d\n", abort_port_count);
+  /* TODO: sin.sin_addr.s_addr=inet_addr("127.0.0.1"); */
+  sin.sin_addr.s_addr=INADDR_ANY;
+  sin.sin_family=AF_INET;
+  sin.sin_port=htons(abort_port_count++);
+
+  if(bind(sb->sockAbort, (struct sockaddr *) &sin, sizeof(sin)) <0) {
+    BSDLOG("ERROR: unable to bind socket!\n");
+    return 0;
+  }
+
+  BSDLOG("socket is now useable!\n");
+	
+	//if ((sb->hEvent = CreateEvent(NULL,FALSE,FALSE,NULL)) == NULL) return 0;
+
+  return 1;
+}
+#endif
+
 /***********************************************************
  * 
  * 
@@ -51,10 +97,21 @@ static void aros_bsdsocket_thread (void) {
   struct JUAE_bsdsocket_Message msg2; /* backup */
   BOOL                          done   = FALSE;
   ULONG                         error;
+  struct socketbase            *sb;
 
   /* There's a time to live .. */
 
   BSDLOG("aros_bsdsocket_thread[%lx]: thread running \n",thread);
+
+  /* "our" sb is sent to us through NP_UserData */
+  sb=thread->pr_Task.tc_UserData;
+  BSDLOG("sb: %lx\n", sb);
+
+#if 0
+  if(!sockabort_init(sb)) {
+    goto EXIT;
+  }
+#endif
 
   port=(struct MsgPort *) &thread->pr_MsgPort;
 
@@ -226,6 +283,7 @@ int aros_bsdsocket_start_thread (struct socketbase *sb) {
 				  NP_StackSize,   49152,
 				  NP_Priority,    0,
 				  NP_Entry,       (ULONG) aros_bsdsocket_thread,
+          NP_UserData,    sb,
 				  TAG_DONE);
 
   if(sb->aros_task) {
@@ -242,3 +300,4 @@ int aros_bsdsocket_start_thread (struct socketbase *sb) {
 }
 
 
+#endif

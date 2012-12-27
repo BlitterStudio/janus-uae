@@ -98,7 +98,13 @@ struct socketbase {
 #else
     uae_sem_t sem;		/* semaphore to notify the socket thread of work */
     uae_thread_id thread;	/* socket thread */
+#ifdef __AROS__
+    BYTE abort_signal;
+    //int sockAbort; /* AROS way to abort a select via a socket */
+    //int sockAbortPort;
+#else
     int  sockabort[2];		/* pipe used to tell the thread to abort a select */
+#endif
     int action;
     int s;			/* for accept */
     uae_u32 name;		/* For gethostbyname */
