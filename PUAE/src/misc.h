@@ -21,7 +21,7 @@ char *utf8u (const char *s);
 int my_existsdir (const char *name);
 bool show_screen_maybe (bool show);
 bool render_screen (bool immediate);
-void show_screen (int mode);
+void show_screen (void);
 TCHAR *au_copy (TCHAR *dst, int maxlen, const char *src);
 FILE *my_opentext (const TCHAR *name);
 int my_existsfile (const char *name);
@@ -40,8 +40,5 @@ TCHAR console_getch (void);
 int vsync_switchmode (int hz);
 bool vsync_busywait_do (int *freetime, bool lace, bool oddeven);
 void doflashscreen (void);
-int scan_roms (int show);
-void enumeratedisplays (void);
-void sortdisplays (void);
 
 #endif /* SRC_MISC_H_INCLUDED */

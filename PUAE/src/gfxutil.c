@@ -177,10 +177,6 @@ static void video_calc_gammatable (void)
 	}
 }
 
-/* UNUSED:
- * useful, but nowhere used
- */
-#if 0
 static uae_u32 limit256 (double v)
 {
 	v = v * (double)(currprefs.gfx_filter_contrast + 1000) / 1000.0 + currprefs.gfx_filter_luminance / 10.0;
@@ -199,7 +195,6 @@ static uae_u32 limit256rb (double v)
 		v = 127;
 	return ((uae_u32)v) & 0xff;
 }
-
 static double get_y (int r, int g, int b)
 {
 	return 0.2989f * r + 0.5866f * g + 0.1145f * b;
@@ -220,7 +215,6 @@ static uae_u32 get_cr (int r, int g, int b)
 {
 	return limit256rb (0.5f * r - 0.418688f * g - 0.081312f * b);
 }
-#endif
 
 extern uae_s32 tyhrgb[65536];
 extern uae_s32 tylrgb[65536];
@@ -513,15 +507,8 @@ void alloc_colors256 (allocfunc_type allocfunc)
 	    int g = (j * 15) / (nb_cols[GRN] - 1);
 	    for (k = 0; k < nb_cols[BLU]; ++k) {
 		int b = (k * 15) / (nb_cols[BLU] - 1);
-/* REMOVEME:
- * nowhere used
- */
-#if 0
 		int result;
 		result = allocfunc (r, g, b, map + l);
-#else
-		allocfunc (r, g, b, map + l);
-#endif
 		l++;
 	    }
 	}
@@ -578,23 +565,12 @@ void alloc_colors256 (allocfunc_type allocfunc)
 			int rgb = (r << 8) | (g << 4) | b;
 
 			if (color_diff[rgb] == maxdiff) {
-/* REMOVEME:
- * nowhere used
- */
-#if 0
 			    int result;
-#endif
+
 			    if (l >= maxcol)
 				lost++;
 			    else {
-/* REMOVEME:
- * nowhere used
- */
-#if 0
 				result = allocfunc (r, g, b, xcolors + rgb);
-#else
-				allocfunc (r, g, b, xcolors + rgb);
-#endif
 				l++;
 			    }
 			    color_diff[rgb] = 0;
@@ -648,22 +624,9 @@ void setup_greydither_maxcol (int maxcol, allocfunc_type allocfunc)
      * set the colormap
      */
     for (i = 0; i < maxcol; ++i) {
-		int c;
-/* REMOVEME:
- * nowhere used
- */
-#if 0
-		int result;
-#endif
+		int c, result;
 		c = (15 * i + (maxcol-1)/2) / (maxcol - 1);
-/* REMOVEME:
- * nowhere used
- */
-#if 0
 		result = allocfunc(c, c, c, map + i);
-#else
-		allocfunc(c, c, c, map + i);
-#endif
 		/* @@@ check for errors */
     }
 
@@ -753,21 +716,9 @@ void setup_dither (int bits, allocfunc_type allocfunc)
 	    grnvals[j] = g;
 	    for (k = 0; k < nb_cols[BLU]; ++k) {
 		int b = (k * 15) / (nb_cols[BLU] - 1);
-/* REMOVEME:
- * nowhere used
- */
-#if 0
 		int result;
-#endif
 		bluvals[k] = b;
-/* REMOVEME:
- * nowhere used
- */
-#if 0
 		result = allocfunc(r, g, b, map + l);
-#else
-		allocfunc(r, g, b, map + l);
-#endif
 		l++;
 	    }
 	}

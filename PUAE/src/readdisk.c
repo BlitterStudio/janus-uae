@@ -12,6 +12,11 @@
 
 #include "uae.h"
 
+void write_log (const char *s,...)
+{
+    fprintf (stderr, "%s", s);
+}
+
 unsigned char filemem[901120];
 
 typedef struct afile {
@@ -29,35 +34,6 @@ typedef struct directory {
 } directory;
 
 static int secdatasize, secdataoffset;
-
-/* We can't use writelog.c, as this would pull in a plethora
- * of unnecessary dependencies, but want write_log to act
- * as known in other uae parts.
-*/
-void write_log (const char *fmt, ...)
-{
-    va_list ap;
-    va_start (ap, fmt);
-#ifdef HAVE_VFPRINTF
-    vfprintf (stderr, fmt, ap);
-#else
-    /* Technique stolen from GCC.  */
-    {
-	int x1, x2, x3, x4, x5, x6, x7, x8;
-	x1 = va_arg (ap, int);
-	x2 = va_arg (ap, int);
-	x3 = va_arg (ap, int);
-	x4 = va_arg (ap, int);
-	x5 = va_arg (ap, int);
-	x6 = va_arg (ap, int);
-	x7 = va_arg (ap, int);
-	x8 = va_arg (ap, int);
-	fprintf (stderr, fmt, x1, x2, x3, x4, x5, x6, x7, x8);
-    }
-#endif
-}
-
-
 
 static uae_u32 readlong (unsigned char *buffer, int pos)
 {
@@ -154,7 +130,7 @@ static void writedir (directory * dir)
 {
     directory *subdir;
     afile *f;
-    int ret;
+	int ret;
 
     if (mkdir (dir->name, 0777) < 0 && errno != EEXIST) {
 		write_log ("Could not create directory \"%s\". Giving up.\n", dir->name);
@@ -167,19 +143,19 @@ static void writedir (directory * dir)
     for (subdir = dir->subdirs; subdir; subdir = subdir->sibling)
 		writedir (subdir);
     for (f = dir->files; f; f = f->sibling) {
-	int fd = creat (f->name, 0666);
-	if (fd < 0) {
-	    write_log ("Could not create file. Giving up.\n");
-	    exit (20);
-	}
-	ret = write (fd, f->data, f->size);
-	if (ret == -1)
-		write_log ("Couldn't write, no permission?");
-	close (fd);
+		int fd = creat (f->name, 0666);
+		if (fd < 0) {
+		    write_log ("Could not create file. Giving up.\n");
+		    exit (20);
+		}
+		ret = write (fd, f->data, f->size);
+		if (ret == -1)
+			write_log ("Couldn't write, no permission?");
+		close (fd);
     }
-    ret = chdir ("..");
-    if (ret == -1)
-	write_log ("Couldn't change directory, no permission?\n");
+	ret = chdir ("..");
+	if (ret == -1)
+		write_log ("Couldn't change directory, no permission?\n");
 }
 
 int main (int argc, char **argv)
@@ -199,7 +175,7 @@ int main (int argc, char **argv)
     }
     ret = fread (filemem, 1, 901120, inf);
     if (ret == 0)
-	write_log ("Couldn't read enough");
+		write_log ("Couldn't read enough");
 
     if (strncmp ((const char *) filemem, "DOS\0", 4) == 0
 			|| strncmp ((const char *) filemem, "DOS\2", 4) == 0) {

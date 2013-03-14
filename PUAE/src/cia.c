@@ -463,15 +463,6 @@ static int checkalarm (unsigned long tod, unsigned long alarm, int inc)
 
 STATIC_INLINE void ciab_checkalarm (int inc)
 {
-	// hack: do not trigger alarm interrupt if KS code and both
-	// tod and alarm == 0. This incorrectly triggers on non-cycle exact
-	// modes. Real hardware value written to ciabtod by KS is always
-	// at least 1 or larger due to bus cycle delays when reading
-	// old value.
-	if ((munge24 (m68k_getpc ()) & 0xFFF80000) == 0xF80000) {
-		if (ciabtod == 0 && ciabalarm == 0)
-			return;
-	}
 	if (checkalarm (ciabtod, ciabalarm, inc)) {
 		ciabicr |= 4;
 		RethinkICRB ();
@@ -1593,8 +1584,8 @@ static uae_u32 REGPARAM2 cia_wget (uaecptr addr)
 	case 3:
 		if (currprefs.cpu_model == 68000 && currprefs.cpu_compatible)
 			v = regs.irc;
-		if (warned > 0 || currprefs.illegal_mem) {
-			write_log (_T("cia_wget: unknown CIA address %08X=%04X PC=%08X\n"), addr, v & 0xffff, M68K_GETPC);
+		if (warned > 0) {
+			write_log (_T("cia_wget: unknown CIA address %x PC=%x\n"), addr, M68K_GETPC);
 			warned--;
 		}
 		break;
@@ -1641,8 +1632,8 @@ static void REGPARAM2 cia_bput (uaecptr addr, uae_u32 value)
 			WriteCIAB (r, value);
 		if ((addr & 0x1000) == 0)
 			WriteCIAA (r, value);
-		if (((addr & 0x3000) == 0x3000) && (warned > 0 || currprefs.illegal_mem)) {
-			write_log (_T("cia_bput: unknown CIA address %08X=%082X PC=%08X\n"), addr, value & 0xff, M68K_GETPC);
+		if (((addr & 0x3000) == 0x3000) && warned > 0) {
+			write_log (_T("cia_bput: unknown CIA address %x %x\n"), addr, value);
 			warned--;
 		}
 	}
@@ -1666,8 +1657,8 @@ static void REGPARAM2 cia_wput (uaecptr addr, uae_u32 value)
 			WriteCIAB (r, value >> 8);
 		if ((addr & 0x1000) == 0)
 			WriteCIAA (r, value & 0xff);
-		if (((addr & 0x3000) == 0x3000) && (warned > 0 || currprefs.illegal_mem)) {
-			write_log (_T("cia_wput: unknown CIA address %08X=%04X %08X\n"), addr, value & 0xffff, M68K_GETPC);
+		if (((addr & 0x3000) == 0x3000) && warned > 0) {
+			write_log (_T("cia_wput: unknown CIA address %x %x\n"), addr, value);
 			warned--;
 		}
 	}
@@ -1779,6 +1770,7 @@ static uae_u8 getclockreg (int addr, struct tm *ct)
 
 static void write_battclock (void)
 {
+  int i;
 	if (!currprefs.rtcfile[0] || currprefs.cs_rtc == 0)
 		return;
 	struct zfile *f = zfile_fopen (currprefs.rtcfile, _T("wb"), ZFD_NORMAL);
@@ -1791,7 +1783,7 @@ static void write_battclock (void)
 		uae_u8 od = clock_control_d;
 		if (currprefs.cs_rtc == 2)
 			clock_control_d &= ~3;
-		for (int i = 0; i < 13; i++) {
+		for (i = 0; i < 13; i++) {
 			uae_u8 v = getclockreg (i, ct);
 			zfile_fwrite (&v, 1, 1, f);
 	}

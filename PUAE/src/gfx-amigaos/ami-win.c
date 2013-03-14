@@ -10,6 +10,7 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
+#include "keymap/keymap.h"
 /* sam: Argg!! Why did phase5 change the path to cybergraphics ? */
 //#define CGX_CGX_H <cybergraphics/cybergraphics.h>
 
@@ -33,7 +34,7 @@
 /****************************************************************************/
 
 #include <exec/execbase.h>
-#include <exec/memory_uae.h>
+#include "memory_uae.h"
 
 #include <dos/dos.h>
 #include <dos/dosextens.h>
@@ -97,6 +98,11 @@
 #undef BitMap
 
 /****************************************************************************/
+
+static const char *get_kb_friendlyname (unsigned int kb);
+
+static const char *get_kb_uniquename (unsigned int kb);
+
 
 #define UAEIFF "UAEIFF"        /* env: var to trigger iff dump */
 #define UAESM  "UAESM"         /* env: var for screen mode */
@@ -252,7 +258,7 @@ static void dummy_flush_screen (struct vidbuf_description *gfxinfo, int first_li
 STATIC_INLINE void flush_line_planar_nodither (struct vidbuf_description *gfxinfo, int line_no)
 {
     int     xs      = 0;
-    int     len     = gfxinfo->width;
+    int     len     = gfxinfo->width_allocated;
     int     yoffset = line_no * gfxinfo->rowbytes;
     uae_u8 *src;
     uae_u8 *dst;
@@ -300,7 +306,7 @@ static void flush_block_planar_nodither (struct vidbuf_description *gfxinfo, int
 STATIC_INLINE void flush_line_planar_dither (struct vidbuf_description *gfxinfo, int line_no)
 {
     int      xs      = 0;
-    int      len     = gfxinfo->width;
+    int      len     = gfxinfo->width_allocated;
     int      yoffset = line_no * gfxinfo->rowbytes;
     uae_u16 *src;
     uae_u16 *dst;
@@ -347,7 +353,7 @@ static void flush_block_planar_dither (struct vidbuf_description *gfxinfo, int f
  */
 STATIC_INLINE void flush_line_ham (struct vidbuf_description *gfxinfo, int line_no)
 {
-    int     len = gfxinfo->width;
+    int     len = gfxinfo->width_allocated;
     uae_u8 *src = gfxinfo->bufmem + (line_no * gfxinfo->rowbytes);
 
     ham_conv ((void*) src, Line, len);
@@ -373,7 +379,7 @@ static void flush_line_cgx (struct vidbuf_description *gfxinfo, int line_no)
 		       RP,
 		       XOffset,
 		       YOffset + line_no,
-		       gfxinfo->width,
+		       gfxinfo->width_allocated,
 		       1,
 		       0xc0);
 }
@@ -385,7 +391,7 @@ static void flush_block_cgx (struct vidbuf_description *gfxinfo, int first_line,
 		       RP,
 		       XOffset,
 		       YOffset + first_line,
-		       gfxinfo->width,
+		       gfxinfo->width_allocated,
 		       last_line - first_line + 1,
 		       0xc0);
 }
@@ -398,7 +404,7 @@ static void flush_line_cgx_v41 (struct vidbuf_description *gfxinfo, int line_no)
 		     RP,
 		     XOffset,
 		     YOffset + line_no,
-		     gfxinfo->width,
+		     gfxinfo->width_allocated,
 		     1,
 		     RECTFMT_RAW);
 }
@@ -411,7 +417,7 @@ static void flush_block_cgx_v41 (struct vidbuf_description *gfxinfo, int first_l
 		     RP,
 		     XOffset,
 		     YOffset + first_line,
-		     gfxinfo->width,
+		     gfxinfo->width_allocated,
 		     last_line - first_line + 1,
 		     RECTFMT_RAW);
 }
@@ -438,7 +444,7 @@ static void flush_clear_screen_gfxlib (struct vidbuf_description *gfxinfo)
 	}
     }
     if (use_delta_buffer)
-	memset (oldpixbuf, 0, gfxinfo->rowbytes * gfxinfo->height);
+	memset (oldpixbuf, 0, gfxinfo->rowbytes * gfxinfo->width_allocated);
 }
 
 /****************************************************************************/
@@ -975,8 +981,8 @@ static int setup_customscreen (void)
 	CUSTOMSCREEN
     };
 
-    ULONG width  = gfxvidinfo.width;
-    ULONG height = gfxvidinfo.height;
+    ULONG width  = gfxvidinfo.width_allocated;
+    ULONG height = gfxvidinfo.height_allocated;
     ULONG depth  = 0; // FIXME: Need to add some way of letting user specify preferred depth
     ULONG mode   = INVALID_ID;
     struct Screen *screen;
@@ -1003,18 +1009,18 @@ static int setup_customscreen (void)
 	depth = os39 ? 8 : (currprefs.gfx_lores_mode ? 5 : 4);
 	mode = PAL_MONITOR_ID; // FIXME: should check whether to use PAL or NTSC.
 	if (currprefs.gfx_lores_mode)
-	    mode |= (gfxvidinfo.height > 256) ? LORESLACE_KEY : LORES_KEY;
+	    mode |= (gfxvidinfo.width_allocated > 256) ? LORESLACE_KEY : LORES_KEY;
 	else
-	    mode |= (gfxvidinfo.height > 256) ? HIRESLACE_KEY : HIRES_KEY;
+	    mode |= (gfxvidinfo.height_allocated > 256) ? HIRESLACE_KEY : HIRES_KEY;
 #ifdef USE_CYBERGFX
     }
 #endif
 
     /* If the screen is larger than requested, centre UAE's display */
-    if (width > (ULONG) gfxvidinfo.width)
-	XOffset = (width - gfxvidinfo.width) / 2;
-    if (height > (ULONG) gfxvidinfo.height)
-	YOffset = (height - gfxvidinfo.height) / 2;
+    if (width > (ULONG) gfxvidinfo.width_allocated)
+	XOffset = (width - gfxvidinfo.width_allocated) / 2;
+    if (height > (ULONG) gfxvidinfo.height_allocated)
+	YOffset = (height - gfxvidinfo.height_allocated) / 2;
 
     do {
 	screen = OpenScreenTags (NULL,
@@ -1076,8 +1082,8 @@ static int setup_publicscreen(void)
     CM = S->ViewPort.ColorMap;
 
     if ((S->ViewPort.Modes & (HIRES | LACE)) == HIRES) {
-	if (gfxvidinfo.height + S->BarHeight + 1 >= S->Height) {
-	    gfxvidinfo.height >>= 1;
+	if (gfxvidinfo.height_allocated + S->BarHeight + 1 >= S->Height) {
+	    gfxvidinfo.height_allocated >>= 1;
 //	    currprefs.gfx_correct_aspect = 1;
 	}
     }
@@ -1085,8 +1091,8 @@ static int setup_publicscreen(void)
     W = OpenWindowTags (NULL,
 			WA_Title,        (ULONG)PACKAGE_NAME,
 			WA_AutoAdjust,   TRUE,
-			WA_InnerWidth,   gfxvidinfo.width,
-			WA_InnerHeight,  gfxvidinfo.height,
+			WA_InnerWidth,   gfxvidinfo.width_allocated,
+			WA_InnerHeight,  gfxvidinfo.height_allocated,
 			WA_PubScreen,    (ULONG)S,
 			WA_Zoom,         (ULONG)ZoomArray,
 			WA_IDCMP,        IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY
@@ -1108,8 +1114,8 @@ static int setup_publicscreen(void)
 	return 0;
     }
 
-    gfxvidinfo.width  = (W->Width  - W->BorderRight - W->BorderLeft);
-    gfxvidinfo.height = (W->Height - W->BorderTop   - W->BorderBottom);
+    gfxvidinfo.width_allocated  = (W->Width  - W->BorderRight - W->BorderLeft);
+    gfxvidinfo.height_allocated = (W->Height - W->BorderTop   - W->BorderBottom);
     XOffset = W->BorderLeft;
     YOffset = W->BorderTop;
 
@@ -1216,8 +1222,8 @@ static int setup_userscreen (void)
 			ASLSM_TitleText, (ULONG)"Select screen display mode",
 			ASLSM_InitialDisplayID,    0,
 			ASLSM_InitialDisplayDepth, 8,
-			ASLSM_InitialDisplayWidth, gfxvidinfo.width,
-			ASLSM_InitialDisplayHeight,gfxvidinfo.height,
+			ASLSM_InitialDisplayWidth, gfxvidinfo.width_allocated,
+			ASLSM_InitialDisplayHeight,gfxvidinfo.height_allocated,
 			ASLSM_MinWidth,            320, //currprefs.gfx_width_win,
 			ASLSM_MinHeight,           200, //currprefs.gfx_height_win,
 			ASLSM_DoWidth,             TRUE,
@@ -1255,16 +1261,16 @@ static int setup_userscreen (void)
 
     /* If chosen screen is smaller than UAE display size then clip
      * display to screen size */
-    if (ScreenWidth  < gfxvidinfo.width)
-	gfxvidinfo.width = ScreenWidth;
-    if (ScreenHeight < gfxvidinfo.width)
-	gfxvidinfo.height = ScreenHeight;
+    if (ScreenWidth  < gfxvidinfo.width_allocated)
+	gfxvidinfo.width_allocated = ScreenWidth;
+    if (ScreenHeight < gfxvidinfo.width_allocated)
+	gfxvidinfo.height_allocated = ScreenHeight;
 
     /* If chosen screen is larger, than centre UAE's display */
-    if (ScreenWidth > gfxvidinfo.width)
-	XOffset = (ScreenWidth - gfxvidinfo.width) / 2;
-    if (ScreenHeight > gfxvidinfo.width)
-	YOffset = (ScreenHeight - gfxvidinfo.height) / 2;
+    if (ScreenWidth > gfxvidinfo.width_allocated)
+	XOffset = (ScreenWidth - gfxvidinfo.width_allocated) / 2;
+    if (ScreenHeight > gfxvidinfo.width_allocated)
+	YOffset = (ScreenHeight - gfxvidinfo.height_allocated) / 2;
 
     S = OpenScreenTags (NULL,
 			SA_DisplayID,			 DisplayID,
@@ -1455,7 +1461,7 @@ static APTR setup_cgx41_buffer (struct vidbuf_description *gfxinfo, const struct
      * and destination modulos to be equal. It certainly goes all wobbly
      * on MorphOS at least when they differ.
      */
-    buffer = AllocVec (bytes_per_row * gfxinfo->height, MEMF_ANY);
+    buffer = AllocVec (bytes_per_row * gfxinfo->height_allocated, MEMF_ANY);
 
     if (buffer) {
 	gfxinfo->bufmem      = buffer;
@@ -1514,16 +1520,16 @@ int graphics_init (void)
     }
 */
 
-    gfxvidinfo.width  = currprefs.gfx_width_win;
-    gfxvidinfo.height = currprefs.gfx_height_win;
+    gfxvidinfo.width_allocated  = currprefs.gfx_size_win.width;
+    gfxvidinfo.height_allocated = currprefs.gfx_size_win.height;
 
-    if (gfxvidinfo.width < 320)
-	gfxvidinfo.width = 320;
-    if (/*!currprefs.gfx_correct_aspect &&*/ (gfxvidinfo.width < 64))
-	gfxvidinfo.width = 200;
+    if (gfxvidinfo.width_allocated < 320)
+	gfxvidinfo.width_allocated = 320;
+    if (/*!currprefs.gfx_correct_aspect &&*/ (gfxvidinfo.width_allocated < 64))
+	gfxvidinfo.width_allocated = 200;
 
-    gfxvidinfo.width += 7;
-    gfxvidinfo.width &= ~7;
+    gfxvidinfo.width_allocated += 7;
+    gfxvidinfo.width_allocated &= ~7;
 
     switch (currprefs.amiga_screen_type) {
 	case UAESCREENTYPE_ASK:
@@ -1548,12 +1554,12 @@ int graphics_init (void)
 
     set_prWindowPtr (W);
 
-    Line = AllocVec ((gfxvidinfo.width + 15) & ~15, MEMF_ANY | MEMF_PUBLIC);
+    Line = AllocVec ((gfxvidinfo.width_allocated + 15) & ~15, MEMF_ANY | MEMF_PUBLIC);
     if (!Line) {
 	write_log ("Unable to allocate raster buffer.\n");
 	return 0;
     }
-    BitMap = myAllocBitMap (gfxvidinfo.width, 1, 8, BMF_CLEAR | BMF_MINPLANES, RP->BitMap);
+    BitMap = myAllocBitMap (gfxvidinfo.width_allocated, 1, 8, BMF_CLEAR | BMF_MINPLANES, RP->BitMap);
     if (!BitMap) {
 	write_log ("Unable to allocate BitMap.\n");
 	return 0;
@@ -1634,8 +1640,8 @@ int graphics_init (void)
 	 * We're not using GGX/P96 for output, so allocate a dumb
 	 * display buffer
 	 */
-	gfxvidinfo.rowbytes = gfxvidinfo.pixbytes * gfxvidinfo.width;
-	gfxvidinfo.bufmem   = (uae_u8 *) calloc (gfxvidinfo.rowbytes, gfxvidinfo.height + 1);
+	gfxvidinfo.rowbytes = gfxvidinfo.pixbytes * gfxvidinfo.width_allocated;
+	gfxvidinfo.bufmem   = (uae_u8 *) calloc (gfxvidinfo.rowbytes, gfxvidinfo.height_allocated + 1);
 	/*									       ^^^ */
 	/*				       This is because DitherLine may read one extra row */
     }
@@ -1647,7 +1653,7 @@ int graphics_init (void)
 
 
     if (use_delta_buffer) {
-	oldpixbuf = (uae_u8 *) calloc (gfxvidinfo.rowbytes, gfxvidinfo.height);
+	oldpixbuf = (uae_u8 *) calloc (gfxvidinfo.rowbytes, gfxvidinfo.height_allocated);
 	if (!oldpixbuf) {
 	    write_log ("AMIGFX: Not enough memory for oldpixbuf.\n");
 	    return 0;
@@ -1773,7 +1779,7 @@ void graphics_notify_state (int state)
 
 /***************************************************************************/
 
-void handle_events(void)
+bool handle_events(void)
 {
     struct IntuiMessage *msg;
     int dmx, dmy, mx, my, class, code, qualifier;
@@ -1815,16 +1821,16 @@ void handle_events(void)
 		if (use_delta_buffer) {
 		    /* hack: this forces refresh */
 		    uae_u8 *ptr = oldpixbuf;
-		    int i, len = gfxvidinfo.width;
+		    int i, len = gfxvidinfo.width_allocated;
 		    len *= gfxvidinfo.pixbytes;
-		    for (i=0; i < currprefs.gfx_height_win; ++i) {
+		    for (i=0; i < currprefs.gfx_size_win.height; ++i) {
 			ptr[00000] ^= 255;
 			ptr[len-1] ^= 255;
 			ptr += gfxvidinfo.rowbytes;
 		    }
 		}
 		BeginRefresh (W);
-		flush_block (0, currprefs.gfx_height_win - 1);
+		flush_block (0, currprefs.gfx_size_win.height - 1);
 		EndRefresh (W, TRUE);
 		break;
 
@@ -1953,7 +1959,7 @@ void DX_SetPalette (int start, int count)
 {
 }
 
-void gfx_set_picasso_modeinfo (uae_u32 w, uae_u32 h, uae_u32 d, int rgbfmt)
+void gfx_set_picasso_modeinfo (uae_u32 w, uae_u32 h, uae_u32 d, RGBFTYPE rgbfmt)
 {
 }
 
@@ -2409,7 +2415,7 @@ struct inputdevice_functions inputdevicefunc_mouse = {
 /*
  * Default inputdevice config for mouse
  */
-int input_get_default_mouse (struct uae_input_device *uid, int num, int port, int af)
+int input_get_default_mouse (struct uae_input_device *uid, int num, int port, int af, bool gp, bool wheel)
 {
     /* Supports only one mouse for now */
     uid[0].eventid[ID_AXIS_OFFSET + 0][0]   = INPUTEVENT_MOUSE1_HORIZ;
@@ -2498,7 +2504,7 @@ struct inputdevice_functions inputdevicefunc_keyboard =
     unacquire_kb,
     read_kb,
     get_kb_num,
-    get_kb_name,
+    get_kb_friendlyname,
     get_kb_widget_num,
     get_kb_widget_type,
     get_kb_widget_first,
@@ -2566,3 +2572,39 @@ int gfx_parse_option (struct uae_prefs *p, const char *option, const char *value
 }
 
 /****************************************************************************/
+
+
+void setmaintitle (void)
+{
+	/* not implemented yet */
+}
+
+
+int picasso_palette (void)
+{
+	int i = 0, changed = 0;
+
+  kprintf("WARNING: picasso_palette is TODO!\n");
+#if 0
+	for ( ; i < 256; i++) {
+		int r = picasso96_state.CLUT[i].Red;
+		int g = picasso96_state.CLUT[i].Green;
+		int b = picasso96_state.CLUT[i].Blue;
+		uae_u32 v = (doMask256 (r, red_bits, red_shift)
+				| doMask256 (g, green_bits, green_shift)
+				| doMask256 (b, blue_bits, blue_shift));
+		if (v !=  picasso_vidinfo.clut[i]) {
+			picasso_vidinfo.clut[i] = v;
+			changed = 1;
+		}
+	}
+	return changed;
+#endif
+  return 0;
+}
+
+void gfx_set_picasso_colors (RGBFTYPE rgbfmt)
+{
+	//alloc_colors_picasso (red_bits, green_bits, blue_bits, red_shift, green_shift, blue_shift, rgbfmt);
+  kprintf("WARNING: gfx_set_picasso_colors is TODO!\n");
+}

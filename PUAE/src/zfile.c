@@ -9,6 +9,7 @@
 
 #define RECURSIVE_ARCHIVES 1
 //#define ZFILE_DEBUG
+#define FSDB_DIR_SEPARATOR_S "\\"
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -31,6 +32,11 @@
 #include <zlib.h>
 #include <stdarg.h>
 #include "misc.h"
+
+#ifdef __AROS__
+#include <proto/dos.h>
+#include <dos/dos.h>
+#endif
 
 static struct zfile *zlist = 0;
 
@@ -80,6 +86,52 @@ struct zdirectory *zfile_opendir_archive_flags (const TCHAR *path, int flags);
 int zfile_readdir_archive_fullpath (struct zdirectory *zd, TCHAR *out, bool fullpath);
 int zfile_fs_usage_archive (const TCHAR *path, const TCHAR *disk, struct fs_usage *fsp);
 
+/* AROS crashes in reading from a handle, if it was an fopened directory, which succeeded */
+static int is_file(char *name) {
+#ifdef __AROS__
+  struct FileInfoBlock *fib;
+  BPTR file=NULL;
+  int ret=0;
+
+  DebOut("name: %s\n", name);
+
+  fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, TAG_END);
+  if(!fib) {
+    DebOut("no FileInfoBlock!\n");
+    goto NOFILE;
+  }
+
+  if(!(file=Lock(name, SHARED_LOCK))) {
+    DebOut("no lock..\n");
+    goto NOFILE;
+  }
+
+  if (!Examine(file, fib)) {
+    DebOut("Examine failed\n");
+    goto NOFILE;
+  }
+
+  if(fib->fib_DirEntryType <0) {
+    DebOut("FILE!\n");
+    ret=1;
+  }
+  else {
+    DebOut("directory..\n");
+  }
+
+NOFILE:
+  if(fib) {
+    FreeDosObject(DOS_FIB, fib);
+  }
+  if(file) {
+    UnLock(file);
+  }
+
+  return ret;
+#else
+  return 1;
+#endif
+}
 
 static void zcache_flush (void)
 {
@@ -1536,13 +1588,13 @@ static struct zfile *zfile_fopen_nozip (const TCHAR *name, const TCHAR *mode)
 	struct zfile *l;
 	FILE *f;
 
-	if(*name == '\0')
+	if(*name == '\0' || !is_file(name))
 		return NULL;
 	l = zfile_create (NULL);
 	l->name = my_strdup (name);
 	l->mode = my_strdup (mode);
 	f = _tfopen (name, mode);
-	if (!f) {
+	if (!f/* || !fd_is_file(f)*/) {
 		zfile_fclose (l);
 		return 0;
 	}
@@ -1606,7 +1658,7 @@ static struct zfile *zfile_fopen_2 (const TCHAR *name, const TCHAR *mode, int ma
 	struct zfile *l;
 	FILE *f;
 
-	if(*name == '\0')
+	if(*name == '\0' || !is_file(name))
 		return NULL;
 #ifdef SINGLEFILE
 	if (zfile_opensinglefile (l))
@@ -1631,7 +1683,7 @@ static struct zfile *zfile_fopen_2 (const TCHAR *name, const TCHAR *mode, int ma
 		} else {
 			f = _tfopen (l->name, mode);
 		}
-		if (!f) {
+		if (!f/*||!fd_is_file(f)*/) {
 			zfile_fclose (l);
 			return 0;
 		}
@@ -1675,10 +1727,14 @@ static struct zfile *zfile_fopen_x (const TCHAR *name, const TCHAR *mode, int ma
 	struct zfile *l, *l2;
 	TCHAR path[MAX_DPATH];
 
+  DebOut("name: %s\n", name);
+
 	if (_tcslen (name) == 0)
 		return NULL;
 	manglefilename (path, name);
+  DebOut("path: %s, name %s\n", path, name);
 	l = zfile_fopen_2 (path, mode, mask);
+  DebOut("l: %lx\n", l);
 	if (!l)
 		return 0;
 	l2 = NULL;
@@ -1704,22 +1760,40 @@ static struct zfile *zfile_fopen_x (const TCHAR *name, const TCHAR *mode, int ma
 
 static struct zfile *zfile_fopenx2 (const TCHAR *name, const TCHAR *mode, int mask, int index)
 {
-	struct zfile *f;
+	struct zfile *f=NULL;
 	TCHAR tmp[MAX_DPATH];
 
+  DebOut("name %s, mode %s\n", name, mode);
+
 	f = zfile_fopen_x (name, mode, mask, index);
+  DebOut("f: %lx\n", f);
 	if (f)
 		return f;
+  DebOut("try other name..\n");
 	if (_tcslen (name) <= 2)
 		return NULL;
+#ifndef __AROS__
 	if (name[1] != ':') {
 //		_tcscpy (tmp, start_path_data);
 		_tcscpy (tmp, "./");
 		_tcscat (tmp, name);
+    DebOut("try %s\n", tmp);
 		f = zfile_fopen_x (tmp, mode, mask, index);
+    DebOut("f: %lx\n", f);
 		if (f)
 			return f;
 	}
+#else
+  /* search in PROGDIR: */
+  if(!strchr(name, ':') && !strncmp(name, "PROGDIR:", strlen("PROGDIR:"))) {
+    /* string does not begin with PROGDIR */
+		_tcscpy (tmp, "PROGDIR:");
+		_tcscat (tmp, name);
+    DebOut("try: %s\n", tmp);
+		f = zfile_fopen_x (tmp, mode, mask, index);
+    DebOut("f: %lx\n", f);
+  }
+#endif
 #if 0
 	name += 2;
 	if (name[0] == '/' || name[0] == '\\')
@@ -1739,7 +1813,7 @@ static struct zfile *zfile_fopenx2 (const TCHAR *name, const TCHAR *mode, int ma
 			break;
 	}
 #endif
-	return NULL;
+	return f;
 }
 
 static struct zfile *zfile_fopenx (const TCHAR *name, const TCHAR *mode, int mask, int index)
@@ -1753,6 +1827,7 @@ static struct zfile *zfile_fopenx (const TCHAR *name, const TCHAR *mode, int mas
 
 struct zfile *zfile_fopen (const TCHAR *name, const TCHAR *mode, int mask)
 {
+  DebOut("name: %s\n", name);
 	return zfile_fopenx (name, mode, mask, 0);
 }
 struct zfile *zfile_fopen2 (const TCHAR *name, const TCHAR *mode)
@@ -1788,8 +1863,11 @@ struct zfile *zfile_dup (struct zfile *zf)
 			if (nzf)
 				return nzf;
 		}
+    if(!is_file(zf->name)) {
+      return NULL;
+    }
 		FILE *ff = _tfopen (zf->name, zf->mode);
-		if (!ff)
+		if (!ff /*|| !fd_is_file(ff)*/)
 			return NULL;
 		nzf = zfile_create (zf);
 		nzf->f = ff;
@@ -1950,10 +2028,13 @@ uae_s64 zfile_ftell (struct zfile *z)
 
 uae_s64 zfile_fseek (struct zfile *z, uae_s64 offset, int mode)
 {
+  DebOut("entered (z %lx, offset: %ld, mode %lx)\n", z, offset, mode);
 	if (z->zfileseek)
 		return z->zfileseek (z, offset, mode);
+  DebOut("1..\n");
 	if (z->data || z->dataseek || (z->parent && z->useparent)) {
 		int ret = 0;
+  DebOut("2..\n");
 		switch (mode)
 		{
 		case SEEK_SET:
@@ -1976,8 +2057,11 @@ uae_s64 zfile_fseek (struct zfile *z, uae_s64 offset, int mode)
 		}
 		return ret;
 	} else {
+    DebOut("3..\n");
+    DebOut("z->f: %lx\n");
 		return fseek (z->f, offset, mode);
 	}
+  DebOut("return 1\n");
 	return 1;
 }
 
@@ -2524,6 +2608,7 @@ static struct zvolume *zfile_fopen_archive_ext (struct znode *parent, struct zfi
 	return zv;
 }
 
+
 static struct zvolume *zfile_fopen_archive_data (struct znode *parent, struct zfile *zf, int flags)
 {
 	struct zvolume *zv = NULL;
@@ -3054,12 +3139,14 @@ int zfile_readdir_archive_fullpath (struct zdirectory *zd, TCHAR *out, bool full
 		uae_u8 *buf = xmalloc (uae_u8, cnt * sizeof (TCHAR*));
 		zd->filenames = (TCHAR**)buf;
 		buf += cnt * sizeof (TCHAR*);
-		for (int i = 0; i < cnt; i++) {
+    int i;
+		for (i = 0; i < cnt; i++) {
 			zd->filenames[i] = n->name;
 			n = n->sibling;
 		}
-		for (int i = 0; i < cnt; i++) {
-			for (int j = i + 1; j < cnt; j++) {
+		for (i = 0; i < cnt; i++) {
+      int j;
+			for (j = i + 1; j < cnt; j++) {
 				if (_tcscmp (zd->filenames[i], zd->filenames[j]) > 0) {
 					TCHAR *tmp = zd->filenames[i];
 					zd->filenames[i] = zd->filenames[j];

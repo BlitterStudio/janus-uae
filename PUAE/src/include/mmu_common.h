@@ -2,7 +2,7 @@
 #ifndef MMU_COMMON_H
 #define MMU_COMMON_H
 
-#define MMUDEBUG 0
+#define MMUDEBUG 1
 #define MMUINSDEBUG 0
 
 #define unlikely(x) x

@@ -16,7 +16,7 @@
 #include <workbench/startup.h>
 
 #include <exec/execbase.h>
-#include <exec/memory_uae.h>
+#include "memory_uae.h"
 
 #include <dos/dos.h>
 

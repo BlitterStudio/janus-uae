@@ -18,7 +18,7 @@
 #endif
 
 #define AMIGA_WIDTH_MAX (752 / 2)
-#define AMIGA_HEIGHT_MAX (576 / 2)
+#define AMIGA_HEIGHT_MAX (574 / 2)
 
 //#define NEWHSYNC
 
@@ -200,11 +200,11 @@ union sps_union {
 };
 extern union sps_union spixstate;
 
-#ifdef OS_WITHOUT_MEMORY_MANAGEMENT
-extern uae_u16 *spixels;
-#else
+//#ifdef OS_WITHOUT_MEMORY_MANAGEMENT
+//extern uae_u16 *spixels;
+//#else
 extern uae_u16 spixels[MAX_SPR_PIXELS * 2];
-#endif
+//#endif
 
 /* Way too much... */
 #define MAX_REG_CHANGE ((MAXVPOS + 1) * 2 * MAXHPOS)

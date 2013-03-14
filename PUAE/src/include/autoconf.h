@@ -1,7 +1,3 @@
-#pragma once
-#ifndef SRC_INCLUDE_AUTOCONF_H_INCLUDED
-#define SRC_INCLUDE_AUTOCONF_H_INCLUDED 1
-
  /*
   * UAE - The Un*x Amiga Emulator
   *
@@ -26,10 +22,6 @@ struct uae_prefs;
 #ifndef HAS_UAEDEV_CONFIG_INFO
 struct uaedev_config_info;
 #endif // HAS_UAEDEV_CONFIG_INFO
-
-#ifndef HAS_UAEDEV_CONFIG_DATA
-struct uaedev_config_data;
-#endif // HAS_UAEDEV_CONFIG_DATA
 
 struct uaedev_mount_info;
 
@@ -87,7 +79,7 @@ extern int move_filesys_unitconfig (struct uae_prefs *p, int nr, int to);
 extern char *validatedevicename (char *s);
 extern char *validatevolumename (char *s);
 
-int filesys_insert (int nr, const TCHAR *volume, const TCHAR *rootdir, bool readonly, int flags);
+int filesys_insert (int nr, TCHAR *volume, const TCHAR *rootdir, bool readonly, int flags);
 int filesys_eject (int nr);
 int filesys_media_change (const TCHAR *rootdir, int inserted, struct uaedev_config_data *uci);
 
@@ -113,5 +105,3 @@ extern void emulib_install (void);
 extern void expansion_init (void);
 extern void expansion_cleanup (void);
 extern void expansion_clear (void);
-
-#endif // SRC_INCLUDE_AUTOCONF_H_INCLUDED

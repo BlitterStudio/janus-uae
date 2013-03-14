@@ -224,7 +224,7 @@ static void mmu_dump_table(const char * label, uaecptr root_ptr)
 #endif
 
 /* {{{ mmu_dump_atc */
-static void mmu_dump_atc(void)
+void mmu_dump_atc(void)
 {
 
 }
@@ -264,7 +264,7 @@ static void mmu_bus_error(uaecptr addr, int fc, bool write, int size, bool rmw, 
 				ssw |= MMU_SSW_TT1;
 			if ((fc2 & 3) != 3)
 				fc2 &= ~2;
-#if MMUDEBUGMISC > 0
+#if MMUDEBUG > 0
 			write_log (_T("040 MMU MOVES fc=%d -> %d\n"), fc, fc2);
 #endif
 			fc = fc2;
@@ -296,14 +296,12 @@ static void mmu_bus_error(uaecptr addr, int fc, bool write, int size, bool rmw, 
 			ssw |= MMU_SSW_CM;
 			regs.mmu_effective_addr = mmu040_movem_ea;
 			mmu040_movem = 0;
-#if MMUDEBUGMISC > 0
 			write_log (_T("040 MMU_SSW_CM EA=%08X\n"), mmu040_movem_ea);
-#endif
 		}
 		if (locked_rmw_cycle) {
 			ssw |= MMU_SSW_LK | MMU_SSW_RW;
 			locked_rmw_cycle = false;
-#if MMUDEBUGMISC > 0
+#if MMUDEBUG > 0
 			write_log (_T("040 MMU_SSW_LK!\n"));
 #endif
 		}
@@ -318,8 +316,14 @@ static void mmu_bus_error(uaecptr addr, int fc, bool write, int size, bool rmw, 
 		uae_u32 fslw = 0;
 
 		fslw |= write ? MMU_FSLW_W : MMU_FSLW_R;
-		fslw |= fc << 16; /* MMU_FSLW_TM */
+#if 0
+		// read-modify-write?
+		if (table68k[mmu060_opcode].rmw) {
+			fslw |= MMU_FSLW_W | MMU_FSLW_R;
+		}
+#endif
 
+		fslw |= fc << 16; /* MMU_FSLW_TM */
 		switch (size) {
 		case sz_byte:
 			fslw |= MMU_FSLW_SIZE_B;
@@ -338,9 +342,6 @@ static void mmu_bus_error(uaecptr addr, int fc, bool write, int size, bool rmw, 
 		}
 		if ((fc & 3) == 2) {
 			// instruction faults always point to opcode address
-#if MMUDEBUGMISC > 0
-			write_log(_T("INS FAULT %08x %08x %d\n"), addr, regs.instruction_pc, mmu060_state);
-#endif
 			addr = regs.instruction_pc;
 			if (mmu060_state == 0) {
 				fslw |= MMU_FSLW_IO; // opword fetch
@@ -360,7 +361,7 @@ static void mmu_bus_error(uaecptr addr, int fc, bool write, int size, bool rmw, 
 		regs.mmu_fslw = fslw;
 
 #if MMUDEBUG > 0
-		write_log(_T("BF: fc=%d w=%d s=%d log=%08x ssw=%08x rmw=%d PC=%08x INS=%04X\n"), fc, write, 1 << size, addr, fslw, rmw, m68k_getpc(), mmu_opcode);
+		write_log(_T("BF: fc=%d w=%d logical=%08x ssw=%08x rmw=%d PC=%08x INS=%04X\n"), fc, write, addr, fslw, rmw, m68k_getpc(), mmu_opcode);
 #endif
 
 	}
@@ -455,7 +456,7 @@ fail:
 uaecptr REGPARAM2 mmu_translate(uaecptr addr, bool super, bool data, bool write)
 {
 	struct mmu_atc_line *l;
-	uae_u32 status = 0;
+	uae_u32 status;
 
 	// this should return a miss but choose a valid line
 	mmu_user_lookup(addr, super, data, write, &l);
@@ -465,8 +466,7 @@ uaecptr REGPARAM2 mmu_translate(uaecptr addr, bool super, bool data, bool write)
 #if MMUDEBUG > 2
 		write_log(_T("[MMU] mmu_translate error"));
 #endif
-		mmu_bus_error(addr, mmu_get_fc(super, data), write, 0, false, status);
-		return 0;
+		THROW(2);
 	}
 
     return l->phys | (addr & mmu_pagemask);
@@ -570,23 +570,6 @@ static uaecptr REGPARAM2 mmu_lookup_pagetable(uaecptr addr, bool super, bool wri
 	return desc;
 }
 
-static void misalignednotfirst(uaecptr addr)
-{
-#if MMUDEBUGMISC > 0
-	write_log (_T("misalignednotfirst %08x -> %08x %08X\n"), regs.mmu_fault_addr, addr, regs.instruction_pc);
-#endif
-	regs.mmu_fault_addr = addr;
-	regs.mmu_fslw |= MMU_FSLW_MA;
-	regs.mmu_ssw |= MMU_SSW_MA;
-}
-
-static void misalignednotfirstcheck(uaecptr addr)
-{
-	if (regs.mmu_fault_addr == addr)
-		return;
-	misalignednotfirst (addr);
-}
-
 uae_u16 REGPARAM2 mmu_get_word_unaligned(uaecptr addr, bool data, bool rmw)
 {
 	uae_u16 res;
@@ -599,7 +582,9 @@ uae_u16 REGPARAM2 mmu_get_word_unaligned(uaecptr addr, bool data, bool rmw)
 	}
 	CATCH(prb) {
 		RESTORE_EXCEPTION;
-		misalignednotfirst(addr);
+		regs.mmu_fault_addr = addr;
+		regs.mmu_fslw |= MMU_FSLW_MA;
+		regs.mmu_ssw |= MMU_SSW_MA;
 		THROW_AGAIN(prb);
 	} ENDTRY
 	return res;
@@ -618,7 +603,9 @@ uae_u32 REGPARAM2 mmu_get_long_unaligned(uaecptr addr, bool data, bool rmw)
 		}
 		CATCH(prb) {
 			RESTORE_EXCEPTION;
-			misalignednotfirst(addr);
+			regs.mmu_fault_addr = addr;
+			regs.mmu_fslw |= MMU_FSLW_MA;
+			regs.mmu_ssw |= MMU_SSW_MA;
 			THROW_AGAIN(prb);
 		} ENDTRY
 	} else {
@@ -632,59 +619,67 @@ uae_u32 REGPARAM2 mmu_get_long_unaligned(uaecptr addr, bool data, bool rmw)
 		}
 		CATCH(prb) {
 			RESTORE_EXCEPTION;
-			misalignednotfirst(addr);
+			regs.mmu_fault_addr = addr;
+			regs.mmu_fslw |= MMU_FSLW_MA;
+			regs.mmu_ssw |= MMU_SSW_MA;
 			THROW_AGAIN(prb);
 		} ENDTRY
 	}
 	return res;
 }
 
-static uae_u16 REGPARAM2 mmu_get_lrmw_word_unaligned(uaecptr addr)
+uae_u16 REGPARAM2 mmu_get_lrmw_word_unaligned(uaecptr addr)
 {
 	uae_u16 res;
 
-	res = (uae_u16)mmu_get_user_byte(addr, regs.s != 0, true, true, sz_word) << 8;
+	res = (uae_u16)mmu_get_user_byte(addr, regs.s != 0, false, true, sz_word) << 8;
 	SAVE_EXCEPTION;
 	TRY(prb) {
-		res |= mmu_get_user_byte(addr + 1, regs.s != 0, true, true, sz_word);
+		res |= mmu_get_user_byte(addr + 1, regs.s != 0, false, true, sz_word);
 		RESTORE_EXCEPTION;
 	}
 	CATCH(prb) {
 		RESTORE_EXCEPTION;
-		misalignednotfirst(addr);
+		regs.mmu_fault_addr = addr;
+		regs.mmu_fslw |= MMU_FSLW_MA;
+		regs.mmu_ssw |= MMU_SSW_MA;
 		THROW_AGAIN(prb);
 	} ENDTRY
 	return res;
 }
 
-static uae_u32 REGPARAM2 mmu_get_lrmw_long_unaligned(uaecptr addr)
+uae_u32 REGPARAM2 mmu_get_lrmw_long_unaligned(uaecptr addr)
 {
 	uae_u32 res;
 
 	if (likely(!(addr & 1))) {
-		res = (uae_u32)mmu_get_user_word(addr, regs.s != 0, true, true, sz_long) << 16;
+		res = (uae_u32)mmu_get_user_word(addr, regs.s != 0, false, true, sz_long) << 16;
 		SAVE_EXCEPTION;
 		TRY(prb) {
-			res |= mmu_get_user_word(addr + 2, regs.s != 0, true, true, sz_long);
+			res |= mmu_get_user_word(addr + 2, regs.s != 0, false, true, sz_long);
 			RESTORE_EXCEPTION;
 		}
 		CATCH(prb) {
 			RESTORE_EXCEPTION;
-			misalignednotfirst(addr);
+			regs.mmu_fault_addr = addr;
+			regs.mmu_fslw |= MMU_FSLW_MA;
+			regs.mmu_ssw |= MMU_SSW_MA;
 			THROW_AGAIN(prb);
 		} ENDTRY
 	} else {
-		res = (uae_u32)mmu_get_user_byte(addr, regs.s != 0, true, true, sz_long) << 8;
+		res = (uae_u32)mmu_get_user_byte(addr, regs.s != 0, false, true, sz_long) << 8;
 		SAVE_EXCEPTION;
 		TRY(prb) {
-			res = (res | mmu_get_user_byte(addr + 1, regs.s != 0, true, true, sz_long)) << 8;
-			res = (res | mmu_get_user_byte(addr + 2, regs.s != 0, true, true, sz_long)) << 8;
-			res |= mmu_get_user_byte(addr + 3, regs.s != 0, true, true, sz_long);
+			res = (res | mmu_get_user_byte(addr + 1, regs.s != 0, false, true, sz_long)) << 8;
+			res = (res | mmu_get_user_byte(addr + 2, regs.s != 0, false, true, sz_long)) << 8;
+			res |= mmu_get_user_byte(addr + 3, regs.s != 0, false, true, sz_long);
 			RESTORE_EXCEPTION;
 		}
 		CATCH(prb) {
 			RESTORE_EXCEPTION;
-			misalignednotfirst(addr);
+			regs.mmu_fault_addr = addr;
+			regs.mmu_fslw |= MMU_FSLW_MA;
+			regs.mmu_ssw |= MMU_SSW_MA;
 			THROW_AGAIN(prb);
 		} ENDTRY
 	}
@@ -741,7 +736,11 @@ void REGPARAM2 mmu_put_long_unaligned(uaecptr addr, uae_u32 val, bool data, bool
 	CATCH(prb) {
 		RESTORE_EXCEPTION;
 		regs.wb3_data = val;
-		misalignednotfirstcheck(addr);
+		if (regs.mmu_fault_addr != addr) {
+			regs.mmu_fault_addr = addr;
+			regs.mmu_fslw |= MMU_FSLW_MA;
+			regs.mmu_ssw |= MMU_SSW_MA;
+		}
 		THROW_AGAIN(prb);
 	} ENDTRY
 }
@@ -757,7 +756,11 @@ void REGPARAM2 mmu_put_word_unaligned(uaecptr addr, uae_u16 val, bool data, bool
 	CATCH(prb) {
 		RESTORE_EXCEPTION;
 		regs.wb3_data = val;
-		misalignednotfirstcheck(addr);
+		if (regs.mmu_fault_addr != addr) {
+			regs.mmu_fault_addr = addr;
+			regs.mmu_fslw |= MMU_FSLW_MA;
+			regs.mmu_ssw |= MMU_SSW_MA;
+		}
 		THROW_AGAIN(prb);
 	} ENDTRY
 }
@@ -817,7 +820,9 @@ uae_u32 REGPARAM2 sfc_get_long(uaecptr addr)
 			}
 			CATCH(prb) {
 				RESTORE_EXCEPTION;
-				misalignednotfirst(addr);
+				regs.mmu_fault_addr = addr;
+				regs.mmu_fslw |= MMU_FSLW_MA;
+				regs.mmu_ssw |= MMU_SSW_MA;
 				THROW_AGAIN(prb);
 			} ENDTRY
 		} else {
@@ -831,7 +836,9 @@ uae_u32 REGPARAM2 sfc_get_long(uaecptr addr)
 			}
 			CATCH(prb) {
 				RESTORE_EXCEPTION;
-				misalignednotfirst(addr);
+				regs.mmu_fault_addr = addr;
+				regs.mmu_fslw |= MMU_FSLW_MA;
+				regs.mmu_ssw |= MMU_SSW_MA;
 				THROW_AGAIN(prb);
 			} ENDTRY
 		}
@@ -859,7 +866,9 @@ uae_u16 REGPARAM2 sfc_get_word(uaecptr addr)
 	}
 	CATCH(prb) {
 		RESTORE_EXCEPTION;
-		misalignednotfirst(addr);
+		regs.mmu_fault_addr = addr;
+		regs.mmu_fslw |= MMU_FSLW_MA;
+		regs.mmu_ssw |= MMU_SSW_MA;
 		THROW_AGAIN(prb);
 	} ENDTRY
 	}
@@ -903,7 +912,11 @@ void REGPARAM2 dfc_put_long(uaecptr addr, uae_u32 val)
 	CATCH(prb) {
 		RESTORE_EXCEPTION;
 		regs.wb3_data = val;
-		misalignednotfirstcheck(addr);
+		if (regs.mmu_fault_addr != addr) {
+			regs.mmu_fault_addr = addr;
+			regs.mmu_fslw |= MMU_FSLW_MA;
+			regs.mmu_ssw |= MMU_SSW_MA;
+		}
 		THROW_AGAIN(prb);
 	} ENDTRY
 	ismoves = false;
@@ -928,7 +941,11 @@ void REGPARAM2 dfc_put_word(uaecptr addr, uae_u16 val)
 	CATCH(prb) {
 		RESTORE_EXCEPTION;
 		regs.wb3_data = val;
-		misalignednotfirstcheck(addr);
+		if (regs.mmu_fault_addr != addr) {
+			regs.mmu_fault_addr = addr;
+			regs.mmu_fslw |= MMU_FSLW_MA;
+			regs.mmu_ssw |= MMU_SSW_MA;
+		}
 		THROW_AGAIN(prb);
 	} ENDTRY
 	ismoves = false;
@@ -1047,34 +1064,31 @@ void REGPARAM2 mmu_flush_atc(uaecptr addr, bool super, bool global)
 {
 	int way,type,index;
 
-	uaecptr tag = ((super ? 0x80000000 : 0) | (addr >> 1)) & mmu_tagmask;
+	uaecptr tag = (mmu_is_super | (addr >> 1)) & mmu_tagmask;
 	if (mmu_pagesize_8k)
 		index=(addr & 0x0001E000)>>13;
 	else
 		index=(addr & 0x0000F000)>>12;
-	for (type=0;type<ATC_TYPE;type++) {
-		for (way=0;way<ATC_WAYS;way++) {
-			if (!global && mmu_atc_array[type][way][index].global)
-				continue;
-			// if we have this 
-			if ((tag == mmu_atc_array[type][way][index].tag) && (mmu_atc_array[type][way][index].valid)) {
-				mmu_atc_array[type][way][index].valid=false;
-			}
-		}
-	}	
+	for (type=0;type<ATC_TYPE;type++)
+	for (way=0;way<ATC_WAYS;way++) {
+		if (!global && mmu_atc_array[type][way][index].global)
+			continue;
+		// if we have this 
+		if ((tag == mmu_atc_array[type][way][index].tag) && (mmu_atc_array[type][way][index].valid)) {
+			mmu_atc_array[type][way][index].valid=false;
+	}
+	}
 }
 
 void REGPARAM2 mmu_flush_atc_all(bool global)
 {
 	unsigned int way,slot,type;
-	for (type=0;type<ATC_TYPE;type++) {
-		for (way=0;way<ATC_WAYS;way++) {
-			for (slot=0;slot<ATC_SLOTS;slot++) {
-				if (!global && mmu_atc_array[type][way][slot].global)
-					continue;
-				mmu_atc_array[type][way][slot].valid=false;
-			}
-		}
+	for (type=0;type<ATC_TYPE;type++) 
+	for (way=0;way<ATC_WAYS;way++) 
+	for (slot=0;slot<ATC_SLOTS;slot++) {
+		if (!global && mmu_atc_array[type][way][slot].global)
+			continue;
+		mmu_atc_array[type][way][slot].valid=false;
 	}
 }
 
@@ -1117,17 +1131,8 @@ void m68k_do_rte_mmu040 (uaecptr a7)
 	if (ssr & MMU_SSW_CM) {
 		mmu040_movem = 1;
 		mmu040_movem_ea = get_long_mmu040 (a7 + 8);
-#if MMUDEBUGMISC > 0
 		write_log (_T("MMU restarted MOVEM EA=%08X\n"), mmu040_movem_ea);
-#endif
 	}
-}
-
-void m68k_do_rte_mmu060 (uaecptr a7)
-{
-#if 0
-	mmu060_state = 2;
-#endif
 }
 
 void flush_mmu040 (uaecptr addr, int n)
@@ -1206,81 +1211,6 @@ uae_u32 uae_mmu_get_lrmw (uaecptr addr, int size, int type)
 	locked_rmw_cycle = false;
 	return v;
 }
-
-uae_u32 REGPARAM2 mmu060_get_rmw_bitfield (uae_u32 src, uae_u32 bdata[2], uae_s32 offset, int width)
-{
-	uae_u32 tmp1, tmp2, res, mask;
-
-	offset &= 7;
-	mask = 0xffffffffu << (32 - width);
-	switch ((offset + width + 7) >> 3) {
-	case 1:
-		tmp1 = get_rmw_byte_mmu060 (src);
-		res = tmp1 << (24 + offset);
-		bdata[0] = tmp1 & ~(mask >> (24 + offset));
-		break;
-	case 2:
-		tmp1 = get_rmw_word_mmu060 (src);
-		res = tmp1 << (16 + offset);
-		bdata[0] = tmp1 & ~(mask >> (16 + offset));
-		break;
-	case 3:
-		tmp1 = get_rmw_word_mmu060 (src);
-		tmp2 = get_rmw_byte_mmu060 (src + 2);
-		res = tmp1 << (16 + offset);
-		bdata[0] = tmp1 & ~(mask >> (16 + offset));
-		res |= tmp2 << (8 + offset);
-		bdata[1] = tmp2 & ~(mask >> (8 + offset));
-		break;
-	case 4:
-		tmp1 = get_rmw_long_mmu060 (src);
-		res = tmp1 << offset;
-		bdata[0] = tmp1 & ~(mask >> offset);
-		break;
-	case 5:
-		tmp1 = get_rmw_long_mmu060 (src);
-		tmp2 = get_rmw_byte_mmu060 (src + 4);
-		res = tmp1 << offset;
-		bdata[0] = tmp1 & ~(mask >> offset);
-		res |= tmp2 >> (8 - offset);
-		bdata[1] = tmp2 & ~(mask << (8 - offset));
-		break;
-	default:
-		/* Panic? */
-		write_log (_T("x_get_bitfield() can't happen %d\n"), (offset + width + 7) >> 3);
-		res = 0;
-		break;
-	}
-	return res;
-}
-
-void REGPARAM2 mmu060_put_rmw_bitfield (uae_u32 dst, uae_u32 bdata[2], uae_u32 val, uae_s32 offset, int width)
-{
-	offset = (offset & 7) + width;
-	switch ((offset + 7) >> 3) {
-	case 1:
-		put_rmw_byte_mmu060 (dst, bdata[0] | (val << (8 - offset)));
-		break;
-	case 2:
-		put_rmw_word_mmu060 (dst, bdata[0] | (val << (16 - offset)));
-		break;
-	case 3:
-		put_rmw_word_mmu060 (dst, bdata[0] | (val >> (offset - 16)));
-		put_rmw_byte_mmu060 (dst + 2, bdata[1] | (val << (24 - offset)));
-		break;
-	case 4:
-		put_rmw_long_mmu060 (dst, bdata[0] | (val << (32 - offset)));
-		break;
-	case 5:
-		put_rmw_long_mmu060 (dst, bdata[0] | (val >> (offset - 32)));
-		put_rmw_byte_mmu060 (dst + 4, bdata[1] | (val << (40 - offset)));
-		break;
-	default:
-		write_log (_T("x_put_bitfield() can't happen %d\n"), (offset + 7) >> 3);
-		break;
-	}
-}
-
 
 #ifndef __cplusplus
 jmp_buf __exbuf;

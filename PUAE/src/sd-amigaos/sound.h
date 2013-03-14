@@ -8,7 +8,6 @@
 
 #define SOUNDSTUFF 1
 
-#include <exec/memory_uae.h>
 #include <exec/devices.h>
 #include <exec/io.h>
 
@@ -20,6 +19,7 @@
 #include <proto/dos.h>
 #include <clib/alib_protos.h>
 
+//#include "memory_uae.h"
 extern struct AHIRequest *AHIio[];
 extern struct AHIRequest *linkio;
 
@@ -77,3 +77,4 @@ STATIC_INLINE void check_sound_buffers (void)
 #define DEFAULT_SOUND_FREQ 11025
 #define DEFAULT_SOUND_LATENCY 100
 #define HAVE_STEREO_SUPPORT
+#define DEFAULT_SOUND_MAXB 16384

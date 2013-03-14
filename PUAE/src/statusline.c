@@ -90,13 +90,7 @@ void draw_status_line_single (uae_u8 *buf, int bpp, int y, int totalwidth, uae_u
 		x_start = TD_PADX;
 
 	for (led = 0; led < LED_MAX; led++) {
-/* REMOVEME:
- * nowhere used
- */
-#if 0
-		int side;
-#endif
-		int pos, num1 = -1, num2 = -1, num3 = -1, num4 = -1;
+		int side, pos, num1 = -1, num2 = -1, num3 = -1, num4 = -1;
 		int x, c, on = 0, am = 2;
 		xcolnr on_rgb = 0, on_rgb2 = 0, off_rgb = 0, pen_rgb = 0;
 		int half = 0;
@@ -125,12 +119,7 @@ void draw_status_line_single (uae_u8 *buf, int bpp, int y, int totalwidth, uae_u
 				if (gui_data.df[pled][0] == 0)
 					pen_rgb = ledcolor (0x00aaaaaa, rc, gc, bc, alpha);
 			}
-/* REMOVEME:
- * nowhere used
- */
-#if 0
 			side = gui_data.drive_side;
-#endif
 		} else if (led == LED_POWER) {
 			pos = 3;
 			on_rgb = ((gui_data.powerled_brightness * 10 / 16) + 0x33) << 16;
@@ -216,11 +205,9 @@ void draw_status_line_single (uae_u8 *buf, int bpp, int y, int totalwidth, uae_u
 		} else if (led == LED_MD && gui_data.drive_disabled[3]) {
 			// DF3 reused as internal non-volatile ram led (cd32/cdtv)
 			pos = 6 + 3;
-			if (gui_data.md >= 0) {
-				on = gui_data.md;
-				on_rgb = on == 2 ? 0xcc0000 : 0x00cc00;
-				off_rgb = 0x003300;
-			}
+			on = gui_data.md;
+			on_rgb = on == 2 ? 0xcc0000 : 0x00cc00;
+			off_rgb = 0x003300;
 			num1 = -1;
 			num2 = -1;
 			num3 = -1;

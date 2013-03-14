@@ -307,16 +307,10 @@ static int shiftpressed (void)
 {
 	return input_getqualifiers () & ID_FLAG_QUALIFIER_SHIFT;
 }
-
-/* REMOVEME:
- */
-#if 0
 static int altpressed (void)
 {
 	return input_getqualifiers () & ID_FLAG_QUALIFIER_ALT;
 }
-#endif
-
 static int ctrlpressed (void)
 {
 	return input_getqualifiers () & ID_FLAG_QUALIFIER_CONTROL;

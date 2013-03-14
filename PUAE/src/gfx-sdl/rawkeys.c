@@ -62,6 +62,42 @@ static const struct sdl_raw_keymap keymaps[] = {
     { 0, 0, 0, 0, 0 }
 };
 
+#if 0
+struct uae_input_device_kbr_default *get_default_raw_keymap (int type)
+{
+	const struct sdl_raw_keymap *k = &keymaps[0];
+
+	if (!keyboard) {
+		free (keyboard);
+		keyboard = 0;
+	}
+
+	while (k->sdl_gfx_driver != type && k->sdl_gfx_driver != 0)
+		k++;
+/*
+	if (k->keymap) {
+		write_log ("Found %s raw keyboard mapping\n", k->name);
+		modkeytable = k->modtable;
+		keyboard = uaekey_make_default_kbr (k->keymap);
+	}
+*/
+
+	return keyboard;
+}
+#endif
+
+#if 0
+struct uae_hotkeyseq *get_default_raw_hotkeys (void)
+{
+	const struct sdl_raw_keymap *k = &keymaps[0];
+
+	while (k->sdl_gfx_driver != get_sdlgfx_type())
+		k++;
+
+	return k->hotkeys;
+}
+#endif
+
 /*
  * Map SDL modifier key to raw key code
  *

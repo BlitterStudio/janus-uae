@@ -99,12 +99,6 @@ STATIC_INLINE int uae_wait_thread (uae_thread_id thread)
     return pthread_join (thread, (void**)0);
 }
 
-STATIC_INLINE void uae_kill_thread (uae_thread_id* thread)
-{
-	pthread_detach(*thread);
-}
-
-
 #define UAE_THREAD_EXIT pthread_exit(0)
 
 #define uae_set_thread_priority(pri)

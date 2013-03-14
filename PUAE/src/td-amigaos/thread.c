@@ -9,22 +9,24 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
-#include <exec/exec.h>
 #include <exec/ports.h>
 #include <exec/lists.h>
 #include <dos/dosextens.h>
+#include <dos/dos.h>
 #include <dos/dostags.h>
+#include <exec/exec.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/timer.h>
 #include <clib/alib_protos.h>
 
-#include "threaddep/thread.h"
+#include "td-amigaos/thread.h"
 
 /*
  * Handle CreateNewProc() differences between AmigaOS-like systems
  */
+#if 0
 #ifdef __MORPHOS__
 /* CreateNewProc() on MorphOS needs to be told that code is PPC */
 # define myCreateNewProcTags(...) CreateNewProcTags(NP_CodeType, CODETYPE_PPC, __VA_ARGS__)
@@ -35,6 +37,7 @@
 # else
 #  define myCreateNewProcTags CreateNewProcTags
 # endif
+#endif
 #endif
 
 /*
@@ -294,7 +297,7 @@ static int start_proxy_thread (void)
     struct Process *p;
 
     if (replyport) {
-	p = myCreateNewProcTags (NP_Name,	(ULONG) "E-UAE semaphore proxy",
+	p = CreateNewProcTags (NP_Name,	(ULONG) "E-UAE semaphore proxy",
 				 NP_Priority,		10,
 				 NP_StackSize,		2048,
 				 NP_Entry,	(ULONG) proxy_thread_main,
@@ -467,7 +470,7 @@ int uae_start_thread (char *name, void *(*f) (void *), void *arg, uae_thread_id 
     struct MsgPort *replyport = CreateMsgPort();
 
     if (replyport) {
-	*foo = (struct Task *)myCreateNewProcTags (NP_Output,		   Output (),
+	*foo =(struct Task *)CreateNewProcTags (NP_Output,		   Output (),
 						   NP_Input,		   Input (),
 						   NP_Name,	   (ULONG) "UAE thread",
 						   NP_CloseOutput,	   FALSE,

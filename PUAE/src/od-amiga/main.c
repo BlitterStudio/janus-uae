@@ -91,7 +91,7 @@ int main (int argc, char *argv[])
     init_libs ();
 
 #ifdef USE_SDL
-    init_sdl ();
+    //init_sdl ();
 #endif
 
     real_main (argc, argv);
@@ -127,7 +127,7 @@ void setup_brkhandler (void)
 /*
  * Handle target-specific cfgfile options
  */
-void target_save_options (FILE *f, const struct uae_prefs *p)
+void target_save_options (struct zfile *f, struct uae_prefs *p)
 {
 }
 

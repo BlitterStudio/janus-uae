@@ -17,15 +17,28 @@
 #include "uae_types.h"
 #include "writelog.h"
 
+#ifdef __AROS__
+#include <aros/debug.h>
+#endif
+
 void write_log (const char *fmt, ...)
 {
-    va_list ap;
-    va_start (ap, fmt);
+  char msg[256];
+  va_list ap;
+  va_start (ap, fmt);
+
+#ifdef __AROS__
+  vsnprintf(msg, 255, fmt, ap);
+  fprintf(stderr, msg);
+  kprintf("uae: ");
+  kprintf(msg);
+#else
+
 #ifdef HAVE_VFPRINTF
     vfprintf (stderr, fmt, ap);
 #else
     /* Technique stolen from GCC.  */
-    {
+{
 	int x1, x2, x3, x4, x5, x6, x7, x8;
 	x1 = va_arg (ap, int);
 	x2 = va_arg (ap, int);
@@ -35,9 +48,12 @@ void write_log (const char *fmt, ...)
 	x6 = va_arg (ap, int);
 	x7 = va_arg (ap, int);
 	x8 = va_arg (ap, int);
+
 	fprintf (stderr, fmt, x1, x2, x3, x4, x5, x6, x7, x8);
-    }
+}
 #endif
+#endif
+
 }
 
 #ifdef JIT

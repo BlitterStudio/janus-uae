@@ -15,6 +15,14 @@
   * Copyright 1996, 1997 Bernd Schmidt
   */
 
+/* Exception is used both in AROS and in uae :(.. I don't like that! */
+/* remove AROS Exception definition */
+/* uae will define its own Exception later on */
+#ifdef __AROS__
+#define Exception AROS_Exception
+#define SetSR AROS_SetSR
+#endif
+
 #if defined(__cplusplus)
 #include <cstddef>
 #include <cstdbool>
@@ -57,6 +65,7 @@
 #if defined __AMIGA__ || defined __amiga__
 #include <devices/timer.h>
 #endif
+#undef NATMEM_OFFSET
 
 #if defined(__cplusplus)
 #include <cstdio>
@@ -312,6 +321,10 @@ extern int gui_message_multibutton (int flags, const char *format,...);
 #define STATIC_INLINE static __inline__ __attribute__ ((always_inline))
 #define NOINLINE __attribute__ ((noinline))
 #define NORETURN __attribute__ ((noreturn))
+#elif _MSC_VER
+#define STATIC_INLINE static __forceinline
+#define NOINLINE __declspec(noinline)
+#define NORETURN __declspec(noreturn)
 #else
 #define STATIC_INLINE static __inline__
 #define NOINLINE
@@ -338,21 +351,12 @@ extern int gui_message_multibutton (int flags, const char *format,...);
 
 #define XFREE_DEBUG 0
 
-// Please do NOT use identifiers with two leading underscores.
-// See C++99 Standard chapter 7.1.3 "Reserved identifiers"
-// #define __xfree(buffer) { free(buffer); buffer = NULL; }
-#define xfree_d(buffer) { free(buffer); buffer = NULL; }
+#define __xfree(buffer) { free(buffer); buffer = NULL; }
 
 #if XFREE_DEBUG > 0
-# define xfree(buffer) { \
-	if (buffer) { \
-		xfree_d (buffer) \
-	} else { \
-		fprintf (stderr, "NULL pointer freed at %s:%d %s\n", \
-				__FILE__, __LINE__, __FUNCTION__); \
-	} }
+#define xfree(buffer) { if (buffer) { __xfree (buffer) } else { fprintf (stderr, "NULL pointer freed at %s:%d %s\n", __FILE__, __LINE__, __FUNCTION__); } }
 #else
-# define xfree(buffer) { if (buffer) { xfree_d (buffer) } }
+#define xfree(buffer) { if (buffer) { __xfree (buffer) } }
 #endif //xfree_debug
 
 #define DBLEQU(f, i) (abs ((f) - (i)) < 0.000001)
@@ -395,9 +399,27 @@ extern int gui_message_multibutton (int flags, const char *format,...);
 #define _T
 #define sleep_millis uae_msleep
 #define _istalnum iswalnum
-#define ULONG unsigned long
+//#define ULONG unsigned long
 #define _strtoui64 strtoul
 #define _tcscspn(wcs, reject) wcscspn((const wchar_t*)(wcs), (const wchar_t*)(reject))
+
+
+/* Exception is used both in AROS and in uae :(.. I don't like that! */
+#ifdef __AROS__
+#include <aros/debug.h>
+//int     kprintf      (const char * fmt, ...);
+//int     kprintf      (const char * fmt, ...);
+
+
+#define OLI_DEBUG
+#if defined(OLI_DEBUG)
+#define DebOut(...) do { bug("%s:%d %s(): ",__FILE__,__LINE__,__func__);bug(__VA_ARGS__); } while(0)
+#define TODO() bug("==> %s:%d: %s\n", __FILE__, __LINE__, __PRETTY_FUNCTION__)
+#else
+#define DebOut(...)
+#define TODO(...)
+#endif
+#endif
 
 #ifndef _stat64
 #define _stat64 stat64
@@ -409,7 +431,8 @@ extern int gui_message_multibutton (int flags, const char *format,...);
 
 typedef int HANDLE;
 typedef unsigned long DWORD;
-typedef unsigned short WORD;
+
+//typedef unsigned short WORD;
 typedef long long LONGLONG;
 typedef int64_t off64_t;
 

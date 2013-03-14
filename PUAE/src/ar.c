@@ -1064,8 +1064,11 @@ void action_replay_enter (void)
 
 void check_prefs_changed_carts (int in_memory_reset)
 {
-	if (!config_changed)
+  DebOut("entered\n");
+	if (!config_changed) {
+    DebOut("left\n");
 		return;
+  }
 	if (currprefs.cart_internal != changed_prefs.cart_internal)
 		currprefs.cart_internal = changed_prefs.cart_internal;
 	if (_tcscmp (currprefs.cartfile, changed_prefs.cartfile) != 0) {
@@ -1081,6 +1084,7 @@ void check_prefs_changed_carts (int in_memory_reset)
 #endif
 		}
 	}
+  DebOut("done\n");
 }
 
 void action_replay_reset (bool hardreset, bool keyboardreset)
@@ -1328,10 +1332,6 @@ static uae_u8* get_checksum_location (void)
 }
 
 
-/* UNNEEDED:
- * This is a useful function, but currently it is nowhere used.
- */
-#if 0
 /* Replaces the existing cart checksum with a correct one. */
 /* Useful if you want to patch the rom. */
 static void action_replay_fixup_checksum (uae_u32 new_checksum)
@@ -1343,7 +1343,6 @@ static void action_replay_fixup_checksum (uae_u32 new_checksum)
 		write_log (_T("Unable to locate Checksum in ROM.\n"));
 	return;
 }
-#endif
 
 /* Longword search on word boundary
 * the search_value is assumed to already be in the local endian format
@@ -1645,21 +1644,30 @@ int action_replay_load (void)
 	armodel = 0;
 	action_replay_flag = ACTION_REPLAY_INACTIVE;
 	write_log_debug (_T("Entered action_replay_load ()\n"));
+  DebOut("entered\n");
 	/* Don't load a rom if one is already loaded. Use action_replay_unload () first. */
 	if (armemory_rom || hrtmemory) {
 		write_log (_T("action_replay_load () ROM already loaded.\n"));
 		return 0;
 	}
 
-	if (_tcslen (currprefs.cartfile) == 0)
+	if (_tcslen (currprefs.cartfile) == 0) {
+    DebOut("done\n");
 		return 0;
+  }
+  DebOut("1..\n");
 	rd = getromdatabypath (currprefs.cartfile);
 	if (rd) {
-		if (rd->id == 62)
+		if (rd->id == 62) {
+      DebOut("done\n");
 			return superiv_init (rd, NULL);
-		if (rd->type & ROMTYPE_CD32CART)
+    }
+		if (rd->type & ROMTYPE_CD32CART) {
+      DebOut("done\n");
 			return 0;
+    }
 	}
+  DebOut("2..\n");
 	f = read_rom_name (currprefs.cartfile);
 	if (!f) {
 		write_log (_T("failed to load '%s' cartridge ROM\n"), currprefs.cartfile);
@@ -1670,9 +1678,11 @@ int action_replay_load (void)
 		write_log (_T("Unknown cartridge ROM\n"));
 	} else {
 		if (rd->type & (ROMTYPE_SUPERIV | ROMTYPE_NORDIC | ROMTYPE_XPOWER)) {
+      DebOut("done\n");
 			return superiv_init (rd, f);
 		}
 	}
+  DebOut("3..\n");
 	zfile_fseek(f, 0, SEEK_END);
 	ar_rom_file_size = zfile_ftell(f);
 	zfile_fseek(f, 0, SEEK_SET);
@@ -1685,8 +1695,10 @@ int action_replay_load (void)
 	if (ar_rom_file_size != 65536 && ar_rom_file_size != 131072 && ar_rom_file_size != 262144) {
 		write_log (_T("rom size must be 64KB (AR1), 128KB (AR2) or 256KB (AR3)\n"));
 		zfile_fclose(f);
+    DebOut("done\n");
 		return 0;
 	}
+  DebOut("4..\n");
 	action_replay_flag = ACTION_REPLAY_INACTIVE;
 	armemory_rom = xmalloc (uae_u8, ar_rom_file_size);
 	zfile_fread (armemory_rom, 1, ar_rom_file_size, f);

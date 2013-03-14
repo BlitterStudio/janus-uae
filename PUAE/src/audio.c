@@ -1136,7 +1136,8 @@ STATIC_INLINE int is_audio_active (void)
 uae_u16 audio_dmal (void)
 {
 	uae_u16 dmal = 0;
-	for (int nr = 0; nr < 4; nr++) {
+  int nr;
+	for (nr = 0; nr < 4; nr++) {
 		struct audio_channel_data *cdp = audio_channel + nr;
 		if (cdp->dr)
 			dmal |= 1 << (nr * 2);
@@ -1492,7 +1493,8 @@ static void audio_state_channel (int nr, bool perfin)
 void audio_state_machine (void)
 {
 	update_audio ();
-	for (int nr = 0; nr < 4; nr++) {
+  int nr;
+	for (nr = 0; nr < 4; nr++) {
 		struct audio_channel_data *cdp = audio_channel + nr;
 		audio_state_channel2 (nr, false);
 		cdp->dat_written = false;

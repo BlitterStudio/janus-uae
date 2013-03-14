@@ -8,6 +8,9 @@
 
 #define SOUNDSTUFF 1
 extern void restart_sound_buffer (void);
+extern int paula_sndbufsize;
+extern uae_u16 *paula_sndbufpt;
+extern uae_u16 paula_sndbuffer[];
 
 STATIC_INLINE void check_sound_buffers (void)
 {
@@ -15,6 +18,12 @@ STATIC_INLINE void check_sound_buffers (void)
 STATIC_INLINE void set_sound_buffers (void)
 {
 }
+
+STATIC_INLINE void clear_sound_buffers (void)
+{
+}
+
+
 #define AUDIO_NAME "dummyaudio"
 
 #define PUT_SOUND_BYTE(b) do { ; } while (0)

@@ -49,7 +49,7 @@ GCC_DIAG_ON(strict-prototypes)
 #include "gui-gtk/chipsetspeedpanel.h"
 #include "gui-gtk/util.h"
 
-//#define GUI_DEBUG
+#define GUI_DEBUG
 #ifdef  GUI_DEBUG
 #define DEBUG_LOG write_log ( "%s: ", __func__); write_log
 #else
@@ -222,7 +222,9 @@ static void do_message_box (const gchar *title, const gchar *message, gboolean m
 static void handle_message_box_request (smp_comm_pipe *msg_pipe);
 static GtkWidget *make_message_box (const gchar *title, const gchar *message, int modal, uae_sem_t *sem);
 void on_message_box_quit (GtkWidget *w, gpointer user_data);
+#if 0
 void on_vstat_toggle(GtkWidget *widget, gpointer statusbar);
+#endif
 
 /* external prototypes */
 extern void clearallkeys (void);
@@ -1788,7 +1790,11 @@ static void create_dirdlg (const char *title)
     gtk_box_pack_start (GTK_BOX (hbox), label, false, false, 0);
     gtk_widget_show (label);
 
+#if !defined GTKMUI
     thing = gtk_entry_new_with_max_length (255);
+#else
+    thing = gtk_entry_new();
+#endif
     gtk_signal_connect (GTK_OBJECT (thing), "changed", (GtkSignalFunc) dirdlg_on_change, (gpointer) NULL);
     gtk_box_pack_start (GTK_BOX (hbox), thing, true, true, 0);
     gtk_widget_show (thing);
@@ -1814,7 +1820,11 @@ static void create_dirdlg (const char *title)
 	label = gtk_label_new ("Device name");
 	gtk_table_attach (GTK_TABLE (table), label, 0, 1, 0, 1, (GtkAttachOptions) (GTK_FILL), (GtkAttachOptions) (0), 0, 0);
 	gtk_widget_show (label);
+#if !defined GTKMUI
 	thing = gtk_entry_new_with_max_length (255);
+#else
+	thing = gtk_entry_new();
+#endif
 	gtk_signal_connect (GTK_OBJECT (thing), "changed", (GtkSignalFunc) dirdlg_on_change, (gpointer) NULL);
 	gtk_widget_show (thing);
 	gtk_table_attach (GTK_TABLE (table), thing, 1, 2, 0, 1, (GtkAttachOptions) (GTK_EXPAND | GTK_SHRINK | GTK_FILL), (GtkAttachOptions) (0), 0, 0);
@@ -1824,7 +1834,11 @@ static void create_dirdlg (const char *title)
 	label = gtk_label_new ("Volume name");
 	gtk_table_attach (GTK_TABLE (table), label, 0, 1, 1, 2, (GtkAttachOptions) (GTK_FILL), (GtkAttachOptions) (0), 0, 0);
 	gtk_widget_show (label);
+#if !defined GTKMUI
 	thing = gtk_entry_new_with_max_length (255);
+#else
+	thing = gtk_entry_new();
+#endif
 	gtk_signal_connect (GTK_OBJECT (thing), "changed", (GtkSignalFunc) dirdlg_on_change, (gpointer) NULL);
 	gtk_table_attach (GTK_TABLE (table), thing, 1, 2, 1, 2, (GtkAttachOptions) (GTK_EXPAND | GTK_SHRINK | GTK_FILL), (GtkAttachOptions) (0), 0, 0);
 	gtk_widget_show (thing);
@@ -1845,8 +1859,12 @@ static void create_dirdlg (const char *title)
 
     dialog_hbox = GTK_DIALOG (dirdlg)->action_area;
 
+#if defined GTKMUI
+    hbox = gtk_hbox_new (FALSE,4);
+#else
     hbox = gtk_hbutton_box_new();
     gtk_button_box_set_layout (GTK_BUTTON_BOX (hbox), GTK_BUTTONBOX_END);
+#endif
     gtk_box_pack_start (GTK_BOX (dialog_hbox), hbox, true, true, 0);
     gtk_widget_show (hbox);
 
@@ -1967,11 +1985,17 @@ static void make_hd_widgets (GtkWidget *dvbox)
     gtk_container_add (GTK_CONTAINER (scrollbox), thing);
 
     /* The buttons */
+#if !defined GTKMUI
     buttonbox = gtk_hbutton_box_new ();
+#else
+    buttonbox = gtk_hbox_new (FALSE,4);
+#endif
     gtk_widget_show (buttonbox);
     gtk_box_pack_start (GTK_BOX (vbox), buttonbox, false, false, 0);
     gtk_container_set_border_width (GTK_CONTAINER (buttonbox), 8);
+#if !defined GTKMUI
     gtk_button_box_set_layout (GTK_BUTTON_BOX (buttonbox), GTK_BUTTONBOX_SPREAD);
+#endif
 
     make_button ("Add...", buttonbox, did_newdir);
 #if 0 /* later... */
@@ -1996,11 +2020,12 @@ static void make_about_widgets (GtkWidget *dvbox)
 
     add_empty_vbox (dvbox);
 
-#if GTK_MAJOR_VERSION >= 2
+#if GTK_MAJOR_VERSION >= 2 && !defined GTKMUI
     thing = gtk_label_new (NULL);
     gtk_label_set_markup (GTK_LABEL (thing), title);
 #else
     thing = gtk_label_new (title);
+#if !defined GTKMUI
     {
 	GdkFont *font = gdk_font_load ("-*-helvetica-medium-r-normal--*-240-*-*-*-*-*-*");
 	if (font) {
@@ -2011,6 +2036,7 @@ static void make_about_widgets (GtkWidget *dvbox)
 	    gtk_widget_set_style (thing, style);
 	}
     }
+#endif
 #endif
     gtk_widget_show (thing);
     add_centered_to_vbox (dvbox, thing);
@@ -2039,14 +2065,17 @@ static void on_menu_saveconfig (void)
 	write_comm_pipe_int (&from_gui_pipe, UAECMD_SAVE_CONFIG, 1);
 }
 
+#if 0
 void on_vstat_toggle(GtkWidget *widget, gpointer statusbar) 
 {
+
   if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget))) {
     gtk_widget_show(statusbar);
   } else {
     gtk_widget_hide(statusbar);
   }
 }
+#endif
 
 static void create_guidlg (void)
 {
@@ -2054,7 +2083,7 @@ static void create_guidlg (void)
     GtkWidget *buttonbox, *vbox, *hbox;
     GtkWidget *thing;
     GtkWidget *menubar, *menuitem, *menuitem_menu;
-    GtkWidget *statusbar, *vstatusbar;
+    /*GtkWidget *statusbar, *vstatusbar*/;
 
     unsigned int i;
     static const struct _pages {
@@ -2107,14 +2136,18 @@ static void create_guidlg (void)
     gtk_container_add (GTK_CONTAINER (menuitem_menu), thing);
     gtk_signal_connect (GTK_OBJECT(thing), "activate", GTK_SIGNAL_FUNC(on_menu_saveconfig), NULL);
 
+#if 0
     vstatusbar = gtk_check_menu_item_new_with_label("View Statusbar");
     gtk_widget_show (vstatusbar);
     gtk_container_add (GTK_CONTAINER (menuitem_menu), vstatusbar);
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(vstatusbar), true);
+#endif
 
+#if !defined GTKMUI
     thing = gtk_separator_menu_item_new ();
     gtk_widget_show (thing);
     gtk_container_add (GTK_CONTAINER (menuitem_menu), thing);
+#endif
 
     thing = gtk_menu_item_new_with_mnemonic ("Quit");
     gtk_widget_show (thing);
@@ -2177,10 +2210,12 @@ static void create_guidlg (void)
     gtk_notebook_set_page (GTK_NOTEBOOK (notebook), i - 1);
 
     /* Statusbar for FPS etc */
+#if 0
     statusbar = gtk_statusbar_new();
     gtk_box_pack_end(GTK_BOX(vbox), statusbar, false, true, 1);
     gtk_widget_show(statusbar);
     g_signal_connect(G_OBJECT(vstatusbar), "activate", G_CALLBACK(on_vstat_toggle), statusbar);
+#endif
 
     gtk_widget_show (vbox);
 
@@ -2209,7 +2244,9 @@ static void *gtk_gui_thread (void *dummy)
     if (gtk_init_check (&argc, &argv)) {
 	DEBUG_LOG ("gtk_init() successful\n");
 
+#if !defined GTKMUI
 	gtk_rc_parse ("uaegtkrc");
+#endif
 	gui_available = 1;
 
 	/* Add callback to GTK+ mainloop to handle messages from UAE */
@@ -2632,11 +2669,18 @@ static GtkWidget *make_message_box (const gchar *title, const gchar *message, in
     gtk_widget_show (hseparator);
     gtk_box_pack_start (GTK_BOX (vbox), hseparator, false, false, 8);
 
+
+#if !defined GTKMUI
     hbuttonbox = gtk_hbutton_box_new ();
+#else
+    hbuttonbox = gtk_hbox_new (FALSE,4);
+#endif
     gtk_widget_show (hbuttonbox);
-    gtk_box_pack_start (GTK_BOX (vbox), hbuttonbox, false, false, 0);
+    gtk_box_pack_start (GTK_BOX (vbox), hbuttonbox, FALSE, FALSE, 0);
+#if !defined GTKMUI
     gtk_button_box_set_layout (GTK_BUTTON_BOX (hbuttonbox), GTK_BUTTONBOX_END);
     gtk_button_box_set_spacing (GTK_BUTTON_BOX (hbuttonbox), 4);
+#endif
 
     button = make_labelled_button ("_Okay", accel_group);
     gtk_widget_show (button);
@@ -2650,7 +2694,9 @@ static GtkWidget *make_message_box (const gchar *title, const gchar *message, in
 						   GTK_OBJECT (dialog));
 
     gtk_widget_grab_default (button);
+#if !defined GTKMUI
     gtk_window_add_accel_group (GTK_WINDOW (dialog), accel_group);
+#endif
     gtk_widget_show( dialog );
 
     return dialog;

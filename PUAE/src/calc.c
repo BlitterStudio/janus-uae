@@ -444,7 +444,8 @@ bool calc(const TCHAR *input, double *outval)
 
 bool iscalcformula (const TCHAR *formula)
 {
-	for (int i = 0; i < _tcslen (formula); i++) {
+  int i;
+	for (i = 0; i < _tcslen (formula); i++) {
 		TCHAR c = formula[i];
 		if (is_operator (c))
 			return true;

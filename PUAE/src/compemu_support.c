@@ -21,7 +21,9 @@
 
 // %%% BRIAN KING WAS HERE %%%
 extern bool canbang;
+#ifndef __AROS__
 #include <sys/mman.h>
+#endif
 extern void jit_abort(const TCHAR*,...);
 compop_func *compfunctbl[65536];
 compop_func *nfcompfunctbl[65536];
@@ -5261,7 +5263,9 @@ void get_n_addr(int address, int dest, int tmp)
 	case 0: distrust=0; break;
 	case 1: distrust=1; break;
 	case 2: distrust=((start_pc&0xF80000)==0xF80000); break;
+#ifdef PICASSO96
 	case 3: distrust=!have_done_picasso; break;
+#endif
 	default: abort();
 	}
 
@@ -5380,12 +5384,16 @@ uae_u32 get_jitted_size(void)
 	return 0;
 }
 
+extern uae_u8* veccode;
+
 void alloc_cache(void)
 {
 	if (compiled_code) {
 		flush_icache_hard(0, 3);
 		cache_free(compiled_code);
 	}
+
+  DebOut("entered\n");
 #ifdef NATMEM_OFFSET
     if (canbang) {
 		/* Set up signal handler to catch illegal natmem accesses */
@@ -5410,8 +5418,12 @@ void alloc_cache(void)
 	if (popallspace == NULL)
 		popallspace = cache_alloc (1024);
 	compiled_code = NULL;
-	if (currprefs.cachesize == 0)
+
+  DebOut("currprefs.cachesize: %d\n", currprefs.cachesize);
+	if (currprefs.cachesize == 0) {
+    write_log (_T("JIT: currprefs.cachesize == 0\n"));
 		return;
+  }
 
 	while (!compiled_code && currprefs.cachesize) {
 		compiled_code=cache_alloc(currprefs.cachesize*1024);

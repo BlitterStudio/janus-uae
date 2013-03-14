@@ -153,12 +153,7 @@ static const TCHAR *collmode[] = { _T("none"), _T("sprites"), _T("playfields"), 
 static const TCHAR *compmode[] = { _T("direct"), _T("indirect"), _T("indirectKS"), _T("afterPic"), 0 };
 static const TCHAR *flushmode[] = { _T("soft"), _T("hard"), 0 };
 static const TCHAR *kbleds[] = { _T("none"), _T("POWER"), _T("DF0"), _T("DF1"), _T("DF2"), _T("DF3"), _T("HD"), _T("CD"), 0 };
-
-/// REMOVEME: nowhere used
-#if 0
 static const TCHAR *onscreenleds[] = { _T("false"), _T("true"), _T("rtg"), _T("both"), 0 };
-#endif // 0
-
 static const TCHAR *soundfiltermode1[] = { _T("off"), _T("emulated"), _T("on"), 0 };
 static const TCHAR *soundfiltermode2[] = { _T("standard"), _T("enhanced"), 0 };
 static const TCHAR *lorestype1[] = { _T("lores"), _T("hires"), _T("superhires"), 0 };
@@ -173,12 +168,7 @@ static const TCHAR *cartsmode[] = { _T("none"), _T("hrtmon"), 0 };
 static const TCHAR *idemode[] = { _T("none"), _T("a600/a1200"), _T("a4000"), 0 };
 static const TCHAR *rtctype[] = { _T("none"), _T("MSM6242B"), _T("RP5C01A"), _T("MSM6242B_A2000"), 0 };
 static const TCHAR *ciaatodmode[] = { _T("vblank"), _T("50hz"), _T("60hz"), 0 };
-
-/// REMOVEME: nowhere used
-#if 0
 static const TCHAR *ksmirrortype[] = { _T("none"), _T("e0"), _T("a8+e0"), 0 };
-#endif // 0
-
 static const TCHAR *cscompa[] = {
 	_T("-"), _T("Generic"), _T("CDTV"), _T("CD32"), _T("A500"), _T("A500+"), _T("A600"),
 	_T("A1000"), _T("A1200"), _T("A2000"), _T("A3000"), _T("A3000T"), _T("A4000"), _T("A4000T"), 0
@@ -235,7 +225,14 @@ static const TCHAR *obsolete[] = {
 	NULL
 };
 
-/* internal prototypes */
+/* external prototypes */
+extern int machdep_parse_option (struct uae_prefs *, const char *, const char *);
+extern int gfx_parse_option (struct uae_prefs *, const char *, const char *);
+extern int audio_parse_option (struct uae_prefs *, const char *, const char *);
+extern void machdep_default_options (struct uae_prefs *);
+extern void gfx_default_options (struct uae_prefs *);
+extern void audio_default_options (struct uae_prefs *);
+
 void cfgfile_write_str (struct zfile *f, const TCHAR *option, const TCHAR *value);
 void cfgfile_dwrite_str (struct zfile *f, const TCHAR *option, const TCHAR *value);
 void cfgfile_target_write_str (struct zfile *f, const TCHAR *option, const TCHAR *value);
@@ -243,7 +240,6 @@ void cfgfile_target_dwrite_str (struct zfile *f, const TCHAR *option, const TCHA
 void cfgfile_save_options (struct zfile *f, struct uae_prefs *p, int type);
 int cfgfile_yesno2 (const TCHAR *option, const TCHAR *value, const TCHAR *name, int *location);
 int cfgfile_doubleval (const TCHAR *option, const TCHAR *value, const TCHAR *name, double *location);
-int cfgfile_floatval (const TCHAR *option, const TCHAR *value, const TCHAR *name, float *location);
 int cfgfile_intval_unsigned (const TCHAR *option, const TCHAR *value, const TCHAR *name, unsigned int *location, int scale);
 int cfgfile_strboolval (const TCHAR *option, const TCHAR *value, const TCHAR *name, bool *location, const TCHAR *table[], int more);
 int cfgfile_path_mp (const TCHAR *option, const TCHAR *value, const TCHAR *name, TCHAR *location, int maxsz, struct multipath *mp);
@@ -321,7 +317,8 @@ TCHAR *cfgfile_subst_path (const TCHAR *path, const TCHAR *subst, const TCHAR *f
 
 static TCHAR *cfgfile_get_multipath2 (struct multipath *mp, const TCHAR *path, const TCHAR *file, bool dir)
 {
-	for (int i = 0; i < MAX_PATHS; i++) {
+  int i;
+	for (i = 0; i < MAX_PATHS; i++) {
 		if (mp->path[i][0] && _tcscmp (mp->path[i], _T(".\\")) != 0 && _tcscmp (mp->path[i], _T("./")) != 0 && (file[0] != '/' && file[0] != '\\' && !_tcschr(file, ':'))) {
 			TCHAR *s = NULL;
 			if (path)
@@ -357,7 +354,8 @@ static TCHAR *cfgfile_get_multipath (struct multipath *mp, const TCHAR *path, co
 
 static TCHAR *cfgfile_put_multipath (struct multipath *mp, const TCHAR *s)
 {
-	for (int i = 0; i < MAX_PATHS; i++) {
+  int i;
+	for (i = 0; i < MAX_PATHS; i++) {
 		if (mp->path[i][0] && _tcscmp (mp->path[i], _T(".\\")) != 0 && _tcscmp (mp->path[i], _T("./")) != 0) {
 			if (_tcsnicmp (mp->path[i], s, _tcslen (mp->path[i])) == 0) {
 				return my_strdup (s + _tcslen (mp->path[i]));
@@ -578,6 +576,10 @@ static void write_filesys_config (struct uae_prefs *p, struct zfile *f)
 		TCHAR *str;
 		int bp = ci->bootpri;
 
+		if (!ci->autoboot)
+			bp = -128;
+		if (ci->donotmount)
+			bp = -129;
 		str = cfgfile_put_multipath (&p->path_hardfile, ci->rootdir);
 		if (ci->type == UAEDEV_DIR) {
 			_stprintf (tmp, _T("%s,%s:%s:%s,%d"), ci->readonly ? _T("ro") : _T("rw"),
@@ -644,9 +646,10 @@ static void write_leds (struct zfile *f, const TCHAR *name, int mask)
 {
 	TCHAR tmp[MAX_DPATH];
 	tmp[0] = 0;
-	for (int i = 0; leds[i]; i++) {
+  int i,j;
+	for (i = 0; leds[i]; i++) {
 		bool got = false;
-		for (int j = 0; leds[j]; j++) {
+		for (j = 0; leds[j]; j++) {
 			if (leds_order[j] == i) {
 				if (mask & (1 << j)) {
 					if (got)
@@ -751,14 +754,11 @@ void cfgfile_save_options (struct zfile *f, struct uae_prefs *p, int type)
 		cfgfile_write_path (f, &p->path_rom, _T("amax_rom_file"), p->amaxromfile);
 
 	cfgfile_write_bool (f, _T("kickshifter"), p->kickshifter);
-	cfgfile_write_bool (f, _T("ks_write_enabled"), p->rom_readwrite);
 
 	p->nr_floppies = 4;
 	for (i = 0; i < 4; i++) {
 		_stprintf (tmp, _T("floppy%d"), i);
 		cfgfile_write_path (f, &p->path_floppy, tmp, p->floppyslots[i].df);
-		_stprintf (tmp, _T("floppy%dwp"), i);
-		cfgfile_dwrite_bool (f, tmp, p->floppyslots[i].forcedwriteprotect);
 		_stprintf (tmp, _T("floppy%dtype"), i);
 		cfgfile_dwrite (f, tmp, _T("%d"), p->floppyslots[i].dfxtype);
 		_stprintf (tmp, _T("floppy%dsound"), i);
@@ -959,20 +959,8 @@ void cfgfile_save_options (struct zfile *f, struct uae_prefs *p, int type)
 	cfgfile_dwrite (f, _T("gfx_horizontal_tweak"), _T("%d"), p->gfx_extrawidth);
 
 #ifdef GFXFILTER
-	for (int i = 0; i <MAX_FILTERSHADERS; i++) {
-		if (p->gfx_filtershader[i][0])
-			cfgfile_write (f, _T("gfx_filter_pre"), _T("D3D:%s"), p->gfx_filtershader[i]);
-		if (p->gfx_filtermask[i][0])
-			cfgfile_write_str (f, _T("gfx_filtermask_pre"), p->gfx_filtermask[i]);
-	}
-	for (int i = 0; i <MAX_FILTERSHADERS; i++) {
-		if (p->gfx_filtershader[i + MAX_FILTERSHADERS][0])
-			cfgfile_write (f, _T("gfx_filter_post"), _T("D3D:%s"), p->gfx_filtershader[i + MAX_FILTERSHADERS]);
-		if (p->gfx_filtermask[i + MAX_FILTERSHADERS][0])
-			cfgfile_write_str (f, _T("gfx_filtermask_post"), p->gfx_filtermask[i + MAX_FILTERSHADERS]);
-	}
-	if (p->gfx_filtershader[0][0] && p->gfx_api) {
-		cfgfile_dwrite (f, _T("gfx_filter"), _T("D3D:%s"), p->gfx_filtershader[0]);
+	if (p->gfx_filtershader[0] && p->gfx_api) {
+		cfgfile_dwrite (f, _T("gfx_filter"), _T("D3D:%s"), p->gfx_filtershader);
 	} else if (p->gfx_filter > 0) {
 		int i = 0;
 		struct uae_filter *uf;
@@ -1012,7 +1000,7 @@ void cfgfile_save_options (struct zfile *f, struct uae_prefs *p, int type)
 	cfgfile_dwrite (f, _T("gfx_luminance"), _T("%d"), p->gfx_luminance);
 	cfgfile_dwrite (f, _T("gfx_contrast"), _T("%d"), p->gfx_contrast);
 	cfgfile_dwrite (f, _T("gfx_gamma"), _T("%d"), p->gfx_gamma);
-	cfgfile_dwrite_str (f, _T("gfx_filter_mask"), p->gfx_filtermask[2 * MAX_FILTERSHADERS - 1]);
+	cfgfile_dwrite_str (f, _T("gfx_filter_mask"), p->gfx_filtermask);
 	if (p->gfx_filteroverlay[0]) {
 		cfgfile_dwrite (f, _T("gfx_filter_overlay"), _T("%s%s"),
 			p->gfx_filteroverlay, _tcschr (p->gfx_filteroverlay, ',') ? _T(",") : _T(""));
@@ -1074,7 +1062,7 @@ void cfgfile_save_options (struct zfile *f, struct uae_prefs *p, int type)
 	if (p->chipset_refreshrate > 0)
 		cfgfile_write (f, _T("chipset_refreshrate"), _T("%f"), p->chipset_refreshrate);
 		
-	for (int i = 0; i < MAX_CHIPSET_REFRESH_TOTAL; i++) {
+	for (i = 0; i < MAX_CHIPSET_REFRESH_TOTAL; i++) {
 		if (p->cr[i].rate <= 0)
 			continue;
 		struct chipset_refresh *cr = &p->cr[i];
@@ -1110,7 +1098,8 @@ void cfgfile_save_options (struct zfile *f, struct uae_prefs *p, int type)
 		if (cr->commands[0]) {
 			_tcscat (s, _T(","));
 			_tcscat (s, cr->commands);
-			for (int j = 0; j < _tcslen (s); j++) {
+      int j;
+			for (j = 0; j < _tcslen (s); j++) {
 				if (s[j] == '\n')
 					s[j] = ',';
 			}
@@ -1374,7 +1363,8 @@ int cfgfile_path_mp (const TCHAR *option, const TCHAR *value, const TCHAR *name,
 	_tcsncpy (location, location, maxsz - 1);
 	location[maxsz - 1] = 0;
 	if (mp) {
-		for (int i = 0; i < MAX_PATHS; i++) {
+    int i;
+		for (i = 0; i < MAX_PATHS; i++) {
 			if (mp->path[i][0] && _tcscmp (mp->path[i], _T(".\\")) != 0 && _tcscmp (mp->path[i], _T("./")) != 0 && (location[0] != '/' && location[0] != '\\' && !_tcschr(location, ':'))) {
 				TCHAR np[MAX_DPATH];
 				_tcscpy (np, mp->path[i]);
@@ -1403,7 +1393,8 @@ int cfgfile_multipath (const TCHAR *option, const TCHAR *value, const TCHAR *nam
 	TCHAR tmploc[MAX_DPATH];
 	if (!cfgfile_string (option, value, name, tmploc, 256))
 		return 0;
-	for (int i = 0; i < MAX_PATHS; i++) {
+  int i;
+	for (i = 0; i < MAX_PATHS; i++) {
 		if (mp->path[i][0] == 0 || (i == 0 && (!_tcscmp (mp->path[i], _T(".\\")) || !_tcscmp (mp->path[i], _T("./"))))) {
 			//TCHAR *s = target_expand_environment (tmploc);
 			_tcsncpy (mp->path[i], tmploc, 256 - 1);
@@ -1691,7 +1682,7 @@ static int cfgfile_parse_host (struct uae_prefs *p, TCHAR *option, TCHAR *value)
 		|| cfgfile_intval (option, value, _T("gfx_gamma"), &p->gfx_gamma, 1)
 		|| cfgfile_intval (option, value, _T("gfx_filter_keep_autoscale_aspect"), &p->gfx_filter_keep_autoscale_aspect, 1)
 		|| cfgfile_intval (option, value, _T("gfx_horizontal_tweak"), &p->gfx_extrawidth, 1)
-		|| cfgfile_string (option, value, _T("gfx_filter_mask"), p->gfx_filtermask[2 * MAX_FILTERSHADERS - 1], sizeof p->gfx_filtermask[2 * MAX_FILTERSHADERS - 1] / sizeof (TCHAR))
+		|| cfgfile_string (option, value, _T("gfx_filter_mask"), p->gfx_filtermask, sizeof p->gfx_filtermask / sizeof (TCHAR))
 		|| cfgfile_intval (option, value, _T("filesys_max_size"), &p->filesys_limit, 1)
 
 		|| cfgfile_floatval (option, value, _T("rtg_vert_zoom_multf"), &p->rtg_vert_zoom_mult)
@@ -1722,10 +1713,6 @@ cfgfile_path (option, value, _T("floppy0soundext"), p->floppyslots[0].dfxclickex
 		return 1;
 
 	if (cfgfile_yesno (option, value, _T("use_debugger"), &p->start_debugger)
-		|| cfgfile_yesno (option, value, _T("floppy0wp"), &p->floppyslots[0].forcedwriteprotect)
-		|| cfgfile_yesno (option, value, _T("floppy1wp"), &p->floppyslots[1].forcedwriteprotect)
-		|| cfgfile_yesno (option, value, _T("floppy2wp"), &p->floppyslots[2].forcedwriteprotect)
-		|| cfgfile_yesno (option, value, _T("floppy3wp"), &p->floppyslots[3].forcedwriteprotect)
 		|| cfgfile_yesno (option, value, _T("sampler_stereo"), &p->sampler_stereo)
 		|| cfgfile_yesno (option, value, _T("sound_auto"), &p->sound_auto)
 		|| cfgfile_yesno (option, value, _T("sound_stereo_swap_paula"), &p->sound_stereo_swap_paula)
@@ -1905,7 +1892,8 @@ cfgfile_path (option, value, _T("floppy0soundext"), p->floppyslots[0].dfxclickex
 			if (s3 && s3 < s)
 				s = s3;
 			*s = 0;
-			for (int i = 0; leds[i]; i++) {
+      int i;
+			for (i = 0; leds[i]; i++) {
 				if (!_tcsicmp (s2, leds[i])) {
 					p->leds_on_screen_mask[idx] |= 1 << i;
 				}
@@ -1995,42 +1983,16 @@ cfgfile_path (option, value, _T("floppy0soundext"), p->floppyslots[0].dfxclickex
 		return 1;
 	}
 
-	if (_tcscmp (option, _T("gfx_filter_pre")) == 0 || _tcscmp (option, _T("gfx_filter_post")) == 0) {
-		TCHAR *s = _tcschr (value, ':');
-		if (s) {
-			*s++ = 0;
-			if (!_tcscmp (value, _T("D3D"))) {
-				p->gfx_api = 1;
-				if (_tcscmp (option, _T("gfx_filter_pre")) == 0) {
-					for (int i = 0; i < MAX_FILTERSHADERS; i++) {
-						if (p->gfx_filtershader[i][0] == 0) {
-							_tcscpy (p->gfx_filtershader[i], s);
-							break;
-						}
-					}
-				} else {
-					for (int i = 0; i < MAX_FILTERSHADERS; i++) {
-						if (p->gfx_filtershader[i + MAX_FILTERSHADERS][0] == 0) {
-							_tcscpy (p->gfx_filtershader[i + MAX_FILTERSHADERS], s);
-							break;
-						}
-					}
-				}
-			}
-		}
-		return 1;
-	}
-
 	if (_tcscmp (option, _T("gfx_filter")) == 0) {
 		int i = 0;
 		TCHAR *s = _tcschr (value, ':');
-		p->gfx_filtershader[0][0] = 0;
+		p->gfx_filtershader[0] = 0;
 		p->gfx_filter = 0;
 		if (s) {
 			*s++ = 0;
 			if (!_tcscmp (value, _T("D3D"))) {
 				p->gfx_api = 1;
-				_tcscpy (p->gfx_filtershader[0], s);
+				_tcscpy (p->gfx_filtershader, s);
 			}
 		}
 		if (!_tcscmp (value, _T("direct3d"))) {
@@ -2329,7 +2291,8 @@ cfgfile_path (option, value, _T("floppy0soundext"), p->floppyslots[0].dfxclickex
 			tmpp++;
 		}
 		if (rate > 0) {
-			for (int i = 0; i < MAX_CHIPSET_REFRESH; i++) {
+      int i;
+			for (i = 0; i < MAX_CHIPSET_REFRESH; i++) {
 				if (_tcscmp (option, _T("displaydata_pal")) == 0) {
 	          i = CHIPSET_REFRESH_PAL;
 	          p->cr[i].rate = -1;
@@ -2450,23 +2413,8 @@ struct uaedev_config_data *add_filesys_config (struct uae_prefs *p, int index, s
 		if (ci->controller > HD_CONTROLLER_SCSI6 || ci->controller < HD_CONTROLLER_IDE0)
 			return NULL;
 	}
+
 	if (index < 0) {
-		if (ci->controller != HD_CONTROLLER_UAE) {
-			int ctrl = ci->controller;
-			for (;;) {
-				for (i = 0; i < p->mountitems; i++) {
-					if (p->mountconfig[i].ci.controller == ctrl) {
-						ctrl++;
-						if (ctrl == HD_CONTROLLER_IDE3 + 1 || ctrl == HD_CONTROLLER_SCSI6 + 1)
-							return 0;
-					}
-				}
-				if (i == p->mountitems) {
-					ci->controller = ctrl;
-					break;
-				}
-			}
-		}
 		if (ci->type == UAEDEV_CD) {
 			for (i = 0; i < p->mountitems; i++) {
 				if (p->mountconfig[i].ci.type == UAEDEV_CD)
@@ -2484,6 +2432,10 @@ struct uaedev_config_data *add_filesys_config (struct uae_prefs *p, int index, s
 	memcpy (&uci->ci, ci, sizeof (struct uaedev_config_info));
 	validatedevicename (uci->ci.devname);
 	validatevolumename (uci->ci.volname);
+	if (uci->ci.bootpri < -128)
+		uci->ci.donotmount = true;
+	else if (uci->ci.bootpri >= -127)
+		uci->ci.autoboot = true;
 	if (!uci->ci.devname[0] && ci->type != UAEDEV_CD) {
 		TCHAR base[32];
 		TCHAR base2[32];
@@ -2645,11 +2597,12 @@ static bool parse_geo (const TCHAR *tname, struct uaedev_config_info *uci, struc
 		if (!_tcsicmp (key, _T("forceload")))
 			uci->forceload = v;
 		if (!_tcsicmp (key, _T("bootpri"))) {
-			if (v < -129)
-				v = -129;
-			if (v > 127)
-				v = 127;
 			uci->bootpri = v;
+			uci->donotmount = false;
+			if (uci->bootpri <= -128) {
+				uci->bootpri = -128;
+				uci->donotmount = true;
+			}
 		}
 		if (!_tcsicmp (key, _T("filesystem")))
 			_tcscpy (uci->filesys, val);
@@ -2784,6 +2737,8 @@ static int cfgfile_parse_newfilesys (struct uae_prefs *p, int nr, int type, TCHA
 		goto invalid_fs;
 	}
 empty_fs:
+	uci.autoboot = uci.bootpri >= -127; 
+	uci.donotmount = uci.bootpri == -129; 
 	if (uci.rootdir[0]) {
 		if (_tcslen (uci.rootdir) > 3 && uci.rootdir[0] == 'H' && uci.rootdir[1] == 'D' && uci.rootdir[2] == '_') {
 			memmove (uci.rootdir, uci.rootdir + 2, (_tcslen (uci.rootdir + 2) + 1) * sizeof (TCHAR));
@@ -2997,7 +2952,6 @@ static int cfgfile_parse_hardware (struct uae_prefs *p, const TCHAR *option, TCH
 		|| cfgfile_yesno (option, value, _T("synchronize_clock"), &p->tod_hack)
 
 		|| cfgfile_yesno (option, value, _T("kickshifter"), &p->kickshifter)
-		|| cfgfile_yesno (option, value, _T("ks_write_enabled"), &p->rom_readwrite)
 		|| cfgfile_yesno (option, value, _T("ntsc"), &p->ntscmode)
 		|| cfgfile_yesno (option, value, _T("sana2"), &p->sana2)
 		|| cfgfile_yesno (option, value, _T("genlock"), &p->genlock)
@@ -3286,7 +3240,8 @@ static void calcformula (struct uae_prefs *prefs, TCHAR *in)
 	if (!configstore)
 		return;
 	cnt1 = cnt2 = 0;
-	for (int i = 1; i < _tcslen (in) - 1; i++) {
+  int i;
+	for (i = 1; i < _tcslen (in) - 1; i++) {
 		TCHAR c = _totupper (in[i]);
 		if (c >= 'A' && c <='Z') {
 			TCHAR *start = &in[i];
@@ -4796,10 +4751,8 @@ void default_prefs (struct uae_prefs *p, int type)
 
 #ifdef GFXFILTER
 	p->gfx_filter = 0;
-	for (int i = 0; i < 2 * MAX_FILTERSHADERS; i++) {
-		p->gfx_filtershader[i][0] = 0;
-		p->gfx_filtermask[i][0] = 0;
-	}
+	p->gfx_filtershader[0] = 0;
+	p->gfx_filtermask[0] = 0;
 	p->gfx_filter_horiz_zoom_mult = 1.0;
 	p->gfx_filter_vert_zoom_mult = 1.0;
 	p->gfx_filter_bilinear = 0;
@@ -4909,7 +4862,7 @@ void default_prefs (struct uae_prefs *p, int type)
 
 	p->cr_selected = -1;
 	struct chipset_refresh *cr;
-	for (int i = 0; i < MAX_CHIPSET_REFRESH_TOTAL; i++) {
+	for (i = 0; i < MAX_CHIPSET_REFRESH_TOTAL; i++) {
 		cr = &p->cr[i];
 		cr->index = i;
 		cr->rate = -1;

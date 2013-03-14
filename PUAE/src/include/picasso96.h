@@ -1,4 +1,4 @@
-#pragma once
+//#pragma once
 #ifndef SRC_INCLUDE_PICASSO96_H_INCLUDED
 #define SRC_INCLUDE_PICASSO96_H_INCLUDED 1
 /*
@@ -9,7 +9,7 @@
  * Copyright 1997 Brian King <Brian_King@Mitel.com, Brian_King@Cloanto.com>
  */
 
-#if defined PICASSO96_SUPPORTED
+//#if defined PICASSO96_SUPPORTED
 
 #define PICASSO96
 
@@ -254,9 +254,6 @@ struct CLUTEntry {
 #define PSSO_BitMap_Planes		8
 #define PSSO_BitMap_sizeof		40
 
-#ifdef TARGET_AMIGAOS
-#include <graphics/gfx.h>
-#else
 struct pBitMap
 {
     uae_u16 BytesPerRow;
@@ -266,7 +263,6 @@ struct pBitMap
     uae_u16 pad;
     uae_u8 *Planes[8];
 };
-#endif
 
 /************************************************************************/
 
@@ -788,6 +784,6 @@ extern int p96hsync_counter;
 #define CARD_END (CARD_IRQCODE + 11 * 2)
 #define CARD_SIZEOF CARD_END
 
-#endif
+//#endif
 
 #endif // SRC_INCLUDE_PICASSO96_H_INCLUDED

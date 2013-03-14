@@ -14,6 +14,34 @@
 #include <sys/time.h>
 #endif
 
+
+#ifdef __AROS__
+#include <sys/time.h>
+
+#define GETBDY(x) ((x) / 1000000 + 2000)
+#define GETBDM(x) (((x) - ((x / 10000) * 10000)) / 100)
+#define GETBDD(x) ((x) % 100)
+
+/* http://msdn.microsoft.com/en-us/library/htb3tdkc%28v=vs.80%29.aspx: 
+ * _daylight, _dstbias, _timezone, and _tzname are used in some time and date routines 
+ * to make local-time adjustments. These global variables have been deprecated in 
+ * Visual C++ 2005 for the more secure functional versions, which should be used 
+ * in place of the global variables.
+ */
+extern int _daylight; 
+extern int daylight; 
+extern int _dstbias; 
+extern int dstbias; 
+extern long _timezone; 
+extern long timezone; 
+extern char *_tzname[2];
+
+/* ? */
+void tzset(void);
+void _tzset(void);
+#endif
+
+
 #include "options.h"
 #include "zfile.h"
 #include "archivers/zip/unzip.h"
@@ -27,7 +55,7 @@
 
 #define unpack_log write_log
 #undef unpack_log
-#define unpack_log(...) { }
+#define unpack_log
 
 static time_t fromdostime (uae_u32 dd)
 {
@@ -1759,9 +1787,7 @@ static struct zfile *archive_access_dir (struct znode *zn)
 
 struct zfile *archive_unpackzfile (struct zfile *zf)
 {
-#ifdef A_ZIP
 	struct zfile *zout = NULL;
-#endif
 	if (!zf->archiveparent)
 		return NULL;
 	unpack_log (_T("delayed unpack '%s'\n"), zf->name);

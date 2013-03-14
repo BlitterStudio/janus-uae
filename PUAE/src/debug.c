@@ -69,10 +69,6 @@ static uaecptr debug_copper_pc;
 extern int audio_channel_mask;
 extern int inputdevice_logging;
 
-#ifdef MMUEMU
-int safe_addr (uaecptr addr, int size);
-#endif
-
 #define console_out               printf
 #define console_flush()           fflush( stdout )
 #define console_get( input, len ) fgets( input, len, stdin )
@@ -1895,9 +1891,10 @@ uae_u8 *save_debug_memwatch (int *len, uae_u8 *dstptr)
 {
 	uae_u8 *dstbak, *dst;
 	int total;
+  unsigned int i;
 
 	total = 0;
-	for (unsigned int i = 0; i < MEMWATCH_TOTAL; i++) {
+	for (i = 0; i < MEMWATCH_TOTAL; i++) {
 		if (mwnodes[i].size > 0)
 			total++;
 	}
@@ -1910,7 +1907,7 @@ uae_u8 *save_debug_memwatch (int *len, uae_u8 *dstptr)
 		dstbak = dst = xmalloc (uae_u8, 1000);
 	save_u32 (1);
 	save_u8 (total);
-	for (unsigned int i = 0; i < MEMWATCH_TOTAL; i++) {
+	for (i = 0; i < MEMWATCH_TOTAL; i++) {
 		struct memwatch_node *m = &mwnodes[i];
 		if (m->size <= 0)
 			continue;
@@ -1963,7 +1960,8 @@ uae_u8 *restore_debug_memwatch (uae_u8 *src)
 
 void restore_debug_memwatch_finish (void)
 {
-	for (unsigned int i = 0; i < MEMWATCH_TOTAL; i++) {
+  unsigned int i;
+	for (i = 0; i < MEMWATCH_TOTAL; i++) {
 		struct memwatch_node *m = &mwnodes[i];
 		if (m->size) {
 			if (!memwatch_enabled)
@@ -2732,21 +2730,21 @@ static void show_exec_tasks (void)
 	uaecptr execbase = get_long_debug (4);
 	uaecptr taskready = get_long_debug (execbase + 406);
 	uaecptr taskwait = get_long_debug (execbase + 420);
-	uaecptr node/* REMOVEME: set but not used: , end */ ;
+	uaecptr node, end;
 	console_out_f (_T("Execbase at 0x%08X\n"), execbase);
 	console_out (_T("Current:\n"));
 	node = get_long_debug (execbase + 276);
 	print_task_info (node);
 	console_out_f (_T("Ready:\n"));
 	node = get_long_debug (taskready);
-	/* REMOVEME: Not used: end = get_long_debug (taskready + 4); */
+	end = get_long_debug (taskready + 4);
 	while (node) {
 		print_task_info (node);
 		node = get_long_debug (node);
 	}
 	console_out (_T("Waiting:\n"));
 	node = get_long_debug (taskwait);
-	/* REMOVEME: Not used: end = get_long_debug (taskwait + 4); */
+	end = get_long_debug (taskwait + 4);
 	while (node) {
 		print_task_info (node);
 		node = get_long_debug (node);
@@ -2822,8 +2820,9 @@ static void show_exec_lists (TCHAR t)
 	} else if (_totupper (t) == 'I') { // interrupts
 		static const int it[] = {  1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0 };
 		static const int it2[] = { 1, 1, 1, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 6, 6, 7 };
+    unsigned int i;
 		list = execbase + 84;
-		for (unsigned int i = 0; i < 16; i++) {
+		for ( i = 0; i < 16; i++) {
 			console_out_f (_T("%2d %d: %08x\n"), i + 1, it2[i], list);
 			if (it[i]) {
 				console_out_f (_T("  [H] %08x\n"), get_long_debug (list));
@@ -2846,7 +2845,8 @@ static void show_exec_lists (TCHAR t)
 						if (!_tcsicmp (name, _T("cia-a")) || !_tcsicmp (name, _T("cia-b"))) {
 							static const TCHAR *ciai[] = { _T("A"), _T("B"), _T("ALRM"), _T("SP"), _T("FLG") };
 							uaecptr cia = node + 22;
-							for (int j = 0; j < 5; j++) {
+              int j;
+							for (j = 0; j < 5; j++) {
 								uaecptr ciap = get_long_debug (cia);
 								console_out_f (_T("        %5s: %08x"), ciai[j], ciap);
 								if (ciap) {
@@ -3866,7 +3866,7 @@ static void addhistory (void)
 	uae_u32 pc = m68k_getpc ();
 
 	history[lasthist] = regs;
-	history[lasthist].pc = pc;
+	history[lasthist].pc = m68k_getpc ();
 	if (++lasthist == MAX_HIST)
 		lasthist = 0;
 	if (lasthist == firsthist) {
@@ -3898,7 +3898,7 @@ void debug (void)
 		}
 		if (trace_same_insn_count > 1)
 			fprintf (logfile, "[ repeated %d times ]\n", trace_same_insn_count);
-		m68k_dumpstate2 (logfile, &nextpc);
+		m68k_dumpstate (logfile, &nextpc);
 		trace_same_insn_count = 1;
 		memcpy (trace_insn_copy, regs.pc_p, 10);
 		memcpy (&trace_prev_regs, &regs, sizeof regs);
@@ -3945,12 +3945,7 @@ void debug (void)
 							seglist = BPTR2APTR(get_long_debug (activetask + 128));
 							seglist = BPTR2APTR(get_long_debug (seglist + 12));
 						}
-						if ( (activetask == processptr)
-						  || ( processname
-							&& ( !strcasecmp (name, processname)
-							  || (command && command[0] && !strncasecmp (command + 1, processname, (size_t)command[0])
-								&& (0 == processname[(size_t)command[0]]))
-							   ) ) ) {
+						if (activetask == processptr || (processname && (!strcasecmp (name, processname) || (command && command[0] && !strncasecmp (command + 1, processname, command[0]) && processname[command[0]] == 0)))) {
 							while (seglist) {
 								uae_u32 size = get_long_debug (seglist - 4) - 4;
 								if (pc >= (seglist + 4) && pc < (seglist + size)) {
@@ -4051,13 +4046,6 @@ const TCHAR *debuginfo (int mode)
 	_stprintf (txt, _T("PC=%08X INS=%04X %04X %04X"),
 		pc, get_word_debug (pc), get_word_debug (pc + 2), get_word_debug (pc + 4));
 	return txt;
-}
-
-void mmu_disasm (uaecptr pc, int lines)
-{
-	debug_mmu_mode = regs.s ? 6 : 2;
-	m68k_dumpstate2 (0xffffffff, NULL);
-	m68k_disasm (pc, NULL, lines);
 }
 
 static int mmu_logging;

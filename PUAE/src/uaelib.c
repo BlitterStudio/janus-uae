@@ -451,7 +451,7 @@ static uae_u32 REGPARAM2 uaelib_demux2 (TrapContext *context)
 static uae_u32 REGPARAM2 uaelib_demux (TrapContext *context)
 {
 	uae_u32 v;
-//	struct regstruct *r = &regs;
+	struct regstruct *r = &regs;
 
 	v = uaelib_demux2 (context);
 	return v;

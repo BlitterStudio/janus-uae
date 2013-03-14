@@ -14,7 +14,6 @@
 #include "options.h"
 #include "events.h"
 #include "uae.h"
-#include "misc.h"
 
 #define ROBOCOP3 1
 #define LEADERBOARD 2
@@ -38,9 +37,6 @@ uae_u16 dongle_joydat (int port, uae_u16 val);
 void dongle_potgo (uae_u16 val);
 uae_u16 dongle_potgor (uae_u16 val);
 int dongle_analogjoy (int joy, int axis);
-
-/* external prototypes */
-uae_u32 uaerand (void);
 
 /*
 Robocop 3

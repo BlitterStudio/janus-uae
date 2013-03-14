@@ -8,7 +8,7 @@ dnl
 AC_PREREQ(2.55)
 AC_INIT(PUAE, 2.6.0, mustafa.tufan@gmail.com, puae)
 AC_CONFIG_SRCDIR([bootstrap.sh])
-AC_CONFIG_HEADER([src/sysconfig.h])
+AM_CONFIG_HEADER([src/sysconfig.h])
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE(1.7 dist-bzip2 foreign)
 
@@ -19,12 +19,11 @@ dnl
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_CXX
-AC_PROG_OBJC
 AS_PROG_OBJC
 AM_PROG_AS
 AC_PROG_MAKE_SET
 AC_PROG_RANLIB
-AC_CHECK_TOOL([AR], [ar], [])
+AC_CHECK_TOOL(AR, ar)
 AC_PROG_INSTALL
 AC_PATH_PROG(MAKEDEPPRG, makedepend, not-found)
 AC_PATH_PROG(FILEPRG, file, not-found)
@@ -40,7 +39,6 @@ NR_ERRORS=0
 ADDITIONAL_CFLAGS=
 OPTIMIZE_CFLAGS=
 WARNING_CFLAGS=
-WARNING_CXXFLAGS=
 DEBUG_CFLAGS=
 NO_SCHED_CFLAGS=
 
@@ -66,17 +64,6 @@ commit="not git"
 fi
 AC_DEFINE_UNQUOTED(PACKAGE_COMMIT, "$commit", [cloned git commit version])
 AC_SUBST(PACKAGE_COMMIT, $commit)
-
-dnl
-dnl Prefer Gtk2.x over Gtk1.x if both are available
-dnl
-dnl Update:
-dnl Using GTK1 is a big big NO-NO! We have 2013 and
-dnl the Gnome community celebrates GTK3.
-AM_PATH_GTK_2_0(2.0.0,HAVE_GTK=yes,HAVE_GTK=no)
-dnl if [[ "x$HAVE_GTK" = "xno" ]]; then
-dnl   AM_PATH_GTK(1.0.0,HAVE_GTK=yes,HAVE_GTK=no)
-dnl fi
 
 dnl
 dnl Check if Qt 4 is installed
@@ -112,7 +99,6 @@ fi
 dnl
 dnl if QT
 dnl
-
 if [[ "x$HAVE_QT" = "xyes" ]]; then
 AC_MSG_CHECKING(QT: Meta Object Compiler)
 if test -z "$QT_MOC"; then
@@ -161,7 +147,6 @@ fi
 dnl
 dnl
 dnl
-
 if [[ "x$HAVE_QT" = "xno" ]]; then
 if [[ "x$WANT_QT" = "xyes" ]]; then
 WANT_QT=no
@@ -188,8 +173,6 @@ AC_CHECK_HEADERS([machine/joystick.h])
 AC_CHECK_HEADER([amigainput/amigainput.h], HAVE_AMIGAINPUT=yes, HAVE_AMIGAINPUT=no)
 
 AC_CHECK_HEADERS([byteswap.h])
-
-AC_CHECK_HEADERS([pcap.h], HAVE_PCAP=yes, HAVE_PCAP=no)
 
 dnl
 dnl  Checks for typedefs, structures, and compiler characteristics.
@@ -294,19 +277,10 @@ fi
 dnl
 dnl  Check for pthreads
 dnl
-ACX_PTHREAD(HAVE_PTHREAD=yes,HAVE_PTHREAD=no)
-
-dnl Solaris, for example, needs additional libs to use POSIX semaphores.
-
-if [[ "x$HAVE_PTHREAD" = "xyes" ]]; then
- SAVE_CFLAGS="$CFLAGS"
- SAVE_LIBS="$LIBS"
- CFLAGS="$PTHREAD_CFLAGS $CFLAGS"
- LIBS="$PTHREAD_LIBS"
- AC_SEARCH_LIBS(sem_init, rt posix4,,,"$SAVE_LIBS")
- PTHREAD_LIBS="$LIBS"
- CFLAGS="$SAVE_CFLAGS"
- LIBS="$SAVE_LIBS"
+if [[ "$OSDEP" != "od-amiga" ]]; then
+  ACX_PTHREAD(HAVE_PTHREAD=yes,HAVE_PTHREAD=no)
+else
+  HAVE_PTHREAD=no
 fi
 
 dnl
@@ -386,6 +360,34 @@ esac
 
 AC_MSG_RESULT([$HOST_OS])
 
+dnl Solaris, for example, needs additional libs to use POSIX semaphores.
+if [[ "x$HAVE_PTHREAD" = "xyes" ]]; then
+
+ if [[ "$OSDEP" != "od-amiga" ]]; then
+  SAVE_CFLAGS="$CFLAGS"
+  SAVE_LIBS="$LIBS"
+  CFLAGS="$PTHREAD_CFLAGS $CFLAGS"
+  LIBS="$PTHREAD_LIBS"
+  AC_SEARCH_LIBS(sem_init, rt posix4,,,"$SAVE_LIBS")
+  PTHREAD_LIBS="$LIBS"
+  CFLAGS="$SAVE_CFLAGS"
+  LIBS="$SAVE_LIBS"
+ fi
+fi
+
+dnl
+dnl Prefer Gtk2.x over Gtk1.x if both are available
+dnl
+
+if [[ "$OSDEP" != "od-amiga" ]]; then
+ AM_PATH_GTK_2_0(2.0.0,HAVE_GTK=yes,HAVE_GTK=no)
+ if [[ "x$HAVE_GTK" = "xno" ]]; then
+   AM_PATH_GTK(1.0.0,HAVE_GTK=yes,HAVE_GTK=no)
+ fi
+else
+ HAVE_GTK=yes
+fi
+
 dnl
 dnl  Find out what CPU arch to build for
 dnl
@@ -423,7 +425,6 @@ dnl
 HAVE_GCC27=no
 HAVE_GCC30=no
 HAVE_GCC40=no
-HAVE_GCC46=no
 HAVE_GCC47=no
 HAVE_GLIBC2=no
 
@@ -451,13 +452,6 @@ if [[ "x$HAVE_GCC30" = "xyes" ]]; then
   #endif
   ], [AC_MSG_RESULT(yes); HAVE_GCC40=yes], AC_MSG_RESULT(no))
 fi
-
-AC_MSG_CHECKING([for GCC 4.6 or higher])
-AC_EGREP_CPP(yes,
-[#if (__GNUC__ > 3 && __GNUC_MINOR__ > 5)
-  yes
-#endif
-], [AC_MSG_RESULT(yes); HAVE_GCC46=yes], AC_MSG_RESULT(no))
 
 AC_MSG_CHECKING([for GCC 4.7 or higher])
 AC_EGREP_CPP(yes,
@@ -487,17 +481,16 @@ fi
 dnl
 dnl  Now we know the compiler, check some compiler options
 dnl
-
 if [[ "x$HAVEGCC27" = "xyes" -a "$HOST_CPU" = "i386" ]]; then
   SAVECFLAGS=$CFLAGS
   CFLAGS="$CFLAGS -mno-schedule-prologue"
-  AC_TRY_COMPILE([],[int main(){return 0;}], [OPTIMIZE_CFLAGS="$OPTIMIZE_CFLAGS -mno-schedule-prologue"])
+  AC_TRY_COMPILE(,int main(){return 0;}, OPTIMIZE_CFLAGS="$OPTIMIZE_CFLAGS -mno-schedule-prologue")
   CFLAGS=$SAVECFLAGS
 fi
 if [[ "x$HAVEGCC27" = "xyes" -a "$HOST_CPU" = "i386" ]]; then
   SAVECFLAGS=$CFLAGS
   CFLAGS="$CFLAGS -mpreferred-stack-boundary=2"
-  AC_TRY_COMPILE([],[int main(){return 0;}], [OPTIMIZE_CFLAGS="$OPTIMIZE_CFLAGS -mpreferred-stack-boundary=2"])
+  AC_TRY_COMPILE(,int main(){return 0;}, OPTIMIZE_CFLAGS="$OPTIMIZE_CFLAGS -mpreferred-stack-boundary=2")
   CFLAGS=$SAVECFLAGS
 fi
 dnl If GCC supports exceptions, we don't want them.
@@ -597,7 +590,6 @@ MATHLIB=-lm
 dnl
 dnl  Override defaults for specific targets
 dnl
-
 if [[ "$HOST_OS" = "linux" ]]; then
   JOY_DEP=jd-linuxold
   JOY_NAME="linux"
@@ -631,10 +623,11 @@ else if [[ "$OSDEP" = "od-amiga" ]]; then
   THREADNAME="native AmigaOS"
   GFX_DEP=gfx-amigaos
   GFX_NAME="native AmigaOS"
-  GUI_DEP=gui-muirexx
-  GUI_NAME="MUIRexx"
-  SND_DEP=sd-amigaos
-  SND_NAME="native AmigaOS/AHI"
+  GUI_DEP=gui-none
+  GUI_NAME="no GUI"
+  SND_DEP=sd-none
+  SND_NAME="no sound yet"
+  WANT_ENFORCER=no
   if [[ "x$HAVE_AMIGAINPUT" = "xyes" ]]; then
    JOY_DEP=jd-amigainput
    JOY_NAME="AmigaInput"
@@ -643,6 +636,7 @@ else if [[ "$OSDEP" = "od-amiga" ]]; then
    JOY_NAME="Amiga lowlevel.library"
   fi
   WANT_BSDSOCK=no
+  UAE_LIBS=-L/usr/local/aros/lib -lgtk-mui -lgobject-2.0 -lglib-2.0 -liconv -lmui -larossupport -lamiga -larosc  -laros -lSDL -lCL
 fi
 fi
 fi
@@ -791,7 +785,6 @@ AC_CHECK_LIB(ncurses, waddch, HAVE_NCURSES_LIB=yes, HAVE_NCURSES_LIB=no)
 dnl
 dnl Check for SDL
 dnl
-
 if [[ "x$WANT_SDL" != "xno" ]]; then
   if [[ "$HOST_OS" = "darwin" ]]; then
 
@@ -824,8 +817,12 @@ if [[ "x$WANT_SDL" != "xno" ]]; then
 
     CPPFLAGS="$SAVE_CPPFLAGS"
     LIBS="$SAVE_LIBS"
+  else if [[ "$OSDEP" = "od-amiga" ]]; then
+    SDL_CFLAGS="-I/home/oli/svn/v0/AROS/bin/linux-i386/gen/include/SDL"
+    HAVE_SDL=yes
   else
     AM_PATH_SDL(1.2.0,HAVE_SDL=yes,HAVE_SDL=no)
+  fi
   fi
 
   if [[ "x$WANT_SDL" = "xyes" -a "x$HAVE_SDL" = "xno" ]]; then
@@ -850,30 +847,24 @@ else
 fi
 
 
+dnl This is the old line. A lot of warnings are already eliminated, but I
+dnl want this whole mess sorted out. So let's be bold and enable both
+dnl Wextra (Just -W is deprecated!) and pedantic! o_O
+dnl
+dnl Further more the flag -fdiagnostics-show-option shows the specific warning
+dnl option responsible to toggle a warning, even if it is enabled by default.
+dnl
+dnl The old line:
+dnl
+dnl WARNING_CFLAGS="$WARNING_CFLAGS -Wall -Wno-unused -Wno-format -W -Wmissing-prototypes -Wstrict-prototypes"
+dnl
+dnl The new lines:
+dnl WARNING_CFLAGS="$WARNING_CFLAGS -fdiagnostics-show-option -Wall -Wextra -pedantic"
+dnl WARNING_CFLAGS="$WARNING_CFLAGS -Wmissing-prototypes -Wstrict-prototypes -Wno-unused"
+
 if test $ac_cv_prog_gcc = yes; then
-  WARNING_CFLAGS="$WARNING_CFLAGS -fdiagnostics-show-option -Wall -Wextra -pedantic"
-  WARNING_CFLAGS="$WARNING_CFLAGS -Wno-unused-parameter -Wno-format"
-  UNUSED_WARN="-Wno-unused-parameter"
-
-  dnl --- Fixing orphans and cleaning files ---
-  dnl Once all files compile without warnings, the following
-  dnl settings can be used to control which warnings about
-  dnl unused functions and parameters should be shown.
-dnl
-  dnl Note: --Wno-unused-parameter should stay, there are a lot dummy functions!
-dnl
-  UNUSED_WARN="$UNUSED_WARN -Wno-unused-variable"
-  UNUSED_WARN="$UNUSED_WARN -Wno-unused-function"
-if [[ "x$HAVE_GCC46" = "xyes" ]]; then
-  UNUSED_WARN="$UNUSED_WARN -Wno-unused-but-set-variable"
-fi
-
-  # Now put them together
-  WARNING_CFLAGS="$WARNING_CFLAGS $UNUSED_WARN -Wno-format"
-  WARNING_CXXFLAGS="$WARNING_CFLAGS"
-
-  # The following two are not valid for C++
-  WARNING_CFLAGS="$WARNING_CFLAGS -Wmissing-prototypes -Wstrict-prototypes"
+  WARNING_CFLAGS="$WARNING_CFLAGS -fdiagnostics-show-option -Wall -Wextra"
+  WARNING_CFLAGS="$WARNING_CFLAGS -Wmissing-prototypes -Wstrict-prototypes -Wno-unused"
 
   if [[ "x$want_gcc_debug" == "xyes" ]]; then
     DEBUG_CFLAGS="$DEBUG_CFLAGS -ggdb"
@@ -895,7 +886,8 @@ if [[ "x$DO_PROFILING" = "xyes" ]]; then
 fi
 
 UAE_CFLAGS="$OPTIMIZE_CFLAGS $DEBUG_CFLAGS $WARNING_CFLAGS"
-UAE_CXXFLAGS="$OPTIMIZE_CFLAGS $DEBUG_CFLAGS  $WARNING_CXXFLAGS"
+UAE_CXXFLAGS="$UAE_CFLAGS"
+
 
 dnl -----------------------------------------------
 dnl  Check CPU emulation options
@@ -914,7 +906,6 @@ CPUOBJS='cpuemu_0.$(OBJEXT)'
 dnl
 dnl CPUEMU_11: 68000 prefetch
 dnl
-
 if [[ "x$WANT_COMPATIBLE" != "xno" ]]; then
   UAE_DEFINES="$UAE_DEFINES -DCPUEMU_11"
   CPUOBJS="$CPUOBJS cpuemu_11.\$(OBJEXT)"
@@ -926,7 +917,6 @@ dnl CPUEMU_20: 68020 prefetch
 dnl CPUEMU_21: 68020 CE + blitter
 dnl CPUEMU_22: 68030 (040/060) CE + blitter
 dnl
-
 if [[ "x$WANT_CYCLEEXACT" != "xno" ]]; then
   UAE_DEFINES="$UAE_DEFINES -DCPUEMU_12 -DCPUEMU_20 -DCPUEMU_21 -DCPUEMU_22"
   CPUOBJS="$CPUOBJS cpuemu_12.\$(OBJEXT) cpuemu_20.\$(OBJEXT) cpuemu_21.\$(OBJEXT) cpuemu_22.\$(OBJEXT)"
@@ -965,7 +955,6 @@ fi
 dnl
 dnl  Check whether to build with optimized CCR flags handling
 dnl
-
 if [[ "x$HAVE_GCC27" = "xyes" ]]; then
   if [[ "$HOST_CPU" = "i386" -o "$HOST_CPU" = "ppc" -o "$HOST_CPU" = "68k" ]]; then
     GENCPUOPTS="--optimized-flags"
@@ -1003,7 +992,7 @@ dnl  fi
   AC_MSG_CHECKING([whether assembler supports --execstack option])
   SAVE_CFLAGS="$CFLAGS"
   CFLAGS="-Wa,--execstack $CFLAGS"
-  AC_TRY_COMPILE([], [int main (void) {return 0;}],
+  AC_TRY_COMPILE(, int main (void) {return 0;},
     [AC_MSG_RESULT(yes)
     UAE_CFLAGS="-Wa,--execstack $UAE_CFLAGS"],
     AC_MSG_RESULT(no)
@@ -1025,7 +1014,6 @@ dnl Check whether we wanted to use ncurses
 dnl
 dnl First check if we need to uses ncurses because no
 dnl other gfx support is available
-
 if [[ "x$WANT_NCURSES" != "xno" -a "x$WANT_SDL" = "xno" -a "x$GFX_DEP" = "x" ]]; then
  WANT_NCURSES=yes
 fi
@@ -1059,7 +1047,6 @@ dnl  Check whether we actually wanted to use SDL or whether
 dnl  we need to use SDL because we couldn't find any other
 dnl  graphics support
 dnl
-
 if [[ "x$WANT_SDL" = "xyes" -o "x$GFX_DEP" = "x" ]]; then
   if [[ "x$HAVE_SDL" = "xyes" -a "x$WANT_SDLGFX" != "xno" ]]; then
     WANT_SDL=yes
@@ -1094,7 +1081,6 @@ fi
 dnl  If we got here and we still haven't found a graphics target
 dnl  then bail out.
 dnl
-
 if [[ "x$GFX_DEP" = "x" ]]; then
   AC_MSG_RESULT(none)
   AC_MSG_ERROR([Could not find a useable graphics target])
@@ -1394,13 +1380,8 @@ AC_MSG_CHECKING([whether to build A2065 Ethernet emulation])
 if [[ "x$WANT_A2065" = "xno" ]]; then
   AC_MSG_RESULT(no)
 else
-  if [[ "x$HAVE_PCAP" = "xyes" ]]; then
-    UAE_DEFINES="$UAE_DEFINES -DA2065"
-    UAE_LIBS="${UAE_LIBS} -lpcap"
-    AC_MSG_RESULT(yes)
-  else
-    AC_MSG_RESULT(pcap.h not found)
-  fi
+  UAE_DEFINES="$UAE_DEFINES -DA2065"
+  AC_MSG_RESULT(yes)
 fi
 
 dnl
@@ -1465,20 +1446,21 @@ if [[ "x$WANT_SCSIEMU" = "xyes" ]]; then
     NR_WARNINGS=`expr $NR_WARNINGS + 1`
     WANT_SCSIEMU=no
   else
-    AC_MSG_RESULT(yes)
     if [[ "$OSDEP" = "od-amiga" ]]; then
-			SCSIOBJS='scsiemul.$(OBJEXT)'
+      AC_MSG_RESULT(yes)
+	SCSIOBJS='scsiemul.$(OBJEXT) blkdev.$(OBJEXT) blkdev_cdimage.$(OBJEXT) scsi.$(OBJEXT)'
       UAE_DEFINES="$UAE_DEFINES -DSCSIEMU"
-			if [[ "x$WANT_A2091" = "xyes" ]]; then
-				UAE_DEFINES="$UAE_DEFINES -DA2091"
-				SCSIOBJS='scsiemul.$(OBJEXT) a2091.$(OBJEXT)'
-			fi
+if [[ "x$WANT_A2091" = "xyes" ]]; then
+	UAE_DEFINES="$UAE_DEFINES -DA2091"
+	SCSIOBJS='scsiemul.$(OBJEXT) blkdev.$(OBJEXT) blkdev_cdimage.$(OBJEXT) scsi.$(OBJEXT) a2091.$(OBJEXT)'
+fi
       NEED_THREAD_SUPPORT=yes
     else
     SCGLIBS="-lscg -lschily"
     if [[ "$HOST_OS" = "darwin" ]]; then
       SCGLIBS="$SCGLIBS -framework IOKit -framework CoreFoundation"
     fi
+    AC_MSG_RESULT(yes)
     AC_MSG_CHECKING([for libscg and libschily])
     OLDLIBS="$LIBS"
     OLDCPPFLAGS="$CPPFLAGS"
@@ -1504,11 +1486,11 @@ typedef int BOOL;
 [{SCSI *scgp = scg_open (0, 0, 0, 0, 0);}],
     [
 	AC_MSG_RESULT(yes)
-	SCSIOBJS='scsiemul.$(OBJEXT) blkdev-libscg.$(OBJEXT)'
+	SCSIOBJS='scsiemul.$(OBJEXT) blkdev.$(OBJEXT) blkdev_cdimage.$(OBJEXT) blkdev-libscg.$(OBJEXT) scsi.$(OBJEXT)'
       UAE_DEFINES="$UAE_DEFINES -DSCSIEMU"
 if [[ "x$WANT_A2091" = "xyes" ]]; then
 	UAE_DEFINES="$UAE_DEFINES -DA2091"
-	SCSIOBJS='scsiemul.$(OBJEXT) blkdev-libscg.$(OBJEXT) a2091.$(OBJEXT)'
+	SCSIOBJS='scsiemul.$(OBJEXT) blkdev.$(OBJEXT) blkdev_cdimage.$(OBJEXT) blkdev-libscg.$(OBJEXT) scsi.$(OBJEXT) a2091.$(OBJEXT)'
 fi
       UAE_CPPFLAGS="$UAE_CPPFLAGS $LIBSCG_CPPFLAGS"
       UAE_LIBS="$LIBSCG_LIBS $UAE_LIBS"
@@ -1529,11 +1511,11 @@ typedef int BOOL;
 [{SCSI *scgp = scg_open (0, 0, 0, 0, 0);}],
       [
         AC_MSG_RESULT(yes)
-        SCSIOBJS='scsiemul.$(OBJEXT) blkdev-libscg.$(OBJEXT)'
+        SCSIOBJS='scsiemul.$(OBJEXT) blkdev.$(OBJEXT) blkdev_cdimage.$(OBJEXT) blkdev-libscg.$(OBJEXT) scsi.$(OBJEXT)'
         UAE_DEFINES="$UAE_DEFINES -DSCSIEMU"
 if [[ "x$WANT_A2091" = "xyes" ]]; then
 	UAE_DEFINES="$UAE_DEFINES -DA2091"
-	SCSIOBJS='scsiemul.$(OBJEXT) blkdev-libscg.$(OBJEXT) a2091.$(OBJEXT)'
+	SCSIOBJS='scsiemul.$(OBJEXT) blkdev.$(OBJEXT) blkdev_cdimage.$(OBJEXT) blkdev-libscg.$(OBJEXT) scsi.$(OBJEXT) a2091.$(OBJEXT)'
 fi
         NEED_THREAD_SUPPORT=yes
         if [[ "$srcdir" != "." ]]; then
@@ -1555,11 +1537,11 @@ dnl          AC_CONFIG_LINKS(src/libschily.a:src/libschily.a)
 [{struct cdrom_generic_command cmd; ioctl (0, CDROM_SEND_PACKET, &cmd);}],
 	[
 	   AC_MSG_RESULT(yes)
-	   SCSIOBJS='scsiemul.$(OBJEXT)'
+	   SCSIOBJS='scsiemul.$(OBJEXT) blkdev.$(OBJEXT) blkdev_cdimage.$(OBJEXT) scsi.$(OBJEXT)'
 	   UAE_DEFINES="$UAE_DEFINES -DSCSIEMU -DSCSIEMU_LINUX_IOCTL"
 if [[ "x$WANT_A2091" = "xyes" ]]; then
 	UAE_DEFINES="$UAE_DEFINES -DA2091"
-	SCSIOBJS='scsiemul.$(OBJEXT) a2091.$(OBJEXT)'
+	SCSIOBJS='scsiemul.$(OBJEXT) blkdev.$(OBJEXT) blkdev_cdimage.$(OBJEXT) scsi.$(OBJEXT) a2091.$(OBJEXT)'
 fi
 	   NEED_THREAD_SUPPORT=yes
 	],
@@ -1581,6 +1563,7 @@ else
 fi
 if [[ "x$WANT_SCSIEMU" != "xyes" ]]; then
   SCSIOBJS='scsi-none.$(OBJEXT)'
+  AC_MSG_RESULT(no)
 fi
 
 
@@ -1878,9 +1861,7 @@ dnl Do we want CPU Specific Optimizations?
 dnl mtufan
 dnl -----------------------------------------------
 AC_MSG_CHECKING([whether to use CPU Specific GCC Optimizations])
-if [[ "x$WANT_OPT" != "xyes" ]]; then
-  AC_MSG_RESULT(no)
-else
+if [[ "x$WANT_OPT" == "xyes" ]]; then
   AC_MSG_RESULT(yes)
 
 dnl
@@ -2048,7 +2029,6 @@ dnl -O?
 dnl while in gcc 3.x, -O3 creates faster executable, this is no longer the case with 4.x
 dnl (using -O3 is not recommended for gcc 4.x, so we don't)
 dnl
-
 if [[ "x$HAVE_GCC40" = "xyes" ]]; then
 OPTIMIZED_FLAGS="-O2 -ffast-math -ftree-vectorize"
 else
@@ -2056,7 +2036,6 @@ OPTIMIZED_FLAGS="-O3 -ffast-math"
 fi
 
 dnl INTEL
-
 if [[ "x$have_avx2" = "xyes" ]]; then
     AX_CHECK_COMPILE_FLAG("-mavx2", [OPTIMIZED_FLAGS="$OPTIMIZED_FLAGS -mavx2"; break])
 fi
@@ -2086,7 +2065,6 @@ if [[ "x$have_mmx" = "xyes" ]]; then
 fi
 
 dnl AMD
-
 if [[ "x$have_sse4a" = "xyes" ]]; then
     AX_CHECK_COMPILE_FLAG("-msse4a", [OPTIMIZED_FLAGS="$OPTIMIZED_FLAGS -msse4a"; break])
 fi
@@ -2097,6 +2075,9 @@ fi
 dnl a safe flag to use. this has no effect on the generated exe,
 dnl but it tells the compiler to use pipes instead of temp files during compilation
 OPTIMIZED_FLAGS="$OPTIMIZED_FLAGS -pipe"
+
+else
+  AC_MSG_RESULT(no)
 fi
 
 dnl
@@ -2113,7 +2094,7 @@ else
 UAE_CXXFLAGS="$UAE_CXXFLAGS $UAE_CFLAGS -std=c++98"
 fi
 
-UAE_CFLAGS="$UAE_CFLAGS -std=c99"
+UAE_CFLAGS="$UAE_CFLAGS "
 
 AC_CONFIG_LINKS(src/target.h:src/targets/$TARGETDEP)
 AC_CONFIG_LINKS(src/machdep:src/$MACHDEP)
@@ -2180,17 +2161,24 @@ AC_CONFIG_FILES([Makefile
 
 AM_CONDITIONAL(TARGET_BIGENDIAN, test x$ac_cv_c_bigendian = xyes)
 AM_CONDITIONAL(TARGET_BEOS,  test x$OSDEP = xod-beos)
-AM_CONDITIONAL(TARGET_LINUX, test x$OSDEP = xod-linux)
 AM_CONDITIONAL(BUILD_MACOSX_BUNDLE, test x$OSDEP = xod-macosx)
+AM_CONDITIONAL(TARGET_LINUX, test x$OSDEP = xod-linux)
+AM_CONDITIONAL(TARGET_AMIGA, test x$OSDEP = xod-amiga)
 AM_CONDITIONAL(ANDROID, test x$WANT_ANDROID = xyes)
+AM_CONDITIONAL(AMIGA, test $OSDEP = "od-amiga")
 AM_CONDITIONAL(IS_QT, test x$WANT_QT = xyes)
 AM_CONDITIONAL(SDL_UI, test x$WANT_SDL_UI = xyes)
 
+dnl olo
+if [[ "$OSDEP" = "od-amiga" ]]; then
+  UAE_LIBS="-L/usr/local/aros/lib -lgtk-mui -lgobject-2.0 -lglib-2.0 -liconv -lmui -larossupport -lamiga -larosc  -laros -lSDL -lGL -lz"
+  LIBS=""
+  GTK_CFLAGS="-I/usr/local/aros/include/ -DGTKMUI"
+fi
 AC_SUBST(UAE_CFLAGS)
 AC_SUBST(UAE_CPPFLAGS)
 AC_SUBST(UAE_CXXFLAGS)
-AC_SUBST(UAE_LIBS)
-
+AC_SUBST(UAE_LIBS) 
 AC_SUBST(ac_cv_c_inline)
 AC_SUBST(WRCPRG)
 AC_SUBST(NO_SCHED_CFLAGS)
@@ -2221,7 +2209,6 @@ AC_SUBST(top_srcdir)
 dnl  If we're not cross-compiling then, the config script in src/tools
 dnl  can be called by config.status as normal
 dnl
-
 if [[ "x$cross_compiling" != "xyes" ]]; then
   AC_CONFIG_SUBDIRS(src/tools)
 fi
@@ -2234,7 +2221,6 @@ dnl  autoconf currently has no support for building host tools
 dnl  when cross-compiling. Okay. This is a hack. But it works. Can
 dnl  anybody think of a better way of doing this?
 dnl
-
 if [[ "x$cross_compiling" = "xyes" ]]; then
   export CC=$CC_FOR_BUILD
   export CFLAGS=$CFLAGS_FOR_BUILD
@@ -2245,3 +2231,5 @@ if [[ "x$cross_compiling" = "xyes" ]]; then
 fi
 
 AC_DEFINE(ECS_DENISE,1,[we want ecs_denise])
+
+

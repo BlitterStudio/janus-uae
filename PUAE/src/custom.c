@@ -647,12 +647,10 @@ STATIC_INLINE int GET_PLANES_LIMIT (uae_u16 bc0)
 	return real_bitplane_number[fetchmode][res][planes];
 }
 
-#define HARD_DDF_LIMITS_DISABLED ((beamcon0 & 0x80) || (bplcon0 & 0x40))
 /* The HRM says 0xD8, but that can't work... */
-#define HARD_DDF_STOP (HARD_DDF_LIMITS_DISABLED ? 0xff : 0xd4)
+#define HARD_DDF_STOP ((beamcon0 & 0x80) ? 0xff : 0xd4)
 #define HARD_DDF_START_REAL 0x18
-/* Programmed rates or superhires (!) disable normal DMA limits */
-#define HARD_DDF_START (HARD_DDF_LIMITS_DISABLED ? 0x04 : 0x18)
+#define HARD_DDF_START ((beamcon0 & 0x80) ? 0x10 : 0x18)
 
 static void add_modulos (void)
 {
@@ -1608,15 +1606,10 @@ static void finish_last_fetch (int pos, int fm)
 		return;
 	if (plf_state == plf_end)
 		return;
+	pos += flush_plane_data (fm);
 	plf_state = plf_end;
-	if (!(currprefs.chipset_mask & CSMASK_ECS_AGNUS)) {
-		finish_final_fetch (fm);
-	} else {
-		bpl1dat_early = true;
-		pos += flush_plane_data (fm);
-		ddfstate = DIW_waiting_start;
-		fetch_state = fetch_not_started;
-	}
+	ddfstate = DIW_waiting_start;
+	fetch_state = fetch_not_started;
 }
 
 STATIC_INLINE int one_fetch_cycle_0 (int pos, int ddfstop_to_test, int dma, int fm)
@@ -1714,7 +1707,8 @@ STATIC_INLINE int one_fetch_cycle (int pos, int ddfstop_to_test, int dma, int fm
 
 static void update_bpldats (int hpos)
 {
-	for (int i = 0; i < MAX_PLANES; i++) {
+  int i;
+	for (i = 0; i < MAX_PLANES; i++) {
 #ifdef AGA
 		fetched_aga0[i] = bplxdat[i];
 		fetched_aga1[i] = 0;
@@ -1770,7 +1764,7 @@ STATIC_INLINE void update_fetch (int until, int fm)
 	programs that move the DDFSTOP before our current position before we
 	reach it.  */
 	ddfstop_to_test = HARD_DDF_STOP;
-	if (ddfstop >= (unsigned int)last_fetch_hpos && plfstop < ddfstop_to_test)
+	if (ddfstop >= last_fetch_hpos && plfstop < ddfstop_to_test)
 		ddfstop_to_test = plfstop;
 
 	update_toscr_planes ();
@@ -2487,17 +2481,9 @@ static void calcsprite (void)
 		int min, max;
 		min = tospritexddf (thisline_decision.plfleft);
 		max = tospritexddf (thisline_decision.plfright);
-		if (min > sprite_minx && min < max) { /* min < max = full line ddf */
-			if (currprefs.chipset_mask & CSMASK_ECS_DENISE) {
-				sprite_minx = min;
-			} else {
-				if (thisline_decision.plfleft >= 0x28 || bpldmawasactive)
-					sprite_minx = min;
-			}
-		}
+		if (min > sprite_minx && min < max) /* min < max = full line ddf */
+			sprite_minx = min;
 		/* sprites are visible from first BPL1DAT write to end of line
-		 * ECS Denise/AGA: not limits
-		 * OCS Denise: BPL1DAT write only enables sprite if hpos >= 0x28 or so.
 		* (undocumented feature)
 		*/
 	}
@@ -2916,11 +2902,12 @@ struct chipset_refresh *get_chipset_refresh (void)
 {
 	int islace = interlace_seen ? 1 : 0;
 	int isntsc = (beamcon0 & 0x20) ? 0 : 1;
+  int i;
 
 	if (!(currprefs.chipset_mask & CSMASK_ECS_AGNUS))
 		isntsc = currprefs.ntscmode ? 1 : 0;
 
-	for (int i = 0; i < MAX_CHIPSET_REFRESH_TOTAL; i++) {
+	for (i = 0; i < MAX_CHIPSET_REFRESH_TOTAL; i++) {
 		struct chipset_refresh *cr = &currprefs.cr[i];
 		if ((cr->horiz < 0 || cr->horiz == maxhpos) &&
 			(cr->vert < 0 || cr->vert == maxvpos_nom) &&
@@ -3033,7 +3020,7 @@ void compute_framesync (void)
 		gfxvidinfo.extrawidth = 0;
 		gfxvidinfo.inwidth2 = gfxvidinfo.inwidth;
 
-		gfxvidinfo.inheight = (maxvpos - minfirstline + 1) << vres2;
+		gfxvidinfo.inheight = (maxvpos - minfirstline) << vres2;
 		gfxvidinfo.inheight2 = gfxvidinfo.inheight;
 
 	} else {
@@ -3041,7 +3028,7 @@ void compute_framesync (void)
 		gfxvidinfo.inwidth = AMIGA_WIDTH_MAX << currprefs.gfx_resolution;
 		gfxvidinfo.extrawidth = currprefs.gfx_extrawidth ? currprefs.gfx_extrawidth : -1;
 		gfxvidinfo.inwidth2 = gfxvidinfo.inwidth;
-		gfxvidinfo.inheight = ((maxvpos_nom + 1) - minfirstline + 1) << currprefs.gfx_vresolution;
+		gfxvidinfo.inheight = (maxvpos_nom - minfirstline + 1) << currprefs.gfx_vresolution;
 		gfxvidinfo.inheight2 = gfxvidinfo.inheight;
 
 	}
@@ -3298,7 +3285,7 @@ static void calcdiw (void)
 				plfstop = 0xff;
 			plfstrt_start = HARD_DDF_START_REAL - 2;
 		} else {
-			plfstrt_start = plfstrt;
+			plfstrt_start = plfstrt - 4;
 		}
 	}
 	diw_change = 2;
@@ -4675,15 +4662,10 @@ static int customdelay[]= {
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 };
 
-/* FIXME
- * Marked "if 0" in update_copper(). Why?
- */
-#if 0
 static void copper_write (uae_u32 v)
 {
 	custom_wput_copper (current_hpos (), v >> 16, v & 0xffff, 0);
 }
-#endif
 
 static void update_copper (int until_hpos)
 {
@@ -5487,7 +5469,7 @@ static bool framewait (void)
 			t += (int)start - (int)vsync_time;
 
 		if (!frame_shown)
-			show_screen (1);
+		show_screen ();
 
 		int legacy_avg = mavg (&ma_legacy, t, MAVG_VSYNC_SIZE);
 		if (t > legacy_avg)
@@ -5532,7 +5514,6 @@ static bool framewait (void)
 				end = read_processor_time ();
 				val += end - start;
 			}
-
 			curr_time = 0;
 			status = vsync_busywait_do (NULL, (bplcon0 & 4) != 0 && !lof_changed && !lof_changing, lof_store != 0);
 
@@ -5586,8 +5567,7 @@ static bool framewait (void)
 			if (!frame_rendered && !picasso_on)
 				frame_rendered = render_screen (false);
 
-			status = vsync_busywait_do (&freetime, (bplcon0 & 4) != 0 && !lof_changed && !lof_changing, lof_store != 0);
-
+						status = vsync_busywait_do (&freetime, (bplcon0 & 4) != 0 && !lof_changed && !lof_changing, lof_store != 0);
 			now = read_processor_time ();
 
 			if (extraframewait && !currprefs.turbo_emulation)
@@ -5721,7 +5701,7 @@ static bool framewait (void)
         	vsyncmintime = curr_time;
 		vsyncmaxtime = vsyncwaittime = curr_time + vstb;
 		if (frame_rendered) {
-			show_screen (0);
+                	show_screen ();
 			t += read_processor_time () - curr_time;
 		}
 		t += frameskipt_avg;
@@ -5803,7 +5783,7 @@ static void vsync_handler_pre (void)
 		if (vsync_handle_check ()) {
 			redraw_frame ();
 			render_screen (true);
-			show_screen (0);
+			show_screen ();
 		}
 		config_check_vsync ();
 	}
@@ -6132,6 +6112,7 @@ static void events_dmal (int hp)
 
 static void events_dmal_hsync (void)
 {
+  int i;
 	if (dmal)
 		write_log (_T("DMAL error!? %04x\n"), dmal);
 	dmal = audio_dmal ();
@@ -6141,7 +6122,7 @@ static void events_dmal_hsync (void)
 		return;
 	dmal_hpos = 0;
 	if (currprefs.cpu_cycle_exact) {
-		for (int i = 0; i < 6 + 8; i += 2) {
+		for (i = 0; i < 6 + 8; i += 2) {
 			if (dmal & (3 << i)) {
 				alloc_cycle_ext (i + 7, CYCLE_MISC);
 			}
@@ -6372,9 +6353,9 @@ static void hsync_handler_post (bool onvsync)
 	cnt++;
 	if (cnt == 500) {
 		int port_insert_custom (int inputmap_port, int devicetype, DWORD flags, const TCHAR *custom);
-		//port_insert_custom (0, 2, 0, _T("Left=0xCB Right=0xCD Up=0xC8 Down=0xD0 Fire=0x39 Fire.autorepeat=0xD2"));
-		port_insert_custom (1, 2, 0, _T("Left=0x1E Right=0x20 Up=0x11 Down=0x1F Fire=0x38"));
-	} else if (0 && cnt == 1000) {
+		port_insert_custom (0, 2, 0, _T("Fire.autorepeat=0x38 Left=0x4B Right=0x4D Up=0x48 Down=0x50 Fire=0x4C Fire2=0x52'"));
+		port_insert_custom (1, 2, 0, _T("Left=0x48 Right=0x50 Up=0x4B Down=0x4D Fire=0x4C"));
+	} else if (cnt == 1000) {
 		TCHAR out[256];
 		bool port_get_custom (int inputmap_port, TCHAR *out);
 		port_get_custom (0, out);
@@ -6475,12 +6456,14 @@ static void hsync_handler_post (bool onvsync)
 	}
 #endif
 
+#ifdef BSDSOCKET
 	{
 		extern void bsdsock_fake_int_handler (void);
 		extern int volatile bsd_int_requested;
 		if (bsd_int_requested)
 			bsdsock_fake_int_handler ();
 	}
+#endif
 
 	plfstrt_sprite = plfstrt;
 	/* See if there's a chance of a copper wait ending this line.  */
@@ -6493,7 +6476,7 @@ static void hsync_handler_post (bool onvsync)
 #endif
 
 #ifdef GAYLE
-//	gayle_hsync ();
+	gayle_hsync ();
 #endif
 #ifdef A2091
 	scsi_hsync ();
@@ -6624,6 +6607,8 @@ void custom_reset (bool hardreset, bool keyboardreset)
 	int i;
 	int zero = 0;
 
+  DebOut("entered\n");
+
 	//target_reset ();
 	reset_all_systems ();
 	write_log (_T("Reset at %08X. Chipset mask = %08X\n"), M68K_GETPC, currprefs.chipset_mask);
@@ -6685,7 +6670,7 @@ void custom_reset (bool hardreset, bool keyboardreset)
 	}
 
 #ifdef GAYLE
-//	gayle_reset (hardreset);
+	gayle_reset (hardreset);
 #endif
 #ifdef AUTOCONFIG
 	expamem_reset ();
@@ -6694,7 +6679,7 @@ void custom_reset (bool hardreset, bool keyboardreset)
 	DISK_reset ();
 	CIA_reset ();
 #ifdef GAYLE
-//	gayle_reset (0);
+	gayle_reset (0);
 #endif
 #ifdef A2091
 	a2091_reset ();
@@ -6742,7 +6727,10 @@ void custom_reset (bool hardreset, bool keyboardreset)
 
 	init_sprites ();
 
+
 	init_hardware_frame ();
+
+  DebOut("calling drawing_init..\n");
 	drawing_init ();
 
 	reset_decisions ();
@@ -6752,6 +6740,8 @@ void custom_reset (bool hardreset, bool keyboardreset)
 	if (isrestore ()) {
 		uae_u16 v;
 		uae_u32 vv;
+
+    DebOut("isrestore..\n");
 
 		audio_update_adkmasks ();
 		INTENA (0);
@@ -6818,6 +6808,7 @@ void custom_reset (bool hardreset, bool keyboardreset)
 #ifdef PICASSO96
 	picasso_reset ();
 #endif
+  DebOut("done.\n");
 }
 
 void dumpcustom (void)
@@ -7882,10 +7873,11 @@ uae_u8 *save_custom_extra (int *len, uae_u8 *dstptr)
 
 uae_u8 *restore_custom_event_delay (uae_u8 *src)
 {
-	if (restore_u32 () != 1)
+  unsigned int i;	
+  if (restore_u32 () != 1)
 		return src;
 	int cnt = restore_u8 ();
-	for (int i = 0; i < cnt; i++) {
+	for (i = 0; i < cnt; i++) {
 		uae_u8 type = restore_u8 ();
 		evt e = restore_u64 ();
 		uae_u32 data = restore_u32 ();
@@ -7898,8 +7890,9 @@ uae_u8 *save_custom_event_delay (int *len, uae_u8 *dstptr)
 {
 	uae_u8 *dstbak, *dst;
 	int cnt = 0;
+  unsigned int i;
 
-	for (int i = ev2_misc;  i < ev2_max; i++) {
+	for (i = ev2_misc;  i < ev2_max; i++) {
 		struct ev2 *e = &eventtab2[i];
 		if (e->active && e->handler == send_interrupt_do) {
 			cnt++;
@@ -7915,7 +7908,7 @@ uae_u8 *save_custom_event_delay (int *len, uae_u8 *dstptr)
 
 	save_u32 (1);
 	save_u8 (cnt);
-	for (int i = ev2_misc;  i < ev2_max; i++) {
+	for (i = ev2_misc;  i < ev2_max; i++) {
 		struct ev2 *e = &eventtab2[i];
 		if (e->active && e->handler == send_interrupt_do) {
 			save_u8 (1);

@@ -34,11 +34,14 @@
 #endif
 
 #define DUNUSED(x)
+
+#ifndef __AROS__
 #define D
 #if DEBUG
 #define bug write_log
 #else
-#define bug(...) { }
+#define bug
+#endif
 #endif
 
 static __inline void flush_internals (void) { }
@@ -307,9 +310,6 @@ STATIC_INLINE int mmu_match_ttr_write(uaecptr addr, bool super, bool data,  uae_
 
 extern void mmu_tt_modified (void);
 
-extern uae_u32 REGPARAM3 mmu060_get_rmw_bitfield (uae_u32 src, uae_u32 bdata[2], uae_s32 offset, int width) REGPARAM;
-extern void REGPARAM3 mmu060_put_rmw_bitfield (uae_u32 dst, uae_u32 bdata[2], uae_u32 val, uae_s32 offset, int width) REGPARAM;
-
 extern uae_u16 REGPARAM3 mmu_get_word_unaligned(uaecptr addr, bool data, bool rmw) REGPARAM;
 extern uae_u32 REGPARAM3 mmu_get_long_unaligned(uaecptr addr, bool data, bool rmw) REGPARAM;
 
@@ -377,7 +377,8 @@ static ALWAYS_INLINE uaecptr mmu_get_real_address(uaecptr addr, struct mmu_atc_l
 static ALWAYS_INLINE void mmu_get_move16(uaecptr addr, uae_u32 *v, bool data, int size)
 {
 	struct mmu_atc_line *cl;
-	for (int i = 0; i < 4; i++) {
+  int i;
+	for (i = 0; i < 4; i++) {
 		uaecptr addr2 = addr + i * 4;
 		//                                       addr,super,data
 		if ((!regs.mmu_enabled) || (mmu_match_ttr(addr2,regs.s != 0,data,false)!=TTR_NO_MATCH))
@@ -443,7 +444,8 @@ static ALWAYS_INLINE void mmu_put_long(uaecptr addr, uae_u32 val, bool data, int
 static ALWAYS_INLINE void mmu_put_move16(uaecptr addr, uae_u32 *val, bool data, int size)
 {
 	struct mmu_atc_line *cl;
-	for (int i = 0; i < 4; i++) {
+  int i;
+	for (i = 0; i < 4; i++) {
 		uaecptr addr2 = addr + i * 4;
 		//                                        addr,super,data
 		if ((!regs.mmu_enabled) || (mmu_match_ttr_write(addr2,regs.s != 0,data,val[i],size,false)==TTR_OK_MATCH))

@@ -114,7 +114,7 @@ int vsync_switchmode (int hz)
 	int w = currentmode->native_width;
 	int h = currentmode->native_height;
 	int d = currentmode->native_depth / 8;
-        struct MultiDisplay *md = getdisplay (&currprefs);
+  struct MultiDisplay *md = getdisplay (&currprefs);
 	struct PicassoResolution *found;
 	int newh, i, cnt;
 
@@ -124,12 +124,9 @@ int vsync_switchmode (int hz)
     for (cnt = 0; cnt <= abs (newh - h) + 1 && !found; cnt++) {
             for (i = 0; md->DisplayModes[i].depth >= 0 && !found; i++) {
                     struct PicassoResolution *r = &md->DisplayModes[i];
-                    if ( (r->res.width == (uae_u32)w)
-					  && ( (r->res.height == (uae_u32)(newh + cnt))
-						|| (r->res.height == (uae_u32)(newh - cnt)) )
-					  && (r->depth == d) ) {
-                            int j = 0;
-                            for ( ; r->refresh[j] > 0; j++) {
+                    if (r->res.width == w && (r->res.height == newh + cnt || r->res.height == newh - cnt) && r->depth == d) {
+                            int j;
+                            for (j = 0; r->refresh[j] > 0; j++) {
                                     if (r->refresh[j] == hz || r->refresh[j] == hz * 2) {
                                             found = r;
                                             hz = r->refresh[j];
@@ -346,7 +343,7 @@ static int qs_override;
 int target_cfgfile_load (struct uae_prefs *p, const TCHAR *filename, int type, int isdefault)
 {
 	int v, i, type2;
-	int ct, ct2 = 0;//, size;
+	int ct, ct2 = 0, size;
 	char tmp1[MAX_DPATH], tmp2[MAX_DPATH];
 	char fname[MAX_DPATH];
 
@@ -381,11 +378,11 @@ int target_cfgfile_load (struct uae_prefs *p, const TCHAR *filename, int type, i
 		return v;
 	for (i = 1; i <= 2; i++) {
 		if (type != i) {
-			// size = sizeof (ct);
+			size = sizeof (ct);
 			ct = 0;
 			//regqueryint (NULL, configreg2[i], &ct);
 			if (ct && ((i == 1 && p->config_hardware_path[0] == 0) || (i == 2 && p->config_host_path[0] == 0) || ct2)) {
-				// size = sizeof (tmp1) / sizeof (TCHAR);
+				size = sizeof (tmp1) / sizeof (TCHAR);
 				//regquerystr (NULL, configreg[i], tmp1, &size);
 				fetch_path ("ConfigurationPath", tmp2, sizeof (tmp2) / sizeof (TCHAR));
 				_tcscat (tmp2, tmp1);
@@ -442,7 +439,6 @@ void refreshtitle (void)
 #define MAX_ROM_PATHS 10
 int scan_roms (int show)
 {
-/** FIXME: This function does nothing right now.
 	TCHAR path[MAX_DPATH];
 	static int recursive;
 	int id, i, ret, keys, cnt;
@@ -461,8 +457,6 @@ int scan_roms (int show)
 end:
 	recursive--;
 	return ret;
-**/
-	return 0;
 }
 
 // dinput
@@ -514,14 +508,13 @@ int input_get_default_joystick_analog (struct uae_input_device *uid, int num, in
 // writelog
 TCHAR* buf_out (TCHAR *buffer, int *bufsize, const TCHAR *format, ...)
 {
-	/// REMOVEME: unused: int count;
+	int count;
 	va_list parms;
 	va_start (parms, format);
 
 	if (buffer == NULL)
 		return 0;
-	/** REMOVEME: unused: count = **/
-	vsnprintf (buffer, (*bufsize) - 1, format, parms);
+	count = vsnprintf (buffer, (*bufsize) - 1, format, parms);
 	va_end (parms);
 	*bufsize -= _tcslen (buffer);
 	return buffer + _tcslen (buffer);
@@ -567,9 +560,10 @@ TCHAR start_path_data[MAX_DPATH];
 
 void fetch_path (TCHAR *name, TCHAR *out, int size)
 {
-	/// REMOVEME: unused: int size2 = size;
+        int size2 = size;
 
-	_tcscpy (start_path_data, "./");
+	_tcscpy (start_path_data, "");
+#if 0
         _tcscpy (out, start_path_data);
         if (!name)
                 return;
@@ -594,6 +588,8 @@ void fetch_path (TCHAR *name, TCHAR *out, int size)
                 _tcscat (out, "./");
         if (!_tcscmp (name, "ConfigurationPath"))
                 _tcscat (out, "./");
+#endif
+  _tcscat (out, "");
 
 }
 
@@ -817,7 +813,7 @@ int isfullscreen (void)
 #define REFRESH_RATE_RAW 1
 #define REFRESH_RATE_LACE 2
 
-static int GetSystemMetrics (int nIndex) {
+int GetSystemMetrics (int nIndex) {
 	switch (nIndex) {
 		case SM_CXSCREEN: return 1024;
 		case SM_CYSCREEN: return 768;
@@ -865,8 +861,7 @@ static void sortmodes (struct MultiDisplay *md)
 				}
 			}
 		}
-		if ( (md->DisplayModes[i].res.height != (uae_u32)ph)
-		  || (md->DisplayModes[i].res.width  != (uae_u32)pw) ) {
+		if (md->DisplayModes[i].res.height != ph || md->DisplayModes[i].res.width != pw) {
 			ph = md->DisplayModes[i].res.height;
 			pw = md->DisplayModes[i].res.width;
 			idx++;
@@ -918,6 +913,7 @@ void addmode (struct MultiDisplay *md, DEVMODE *dm, int rawmode)
 	}*/
 	int freq = 75;
 
+  DebOut("addmode(%lx, %lx, %d)\n", md, dm, rawmode);
 	ct = 0;
 	if (d == 8)
 		ct = RGBMASK_8BIT;
@@ -935,9 +931,7 @@ void addmode (struct MultiDisplay *md, DEVMODE *dm, int rawmode)
 	i = 0;
 
 	while (md->DisplayModes[i].depth >= 0) {
-		if ( (md->DisplayModes[i].depth      == d)
-		  && (md->DisplayModes[i].res.width  == (uae_u32)w)
-		  && (md->DisplayModes[i].res.height == (uae_u32)h) ) {
+		if (md->DisplayModes[i].depth == d && md->DisplayModes[i].res.width == w && md->DisplayModes[i].res.height == h) {
 			for (j = 0; j < MAX_REFRESH_RATES; j++) {
 				if (md->DisplayModes[i].refresh[j] == 0 || md->DisplayModes[i].refresh[j] == freq)
 					break;
@@ -956,8 +950,8 @@ void addmode (struct MultiDisplay *md, DEVMODE *dm, int rawmode)
 		i++;
 	if (i >= MAX_PICASSO_MODES - 1)
 		return;
-//	md->DisplayModes[i].rawmode = rawmode;
-//	md->DisplayModes[i].lace = lace;
+	md->DisplayModes[i].rawmode = rawmode;
+	md->DisplayModes[i].lace = lace;
 	md->DisplayModes[i].res.width = w;
 	md->DisplayModes[i].res.height = h;
 	md->DisplayModes[i].depth = d;
@@ -971,7 +965,7 @@ void addmode (struct MultiDisplay *md, DEVMODE *dm, int rawmode)
 		lace ? _T("i") : _T(""),
 		md->DisplayModes[i].depth * 8);
 
-//	write_log ("Add Mode: %s\n", md->DisplayModes[i].name);
+	DebOut ("Add Mode: %s\n", md->DisplayModes[i].name);
 }
 
 void sortdisplays (void)
@@ -997,7 +991,8 @@ void sortdisplays (void)
 
 		write_log (_T("%s '%s' [%s]\n"), md->adaptername, md->adapterid, md->adapterkey);
 		write_log (_T("-: %s [%s]\n"), md->fullname, md->monitorid);
-		for (int mode = 0; mode < 2; mode++) {
+    int mode;
+		for (mode = 0; mode < 2; mode++) {
 			DEVMODE dm;
 			dm.dmSize = sizeof dm;
 			dm.dmDriverExtra = 0;
@@ -1016,11 +1011,9 @@ dm.dmDisplayFrequency = 50;
 				int idx2 = 0;
 				while (md->DisplayModes[idx2].depth >= 0 && !found) {
 					struct PicassoResolution *pr = &md->DisplayModes[idx2];
-					if ( (pr->res.width  == (uae_u32)dm.dmPelsWidth)
-					  && (pr->res.height == (uae_u32)dm.dmPelsHeight)
-					  && (pr->depth      == (int)(dm.dmBitsPerPel / 8)) ) {
+					if (pr->res.width == dm.dmPelsWidth && pr->res.height == dm.dmPelsHeight && pr->depth == dm.dmBitsPerPel / 8) {
 						for (i = 0; pr->refresh[i]; i++) {
-							if (pr->refresh[i] == (int)dm.dmDisplayFrequency) {
+							if (pr->refresh[i] == dm.dmDisplayFrequency) {
 								found = 1;
 								break;
 							}
@@ -1029,7 +1022,7 @@ dm.dmDisplayFrequency = 50;
 					idx2++;
 				}
 				if (!found && dm.dmBitsPerPel > 8) {
-					/// REMOVEME: unused: int freq = 0;
+					int freq = 0;
 //					if ((dm.dmFields & DM_PELSWIDTH) && (dm.dmFields & DM_PELSHEIGHT) && (dm.dmFields & DM_BITSPERPEL)) {
 						addmode (md, &dm, mode);
 //					}
@@ -1111,7 +1104,7 @@ bool show_screen_maybe (bool show)
 	struct apmode *ap = picasso_on ? &currprefs.gfx_apmode[1] : &currprefs.gfx_apmode[0];
 	if (!ap->gfx_vflip || ap->gfx_vsyncmode == 0 || !ap->gfx_vsync) {
 		if (show)
-			show_screen (0);
+			show_screen ();
 		return false;
 	}
 	return false;
@@ -1123,7 +1116,7 @@ bool render_screen (bool immediate)
 	return render_ok;
 }
 
-void show_screen (int mode)
+void show_screen (void)
 {
 	render_ok = false;
 }
@@ -1235,7 +1228,7 @@ bool vsync_busywait_do (int *freetime, bool lace, bool oddeven)
 		int vp;
 
 		if (currprefs.turbo_emulation) {
-			show_screen (0);
+			show_screen ();
 			vblank_prev_time = read_processor_time ();
 			framelost = true;
 			v = -1;
@@ -1248,7 +1241,7 @@ bool vsync_busywait_do (int *freetime, bool lace, bool oddeven)
 			if (vp >= -1) {
 				vblank_prev_time = read_processor_time ();
 				if (ap->gfx_vflip == 0) {
-					show_screen (0);
+					show_screen ();
 				}
 				for (;;) {
 					if (!getvblankpos (&vp))
@@ -1258,7 +1251,7 @@ bool vsync_busywait_do (int *freetime, bool lace, bool oddeven)
 					sleep_millis (1);
 				}
 				if (ap->gfx_vflip != 0) {
-					show_screen (0);
+					show_screen ();
 				}
 				v = framelost ? -1 : 1;
 			}
@@ -1320,41 +1313,3 @@ int isinf (double x)
 }
 #endif
 */
-
-//fsdb_mywin
-int my_issamevolume(const TCHAR *path1, const TCHAR *path2, TCHAR *path)
-{
-/*        TCHAR p1[MAX_DPATH];
-        TCHAR p2[MAX_DPATH];
-        TCHAR p1b[MAX_DPATH];
-        TCHAR p2b[MAX_DPATH];
-        int len;
-
-        if (!GetFullPathName(path1, sizeof p1 / sizeof (TCHAR), p1, NULL))
-                return false;
-        if (!GetFullPathName(path2, sizeof p2 / sizeof (TCHAR), p2, NULL))
-                return false;
-        PathCanonicalize(p1b, p1);
-        PathCanonicalize(p2b, p2);
-        len = _tcslen (p1b);
-        if (len > _tcslen (p2b))
-                len = _tcslen (p2b);
-        if (_tcsnicmp (p1b, p2b, len))
-                return false;
-        _tcscpy (path, p2b + len);
-        for (int i = 0; i < _tcslen (path); i++) {
-                if (path[i] == '\\')
-                        path[i] = '/';
-        }*/
-        return true;
-}
-
-bool my_resolvesoftlink(TCHAR *linkfile, int size)
-{
-/*	if (my_resolvessymboliclink(linkfile, size))
-		return true;
-	if (my_resolveshortcut(linkfile,size))
-		return true;*/
-	return false;
-}
-

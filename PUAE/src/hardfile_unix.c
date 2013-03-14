@@ -47,7 +47,7 @@ struct uae_driveinfo {
 	int readonly;
 };
 
-//#define HDF_HANDLE_WIN32 1
+#define HDF_HANDLE_WIN32 1
 #define HDF_HANDLE_ZFILE 2
 #define HDF_HANDLE_LINUX 3
 #define INVALID_HANDLE_VALUE NULL
@@ -162,9 +162,7 @@ static int safetycheck (FILE *h, const char *name, uae_u64 offset, uae_u8 *buf, 
 	return -9;
 }
 
-/* REMOVEME:
- * nowhere used
- */
+
 #if 0
 static void trim (TCHAR *s)
 {
@@ -226,9 +224,9 @@ int hdf_open_target (struct hardfiledata *hfd, const char *pname)
 			_tcsncpy (hfd->product_rev, udi->product_rev, 4);
 			hfd->offset = udi->offset;
 			hfd->physsize = hfd->virtsize = udi->size;
-			hfd->vhd_blocksize = udi->bytespersector; /// CHECK
+//			hfd->blocksize = udi->bytespersector;
 			if (hfd->offset == 0 && !hfd->drive_empty) {
-				int sf = safetycheck (hfd->handle->h, udi->device_path, 0, hfd->cache, hfd->vhd_blocksize); /// CHECK
+				int sf = safetycheck (hfd->handle->h, udi->device_path, 0, hfd->cache, 0/*hfd->blocksize*/);
 				if (sf > 0)
 					goto end;
 				if (sf == 0 /*&& !hfd->readonly*/ && harddrive_dangerous != 0x1234dead) {
@@ -313,10 +311,6 @@ end:
 	return 0;
 }
 
-/* REMOVEME:
- * Is it no longer neccessary for hdf_close_target
- * to close hfd->h->h ?
- */
 #if 0
 static void freehandle (struct hardfilehandle *h)
 {
@@ -591,9 +585,6 @@ int hdf_resize_target (struct hardfiledata *hfd, uae_u64 newsize)
 
 static int hdf_init2 (int force)
 {
-/* REMOEME:
- * orphaned, no longer needed
- */
 #if 0
 	int index = 0, index2 = 0, drive;
 	uae_u8 *buffer;

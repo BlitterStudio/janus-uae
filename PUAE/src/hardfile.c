@@ -1153,8 +1153,7 @@ int scsi_hd_emulate (struct hardfiledata *hfd, struct hd_hardfiledata *hdhfd, ua
 		if (!len)
 			len = 256;
 		len *= hfd->ci.blocksize;
-		if (!checkbounds(hfd, offset, len))
-			goto outofbounds;
+		if (checkbounds(hfd, offset, len))
 			scsi_len = (uae_u32)cmd_readx (hfd, scsi_data, offset, len);
 		break;
 	case 0x0a: /* WRITE (6) */
@@ -1168,8 +1167,7 @@ int scsi_hd_emulate (struct hardfiledata *hfd, struct hd_hardfiledata *hdhfd, ua
 		if (!len)
 			len = 256;
 		len *= hfd->ci.blocksize;
-		if (!checkbounds(hfd, offset, len))
-			goto outofbounds;
+		if (checkbounds(hfd, offset, len))
 			scsi_len = (uae_u32)cmd_writex (hfd, scsi_data, offset, len);
 		break;
 	case 0x12: /* INQUIRY */
@@ -1252,7 +1250,7 @@ int scsi_hd_emulate (struct hardfiledata *hfd, struct hd_hardfiledata *hdhfd, ua
 			p = r;
 			p[0] = 4 - 1;
 			p[1] = 0;
-			p[2] = (hfd->ci.readonly || hfd->dangerous) ? 0x80 : 0x00;
+			p[2] = 0;
 			p[3] = 0;
 			p += 4;
 			if (!dbd) {
@@ -1348,8 +1346,7 @@ int scsi_hd_emulate (struct hardfiledata *hfd, struct hd_hardfiledata *hdhfd, ua
 		offset *= hfd->ci.blocksize;
 		len = rl (cmdbuf + 7 - 2) & 0xffff;
 		len *= hfd->ci.blocksize;
-		if (!checkbounds (hfd, offset, len))
-			goto outofbounds;
+		if (checkbounds (hfd, offset, len))
 			scsi_len = (uae_u32)cmd_readx (hfd, scsi_data, offset, len);
 		break;
 	case 0x2a: /* WRITE (10) */
@@ -1361,8 +1358,7 @@ int scsi_hd_emulate (struct hardfiledata *hfd, struct hd_hardfiledata *hdhfd, ua
 		offset *= hfd->ci.blocksize;
 		len = rl (cmdbuf + 7 - 2) & 0xffff;
 		len *= hfd->ci.blocksize;
-		if (!checkbounds (hfd, offset, len))
-			goto outofbounds;
+		if (checkbounds (hfd, offset, len))
 			scsi_len = (uae_u32)cmd_writex (hfd, scsi_data, offset, len);
 		break;
 #if 0
@@ -1403,8 +1399,7 @@ int scsi_hd_emulate (struct hardfiledata *hfd, struct hd_hardfiledata *hdhfd, ua
 		offset *= hfd->ci.blocksize;
 		len = rl (cmdbuf + 6);
 		len *= hfd->ci.blocksize;
-		if (!checkbounds(hfd, offset, len))
-			goto outofbounds;
+		if (checkbounds(hfd, offset, len))
 			scsi_len = (uae_u32)cmd_readx (hfd, scsi_data, offset, len);
 		break;
 	case 0xaa: /* WRITE (12) */
@@ -1416,8 +1411,7 @@ int scsi_hd_emulate (struct hardfiledata *hfd, struct hd_hardfiledata *hdhfd, ua
 		offset *= hfd->ci.blocksize;
 		len = rl (cmdbuf + 6);
 		len *= hfd->ci.blocksize;
-		if (!checkbounds(hfd, offset, len))
-			goto outofbounds;
+		if (checkbounds(hfd, offset, len))
 			scsi_len = (uae_u32)cmd_writex (hfd, scsi_data, offset, len);
 		break;
 	case 0x37: /* READ DEFECT DATA */
@@ -1427,7 +1421,7 @@ int scsi_hd_emulate (struct hardfiledata *hfd, struct hd_hardfiledata *hdhfd, ua
 		s[0] = 0x70;
 		s[2] = 0; /* NO SENSE */
 		s[12] = 0x1c; /* DEFECT LIST NOT FOUND */
-		ls = 0x12;
+		ls = 12;
 		break;
 	case 0x1b: /* START/STOP UNIT */
 		scsi_len = 0;
@@ -1437,14 +1431,14 @@ readprot:
 		s[0] = 0x70;
 		s[2] = 7; /* DATA PROTECT */
 		s[12] = 0x27; /* WRITE PROTECTED */
-		ls = 0x12;
+		ls = 12;
 		break;
 nodisk:
 		status = 2; /* CHECK CONDITION */
 		s[0] = 0x70;
 		s[2] = 2; /* NOT READY */
 		s[12] = 0x3A; /* MEDIUM NOT PRESENT */
-		ls = 0x12;
+		ls = 12;
 		break;
 
 	default:
@@ -1456,15 +1450,7 @@ errreq:
 		s[0] = 0x70;
 		s[2] = 5; /* ILLEGAL REQUEST */
 		s[12] = 0x24; /* ILLEGAL FIELD IN CDB */
-		ls = 0x12;
-		break;
-outofbounds:
-		lr = -1;
-		status = 2; /* CHECK CONDITION */
-		s[0] = 0x70;
-		s[2] = 5; /* ILLEGAL REQUEST */
-		s[12] = 0x21; /* LOGICAL BLOCK OUT OF RANGE */
-		ls = 0x12;
+		ls = 12;
 		break;
 miscompare:
 		lr = -1;
@@ -1472,7 +1458,7 @@ miscompare:
 		s[0] = 0x70;
 		s[2] = 5; /* ILLEGAL REQUEST */
 		s[12] = 0x1d; /* MISCOMPARE DURING VERIFY OPERATION */
-		ls = 0x12;
+		ls = 12;
 		break;
 	}
 	*data_len = scsi_len;
@@ -1860,6 +1846,16 @@ static uae_u32 hardfile_do_io (struct hardfiledata *hfd, struct hardfileprivdata
 		}
 		break;
 
+bad_command:
+		error = IOERR_BADADDRESS;
+		break;
+bad_len:
+		error = IOERR_BADLENGTH;
+		break;
+no_disk:
+		error = 29; /* no disk */
+		break;
+
 	case NSCMD_DEVICEQUERY:
 		put_long (dataptr + 0, 0);
 		put_long (dataptr + 4, 16); /* size */
@@ -1964,16 +1960,6 @@ static uae_u32 hardfile_do_io (struct hardfiledata *hfd, struct hardfileprivdata
 		} else {
 			error = IOERR_NOCMD;
 		}
-		break;
-
-bad_command:
-		error = IOERR_BADADDRESS;
-		break;
-bad_len:
-		error = IOERR_BADLENGTH;
-		break;
-no_disk:
-		error = 29; /* no disk */
 		break;
 
 	default:
