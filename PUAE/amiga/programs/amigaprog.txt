@@ -1,0 +1,59 @@
+ahitweak
+
+This is a program you can start from shell or user-startup
+and allow you to tune the ahi driver for better latency,because on winxp the 
+playpointer position have a delay depend on system and soundcard
+
+I can reach with 
+ahitweak 200 
+
+latency of 4 ms with my sb-PCI512 on winxp (simular sb-live) 
+to get hd-rec working with 4ms
+
+You see thats more a function to get the best for realtime Music without special 
+ASIO drivers
+
+Most users dont need that
+
+But if you have crackle problems WITH 16 BIT AHI 
+play a song and try values of 50 200 500 2000 -50 -200 -500 -2000
+
+Maybe that help 
+                        p96refresh  (winuae only)
+Start this program to get higher mousepointer redraw rates than 50 hz
+with P96.Actions are seen immediatly after call.You can start this in your 
+user-startup for automatic on boot 
+
+Example:
+ p96refresh 75 
+set redraw rate to 75 hz.Best is if you set rate 
+         to your monitor refresh rate or monitor refreshrate*2
+         Dont set it higher or you get speedloss > 2%  
+
+			rtg.library:   (help also on Standard UAE)
+This avoid large slowdown and redraw problems in picasso96 with JIT
+copy it in libs:pacasso96
+
+			picasso96fix   (help also on Standard UAE)
+This allow larger Screen Width than 1024 
+start it BEFORE the loadwb instruction in startup-sequence
+
+			uae_german     (help also on Standard UAE (i hope ?))
+This is a German keymap to reach @\~{[]} with ALT-GR like windows
+Copy it in devs/keymaps and choose it in the keymap-prefs
+
+
+                         uae/uae.audio (winuae only)
+This is the AHI Driver.This allow support for record and playback upto 96 khz
+
+copy uae       to devs:audiomodes
+copy uae.audio to devs:ahi
+
+If you install correct the driver should show Version 4.3 Date 22.5.02 
+and offer you only 1 Mode UAE hifi stereo++. 
+
+This driver work fully independent from paula sound.For a speed 
+boost on slower systems you can set paula buffer to 5 or 6 choose 11 khz mono
+thats enough to hear system sound 
+
+
