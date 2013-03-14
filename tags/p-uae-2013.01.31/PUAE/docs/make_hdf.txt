@@ -1,0 +1,55 @@
+make_hdf
+========
+
+make_hdf is a command-line tool for creating unformatted hard disk
+images (hard files) for PUAE (and other versions of UAE). It will
+also print a config option that can be added to a UAE config file to
+mount the created disk image.
+
+Usage
+-----
+
+make_hdf accepts the following parameters:
+
+make_hdf <path> <size> [<device>]
+
+<path>   The path to the file to create. Note that any directories 
+         included in this path must already exist; make_hdf will not
+         create them for you.
+       
+<size>   The size of the hard disk image to create in MB. Add a trailing
+         'G' to the size to specify a size in GB or a 'K' for a size
+         in KB.
+
+<device> Device name to be included in the generated config option.
+         This is optional and defaults to DH0: if omitted.
+
+Example
+-------
+
+> make_hdf hdf/my_disk.hdf 2G DH5:
+
+Will generate a 1 GB disk as the file 'hdf/my_disk.hdf' and the
+following config options are output (see configuration.txt).
+
+hardfile2=rw,DH5:hdf/my_disk.hdf,32,2,2,512,0,
+hardfile=rw,32,2,2,512,hdf/my_disk.hdf
+
+
+Limits
+------
+
+On systems that do not support large files sizes (i.e, systems without
+support for 64-bit file sizes), make_hdf is limited to creating hard
+files up to 2GB in size.
+
+On systems that do support large file sizes, make_hdf can create hard
+files up to around 2TB in size (whether you can make use of disks that
+in AmigaOS is another question).
+
+Sparse files
+------------
+
+Where supported (e.g., Linux, MacOS X), make_hdf will create sparse
+files. This allows hard disk images which are not full to take up less
+space on disk.
