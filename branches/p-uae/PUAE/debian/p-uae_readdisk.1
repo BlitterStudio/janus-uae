@@ -1,0 +1,17 @@
+.TH P-UAE_READDISK 1 "23 Nov 2005" "3rd party" "Contributed application"
+.SH NAME
+\fBp-uae_readdisk\fR	\- Read files from Amiga Disk Files.
+.SH DESCRIPTION
+If you have a disk image file, and you want to retrieve the files from it, you
+can use the "readdisk" tool. It is automatically built by "make". If you have
+a disk image of a disk called "Workbench1.3D" as df0.adf, and you do
+   readdisk df0.adf
+the whole directory structure of the disk image will be stored in a newly
+created subdirectory called "Workbench1.3D". You can optionally give a second
+parameter to specify a directory where to create the output other than the
+current directory.
+readdisk only understands about the OFS right now. FFS disks will cheerfully
+be regarded as being unreadable. Use the unixfs.device from within the
+emulator if you want to transfer files from FFS disks.
+.SH "SEE ALSO"
+.BR uae_readdisk (1)
