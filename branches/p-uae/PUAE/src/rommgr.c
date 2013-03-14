@@ -933,11 +933,6 @@ static void byteswap (uae_u8 *buf, int size)
 		buf[i + 1] = t;
 	}
 }
-
-/* UNUSED:
- * useful, but nowhere used
- */
-#if 0
 static void wordbyteswap (uae_u8 *buf, int size)
 {
 	int i;
@@ -951,7 +946,6 @@ static void wordbyteswap (uae_u8 *buf, int size)
 		buf[i + 3] = t;
 	}
 }
-#endif
 
 static void mergecd32 (uae_u8 *dst, uae_u8 *src, int size)
 {
@@ -1016,6 +1010,8 @@ struct zfile *read_rom (struct romdata **prd)
 	uae_u32 crc32;
 	int size;
 	uae_u8 *buf, *buf2;
+
+  DebOut("entered\n");
 
 	/* find parent node */
 	for (;;) {
@@ -1131,9 +1127,11 @@ struct zfile *read_rom (struct romdata **prd)
 struct zfile *rom_fopen (const TCHAR *name, const TCHAR *mode, int mask)
 {
 	struct zfile *f;
-	//write_log (_T("attempting to load '%s'\n"), name);
+	write_log (_T("attempting to load '%s'\n"), name);
+  DebOut("filename: %s, mode %s, mask %lx\n", name, mode, mask);
 	f = zfile_fopen (name, mode, mask);
-	//write_log (_T("=%p\n"), f);
+  DebOut("return f: %lx\n", f);
+	write_log (_T("=%p\n"), f);
 	return f;
 }
 
@@ -1142,7 +1140,10 @@ struct zfile *read_rom_name (const TCHAR *filename)
 	int i;
 	struct zfile *f;
 
+  DebOut("filename: %s\n", filename);
+
 	for (i = 0; i < romlist_cnt; i++) {
+    DebOut("i: %d\n", i);
 		if (!_tcsicmp (filename, rl[i].path)) {
 			struct romdata *rd = rl[i].rd;
 			f = read_rom (&rd);
@@ -1150,19 +1151,25 @@ struct zfile *read_rom_name (const TCHAR *filename)
 				return f;
 		}
 	}
+  DebOut("filename: %s\n", filename);
 	f = rom_fopen (filename, _T("rb"), ZFD_NORMAL);
+  DebOut("f: %lx\n", f);
 	if (f) {
 		uae_u8 tmp[11];
+    DebOut("1..\n");
 		zfile_fread (tmp, sizeof tmp, 1, f);
+    DebOut("1..\n");
 		if (!memcmp (tmp, "AMIROMTYPE1", sizeof tmp)) {
 			struct zfile *df;
 			int size;
 			uae_u8 *buf;
+    DebOut("3..\n");
 			addkeydir (filename);
 			zfile_fseek (f, 0, SEEK_END);
 			size = zfile_ftell (f) - sizeof tmp;
 			zfile_fseek (f, sizeof tmp, SEEK_SET);
 			buf = xmalloc (uae_u8, size);
+      DebOut("buf: %lx, size %d\n", buf, size);
 			zfile_fread (buf, size, 1, f);
 			df = zfile_fopen_empty (f, _T("tmp.rom"), size);
 			decode_cloanto_rom_do (buf, size, size);
@@ -1172,6 +1179,7 @@ struct zfile *read_rom_name (const TCHAR *filename)
 			zfile_fseek (df, 0, SEEK_SET);
 			f = df;
 		} else {
+    DebOut("seek..\n");
 			zfile_fseek (f, -((int)sizeof tmp), SEEK_CUR);
 		}
 	}

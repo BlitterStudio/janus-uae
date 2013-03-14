@@ -55,7 +55,7 @@ static long adjust_blocks (long blocks, int fromsize, int tosize)
 #if defined TARGET_AMIGAOS
 
 #include <dos/dos.h>
-#include <exec/memory_uae.h>
+#include <od-amiga/memory_uae.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 
@@ -159,10 +159,10 @@ int get_fs_usage (const char *path, const char *disk, struct fs_usage *fsp)
 //int statvfs ();
 #endif
 
-#ifdef STAT_READ_FILSYS /* SVR2 */
 /* Read LEN bytes at PTR from descriptor DESC, retrying if interrupted.
    Return the actual number of bytes read, zero for EOF, or negative
    for an error.  */
+
 static int safe_read (int desc, TCHAR *ptr, int len)
 {
 	int n_chars;
@@ -182,7 +182,6 @@ static int safe_read (int desc, TCHAR *ptr, int len)
 
 	return n_chars;
 }
-#endif
 
 /* Fill in the fields of FSP with information about space usage for
    the filesystem on which PATH resides.

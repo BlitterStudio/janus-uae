@@ -16,13 +16,14 @@
 /****************************************************************************/
 
 #include <exec/execbase.h>
-#include <exec/memory_uae.h>
 #include <exec/devices.h>
 #include <exec/io.h>
 
 #include <dos/dos.h>
 
 #include <devices/trackdisk.h>
+
+#include "memory_uae.h"
 
 #if defined(POWERUP)
 #include <dos/dosextens.h>

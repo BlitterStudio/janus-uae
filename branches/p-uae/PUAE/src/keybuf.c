@@ -25,8 +25,7 @@
 
 static int kpb_first, kpb_last;
 
-#define KEYBUF_SIZE 256
-static int keybuf[KEYBUF_SIZE];
+static int keybuf[256];
 
 int keys_available (void)
 {
@@ -41,7 +40,7 @@ int get_next_key (void)
 	assert (kpb_first != kpb_last);
 
 	key = keybuf[kpb_last];
-	if (++kpb_last == KEYBUF_SIZE)
+	if (++kpb_last == 256)
 		kpb_last = 0;
 	//write_log (_T("%02x:%d\n"), key >> 1, key & 1);
 	return key;
@@ -62,7 +61,7 @@ int record_key_direct (int kc)
 	int b = !(kc & 1);
 
 	//write_log (_T("got kc %02X\n"), ((kc << 7) | (kc >> 1)) & 0xff);
-	if (kpb_next == KEYBUF_SIZE)
+	if (kpb_next == 256)
 		kpb_next = 0;
 	if (kpb_next == kpb_last) {
 		write_log (_T("Keyboard buffer overrun. Congratulations.\n"));

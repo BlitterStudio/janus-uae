@@ -55,7 +55,6 @@
 #include "dongle.h"
 #include "sampler.h"
 #include "consolehook.h"
-#include "gayle.h"
 #include "misc.h"
 #include "keyboard.h"
 #ifdef RETROPLATFORM
@@ -66,7 +65,6 @@
 #endif
 
 /* internal prototypes */
-uae_u32 uaerand (void);
 uae_u32 uaesrand (uae_u32 seed);
 uae_u32 uaerandgetseed (void);
 void my_trim (TCHAR *s);
@@ -208,12 +206,13 @@ static void fixup_prefs_dim2 (struct wh *wh)
 
 void fixup_prefs_dimensions (struct uae_prefs *prefs)
 {
+  int i;
 	fixup_prefs_dim2 (&prefs->gfx_size_fs);
 	fixup_prefs_dim2 (&prefs->gfx_size_win);
 	if (prefs->gfx_apmode[1].gfx_vsync)
 		prefs->gfx_apmode[1].gfx_vsyncmode = 1;
 
-	for (int i = 0; i < 2; i++) {
+	for (i = 0; i < 2; i++) {
 		struct apmode *ap = &prefs->gfx_apmode[i];
 		ap->gfx_vflip = 0;
 		if (ap->gfx_vsync) {
@@ -223,15 +222,11 @@ void fixup_prefs_dimensions (struct uae_prefs *prefs)
 					ap->gfx_vflip = 1;
 				if (!i && ap->gfx_backbuffers == 2)
 					ap->gfx_vflip = 1;
-				if (ap->gfx_vflip)
-					ap->gfx_strobo = true;
 			} else {
 				// legacy vsync: always wait for flip
 				ap->gfx_vflip = -1;
 				if (prefs->gfx_api && ap->gfx_backbuffers < 1)
 					ap->gfx_backbuffers = 1;
-				if (ap->gfx_vflip)
-					ap->gfx_strobo = true;
 			}
 		} else {
 			// no vsync: wait if triple bufferirng
@@ -279,10 +274,7 @@ void fixup_cpu (struct uae_prefs *p)
 		break;
 	}
 
-	if (p->cpu_model >= 68040 && p->cachesize && p->cpu_compatible)
-		p->cpu_compatible = false;
-
-	if (p->cpu_model < 68030 || p->cachesize)
+	if (p->cpu_model != 68040)
 		p->mmu_model = 0;
 
 	if (p->cachesize && p->cpu_cycle_exact)
@@ -859,6 +851,8 @@ void reset_all_systems (void)
 extern unsigned int pause_uae;
 void do_start_program (void)
 {
+
+  DebOut("entered\n");
 	if (quit_program == -UAE_QUIT)
 		return;
 #ifdef JIT
@@ -872,6 +866,7 @@ void do_start_program (void)
 	if (quit_program >= 0)
 		quit_program = UAE_RESET;
 
+  DebOut("call m68k_go..\n");
 	{
 		m68k_go (1);
 	}
@@ -917,10 +912,7 @@ void do_leave_program (void)
 	bsdlib_reset ();
 #endif
 #ifdef SCSIEMU
-#ifdef GAYLE
-	gayle_free ();
-#endif
-	device_func_reset ();
+//	device_func_reset ();
 #endif
 	savestate_free ();
 	memory_cleanup ();
@@ -967,14 +959,14 @@ void virtualdevice_init (void)
 #endif
 #ifdef AUTOCONFIG
 	expansion_init ();
-	emulib_install ();
-	uaeexe_install ();
+//	emulib_install ();
+//	uaeexe_install ();
 #endif
 #ifdef FILESYS
 	filesys_install ();
 #endif
 #if defined (BSDSOCKET)
-	bsdlib_install ();
+//	bsdlib_install ();
 #endif
 }
 
@@ -982,9 +974,12 @@ static int real_main2 (int argc, TCHAR **argv)
 {
 #ifdef USE_SDL
 	int result = (SDL_Init (SDL_INIT_TIMER | SDL_INIT_JOYSTICK | SDL_INIT_NOPARACHUTE) == 0);
+  DebOut("SDL_Init: %d\n", result);
 	if (result)
 		atexit (SDL_Quit);
 #endif
+
+  DebOut("entered\n");
 	config_changed = 1;
 	if (restart_config[0]) {
 		default_prefs (&currprefs, 0);
@@ -995,6 +990,8 @@ static int real_main2 (int argc, TCHAR **argv)
 		write_log (_T("Graphics Setup Failed\n"));
 		exit (1);
 	}
+
+  DebOut("graphics_setup done ..\n");
 
 	if (restart_config[0])
 		parse_cmdline_and_init_file (argc, argv);
@@ -1009,6 +1006,8 @@ static int real_main2 (int argc, TCHAR **argv)
 		return -1;
 	}
 
+  DebOut("machdep_init done ..\n");
+
 	if (console_emulation) {
 		consolehook_config (&currprefs);
 		fixup_prefs (&currprefs);
@@ -1019,6 +1018,8 @@ static int real_main2 (int argc, TCHAR **argv)
 		currprefs.produce_sound = 0;
 	}
 	inputdevice_init ();
+
+  DebOut("inputdevice_init done ..\n");
 
 	changed_prefs = currprefs;
 	no_gui = ! currprefs.start_gui;
@@ -1042,20 +1043,31 @@ static int real_main2 (int argc, TCHAR **argv)
 		}
 	}
 
+  DebOut("gui_init done ..\n");
+
 	memset (&gui_data, 0, sizeof gui_data);
 	gui_data.cd = -1;
 	gui_data.hd = -1;
-	gui_data.md = -1;
 
+  DebOut("gui_data done ..\n");
 #ifdef NATMEM_OFFSET
 	init_shm ();
 #endif
 
 #ifdef PICASSO96
 	picasso_reset ();
+  DebOut("picasso_reset done ..\n");
+#endif
+
+#if 0
+#ifdef JIT
+	if (!(currprefs.cpu_model >= 68020 && currprefs.address_space_24 == 0 && currprefs.cachesize))
+		canbang = 0;
+#endif
 #endif
 
 	fixup_prefs (&currprefs);
+  DebOut("fixup_prefs done ..\n");
 
 #ifdef RETROPLATFORM
 	rp_fixup_options (&currprefs);
@@ -1069,14 +1081,19 @@ static int real_main2 (int argc, TCHAR **argv)
 	savestate_init ();
 	keybuf_init (); /* Must come after init_joystick */
 
+  DebOut("keybuf_init done ..\n");
+
 	memory_hardreset (2);
 	memory_reset ();
 
+  DebOut("memory_reset done ..\n");
 #ifdef AUTOCONFIG
 	native2amiga_install ();
 #endif
 
 	custom_init (); /* Must come after memory_init */
+
+  DebOut("... 1\n");
 
 #ifdef SERIAL_PORT
 	serial_init ();
@@ -1087,9 +1104,12 @@ static int real_main2 (int argc, TCHAR **argv)
 	reset_frame_rate_hack ();
 	init_m68k (); /* must come after reset_frame_rate_hack (); */
 
+  DebOut("... 2\n");
 	gui_update ();
 
+  DebOut("... 3\n");
 	if (graphics_init ()) {
+    DebOut("... 4\n");
 
 #ifdef DEBUGGER
 		setup_brkhandler ();
@@ -1106,6 +1126,7 @@ static int real_main2 (int argc, TCHAR **argv)
 		start_program ();
 	}
 
+  DebOut("... exit\n");
 	return 0;
 }
 
@@ -1118,9 +1139,17 @@ void real_main (int argc, TCHAR **argv)
 	_tcscat (restart_config, OPTIONSFILENAME);
 	default_config = 1;
 
+  DebOut("1...\n");
+
 #ifdef NATMEM_OFFSET
 	preinit_shm ();
 #endif
+
+#ifdef __AROS__
+  init_mem();
+#endif
+
+  DebOut("2...\n");
 
 	write_log (_T("Enumerating display devices.. \n"));
 	enumeratedisplays ();
@@ -1130,13 +1159,18 @@ void real_main (int argc, TCHAR **argv)
 //	enumerate_sound_devices ();
 	write_log (_T("done\n"));
 
+  DebOut("3...\n");
+
 	keyboard_settrans ();
 #ifdef CATWEASEL
 	catweasel_init ();
 #endif
+  DebOut("4...\n");
 #ifdef PARALLEL_PORT
 	paraport_mask = paraport_init ();
 #endif
+
+  DebOut("ENTERING MAIN while LOOP..\n");
 	while (restart_program) {
 		int ret;
 		changed_prefs = currprefs;
@@ -1146,6 +1180,7 @@ void real_main (int argc, TCHAR **argv)
 		leave_program ();
 		quit_program = 0;
 	}
+  DebOut("LEFT MAIN while LOOP..\n");
 	zfile_exit ();
 }
 

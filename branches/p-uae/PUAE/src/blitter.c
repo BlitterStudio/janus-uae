@@ -77,12 +77,7 @@ extern uae_u8 cycle_line[256];
 static long blit_firstline_cycles;
 static long blit_first_cycle;
 static int blit_last_cycle, blit_dmacount, blit_dmacount2;
-
-/// REMOVEME: nowhere used
-#if 0
-static int blit_linecycles, blit_extracycles;
-#endif // 0
-static int blit_nod;
+static int blit_linecycles, blit_extracycles, blit_nod;
 static const int *blit_diag;
 static int blit_frozen, blit_faulty;
 static int blit_final;
@@ -203,7 +198,8 @@ static const int blit_cycle_diagram_finalld[] =
 
 static int get_cycle_diagram_type (const int *diag)
 {
-	for (int i = 0; i < 16; i++) {
+  int i;
+	for (i = 0; i < 16; i++) {
 		if (diag == &blit_cycle_diagram[i][0])
 			return i;
 		if (diag == &blit_cycle_diagram_fill[i][0])
@@ -282,7 +278,6 @@ static void blitter_dump (void)
 	write_log (_T("AFWM=%04X ALWM=%04X MOD A=%04X B=%04X C=%04X D=%04X\n"),
 		blt_info.bltafwm, blt_info.bltalwm,
 		blt_info.bltamod & 0xffff, blt_info.bltbmod & 0xffff, blt_info.bltcmod & 0xffff, blt_info.bltdmod & 0xffff);
-	write_log (_T("PC=%08X DMA=%d\n"), m68k_getpc (), dmaen (DMA_BLITTER));
 }
 
 STATIC_INLINE const int *get_ch (void)
@@ -327,8 +322,6 @@ int blitter_channel_state (void)
 extern int is_bitplane_dma (int hpos);
 STATIC_INLINE int canblit (int hpos)
 {
-	if (!dmaen (DMA_BLITTER))
-		return 0;
 	if (is_bitplane_dma (hpos))
 		return 0;
 	if (cycle_line[hpos] & CYCLE_MASK)
@@ -712,6 +705,12 @@ static void decide_blitter_line (int hsync, int hpos)
 				break;
 			}
 
+			if ((!dmaen (DMA_BLITTER) || v <= 0) && (c == 3 || c == 4)) {
+				blit_misscyclecounter++;
+				blitter_nasty++;
+				break;
+			}
+
 			blit_cyclecounter++;
 			blit_totalcyclecounter++;
 
@@ -799,7 +798,7 @@ static void actually_do_blit (void)
 
 static void blitter_doit (void)
 {
-#ifdef BLITTER_DEBUG
+	#ifdef BLITTER_DEBUG
 	if (!blitter_dontdo)
 		actually_do_blit ();
 	else
@@ -873,21 +872,21 @@ STATIC_INLINE uae_u16 blitter_doblit (void)
 
 STATIC_INLINE void blitter_doddma (int hpos)
 {
-//	int wd;
+	int wd;
 	uae_u16 d;
 
-//	wd = 0;
+	wd = 0;
 	if (blit_dmacount2 == 0) {
 		d =  blitter_doblit ();
-//		wd = -1;
+		wd = -1;
 	} else if (ddat2use) {
 		d = ddat2;
 		ddat2use = 0;
-//		wd = 2;
+		wd = 2;
 	} else if (ddat1use) {
 		d = ddat1;
 		ddat1use = 0;
-//		wd = 1;
+		wd = 1;
 	} else {
 		static int warn = 10;
 		if (warn > 0) {
@@ -1091,6 +1090,12 @@ void decide_blitter (int hpos)
 			}
 
 			blitter_nasty++;
+
+			if (!dmaen (DMA_BLITTER) || v <= 0) {
+				blit_misscyclecounter++;
+				break;
+			}
+
 			blt_info.got_cycle = 1;
 			if (c == 4) {
 				blitter_doddma (last_blitter_hpos);
@@ -1226,8 +1231,6 @@ static void blit_bltset (int con)
 			blit_frozen = 1;
 			write_log (_T("BLITTER: frozen! %d (%d) -> %d (%d) %08X\n"), original_ch, iseo, blit_ch, isen, M68K_GETPC);
 		} else if (!iseo && isen) {
-			if (!dmaen (DMA_BLITTER)) // subtle shades / nuance bootblock bug
-				blit_frozen = 1;
 #ifdef BLITTER_DEBUG_NOWAIT
 			write_log (_T("BLITTER: on the fly %d (%d) -> %d (%d) switch\n"), original_ch, iseo, blit_ch, isen);
 #endif
@@ -1432,8 +1435,7 @@ static void do_blitter2 (int hpos, int copper)
 	}
 
 	if (blt_info.vblitsize == 0 || (blitline && blt_info.hblitsize != 2)) {
-		if (dmaen (DMA_BLITTER))
-			blitter_done (hpos);
+		blitter_done (hpos);
 		return;
 	}
 
@@ -1441,8 +1443,10 @@ static void do_blitter2 (int hpos, int copper)
 	blit_waitcyclecounter = 0;
 
 	if (currprefs.immediate_blits) {
-		if (dmaen (DMA_BLITTER))
+		if (dmaen (DMA_BLITTER)) {
 			blitter_doit ();
+			return;
+		}
 		return;
 	}
 	

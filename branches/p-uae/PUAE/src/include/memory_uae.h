@@ -24,6 +24,7 @@ extern void cache_free (uae_u8*);
 bool init_shm (void);
 void free_shm (void);
 bool preinit_shm (void);
+bool init_mem(void);
 extern bool canbang;
 extern int candirect;
 #endif
@@ -126,10 +127,8 @@ extern addrbank rtarea_bank;
 extern addrbank expamem_bank;
 extern addrbank fastmem_bank;
 extern addrbank gfxmem_bank;
-#ifdef GAYLE
 extern addrbank gayle_bank;
 extern addrbank gayle2_bank;
-#endif // GAYLE
 extern addrbank mbres_bank;
 extern addrbank akiko_bank;
 extern addrbank cardmem_bank;
@@ -180,7 +179,6 @@ extern uae_u8 *baseaddr[MEMORY_BANKS];
 extern void memory_init (void);
 extern void memory_cleanup (void);
 extern void map_banks (addrbank *bank, int first, int count, int realsize);
-extern void map_banks_cond (addrbank *bank, int first, int count, int realsize);
 extern void map_overlay (int chip);
 extern void memory_hardreset (int);
 extern void memory_clear (void);
@@ -335,13 +333,6 @@ extern uae_u8 *(REGPARAM3 *chipmem_xlate_indirect)(uaecptr) REGPARAM;
 
 #ifdef NATMEM_OFFSET
 
-#ifdef HAVE_SYS_TYPES_H
-#  include <sys/types.h>
-#endif // HAVE_SYS_TYPES_H
-#ifndef __key_t_defined
-  typedef int key_t;
-#endif // __key_t_defined
-
 typedef struct shmpiece_reg {
 	uae_u8 *native_address;
 	int id;
@@ -352,14 +343,6 @@ typedef struct shmpiece_reg {
 } shmpiece;
 
 extern shmpiece *shm_start;
-
-struct shmid_ds;
-
-/* Prototypes from src/memory.c used elsewhere, too */
-int my_shmdt (const void *shmaddr);
-void *my_shmat (int shmid, void *shmaddr, int shmflg);
-int my_shmget (key_t key, size_t size, int shmflg, const TCHAR *name);
-int my_shmctl (int shmid, int cmd, struct shmid_ds *buf);
 
 #endif
 
@@ -376,5 +359,5 @@ extern void memcpyha_safe (uaecptr dst, const uae_u8 *src, int size);
 extern void memcpyah_safe (uae_u8 *dst, uaecptr src, int size);
 extern void memcpyah (uae_u8 *dst, uaecptr src, int size);
 
-extern uae_s32 getz2size (struct uae_prefs *p);
-extern ULONG getz2endaddr (void);
+//extern uae_s32 getz2size (struct uae_prefs *p);
+//extern ULONG getz2endaddr (void);

@@ -63,7 +63,7 @@ static int alsa_xrun_recovery(snd_pcm_t *handle, int err)
   return err;
 }
 
-STATIC_INLINE void check_sound_buffers (void)
+static void check_sound_buffers (void)
 {
   if ((char *)paula_sndbufpt - (char *)paula_sndbuffer >= paula_sndbufsize) {
     int frames = paula_sndbufsize / bytes_per_frame;

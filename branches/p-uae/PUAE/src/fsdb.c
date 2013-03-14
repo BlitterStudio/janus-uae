@@ -30,7 +30,7 @@
  * Offset 519, 81 bytes, comment
  */
 
-#define TRACING_ENABLED 0
+#define TRACING_ENABLED 1
 #if TRACING_ENABLED
 #define TRACE(x) do { write_log x; } while(0)
 #else
@@ -70,9 +70,11 @@ TCHAR *fsdb_search_dir (const TCHAR *dirname, TCHAR *rel)
 			p = my_strdup (de->d_name);
 	}
 	my_closedir (dir);
+  DebOut("return: %s\n", p);
 	return p;
 }
 
+/* just return the according _UAEFSDB.___ file */
 static FILE *get_fsdb (a_inode *dir, const TCHAR *mode)
 {
 	TCHAR *n;
@@ -83,6 +85,7 @@ static FILE *get_fsdb (a_inode *dir, const TCHAR *mode)
 	n = build_nname (dir->nname, FSDB_FILE);
 	f = _tfopen (n, mode);
 	xfree (n);
+
 	return f;
 }
 
@@ -141,11 +144,7 @@ void fsdb_clean_dir (a_inode *dir)
 			continue;
 		if (pos1 != pos2) {
 			fseek (f, pos1, SEEK_SET);
-			size_t isWritten = fwrite (buf, 1, sizeof buf, f);
-			if (isWritten < sizeof(buf))
-				write_log("%s:%d [%s] - Failed to write %l bytes (%l/%d)",
-							 __FILE__, __LINE__, __FUNCTION__,
-							sizeof(buf) - isWritten, isWritten, sizeof(buf));
+			fwrite (buf, 1, sizeof buf, f);
 			fseek (f, pos2 + sizeof buf, SEEK_SET);
 		}
 		pos1 += sizeof buf;
@@ -214,6 +213,8 @@ a_inode *fsdb_lookup_aino_nname (a_inode *base, const TCHAR *nname)
 {
 	FILE *f;
 	char *s;
+
+  DebOut("nname: %s\n", nname);
 
 	f = get_fsdb (base, _T("r+b"));
 	if (f == 0) {
@@ -294,11 +295,7 @@ static void write_aino (FILE *f, a_inode *aino)
 	ua_copy ((char*)buf + 5 + 2 * 257, 80, aino->comment ? aino->comment : _T(""));
 	buf[5 + 2 * 257 + 80] = '\0';
 	aino->db_offset = ftell (f);
-	size_t isWritten = fwrite (buf, 1, sizeof buf, f);
-	if (isWritten < sizeof(buf))
-		write_log("%s:%d [%s] - Failed to write %l bytes (%l/%d)",
-							 __FILE__, __LINE__, __FUNCTION__,
-					sizeof(buf) - isWritten, isWritten, sizeof(buf));
+	fwrite (buf, 1, sizeof buf, f);
 	aino->has_dbentry = aino->needs_dbentry;
 	TRACE ((_T("%d '%s' '%s' written\n"), aino->db_offset, aino->aname, aino->nname));
 }
@@ -368,11 +365,7 @@ void fsdb_dir_writeback (a_inode *dir)
 	tmpbuf = 0;
 	if (size > 0) {
 		tmpbuf = (uae_u8*)malloc (size);
-		size_t isRead = fread (tmpbuf, 1, size, f);
-		if (isRead < (size_t)size)
-			write_log("%s:%d [%s] - Failed to read %l bytes (%l/%d)",
-						__FILE__, __LINE__, __FUNCTION__,
-						(size_t)size - isRead, isRead, size);
+		fread (tmpbuf, 1, size, f);
 	}
 	TRACE ((_T("**** updating '%s' %d\n"), dir->aname, size));
 

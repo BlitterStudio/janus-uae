@@ -1,7 +1,7 @@
 dnl
 
-AC_PREREQ(2.55)
-AC_INIT(PUAE, 2.5.1, mustafa.tufan@gmail.com, puae)
+AC_INIT(sysconfig.h.in)
+AC_PREREQ(2.50)
 AC_CONFIG_HEADER(sysconfig.h)
 AC_CANONICAL_TARGET
 
@@ -43,11 +43,9 @@ AC_SUBST(SET_MAKE)
 
 AC_SUBST(top_srcdir)
 
-
 dnl Do we want a possible optimization for bigendian targets?
-dnl So far, this has proved benefical only on OS X (and probably Dawrwin), so we
+dnl So far, this has proved beneifical only on OS X (and probably Dawrwin), so we
 dnl only enable it there. Should really check compiler version too.
-
 if [[ "$target_cpu" = "powerpc" ]]; then
   case $target_os in
     darwin*)

@@ -38,7 +38,7 @@ void gtkutil_add_signals_to_class (GtkObjectClass *class, guint func_offset, gui
    name = va_arg (signames, const char *);
 
    while (name) {
-#if GTK_MAJOR_VERSION >= 2
+#if GTK_MAJOR_VERSION >= 2 || defined GTKMUI
 	signals[count] = g_signal_new (name, G_TYPE_FROM_CLASS (class), G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
 				func_offset, NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 #else
@@ -49,7 +49,7 @@ void gtkutil_add_signals_to_class (GtkObjectClass *class, guint func_offset, gui
 	name = va_arg (signames, const char *);
    };
 
-#if GTK_MAJOR_VERSION < 2
+#if GTK_MAJOR_VERSION < 2  && !defined GTKMUI
     gtk_object_class_add_signals (class, signals, count);
 #endif
 }
@@ -90,12 +90,21 @@ GtkWidget *make_label (const char *string)
     return label;
 }
 
+#if !defined GTKMUI
+
 #if GTK_MAJOR_VERSION < 2
 GtkWidget *make_labelled_button (const char *label, GtkAccelGroup *accel_group)
 {
     GtkWidget *button = gtk_button_new ();
     int key = gtk_label_parse_uline (GTK_LABEL (GTK_BIN (button)->child), "_Okay");
     gtk_widget_add_accelerator (button, "clicked", accel_group,key, GDK_MOD1_MASK, (GtkAccelFlags) 0);
+}
+#endif
+
+#else
+GtkWidget *make_labelled_button (const char *label, GtkAccelGroup *accel_group)
+{
+    return gtk_button_new_with_label (label);
 }
 #endif
 

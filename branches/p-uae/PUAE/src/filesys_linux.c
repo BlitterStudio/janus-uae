@@ -9,7 +9,9 @@
 #include <sys/timeb.h>
 #include "zfile.h"
 
+#ifndef __AROS__
 typedef int BOOL;
+#endif
 
 #define INVALID_HANDLE_VALUE		((HANDLE)~0U)
 #define INVALID_FILE_ATTRIBUTES		((DWORD) -1)

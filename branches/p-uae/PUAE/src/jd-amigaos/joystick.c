@@ -172,7 +172,7 @@ struct inputdevice_functions inputdevicefunc_joystick = {
 /*
  * Set default inputdevice config for Amiga joysticks
  */
-int input_get_default_joystick (struct uae_input_device *uid, int num, int port, int cd32)
+int input_get_default_joystick (struct uae_input_device *uid, int num, int port, int af, int mode, bool gp)
 {
     unsigned int i;
 

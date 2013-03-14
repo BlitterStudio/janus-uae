@@ -109,7 +109,7 @@ unsigned int define_trap (TrapHandler handler_func, int flags, const TCHAR *name
 		abort ();
 		return -1;
 	} else {
-		unsigned int i = 0;
+		int i = 0;
 		unsigned int trap_num;
 		struct Trap *trap;
 		uaecptr addr = here ();

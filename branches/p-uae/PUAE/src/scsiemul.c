@@ -44,6 +44,8 @@
 #define ASYNC_REQUEST_CHANGEINT 10
 #define ASYNC_REQUEST_FRAMEINT 11
 
+static int log_scsi=0;
+
 struct devstruct {
 	int unitnum, aunit;
 	int opencnt;
@@ -254,8 +256,6 @@ static uae_u32 REGPARAM2 diskdev_expunge (TrapContext *context)
 	return 0;
 }
 
-/// REMOVEME: nowhere used
-#if 0
 static int is_async_request (struct devstruct *dev, uaecptr request)
 {
 	int i = 0;
@@ -265,7 +265,6 @@ static int is_async_request (struct devstruct *dev, uaecptr request)
 	}
 	return 0;
 }
-#endif // 0
 
 #if 0
 static int scsiemul_switchscsi (const TCHAR *name)
@@ -336,7 +335,7 @@ int scsi_do_disk_change (int unitnum, int insert, int *pollmode)
 				if (pollmode)
 					*pollmode = 1;
 				if (dev->aunit >= 0) {
-					/// REMOVEME: unused : struct priv_devstruct *pdev = &pdevst[dev->aunit];
+					struct priv_devstruct *pdev = &pdevst[dev->aunit];
 					devinfo (dev, &dev->di);
 				}
 				dev->changenum++;
@@ -492,7 +491,7 @@ static int command_cd_read (struct devstruct *dev, uaecptr data, uae_u64 offset,
 			data += len;
 			startoffset = 0;
 			*io_actual += len;
-		} else if (length >= (uae_u32)blocksize) {
+		} else if (length >= blocksize) {
 			len = blocksize;
 			memcpyha_safe (data, temp, len);
 			length -= len;
@@ -696,7 +695,8 @@ static int dev_do_io (struct devstruct *dev, uaecptr request)
 				io_data += 6;
 				io_actual++;
 			}
-			for (int i = toc.first_track_offset; i < toc.last_track_offset && io_length > 0; i++) {
+      int i;
+			for (i = toc.first_track_offset; i < toc.last_track_offset && io_length > 0; i++) {
 				if (io_offset == toc.toc[i].point) {
 					int pos = toc.toc[i].paddress;
 					put_byte (io_data, (toc.toc[i].control << 4) | toc.toc[i].adr);
@@ -819,8 +819,9 @@ static int dev_do_io (struct devstruct *dev, uaecptr request)
 		struct cd_toc_head toc;
 		int ok = 0;
 		if (sys_command_cd_toc (dev->di.unitnum, &toc)) {
-			for (int i = toc.first_track_offset; i < toc.last_track_offset; i++) {
-				if (i == (int)io_offset && (int)(i + io_length) <= toc.last_track_offset) {
+      int i;
+			for (i = toc.first_track_offset; i < toc.last_track_offset; i++) {
+				if (i == io_offset && i + io_length <= toc.last_track_offset) {
 					ok = sys_command_cd_play (dev->di.unitnum, toc.toc[i].address, toc.toc[i + io_length].address, 0);
 					break;
 				}
@@ -924,7 +925,7 @@ static uae_u32 REGPARAM2 dev_beginio (TrapContext *context)
 {
 	uae_u32 request = m68k_areg (regs, 1);
 	uae_u8 flags = get_byte (request + 30);
-	/// REMOVEME: nowhere used : int command = get_word (request + 28);
+	int command = get_word (request + 28);
 	struct priv_devstruct *pdev = getpdevstruct (request);
 	struct devstruct *dev;
 	int canquick;
@@ -1026,7 +1027,8 @@ static uae_u32 REGPARAM2 dev_abortio (TrapContext *context)
 uae_u32 scsi_get_cd_drive_mask (void)
 {
 	uae_u32 mask = 0;
-	for (int i = 0; i < MAX_TOTAL_SCSI_DEVICES; i++) {
+  int i;
+	for (i = 0; i < MAX_TOTAL_SCSI_DEVICES; i++) {
 		struct devstruct *dev = &devst[i];
 		if (dev->iscd)
 			mask |= 1 << i;
@@ -1036,7 +1038,8 @@ uae_u32 scsi_get_cd_drive_mask (void)
 uae_u32 scsi_get_cd_drive_media_mask (void)
 {
 	uae_u32 mask = 0;
-	for (int i = 0; i < MAX_TOTAL_SCSI_DEVICES; i++) {
+  int i;
+	for (i = 0; i < MAX_TOTAL_SCSI_DEVICES; i++) {
 		struct devstruct *dev = &devst[i];
 		if (dev->iscd && dev->changeint_mediastate)
 			mask |= 1 << i;

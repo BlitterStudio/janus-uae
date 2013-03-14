@@ -8,11 +8,6 @@
 #include "xwin.h"
 #include "custom.h"
 
-/* there is no struct vidbuffer anywhere and this file
- * is nowhere referenced. Thus it is nulled until further notice.
- * - Sven
-*/
-#if (0)
 static bool automatic;
 static int monitor;
 
@@ -67,7 +62,8 @@ STATIC_INLINE void PRGB(struct vidbuf_description *dst, uae_u8 *dataline, uae_u8
 static void clearmonitor(struct vidbuf_description *dst)
 {
 	uae_u8 *p = dst->bufmem;
-	for (int y = 0; y < dst->height_allocated; y++) {
+  int y;
+	for (y = 0; y < dst->height_allocated; y++) {
 		memset(p, 0, dst->width_allocated * dst->pixbytes);
 		p += dst->rowbytes;
 	}
@@ -138,7 +134,8 @@ static bool graffiti(struct vidbuf_description *src, struct vidbuf_description *
 
 			if (command) {
 				if (chunky[0] || chunky[1] || chunky[2] || chunky[3] || found) {
-					for (int pix = 0; pix < 2; pix++) {
+          int pix;
+					for (pix = 0; pix < 2; pix++) {
 						uae_u8 cmd = chunky[pix * 2 + 0];
 						uae_u8 parm = chunky[pix * 2 + 1];
 
@@ -195,7 +192,8 @@ static bool graffiti(struct vidbuf_description *src, struct vidbuf_description *
 			
 			} else {
 
-				for (int pix = 0; pix < 4; pix++) {
+        int pix;
+				for (pix = 0; pix < 4; pix++) {
 					uae_u8 r, g, b, c;
 					
 					c = chunky[pix] & read_mask;
@@ -459,5 +457,3 @@ bool emulate_specialmonitors(struct vidbuf_description *src, struct vidbuf_descr
 	}
 	return true;
 }
-
-#endif /* (0) */

@@ -256,7 +256,7 @@ TCHAR *restore_path_func (uae_u8 **dstp, int type)
 {
 	TCHAR *newpath;
 	TCHAR *s;
-	/// REMOVEME: nowhere used: TCHAR *out = NULL;
+	TCHAR *out = NULL;
 	TCHAR tmp[MAX_DPATH], tmp2[MAX_DPATH];
 
 	s = restore_string_func (dstp);
@@ -271,7 +271,8 @@ TCHAR *restore_path_func (uae_u8 **dstp, int type)
 		xfree (s);
 		return my_strdup (tmp);
 	}
-	for (int i = 0; i < MAX_PATHS; i++) {
+  int i;
+	for (i = 0; i < MAX_PATHS; i++) {
 		newpath = NULL;
 		if (type == SAVESTATE_PATH_FLOPPY)
 			newpath = currprefs.path_floppy.path[i];
@@ -464,7 +465,7 @@ void restore_ram (size_t filepos, uae_u8 *memory)
 	}
 }
 
-static uae_u8 *restore_log (uae_u8 *src)
+uae_u8 *restore_log (uae_u8 *src)
 {
 #if OPEN_LOG > 0
 	TCHAR *s = utf8u (src);
@@ -517,7 +518,7 @@ void restore_state (const TCHAR *filename)
 		gui_message ("Cannot restore state from '%s'.\nIt is not an AmigaStateFile.\n", filename);
 		goto error;
 	}
-	write_log (_T("STATERESTORE: '%s'\n"), filename);
+	write_log (_T("STATERESTORE:\n"));
 	config_changed = 1;
 	savestate_file = f;
 	restore_header (chunk);
@@ -974,9 +975,10 @@ static int save_state_internal (struct zfile *f, const TCHAR *description, int c
 	dst = save_cdtv (&len, NULL);
 	save_chunk (f, dst, len, _T("CDTV"), 0);
 	xfree (dst);
-	dst = save_dmac (&len, NULL);
-	save_chunk (f, dst, len, _T("DMAC"), 0);
-	xfree (dst);
+#warning save_dmac disabled here!!
+	//dst = save_dmac (&len, NULL);
+	//save_chunk (f, dst, len, _T("DMAC"), 0);
+	//xfree (dst);
 #endif
 
 #ifdef ACTION_REPLAY

@@ -28,8 +28,6 @@
 #include "rp.h"
 #endif
 
-#include "cdrom.h"
-
 #include "archivers/chd/chdtypes.h"
 #include "archivers/chd/chd.h"
 #include "archivers/chd/chdcd.h"
@@ -602,7 +600,6 @@ static int command_pause (int unitnum, int paused)
 	if (!cdu)
 		return -1;
 	int old = cdu->cdda_paused;
-	if ((paused && cdu->cdda_play) || !paused)
 	cdu->cdda_paused = paused;
 	return old;
 }
@@ -1653,7 +1650,7 @@ static int parse_image (struct cdunit *cdu, const TCHAR *img)
 		else
 			write_log (_T("    "));
 		write_log (_T("%7d %02d:%02d:%02d"),
-			t->address, (msf >> 16) & 0x7fff, (msf >> 8) & 0xff, (msf >> 0) & 0xff);
+			t->address, (msf >> 16) & 0xff, (msf >> 8) & 0xff, (msf >> 0) & 0xff);
 		if (i < cdu->tracks) {
 			write_log (_T(" %s %x %10lld %10lld %s%s"),
 				(t->ctrl & 4) ? _T("DATA    ") : (t->subcode ? _T("CDA+SUB") : _T("CDA     ")),
@@ -1669,7 +1666,7 @@ static int parse_image (struct cdunit *cdu, const TCHAR *img)
 	}
 
 	cdu->blocksize = 2048;
-	cdu->cdsize = (uae_u64)cdu->toc[cdu->tracks].address * cdu->blocksize;
+	cdu->cdsize = cdu->toc[cdu->tracks].address * cdu->blocksize;
 	
 
 	zfile_fclose (zcue);

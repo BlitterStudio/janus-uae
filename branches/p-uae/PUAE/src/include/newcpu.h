@@ -66,7 +66,7 @@ struct comptbl {
 #endif
 
 extern uae_u32 REGPARAM3 op_illg (uae_u32) REGPARAM;
-extern void REGPARAM3 op_unimpl (uae_u16) REGPARAM;
+extern void REGPARAM3 op_unimpl (void) REGPARAM;
 
 typedef uae_u8 flagtype;
 
@@ -393,12 +393,14 @@ extern void m68k_disasm_2 (TCHAR *buf, int bufsize, uaecptr addr, uaecptr *nextp
 extern void sm68k_disasm (TCHAR*, TCHAR*, uaecptr addr, uaecptr *nextpc);
 extern int get_cpu_model (void);
 
-/* Hack to stop conflict with AROS Exception function */
-#ifdef __AROS__
-# undef Exception
-#endif
+/* MakeSR is used both in AROS and in uae :(.. I don't like that! */
+#undef MakeSR
+
 extern void REGPARAM3 MakeSR (void) REGPARAM;
 extern void REGPARAM3 MakeFromSR (void) REGPARAM;
+
+/* Exception is used both in AROS and in uae :(.. I don't like that! */
+#undef Exception
 extern void REGPARAM3 Exception (int) REGPARAM;
 extern void NMI (void);
 extern void NMI_delayed (void);
@@ -413,7 +415,6 @@ extern void init_m68k (void);
 extern void init_m68k_full (void);
 extern void m68k_go (int);
 extern void m68k_dumpstate (uaecptr *);
-extern void m68k_dumpstate2 (uaecptr, uaecptr *);
 extern void m68k_reset (int);
 extern int getDivu68kCycles (uae_u32 dividend, uae_u16 divisor);
 extern int getDivs68kCycles (uae_s32 dividend, uae_s16 divisor);
@@ -438,7 +439,7 @@ extern void fpux_restore (int*);
 
 extern void exception3 (uae_u32 opcode, uaecptr addr);
 extern void exception3i (uae_u32 opcode, uaecptr addr);
-extern void exception3pc (uae_u32 opcode, uaecptr addr, bool w, bool i, uaecptr pc);
+extern void exception3pc (uae_u32 opcode, uaecptr addr, int w, int i, uaecptr pc);
 extern void exception2 (uaecptr addr);
 extern void cpureset (void);
 extern void cpu_halt (int id);

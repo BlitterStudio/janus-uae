@@ -11,7 +11,7 @@
 #include "sysdeps.h"
 
 #include "options.h"
-#include "include/memory_uae.h"
+#include "../include/memory_uae.h"
 #include "threaddep/thread.h"
 #include "blkdev.h"
 #include "scsidev.h"
@@ -567,7 +567,7 @@ static struct device_info *info_device (int unitnum, struct device_info *di)
 	di->bytespersector  = 2048;
 	di->cylinders	    = 1;
 	di->type	    = INQ_ROMD; /* We only support CD/DVD drives for now */
-	di->id		    = unitnum + 1;
+	di->unitnum		= unitnum + 1;
 
 	snprintf (di->label, 60, "%s:%d", sdd->device, sdd->unit);
     } else

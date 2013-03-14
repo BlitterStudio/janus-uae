@@ -14,6 +14,11 @@
 #include "gensound.h"
 #include "sounddep/sound.h"
 
+int paula_sndbufsize=0;
+uae_u16 *paula_sndbufpt=NULL;
+uae_u16 paula_sndbuffer[44100];
+unsigned int have_sound = 0;
+
 int init_sound (void)
 {
     currprefs.produce_sound = 0;

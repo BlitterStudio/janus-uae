@@ -14,7 +14,7 @@
 #include "gensound.h"
 #include "sounddep/sound.h"
 
-#include <exec/memory_uae.h>
+#include "memory_uae.h"
 #include <graphics/gfxbase.h>
 
 struct MsgPort    *AHImp    = NULL;
@@ -121,7 +121,7 @@ int init_sound (void)
 	goto fail;
 
     /* calculate buffer size */
-    paula_sndbufsize = rate * currprefs.sound_latency * 2 * (currprefs.sound_stereo ? 2 : 1) / 1000;
+    paula_sndbufsize = rate * /*currprefs.sound_latency * */ 2 * (currprefs.sound_stereo ? 2 : 1) / 1000;
     paula_sndbufsize = (paula_sndbufsize + 1) & ~1;
 
     /* get the buffers */

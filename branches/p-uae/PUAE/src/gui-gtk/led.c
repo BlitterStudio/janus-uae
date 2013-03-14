@@ -7,16 +7,12 @@
   * Copyright 2006 Richard Drummond
   */
 
-#include "sysdeps.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
 
-#include "gcc_warnings.h"
-GCC_DIAG_OFF(strict-prototypes)
 #include <gtk/gtk.h>
-GCC_DIAG_ON(strict-prototypes)
 
 #include "led.h"
 
@@ -35,10 +31,9 @@ static void led_size_allocate (GtkWidget *widget, GtkAllocation *allocation);
 
 GtkType led_get_type ()
 {
-	static bool hasLed = false;
-    static GtkType led_type;
+    static guint led_type = 0;
 
-    if (!hasLed) {
+    if (!led_type) {
 	static const GtkTypeInfo led_info = {
 	    (char *) "Led",
 	    sizeof (Led),
@@ -50,7 +45,6 @@ GtkType led_get_type ()
 	    (GtkClassInitFunc) NULL
 	};
 	led_type = gtk_type_unique (gtk_misc_get_type (), &led_info);
-		hasLed = true;
     }
     return led_type;
 }
@@ -73,24 +67,34 @@ static void led_class_init (LedClass *class)
 
 static void led_init (Led *theled)
 {
-    theled->color = LED_OFF;
+  theled->color = LED_OFF;
+#if defined GTKMUI
+  gtk_widget_set_size_request(theled,LED_W,LED_H);
+#endif
 }
 
 GtkWidget *led_new (void)
 {
-//    return gtk_type_new (led_get_type ());
-    Led *w = LED (gtk_type_new (led_get_type()));
-
-    return GTK_WIDGET (w);
+  return gtk_type_new (led_get_type ());
 }
 
 static gint led_expose (GtkWidget *w, GdkEventExpose *event)
 {
+#if !defined GTKMUI
+  /* TODO */
     if (w && GTK_WIDGET_DRAWABLE (w)) {
 	Led *theled = LED (w);
-	gdk_draw_rectangle (w->window, theled->gc, true, 0, 0,
+	gdk_draw_rectangle (w->window, theled->gc, TRUE, 0, 0,
 			    w->allocation.width, w->allocation.height);
     }
+#else
+    //kprintf("LED: led_expose(%lx,%lx)\n",w,event);
+    GtkStyle *style = gtk_style_copy (w->style);
+    style->bg[GTK_STATE_NORMAL] = LED (w)->color;
+    gtk_style_attach (style, w->window);
+    gtk_draw_flat_box (style, w->window, GTK_STATE_NORMAL, GTK_SHADOW_NONE,
+			0, 0, LED_W, LED_H);
+#endif
     return 0;
 }
 
@@ -175,7 +179,10 @@ void led_set_color (Led *l, GdkColor col)
     l->color = col;
 
     if (GTK_WIDGET_REALIZED (l)) {
+#if !defined GTKMUI
+      /* TODO */
 	gdk_gc_set_rgb_fg_color (l->gc, &l->color);
+#endif
 	led_expose (GTK_WIDGET (l), NULL);
     }
 }

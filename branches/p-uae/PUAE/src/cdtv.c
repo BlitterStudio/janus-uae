@@ -234,7 +234,8 @@ static void subfunc (uae_u8 *data, int cnt)
 	uae_sem_wait (&sub_sem);
 #ifdef CDTV_SUB_DEBUG
 	int total = 0;
-	for (int i = 0; i < MAX_SUBCODEBUFFER; i++) {
+  int i;
+	for (i = 0; i < MAX_SUBCODEBUFFER; i++) {
 		if (subcodebufferinuse[i])
 			total++;
 	}
@@ -315,9 +316,9 @@ static void startplay (void)
 static int play_cdtrack (uae_u8 *p)
 {
 	int track_start = p[1];
-	/// REMOVEME: nowhere used : int index_start = p[2];
+	int index_start = p[2];
 	int track_end = p[3];
-	/// REMOVEME: nowhere used : int index_end = p[4];
+	int index_end = p[4];
 	int start_found, end_found;
 	uae_u32 start, end;
 	int j;
@@ -791,7 +792,8 @@ bool cdtv_front_panel (int button)
 	uae_u8 *sq = cdrom_qcode + 4;
 	int track = frombcd (sq[1]);
 	int pos = 0;
-	for (int j = 0; j < toc.points; j++) {
+  int j;
+	for (j = 0; j < toc.points; j++) {
 		int t = toc.toc[j].track;
 		pos = toc.toc[j].paddress;
 		if (t == 1 && track == 1 && button == 2)
@@ -1218,11 +1220,6 @@ static void do_stch (void)
 	}
 }
 
-/** REMOVEME:
-  * nowhere used. All I found was the comment
-  * "bleh for compatibility" in cfgfile.c
-**/
-#if 0
 void bleh (void)
 {
 #if 0
@@ -1232,7 +1229,6 @@ void bleh (void)
 	do_stch();
 #endif
 }
-#endif // 0
 
 static void cdtv_reset_int (void)
 {
@@ -1858,7 +1854,8 @@ uae_u8 *save_cdtv (int *len, uae_u8 *dstptr)
 	save_u32 (last_play_pos);
 	save_u32 (last_play_end);
 	save_u64 (dma_wait);
-	for (int i = 0; i < sizeof cdrom_command_input; i++)
+  int i;
+	for (i = 0; i < sizeof cdrom_command_input; i++)
 		save_u8 (cdrom_command_input[i]);
 	save_u8 (cdrom_command_cnt_in);
 	save_u16 (cdtv_sectorsize);
@@ -1909,7 +1906,8 @@ uae_u8 *restore_cdtv (uae_u8 *src)
 	last_play_pos = restore_u32 ();
 	last_play_end = restore_u32 ();
 	dma_wait = restore_u64 ();
-	for (int i = 0; i < sizeof cdrom_command_input; i++)
+  int i;
+	for (i = 0; i < sizeof cdrom_command_input; i++)
 		cdrom_command_input[i] = restore_u8 ();
 	cdrom_command_cnt_in = restore_u8 ();
 	cdtv_sectorsize = restore_u16 ();

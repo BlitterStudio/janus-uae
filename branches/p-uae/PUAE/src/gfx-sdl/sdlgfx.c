@@ -110,11 +110,15 @@ extern void setid_af (struct uae_input_device *uid, int i, int slot, int sub, in
 
 /* Uncomment for debugging output */
 //#define DEBUG
+#if 0
 #ifdef DEBUG
 #define DEBUG_LOG write_log
 #else
 #define DEBUG_LOG(...) { }
 #endif
+#endif
+
+#define DEBUG_LOG DebOut
 
 SDL_Surface *display = NULL;
 SDL_Surface *screen = NULL;
@@ -164,48 +168,48 @@ static int current_width, current_height;
 #define AXISTYPE_DIAL 4
 
 struct didata {
-	int type;
-	int acquired;
-	int priority;
-	int superdevice;
-//	GUID iguid;
-//	GUID pguid;
-	TCHAR *name;
-	bool fullname;
-	TCHAR *sortname;
-	TCHAR *configname;
-	int vid, pid, mi;
+    int type;
+    int acquired;
+    int priority;
+    int superdevice;
+//  GUID iguid;
+//  GUID pguid;
+    TCHAR *name;
+    bool fullname;
+    TCHAR *sortname;
+    TCHAR *configname;
+    int vid, pid, mi;
 
-	int connection;
-//	LPDIRECTINPUTDEVICE8 lpdi;
-//	HANDLE rawinput;
-//	HIDP_CAPS hidcaps;
-//	HIDP_VALUE_CAPS hidvcaps[MAX_MAPPINGS];
-//	PCHAR hidbuffer, hidbufferprev;
-//	PHIDP_PREPARSED_DATA hidpreparseddata;
-	int maxusagelistlength;
-//	PUSAGE_AND_PAGE usagelist, prevusagelist;
+    int connection;
+//  LPDIRECTINPUTDEVICE8 lpdi;
+//  HANDLE rawinput;
+//  HIDP_CAPS hidcaps;
+//  HIDP_VALUE_CAPS hidvcaps[MAX_MAPPINGS];
+//  PCHAR hidbuffer, hidbufferprev;
+//  PHIDP_PREPARSED_DATA hidpreparseddata;
+    int maxusagelistlength;
+//  PUSAGE_AND_PAGE usagelist, prevusagelist;
 
-	int wininput;
-	int catweasel;
-	int coop;
+    int wininput;
+    int catweasel;
+    int coop;
 
-//	HANDLE parjoy;
-//	PAR_QUERY_INFORMATION oldparjoystatus;
+//  HANDLE parjoy;
+//  PAR_QUERY_INFORMATION oldparjoystatus;
 
-	uae_s16 axles;
-	uae_s16 buttons, buttons_real;
-	uae_s16 axismappings[MAX_MAPPINGS];
-	TCHAR *axisname[MAX_MAPPINGS];
-	uae_s16 axissort[MAX_MAPPINGS];
-	uae_s16 axistype[MAX_MAPPINGS];
-	bool analogstick;
+    uae_s16 axles;
+    uae_s16 buttons, buttons_real;
+    uae_s16 axismappings[MAX_MAPPINGS];
+    TCHAR *axisname[MAX_MAPPINGS];
+    uae_s16 axissort[MAX_MAPPINGS];
+    uae_s16 axistype[MAX_MAPPINGS];
+    bool analogstick;
 
-	uae_s16 buttonmappings[MAX_MAPPINGS];
-	TCHAR *buttonname[MAX_MAPPINGS];
-	uae_s16 buttonsort[MAX_MAPPINGS];
-	uae_s16 buttonaxisparent[MAX_MAPPINGS];
-	uae_s16 buttonaxisparentdir[MAX_MAPPINGS];
+    uae_s16 buttonmappings[MAX_MAPPINGS];
+    TCHAR *buttonname[MAX_MAPPINGS];
+    uae_s16 buttonsort[MAX_MAPPINGS];
+    uae_s16 buttonaxisparent[MAX_MAPPINGS];
+    uae_s16 buttonaxisparentdir[MAX_MAPPINGS];
 
 };
 
@@ -215,7 +219,7 @@ static struct didata di_joystick[MAX_INPUT_DEVICES];
 static int num_mouse, num_keyboard, num_joystick;
 static int dd_inited, mouse_inited, keyboard_inited, joystick_inited;
 
-#define	MAX_KEYCODES 256
+#define MAX_KEYCODES 256
 static uae_u8 di_keycodes[MAX_INPUT_DEVICES][MAX_KEYCODES];
 static int keyboard_german;
 
@@ -343,6 +347,8 @@ void setupExtensions(void)
  * Yes, SDL is supposed to abstract away from the underlying
  * platform, but we need to know this to be able to map raw keys
  * and to work around any platform-specific quirks . . .
+ *
+ * On AROS SDL_VideoDriverName seems not to return a reasonable name .. 
  */
 int get_sdlgfx_type (void)
 {
@@ -351,29 +357,29 @@ int get_sdlgfx_type (void)
     static int search_done = 0;
 
     if (!search_done) {
-	if (SDL_VideoDriverName (name, sizeof name)) {
-	    if (strcmp (name, "x11")==0)
-			driver = SDLGFX_DRIVER_X11;
-	    else if (strcmp (name, "dga") == 0)
-			driver = SDLGFX_DRIVER_DGA;
-	    else if (strcmp (name, "svgalib") == 0)
-			driver = SDLGFX_DRIVER_SVGALIB;
-	    else if (strcmp (name, "fbcon") == 0)
-			driver = SDLGFX_DRIVER_FBCON;
-	    else if (strcmp (name, "directfb") == 0)
-			driver = SDLGFX_DRIVER_DIRECTFB;
-	    else if (strcmp (name, "Quartz") == 0)
-			driver = SDLGFX_DRIVER_QUARTZ;
-	    else if (strcmp (name, "bwindow") == 0)
-			driver = SDLGFX_DRIVER_BWINDOW;
-	    else if (strcmp (name, "CGX") == 0)
-			driver = SDLGFX_DRIVER_CYBERGFX;
-	    else if (strcmp (name, "OS4") == 0)
-			driver = SDLGFX_DRIVER_AMIGAOS4;
-	}
-	search_done = 1;
+    if (SDL_VideoDriverName (name, sizeof name)) {
+        if (strcmp (name, "x11")==0)
+            driver = SDLGFX_DRIVER_X11;
+        else if (strcmp (name, "dga") == 0)
+            driver = SDLGFX_DRIVER_DGA;
+        else if (strcmp (name, "svgalib") == 0)
+            driver = SDLGFX_DRIVER_SVGALIB;
+        else if (strcmp (name, "fbcon") == 0)
+            driver = SDLGFX_DRIVER_FBCON;
+        else if (strcmp (name, "directfb") == 0)
+            driver = SDLGFX_DRIVER_DIRECTFB;
+        else if (strcmp (name, "Quartz") == 0)
+            driver = SDLGFX_DRIVER_QUARTZ;
+        else if (strcmp (name, "bwindow") == 0)
+            driver = SDLGFX_DRIVER_BWINDOW;
+        else if (strcmp (name, "CGX") == 0)
+            driver = SDLGFX_DRIVER_CYBERGFX;
+        else if (strcmp (name, "OS4") == 0)
+            driver = SDLGFX_DRIVER_AMIGAOS4;
+    }
+    search_done = 1;
 
-	DEBUG_LOG ("SDL video driver: %s\n", name);
+    DEBUG_LOG ("SDL video driver: %s\n", name);
     }
 
     return driver;
@@ -384,8 +390,8 @@ STATIC_INLINE unsigned long bitsInMask (unsigned long mask)
     /* count bits in mask */
     unsigned long n = 0;
     while (mask) {
-		n += mask & 1;
-		mask >>= 1;
+        n += mask & 1;
+        mask >>= 1;
     }
     return n;
 }
@@ -395,8 +401,8 @@ STATIC_INLINE unsigned long maskShift (unsigned long mask)
     /* determine how far mask is shifted */
     unsigned long n = 0;
     while (!(mask & 1)) {
-		n++;
-		mask >>= 1;
+        n++;
+        mask >>= 1;
     }
     return n;
 }
@@ -416,32 +422,34 @@ static void init_colors (void)
 {
     int i;
 
+    DebOut("entered\n");
+
     DEBUG_LOG ("Function: init_colors\n");
 
 #ifdef USE_GL
     if (currprefs.use_gl) {
-		DEBUG_LOG ("SDLGFX: bitdepth = %d\n", bitdepth);
-		if (bitdepth <= 8) {
-		    write_log ("SDLGFX: bitdepth %d to small\n", bitdepth);
-		    abort();
-		}
+        DEBUG_LOG ("SDLGFX: bitdepth = %d\n", bitdepth);
+        if (bitdepth <= 8) {
+            write_log ("SDLGFX: bitdepth %d to small\n", bitdepth);
+            abort();
+        }
     }
 #endif /* USE_GL */
 
     if (bitdepth > 8) {
-	red_bits    = bitsInMask (display->format->Rmask);
-	green_bits  = bitsInMask (display->format->Gmask);
-	blue_bits   = bitsInMask (display->format->Bmask);
-	red_shift   = maskShift (display->format->Rmask);
-	green_shift = maskShift (display->format->Gmask);
-	blue_shift  = maskShift (display->format->Bmask);
-	alpha_bits = 0;
-	alpha_shift = 0;
+    red_bits    = bitsInMask (display->format->Rmask);
+    green_bits  = bitsInMask (display->format->Gmask);
+    blue_bits   = bitsInMask (display->format->Bmask);
+    red_shift   = maskShift (display->format->Rmask);
+    green_shift = maskShift (display->format->Gmask);
+    blue_shift  = maskShift (display->format->Bmask);
+    alpha_bits = 0;
+    alpha_shift = 0;
 
-	alloc_colors64k (red_bits, green_bits, blue_bits, red_shift, green_shift, blue_shift, alpha_bits, alpha_shift, alpha, 0);
+    alloc_colors64k (red_bits, green_bits, blue_bits, red_shift, green_shift, blue_shift, alpha_bits, alpha_shift, alpha, 0);
     } else {
-	alloc_colors256 (get_color);
-	SDL_SetColors (screen, arSDLColors, 0, 256);
+    alloc_colors256 (get_color);
+    SDL_SetColors (screen, arSDLColors, 0, 256);
     }
 }
 
@@ -461,28 +469,28 @@ static int find_best_mode (int *width, int *height, int depth, int fullscreen)
     found = SDL_VideoModeOK (*width, *height, depth, fullscreen ? SDL_FULLSCREEN : 0);
 
     if (!found && mode_count > 0) {
-	/* The specified mode wasn't available, so we'll try and find
-	 * a supported resolution which best matches it.
-	 */
-	int i;
-	write_log ("SDLGFX: Requested mode (%dx%d%d) not available.\n", *width, *height, depth);
+    /* The specified mode wasn't available, so we'll try and find
+     * a supported resolution which best matches it.
+     */
+    int i;
+    write_log ("SDLGFX: Requested mode (%dx%d%d) not available.\n", *width, *height, depth);
 
-	/* Note: the screenmode array should already be sorted from largest to smallest, since
-	 * that's the order SDL gives us the screenmodes. */
-	for (i = mode_count - 1; i >= 0; i--) {
-	    if (screenmode[i].w >= *width && screenmode[i].h >= *height)
-		break;
-	}
+    /* Note: the screenmode array should already be sorted from largest to smallest, since
+     * that's the order SDL gives us the screenmodes. */
+    for (i = mode_count - 1; i >= 0; i--) {
+        if (screenmode[i].w >= *width && screenmode[i].h >= *height)
+        break;
+    }
 
-	/* If we didn't find a mode, use the largest supported mode */
-	if (i < 0)
-	    i = 0;
+    /* If we didn't find a mode, use the largest supported mode */
+    if (i < 0)
+        i = 0;
 
-	*width  = screenmode[i].w;
-	*height = screenmode[i].h;
-	found   = 1;
+    *width  = screenmode[i].w;
+    *height = screenmode[i].h;
+    found   = 1;
 
-	write_log ("SDLGFX: Using mode (%dx%d)\n", *width, *height);
+    write_log ("SDLGFX: Using mode (%dx%d)\n", *width, *height);
     }
     return found;
 }
@@ -514,61 +522,61 @@ int picasso_palette (void)
 static int get_p96_pixel_format (const struct SDL_PixelFormat *fmt)
 {
     if (fmt->BitsPerPixel == 8)
-		return RGBFB_CLUT;
+        return RGBFB_CLUT;
 
 #ifdef WORDS_BIGENDIAN
     if (fmt->BitsPerPixel == 24) {
-		if (fmt->Rmask == 0x00FF0000 && fmt->Gmask == 0x0000FF00 && fmt->Bmask == 0x000000FF)
-		    return RGBFB_R8G8B8;
-		if (fmt->Rmask == 0x000000FF && fmt->Gmask == 0x0000FF00 && fmt->Bmask == 0x00FF0000)
-		    return RGBFB_B8G8R8;
+        if (fmt->Rmask == 0x00FF0000 && fmt->Gmask == 0x0000FF00 && fmt->Bmask == 0x000000FF)
+            return RGBFB_R8G8B8;
+        if (fmt->Rmask == 0x000000FF && fmt->Gmask == 0x0000FF00 && fmt->Bmask == 0x00FF0000)
+            return RGBFB_B8G8R8;
     } else if (fmt->BitsPerPixel == 32) {
-		if (fmt->Rmask == 0xFF000000 && fmt->Gmask == 0x00FF0000 && fmt->Bmask == 0x0000FF00)
-		    return RGBFB_R8G8B8A8;
-		if (fmt->Rmask == 0x00FF0000 && fmt->Gmask == 0x0000FF00 && fmt->Bmask == 0x000000FF)
-		    return RGBFB_A8R8G8B8;
-		if (fmt->Bmask == 0x00FF0000 && fmt->Gmask == 0x0000FF00 && fmt->Rmask == 0x000000FF)
-		    return RGBFB_A8B8G8R8;
-		if (fmt->Bmask == 0xFF000000 && fmt->Gmask == 0x00FF0000 && fmt->Rmask == 0x0000FF00)
-		    return RGBFB_B8G8R8A8;
+        if (fmt->Rmask == 0xFF000000 && fmt->Gmask == 0x00FF0000 && fmt->Bmask == 0x0000FF00)
+            return RGBFB_R8G8B8A8;
+        if (fmt->Rmask == 0x00FF0000 && fmt->Gmask == 0x0000FF00 && fmt->Bmask == 0x000000FF)
+            return RGBFB_A8R8G8B8;
+        if (fmt->Bmask == 0x00FF0000 && fmt->Gmask == 0x0000FF00 && fmt->Rmask == 0x000000FF)
+            return RGBFB_A8B8G8R8;
+        if (fmt->Bmask == 0xFF000000 && fmt->Gmask == 0x00FF0000 && fmt->Rmask == 0x0000FF00)
+            return RGBFB_B8G8R8A8;
     } else if (fmt->BitsPerPixel == 16) {
-		if (get_sdlgfx_type () == SDLGFX_DRIVER_QUARTZ) {
-		    /* The MacOS X port of SDL lies about it's default pixel format
-		     * for high-colour display. It's always R5G5B5. */
-		    return RGBFB_R5G5B5;
-		} else {
-	    	if (fmt->Rmask == 0xf800 && fmt->Gmask == 0x07e0 && fmt->Bmask == 0x001f)
-				return RGBFB_R5G6B5;
-	    	if (fmt->Rmask == 0x7C00 && fmt->Gmask == 0x03e0 && fmt->Bmask == 0x001f)
-				return RGBFB_R5G5B5;
-		}
+        if (get_sdlgfx_type () == SDLGFX_DRIVER_QUARTZ) {
+            /* The MacOS X port of SDL lies about it's default pixel format
+             * for high-colour display. It's always R5G5B5. */
+            return RGBFB_R5G5B5;
+        } else {
+            if (fmt->Rmask == 0xf800 && fmt->Gmask == 0x07e0 && fmt->Bmask == 0x001f)
+                return RGBFB_R5G6B5;
+            if (fmt->Rmask == 0x7C00 && fmt->Gmask == 0x03e0 && fmt->Bmask == 0x001f)
+                return RGBFB_R5G5B5;
+        }
     } else if (fmt->BitsPerPixel == 15) {
-		if (fmt->Rmask == 0x7C00 && fmt->Gmask == 0x03e0 && fmt->Bmask == 0x001f)
-		    return RGBFB_R5G5B5;
+        if (fmt->Rmask == 0x7C00 && fmt->Gmask == 0x03e0 && fmt->Bmask == 0x001f)
+            return RGBFB_R5G5B5;
     }
 #else
     if (fmt->BitsPerPixel == 24) {
-		if (fmt->Rmask == 0x00FF0000 && fmt->Gmask == 0x0000FF00 && fmt->Bmask == 0x000000FF)
-		    return RGBFB_B8G8R8;
-		if (fmt->Rmask == 0x000000FF && fmt->Gmask == 0x0000FF00 && fmt->Bmask == 0x00FF0000)
-		    return RGBFB_R8G8B8;
+        if (fmt->Rmask == 0x00FF0000 && fmt->Gmask == 0x0000FF00 && fmt->Bmask == 0x000000FF)
+            return RGBFB_B8G8R8;
+        if (fmt->Rmask == 0x000000FF && fmt->Gmask == 0x0000FF00 && fmt->Bmask == 0x00FF0000)
+            return RGBFB_R8G8B8;
     } else if (fmt->BitsPerPixel == 32) {
-		if (fmt->Rmask == 0xFF000000 && fmt->Gmask == 0x00FF0000 && fmt->Bmask == 0x0000FF00)
-		    return RGBFB_A8B8G8R8;
-		if (fmt->Rmask == 0x00FF0000 && fmt->Gmask == 0x0000FF00 && fmt->Bmask == 0x000000FF)
-		    return RGBFB_B8G8R8A8;
-		if (fmt->Bmask == 0x00FF0000 && fmt->Gmask == 0x0000FF00 && fmt->Rmask == 0x000000FF)
-		    return RGBFB_R8G8B8A8;
-		if (fmt->Bmask == 0xFF000000 && fmt->Gmask == 0x00FF0000 && fmt->Rmask == 0x0000FF00)
-		    return RGBFB_A8R8G8B8;
+        if (fmt->Rmask == 0xFF000000 && fmt->Gmask == 0x00FF0000 && fmt->Bmask == 0x0000FF00)
+            return RGBFB_A8B8G8R8;
+        if (fmt->Rmask == 0x00FF0000 && fmt->Gmask == 0x0000FF00 && fmt->Bmask == 0x000000FF)
+            return RGBFB_B8G8R8A8;
+        if (fmt->Bmask == 0x00FF0000 && fmt->Gmask == 0x0000FF00 && fmt->Rmask == 0x000000FF)
+            return RGBFB_R8G8B8A8;
+        if (fmt->Bmask == 0xFF000000 && fmt->Gmask == 0x00FF0000 && fmt->Rmask == 0x0000FF00)
+            return RGBFB_A8R8G8B8;
     } else if (fmt->BitsPerPixel == 16) {
-		if (fmt->Rmask == 0xf800 && fmt->Gmask == 0x07e0 && fmt->Bmask == 0x001f)
-		    return RGBFB_R5G6B5PC;
-		if (fmt->Rmask == 0x7C00 && fmt->Gmask == 0x03e0 && fmt->Bmask == 0x001f)
-		    return RGBFB_R5G5B5PC;
+        if (fmt->Rmask == 0xf800 && fmt->Gmask == 0x07e0 && fmt->Bmask == 0x001f)
+            return RGBFB_R5G6B5PC;
+        if (fmt->Rmask == 0x7C00 && fmt->Gmask == 0x03e0 && fmt->Bmask == 0x001f)
+            return RGBFB_R5G5B5PC;
     } else if (fmt->BitsPerPixel == 15) {
-		if (fmt->Rmask == 0x7C00 && fmt->Gmask == 0x03e0 && fmt->Bmask == 0x001f)
-		    return RGBFB_R5G5B5PC;
+        if (fmt->Rmask == 0x7C00 && fmt->Gmask == 0x03e0 && fmt->Bmask == 0x001f)
+            return RGBFB_R5G5B5PC;
     }
 #endif
 
@@ -589,22 +597,22 @@ static long find_screen_modes (struct SDL_PixelFormat *vfmt, SDL_Rect *mode_list
     SDL_Rect **modes = SDL_ListModes (vfmt, SDL_FULLSCREEN | SDL_HWSURFACE);
 
     if (modes != 0 && modes != (SDL_Rect**)-1) {
-		unsigned int i;
-		int w = -1;
-		int h = -1;
+        unsigned int i;
+        int w = -1;
+        int h = -1;
 
-		/* Filter list of modes SDL gave us and ignore duplicates */
-		for (i = 0; modes[i] && count < mode_list_size; i++) {
-		    if (modes[i]->w != w || modes[i]->h != h) {
-				mode_list[count].w = w = modes[i]->w;
-				mode_list[count].h = h = modes[i]->h;
-				count++;
+        /* Filter list of modes SDL gave us and ignore duplicates */
+        for (i = 0; modes[i] && count < mode_list_size; i++) {
+            if (modes[i]->w != w || modes[i]->h != h) {
+                mode_list[count].w = w = modes[i]->w;
+                mode_list[count].h = h = modes[i]->h;
+                count++;
 
-				write_log ("SDLGFX: Found screenmode: %dx%d.\n", w, h);
-	    	}
-		}
+                write_log ("SDLGFX: Found screenmode: %dx%d.\n", w, h);
+            }
+        }
     } else
-		count = (long) modes;
+        count = (long) modes;
 
     return count;
 }
@@ -628,7 +636,7 @@ static int round_up_to_power_of_2 (int value)
     int result = 1;
 
     while (result < value)
-		result *= 2;
+        result *= 2;
 
     return result;
 }
@@ -638,11 +646,11 @@ static void check_gl_extensions (void)
     static int done = 0;
 
     if (!done) {
-		const char *extensions = (const char *) glGetString(GL_EXTENSIONS);
+        const char *extensions = (const char *) glGetString(GL_EXTENSIONS);
 
-		have_texture_rectangles   = strstr (extensions, "ARB_texture_rectangle") ? 1 : 0;
-		have_apple_client_storage = strstr (extensions, "APPLE_client_storage")  ? 1 : 0;
-		have_apple_texture_range  = strstr (extensions, "APPLE_texture_range")   ? 1 : 0;
+        have_texture_rectangles   = strstr (extensions, "ARB_texture_rectangle") ? 1 : 0;
+        have_apple_client_storage = strstr (extensions, "APPLE_client_storage")  ? 1 : 0;
+        have_apple_texture_range  = strstr (extensions, "APPLE_texture_range")   ? 1 : 0;
     }
 }
 
@@ -658,9 +666,9 @@ static void init_gl_display (GLsizei width, GLsizei height)
     glDisable (GL_LIGHTING);
 
     if (have_texture_rectangles)
-		glEnable (GL_TEXTURE_RECTANGLE_ARB);
+        glEnable (GL_TEXTURE_RECTANGLE_ARB);
     else
-		glEnable (GL_TEXTURE_2D);
+        glEnable (GL_TEXTURE_2D);
 
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity ();
@@ -686,28 +694,28 @@ static int alloc_gl_buffer (struct gl_buffer_t *buffer, int width, int height, i
 
     buffer->width          = width;
     if (have_texture_rectangles) {
-		buffer->texture_width  = width;
-		buffer->texture_height = height;
-		buffer->target         = GL_TEXTURE_RECTANGLE_ARB;
+        buffer->texture_width  = width;
+        buffer->texture_height = height;
+        buffer->target         = GL_TEXTURE_RECTANGLE_ARB;
     } else {
-		buffer->texture_width  = round_up_to_power_of_2 (width);
-		buffer->texture_height = round_up_to_power_of_2 (height);
-		buffer->target         = GL_TEXTURE_2D;
+        buffer->texture_width  = round_up_to_power_of_2 (width);
+        buffer->texture_height = round_up_to_power_of_2 (height);
+        buffer->target         = GL_TEXTURE_2D;
     }
 
     /* TODO: Should allocate buffer after we've successfully created the texture */
     if (want_16bit) {
 #if defined (__APPLE__)
-		display = SDL_CreateRGBSurface (SDL_SWSURFACE, buffer->texture_width, buffer->texture_height, 16, 0x00007c00, 0x000003e0, 0x0000001f, 0x00000000);
+        display = SDL_CreateRGBSurface (SDL_SWSURFACE, buffer->texture_width, buffer->texture_height, 16, 0x00007c00, 0x000003e0, 0x0000001f, 0x00000000);
 #else
-		display = SDL_CreateRGBSurface (SDL_SWSURFACE, buffer->texture_width, buffer->texture_height, 16, 0x0000f800, 0x000007e0, 0x0000001f, 0x00000000);
+        display = SDL_CreateRGBSurface (SDL_SWSURFACE, buffer->texture_width, buffer->texture_height, 16, 0x0000f800, 0x000007e0, 0x0000001f, 0x00000000);
 #endif
     } else {
-		display = SDL_CreateRGBSurface (SDL_SWSURFACE, buffer->texture_width, buffer->texture_height, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000);
+        display = SDL_CreateRGBSurface (SDL_SWSURFACE, buffer->texture_width, buffer->texture_height, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000);
     }
 
     if (!display)
-		return 0;
+        return 0;
 
     buffer->pixels = display->pixels;
     buffer->pitch  = display->pitch;
@@ -715,9 +723,9 @@ static int alloc_gl_buffer (struct gl_buffer_t *buffer, int width, int height, i
     glGenTextures   (1, &buffer->texture);
     glBindTexture   (buffer->target, buffer->texture);
     if (have_apple_client_storage)
-		glPixelStorei (GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
+        glPixelStorei (GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
     if (have_apple_texture_range)
-		glTexParameteri (buffer->target, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
+        glTexParameteri (buffer->target, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
 
     glTexParameteri (buffer->target, GL_TEXTURE_WRAP_S, GL_CLAMP);
     glTexParameteri (buffer->target, GL_TEXTURE_WRAP_T, GL_CLAMP);
@@ -725,29 +733,29 @@ static int alloc_gl_buffer (struct gl_buffer_t *buffer, int width, int height, i
     /* TODO: Better method of deciding on the best texture format to use is needed. */
     if (want_16bit) {
 #if defined (__APPLE__)
-		tex_intformat     = GL_RGB5;
-		buffer->format    = GL_BGRA;
-		buffer->type      = GL_UNSIGNED_SHORT_1_5_5_5_REV;
+        tex_intformat     = GL_RGB5;
+        buffer->format    = GL_BGRA;
+        buffer->type      = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 #else
-		tex_intformat     = GL_RGB;
-		buffer->format    = GL_RGB;
-		buffer->type      = GL_UNSIGNED_SHORT_5_6_5;
+        tex_intformat     = GL_RGB;
+        buffer->format    = GL_RGB;
+        buffer->type      = GL_UNSIGNED_SHORT_5_6_5;
 #endif
     } else {
-		tex_intformat     = GL_RGBA8;
-		buffer->format    = GL_BGRA;
-		buffer->type      = GL_UNSIGNED_INT_8_8_8_8_REV;
+        tex_intformat     = GL_RGBA8;
+        buffer->format    = GL_BGRA;
+        buffer->type      = GL_UNSIGNED_INT_8_8_8_8_REV;
     }
 
     glTexImage2D (buffer->target, 0, tex_intformat, buffer->texture_width, buffer->texture_height, 0, buffer->format, buffer->type, buffer->pixels);
 
     if (glGetError () != GL_NO_ERROR) {
-		write_log ("SDLGFX: Failed to allocate texture.\n");
-		free_gl_buffer (buffer);
-		return 0;
+        write_log ("SDLGFX: Failed to allocate texture.\n");
+        free_gl_buffer (buffer);
+        return 0;
     }
     else
-		return 1;
+        return 1;
 }
 
 void flush_gl_buffer (const struct gl_buffer_t *buffer, int first_line, int last_line)
@@ -768,47 +776,47 @@ void render_gl_buffer (const struct gl_buffer_t *buffer, int first_line, int las
     if (currprefs.leds_on_screen) bottomledspace=14; //reserve some space for drawing leds
 
     if (currprefs.gfx_lores_mode) {
-		amiga_real_w = 362;
+        amiga_real_w = 362;
     } else {
-		amiga_real_w = 724;
+        amiga_real_w = 724;
     }
     if (currprefs.gfx_vresolution) {
-		amiga_real_h = 568;
+        amiga_real_h = 568;
     } else {
-		amiga_real_h = 284;
+        amiga_real_h = 284;
     }
 
     if ((current_width >= amiga_real_w ) &&  (current_height >= amiga_real_h )  && (!screen_is_picasso)  ) {
-		right_crop	= (current_width - amiga_real_w);
-		left_crop	= 0;
-		bottom_crop	= (current_height - amiga_real_h);
-		top_crop	= 0;
+        right_crop  = (current_width - amiga_real_w);
+        left_crop   = 0;
+        bottom_crop = (current_height - amiga_real_h);
+        top_crop    = 0;
 
-		bottom_crop		= bottom_crop - bottomledspace ;
+        bottom_crop     = bottom_crop - bottomledspace ;
     } else {
-		right_crop = 0;
-		left_crop = 0;
-		bottom_crop = 0;
-		top_crop = 0;
+        right_crop = 0;
+        left_crop = 0;
+        bottom_crop = 0;
+        top_crop = 0;
     }
 
     if (have_texture_rectangles) {
-		tx0 = 			      left_crop;
-		tx1 = (float) buffer->width - right_crop;
-		ty0 = (float) first_line + top_crop;
-		ty1 = (float) last_line - bottom_crop;
+        tx0 =                 left_crop;
+        tx1 = (float) buffer->width - right_crop;
+        ty0 = (float) first_line + top_crop;
+        ty1 = (float) last_line - bottom_crop;
     } else {
-		tx0 = 0.0f;
-		ty0 = (float) first_line    / (float) buffer->texture_height;
-		tx1 = (float) buffer->width / (float) buffer->texture_width;
-		ty1 = (float) last_line     / (float) buffer->texture_height;
+        tx0 = 0.0f;
+        ty0 = (float) first_line    / (float) buffer->texture_height;
+        tx1 = (float) buffer->width / (float) buffer->texture_width;
+        ty1 = (float) last_line     / (float) buffer->texture_height;
     }
 
     glBegin (GL_QUADS);
-	glTexCoord2f (tx0, ty0); glVertex2f (0.0f,                  (float) first_line);
-	glTexCoord2f (tx1, ty0); glVertex2f ((float) buffer->width, (float) first_line);
-	glTexCoord2f (tx1, ty1); glVertex2f ((float) buffer->width, (float) last_line);
-	glTexCoord2f (tx0, ty1); glVertex2f (0.0f,                  (float) last_line);
+    glTexCoord2f (tx0, ty0); glVertex2f (0.0f,                  (float) first_line);
+    glTexCoord2f (tx1, ty0); glVertex2f ((float) buffer->width, (float) first_line);
+    glTexCoord2f (tx1, ty1); glVertex2f ((float) buffer->width, (float) last_line);
+    glTexCoord2f (tx0, ty1); glVertex2f (0.0f,                  (float) last_line);
     glEnd ();
 }
 
@@ -853,16 +861,16 @@ static int sdl_lock (struct vidbuf_description *gfxinfo)
     DEBUG_LOG ("Function: lock\n");
 
     if (SDL_LockSurface (display) == 0) {
-		gfxinfo->bufmem   = display->pixels;
-		gfxinfo->rowbytes = display->pitch;
+        gfxinfo->bufmem   = display->pixels;
+        gfxinfo->rowbytes = display->pitch;
 
-		if (display->pixels != old_pixels) {
-			/* If the address of the pixel data has
-			 * changed, recalculate the row maps */
-		    init_row_map ();
-		    old_pixels = display->pixels;
-		}
-		success = 1;
+        if (display->pixels != old_pixels) {
+            /* If the address of the pixel data has
+             * changed, recalculate the row maps */
+            init_row_map ();
+            old_pixels = display->pixels;
+        }
+        success = 1;
     }
     return success;
 }
@@ -911,9 +919,9 @@ static void sdl_flush_clear_screen (struct vidbuf_description *gfxinfo)
     DEBUG_LOG ("Function: flush_clear_screen\n");
 
     if (display) {
-		SDL_Rect rect = { 0, 0, display->w, display->h };
-		SDL_FillRect (display, &rect, SDL_MapRGB (display->format, 0,0,0));
-		SDL_UpdateRect (display, 0, 0, rect.w, rect.h);
+        SDL_Rect rect = { 0, 0, display->w, display->h };
+        SDL_FillRect (display, &rect, SDL_MapRGB (display->format, 0,0,0));
+        SDL_UpdateRect (display, 0, 0, rect.w, rect.h);
     }
 }
 
@@ -974,10 +982,10 @@ static void sdl_gl_flush_clear_screen (struct vidbuf_description *gfxinfo)
     DEBUG_LOG ("Function: sdl_gl_flush_clear_screen\n");
 
     if (display) {
-		glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		SDL_GL_SwapBuffers ();
-		glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		SDL_GL_SwapBuffers ();
+        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        SDL_GL_SwapBuffers ();
+        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        SDL_GL_SwapBuffers ();
     }
 }
 
@@ -989,24 +997,24 @@ int graphics_setup (void)
 
     if (SDL_InitSubSystem (SDL_INIT_VIDEO) == 0) {
 
-		const SDL_version   *version = SDL_Linked_Version ();
-		const SDL_VideoInfo *info    = SDL_GetVideoInfo ();
+        const SDL_version   *version = SDL_Linked_Version ();
+        const SDL_VideoInfo *info    = SDL_GetVideoInfo ();
 
-		write_log ("SDLGFX: Initialized.\n");
-		write_log ("SDLGFX: Using SDL version %d.%d.%d.\n", version->major, version->minor, version->patch);
+        write_log ("SDLGFX: Initialized.\n");
+        write_log ("SDLGFX: Using SDL version %d.%d.%d.\n", version->major, version->minor, version->patch);
 
-		/* Find default display depth */
-		bitdepth = info->vfmt->BitsPerPixel;
-		bit_unit = info->vfmt->BytesPerPixel * 8;
+        /* Find default display depth */
+        bitdepth = info->vfmt->BitsPerPixel;
+        bit_unit = info->vfmt->BytesPerPixel * 8;
 
-		write_log ("SDLGFX: Display is %d bits deep.\n", bitdepth);
+        write_log ("SDLGFX: Display is %d bits deep.\n", bitdepth);
 
-		/* Build list of screenmodes */
-		mode_count = find_screen_modes (info->vfmt, &screenmode[0], MAX_SDL_SCREENMODE);
+        /* Build list of screenmodes */
+        mode_count = find_screen_modes (info->vfmt, &screenmode[0], MAX_SDL_SCREENMODE);
 
-		result = 1;
+        result = 1;
     } else
-		write_log ("SDLGFX: initialization failed - %s\n", SDL_GetError());
+        write_log ("SDLGFX: initialization failed - %s\n", SDL_GetError());
 
     return result;
 }
@@ -1033,124 +1041,124 @@ static int graphics_subinit_gl (void)
      */
 #if SDL_VERSION_ATLEAST(1, 2, 10)
     if (!screen_is_picasso) {
-		DEBUG_LOG ("Want double-buffering.\n");
-		SDL_GL_SetAttribute (SDL_GL_DOUBLEBUFFER, 1);
-		SDL_GL_SetAttribute (SDL_GL_SWAP_CONTROL, 1);
+        DEBUG_LOG ("Want double-buffering.\n");
+        SDL_GL_SetAttribute (SDL_GL_DOUBLEBUFFER, 1);
+        SDL_GL_SetAttribute (SDL_GL_SWAP_CONTROL, 1);
     } else {
-		SDL_GL_SetAttribute (SDL_GL_DOUBLEBUFFER, 0);
-		SDL_GL_SetAttribute (SDL_GL_SWAP_CONTROL, 0);
+        SDL_GL_SetAttribute (SDL_GL_DOUBLEBUFFER, 0);
+        SDL_GL_SetAttribute (SDL_GL_SWAP_CONTROL, 0);
     }
 #else
     SDL_GL_SetAttribute (SDL_GL_DOUBLEBUFFER, 0);
 #endif
 
     if (bitdepth <= 16 || (!screen_is_picasso && !(currprefs.chipset_mask & CSMASK_AGA))) {
-		DEBUG_LOG ("Want 16-bit framebuffer.\n");
-		SDL_GL_SetAttribute (SDL_GL_RED_SIZE,   5);
-		SDL_GL_SetAttribute (SDL_GL_GREEN_SIZE, 5);
-		SDL_GL_SetAttribute (SDL_GL_BLUE_SIZE,  5);
-		want_16bit = 1;
+        DEBUG_LOG ("Want 16-bit framebuffer.\n");
+        SDL_GL_SetAttribute (SDL_GL_RED_SIZE,   5);
+        SDL_GL_SetAttribute (SDL_GL_GREEN_SIZE, 5);
+        SDL_GL_SetAttribute (SDL_GL_BLUE_SIZE,  5);
+        want_16bit = 1;
     } else {
-		SDL_GL_SetAttribute (SDL_GL_RED_SIZE,   8);
-		SDL_GL_SetAttribute (SDL_GL_GREEN_SIZE, 8);
-		SDL_GL_SetAttribute (SDL_GL_BLUE_SIZE,  8);
-		want_16bit = 0;
+        SDL_GL_SetAttribute (SDL_GL_RED_SIZE,   8);
+        SDL_GL_SetAttribute (SDL_GL_GREEN_SIZE, 8);
+        SDL_GL_SetAttribute (SDL_GL_BLUE_SIZE,  8);
+        want_16bit = 0;
     }
 
     // TODO: introduce a virtual resolution with scaling
     uiSDLVidModFlags = SDL_OPENGL;
     if (fullscreen) {
-		uiSDLVidModFlags |= SDL_FULLSCREEN;
+        uiSDLVidModFlags |= SDL_FULLSCREEN;
     }
     DEBUG_LOG ("Resolution: %d x %d \n", current_width, current_height);
     screen = SDL_SetVideoMode (current_width, current_height, 0, uiSDLVidModFlags);
 
     if (screen == NULL) {
-		gui_message ("Unable to set video mode: %s\n", SDL_GetError ());
-		return 0;
+        gui_message ("Unable to set video mode: %s\n", SDL_GetError ());
+        return 0;
     } else {
-	/* Just in case we didn't get exactly what we asked for . . . */
-	fullscreen   = ((screen->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN);
-	is_hwsurface = 0;
+    /* Just in case we didn't get exactly what we asked for . . . */
+    fullscreen   = ((screen->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN);
+    is_hwsurface = 0;
 
-	/* Are these values what we expected? */
+    /* Are these values what we expected? */
 #ifdef PICASSO96
-	DEBUG_LOG ("P96 screen?    : %d\n", screen_is_picasso);
+    DEBUG_LOG ("P96 screen?    : %d\n", screen_is_picasso);
 #endif
-	DEBUG_LOG ("Fullscreen?    : %d\n", fullscreen);
-	DEBUG_LOG ("Mouse grabbed? : %d\n", mousegrab);
-	DEBUG_LOG ("HW surface?    : %d\n", is_hwsurface);
-	DEBUG_LOG ("Must lock?     : %d\n", SDL_MUSTLOCK (screen));
-	DEBUG_LOG ("Bytes per Pixel: %d\n", screen->format->BytesPerPixel);
-	DEBUG_LOG ("Bytes per Line : %d\n", screen->pitch);
+    DEBUG_LOG ("Fullscreen?    : %d\n", fullscreen);
+    DEBUG_LOG ("Mouse grabbed? : %d\n", mousegrab);
+    DEBUG_LOG ("HW surface?    : %d\n", is_hwsurface);
+    DEBUG_LOG ("Must lock?     : %d\n", SDL_MUSTLOCK (screen));
+    DEBUG_LOG ("Bytes per Pixel: %d\n", screen->format->BytesPerPixel);
+    DEBUG_LOG ("Bytes per Line : %d\n", screen->pitch);
 
-	SDL_GL_GetAttribute (SDL_GL_DOUBLEBUFFER, &dblbuff);
+    SDL_GL_GetAttribute (SDL_GL_DOUBLEBUFFER, &dblbuff);
 #if SDL_VERSION_ATLEAST(1, 2, 10)
-	if (dblbuff)
-	    SDL_GL_GetAttribute (SDL_GL_SWAP_CONTROL, &vsync);
+    if (dblbuff)
+        SDL_GL_GetAttribute (SDL_GL_SWAP_CONTROL, &vsync);
 #endif
 
-	if (!vsync)
-	    write_log ("SDLGFX: vsynced output not supported.\n");
+    if (!vsync)
+        write_log ("SDLGFX: vsynced output not supported.\n");
 
-	gfxvidinfo.lockscr = sdl_gl_lock;
-	gfxvidinfo.unlockscr = sdl_gl_unlock;
-	gfxvidinfo.flush_block = sdl_gl_flush_block;
-	gfxvidinfo.flush_clear_screen = sdl_gl_flush_clear_screen;
+    gfxvidinfo.lockscr = sdl_gl_lock;
+    gfxvidinfo.unlockscr = sdl_gl_unlock;
+    gfxvidinfo.flush_block = sdl_gl_flush_block;
+    gfxvidinfo.flush_clear_screen = sdl_gl_flush_clear_screen;
 
-	if (dblbuff) {
-	    if (vsync) {
-			write_log ("SDLGFX: Using double-buffered, vsynced output.\n");
-			gfxvidinfo.flush_screen = sdl_gl_flush_screen_vsync;
-	    } else {
-			write_log ("SDLGFX: Using double-buffered, unsynced output.\n");
-			gfxvidinfo.flush_screen = sdl_gl_flush_screen_dbl;
-	    }
-	} else {
-	    write_log ("SDLGFX: Using single-buffered output.\n");
-	    gfxvidinfo.flush_screen = sdl_gl_flush_screen;
-	}
+    if (dblbuff) {
+        if (vsync) {
+            write_log ("SDLGFX: Using double-buffered, vsynced output.\n");
+            gfxvidinfo.flush_screen = sdl_gl_flush_screen_vsync;
+        } else {
+            write_log ("SDLGFX: Using double-buffered, unsynced output.\n");
+            gfxvidinfo.flush_screen = sdl_gl_flush_screen_dbl;
+        }
+    } else {
+        write_log ("SDLGFX: Using single-buffered output.\n");
+        gfxvidinfo.flush_screen = sdl_gl_flush_screen;
+    }
 
-	check_gl_extensions ();
+    check_gl_extensions ();
 
-	init_gl_display (current_width, current_height);
-	if (!alloc_gl_buffer (&glbuffer, current_width, current_height, want_16bit))
-	    return 0;
+    init_gl_display (current_width, current_height);
+    if (!alloc_gl_buffer (&glbuffer, current_width, current_height, want_16bit))
+        return 0;
 
 #ifdef PICASSO96
-	if (!screen_is_picasso) {
+    if (!screen_is_picasso) {
 #endif
-	    gfxvidinfo.bufmem = display->pixels;
-	    gfxvidinfo.emergmem = 0;
-	    gfxvidinfo.maxblocklines = MAXBLOCKLINES_MAX;
-	    gfxvidinfo.linemem = 0;
-	    gfxvidinfo.pixbytes = display->format->BytesPerPixel;
-	    gfxvidinfo.rowbytes = display->pitch;
-	    SDL_SetColors (display, arSDLColors, 0, 256);
-	    reset_drawing ();
-	    old_pixels = (void *) -1;
+        gfxvidinfo.bufmem = display->pixels;
+        gfxvidinfo.emergmem = 0;
+        gfxvidinfo.maxblocklines = MAXBLOCKLINES_MAX;
+        gfxvidinfo.linemem = 0;
+        gfxvidinfo.pixbytes = display->format->BytesPerPixel;
+        gfxvidinfo.rowbytes = display->pitch;
+        SDL_SetColors (display, arSDLColors, 0, 256);
+        reset_drawing ();
+        old_pixels = (void *) -1;
 #ifdef PICASSO96
-	} else {
-	    /* Initialize structure for Picasso96 video modes */
-	    picasso_vidinfo.rowbytes	= display->pitch;
-	    picasso_vidinfo.extra_mem	= 1;
-	    picasso_vidinfo.depth	= bitdepth;
-	    picasso_has_invalid_lines	= 0;
-	    picasso_invalid_start	= picasso_vidinfo.height + 1;
-	    picasso_invalid_stop	= -1;
-	    memset (picasso_invalid_lines, 0, sizeof picasso_invalid_lines);
-	    refresh_necessary           = 1;
-	}
+    } else {
+        /* Initialize structure for Picasso96 video modes */
+        picasso_vidinfo.rowbytes    = display->pitch;
+        picasso_vidinfo.extra_mem   = 1;
+        picasso_vidinfo.depth   = bitdepth;
+        picasso_has_invalid_lines   = 0;
+        picasso_invalid_start   = picasso_vidinfo.height + 1;
+        picasso_invalid_stop    = -1;
+        memset (picasso_invalid_lines, 0, sizeof picasso_invalid_lines);
+        refresh_necessary           = 1;
+    }
 #endif
     }
 
-	gfxvidinfo.emergmem = scrlinebuf; // memcpy from system-memory to video-memory
+    gfxvidinfo.emergmem = scrlinebuf; // memcpy from system-memory to video-memory
 
-	//xfree (gfxvidinfo.realbufmem);
-	gfxvidinfo.realbufmem = NULL;
-//	gfxvidinfo.bufmem = NULL;
-	gfxvidinfo.bufmem_allocated = NULL;
-	gfxvidinfo.bufmem_lockable = false;
+    //xfree (gfxvidinfo.realbufmem);
+    gfxvidinfo.realbufmem = NULL;
+//  gfxvidinfo.bufmem = NULL;
+    gfxvidinfo.bufmem_allocated = NULL;
+    gfxvidinfo.bufmem_lockable = false;
 
     return 1;
 }
@@ -1161,8 +1169,8 @@ static int graphics_subinit (void)
 {
 #ifdef USE_GL
     if (currprefs.use_gl) {
-		if (graphics_subinit_gl () == 0)
-			return 0;
+        if (graphics_subinit_gl () == 0)
+            return 0;
     } else {
 #endif /* USE_GL */
 
@@ -1171,11 +1179,11 @@ static int graphics_subinit (void)
     DEBUG_LOG ("Function: graphics_subinit\n");
 
     if (bitdepth == 8)
-	uiSDLVidModFlags |= SDL_HWPALETTE;
+    uiSDLVidModFlags |= SDL_HWPALETTE;
     if (fullscreen) {
-		uiSDLVidModFlags |= SDL_FULLSCREEN | SDL_HWSURFACE;
+        uiSDLVidModFlags |= SDL_FULLSCREEN | SDL_HWSURFACE;
         if (!screen_is_picasso)
-		    uiSDLVidModFlags |= SDL_DOUBLEBUF;
+            uiSDLVidModFlags |= SDL_DOUBLEBUF;
     }
 
     DEBUG_LOG ("Resolution: %d x %d x %d\n", current_width, current_height, bitdepth);
@@ -1183,88 +1191,88 @@ static int graphics_subinit (void)
     screen = SDL_SetVideoMode (current_width, current_height, bitdepth, uiSDLVidModFlags);
 
     if (screen == NULL) {
-		gui_message ("Unable to set video mode: %s\n", SDL_GetError ());
-		return 0;
+        gui_message ("Unable to set video mode: %s\n", SDL_GetError ());
+        return 0;
     } else {
-		/* Just in case we didn't get exactly what we asked for . . . */
-		fullscreen   = ((screen->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN);
-		is_hwsurface = ((screen->flags & SDL_HWSURFACE)  == SDL_HWSURFACE);
+        /* Just in case we didn't get exactly what we asked for . . . */
+        fullscreen   = ((screen->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN);
+        is_hwsurface = ((screen->flags & SDL_HWSURFACE)  == SDL_HWSURFACE);
 
-		/* We assume that double-buffering is vsynced, but we have no way of
-		 * knowing if it really is. */
-		vsync        = ((screen->flags & SDL_DOUBLEBUF) == SDL_DOUBLEBUF);
+        /* We assume that double-buffering is vsynced, but we have no way of
+         * knowing if it really is. */
+        vsync        = ((screen->flags & SDL_DOUBLEBUF) == SDL_DOUBLEBUF);
 
-		/* Are these values what we expected? */
+        /* Are these values what we expected? */
 #ifdef PICASSO96
-	DEBUG_LOG ("P96 screen?    : %d\n", screen_is_picasso);
+    DEBUG_LOG ("P96 screen?    : %d\n", screen_is_picasso);
 #endif
-	DEBUG_LOG ("Fullscreen?    : %d\n", fullscreen);
-	DEBUG_LOG ("Mouse grabbed? : %d\n", mousegrab);
-	DEBUG_LOG ("HW surface?    : %d\n", is_hwsurface);
-	DEBUG_LOG ("Must lock?     : %d\n", SDL_MUSTLOCK (screen));
-	DEBUG_LOG ("Bytes per Pixel: %d\n", screen->format->BytesPerPixel);
-	DEBUG_LOG ("Bytes per Line : %d\n", screen->pitch);
+    DEBUG_LOG ("Fullscreen?    : %d\n", fullscreen);
+    DEBUG_LOG ("Mouse grabbed? : %d\n", mousegrab);
+    DEBUG_LOG ("HW surface?    : %d\n", is_hwsurface);
+    DEBUG_LOG ("Must lock?     : %d\n", SDL_MUSTLOCK (screen));
+    DEBUG_LOG ("Bytes per Pixel: %d\n", screen->format->BytesPerPixel);
+    DEBUG_LOG ("Bytes per Line : %d\n", screen->pitch);
 
-	/* Set up buffer methods */
-	if (SDL_MUSTLOCK (screen)) {
-	    gfxvidinfo.lockscr     = sdl_lock;
-	    gfxvidinfo.unlockscr   = sdl_unlock;
-	    gfxvidinfo.flush_block = sdl_flush_block;
-	} else {
-	    gfxvidinfo.lockscr     = sdl_lock_nolock;
-	    gfxvidinfo.unlockscr   = sdl_unlock_nolock;
-	    gfxvidinfo.flush_block = sdl_flush_block_nolock;
-	}
-	gfxvidinfo.flush_clear_screen = sdl_flush_clear_screen;
+    /* Set up buffer methods */
+    if (SDL_MUSTLOCK (screen)) {
+        gfxvidinfo.lockscr     = sdl_lock;
+        gfxvidinfo.unlockscr   = sdl_unlock;
+        gfxvidinfo.flush_block = sdl_flush_block;
+    } else {
+        gfxvidinfo.lockscr     = sdl_lock_nolock;
+        gfxvidinfo.unlockscr   = sdl_unlock_nolock;
+        gfxvidinfo.flush_block = sdl_flush_block_nolock;
+    }
+    gfxvidinfo.flush_clear_screen = sdl_flush_clear_screen;
 
 
-	if (vsync) {
-	    display = SDL_CreateRGBSurface(SDL_HWSURFACE, screen->w, screen->h, screen->format->BitsPerPixel, screen->format->Rmask, screen->format->Gmask, screen->format->Bmask, 0);
-	    gfxvidinfo.flush_screen = sdl_flush_screen_flip;
-	} else {
-	    display = screen;
-	    gfxvidinfo.flush_screen = sdl_flush_screen_dummy;
-	}
+    if (vsync) {
+        display = SDL_CreateRGBSurface(SDL_HWSURFACE, screen->w, screen->h, screen->format->BitsPerPixel, screen->format->Rmask, screen->format->Gmask, screen->format->Bmask, 0);
+        gfxvidinfo.flush_screen = sdl_flush_screen_flip;
+    } else {
+        display = screen;
+        gfxvidinfo.flush_screen = sdl_flush_screen_dummy;
+    }
 
 #ifdef PICASSO96
-	if (!screen_is_picasso) {
+    if (!screen_is_picasso) {
 #endif
-	    /* Initialize structure for Amiga video modes */
-	    if (is_hwsurface) {
-			SDL_LockSurface (display);
-			gfxvidinfo.bufmem	 = 0;
-			gfxvidinfo.emergmem	 = malloc (display->pitch);
-			SDL_UnlockSurface (display);
-	    }
+        /* Initialize structure for Amiga video modes */
+        if (is_hwsurface) {
+            SDL_LockSurface (display);
+            gfxvidinfo.bufmem    = 0;
+            gfxvidinfo.emergmem  = malloc (display->pitch);
+            SDL_UnlockSurface (display);
+        }
 
-	    if (!is_hwsurface) {
-			gfxvidinfo.bufmem	 = display->pixels;
-			gfxvidinfo.emergmem	 = 0;
-	    }
-	    gfxvidinfo.maxblocklines    = MAXBLOCKLINES_MAX;
-	    gfxvidinfo.linemem		= 0;
-	    gfxvidinfo.pixbytes		= display->format->BytesPerPixel;
-	    gfxvidinfo.rowbytes		= display->pitch;
+        if (!is_hwsurface) {
+            gfxvidinfo.bufmem    = display->pixels;
+            gfxvidinfo.emergmem  = 0;
+        }
+        gfxvidinfo.maxblocklines    = MAXBLOCKLINES_MAX;
+        gfxvidinfo.linemem      = 0;
+        gfxvidinfo.pixbytes     = display->format->BytesPerPixel;
+        gfxvidinfo.rowbytes     = display->pitch;
 
 
-	    SDL_SetColors (display, arSDLColors, 0, 256);
+        SDL_SetColors (display, arSDLColors, 0, 256);
 
-	    reset_drawing ();
+        reset_drawing ();
 
-	    /* Force recalculation of row maps - if we're locking */
-	    old_pixels = (void *)-1;
+        /* Force recalculation of row maps - if we're locking */
+        old_pixels = (void *)-1;
 #ifdef PICASSO96
-	} else {
-	    /* Initialize structure for Picasso96 video modes */
-	    picasso_vidinfo.rowbytes	= display->pitch;
-	    picasso_vidinfo.extra_mem	= 1;
-	    picasso_vidinfo.depth	= bitdepth;
-	    picasso_has_invalid_lines	= 0;
-	    picasso_invalid_start	= picasso_vidinfo.height + 1;
-	    picasso_invalid_stop	= -1;
+    } else {
+        /* Initialize structure for Picasso96 video modes */
+        picasso_vidinfo.rowbytes    = display->pitch;
+        picasso_vidinfo.extra_mem   = 1;
+        picasso_vidinfo.depth   = bitdepth;
+        picasso_has_invalid_lines   = 0;
+        picasso_invalid_start   = picasso_vidinfo.height + 1;
+        picasso_invalid_stop    = -1;
 
-	    memset (picasso_invalid_lines, 0, sizeof picasso_invalid_lines);
-	}
+        memset (picasso_invalid_lines, 0, sizeof picasso_invalid_lines);
+    }
 #endif
     }
 
@@ -1279,9 +1287,9 @@ static int graphics_subinit (void)
     /* Mouse is now always grabbed when full-screen - to work around
      * problems with full-screen mouse input in some SDL implementations */
     if (fullscreen)
-		SDL_WM_GrabInput (SDL_GRAB_ON);
+        SDL_WM_GrabInput (SDL_GRAB_ON);
     else
-		SDL_WM_GrabInput (mousegrab ? SDL_GRAB_ON : SDL_GRAB_OFF);
+        SDL_WM_GrabInput (mousegrab ? SDL_GRAB_ON : SDL_GRAB_OFF);
 
     /* Hide mouse cursor */
     SDL_ShowCursor (currprefs.hide_cursor || fullscreen || mousegrab ? SDL_DISABLE : SDL_ENABLE);
@@ -1290,7 +1298,7 @@ static int graphics_subinit (void)
 
     inputdevice_release_all_keys ();
     reset_hotkeys ();
-	init_colors ();
+    init_colors ();
 
     return 1;
 }
@@ -1302,8 +1310,8 @@ int graphics_init (void)
     DEBUG_LOG ("Function: graphics_init\n");
 
     if (currprefs.color_mode > 5) {
-		write_log ("Bad color mode selected. Using default.\n");
-		currprefs.color_mode = 0;
+        write_log ("Bad color mode selected. Using default.\n");
+        currprefs.color_mode = 0;
     }
 
 #ifdef PICASSO96
@@ -1319,12 +1327,12 @@ int graphics_init (void)
     current_height = currprefs.gfx_size_win.height;
 
     if (find_best_mode (&current_width, &current_height, bitdepth, fullscreen)) {
-	gfxvidinfo.width_allocated = current_width;
-	gfxvidinfo.height_allocated = current_height;
+    gfxvidinfo.width_allocated = current_width;
+    gfxvidinfo.height_allocated = current_height;
 
-	if (graphics_subinit ()) {
-	    success = 1;
-	}
+    if (graphics_subinit ()) {
+        success = 1;
+    }
     }
     return success;
 }
@@ -1335,13 +1343,13 @@ static void graphics_subshutdown (void)
 
 #ifdef USE_GL
     if (currprefs.use_gl)
-	free_gl_buffer (&glbuffer);
+    free_gl_buffer (&glbuffer);
     else
 #endif /* USE_GL */
     {
-	SDL_FreeSurface (display);
-	if (display != screen)
-	    SDL_FreeSurface (screen);
+    SDL_FreeSurface (display);
+    if (display != screen)
+        SDL_FreeSurface (screen);
     }
     display = screen = 0;
     mousehack = 0;
@@ -1352,14 +1360,14 @@ static void graphics_subshutdown (void)
 // This breaks catastrophically on some systems. Better work-around needed.
 #ifdef USE_GL
     if (currprefs.use_gl) {
-	/*
-	 * Nasty work-around.
-	 *
-	 * We don't seem to be able reset GL attributes such as
-	 * SDL_GL_DOUBLEBUFFER unless we tear down the video driver.
-	 */
-	SDL_QuitSubSystem(SDL_INIT_VIDEO);
-	SDL_InitSubSystem(SDL_INIT_VIDEO);
+    /*
+     * Nasty work-around.
+     *
+     * We don't seem to be able reset GL attributes such as
+     * SDL_GL_DOUBLEBUFFER unless we tear down the video driver.
+     */
+    SDL_QuitSubSystem(SDL_INIT_VIDEO);
+    SDL_InitSubSystem(SDL_INIT_VIDEO);
     }
 #endif
 #endif
@@ -1377,303 +1385,303 @@ void graphics_leave (void)
 void graphics_notify_state (int state)
 {
     if (last_state != state) {
-	last_state = state;
-	if (display)
-	    setmaintitle ();
+    last_state = state;
+    if (display)
+        setmaintitle ();
     }
 }
 
 bool handle_events (void)
 {
     SDL_Event rEvent = { SDL_NOEVENT };
-	int istest = inputdevice_istest ();
-	int scancode     = 0;
+    int istest = inputdevice_istest ();
+    int scancode     = 0;
 
     while (SDL_PollEvent (&rEvent)) {
-	switch (rEvent.type) {
-	    case SDL_QUIT:
-			DEBUG_LOG ("Event: quit\n");
-			uae_quit ();
-			break;
+    switch (rEvent.type) {
+        case SDL_QUIT:
+            DEBUG_LOG ("Event: quit\n");
+            uae_quit ();
+            break;
 
-	    case SDL_MOUSEBUTTONDOWN:
-	    case SDL_MOUSEBUTTONUP: {
-			int state = (rEvent.type == SDL_MOUSEBUTTONDOWN);
-			int buttonno = -1;
+        case SDL_MOUSEBUTTONDOWN:
+        case SDL_MOUSEBUTTONUP: {
+            int state = (rEvent.type == SDL_MOUSEBUTTONDOWN);
+            int buttonno = -1;
 
-			DEBUG_LOG ("Event: mouse button %d %s\n", rEvent.button.button, state ? "down" : "up");
+            DEBUG_LOG ("Event: mouse button %d %s\n", rEvent.button.button, state ? "down" : "up");
 
-			switch (rEvent.button.button) {
-			    case SDL_BUTTON_LEFT:      buttonno = 0; break;
-			    case SDL_BUTTON_MIDDLE:    buttonno = 2; break;
-			    case SDL_BUTTON_RIGHT:     buttonno = 1; break;
+            switch (rEvent.button.button) {
+                case SDL_BUTTON_LEFT:      buttonno = 0; break;
+                case SDL_BUTTON_MIDDLE:    buttonno = 2; break;
+                case SDL_BUTTON_RIGHT:     buttonno = 1; break;
 #ifdef SDL_BUTTON_WHEELUP
-			    case SDL_BUTTON_WHEELUP:   if (state) record_key (0x7a << 1); break;
-			    case SDL_BUTTON_WHEELDOWN: if (state) record_key (0x7b << 1); break;
+                case SDL_BUTTON_WHEELUP:   if (state) record_key (0x7a << 1); break;
+                case SDL_BUTTON_WHEELDOWN: if (state) record_key (0x7b << 1); break;
 #endif
-			}
-			if (buttonno >= 0)
-			    setmousebuttonstate (0, buttonno, rEvent.type == SDL_MOUSEBUTTONDOWN ? 1:0);
-				break;
-		    }
+            }
+            if (buttonno >= 0)
+                setmousebuttonstate (0, buttonno, rEvent.type == SDL_MOUSEBUTTONDOWN ? 1:0);
+                break;
+            }
 
-	    case SDL_KEYUP:
-	    case SDL_KEYDOWN: {
-			int state = (rEvent.type == SDL_KEYDOWN);
-			int keycode;
-			int ievent;
+        case SDL_KEYUP:
+        case SDL_KEYDOWN: {
+            int state = (rEvent.type == SDL_KEYDOWN);
+            int keycode;
+            int ievent;
 
-			// Hack -- Alt + Tab
+            // Hack -- Alt + Tab
 /*
-			if (rEvent.key.keysym.sym == SDLK_LALT) alt_pressed = rEvent.key.type;
-			if (rEvent.key.keysym.sym == SDLK_RALT) alt_pressed = rEvent.key.type;
-			if ((rEvent.key.keysym.sym == SDLK_TAB) && (alt_pressed == SDL_KEYDOWN)) {
-				alt_pressed = SDL_KEYUP;
+            if (rEvent.key.keysym.sym == SDLK_LALT) alt_pressed = rEvent.key.type;
+            if (rEvent.key.keysym.sym == SDLK_RALT) alt_pressed = rEvent.key.type;
+            if ((rEvent.key.keysym.sym == SDLK_TAB) && (alt_pressed == SDL_KEYDOWN)) {
+                alt_pressed = SDL_KEYUP;
 
-				if (mouse_capture) {
-			                SDL_WM_GrabInput(SDL_GRAB_ON);
-			                SDL_ShowCursor(SDL_DISABLE);
-			        } else {
-			                SDL_WM_GrabInput(SDL_GRAB_OFF);
-			                SDL_ShowCursor(SDL_ENABLE);
-			        }
-				break;
-			}
+                if (mouse_capture) {
+                            SDL_WM_GrabInput(SDL_GRAB_ON);
+                            SDL_ShowCursor(SDL_DISABLE);
+                    } else {
+                            SDL_WM_GrabInput(SDL_GRAB_OFF);
+                            SDL_ShowCursor(SDL_ENABLE);
+                    }
+                break;
+            }
 */
 #if 0
 //fixme
-			if (currprefs.map_raw_keys) {
-			    keycode = rEvent.key.keysym.scancode;
-			    // Hack - OS4 keyup events have bit 7 set.
+            if (currprefs.map_raw_keys) {
+                keycode = rEvent.key.keysym.scancode;
+                // Hack - OS4 keyup events have bit 7 set.
 #ifdef TARGET_AMIGAOS
-				keycode &= 0x7F;
+                keycode &= 0x7F;
 #endif
-			    modifier_hack (&keycode, &state);
-			} else
-			    keycode = rEvent.key.keysym.sym;
+                modifier_hack (&keycode, &state);
+            } else
+                keycode = rEvent.key.keysym.sym;
 #endif
-			    keycode = rEvent.key.keysym.sym;
+                keycode = rEvent.key.keysym.sym;
 
-//				write_log ("Event: key: %d to: %d  %s\n", keycode, sdlk2dik (keycode), state ? "down" : "up");
-/*				if (!istest)
-					scancode = keyhack (keycode, state, 0);
-				if (scancode < 0)
-					continue;*/
-				di_keycodes[0][keycode] = state;
-				my_kbd_handler (0, sdlk2dik (keycode), state);
-				break;
-		}
+//              write_log ("Event: key: %d to: %d  %s\n", keycode, sdlk2dik (keycode), state ? "down" : "up");
+/*              if (!istest)
+                    scancode = keyhack (keycode, state, 0);
+                if (scancode < 0)
+                    continue;*/
+                di_keycodes[0][keycode] = state;
+                my_kbd_handler (0, sdlk2dik (keycode), state);
+                break;
+        }
 
-	    case SDL_MOUSEMOTION:
-			DEBUG_LOG ("Event: mouse motion\n");
+        case SDL_MOUSEMOTION:
+            //DEBUG_LOG ("Event: mouse motion\n");
 
-			if (!fullscreen && !mousegrab) {
-			    setmousestate (0, 0,rEvent.motion.x, 1);
-			    setmousestate (0, 1,rEvent.motion.y, 1);
-			} else {
-			    setmousestate (0, 0, rEvent.motion.xrel, 0);
-			    setmousestate (0, 1, rEvent.motion.yrel, 0);
-			}
-			break;
+            if (!fullscreen && !mousegrab) {
+                setmousestate (0, 0,rEvent.motion.x, 1);
+                setmousestate (0, 1,rEvent.motion.y, 1);
+            } else {
+                setmousestate (0, 0, rEvent.motion.xrel, 0);
+                setmousestate (0, 1, rEvent.motion.yrel, 0);
+            }
+            break;
 
-	  case SDL_ACTIVEEVENT:
-			if (rEvent.active.state & SDL_APPINPUTFOCUS && !rEvent.active.gain) {
-			    DEBUG_LOG ("Lost input focus\n");
-			    inputdevice_release_all_keys ();
-			    reset_hotkeys ();
-			}
-			break;
+      case SDL_ACTIVEEVENT:
+            if (rEvent.active.state & SDL_APPINPUTFOCUS && !rEvent.active.gain) {
+                DEBUG_LOG ("Lost input focus\n");
+                inputdevice_release_all_keys ();
+                reset_hotkeys ();
+            }
+            break;
 
-	    case SDL_VIDEOEXPOSE:
-		notice_screen_contents_lost ();
-		break;
-	} /* end switch() */
+        case SDL_VIDEOEXPOSE:
+        notice_screen_contents_lost ();
+        break;
+    } /* end switch() */
     } /* end while() */
 
 //abant
-	inputdevicefunc_keyboard.read ();
-	inputdevicefunc_mouse.read ();
-	inputdevicefunc_joystick.read ();
-	inputdevice_handle_inputcode ();
-	check_prefs_changed_gfx ();
+    inputdevicefunc_keyboard.read ();
+    inputdevicefunc_mouse.read ();
+    inputdevicefunc_joystick.read ();
+    inputdevice_handle_inputcode ();
+    check_prefs_changed_gfx ();
 
 #ifdef PICASSO96
 # ifdef USE_GL
     if (!currprefs.use_gl) {
 # endif /* USE_GL */
-	if (screen_is_picasso && refresh_necessary) {
-	    SDL_UpdateRect (screen, 0, 0, picasso_vidinfo.width, picasso_vidinfo.height);
-	    refresh_necessary = 0;
-	    memset (picasso_invalid_lines, 0, sizeof picasso_invalid_lines);
-	} else if (screen_is_picasso && picasso_has_invalid_lines) {
-	    int i;
-	    int strt = -1;
+    if (screen_is_picasso && refresh_necessary) {
+        SDL_UpdateRect (screen, 0, 0, picasso_vidinfo.width, picasso_vidinfo.height);
+        refresh_necessary = 0;
+        memset (picasso_invalid_lines, 0, sizeof picasso_invalid_lines);
+    } else if (screen_is_picasso && picasso_has_invalid_lines) {
+        int i;
+        int strt = -1;
 # define OPTIMIZE_UPDATE_RECS
 # ifdef OPTIMIZE_UPDATE_RECS
-	    static SDL_Rect *updaterecs = 0;
-	    static int updaterecssize = 0;
-	    int urc = 0;
+        static SDL_Rect *updaterecs = 0;
+        static int updaterecssize = 0;
+        int urc = 0;
 
-	    if (picasso_vidinfo.height / 2 + 1 > updaterecssize) {
-		xfree (updaterecs);
-		updaterecssize = picasso_vidinfo.height / 2 + 1;
-		updaterecs = (SDL_Rect *) calloc (updaterecssize, sizeof (SDL_Rect));
-	    }
+        if (picasso_vidinfo.height / 2 + 1 > updaterecssize) {
+        xfree (updaterecs);
+        updaterecssize = picasso_vidinfo.height / 2 + 1;
+        updaterecs = (SDL_Rect *) calloc (updaterecssize, sizeof (SDL_Rect));
+        }
 # endif
-	    picasso_invalid_lines[picasso_vidinfo.height] = 0;
-	    for (i = picasso_invalid_start; i < picasso_invalid_stop + 2; i++) {
-		if (picasso_invalid_lines[i]) {
-		    picasso_invalid_lines[i] = 0;
-		    if (strt != -1)
-			continue;
-		    strt = i;
-		} else {
-		    if (strt == -1)
-			continue;
+        picasso_invalid_lines[picasso_vidinfo.height] = 0;
+        for (i = picasso_invalid_start; i < picasso_invalid_stop + 2; i++) {
+        if (picasso_invalid_lines[i]) {
+            picasso_invalid_lines[i] = 0;
+            if (strt != -1)
+            continue;
+            strt = i;
+        } else {
+            if (strt == -1)
+            continue;
 # ifdef OPTIMIZE_UPDATE_RECS
-		    updaterecs[urc].x = 0;
-		    updaterecs[urc].y = strt;
-		    updaterecs[urc].w = picasso_vidinfo.width;
-		    updaterecs[urc].h = i - strt;
-		    urc++;
+            updaterecs[urc].x = 0;
+            updaterecs[urc].y = strt;
+            updaterecs[urc].w = picasso_vidinfo.width;
+            updaterecs[urc].h = i - strt;
+            urc++;
 # else
-		    SDL_UpdateRect (screen, 0, strt, picasso_vidinfo.width, i - strt);
+            SDL_UpdateRect (screen, 0, strt, picasso_vidinfo.width, i - strt);
 # endif
-		    strt = -1;
-		}
-	    }
-	    if (strt != -1)
-		abort ();
+            strt = -1;
+        }
+        }
+        if (strt != -1)
+        abort ();
 # ifdef OPTIMIZE_UPDATE_RECS
-	    SDL_UpdateRects (screen, urc, updaterecs);
+        SDL_UpdateRects (screen, urc, updaterecs);
 # endif
-	}
-	picasso_has_invalid_lines = 0;
-	picasso_invalid_start = picasso_vidinfo.height + 1;
-	picasso_invalid_stop = -1;
+    }
+    picasso_has_invalid_lines = 0;
+    picasso_invalid_start = picasso_vidinfo.height + 1;
+    picasso_invalid_stop = -1;
 # ifdef USE_GL
     } else {
-	if (screen_is_picasso && refresh_necessary) {
+    if (screen_is_picasso && refresh_necessary) {
 
-	    flush_gl_buffer (&glbuffer, 0, picasso_vidinfo.height - 1);
-	    render_gl_buffer (&glbuffer, 0, picasso_vidinfo.height - 1);
+        flush_gl_buffer (&glbuffer, 0, picasso_vidinfo.height - 1);
+        render_gl_buffer (&glbuffer, 0, picasso_vidinfo.height - 1);
 
-	    glFlush ();
-	    SDL_GL_SwapBuffers ();
+        glFlush ();
+        SDL_GL_SwapBuffers ();
 
-	    refresh_necessary = 0;
-	    memset (picasso_invalid_lines, 0, sizeof picasso_invalid_lines);
-	} else if (screen_is_picasso && picasso_has_invalid_lines) {
-	    int i;
-	    int strt = -1;
+        refresh_necessary = 0;
+        memset (picasso_invalid_lines, 0, sizeof picasso_invalid_lines);
+    } else if (screen_is_picasso && picasso_has_invalid_lines) {
+        int i;
+        int strt = -1;
 
-	    picasso_invalid_lines[picasso_vidinfo.height] = 0;
-	    for (i = picasso_invalid_start; i < picasso_invalid_stop + 2; i++) {
-		if (picasso_invalid_lines[i]) {
-		    picasso_invalid_lines[i] = 0;
-		    if (strt != -1)
-			continue;
-		    strt = i;
-		} else {
-		    if (strt != -1) {
-			flush_gl_buffer (&glbuffer, strt, i - 1);
-			strt = -1;
-		    }
-		}
-	    }
-	    if (strt != -1)
-		abort ();
+        picasso_invalid_lines[picasso_vidinfo.height] = 0;
+        for (i = picasso_invalid_start; i < picasso_invalid_stop + 2; i++) {
+        if (picasso_invalid_lines[i]) {
+            picasso_invalid_lines[i] = 0;
+            if (strt != -1)
+            continue;
+            strt = i;
+        } else {
+            if (strt != -1) {
+            flush_gl_buffer (&glbuffer, strt, i - 1);
+            strt = -1;
+            }
+        }
+        }
+        if (strt != -1)
+        abort ();
 
-	    render_gl_buffer (&glbuffer, picasso_invalid_start, picasso_invalid_stop);
+        render_gl_buffer (&glbuffer, picasso_invalid_start, picasso_invalid_stop);
 
-	    glFlush();
-	    SDL_GL_SwapBuffers();
-	}
+        glFlush();
+        SDL_GL_SwapBuffers();
+    }
 
-	picasso_has_invalid_lines = 0;
-	picasso_invalid_start = picasso_vidinfo.height + 1;
-	picasso_invalid_stop = -1;
+    picasso_has_invalid_lines = 0;
+    picasso_invalid_start = picasso_vidinfo.height + 1;
+    picasso_invalid_stop = -1;
     }
 #endif /* USE_GL */
 #endif /* PICASSSO96 */
 
-	return pause_emulation != 0;
+    return pause_emulation != 0;
 }
 
 static void switch_keymaps (void)
 {
 #if 0
-	if (currprefs.map_raw_keys) {
-		if (have_rawkeys) {
-			set_default_hotkeys (get_default_raw_hotkeys ());
-			write_log ("Using raw keymap\n");
-		} else {
-			currprefs.map_raw_keys = changed_prefs.map_raw_keys = 0;
-			write_log ("Raw keys not supported\n");
-		}
-	}
-	if (!currprefs.map_raw_keys) {
-		set_default_hotkeys (get_default_cooked_hotkeys ());
-		write_log ("Using cooked keymap\n");
-	}
+    if (currprefs.map_raw_keys) {
+        if (have_rawkeys) {
+            set_default_hotkeys (get_default_raw_hotkeys ());
+            write_log ("Using raw keymap\n");
+        } else {
+            currprefs.map_raw_keys = changed_prefs.map_raw_keys = 0;
+            write_log ("Raw keys not supported\n");
+        }
+    }
+    if (!currprefs.map_raw_keys) {
+        set_default_hotkeys (get_default_cooked_hotkeys ());
+        write_log ("Using cooked keymap\n");
+    }
 #endif
 }
 
 int check_prefs_changed_gfx (void)
 {
 #if 0
-	if (changed_prefs.map_raw_keys != currprefs.map_raw_keys) {
-		switch_keymaps ();
-		currprefs.map_raw_keys = changed_prefs.map_raw_keys;
-	}
+    if (changed_prefs.map_raw_keys != currprefs.map_raw_keys) {
+        switch_keymaps ();
+        currprefs.map_raw_keys = changed_prefs.map_raw_keys;
+    }
 #endif
 
-	if (changed_prefs.gfx_size_win.width		!= currprefs.gfx_size_win.width
-		|| changed_prefs.gfx_size_win.height	!= currprefs.gfx_size_win.height
-		|| changed_prefs.gfx_size_fs.width		!= currprefs.gfx_size_fs.width
-		|| changed_prefs.gfx_size_fs.height		!= currprefs.gfx_size_fs.height) {
-		fixup_prefs_dimensions (&changed_prefs);
-    } else if (changed_prefs.gfx_lores_mode	== currprefs.gfx_lores_mode
-		&& changed_prefs.gfx_vresolution	== currprefs.gfx_vresolution
-		&& changed_prefs.gfx_xcenter		== currprefs.gfx_xcenter
-		&& changed_prefs.gfx_ycenter		== currprefs.gfx_ycenter) {
-		return 0;
+    if (changed_prefs.gfx_size_win.width        != currprefs.gfx_size_win.width
+        || changed_prefs.gfx_size_win.height    != currprefs.gfx_size_win.height
+        || changed_prefs.gfx_size_fs.width      != currprefs.gfx_size_fs.width
+        || changed_prefs.gfx_size_fs.height     != currprefs.gfx_size_fs.height) {
+        fixup_prefs_dimensions (&changed_prefs);
+    } else if (changed_prefs.gfx_lores_mode == currprefs.gfx_lores_mode
+        && changed_prefs.gfx_vresolution    == currprefs.gfx_vresolution
+        && changed_prefs.gfx_xcenter        == currprefs.gfx_xcenter
+        && changed_prefs.gfx_ycenter        == currprefs.gfx_ycenter) {
+        return 0;
     }
 
-	DEBUG_LOG ("Function: check_prefs_changed_gfx\n");
+    DEBUG_LOG ("Function: check_prefs_changed_gfx\n");
 
 #ifdef PICASSO96
-	if (!screen_is_picasso)
-		graphics_subshutdown ();
+    if (!screen_is_picasso)
+        graphics_subshutdown ();
 #endif
 
-	currprefs.gfx_size_win.width	= changed_prefs.gfx_size_win.width;
-	currprefs.gfx_size_win.height	= changed_prefs.gfx_size_win.height;
-	currprefs.gfx_size_fs.width	= changed_prefs.gfx_size_fs.width;
-	currprefs.gfx_size_fs.height	= changed_prefs.gfx_size_fs.height;
-	currprefs.gfx_lores_mode	= changed_prefs.gfx_lores_mode;
-	currprefs.gfx_vresolution	= changed_prefs.gfx_vresolution;
-	currprefs.gfx_xcenter		= changed_prefs.gfx_xcenter;
-	currprefs.gfx_ycenter		= changed_prefs.gfx_ycenter;
-	currprefs.monitoremu		= changed_prefs.monitoremu;
-	currprefs.leds_on_screen	= changed_prefs.leds_on_screen;
+    currprefs.gfx_size_win.width    = changed_prefs.gfx_size_win.width;
+    currprefs.gfx_size_win.height   = changed_prefs.gfx_size_win.height;
+    currprefs.gfx_size_fs.width = changed_prefs.gfx_size_fs.width;
+    currprefs.gfx_size_fs.height    = changed_prefs.gfx_size_fs.height;
+    currprefs.gfx_lores_mode    = changed_prefs.gfx_lores_mode;
+    currprefs.gfx_vresolution   = changed_prefs.gfx_vresolution;
+    currprefs.gfx_xcenter       = changed_prefs.gfx_xcenter;
+    currprefs.gfx_ycenter       = changed_prefs.gfx_ycenter;
+    currprefs.monitoremu        = changed_prefs.monitoremu;
+    currprefs.leds_on_screen    = changed_prefs.leds_on_screen;
 
 #ifdef PICASSO96
-	if (!screen_is_picasso)
+    if (!screen_is_picasso)
 #endif
-		graphics_subinit ();
+        graphics_subinit ();
 
-	return 0;
+    return 0;
 }
 
 int debuggable (void)
 {
-	return 1;
+    return 1;
 }
 
 int mousehack_allowed (void)
 {
-	return mousehack;
+    return mousehack;
 }
 
 void LED (int on)
@@ -1683,24 +1691,24 @@ void LED (int on)
 #ifdef PICASSO96
 void DX_Invalidate (int first, int last)
 {
-	DEBUG_LOG ("Function: DX_Invalidate %i - %i\n", first, last);
+    DEBUG_LOG ("Function: DX_Invalidate %i - %i\n", first, last);
 
-	if (is_hwsurface)
-		return;
+    if (is_hwsurface)
+        return;
 
-	if (first > last)
-		return;
+    if (first > last)
+        return;
 
-	picasso_has_invalid_lines = 1;
-	if (first < picasso_invalid_start)
-		picasso_invalid_start = first;
-	if (last > picasso_invalid_stop)
-		picasso_invalid_stop = last;
+    picasso_has_invalid_lines = 1;
+    if (first < picasso_invalid_start)
+        picasso_invalid_start = first;
+    if (last > picasso_invalid_stop)
+        picasso_invalid_stop = last;
 
-	while (first <= last) {
-		picasso_invalid_lines[first] = 1;
-		first++;
-	}
+    while (first <= last) {
+        picasso_invalid_lines[first] = 1;
+        first++;
+    }
 }
 
 static int palette_update_start = 256;
@@ -1708,57 +1716,57 @@ static int palette_update_end   = 0;
 
 void DX_SetPalette (int start, int count)
 {
-	DEBUG_LOG ("Function: DX_SetPalette\n");
+    DEBUG_LOG ("Function: DX_SetPalette\n");
 
-	if (! screen_is_picasso || picasso96_state.RGBFormat != RGBFB_CHUNKY)
-		return;
+    if (! screen_is_picasso || picasso96_state.RGBFormat != RGBFB_CHUNKY)
+        return;
 
-	if (picasso_vidinfo.pixbytes != 1) {
-		/* This is the case when we're emulating a 256 color display. */
-		while (count-- > 0) {
-			int r = picasso96_state.CLUT[start].Red;
-			int g = picasso96_state.CLUT[start].Green;
-			int b = picasso96_state.CLUT[start].Blue;
-			picasso_vidinfo.clut[start++] = (doMask256 (r, red_bits, red_shift) | doMask256 (g, green_bits, green_shift) | doMask256 (b, blue_bits, blue_shift));
-		}
-	} else {
-		int i;
-		for (i = start; i < start+count && i < 256;  i++) {
-			p96Colors[i].r = picasso96_state.CLUT[i].Red;
-			p96Colors[i].g = picasso96_state.CLUT[i].Green;
-			p96Colors[i].b = picasso96_state.CLUT[i].Blue;
-		}
-		SDL_SetColors (screen, &p96Colors[start], start, count);
-	}
+    if (picasso_vidinfo.pixbytes != 1) {
+        /* This is the case when we're emulating a 256 color display. */
+        while (count-- > 0) {
+            int r = picasso96_state.CLUT[start].Red;
+            int g = picasso96_state.CLUT[start].Green;
+            int b = picasso96_state.CLUT[start].Blue;
+            picasso_vidinfo.clut[start++] = (doMask256 (r, red_bits, red_shift) | doMask256 (g, green_bits, green_shift) | doMask256 (b, blue_bits, blue_shift));
+        }
+    } else {
+        int i;
+        for (i = start; i < start+count && i < 256;  i++) {
+            p96Colors[i].r = picasso96_state.CLUT[i].Red;
+            p96Colors[i].g = picasso96_state.CLUT[i].Green;
+            p96Colors[i].b = picasso96_state.CLUT[i].Blue;
+        }
+        SDL_SetColors (screen, &p96Colors[start], start, count);
+    }
 }
 
 void DX_SetPalette_vsync(void)
 {
-	if (palette_update_end > palette_update_start) {
-		DX_SetPalette (palette_update_start, palette_update_end - palette_update_start);
-		palette_update_end   = 0;
-		palette_update_start = 0;
-	}
+    if (palette_update_end > palette_update_start) {
+        DX_SetPalette (palette_update_start, palette_update_end - palette_update_start);
+        palette_update_end   = 0;
+        palette_update_start = 0;
+    }
 }
 
 int DX_Fill (int dstx, int dsty, int width, int height, uae_u32 color, RGBFTYPE rgbtype)
 {
-	int result = 0;
+    int result = 0;
 #ifdef USE_GL /* TODO think about optimization for GL */
-	if (!currprefs.use_gl) {
+    if (!currprefs.use_gl) {
 #endif /* USE_GL */
-	SDL_Rect rect = {dstx, dsty, width, height};
+    SDL_Rect rect = {dstx, dsty, width, height};
 
-	DEBUG_LOG ("DX_Fill (x:%d y:%d w:%d h:%d color=%08x)\n", dstx, dsty, width, height, color);
+    DEBUG_LOG ("DX_Fill (x:%d y:%d w:%d h:%d color=%08x)\n", dstx, dsty, width, height, color);
 
-	if (SDL_FillRect (screen, &rect, color) == 0) {
-		DX_Invalidate (dsty, dsty + height - 1);
-		result = 1;
-	}
+    if (SDL_FillRect (screen, &rect, color) == 0) {
+        DX_Invalidate (dsty, dsty + height - 1);
+        result = 1;
+    }
 #ifdef USE_GL
-	}
+    }
 #endif /* USE_GL */
-	return result;
+    return result;
 }
 
 int DX_Blit (int srcx, int srcy, int dstx, int dsty, int width, int height, BLIT_OPCODE opcode)
@@ -1769,28 +1777,28 @@ int DX_Blit (int srcx, int srcy, int dstx, int dsty, int width, int height, BLIT
 
 static void set_window_for_picasso (void)
 {
-	DEBUG_LOG ("Function: set_window_for_picasso\n");
+    DEBUG_LOG ("Function: set_window_for_picasso\n");
 
-	if (screen_was_picasso && current_width == picasso_vidinfo.width && current_height == picasso_vidinfo.height)
-		return;
+    if (screen_was_picasso && current_width == picasso_vidinfo.width && current_height == picasso_vidinfo.height)
+        return;
 
-	screen_was_picasso = 1;
-	graphics_subshutdown();
-	current_width  = picasso_vidinfo.width;
-	current_height = picasso_vidinfo.height;
-	graphics_subinit();
+    screen_was_picasso = 1;
+    graphics_subshutdown();
+    current_width  = picasso_vidinfo.width;
+    current_height = picasso_vidinfo.height;
+    graphics_subinit();
 }
 
 void gfx_set_picasso_modeinfo (uae_u32 w, uae_u32 h, uae_u32 depth, RGBFTYPE rgbfmt)
 {
-	DEBUG_LOG ("Function: gfx_set_picasso_modeinfo w: %i h: %i depth: %i rgbfmt: %i\n", w, h, depth, rgbfmt);
+    DEBUG_LOG ("Function: gfx_set_picasso_modeinfo w: %i h: %i depth: %i rgbfmt: %i\n", w, h, depth, rgbfmt);
 
-	picasso_vidinfo.width = w;
-	picasso_vidinfo.height = h;
-	picasso_vidinfo.depth = depth;
-	picasso_vidinfo.pixbytes = bit_unit >> 3;
-	if (screen_is_picasso)
-		set_window_for_picasso();
+    picasso_vidinfo.width = w;
+    picasso_vidinfo.height = h;
+    picasso_vidinfo.depth = depth;
+    picasso_vidinfo.pixbytes = bit_unit >> 3;
+    if (screen_is_picasso)
+        set_window_for_picasso();
 }
 
 /* Color management */
@@ -1803,123 +1811,123 @@ static int alpha;
 
 void gfx_set_picasso_colors (RGBFTYPE rgbfmt)
 {
-	alloc_colors_picasso (red_bits, green_bits, blue_bits, red_shift, green_shift, blue_shift, rgbfmt);
+    alloc_colors_picasso (red_bits, green_bits, blue_bits, red_shift, green_shift, blue_shift, rgbfmt);
 }
 
 void gfx_set_picasso_state (int on)
 {
-	DEBUG_LOG ("Function: gfx_set_picasso_state: %d\n", on);
+    DEBUG_LOG ("Function: gfx_set_picasso_state: %d\n", on);
 
-	if (on == screen_is_picasso)
-		return;
+    if (on == screen_is_picasso)
+        return;
 
-	/* We can get called by drawing_init() when there's
-	 * no window opened yet... */
-	if (display == 0)
-		return;
+    /* We can get called by drawing_init() when there's
+     * no window opened yet... */
+    if (display == 0)
+        return;
 
-	graphics_subshutdown ();
-	screen_was_picasso = screen_is_picasso;
-	screen_is_picasso = on;
+    graphics_subshutdown ();
+    screen_was_picasso = screen_is_picasso;
+    screen_is_picasso = on;
 
-	if (on) {
-		// Set height, width for Picasso gfx
-		current_width  = picasso_vidinfo.width;
-		current_height = picasso_vidinfo.height;
-		graphics_subinit ();
+    if (on) {
+        // Set height, width for Picasso gfx
+        current_width  = picasso_vidinfo.width;
+        current_height = picasso_vidinfo.height;
+        graphics_subinit ();
     } else {
-		// Set height, width for Amiga gfx
-		current_width  = gfxvidinfo.width_allocated;
-		current_height = gfxvidinfo.height_allocated;
-		graphics_subinit ();
-	}
+        // Set height, width for Amiga gfx
+        current_width  = gfxvidinfo.width_allocated;
+        current_height = gfxvidinfo.height_allocated;
+        graphics_subinit ();
+    }
 
-	if (on)
-		DX_SetPalette (0, 256);
+    if (on)
+        DX_SetPalette (0, 256);
 }
 
 uae_u8 *gfx_lock_picasso (bool fullupdate, bool doclear)
 {
-	DEBUG_LOG ("Function: gfx_lock_picasso\n");
+    DEBUG_LOG ("Function: gfx_lock_picasso\n");
 
 #ifdef USE_GL
-	if (!currprefs.use_gl) {
+    if (!currprefs.use_gl) {
 #endif /* USE_GL */
-		if (SDL_MUSTLOCK (screen))
-			SDL_LockSurface (screen);
-		picasso_vidinfo.rowbytes = screen->pitch;
-		return screen->pixels;
+        if (SDL_MUSTLOCK (screen))
+            SDL_LockSurface (screen);
+        picasso_vidinfo.rowbytes = screen->pitch;
+        return screen->pixels;
 #ifdef USE_GL
-	} else {
-		picasso_vidinfo.rowbytes = display->pitch;
-		return display->pixels;
-	}
+    } else {
+        picasso_vidinfo.rowbytes = display->pitch;
+        return display->pixels;
+    }
 #endif /* USE_GL */
 }
 
 void gfx_unlock_picasso (bool dorender)
 {
-	DEBUG_LOG ("Function: gfx_unlock_picasso\n");
+    DEBUG_LOG ("Function: gfx_unlock_picasso\n");
 
 #ifdef USE_GL
-	if (!currprefs.use_gl) {
+    if (!currprefs.use_gl) {
 #endif /* USE_GL */
-		if (SDL_MUSTLOCK (screen))
-			SDL_UnlockSurface (screen);
+        if (SDL_MUSTLOCK (screen))
+            SDL_UnlockSurface (screen);
 #ifdef USE_GL
-	}
+    }
 #endif /* USE_GL */
 }
 #endif /* PICASSO96 */
 
 int is_fullscreen (void)
 {
-	return fullscreen;
+    return fullscreen;
 }
 
 int is_vsync (void)
 {
-	return vsync;
+    return vsync;
 }
 
 void toggle_fullscreen (int mode)
 {
-	/* FIXME: Add support for separate full-screen/windowed sizes */
-	fullscreen = 1 - fullscreen;
+    /* FIXME: Add support for separate full-screen/windowed sizes */
+    fullscreen = 1 - fullscreen;
 
-	/* Close existing window and open a new one (with the new fullscreen setting) */
-	graphics_subshutdown ();
-	graphics_subinit ();
+    /* Close existing window and open a new one (with the new fullscreen setting) */
+    graphics_subshutdown ();
+    graphics_subinit ();
 
-	notice_screen_contents_lost ();
-	if (screen_is_picasso)
-		refresh_necessary = 1;
+    notice_screen_contents_lost ();
+    if (screen_is_picasso)
+        refresh_necessary = 1;
 
-	DEBUG_LOG ("ToggleFullScreen: %d\n", fullscreen );
+    DEBUG_LOG ("ToggleFullScreen: %d\n", fullscreen );
 }
 
 void toggle_mousegrab (void)
 {
-	if (!fullscreen) {
-		if (SDL_WM_GrabInput (SDL_GRAB_QUERY) == SDL_GRAB_OFF) {
-			if (SDL_WM_GrabInput (SDL_GRAB_ON) == SDL_GRAB_ON) {
-				mousegrab = 1;
-				mousehack = 0;
-				SDL_ShowCursor (SDL_DISABLE);
-			}
-		} else {
-			if (SDL_WM_GrabInput (SDL_GRAB_OFF) == SDL_GRAB_OFF) {
-				mousegrab = 0;
-				mousehack = 1;
-				SDL_ShowCursor (currprefs.hide_cursor ?  SDL_DISABLE : SDL_ENABLE);
-			}
-		}
-	}
+    if (!fullscreen) {
+        if (SDL_WM_GrabInput (SDL_GRAB_QUERY) == SDL_GRAB_OFF) {
+            if (SDL_WM_GrabInput (SDL_GRAB_ON) == SDL_GRAB_ON) {
+                mousegrab = 1;
+                mousehack = 0;
+                SDL_ShowCursor (SDL_DISABLE);
+            }
+        } else {
+            if (SDL_WM_GrabInput (SDL_GRAB_OFF) == SDL_GRAB_OFF) {
+                mousegrab = 0;
+                mousehack = 1;
+                SDL_ShowCursor (currprefs.hide_cursor ?  SDL_DISABLE : SDL_ENABLE);
+            }
+        }
+    }
 }
 
 void screenshot (int mode, int doprepare)
 {
-	write_log ("Screenshot not supported yet\n");
+    write_log ("Screenshot not supported yet\n");
 }
 
 /*
@@ -1930,99 +1938,99 @@ void screenshot (int mode, int doprepare)
  * currently support a Z-axis as such. Mousewheel events are supplied
  * as buttons 4 and 5
  */
-#define MAX_BUTTONS	3
-#define MAX_AXES	3
-#define FIRST_AXIS	0
-#define FIRST_BUTTON	MAX_AXES
+#define MAX_BUTTONS 3
+#define MAX_AXES    3
+#define FIRST_AXIS  0
+#define FIRST_BUTTON    MAX_AXES
 
 static int init_mouse (void)
 {
-	return 1;
+    return 1;
 }
 
 static void close_mouse (void)
 {
-	return;
+    return;
 }
 
 static int acquire_mouse (int num, int flags)
 {
-	/* SDL supports only one mouse */
-	return 1;
+    /* SDL supports only one mouse */
+    return 1;
 }
 
 static void unacquire_mouse (int num)
 {
-	return;
+    return;
 }
 
 static int get_mouse_num (void)
 {
-	return 1;
+    return 1;
 }
 
 static TCHAR *get_mouse_friendlyname (int mouse)
 {
-	return "Default mouse";
+    return "Default mouse";
 }
 static TCHAR *get_mouse_uniquename (int mouse)
 {
-	return "DEFMOUSE1";
+    return "DEFMOUSE1";
 }
 
 static int get_mouse_widget_num (int mouse)
 {
-	return MAX_AXES + MAX_BUTTONS;
+    return MAX_AXES + MAX_BUTTONS;
 }
 
 static int get_mouse_widget_first (int mouse, int type)
 {
-	switch (type) {
-	case IDEV_WIDGET_BUTTON:
-		return FIRST_BUTTON;
-	case IDEV_WIDGET_AXIS:
-		return FIRST_AXIS;
-	}
-	return -1;
+    switch (type) {
+    case IDEV_WIDGET_BUTTON:
+        return FIRST_BUTTON;
+    case IDEV_WIDGET_AXIS:
+        return FIRST_AXIS;
+    }
+    return -1;
 }
 
 static int get_mouse_widget_type (int mouse, int num, TCHAR *name, uae_u32 *code)
 {
-	if (num >= MAX_AXES && num < MAX_AXES + MAX_BUTTONS) {
-		if (name)
-			sprintf (name, "Button %d", num + 1 + MAX_AXES);
-		return IDEV_WIDGET_BUTTON;
-	} else if (num < MAX_AXES) {
-		if (name)
-			sprintf (name, "Axis %d", num + 1);
-		return IDEV_WIDGET_AXIS;
-	}
-	return IDEV_WIDGET_NONE;
+    if (num >= MAX_AXES && num < MAX_AXES + MAX_BUTTONS) {
+        if (name)
+            sprintf (name, "Button %d", num + 1 + MAX_AXES);
+        return IDEV_WIDGET_BUTTON;
+    } else if (num < MAX_AXES) {
+        if (name)
+            sprintf (name, "Axis %d", num + 1);
+        return IDEV_WIDGET_AXIS;
+    }
+    return IDEV_WIDGET_NONE;
 }
 
 static void read_mouse (void)
 {
-	/* We handle mouse input in handle_events() */
+    /* We handle mouse input in handle_events() */
 }
 
 static int get_mouse_flags (int num)
 {
-	return 0;
+    return 0;
 }
 
 struct inputdevice_functions inputdevicefunc_mouse = {
-	init_mouse,
-	close_mouse,
-	acquire_mouse,
-	unacquire_mouse,
-	read_mouse,
-	get_mouse_num,
-	get_mouse_friendlyname,
-	get_mouse_uniquename,
-	get_mouse_widget_num,
-	get_mouse_widget_type,
-	get_mouse_widget_first,
-	get_mouse_flags
+    init_mouse,
+    close_mouse,
+    acquire_mouse,
+    unacquire_mouse,
+    read_mouse,
+    get_mouse_num,
+    get_mouse_friendlyname,
+    get_mouse_uniquename,
+    get_mouse_widget_num,
+    get_mouse_widget_type,
+    get_mouse_widget_first,
+    get_mouse_flags
 };
 
 /*
@@ -2030,109 +2038,110 @@ struct inputdevice_functions inputdevicefunc_mouse = {
  */
 static int get_kb_num (void)
 {
-	/* SDL supports only one keyboard */
-	return 1;
+    /* SDL supports only one keyboard */
+    return 1;
 }
 
 static TCHAR *get_kb_friendlyname (int kb)
 {
-	return "Default keyboard";
+    return "Default keyboard";
 }
 static TCHAR *get_kb_uniquename (int kb)
 {
-	return "DEFKEYB1";
+    return "DEFKEYB1";
 }
 
 static int get_kb_widget_num (int kb)
 {
-	return 255; // fix me
+    return 255; // fix me
 }
 
 static int get_kb_widget_first (int kb, int type)
 {
-	return 0;
+    return 0;
 }
 
 static int get_kb_widget_type (int kb, int num, TCHAR *name, uae_u32 *code)
 {
-	if (name)
-		_tcscpy (name, di_keyboard[kb].buttonname[num]);
-	if (code)
-		*code = di_keyboard[kb].buttonmappings[num];
-	return IDEV_WIDGET_KEY;
+    if (name)
+        _tcscpy (name, di_keyboard[kb].buttonname[num]);
+    if (code)
+        *code = di_keyboard[kb].buttonmappings[num];
+    return IDEV_WIDGET_KEY;
 }
 
 static int init_kb (void)
 {
-	if (keyboard_inited)
-		return 1;
-	//oldusedleds = -1;
-	keyboard_inited = 1;
+    if (keyboard_inited)
+        return 1;
+    //oldusedleds = -1;
+    keyboard_inited = 1;
 
-	int i = 0;
-	/*for ( ; i < num_keyboard; i++) {
-		struct didata *did = &di_keyboard[i];
-		if (did->connection == DIDC_DX) {
-			hr = g_lpdi->CreateDevice (did->iguid, &lpdi, NULL);
-			if (SUCCEEDED (hr)) {
-				hr = lpdi->SetDataFormat (&c_dfDIKeyboard);
-				if (FAILED (hr))
-					write_log (_T("keyboard setdataformat failed, %s\n"), DXError (hr));
-				memset (&dipdw, 0, sizeof (dipdw));
-				dipdw.diph.dwSize = sizeof (DIPROPDWORD);
-				dipdw.diph.dwHeaderSize = sizeof (DIPROPHEADER);
-				dipdw.diph.dwObj = 0;
-				dipdw.diph.dwHow = DIPH_DEVICE;
-				dipdw.dwData = DI_KBBUFFER;
-				hr = lpdi->SetProperty (DIPROP_BUFFERSIZE, &dipdw.diph);
-				if (FAILED (hr))
-					write_log (_T("keyboard setpropertry failed, %s\n"), DXError (hr));
-				lpdi->EnumObjects (EnumObjectsCallback, did, DIDFT_ALL);
-				sortobjects (did);
-				did->lpdi = lpdi;
-			} else
-				write_log (_T("keyboard CreateDevice failed, %s\n"), DXError (hr));
-		}
-	}*/
+    int i = 0;
+    for ( ; i < num_keyboard; i++) {
+        struct didata *did = &di_keyboard[i];
+    /*  if (did->connection == DIDC_DX) {
+            hr = g_lpdi->CreateDevice (did->iguid, &lpdi, NULL);
+            if (SUCCEEDED (hr)) {
+                hr = lpdi->SetDataFormat (&c_dfDIKeyboard);
+                if (FAILED (hr))
+                    write_log (_T("keyboard setdataformat failed, %s\n"), DXError (hr));
+                memset (&dipdw, 0, sizeof (dipdw));
+                dipdw.diph.dwSize = sizeof (DIPROPDWORD);
+                dipdw.diph.dwHeaderSize = sizeof (DIPROPHEADER);
+                dipdw.diph.dwObj = 0;
+                dipdw.diph.dwHow = DIPH_DEVICE;
+                dipdw.dwData = DI_KBBUFFER;
+                hr = lpdi->SetProperty (DIPROP_BUFFERSIZE, &dipdw.diph);
+                if (FAILED (hr))
+                    write_log (_T("keyboard setpropertry failed, %s\n"), DXError (hr));
+                lpdi->EnumObjects (EnumObjectsCallback, did, DIDFT_ALL);
+                sortobjects (did);
+                did->lpdi = lpdi;
+            } else
+                write_log (_T("keyboard CreateDevice failed, %s\n"), DXError (hr));
+        }*/
+    }
 
-	keyboard_german = 0;
-//	if ((LOWORD(GetKeyboardLayout (0)) & 0x3ff) == 7)
-//		keyboard_german = 1;
+    keyboard_german = 0;
+//  if ((LOWORD(GetKeyboardLayout (0)) & 0x3ff) == 7)
+//      keyboard_german = 1;
 
-	struct didata *did = &di_keyboard[0];
-	for (int k = 0; k < 254; k++) {
-		TCHAR tmp[100];
-		tmp[0] = 0;
-//			if (rawkeyboardlabels[k] != NULL && rawkeyboardlabels[k][0])
-//				_tcscpy (tmp, rawkeyboardlabels[k]);
-		if (!tmp[0])
-			_stprintf (tmp, _T("KEY_%02X"), k + 1);
-		did->buttonname[k] = my_strdup (tmp);
-		did->buttonmappings[k] = k + 1;
-		did->buttonsort[k] = k + 1;
-	}
+    struct didata *did = &di_keyboard[0];
+  int k;
+    for (k = 0; k < 254; k++) {
+        TCHAR tmp[100];
+        tmp[0] = 0;
+//          if (rawkeyboardlabels[k] != NULL && rawkeyboardlabels[k][0])
+//              _tcscpy (tmp, rawkeyboardlabels[k]);
+        if (!tmp[0])
+            _stprintf (tmp, _T("KEY_%02X"), k + 1);
+        did->buttonname[k] = my_strdup (tmp);
+        did->buttonmappings[k] = k + 1;
+        did->buttonsort[k] = k + 1;
+    }
 
-	return 1;
+    return 1;
 }
 
 static void close_kb (void)
 {
-	if (keyboard_inited == 0)
-		return;
-	keyboard_inited = 0;
+    if (keyboard_inited == 0)
+        return;
+    keyboard_inited = 0;
 
 /*
-	unsigned int i;
-	for (i = 0; i < num_keyboard; i++)
-		di_dev_free (&di_keyboard[i]);
-	di_free ();
+    unsigned int i;
+    for (i = 0; i < num_keyboard; i++)
+        di_dev_free (&di_keyboard[i]);
+    di_free ();
 */
-//	superkb = normalkb = rawkb = 0;
+//  superkb = normalkb = rawkb = 0;
 }
 
 static int keyhack (int scancode, int pressed, int num)
 {
-	return scancode;
+    return scancode;
 }
 
 static void read_kb (void)
@@ -2141,7 +2150,7 @@ static void read_kb (void)
 
 static int acquire_kb (int num, int flags)
 {
-	return 1;
+    return 1;
 }
 
 static void unacquire_kb (int num)
@@ -2150,35 +2159,35 @@ static void unacquire_kb (int num)
 
 static int get_kb_flags (int num)
 {
-	return 0;
+    return 0;
 }
 
 struct inputdevice_functions inputdevicefunc_keyboard =
 {
-	init_kb,
-	close_kb,
-	acquire_kb,
-	unacquire_kb,
-	read_kb,
-	get_kb_num,
-	get_kb_friendlyname,
-	get_kb_uniquename,
-	get_kb_widget_num,
-	get_kb_widget_type,
-	get_kb_widget_first,
-	get_kb_flags
+    init_kb,
+    close_kb,
+    acquire_kb,
+    unacquire_kb,
+    read_kb,
+    get_kb_num,
+    get_kb_friendlyname,
+    get_kb_uniquename,
+    get_kb_widget_num,
+    get_kb_widget_type,
+    get_kb_widget_first,
+    get_kb_flags
 };
 
 //static int capslockstate;
 
 int getcapslockstate (void)
 {
-	return SDL_GetModState() & KMOD_CAPS;
+    return SDL_GetModState() & KMOD_CAPS;
 }
 
 void setcapslockstate (int state)
 {
-	//TODO:
+    //TODO:
 }
 
 /*
@@ -2186,14 +2195,14 @@ void setcapslockstate (int state)
  */
 int input_get_default_mouse (struct uae_input_device *uid, int num, int port, int af, bool gp, bool wheel)
 {
-	/* SDL supports only one mouse */
-	setid (uid, num, ID_AXIS_OFFSET + 0, 0, port, port ? INPUTEVENT_MOUSE2_HORIZ : INPUTEVENT_MOUSE1_HORIZ);
-	setid (uid, num, ID_AXIS_OFFSET + 1, 0, port, port ? INPUTEVENT_MOUSE2_VERT : INPUTEVENT_MOUSE1_VERT);
-	setid (uid, num, ID_AXIS_OFFSET + 2, 0, port, port ? 0 : INPUTEVENT_MOUSE1_WHEEL);
-	setid_af (uid, num, ID_BUTTON_OFFSET + 0, 0, port, port ? INPUTEVENT_JOY2_FIRE_BUTTON : INPUTEVENT_JOY1_FIRE_BUTTON, af);
-	setid (uid, num, ID_BUTTON_OFFSET + 1, 0, port, port ? INPUTEVENT_JOY2_2ND_BUTTON : INPUTEVENT_JOY1_2ND_BUTTON);
-	setid (uid, num, ID_BUTTON_OFFSET + 2, 0, port, port ? INPUTEVENT_JOY2_3RD_BUTTON : INPUTEVENT_JOY1_3RD_BUTTON);
-	if (port == 0) { /* map back and forward to ALT+LCUR and ALT+RCUR */
+    /* SDL supports only one mouse */
+    setid (uid, num, ID_AXIS_OFFSET + 0, 0, port, port ? INPUTEVENT_MOUSE2_HORIZ : INPUTEVENT_MOUSE1_HORIZ);
+    setid (uid, num, ID_AXIS_OFFSET + 1, 0, port, port ? INPUTEVENT_MOUSE2_VERT : INPUTEVENT_MOUSE1_VERT);
+    setid (uid, num, ID_AXIS_OFFSET + 2, 0, port, port ? 0 : INPUTEVENT_MOUSE1_WHEEL);
+    setid_af (uid, num, ID_BUTTON_OFFSET + 0, 0, port, port ? INPUTEVENT_JOY2_FIRE_BUTTON : INPUTEVENT_JOY1_FIRE_BUTTON, af);
+    setid (uid, num, ID_BUTTON_OFFSET + 1, 0, port, port ? INPUTEVENT_JOY2_2ND_BUTTON : INPUTEVENT_JOY1_2ND_BUTTON);
+    setid (uid, num, ID_BUTTON_OFFSET + 2, 0, port, port ? INPUTEVENT_JOY2_3RD_BUTTON : INPUTEVENT_JOY1_3RD_BUTTON);
+    if (port == 0) { /* map back and forward to ALT+LCUR and ALT+RCUR */
 //                if (isrealbutton (did, 3)) {
                         setid (uid, num, ID_BUTTON_OFFSET + 3, 0, port, INPUTEVENT_KEY_ALT_LEFT);
                         setid (uid, num, ID_BUTTON_OFFSET + 3, 1, port, INPUTEVENT_KEY_CURSOR_LEFT);
@@ -2202,10 +2211,10 @@ int input_get_default_mouse (struct uae_input_device *uid, int num, int port, in
                                 setid (uid, num, ID_BUTTON_OFFSET + 4, 1, port, INPUTEVENT_KEY_CURSOR_RIGHT);
 //                        }
 //                }
-	}
-	if (num == 0)
-		return 1;
-	return 0;
+    }
+    if (num == 0)
+        return 1;
+    return 0;
 }
 
 /*
@@ -2213,40 +2222,40 @@ int input_get_default_mouse (struct uae_input_device *uid, int num, int port, in
  */
 void gfx_default_options (struct uae_prefs *p)
 {
-	int type = get_sdlgfx_type ();
+    int type = get_sdlgfx_type ();
 
 #if 0
 //fixme
-	if (type == SDLGFX_DRIVER_AMIGAOS4 || type == SDLGFX_DRIVER_CYBERGFX || type == SDLGFX_DRIVER_BWINDOW  || type == SDLGFX_DRIVER_QUARTZ)
-		p->map_raw_keys = 1;
-	else
-		p->map_raw_keys = 0;
+    if (type == SDLGFX_DRIVER_AMIGAOS4 || type == SDLGFX_DRIVER_CYBERGFX || type == SDLGFX_DRIVER_BWINDOW  || type == SDLGFX_DRIVER_QUARTZ)
+        p->map_raw_keys = 1;
+    else
+        p->map_raw_keys = 0;
 #endif
 #ifdef USE_GL
-//	p->use_gl = 0;
+//  p->use_gl = 0;
 #endif /* USE_GL */
 }
 
 void gfx_save_options (struct zfile *f, const struct uae_prefs *p)
 {
 #if 0
-	cfgfile_write (f, GFX_NAME ".map_raw_keys=%s\n", p->map_raw_keys ? "true" : "false");
+    cfgfile_write (f, GFX_NAME ".map_raw_keys=%s\n", p->map_raw_keys ? "true" : "false");
 #endif
 #ifdef USE_GL
-	cfgfile_write (f, GFX_NAME ".use_gl=%s\n", p->use_gl ? "true" : "false");
+    cfgfile_write (f, GFX_NAME ".use_gl=%s\n", p->use_gl ? "true" : "false");
 #endif /* USE_GL */
 }
 
 int gfx_parse_option (struct uae_prefs *p, const char *option, const char *value)
 {
 #if 0
-	int result = (cfgfile_yesno (option, value, "map_raw_keys", &(p->map_raw_keys)));
+    int result = (cfgfile_yesno (option, value, "map_raw_keys", &(p->map_raw_keys)));
 #endif
-	int result = 0;
+    int result;
 #ifdef USE_GL
-	result = result || (cfgfile_yesno (option, value, "use_gl", &(p->use_gl)));
+    result = result || (cfgfile_yesno (option, value, "use_gl", &(p->use_gl)));
 #endif /* USE_GL */
-	return result;
+    return result;
 }
 
 int target_checkcapslock (int scancode, int *state)
@@ -2267,27 +2276,27 @@ int target_checkcapslock (int scancode, int *state)
 
 void setmaintitle (void)
 {
-	TCHAR txt[1000], txt2[500];
+    TCHAR txt[1000], txt2[500];
     const char *title = PACKAGE_NAME;
 
-	txt[0] = 0;
+    txt[0] = 0;
 #ifdef INPREC
-	inprec_getstatus (txt);
+    inprec_getstatus (txt);
 #endif
-	if (currprefs.config_window_title[0]) {
-		_tcscat (txt, currprefs.config_window_title);
-		_tcscat (txt, " - ");
-	} else if (config_filename[0]) {
-		_tcscat (txt, "[");
-		_tcscat (txt, config_filename);
-		_tcscat (txt, "] - ");
-	}
-	_tcscat (txt, title);
-	txt2[0] = 0;
-	if (txt2[0]) {
-		_tcscat (txt, " - ");
-		_tcscat (txt, txt2);
-	}
+    if (currprefs.config_window_title[0]) {
+        _tcscat (txt, currprefs.config_window_title);
+        _tcscat (txt, " - ");
+    } else if (config_filename[0]) {
+        _tcscat (txt, "[");
+        _tcscat (txt, config_filename);
+        _tcscat (txt, "] - ");
+    }
+    _tcscat (txt, title);
+    txt2[0] = 0;
+    if (txt2[0]) {
+        _tcscat (txt, " - ");
+        _tcscat (txt, txt2);
+    }
 
-	SDL_WM_SetCaption(txt, txt);
+    SDL_WM_SetCaption(txt, txt);
 }

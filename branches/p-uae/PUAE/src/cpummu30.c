@@ -587,7 +587,7 @@ int mmu030_match_ttr_access(uaecptr addr, uae_u32 fc, bool write)
 }
 
 /* Locked Read-Modify-Write */
-static int mmu030_match_lrmw_ttr_access(uaecptr addr, uae_u32 fc)
+int mmu030_match_lrmw_ttr_access(uaecptr addr, uae_u32 fc)
 {
     int tt0, tt1;
 
@@ -1566,11 +1566,10 @@ static void mmu030_page_fault(uaecptr addr, bool read, int flags, uae_u32 fc) {
 	regs.mmu_ssw |= fc;
     bBusErrorReadWrite = read; 
 	mm030_stageb_address = addr;
-#if MMUDEBUG
+
 	write_log(_T("MMU: page fault (logical addr=%08X SSW=%04x read=%d size=%d fc=%d pc=%08x ob=%08x ins=%04X)\n"),
 		addr, regs.mmu_ssw, read, (flags & MMU030_SSW_SIZE_B) ? 1 : (flags & MMU030_SSW_SIZE_W) ? 2 : 4, fc,
 		regs.instruction_pc, (mmu030_state[1] & MMU030_STATEFLAG1_MOVEM1) ? mmu030_data_buffer : mmu030_ad[mmu030_idx].val, mmu030_opcode & 0xffff);
-#endif
 
 	THROW(2);
 }
@@ -1690,7 +1689,7 @@ uae_u8 mmu030_get_byte_atc(uaecptr addr, int l, uae_u32 fc) {
 }
 
 /* Generic versions of above */
-static void mmu030_put_atc_generic(uaecptr addr, uae_u32 val, int l, uae_u32 fc, int size, int flags) {
+void mmu030_put_atc_generic(uaecptr addr, uae_u32 val, int l, uae_u32 fc, int size, int flags) {
     uae_u32 page_index = addr & mmu030.translation.page.mask;
     uae_u32 addr_mask = mmu030.translation.page.imask;
     
@@ -1713,7 +1712,7 @@ static void mmu030_put_atc_generic(uaecptr addr, uae_u32 val, int l, uae_u32 fc,
 	    phys_put_long(physical_addr, val);
 
 }
-static uae_u32 mmu030_get_atc_generic(uaecptr addr, int l, uae_u32 fc, int size, int flags, bool checkwrite) {
+uae_u32 mmu030_get_atc_generic(uaecptr addr, int l, uae_u32 fc, int size, int flags, bool checkwrite) {
     uae_u32 page_index = addr & mmu030.translation.page.mask;
     uae_u32 addr_mask = mmu030.translation.page.imask;
     
@@ -1908,7 +1907,7 @@ uae_u8 mmu030_get_byte(uaecptr addr, uae_u32 fc) {
 
 
 /* Not commonly used access function */
-static void mmu030_put_generic(uaecptr addr, uae_u32 val, uae_u32 fc, int size, int accesssize, int flags) {
+void mmu030_put_generic(uaecptr addr, uae_u32 val, uae_u32 fc, int size, int accesssize, int flags) {
     
 	//                                        addr,super,write
 	if ((!mmu030.enabled) || (mmu030_match_ttr_access(addr, fc, true)) || (fc==7)) {
@@ -2161,6 +2160,7 @@ void mmu030_reset(int hardreset)
 void m68k_do_rte_mmu030 (uaecptr a7)
 {
 	// Restore access error exception state
+  int i;
 
 	uae_u16 format = get_word_mmu030 (a7 + 6);
 	uae_u16 frame = format >> 12;
@@ -2180,7 +2180,7 @@ void m68k_do_rte_mmu030 (uaecptr a7)
 
 	if (frame == 0xb) {
 		uae_u16 idxsize = get_word_mmu030 (a7 + 0x36);
-		for (int i = 0; i < idxsize + 1; i++) {
+		for (i = 0; i < idxsize + 1; i++) {
 			mmu030_ad[i].done = i < idxsize;
 			mmu030_ad[i].val = get_long_mmu030 (a7 + 0x5c - (i + 1) * 4);
 		}

@@ -172,6 +172,7 @@ static int inprec_pstart (uae_u8 type)
 	static uae_u8 *lastp;
 	uae_u32 hc_orig, hc2_orig;
 	int mvp = current_maxvpos ();
+  int i;
 
 	if (!input_play || !inprec_zf)
 		return 0;
@@ -238,7 +239,7 @@ static int inprec_pstart (uae_u8 type)
 			if (cycles != cycles2 + cycleoffset) {
 				if (warned > 0) {
 					warned--;
-					for (int i = 0; i < 7; i++)
+					for (i = 0; i < 7; i++)
 						write_log (_T("%08x (%08x) "), pcs[i], pcs2[i]);
 					write_log (_T("\n"));
 				}
@@ -634,7 +635,8 @@ void inprec_playdebug_cpu (int mode)
 			if (warned > 0) {
 				warned--;
 				write_log (_T("SYNC ERROR2 PC %08x != %08x\n"), pc1, pc2);
-				for (int i = 0; i < 15; i++)
+        int i;
+				for (i = 0; i < 15; i++)
 					write_log (_T("%08x "), pcs[i]);
 				write_log (_T("\n"));
 
@@ -650,7 +652,8 @@ void inprec_playdebug_cpu (int mode)
 			if (warned > 0) {
 				warned--;
 				write_log (_T("SYNC ERROR2 %08x != %08x\n"), v1, v2);
-				for (int i = 0; i < 15; i++)
+        int i;
+				for (i = 0; i < 15; i++)
 					write_log (_T("%08x "), pcs[i]);
 				write_log (_T("\n"));
 			}

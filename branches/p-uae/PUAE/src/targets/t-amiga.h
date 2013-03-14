@@ -11,10 +11,10 @@
 
 #define TARGET_NAME		"amiga"
 
-#define TARGET_ROM_PATH		"PROGDIR:Roms/"
-#define TARGET_FLOPPY_PATH	"PROGDIR:Floppies/"
-#define TARGET_HARDFILE_PATH	"PROGDIR:HardFiles/"
-#define TARGET_SAVESTATE_PATH   "PROGDIR:SaveStates/"
+#define TARGET_ROM_PATH		"Roms/"
+#define TARGET_FLOPPY_PATH	"Floppies/"
+#define TARGET_HARDFILE_PATH	""
+#define TARGET_SAVESTATE_PATH   "SaveStates/"
 
 #define UNSUPPORTED_OPTION_l
 

@@ -531,7 +531,8 @@ static void subfunc (uae_u8 *data, int cnt)
 	uae_sem_wait (&sub_sem);
 #if 0
 	int total = 0;
-	for (int i = 0; i < MAX_SUBCODEBUFFER; i++) {
+  int i;
+	for (i = 0; i < MAX_SUBCODEBUFFER; i++) {
 		if (subcodebufferinuse[i])
 			total++;
 	}
@@ -617,10 +618,11 @@ static bool isaudiotrack (int startlsn)
 
 static struct cd_toc *get_track (int startlsn)
 {
-	for (int i = cdrom_toc_cd_buffer.first_track_offset + 1; i <= cdrom_toc_cd_buffer.last_track_offset; i++) {
+  unsigned int i;
+	for (i = cdrom_toc_cd_buffer.first_track_offset + 1; i <= cdrom_toc_cd_buffer.last_track_offset; i++) {
 		struct cd_toc *s = &cdrom_toc_cd_buffer.toc[i];
-		size_t addr = (size_t)s->paddress;
-		if ((size_t)startlsn < addr)
+		uae_u32 addr = s->paddress;
+		if (startlsn < addr)
 			return s - 1;
 	}
 	return NULL;
@@ -859,17 +861,12 @@ static int cdrom_command_led (void)
 	return 0;
 }
 
-/** REMOVEME:
-  * nowhere used
-**/
-#if 0
 static int cdrom_command_idle_status (void)
 {
 	cdrom_result_buffer[0] = 0x0a;
 	cdrom_result_buffer[1] = 0x70;
 	return 2;
 }
-#endif // 0
 
 static int cdrom_command_media_status (void)
 {
@@ -1346,7 +1343,8 @@ void AKIKO_hsync_handler (void)
 				else
 					cdrom_subcodeoffset = 128;
 				// 96 byte subchannel data
-				for (int i = 0; i < SUB_CHANNEL_SIZE; i++)
+        int i;
+				for (i = 0; i < SUB_CHANNEL_SIZE; i++)
 					put_byte (subcode_address + cdrom_subcodeoffset + i, subcodebuffer[subcodebufferoffset * SUB_CHANNEL_SIZE + i]);
 				put_long (subcode_address + cdrom_subcodeoffset + SUB_CHANNEL_SIZE, 0xffffffff);
 				subcodebufferinuse[subcodebufferoffset] = 0;
@@ -1489,15 +1487,8 @@ STATIC_INLINE void akiko_put_long (uae_u32 *p, int offset, int v)
 static uae_u32 REGPARAM3 akiko_lget (uaecptr) REGPARAM;
 static uae_u32 REGPARAM3 akiko_wget (uaecptr) REGPARAM;
 static uae_u32 REGPARAM3 akiko_bget (uaecptr) REGPARAM;
-
-/** REMOVEME:
-  * Nowhere defined, nowhere used
-**/
-#if 0
 static uae_u32 REGPARAM3 akiko_lgeti (uaecptr) REGPARAM;
 static uae_u32 REGPARAM3 akiko_wgeti (uaecptr) REGPARAM;
-#endif // 0
-
 static void REGPARAM3 akiko_lput (uaecptr, uae_u32) REGPARAM;
 static void REGPARAM3 akiko_wput (uaecptr, uae_u32) REGPARAM;
 static void REGPARAM3 akiko_bput (uaecptr, uae_u32) REGPARAM;

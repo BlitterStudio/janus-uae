@@ -34,6 +34,8 @@
 
 #define MAX_EXPANSION_BOARDS 8
 
+#define PICASSO96
+
 /* ********************************************************** */
 /* 00 / 02 */
 /* er_Type */
@@ -302,14 +304,20 @@ static void REGPARAM2 expamem_wput (uaecptr addr, uae_u32 value)
 	else {
 		switch (addr & 0xff) {
 		case 0x44:
+      DebOut("case 0x44:\n");
 			if (expamem_type() == zorroIII) {
 				uae_u32 p1, p2 = 0;
+        DebOut("=>zorroIII\n");
 				// +Bernd Roesch & Toni Wilen
 				p1 = get_word (regs.regs[11] + 0x20);
+        DebOut("p1: %lx\n", p1);
+        DebOut("expamem[0] %lx & add_memory %lx\n", expamem[0], add_memory);
 				if (expamem[0] & add_memory) {
 					// Z3 RAM expansion
+          DebOut("p2 %lx, z3num %d\n", p2, z3num);
 					p2 = 0;
 					while (!p2 && z3num < 2) {
+            DebOut("while (!p2 && z3num < 2) \n");
 						if (z3num == 0 && currprefs.z3fastmem_size)
 							p2 = z3fastmem_start >> 16;
 						else if (z3num == 1 && currprefs.z3fastmem2_size)
@@ -319,10 +327,12 @@ static void REGPARAM2 expamem_wput (uaecptr addr, uae_u32 value)
 					}
 					z3num++;
 				} else {
+          DebOut("p96ram_start: %lx\n", p96ram_start);
 					// Z3 P96 RAM
 					if (p96ram_start & 0xff000000)
         					p2 = p96ram_start >> 16;
 				}
+        DebOut("p2: %lx\n", p2);
 				put_word (regs.regs[11] + 0x20, p2);
 				put_word (regs.regs[11] + 0x28, p2);
 				// -Bernd Roesch
@@ -1145,7 +1155,10 @@ uaecptr p96ram_start;
 
 static void expamem_map_gfxcard (void)
 {
+  DebOut("entered\n");
+
 	gfxmem_start = (expamem_hi | (expamem_lo >> 4)) << 16;
+  DebOut("gfxmem_start %lx = expamem_hi %d | (expamem_lo %d >> 4)) << 16\n", gfxmem_start, expamem_hi, expamem_lo);
 	if (gfxmem_start) {
 		map_banks (&gfxmem_bank, gfxmem_start >> 16, allocated_gfxmem >> 16, allocated_gfxmem);
 		write_log (_T("%sUAEGFX-card: mapped @$%lx, %d MB RTG RAM\n"), currprefs.rtgmem_type ? _T("Z3") : _T("Z2"), gfxmem_start, allocated_gfxmem / 0x100000);
@@ -1438,6 +1451,8 @@ void p96memstart (void)
 	if (p96ram_start == currprefs.z3fastmem_start + currprefs.z3fastmem_size + currprefs.z3fastmem2_size + currprefs.z3chipmem_size &&
 		(currprefs.z3fastmem_size + currprefs.z3fastmem2_size + currprefs.z3chipmem_size < 512 * 1024 * 1024 || currprefs.rtgmem_size < 128 * 1024 * 1024))
 		p96ram_start += 0x1000000;
+
+  DebOut("p96ram_start: %lx\n", p96ram_start);
 }
 
 void expamem_reset (void)
