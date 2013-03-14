@@ -1,0 +1,76 @@
+p-uae (0.0.0-0) UNRELEASED; urgency=low
+
+  * Changed package name to p-uae.
+  * http://rzr.online.fr/q/amiga
+
+ -- Philippe Coval <rzr@gna.org>  Mon, 23 May 2011 11:43:36 +0200
+
+e-uae (0.8.28-2) unstable; urgency=low
+
+  * Adjustments to Debian packaging, making this package suitable for
+    inclusion in the Debian archives (Closes: #301312)
+
+ -- Florian Ernst <florian@debian.org>  Wed, 23 Nov 2005 17:42:44 +0100
+
+e-uae (0.8.28-1) unstable; urgency=low
+
+  * Updated to version 0.8.28.
+
+ -- Richard Drummond <uae@rcdrummond.net>  Sat, 17 Sep 2005 15:54:09 -0400
+
+e-uae (0.8.27-1) unstable; urgency=low
+
+  * Changed package name to e-uae.
+  * Updated to version 0.8.27.
+
+ -- Richard Drummond <uae@rcdrummond.net>  Mon,  3 Jan 2005 14:57:37 -0500
+
+uae (0.8.23-1.20040125.1) unstable; urgency=low
+
+  * Updated.
+
+ -- Richard Drummond <uae@rcdrummond.net>  Sun, 25 Jan 2004 03:29:46 -0500
+
+uae (0.8.23-1.20040123.1) unstable; urgency=low
+
+  * Updated to 0.8.23
+  * Now build depends on either gtk1.2-dev or gtk2.0-dev 
+
+ -- Richard Drummond <uae@rcdrummond.net>  Fri, 23 Jan 2004 14:37:25 -0500
+
+uae (0.8.22-1.20040104.1) unstable; urgency=low
+
+  * Updated. See CHANGES-rich.txt for details.
+  * Added readdisk binary to package.
+  * Updated rules due to new automake-based build system used.
+
+ -- Richard Drummond <uae@rcdrummond.net>  Mon,  5 Jan 2004 14:38:37 -0500
+
+uae (0.8.22-1.20031215.1) unstable; urgency=low
+
+  * Updated. See CHANGES-rich.txt for details.
+
+ -- Richard Drummond <uae@rcdrummond.net>  Mon, 15 Dec 2003 03:40:21 -0500
+
+uae (0.8.22-1.20031214.1) unstable; urgency=low
+
+  * Updated. See CHANGES-rich.txt for details.
+
+ -- Richard Drummond <uae@rcdrummond.net>  Sun, 14 Dec 2003 21:42:43 -0500
+
+uae (0.8.22-1.20031202.1) unstable; urgency=low
+
+  * Update. See CHANGES-rich.txt for details.
+  * No longer requires GCC-2.95 to build. Will build with default gcc.
+
+ -- Richard Drummond <uae@rcdrummond.net>  Tue, 18 Nov 2003 15:48:00 -0500
+
+uae (0.8.22-1.20031118.1) unstable; urgency=low
+
+  * Initial debian packaging
+
+ -- Richard Drummond <uae@rcdrummond.net>  Tue, 18 Nov 2003 15:48:00 -0500
+
+Local variables:
+mode: debian-changelog
+End:

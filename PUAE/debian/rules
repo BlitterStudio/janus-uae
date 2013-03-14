@@ -1,0 +1,93 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Simple debian/rules for UAE
+# Based on sample rules  GNU copyright 1997 to 1999 by Joey Hess.
+
+#export DH_VERBOSE=1
+
+DEB_HOST_ARCH_OS	?= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
+DEB_HOST_GNU_CPU	?= $(shell dpkg-architecture -qDEB_HOST_GNU_CPU)
+DEB_HOST_ARCH		?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+
+# Build only the SDL target for just now
+CFG_OPTIONS += --with-sdl-gfx --with-sdl-sound
+
+# Use 'new' bsdsocket emulation on these architectures:
+ifneq (,$(findstring $(DEB_HOST_ARCH),i386 amd64 powerpc))
+    CFG_OPTIONS += --enable-bsdsock-new
+else
+    CFG_OPTIONS += --enable-bsdsock
+endif
+
+CFLAGS = -Wall -g
+
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+	CFLAGS += -O0
+else
+	CFLAGS += -O2
+endif
+
+config.status: configure
+	dh_testdir
+	ln -sf /usr/share/misc/config.sub	config.sub
+	ln -sf /usr/share/misc/config.guess	config.guess
+	CC="$(CC)" CFLAGS="$(CFLAGS)" ./configure \
+		--prefix=/usr \
+		--host=$(DEB_HOST_GNU_TYPE) \
+		--build=$(DEB_BUILD_GNU_TYPE) \
+		--with-caps --with-caps-prefix=$(CURDIR)/src \
+		$(CFG_OPTIONS)
+
+build: build-stamp
+build-stamp:  config.status
+	dh_testdir
+	$(MAKE)
+	touch $@
+
+clean:
+	dh_testdir
+	dh_testroot
+	-rm build-stamp
+	[ ! -f Makefile ] || $(MAKE) -i distclean
+	dh_clean config.sub config.guess
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs usr/share/p-uae
+	install -D src/uae debian/p-uae/usr/bin/p-uae
+	install -D src/readdisk debian/p-uae/usr/bin/p-uae_readdisk
+	cp -a amiga debian/p-uae/usr/share/p-uae
+	rm -rf debian/p-uae/usr/share/p-uae/amiga/source
+	install -D -m 644 debian/lintian.overrides \
+		debian/p-uae/usr/share/lintian/overrides/p-uae
+	install -D -m 644 debian/linda.overrides \
+		debian/p-uae/usr/share/linda/overrides/p-uae
+
+binary-indep: build install
+# We have nothing to do by default.
+
+binary-arch: build install
+	dh_testdir
+	dh_testroot
+#	dh_installchangelogs ChangeLog
+	dh_installchangelogs CHANGES
+	dh_installdocs
+	dh_installmenu
+	dh_installman
+	dh_link
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+configure: bootstrap.sh
+	${SHELL} $<
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install
