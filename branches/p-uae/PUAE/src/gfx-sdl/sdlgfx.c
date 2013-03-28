@@ -1005,6 +1005,7 @@ int graphics_setup (void)
 
         /* Find default display depth */
         bitdepth = info->vfmt->BitsPerPixel;
+        DebOut("bitdepth: %d\n", bitdepth);
         bit_unit = info->vfmt->BytesPerPixel * 8;
 
         write_log ("SDLGFX: Display is %d bits deep.\n", bitdepth);
@@ -1133,6 +1134,7 @@ static int graphics_subinit_gl (void)
         gfxvidinfo.maxblocklines = MAXBLOCKLINES_MAX;
         gfxvidinfo.linemem = 0;
         gfxvidinfo.pixbytes = display->format->BytesPerPixel;
+        DebOut("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.pixbytes);
         gfxvidinfo.rowbytes = display->pitch;
         SDL_SetColors (display, arSDLColors, 0, 256);
         reset_drawing ();
@@ -1151,6 +1153,8 @@ static int graphics_subinit_gl (void)
     }
 #endif
     }
+
+    DebOut("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.pixbytes);
 
     gfxvidinfo.emergmem = scrlinebuf; // memcpy from system-memory to video-memory
 
@@ -1186,9 +1190,13 @@ static int graphics_subinit (void)
             uiSDLVidModFlags |= SDL_DOUBLEBUF;
     }
 
+    if(bitdepth==24) {
+      DEBUG_LOG ("force bitdepth of 32 instead of 24\n");
+      bitdepth=32;
+    }
     DEBUG_LOG ("Resolution: %d x %d x %d\n", current_width, current_height, bitdepth);
 
-    screen = SDL_SetVideoMode (current_width, current_height, bitdepth, uiSDLVidModFlags);
+    screen = SDL_SetVideoMode (current_width, current_height, 32, uiSDLVidModFlags);
 
     if (screen == NULL) {
         gui_message ("Unable to set video mode: %s\n", SDL_GetError ());
@@ -1252,6 +1260,8 @@ static int graphics_subinit (void)
         gfxvidinfo.maxblocklines    = MAXBLOCKLINES_MAX;
         gfxvidinfo.linemem      = 0;
         gfxvidinfo.pixbytes     = display->format->BytesPerPixel;
+        DebOut("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.pixbytes);
+
         gfxvidinfo.rowbytes     = display->pitch;
 
 
@@ -1281,6 +1291,8 @@ static int graphics_subinit (void)
     }
 #endif /* USE_GL */
 
+    //DebOut("force gfxvidinfo.pixbytes %d to 4\n", gfxvidinfo.pixbytes);
+    //gfxvidinfo.pixbytes=4;
     /* Set UAE window title and icon name */
     setmaintitle ();
 
@@ -1797,6 +1809,7 @@ void gfx_set_picasso_modeinfo (uae_u32 w, uae_u32 h, uae_u32 depth, RGBFTYPE rgb
     picasso_vidinfo.height = h;
     picasso_vidinfo.depth = depth;
     picasso_vidinfo.pixbytes = bit_unit >> 3;
+    DebOut("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.pixbytes);
     if (screen_is_picasso)
         set_window_for_picasso();
 }
