@@ -3408,7 +3408,9 @@ uae_u32 REGPARAM2 op_illg (uae_u32 opcode)
 			write_log (_T("A-Trap %x at %x (%p)\n"), opcode, pc, regs.pc_p);
 			warned++;
 		}
+    DebOut("calling Exception ..\n");
 		Exception (0xA);
+    DebOut("Exception (0xA) called\n");
 		//activate_debugger();
 		return 4;
 	}

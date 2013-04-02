@@ -5393,7 +5393,6 @@ void alloc_cache(void)
 		cache_free(compiled_code);
 	}
 
-  DebOut("entered\n");
 #ifdef NATMEM_OFFSET
     if (canbang) {
 		/* Set up signal handler to catch illegal natmem accesses */
@@ -5419,7 +5418,6 @@ void alloc_cache(void)
 		popallspace = cache_alloc (1024);
 	compiled_code = NULL;
 
-  DebOut("currprefs.cachesize: %d\n", currprefs.cachesize);
 	if (currprefs.cachesize == 0) {
     write_log (_T("JIT: currprefs.cachesize == 0\n"));
 		return;

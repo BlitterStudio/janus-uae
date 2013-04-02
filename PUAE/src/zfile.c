@@ -38,6 +38,9 @@
 #include <dos/dos.h>
 #endif
 
+// disable debugging for this file
+#define DebOut(...)
+
 static struct zfile *zlist = 0;
 
 const TCHAR *uae_archive_extensions[] = { _T("zip"), _T("rar"), _T("7z"), _T("lha"), _T("lzh"), _T("lzx"), _T("tar"), NULL };
