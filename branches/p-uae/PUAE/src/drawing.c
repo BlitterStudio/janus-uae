@@ -50,6 +50,13 @@
 #include "inputdevice.h"
 #include "debug.h"
 
+#ifndef __AROS__
+#define DebOut(...) do { printf("%s:%d %s(): ",__FILE__,__LINE__,__func__);printf(__VA_ARGS__); } while(0)
+
+#endif
+
+#define DebOut(...)
+
 /* internal prototypes */
 void get_custom_mouse_limits (int *pw, int *ph, int *pdx, int *pdy, int dbl);
 void init_aspect_maps (void);
@@ -245,6 +252,7 @@ static int picasso_redraw_necessary;
 #ifdef XLINECHECK
 static void xlinecheck (unsigned int start, unsigned int end)
 {
+  DebOut("start %d, end %d\n", start, end);
 	unsigned int xstart = (unsigned int)xlinebuffer + start * gfxvidinfo.pixbytes;
 	unsigned int xend = (unsigned int)xlinebuffer + end * gfxvidinfo.pixbytes;
 	unsigned int end1 = (unsigned int)gfxvidinfo.bufmem + gfxvidinfo.rowbytes * gfxvidinfo.height;
@@ -278,7 +286,10 @@ static void xlinecheck (unsigned int start, unsigned int end)
 	}
 }
 #else
-#define xlinecheck
+//#define xlinecheck
+static void xlinecheck (unsigned int start, unsigned int end) {
+  DebOut("disabled (XLINECHECK undef)\n");
+}
 #endif
 
 
@@ -301,6 +312,7 @@ STATIC_INLINE int xshift (int x, int shift)
 
 int coord_native_to_amiga_x (int x)
 {
+  DebOut("coord_native_to_amiga_x(%d)\n", x);
 	x += visible_left_border;
 	x = xshift (x, 1 - lores_shift);
 	return x + 2 * DISPLAY_LEFT_SHIFT - 2 * DIW_DDF_OFFSET;
@@ -327,6 +339,7 @@ STATIC_INLINE int res_shift_from_amiga (int x)
 
 void notice_screen_contents_lost (void)
 {
+  DebOut("entered\n");
 	picasso_redraw_necessary = 1;
 	frame_redraw_necessary = 2;
 }
@@ -400,6 +413,8 @@ int get_custom_limits (int *pw, int *ph, int *pdx, int *pdy, int *prealh)
 {
 	int w, h, dx, dy, y1, y2, dbl1, dbl2;
 	int ret = 0;
+
+  DebOut("entered\n");
 
 	if (!pw || !ph || !pdx || !pdy) {
 		reset_custom_limits ();
@@ -572,6 +587,7 @@ void get_custom_mouse_limits (int *pw, int *ph, int *pdx, int *pdy, int dbl)
 	int delay1, delay2;
 	int w, h, dx, dy, dbl1, dbl2, y1, y2;
 
+  DebOut("entered\n");
 	w = diwlastword_total - diwfirstword_total;
 	dx = diwfirstword_total - visible_left_border;
 
@@ -632,6 +648,7 @@ static struct draw_info *dip_for_drawing;
 /* Record DIW of the current line for use by centering code.  */
 void record_diw_line (int plfstrt, int first, int last)
 {
+  DebOut("entered\n");
 	if (last > max_diwstop)
 		max_diwstop = last;
 	if (first < min_diwstart) {
@@ -664,6 +681,7 @@ static int seen_sprites;
 
 STATIC_INLINE xcolnr getbgc (bool blank)
 {
+  DebOut("getbgc(%d)\n", blank);
 #if 0
 	if (blank)
 		return xcolors[0x088];
@@ -689,6 +707,8 @@ static void pfield_init_linetoscr (void)
 	/* First, get data fetch start/stop in DIW coordinates.  */
 	int ddf_left = dp_for_drawing->plfleft * 2 + DIW_DDF_OFFSET;
 	int ddf_right = dp_for_drawing->plfright * 2 + DIW_DDF_OFFSET;
+
+  DebOut("entered\n");
 
 	/* Compute datafetch start/stop in pixels; native display coordinates.  */
 	native_ddf_left = coord_hw_to_window_x (ddf_left);
@@ -808,6 +828,7 @@ STATIC_INLINE void fill_line_16 (uae_u8 *buf, int start, int stop, bool blank)
 	uae_u16 *b = (uae_u16 *)buf;
 	int i;
 	unsigned int rem = 0;
+  DebOut("entered\n");
 	xcolnr col = getbgc (blank);
 	if (((long)&b[start]) & 1)
 		b[start++] = (uae_u16) col;
@@ -830,18 +851,27 @@ STATIC_INLINE void fill_line_32 (uae_u8 *buf, int start, int stop, bool blank)
 	uae_u32 *b = (uae_u32 *)buf;
 	int i;
 	xcolnr col = getbgc (blank);
+  DebOut("entered\n");
 	for (i = start; i < stop; i++)
 		b[i] = col;
 }
 static void pfield_do_fill_line2 (int start, int stop, bool blank)
 {
+  DebOut("start %d, stop %d, blank %d\n", start, stop, blank);
+  DebOut("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.pixbytes);
 	switch (gfxvidinfo.pixbytes) {
 	case 2: fill_line_16 (xlinebuffer, start, stop, blank); break;
 	case 4: fill_line_32 (xlinebuffer, start, stop, blank); break;
+  default: 
+    //gfxvidinfo.pixbytes=4;
+    write_log("gfxvidinfo.pixbytes %d not supported!!\n", gfxvidinfo.pixbytes);
 	}
 }
+
+/* oli: here it goes different directions .. */
 static void pfield_do_fill_line (int start, int stop, bool blank)
 {
+  DebOut("entered\n");
 	xlinecheck(start, stop);
 	if (!blank) {
 		if (start < visible_left_start) {
@@ -865,6 +895,7 @@ STATIC_INLINE void fill_line2 (int startpos, int len)
 	int *start;
 	xcolnr val;
 
+  DebOut("entered\n");
 /*    shift = 0;
     if (gfxvidinfo.pixbytes == 2)
 		shift = 1;
@@ -908,6 +939,7 @@ STATIC_INLINE void fill_line2 (int startpos, int len)
 
 static void fill_line (void)
 {
+  DebOut("entered\n");
 	int hs = coord_hw_to_window_x (hsyncstartpos * 2);
 	if (hs >= gfxvidinfo.inwidth || hposblank) {
 		hposblank = 3;
@@ -1250,6 +1282,7 @@ static int NOINLINE linetoscr_16_shrink2f_sh (int spix, int dpix, int stoppos, i
 
 static void pfield_do_linetoscr (int start, int stop, bool blank)
 {
+  DebOut("entered\n");
 	xlinecheck(start, stop);
 	if (issprites && (currprefs.chipset_mask & CSMASK_AGA)) {
 		if (res_shift == 0) {
@@ -1566,6 +1599,7 @@ static void decode_ham (int pix, int stoppos, bool blank)
 static void gen_pfield_tables (void)
 {
 	int i;
+  DebOut("entered\n");
 
 	for (i = 0; i < 256; i++) {
 		int plane1 = ((i >> 0) & 1) | ((i >> 1) & 2) | ((i >> 2) & 4) | ((i >> 3) & 8);
@@ -1671,6 +1705,7 @@ static void clear_bitplane_border_aga (void)
 	int len, shift = res_shift;
 	uae_u8 v = 0;
 
+  DebOut("entered\n");
 	if (shift < 0) {
 		shift = -shift;
 		len = (real_playfield_start - playfield_start) << shift;
@@ -1819,6 +1854,7 @@ void init_row_map (void)
 	static int oldheight, oldpitch;
 
 	int i, j;
+  DebOut("entered\n");
 	if (gfxvidinfo.height_allocated > MAX_VIDHEIGHT) {
 		write_log (_T("Resolution too high, aborting\n"));
 		abort ();
@@ -1841,6 +1877,7 @@ void init_aspect_maps (void)
 {
 	int i, maxl, h;
 
+  DebOut("entered\n");
 	h = gfxvidinfo.height_allocated;
 
 	if (h == 0)
@@ -1933,6 +1970,7 @@ static void do_flush_line_1 (int lineno)
 
 STATIC_INLINE void do_flush_line (int lineno)
 {
+  DebOut("entered\n");
 	do_flush_line_1 (lineno);
 }
 
@@ -1947,6 +1985,7 @@ STATIC_INLINE void do_flush_screen (int start, int stop)
 	/* TODO: this flush operation is executed outside locked state!
 	Should be corrected.
 	(sjo 26.9.99) */
+  DebOut("entered\n");
 
 	xlinecheck (start, stop);
 	if (gfxvidinfo.maxblocklines != 0 && first_block_line != NO_BLOCK) {
@@ -2052,6 +2091,7 @@ static enum { color_match_acolors, color_match_full } color_match_type;
    line.  Try to avoid copying color tables around whenever possible.  */
 static void adjust_drawing_colors (int ctable, int need_full)
 {
+  DebOut("entered\n");
 	if (drawing_color_matches != ctable) {
 		if (need_full) {
 			color_reg_cpy (&colors_for_drawing, curr_color_tables + ctable);
@@ -2075,6 +2115,7 @@ static void do_color_changes (line_draw_func worker_border, line_draw_func worke
 	int lastpos = visible_left_border;
 	int endpos = visible_left_border + gfxvidinfo.inwidth;
 
+  DebOut("entered\n");
 	for (i = dip_for_drawing->first_color_change; i <= dip_for_drawing->last_color_change; i++) {
 		int regno = curr_color_changes[i].regno;
 		unsigned int value = curr_color_changes[i].value;
@@ -2147,6 +2188,7 @@ static void pfield_draw_line (int lineno, int gfx_ypos, int follow_ypos)
 	int border = 0;
 	int do_double = 0;
 	enum double_how dh;
+  DebOut("entered\n");
 
 	dp_for_drawing = line_decisions + lineno;
 	dip_for_drawing = curr_drawinfo + lineno;
@@ -2339,6 +2381,7 @@ static void center_image (void)
 	int tmp;
 
 	int w = gfxvidinfo.inwidth;
+  DebOut("entered\n");
 	if (currprefs.gfx_xcenter && !currprefs.gfx_filter_autoscale && max_diwstop > 0) {
 
 		if (max_diwstop - min_diwstart < w && currprefs.gfx_xcenter == 2)
@@ -2434,6 +2477,7 @@ static void init_drawing_frame (void)
 #if 1
 	static int frame_res_old;
 
+  DebOut("entered\n");
 	if (currprefs.gfx_autoresolution && frame_res >= 0 && frame_res_lace >= 0) {
 		if (FRAMES_UNTIL_RES_SWITCH > 0 && frame_res_old == frame_res * 2 + frame_res_lace) {
 			frame_res_cnt--;
@@ -2588,6 +2632,7 @@ static void draw_status_line (int line, int statusy)
 	int bpp, y;
 	uae_u8 *buf;
 
+  DebOut("entered\n");
 	if (!(currprefs.leds_on_screen & STATUSLINE_CHIPSET) || (currprefs.leds_on_screen & STATUSLINE_TARGET))
 		return;
 	bpp = gfxvidinfo.pixbytes;
@@ -2824,6 +2869,7 @@ void hardware_line_completed (int lineno)
 
 void check_picasso (void)
 {
+  DebOut("entered\n");
 #ifdef PICASSO96
 	if (picasso_on && picasso_redraw_necessary)
 		picasso_refresh ();
@@ -2850,6 +2896,7 @@ void check_picasso (void)
 
 void redraw_frame (void)
 {
+  DebOut("entered\n");
 	last_drawn_line = 0;
 	first_drawn_line = 32767;
 	finish_drawing_frame ();
@@ -2858,6 +2905,7 @@ void redraw_frame (void)
 
 bool vsync_handle_check (void)
 {
+  DebOut("entered\n");
 	check_picasso ();
 
 	int changed = check_prefs_changed_gfx ();
@@ -2885,6 +2933,7 @@ bool vsync_handle_check (void)
 
 void vsync_handle_redraw (int long_frame, int lof_changed, uae_u16 bplcon0p, uae_u16 bplcon3p)
 {
+  DebOut("entered\n");
 	last_redraw_point++;
 	if (lof_changed || interlace_seen <= 0 || last_redraw_point >= 2 || long_frame || doublescan < 0) {
 		last_redraw_point = 0;
@@ -3000,6 +3049,7 @@ static void dummy_unlock (struct vidbuf_description *gfxinfo)
 
 static void gfxbuffer_reset (void)
 {
+  DebOut("entered\n");
 	gfxvidinfo.flush_line         = dummy_flush_line;
 	gfxvidinfo.flush_block        = dummy_flush_block;
 	gfxvidinfo.flush_screen       = dummy_flush_screen;

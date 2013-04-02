@@ -185,6 +185,8 @@ a_inode *fsdb_lookup_aino_aname (a_inode *base, const TCHAR *aname)
 {
 	FILE *f;
 
+  DebOut("aname: %s\n", aname);
+
 	f = get_fsdb (base, _T("r+b"));
 	if (f == 0) {
 //		if (currprefs.filesys_custom_uaefsdb && (base->volflags & MYVOLUMEINFO_STREAMS))

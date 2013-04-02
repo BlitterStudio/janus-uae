@@ -2287,10 +2287,15 @@ int target_checkcapslock (int scancode, int *state)
         return 1;
 }
 
+#ifdef __AROS__
+#define OLI_PACKAGE_NAME "PUAE 2.6.0 (31.1.2013) for AROS - v0.1 - ALPHA RELEASE!"
+#else
+#define OLI_PACKAGE_NAME PACKAGE_NAME
+#endif
 void setmaintitle (void)
 {
     TCHAR txt[1000], txt2[500];
-    const char *title = PACKAGE_NAME;
+    const char *title = OLI_PACKAGE_NAME;
 
     txt[0] = 0;
 #ifdef INPREC
