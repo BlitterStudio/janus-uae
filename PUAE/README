@@ -1,0 +1,65 @@
+PUAE 2.6.0 beta series
+---------------------------------------------------
+PUAE tries to continue where E-UAE left off..
+PUAE versioning is based on the merged WinUAE version..
+
+All is done by:
+	Mustafa 'GnoStiC' TUFAN (mustafa.tufan@gmail.com)
+
+Thanks:
+Sven Eden (cleanup)
+
+
+
+GIT
+---------------------------------------------------
+http://github.com/GnoStiC/PUAE
+
+
+PUAE Binaries
+---------------------------------------------------
+I don't supply binaries for any OS
+but you can find compiled versions on net
+(e.g. chiark creates dmg and posts here http://www.binarydevotion.com)
+
+You should also check FS-UAE: http://fengestad.no/wp/fs-uae
+                  and WinUAE: http://www.winuae.net
+
+
+PUAE Ports
+---------------------------------------------------
+Pandora    : http://apps.openpandora.org/cgi-bin/viewapp.pl?/Emulator/puae.inf
+XBOX360    : http://lantus360.com
+Android    : http://droidpuae.blogspot.com
+           : https://github.com/pelya/commandergenius/tree/sdl_android/project/jni/application/puae
+PS3        : http://metaneutrons.blogspot.com/2011/07/porting-puae-to-playstation-3.html
+Raspbery PI: http://www.valvers.com/raspberry-pi#toc-amiga-emulation-puae
+
+
+Using PUAE
+---------------------------------------------------
+See the docs directory
+
+
+Compiling PUAE
+---------------------------------------------------
+See the docs/compiling.txt
+
+i use 
+imac,        xcode 4.3.3, sdl 1.2.15, macosx 10.7.5
+macbook pro, xcode 4.5.2, sdl 1.2.15, macosx 10.8.2
+(build_macos_cocoa)
+
+
+Bug Reports
+---------------------------------------------------
+Post it on github/eab forum or e-mail me
+
+
+Contact
+---------------------------------------------------
+http://eab.abime.net/forumdisplay.php?f=54
+http://www.freelists.org/list/uae
+
+mustafa.tufan@gmail.com
+http://gnostic.ms

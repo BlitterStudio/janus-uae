@@ -1,0 +1,5 @@
+https://github.com/pelya/commandergenius/blob/sdl_android/project/jni/application/puae/
+
+run build.sh
+Also you should deinstall libgtk2.0-dev from your Linux,
+otherwise it will be detected by configure script and will break compilation.

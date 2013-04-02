@@ -1,0 +1,168 @@
+Compiling PUAE
+===============
+
+PUAE should be able to compile on any platform with a POSIX-like shell
+environment, a C compiler and make. Version 2.95 or newer of the GNU C
+Compiler is recommended as is GNU make, but alternative compilers and
+versions of make may work. Some features may be GCC-specific, however.
+Currently, for example, the JIT - the compiler which dynamically
+translate 68k opcodes to x86 opcodes - does require GCC (and GAS, the
+GNU assembler).
+
+Currently zlib is also required to build PUAE for all supported
+platforms. This isn't much of hardship since zlib is available
+everywhere, but shout loudly enough and I'll fix this.
+
+Required Stuff
+==============
+(for debian based Linux)
+apt-get install build-essential
+apt-get install automake
+apt-get install zlib1g
+apt-get install libsdl1.2-dev
+apt-get install libgtk2.0-dev
+
+
+Configuring
+===========
+
+The first step to compiling PUAE is to generate a makefile suitable
+for your intended target system. This is done by running the configure
+script.
+
+Run ./configure --help to see the list of options that the configure
+script supports. Most options will automatically default to
+appropriate values.
+
+Here are a selection of the the supported options:
+
+The config script for UAE supports a bunch of compile-time options for
+selecting what features are built into UAE. Here's a selection:
+
+--enable-fpu
+  Build CPU emulation with suppport for optional emulation of a math
+  coprocessor (Motoroloa 68881/2, etc.). Defaults to true.
+
+--enable-compatible-cpu
+  Build CPU emulation with support for optional emulation of
+  instruction prefetch. Defaults to true.
+
+--enable-cycle-exact-cpu
+  Build CPU/custom chip emulation with support for optional
+  cycle-exact emulation of interactions between the CPU and Amiga chip
+  set. Defaults to true.
+
+--enable-jit
+  Build CPU emulation with support for optional JIT compiler. The JIT
+  (which compiles 680x0 instructions to native instructions) is
+  currently only supported on x86 platforms. (It is known to work on
+  Linux, Solaris, AROS, and BeOS, but should work on most Unix-like
+  platforms, providing you are building with GCC). Defaults to enabled
+  when building for x86.
+
+--enable-natmem
+  If building the JIT, include support for direct memory access (which
+  greatly improves performance). Currently only supported on Linux.
+  Defaults to enabled when building for Linux/x86.
+
+--enable-autoconfig
+  Include emulation of the Amiga's autoconfig expansion system.
+  Required for emulating ZII or ZIII memory, emulating disks, SCSI
+  devices, network stacks - in fact, most of the cool stuff that UAE
+  can do. Currently defaults to enabled providing thread support is
+  available (which should be on all the supported host platforms).
+  This dependency on threads will eventually be removed.
+
+--enable-aga
+  Support emulation of AGA chipset. Defaults to true. Required if you
+  want to emulate an A1200, A4000 or CD32.
+
+--enable-scsi-device
+  Build with SCSI emulation. This requires the libscg and libschily
+  libraries and headers from cdrtools 2.0.x (see below).
+
+--enable-cdtv
+  Enable CDTV emulation. Requires SCSI emulation. Defaults to enabled
+  if SCSI emulation is enabled.
+
+--enable-cd32
+  Enable CD32 emulation. Requires SCSI emulation and AGA support be
+  enabled. Defaults to enabled if both these are enabled.
+
+--enable-bsdsock
+  Build with support for emulated network stack (an emulated
+  bsdsocket.library). This works only on Unix platforms at the moment
+  (including Linux, Solaris and OS X).
+
+--enable-gccopt
+  Enable CPU specific optimization parameters. Script will check for your CPU's
+  features and set additional compile flags.
+
+--with-caps
+  Build with support for IPF (CAPS) images. This requires the IPF
+  development files from http://www.caps-project.org/
+
+--with-caps-prefix=<dir>
+  Optional absolute path to where the CAPS API is installed on your
+  system.
+
+--with-sdl-gfx
+  Use SDL library for graphics output.
+
+--with-sdl-gl
+  Use SDL library for graphics output and enable OpenGL display output.
+
+--with-sdl-sound
+  Use SDL library for audio output.
+
+
+Note that the '--enable-xyz' options all have a '--disable-xyz'
+counterpart to disable that feature.
+
+
+Compiling on MacOS X
+--------------------
+
+At the moment, only building against the SDL framework is supported.
+Configure with
+
+./configure --with-sdl-gfx --with-sdl-sound
+
+and any other options you fancy.
+
+If you are building on an x86 OS X box, then the SDL test in the
+configure script currently fails. It should build okay if you disable
+the SDL test. That is, configure with:
+
+./configure --with-sdl-gfx --with-sdl-sound --disable-sdltest
+
+I've not tested this myself, however, since I don't have a MacIntel
+box.
+
+
+Building the SCSI emulation
+---------------------------
+
+PUAE's SCSI emulation may use libscg, the SCSI transport layer from
+the cdrtools project (see http://cdrecord.berlios.de). Note, however,
+due to a license change in the cdrtools project, only versions of
+cdrtools up to 2.01.01a08 inclusive may be used.
+
+If libscg is not available on your build system, download a recent
+version of cdrecord and compile it. Then run the ./src/install_libscg
+script in the PUAE source archive to move the relevant files from
+cdrecord to the PUAE source directory.
+
+If your system has the libscg headers and library installed in a
+non-standard location, you can pass the --with-libscg-prefix option or
+the --with-libscg-includedir and --with-libscg-libdir options to the
+configure script to specify where these are installed.
+
+On Linux systems, if libscg is not available, PUAE tries to use a
+Linux-specific SCSI emulation that is based on some ioctl() commands.
+
+
+Misc
+-------------
+
+--host=i586 --target=i586 CFLAGS="-m32" LDFLAGS="-m32"

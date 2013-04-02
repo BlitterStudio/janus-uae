@@ -1,0 +1,26 @@
+P-UAE for Debian
+----------------
+
+Currently this build of P-UAE does not support the SCSI emulation. This will
+be addressed eventually.
+
+Additionally, this package is missing support for IPF floppy images as the
+corresponding header files are distributed under a disputable license.
+However, the package build system is configured to use these headers if they
+are present, so all you need to do is download the package source via
+| $ apt-get source p-uae
+(works only if you have a working deb-src line in your /etc/apt/sources.list)
+install all packages needed for a rebuild via
+| $ apt-get build-dep p-uae; apt-get install build-essential fakeroot
+download the IPF Access API tarball from http://www.softpres.org/
+and copy the include/caps directory included therein into the src/include
+directory in your private p-uae build tree. From this tree, now execute
+| $ dpkg-buildpackage -rfakeroot -uc -B
+and you will get a shiny new package with support for IPF floppy images,
+just right for installation via "dpkg -i packagename.deb" (as root).
+
+This package will be built using Jeff Shepherd's new network emulation which
+doesn't require the companion bsdsocket.library on platforms that support it.
+Currently, these are i386, amd64 (aka x86_64) and powerpc.
+
+ -- Florian Ernst <florian@debian.org>  Wed, 23 Nov 2005 13:31:05 +0100
