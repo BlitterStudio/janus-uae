@@ -119,7 +119,8 @@ static void show_version_full (void)
 	write_log (_T("Copyright 1995-2002 Bernd Schmidt\n"));
 	write_log (_T("          1999-2013 Toni Wilen\n"));
 	write_log (_T("          2003-2007 Richard Drummond\n"));
-	write_log (_T("          2006-2013 Mustafa 'GnoStiC' Tufan\n\n"));
+	write_log (_T("          2006-2013 Mustafa 'GnoStiC' Tufan\n"));
+	write_log (_T("          2013      Oliver Brunner\n\n"));
 	write_log (_T("See the source for a full list of contributors.\n"));
 	write_log (_T("This is free software; see the file COPYING for copying conditions.  There is NO\n"));
 	write_log (_T("warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"));
