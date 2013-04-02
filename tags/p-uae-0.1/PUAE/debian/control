@@ -1,0 +1,28 @@
+Source: p-uae
+Section: contrib/otherosfs
+Priority: optional
+Maintainer: Mustafa Tufan <mustafa.tufan@gmail.com>
+Uploaders: Florian Ernst <florian@debian.org>
+Build-Depends: debhelper (>= 5),
+ libgtk2.0-dev, libsdl1.2-dev, zlib1g-dev, 
+ autotools-dev,
+ autoconf, 
+ automake
+Standards-Version: 3.6.2
+
+Package: p-uae
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Provides: uae, uae-sdl
+Description: Unix Amiga Emulator
+ This is a fork of E-UAE, the Ubiquitous Amiga Emulator, with an emulation core
+ based on WinUAE. It attempts to bring many of the great features of WinUAE
+ to non-Windows platforms. P-UAE was meant to be a Pandora Amiga emulator,
+ thus P-UAE, but later become the 'Portable' UAE.
+ .
+ To make full use of P-UAE you will need access to an image of some version
+ of the Amiga Kickstart ROM (although UAE does include a ROM emulation which
+ may work with some old games). The Amiga Kickstart ROMs are copyrighted
+ material and may not be freely distributed (so don't ask me for a copy).
+ .
+ Homepage: https://github.com/GnoStiC/PUAE
