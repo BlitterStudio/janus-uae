@@ -39,6 +39,9 @@
 #define CPUEMU_21
 #endif
 
+#undef NATMEM_OFFSET 
+#define AUTOCONFIG
+#define FILESYS
 
 #define CPUEMU_0 /* generic 680x0 emulation */
 #define CPUEMU_11 /* 68000+prefetch emulation */
