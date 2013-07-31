@@ -16,7 +16,7 @@
 
 uae_u32 max_z3fastmem=0;
 
-#ifdef JIT
+//#ifdef JIT
 
 
 /*
@@ -51,4 +51,4 @@ bool init_mem() {
   p96memstart();
 }
 
-#endif
+//#endif
