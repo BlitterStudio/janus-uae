@@ -1392,6 +1392,7 @@ void save_zram(int* a, int b)  {
   TODO();
 }
 
+/* */
 struct picasso_vidbuf_description picasso_vidinfo;
 int screen_was_picasso;
 
