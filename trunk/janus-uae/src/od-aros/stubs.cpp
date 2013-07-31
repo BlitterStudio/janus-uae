@@ -44,16 +44,19 @@
 
 #include "od-aros/aros_uaenet.h"
 #include "od-aros/threaddep/thread.h"
+#include "od-aros/stubs.h"
 
 WCHAR *au_fs_copy (TCHAR *dst, int maxlen, const char *src)
 {
   TODO();
 }
 
+#if 0
 int debuggable(void) 
 {
   TODO();
 }
+#endif
 
 int init_sound (void)
 {
@@ -92,6 +95,7 @@ uae_u8 *save_disk2 (int num, int *len, uae_u8 *dstptr)
   TODO();
 }
 
+#if 0
 void screenshot (int mode) 
 {
   TODO();
@@ -101,6 +105,7 @@ void screenshot (int mode, int foo)
 {
   TODO();
 }
+#endif
 
 
 void sound_mute (int newmute)
@@ -410,10 +415,12 @@ uae_u32 get_long_ce030_prefetch (int o)
   TODO();
 }
 
+#if 0
 void graphics_leave(void) 
 {
   TODO();
 }
+#endif
 
 int handle_msgpump (void)
 {
@@ -623,10 +630,12 @@ void setup_brkhandler(void)
   TODO();
 }
 
+#if 0
 void toggle_mousegrab (void)
 {
   TODO();
 }
+#endif
 
 int uae_start_thread (const TCHAR *name, void *(*f)(void *), void *arg, uae_thread_id *tid)
 {
@@ -688,10 +697,12 @@ uae_u8 *save_custom_extra (int *len, uae_u8 *dstptr)
   TODO();
 }
 
+#if 0
 void toggle_fullscreen (int mode)
 {
   TODO();
 }
+#endif
 
 void update_debug_info(void)
 {
@@ -879,10 +890,12 @@ uae_u8 *restore_custom_extra (uae_u8 *src)
   TODO();
 }
 
+#if 0
 int target_checkcapslock (int scancode, int *state)
 {
   TODO();
 }
+#endif
 
 int uaenet_getdatalenght (void)
 {
@@ -939,10 +952,12 @@ struct zvolume *archive_directory_zip (struct zfile *z)
   TODO();
 }
 
+#if 0
 void gfx_set_picasso_state (int on)
 {
   TODO();
 }
+#endif
 
 uae_u8 *restore_custom_sprite (int num, uae_u8 *src)
 {
@@ -979,10 +994,12 @@ struct zvolume *archive_directory_plain (struct zfile *z)
   TODO();
 }
 
+#if 0
 int check_prefs_changed_gfx (void) 
 {
   TODO();
 }
+#endif
 
 void draw_status_line_single (uae_u8 *buf, int bpp, int y, int totalwidth, uae_u32 *rc, uae_u32 *gc, uae_u32 *bc, uae_u32 *alpha)
 {
@@ -1321,4 +1338,61 @@ void fetch_inputfilepath (TCHAR *out, int size)
 }
 
 uae_u8 veccode[256];
+
+
+void my_kbd_handler (int keyboard, int scancode, int newstate) {
+  TODO();
+}
+
+void alloc_colors256 (int (*)(int, int, int, unsigned int*)) {
+  TODO();
+}
+
+void setid (struct uae_input_device *uid, int i, int slot, int sub, int port, int evt) {
+  TODO();
+}
+
+int sdlk2dik (int key) {
+  TODO();
+}
+
+void setid_af (struct uae_input_device *uid, int i, int slot, int sub, int port, int evt, int af) {
+  TODO();
+}
+
+void restore_fram(int a, unsigned intb) {
+  TODO();
+}
+
+void restore_zram(int a, unsigned int b, int c) {
+  TODO();
+}
+
+void save_bootrom(int* a) {
+  TODO();
+}
+
+void save_expansion(int* a, unsigned char* b) {
+  TODO();
+}
+
+void restore_bootrom(int a, unsigned int b) {
+  TODO();
+}
+
+void restore_expansion(unsigned char* a) {
+  TODO();
+}
+
+void save_fram(int* a)       {
+  TODO();
+}
+
+void save_zram(int* a, int b)  {
+  TODO();
+}
+
+struct picasso_vidbuf_description picasso_vidinfo;
+int screen_was_picasso;
+
 
