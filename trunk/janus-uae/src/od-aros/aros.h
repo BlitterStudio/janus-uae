@@ -11,6 +11,7 @@
 #define WINUAEREV ""
 #define MAKEBD(x,y,z) ((((x) - 2000) * 10000 + (y)) * 100 + (z))
 
+extern int screen_is_picasso, scalepicasso;
 
 extern TCHAR start_path_data[MAX_DPATH];
 extern TCHAR VersionStr[256];

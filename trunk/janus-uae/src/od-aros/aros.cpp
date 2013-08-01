@@ -283,29 +283,3 @@ static int get_BytesPerRow(struct Window *win) {
 }
 #endif
 
-void handle_events(void) {
-	DebOut("entered\n");
-
-
-/*
-    WritePixelArray (
-	picasso_memory, 0, start, get_BytesPerRow(W),
-	W->RPort, 
-	W->BorderLeft, W->BorderTop + start,
-	W->Width - W->BorderLeft - W->BorderRight, 
-	W->BorderTop + start + i,
-	RECTFMT_RAW
-    );
-*/
-#if 0
-	if(hAmigaWnd) {
-		WritePixelArray(gfxvidinfo.bufmem, 0, 0, get_BytesPerRow(hAmigaWnd),
-		                hAmigaWnd->RPort,
-										hAmigaWnd->BorderLeft, hAmigaWnd->BorderTop /* + start */,
-										hAmigaWnd->Width - hAmigaWnd->BorderLeft - hAmigaWnd->BorderLeft,
-										hAmigaWnd->Height - hAmigaWnd->BorderTop - hAmigaWnd->BorderBottom /*?*/,
-										RECTFMT_RAW);
-		                
-	}
-#endif
-}

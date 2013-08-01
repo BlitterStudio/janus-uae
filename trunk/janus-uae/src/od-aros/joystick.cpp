@@ -35,7 +35,7 @@
 #include <proto/exec.h>
 #include <proto/lowlevel.h>
 
-struct Library *LowLevelBase=NULL;
+//struct Library *LowLevelBase=NULL;
 struct LowLevelIFace *ILowLevel;
 
 static unsigned int nr_joysticks;

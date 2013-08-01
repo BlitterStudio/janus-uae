@@ -320,6 +320,7 @@ static int get_mouse_flags (int num) {
 }
 
 
+#if 0
 struct inputdevice_functions inputdevicefunc_mouse = {
     init_mouse,
     close_mouse,
@@ -334,6 +335,7 @@ struct inputdevice_functions inputdevicefunc_mouse = {
     get_mouse_widget_first,
 		get_mouse_flags
 };
+#endif
 
 #if 0
 /*

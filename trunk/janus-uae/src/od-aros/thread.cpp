@@ -39,7 +39,7 @@ void uae_sem_init (uae_sem_t *sem, int manual_reset, int initial_state) {
 		return;
 	}
 
-	DebOut("init sem %lx\n", sem);
+	DebOut("new semaphore: %lx\n", sem);
 	InitSemaphore(sem);
 
 	if(initial_state) {

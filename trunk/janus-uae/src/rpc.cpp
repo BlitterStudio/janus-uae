@@ -350,6 +350,7 @@ void readkeyboard(void)
   }
 }
 
+#ifndef __AROS__
 void handle_events(void)
 {
   readmouse();
@@ -391,6 +392,7 @@ void handle_events(void)
   if (uae_running==0)
     gui_process();
 }
+#endif
 
 int debuggable(void)
 {

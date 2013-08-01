@@ -23,8 +23,30 @@
  *
  ************************************************************************/
 
+
+#include <stdlib.h>
+#include <stdarg.h>
+
+
 #include "sysconfig.h"
+#include "sysdeps.h"
+
+#include "options.h"
+
+#include "aros.h"
 
 struct uae_filter *usedfilter;
 
+static int isfullscreen_2 (struct uae_prefs *p)
+{
+	if (screen_is_picasso)
+		return p->gfx_pfullscreen == GFX_FULLSCREEN ? 1 : (p->gfx_pfullscreen == GFX_FULLWINDOW ? -1 : 0);
+	else
+		return p->gfx_afullscreen == GFX_FULLSCREEN ? 1 : (p->gfx_afullscreen == GFX_FULLWINDOW ? -1 : 0);
+}
+
+int isfullscreen (void)
+{
+	return isfullscreen_2 (&currprefs);
+}
 

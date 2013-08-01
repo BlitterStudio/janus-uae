@@ -108,6 +108,7 @@ static int get_kb_flags (int num)
 	return 0;
 }
 
+#if 0
 struct inputdevice_functions inputdevicefunc_keyboard =
 {
     init_kb,
@@ -123,6 +124,7 @@ struct inputdevice_functions inputdevicefunc_keyboard =
     get_kb_widget_first,
 		get_kb_flags
 };
+#endif
 
 static struct uae_input_device_kbr_default keytrans[] = {
 

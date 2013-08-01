@@ -4190,9 +4190,12 @@ static uae_u16 COLOR_READ (int num)
 }
 #endif
 
+// o1i: NOT CALLED!
 static void COLOR_WRITE (int hpos, uae_u16 v, int num)
 {
 	v &= 0xFFF;
+
+  DebOut("entered!\n");
 #ifdef AGA
 	if (currprefs.chipset_mask & CSMASK_AGA) {
 		int r,g,b;
@@ -5103,6 +5106,8 @@ static void vsync_handler_pre (void)
 	if (bogusframe > 0)
 		bogusframe--;
 
+  DebOut("entered\n");
+
 	handle_events ();
 
 #ifdef PICASSO96
@@ -5759,9 +5764,13 @@ static void hsync_handler_post (bool isvsync)
 #endif
 }
 
+/* this gets called by eventtab[hsync..].handler */
 static void hsync_handler (void)
 {
 	bool vs = is_vsync ();
+
+  DebOut("entered (vs: %d)\n", vs);
+
 	hsync_handler_pre (vs);
 	if (vs) {
 		vsync_handler_pre ();
@@ -5771,6 +5780,9 @@ static void hsync_handler (void)
 		}
 	}
 	hsync_handler_post (vs);
+
+  DebOut("left\n");
+
 }
 
 void event2_remevent (int no)
@@ -5778,9 +5790,14 @@ void event2_remevent (int no)
 	eventtab2[no].active = 0;
 }
 
+/* this calls hsync stuff .. */
 void init_eventtab (void)
 {
 	int i;
+
+	DebOut("entered\n");
+
+	DebOut("ev_max: %d\n", ev_max);
 
 	nextevent = 0;
 	for (i = 0; i < ev_max; i++) {
@@ -5802,6 +5819,8 @@ void init_eventtab (void)
 	eventtab2[ev2_disk].handler = DISK_handler;
 
 	events_schedule ();
+
+	DebOut("left\n");
 }
 
 void custom_prepare (void)
@@ -6254,8 +6273,11 @@ static uae_u32 REGPARAM2 custom_lget (uaecptr addr)
 #endif
 	return ((uae_u32)custom_wget (addr) << 16) | custom_wget (addr + 2);
 }
+
+// o1i: NOT CALLED
 static int REGPARAM2 custom_wput_1 (int hpos, uaecptr addr, uae_u32 value, int noget)
 {
+  DebOut("entered!\n");
 	if (!noget)
 		last_custom_value1 = value;
 	addr &= 0x1FE;

@@ -434,6 +434,7 @@ void uae_reset (int hardreset)
 
 void uae_quit (void)
 {
+  DebOut("==== uae_quit ====\n");
 	deactivate_debugger ();
 	if (quit_program != -1)
 		quit_program = -1;
@@ -443,6 +444,7 @@ void uae_quit (void)
 /* 0 = normal, 1 = nogui, -1 = disable nogui */
 void uae_restart (int opengui, TCHAR *cfgfile)
 {
+  DebOut(" ==== uae_restart ====\n");
 	uae_quit ();
 	restart_program = opengui > 0 ? 1 : (opengui == 0 ? 2 : 3);
 	restart_config[0] = 0;
@@ -680,21 +682,29 @@ extern int DummyException (LPEXCEPTION_POINTERS blah, int n_except)
 
 void do_start_program (void)
 {
+  DebOut("entered (quit_program: %d)\n", quit_program);
+
 	if (quit_program == -1)
 		return;
+
+  DebOut("++++ 1\n");
 	if (!canbang && candirect < 0)
 		candirect = 0;
 	if (canbang && candirect < 0)
 		candirect = 1;
 	/* Do a reset on startup. Whether this is elegant is debatable. */
+  DebOut("++++ 2\n");
 	inputdevice_updateconfig (&currprefs);
 	if (quit_program >= 0)
 		quit_program = 2;
+  DebOut("++++ 3\n");
 #if (defined (_WIN32) || defined (_WIN64)) && !defined (NO_WIN32_EXCEPTION_HANDLER)
+  DebOut("++++ 4 ??\n");
 	extern int EvalException (LPEXCEPTION_POINTERS blah, int n_except);
 	__try
 #endif
 	{
+    DebOut("call m68k_go..\n");
 		m68k_go (1);
 	}
 #if (defined (_WIN32) || defined (_WIN64)) && !defined (NO_WIN32_EXCEPTION_HANDLER)
@@ -707,6 +717,7 @@ void do_start_program (void)
 		// EvalException does the good stuff...
 	}
 #endif
+  DebOut("left\n");
 }
 
 void do_leave_program (void)
@@ -768,8 +779,12 @@ static int real_main2 (int argc, TCHAR **argv)
 	DebOut("entered\n");
 
 #ifdef USE_SDL
-	SDL_Init (SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_NOPARACHUTE);
+	int result = SDL_Init (SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_NOPARACHUTE);
+  if (result)
+    atexit (SDL_Quit);
 #endif
+
+  DebOut("entered\n");
 	config_changed = 1;
 	if (restart_config[0]) {
 		default_prefs (&currprefs, 0);
@@ -777,11 +792,18 @@ static int real_main2 (int argc, TCHAR **argv)
 	}
 
 	if (! graphics_setup ()) {
+    write_log (_T("Graphics Setup Failed\n"));
 		exit (1);
 	}
 
+  DebOut("graphics_setup done ..\n");
+
 #ifdef NATMEM_OFFSET
 	preinit_shm ();
+#endif
+
+#ifdef __AROS__
+  init_mem();
 #endif
 
 	if (restart_config[0])
@@ -790,9 +812,12 @@ static int real_main2 (int argc, TCHAR **argv)
 		currprefs = changed_prefs;
 
 	if (!machdep_init ()) {
+    write_log (_T("Machine Init Failed.\n"));
 		restart_program = 0;
 		return -1;
 	}
+
+  DebOut("machdep_init done ..\n");
 
 	if (console_emulation) {
 		consolehook_config (&currprefs);
@@ -804,6 +829,8 @@ static int real_main2 (int argc, TCHAR **argv)
 		currprefs.produce_sound = 0;
 	}
 	inputdevice_init ();
+
+  DebOut("inputdevice_init done ..\n");
 
 	changed_prefs = currprefs;
 	no_gui = ! currprefs.start_gui;
@@ -824,12 +851,16 @@ static int real_main2 (int argc, TCHAR **argv)
 		}
 	}
 
+  DebOut("gui_init done ..\n");
+
 	logging_init (); /* Yes, we call this twice - the first case handles when the user has loaded
 						 a config using the cmd-line.  This case handles loads through the GUI. */
 
+  DebOut("============== a\n");
 #ifdef NATMEM_OFFSET
 	init_shm ();
 #endif
+  DebOut("============== b\n");
 
 #ifdef JIT
 	if (!(currprefs.cpu_model >= 68020 && currprefs.address_space_24 == 0 && currprefs.cachesize))
@@ -837,10 +868,15 @@ static int real_main2 (int argc, TCHAR **argv)
 #endif
 
 	fixup_prefs (&currprefs);
+  DebOut("============== c\n");
 	changed_prefs = currprefs;
+  DebOut("target_run .. 0\n");
 	target_run ();
+  DebOut("target_run .. 1\n");
 	/* force sound settings change */
 	currprefs.produce_sound = 0;
+
+  DebOut("real_main2 .. 0\n");
 
 #ifdef AUTOCONFIG
 	rtarea_setup ();
@@ -851,6 +887,9 @@ static int real_main2 (int argc, TCHAR **argv)
 	hardfile_install ();
 #endif
 	savestate_init ();
+
+  DebOut("real_main2 .. 1a\n");
+
 #ifdef SCSIEMU
 	scsi_reset ();
 	scsidev_install ();
@@ -862,6 +901,8 @@ static int real_main2 (int argc, TCHAR **argv)
 	uaeserialdev_install ();
 #endif
 	keybuf_init (); /* Must come after init_joystick */
+
+  DebOut("real_main2 .. 1\n");
 
 #ifdef AUTOCONFIG
 	expansion_init ();
@@ -881,6 +922,8 @@ static int real_main2 (int argc, TCHAR **argv)
 	native2amiga_install ();
 #endif
 
+  DebOut("real_main2 .. 2\n");
+
 	custom_init (); /* Must come after memory_init */
 #ifdef SERIAL_PORT
 	serial_init ();
@@ -890,9 +933,14 @@ static int real_main2 (int argc, TCHAR **argv)
 	reset_frame_rate_hack ();
 	init_m68k (); /* must come after reset_frame_rate_hack (); */
 
+  DebOut("real_main2 .. 3\n");
+
 	gui_update ();
 
+  DebOut("real_main2 .. 4\n");
+
 	if (graphics_init ()) {
+    DebOut("graphics_init SUCCESS!\n");
 		setup_brkhandler ();
 		if (currprefs.start_debugger && debuggable ())
 			activate_debugger ();
@@ -903,6 +951,7 @@ static int real_main2 (int argc, TCHAR **argv)
 			}
 			currprefs.produce_sound = 0;
 		}
+    DebOut("calling start_program ..\n");
 		start_program ();
 	}
 	return 0;
@@ -912,13 +961,16 @@ void real_main (int argc, TCHAR **argv)
 {
 	restart_program = 1;
 
-	DebOut("entered\n");
-
 	fetch_configurationpath (restart_config, sizeof (restart_config) / sizeof (TCHAR));
 	_tcscat (restart_config, OPTIONSFILENAME);
 	default_config = 1;
 
-	DebOut("entering while..\n");
+  DebOut("1...\n");
+  DebOut("2...\n");
+  DebOut("3...\n");
+  DebOut("4...\n");
+
+	DebOut("ENTERING MAIN while LOOP..\n");
 
 	while (restart_program) {
 		int ret;
@@ -929,6 +981,7 @@ void real_main (int argc, TCHAR **argv)
 		leave_program ();
 		quit_program = 0;
 	}
+  DebOut("LEFT MAIN while LOOP..\n");
 	zfile_exit ();
 }
 

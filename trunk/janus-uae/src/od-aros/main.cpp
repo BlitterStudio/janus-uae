@@ -46,10 +46,10 @@ void makeverstr (TCHAR *s) {
 	if (_tcslen (WINUAEBETA) > 0) {
 		_stprintf (BetaStr, " (%sBeta %s, %d.%02d.%02d)", WINUAEPUBLICBETA > 0 ? "Public " : "", WINUAEBETA,
 			GETBDY(WINUAEDATE), GETBDM(WINUAEDATE), GETBDD(WINUAEDATE));
-		_stprintf (s, "janus-UAE %d.%d.%d%s%s",
+		_stprintf (s, "WinUAE %d.%d.%d%s%s",
 			UAEMAJOR, UAEMINOR, UAESUBREV, WINUAEREV, BetaStr);
 	} else {
-		_stprintf (s, "janus-UAE %d.%d.%d%s (%d.%02d.%02d)",
+		_stprintf (s, "WinUAE %d.%d.%d%s (%d.%02d.%02d)",
 			UAEMAJOR, UAEMINOR, UAESUBREV, WINUAEREV, GETBDY(WINUAEDATE), GETBDM(WINUAEDATE), GETBDD(WINUAEDATE));
 	}
 	if (_tcslen (WINUAEEXTRA) > 0) {
