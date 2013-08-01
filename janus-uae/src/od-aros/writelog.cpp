@@ -251,7 +251,7 @@ void write_log (const TCHAR *format, ...)
 			sprintf (aros_buf, _T("%s"), ts);
 			Write(debugfile, aros_buf, strlen(aros_buf));
 		}
-		bug("write_log(\n%s)\n", bufp);
+		bug("uae: %s", bufp);
 		sprintf (aros_buf, _T("%s"), bufp);
 		Write(debugfile, aros_buf, strlen(aros_buf));
 	}

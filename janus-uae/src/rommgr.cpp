@@ -1185,8 +1185,10 @@ struct zfile *read_rom (struct romdata **prd)
 struct zfile *rom_fopen (const TCHAR *name, const TCHAR *mode, int mask)
 {
 	struct zfile *f;
-	//write_log (_T("attempting to load '%s'\n"), name); 
 	f = zfile_fopen (name, mode, mask);
+  if(f) {
+    write_log (_T("loaded '%s'\n"), name); 
+  }
 	//write_log (_T("=%p\n"), f);
 	return f;
 }

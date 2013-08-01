@@ -450,9 +450,14 @@ static uae_u32 REGPARAM2 uaelib_demux (TrapContext *context)
 void emulib_install (void)
 {
 	uaecptr a;
-	if (!uae_boot_rom)
+
+  DebOut("entered\n");
+	if (!uae_boot_rom) {
+    DebOut("!uae_boot_rom\n");
 		return;
+  }
 	a = here ();
+  DebOut("a=%lx\n", a);
 	currprefs.mmkeyboard = 0;
 	org (rtarea_base + 0xFF60);
 #if 0
@@ -460,7 +465,9 @@ void emulib_install (void)
 	dw ((rtarea_base >> 16) | get_word (rtarea_base + 36));
 	dw (get_word (rtarea_base + 38) + 12);
 #endif
+  DebOut("calltrap..\n");
 	calltrap (deftrapres (uaelib_demux, 0, _T("uaelib_demux")));
 	dw (RTS);
 	org (a);
+  DebOut("done\n");
 }

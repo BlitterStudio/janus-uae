@@ -106,6 +106,7 @@ static uae_u8 scrlinebuf[4096 * 4]; /* this is too large, but let's rather play 
 
 static BOOL doInit (void);
 
+#if 0
 int graphics_setup (void) {
 
 	/* TODO(); */
@@ -120,6 +121,7 @@ int graphics_setup (void) {
 	 * here */
 	return 1;
 }
+#endif
 
 static void gfxmode_reset (void) {
 	TODO();
@@ -270,6 +272,10 @@ static BOOL doInit (void) {
 
 			gfxvidinfo.width = (currentmode->amiga_width + 7) & ~7;
 			gfxvidinfo.height = currentmode->amiga_height;
+
+      DebOut("gfxvidinfo.width : %4d\n", gfxvidinfo.width);
+      DebOut("gfxvidinfo.height: %4d\n", gfxvidinfo.height);
+
 			gfxvidinfo.maxblocklines = 0; // flush_screen actually does everything
 
       gfxvidinfo.pixbytes = GetCyberMapAttr (hAmigaWnd->RPort->BitMap, CYBRMATTR_BPPIX);
@@ -484,6 +490,7 @@ static void flush_block_planar_nodither (struct vidbuf_description *gfxinfo, int
 #endif
 
 /* graphics_init does not very much, just gfxmode_reset and open_windows */
+#if 0
 int graphics_init(void) {
 
 	DebOut("entered\n");
@@ -505,6 +512,7 @@ int graphics_init(void) {
 
 	return open_windows (1);
 }
+#endif
 
 int isscreen (void)
 {
@@ -544,6 +552,7 @@ void enumeratedisplays (int multi) {
 static void flushit (int line_no) {
 
 	int     xs      = 0;
+  int     last    = 0;
 	int     len     = gfxvidinfo.width;
 	int     yoffset = line_no * gfxvidinfo.rowbytes;
 	uae_u8 *src;
@@ -589,15 +598,29 @@ if (!--len)
 	WritePixelLine8 (hAmigaWnd->RPort, 0, line_no, len, gfxvidinfo.linemem, TempRPort);
   DebOut("gfxvidinfo.linemem:\n");
   for(xs=0; xs<len;xs++) {
-    kprintf(" 0x%02x", *(gfxvidinfo.linemem + line_no*gfxvidinfo.width + xs));
+    DebOut(" 0x%02x", *(gfxvidinfo.linemem + line_no*gfxvidinfo.width + xs));
   }
   DebOut("\n");
 #endif
   DebOut("gfxvidinfo.bufmem:\n");
   for(xs=0; xs<len;xs++) {
-    kprintf(" 0x%02x", *(gfxvidinfo.bufmem + line_no*gfxvidinfo.rowbytes + xs));
+    if(*(gfxvidinfo.bufmem + line_no*gfxvidinfo.rowbytes + xs) == 0) {
+        last++;
+    }
+    else {
+      if(last>0) {
+        DebOut("\n%d zero values skipped\n", last);
+        last=0;
+      }
+      DebOut(" 0x%02x", *(gfxvidinfo.bufmem + line_no*gfxvidinfo.rowbytes + xs));
+    }
   }
-  DebOut("\n");
+  if(last>0) {
+    DebOut("\n%d zero values skipped\n", last);
+  }
+  else {
+    DebOut("\n");
+  }
 
 
 
@@ -606,7 +629,7 @@ if (!--len)
 void flush_line(int lineno) {
 
 /* TODO */
-	if(lineno >100 && lineno < 140) {
+//	if(lineno >100 && lineno < 140) {
 		flushit (lineno);
-	}
+//	}
 }

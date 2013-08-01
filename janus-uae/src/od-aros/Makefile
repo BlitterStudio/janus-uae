@@ -37,12 +37,12 @@ FLAGS      = -O2 #-Wall
 DEBUGFLAGS = -g
 
 CDEFS   =
-INCLUDES= -I. -I../include -I../md-i386-gcc -I..
+INCLUDES= -I. -I../include -I../md-i386-gcc -I.. -I/home/oli/svn/v0/AROS/bin/linux-i386/gen/include/SDL
 
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 CPPFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
-LINK_LIBS=-larossupport -lz 
+LINK_LIBS=-larossupport -lz -lSDL -lGL
 
 # ============== common ====================
 
@@ -155,6 +155,8 @@ COMMON_OBJS= \
 	mman.o \
 	writelog.o \
 	keyboard.o \
+	sdlgfx.o \
+	shm.o \
 	stubs.o
 
 #../zfile_archive.o 

@@ -249,11 +249,6 @@ void getgfxoffset (int *dxp, int *dyp, int *mxp, int *myp)
   TODO();
 }
 
-int isfullscreen (void) 
-{
-  TODO();
-}
-
 void machdep_free (void)
 {
   TODO();

@@ -3710,7 +3710,6 @@ void default_prefs (struct uae_prefs *p, int type)
 	_tcscpy (p->path_rom.path[0], _T("PROGDIR:"));
 	_tcscpy (p->path_floppy.path[0], _T("PROGDIR:"));
 	_tcscpy (p->path_hardfile.path[0], _T("PROGDIR:"));
-
 #endif
 
 	p->prtname[0] = 0;
@@ -3784,6 +3783,9 @@ void default_prefs (struct uae_prefs *p, int type)
 		cfg_write (&zero, f);
 		default_file = f;
 	}
+
+  DebOut("gfx_size_win.width : %4d\n", p->gfx_size_win.width);
+  DebOut("gfx_size_win.height: %4d\n", p->gfx_size_win.height);
 }
 
 static void buildin_default_prefs_68020 (struct uae_prefs *p)

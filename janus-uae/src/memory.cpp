@@ -1874,13 +1874,18 @@ uae_u8 *mapped_malloc (size_t s, const TCHAR *file) {
 
 	alloc=xmalloc (uae_u8, s);
 
-	DebOut("xmalloc(size %lx, %s)=%lx\n", s, file, alloc);
+	DebOut("malloc(size %lx, %s)=%lx\n", s, file, alloc);
+
+  if(!alloc) {
+    bug("Unable to alloc %d bytes\n", s);
+    printf("Unable to alloc %d bytes\n", s);
+  }
 	return alloc;
 }
 
 void mapped_free (uae_u8 *p) {
 
-	DebOut("xfree(%lx)\n", p);
+	DebOut("free(%lx)\n", p);
 
 	xfree (p);
 }
@@ -2335,6 +2340,8 @@ void memory_reset (void)
 	int bnk, bnk_end;
 	int gayle;
 
+  DebOut("entered\n");
+
 	be_cnt = 0;
 	currprefs.chipmem_size = changed_prefs.chipmem_size;
 	currprefs.bogomem_size = changed_prefs.bogomem_size;
@@ -2692,6 +2699,8 @@ void memory_cleanup (void)
 
 void memory_hardreset (void)
 {
+  DebOut("mem_hardreset\n");
+
 	if (savestate_state == STATE_RESTORE)
 		return;
 	if (chipmemory)

@@ -18,7 +18,10 @@ extern uae_u8 *cache_alloc (int);
 extern void cache_free (uae_u8*);
 #endif
 
-int init_shm (void);
+#ifdef __AROS__
+bool init_mem(void);
+#endif
+void init_shm (void);
 void preinit_shm (void);
 extern bool canbang;
 extern int candirect;

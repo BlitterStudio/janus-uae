@@ -169,6 +169,7 @@ uae_u32 ds (const TCHAR *str)
 
 void calltrap (uae_u32 n)
 {
+  DebOut("calltrap(%d)\n", n);
 	dw (0xA000 + n);
 }
 
@@ -210,6 +211,7 @@ static uae_u32 REGPARAM2 uae_puts (TrapContext *context)
 
 void rtarea_init_mem (void)
 {
+  DebOut("entered\n");
 	rtarea = mapped_malloc (0x10000, _T("rtarea"));
 	if (!rtarea) {
 		write_log (_T("virtual memory exhausted (rtarea)!\n"));
@@ -222,6 +224,8 @@ void rtarea_init (void)
 {
 	uae_u32 a;
 	TCHAR uaever[100];
+
+  DebOut("entered\n");
 
 	rt_straddr = 0xFF00 - 2;
 	rt_addr = 0;
