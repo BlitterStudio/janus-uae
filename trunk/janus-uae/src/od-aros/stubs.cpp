@@ -46,11 +46,6 @@
 #include "od-aros/threaddep/thread.h"
 #include "od-aros/stubs.h"
 
-WCHAR *au_fs_copy (TCHAR *dst, int maxlen, const char *src)
-{
-  TODO();
-}
-
 #if 0
 int debuggable(void) 
 {
@@ -109,11 +104,6 @@ void screenshot (int mode, int foo)
 
 
 void sound_mute (int newmute)
-{
-  TODO();
-}
-
-char *ua_fs_copy (char *dst, int maxlen, const TCHAR *src, int defchar)
 {
   TODO();
 }

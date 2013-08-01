@@ -47,6 +47,23 @@ WCHAR *au_copy (TCHAR *dst, int maxlen, const char *src) {
 	return strncpy(dst, src, maxlen);
 }
 
+char *au_fs_copy (char *dst, int maxlen, const char *src)
+{
+	int i;
+
+  DebOut("src: %s, len %d\n", src, maxlen);
+
+	for (i = 0; src[i] && i < maxlen - 1; i++)
+		dst[i] = src[i];
+	dst[i] = 0;
+	return dst;
+}
+
+/* we only have ASCII bytes, so.. */
+char *ua_fs_copy (char *dst, int maxlen, const TCHAR *src, int defchar) {
+  strncpy(dst, src, maxlen);
+}
+
 WCHAR *utf8u (const char *s) {
 
 	//DebOut("s=%s\n", s);
