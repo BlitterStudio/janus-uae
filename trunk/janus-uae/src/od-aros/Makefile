@@ -117,7 +117,6 @@ COMMON_OBJS= \
 	../native2amiga.o \
 	../ncr_scsi.o \
 	../newcpu.o \
-	../picasso96.o \
 	../rommgr.o \
 	../readcpu.o \
 	../sana2.o \
@@ -159,6 +158,7 @@ COMMON_OBJS= \
 	shm.o \
 	stubs.o
 
+	#../picasso96.o \
 #../zfile_archive.o 
 #gui.o \
 

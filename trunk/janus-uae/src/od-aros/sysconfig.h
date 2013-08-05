@@ -33,6 +33,8 @@
 #define JIT
 #define CDTV
 #define GFXFILTER
+#define PICASSO96
+
 #if 0
 #define CPUEMU_0
 #define CPUEMU_20

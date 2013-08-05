@@ -36,6 +36,7 @@
 #include "aros.h"
 
 struct uae_filter *usedfilter;
+int default_freq = 0;
 
 static int isfullscreen_2 (struct uae_prefs *p)
 {

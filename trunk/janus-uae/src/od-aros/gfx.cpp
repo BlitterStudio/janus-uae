@@ -92,15 +92,13 @@ struct winuae_currentmode {
 	int vsync;
 };
 
-struct MultiDisplay Displays[MAX_DISPLAYS];
-
 static struct winuae_currentmode currentmodestruct;
 static struct winuae_currentmode *currentmode = &currentmodestruct;
 
 struct Window *hAmigaWnd;
 struct RastPort  *TempRPort;
 int screen_is_picasso = 0;
-static int scalepicasso;
+int scalepicasso;
 
 static uae_u8 scrlinebuf[4096 * 4]; /* this is too large, but let's rather play on the safe side here */
 

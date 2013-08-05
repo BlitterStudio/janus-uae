@@ -3,6 +3,10 @@
 
 #include "picasso96_win.h"
 
+#elif defined __AROS__
+
+#include "picasse96_aros.h"
+
 #else
 /*
  * UAE - The U*nix Amiga Emulator
@@ -15,7 +19,6 @@
 #if defined PICASSO96_SUPPORTED
 
 #define PICASSO96
-
 
 /* Seems the same routines copy back and forth ;-) */
 #define PIC_READ (S_READ|S_WRITE)
@@ -92,7 +95,6 @@ struct PicassoResolution
     char name[25];
 };
 extern struct PicassoResolution DisplayModes[MAX_PICASSO_MODES];
-
 
 /* Types for RGBFormat used */
 typedef enum {

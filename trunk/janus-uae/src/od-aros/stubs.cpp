@@ -148,11 +148,6 @@ void getpathpart (TCHAR *outpath, int size, const TCHAR *inpath)
   TODO();
 }
 
-void init_hz_p96 (void)
-{
-  TODO();
-}
-
 void my_closedir (struct my_opendir_s *mod)
 {
   TODO();
@@ -339,11 +334,6 @@ void update_sound (int freq, int longframe, int linetoggle)
   TODO();
 }
 
-void InitPicasso96 (void) 
-{
-  TODO();
-}
-
 void close_console (void)
 {
   TODO();
@@ -358,17 +348,6 @@ void console_out_f (const TCHAR *format,...)
 {
   TODO();
 }
-
-uae_u32 picasso_demux (uae_u32 arg, TrapContext *ctx)
-{
-  TODO();
-}
-
-void picasso_reset (void)
-{
-  TODO();
-}
-
 
 uae_u8 *restore_disk2 (int num,uae_u8 *src) 
 {
@@ -522,17 +501,6 @@ static void picasso96_alloc2 (TrapContext *ctx)
 {
   TODO();
 }
-
-void picasso_refresh (int call_setpalette) 
-{
-  TODO();
-}
-
-void picasso_refresh (void)
-{
-  TODO();
-}
-
 
 uae_u8 *restore_blitter (uae_u8 *src) 
 {
@@ -719,11 +687,6 @@ void restore_cpu_finish (void)
   TODO();
 }
 
-void restore_p96_finish (void)
-{
-  TODO();
-}
-
 uae_u8 *save_custom_sprite (int num, int *len, uae_u8 *dstptr)
 {
   TODO();
@@ -836,21 +799,6 @@ struct zvolume *archive_directory_7z (struct zfile *z)
 }
 
 int consolehook_activate (void)
-{
-  TODO();
-}
-
-void picasso_enablescreen (int on) 
-{
-  TODO();
-}
-
-void picasso_handle_hsync (void)
-{
-  TODO();
-}
-
-void picasso_handle_vsync (void)
 {
   TODO();
 }
@@ -1289,11 +1237,6 @@ void XzUnpacker_Free(CXzUnpacker *p)
 	TODO();
 }
 
-void picasso96_alloc (TrapContext *ctx) 
-{
-	TODO();
-}
-
 int fsdb_fill_file_attrs (a_inode *base, a_inode *aino)
 {
 	TODO();
@@ -1377,8 +1320,11 @@ void save_zram(int* a, int b)  {
   TODO();
 }
 
+void clipboard_vsync (void) {
+  TODO();
+}
 /******/
-struct picasso_vidbuf_description picasso_vidinfo;
 int screen_was_picasso;
+
 
 
