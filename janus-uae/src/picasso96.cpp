@@ -33,15 +33,14 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
-#ifndef __AROS__
-#include "config.h"
+//#include "config.h"
 #include "options.h"
 #include "threaddep/thread.h"
 #include "uae.h"
 #include "custom.h"
-#include "newcpu.h"
+//#include "newcpu.h"
 #include "xwin.h"
-#endif
+
 #include "memory.h"
 #include "picasso96.h"
 
@@ -73,7 +72,6 @@ addrbank gfxmem_bank = {
 
 
 #ifdef PICASSO96
-#ifndef __AROS__
 
 #define P96TRACING_ENABLED 0
 #if P96TRACING_ENABLED
@@ -2929,5 +2927,4 @@ void InitPicasso96 (void)
     }
 }
 
-#endif
 #endif

@@ -46,7 +46,7 @@
 #include "keybuf.h"
 #include "drawing.h"
 //#include "dxwrap.h"
-#include "picasso96.h"
+#include "picasso96_aros.h"
 //#include "bsdsocket.h"
 #include "aros.h"
 //#include "arosgfx.h"
@@ -78,6 +78,7 @@
 #include "rp.h"
 #include "cloanto/RetroPlatformIPC.h"
 #endif
+#include "gfx.h"
 
 
 //#include "options.h"
@@ -224,6 +225,32 @@ void fullpath (TCHAR *path, int size) {
 	//DebOut("result: %s\n", path);
 }
 
+/* taken from puae/misc.c */
+
+#define MAX_DISPLAYS 10
+struct MultiDisplay Displays[MAX_DISPLAYS];
+
+static struct MultiDisplay *getdisplay2 (struct uae_prefs *p, int index)
+{
+	int max;
+#ifndef __AROS__
+	int display = index < 0 ? p->gfx_apmode[screen_is_picasso ? APMODE_RTG : APMODE_NATIVE].gfx_display - 1 : index;
+#else
+  int display=0;
+#endif
+
+	write_log ("Multimonitor detection disabled\n");
+	Displays[0].primary  = 1;
+	Displays[0].name     = (TCHAR *) "Display";
+  Displays[0].disabled = 0;
+
+	return &Displays[0];
+}
+
+struct MultiDisplay *getdisplay (struct uae_prefs *p)
+{
+	return getdisplay2 (p, -1);
+}
 
 /* starts one command in the shell, before emulation starts ..? */
 void target_run (void)
@@ -282,4 +309,9 @@ static int get_BytesPerRow(struct Window *win) {
   return width * get_BytesPerPix(win);
 }
 #endif
+
+int WIN32GFX_IsPicassoScreen (void)
+{
+    return screen_is_picasso;
+}
 
