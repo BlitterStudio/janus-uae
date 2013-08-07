@@ -5,7 +5,7 @@
 
 #elif defined __AROS__
 
-#include "picasse96_aros.h"
+#include "picasso96_aros.h"
 
 #else
 /*

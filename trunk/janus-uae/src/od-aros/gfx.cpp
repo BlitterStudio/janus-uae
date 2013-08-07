@@ -95,8 +95,8 @@ struct winuae_currentmode {
 static struct winuae_currentmode currentmodestruct;
 static struct winuae_currentmode *currentmode = &currentmodestruct;
 
-struct Window *hAmigaWnd;
-struct RastPort  *TempRPort;
+//struct Window *hAmigaWnd;
+//struct RastPort  *TempRPort;
 int screen_is_picasso = 0;
 int scalepicasso;
 
@@ -512,10 +512,12 @@ int graphics_init(void) {
 }
 #endif
 
+#if 0
 int isscreen (void)
 {
 	return hAmigaWnd ? 1 : 0;
 }
+#endif
 
 /* not sure, what this does..
  * winuae uses it to D3D_locktexture/DirectDraw_SurfaceLock stuff.
@@ -523,12 +525,15 @@ int isscreen (void)
  */
 int lockscr (int fullupdate) {
 	DebOut("fullupdate: %d\n", fullupdate);
-
+  TODO();
+  return 1;
+#if 0
 	if(!isscreen()) {
 		DebOut("no screen\n");
 		return 0;
 	}
 	return 1;
+#endif
 }
 
 void enumeratedisplays (int multi) {
@@ -591,6 +596,8 @@ if (!--len)
 
 	/* Blit changed pixels to the display */
 	DebOut("WritePixelLine8 ..\n");
+  TODO();
+#if 0
 	WritePixelLine8 (hAmigaWnd->RPort, 0, line_no, len, gfxvidinfo.bufmem, TempRPort);
 #if 0
 	WritePixelLine8 (hAmigaWnd->RPort, 0, line_no, len, gfxvidinfo.linemem, TempRPort);
@@ -619,6 +626,7 @@ if (!--len)
   else {
     DebOut("\n");
   }
+#endif
 
 
 

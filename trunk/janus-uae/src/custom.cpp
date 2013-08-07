@@ -5135,6 +5135,8 @@ static void vsync_handler_pre (void)
 	sampler_vsync ();
 
 	vsync_handle_redraw (lof_store, lof_changed);
+
+  DebOut("left\n");
 }
 
 // emulated hardware vsync
@@ -5463,6 +5465,8 @@ static void hsync_handler_pre (bool isvsync)
 {
 	int hpos = current_hpos ();
 
+  DebOut("entered\n");
+
 	if (!nocustom ()) {
 		sync_copper_with_cpu (maxhpos, 0);
 		finish_decisions ();
@@ -5536,6 +5540,7 @@ static void hsync_handler_pre (bool isvsync)
 			activate_debugger ();
 	}
 #endif
+  DebOut("left\n");
 }
 
 // this prepares for new line
@@ -6077,6 +6082,7 @@ static uae_u32 REGPARAM2 mousehack_helper_old (struct TrapContext *ctx)
 
 int custom_init (void)
 {
+  DebOut("entered\n");
 
 #ifdef AUTOCONFIG
 	if (uae_boot_rom) {
@@ -6101,6 +6107,8 @@ int custom_init (void)
 	drawing_init ();
 
 	create_cycle_diagram_table ();
+
+  DebOut("left\n");
 
 	return 1;
 }

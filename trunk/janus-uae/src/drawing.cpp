@@ -241,6 +241,8 @@ static void xlinecheck (unsigned int start, unsigned int end)
 	int min = linetoscr_x_adjust_bytes / gfxvidinfo.pixbytes;
 	int ok = 1;
 
+  DebOut("start %d, end %d\n", start, end);
+
 	if (xstart >= gfxvidinfo.emergmem && xstart < gfxvidinfo.emergmem + 4096 * gfxvidinfo.pixbytes &&
 		xend >= gfxvidinfo.emergmem && xend < gfxvidinfo.emergmem + 4096 * gfxvidinfo.pixbytes)
 		return;
@@ -291,6 +293,7 @@ STATIC_INLINE int xshift (int x, int shift)
 
 int coord_native_to_amiga_x (int x)
 {
+  DebOut("coord_native_to_amiga_x(%d)\n", x);
 	x += visible_left_border;
 	x = xshift (x, 1 - lores_shift);
 	return x + 2 * DISPLAY_LEFT_SHIFT - 2 * DIW_DDF_OFFSET;
@@ -317,6 +320,7 @@ STATIC_INLINE int res_shift_from_amiga (int x)
 
 void notice_screen_contents_lost (void)
 {
+  DebOut("entered\n");
 	picasso_redraw_necessary = 1;
 	frame_redraw_necessary = 2;
 }
@@ -350,6 +354,8 @@ int get_custom_limits (int *pw, int *ph, int *pdx, int *pdy)
 {
 	int w, h, dx, dy, y1, y2, dbl1, dbl2;
 	int ret = 0;
+
+  DebOut("entered\n");
 
 	if (!pw || !ph || !pdx || !pdy) {
 		reset_custom_limits ();
@@ -481,6 +487,8 @@ void get_custom_mouse_limits (int *pw, int *ph, int *pdx, int *pdy, int dbl)
 	int delay1, delay2;
 	int w, h, dx, dy, dbl1, dbl2, y1, y2;
 
+  DebOut("entered\n");
+
 	w = diwlastword_total - diwfirstword_total;
 	dx = diwfirstword_total - visible_left_border;
 
@@ -541,6 +549,7 @@ static struct draw_info *dip_for_drawing;
 /* Record DIW of the current line for use by centering code.  */
 void record_diw_line (int plfstrt, int first, int last)
 {
+  DebOut("entered\n");
 	if (last > max_diwstop)
 		max_diwstop = last;
 	if (first < min_diwstart) {
@@ -703,7 +712,8 @@ STATIC_INLINE xcolnr getbgc (void)
 	if (hposblank)
 		return xcolors[0xf00];
 #endif
-  DebOut("brdblank %d, colors_for_drawing.acolors[0] %x (%d)\n", brdblank, colors_for_drawing.acolors[0], colors_for_drawing.acolors[0]);
+  DebOut("getbgc()\n");
+  //DebOut("brdblank %d, colors_for_drawing.acolors[0] %x (%d)\n", brdblank, colors_for_drawing.acolors[0], colors_for_drawing.acolors[0]);
 	return (brdblank || hposblank) ? 0 : colors_for_drawing.acolors[0];
 }
 
@@ -714,6 +724,8 @@ static void fill_line_16 (uae_u8 *buf, unsigned int start, unsigned int stop)
 	uae_u16 *b = (uae_u16 *)buf;
 	unsigned int i;
 	unsigned int rem = 0;
+
+  DebOut("entered\n");
 
 	xcolnr col = getbgc ();
   DebOut("fill_line_16(%lx, %d, %d): col: %d\n", buf, start, stop, col);
@@ -2666,9 +2678,11 @@ void finish_drawing_frame (void)
 
 	if (! lockscr (false)) {
 		notice_screen_contents_lost ();
+    DebOut("!lockscr !!\n");
 		return;
 	}
 
+  DebOut("finish_drawing_frame 2\n");
 #ifndef SMART_UPDATE
 	/* @@@ This isn't exactly right yet. FIXME */
 	if (!interlace_seen)
@@ -2678,8 +2692,7 @@ void finish_drawing_frame (void)
 	return;
 #endif
 
-	DebOut("1..\n");
-
+  DebOut("finish_drawing_frame 3\n");
 	for (i = 0; i < max_ypos_thisframe; i++) {
 		int i1 = i + min_ypos_for_screen;
 		int line = i + thisframe_y_adjust_real;
@@ -2726,6 +2739,7 @@ void finish_drawing_frame (void)
 	}
 
 	//DebOut("3..\n");
+  DebOut("finish_drawing_frame 4\n");
 	if (currprefs.leds_on_screen) {
 		for (i = 0; i < TD_TOTAL_HEIGHT; i++) {
 			int line = gfxvidinfo.height - TD_TOTAL_HEIGHT + i;
@@ -2756,6 +2770,7 @@ void finish_drawing_frame (void)
 		brdblank_changed = 0;
 	}
 #endif
+  DebOut("left\n");
 }
 
 void hardware_line_completed (int lineno)
