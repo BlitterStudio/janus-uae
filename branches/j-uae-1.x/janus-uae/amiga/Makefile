@@ -13,7 +13,7 @@
 CC        = m68k-amigaos-gcc
 
 #TARGETDIR = /home/oli/svn/v0/AROS/bin/linux-i386/AROS/m68k/
-TARGETDIR = /home/oli/svn/v0/AROS/bin/linux-i386/AROS/aros_68k.icaros_wip1.5/
+TARGETDIR = /home/oli/svn/v0/AROS/bin/linux-i386/AROS/m68k/janus-tools/
 
 FLAGS     = -Wall
 CDEFS     = 
@@ -53,7 +53,7 @@ clonescreenmode: $(SMOBJS)
 	cp clonescreenmode  $(TARGETDIR)
 
 clean:
-	@rm -f $(JOBJS) $(COBJS) $(LOBJS) janusd clipd launchd
+	@rm -f $(JOBJS) $(COBJS) $(LOBJS) janusd clipd launchd janus-splash clonescreenmode
 
 %.o: %.c janus-daemon.h clip-daemon.h
 	$(CC) $(CFLAGS) -o $@ -c $*.c
