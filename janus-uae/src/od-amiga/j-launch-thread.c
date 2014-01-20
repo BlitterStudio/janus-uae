@@ -68,6 +68,8 @@ static char *check_and_convert_path(char *aros_exe_full_path,
   char   *result=NULL;
   /* aros_device_mounted might be an assign, this will be the real path: */
   char    aros_path_mounted_real[MAX_PATH_LENGTH+1];  
+  /* aros_exe_full_path might be inside an assign, this will be the real path: */
+  char    aros_exe_full_path_real[MAX_PATH_LENGTH+1];  
   BPTR    lock;
 
   JWLOG("aros_exe_full_path:     %s\n", aros_exe_full_path);
@@ -80,7 +82,12 @@ static char *check_and_convert_path(char *aros_exe_full_path,
   JWLOG("aros_path_mounted_real: %s\n", aros_path_mounted_real);
   UnLock(lock);
   
-  if(Strnicmp(aros_exe_full_path, aros_path_mounted_real, strlen(aros_path_mounted_real))) {
+  lock=Lock(aros_exe_full_path, SHARED_LOCK);
+  NameFromLock(lock, aros_exe_full_path_real, MAX_PATH_LENGTH);
+  JWLOG("aros_exe_full_path_real: %s\n", aros_exe_full_path_real);
+  UnLock(lock);
+ 
+  if(Strnicmp(aros_exe_full_path_real, aros_path_mounted_real, strlen(aros_path_mounted_real))) {
 
     JWLOG("Strnicmp(%s, %s, %d) failed!\n", aros_exe_full_path, aros_path_mounted_real, 
                                                 strlen(aros_path_mounted_real));
@@ -90,7 +97,7 @@ static char *check_and_convert_path(char *aros_exe_full_path,
   /* So the supplied executable is accessable inside of amigaOS */
 
   /* path without aros_path_mounted_real */
-  aros_exe_path=aros_exe_full_path + strlen(aros_path_mounted_real);
+  aros_exe_path=aros_exe_full_path_real + strlen(aros_path_mounted_real);
     /* remove '/' if there is one at the end */
     if(aros_exe_path[0] == '/') {
         aros_exe_path++;
@@ -254,39 +261,39 @@ static void aros_launch_thread (void) {
       JWLOG("aros_launch_thread[%lx]: msg %lx received!\n", thread);
       JWLOG("aros_launch_thread[%lx]: msg->ln_Name: >%s< \n", thread, msg->ln_Name);
       if(strcmp(msg->ln_Name, DIE_STRING)) {
-    amiga_exe=aros_path_to_amigaos(msg->ln_Name);
+        amiga_exe=aros_path_to_amigaos(msg->ln_Name);
 
-    if(amiga_exe) {
-      if(aos3_launch_task) {
-        /* store it for the launchd to fetch and execute */
-        ObtainSemaphore(&sem_janus_launch_list);
-        jlaunch=(struct JanusLaunch *) AllocVec(sizeof(JanusLaunch),MEMF_CLEAR);
-        if(jlaunch) {
-          jlaunch->type      =CLI_TYPE_WB_ASYNC;
-          jlaunch->amiga_path=amiga_exe;
-          jlaunch->args      =convert_tags_to_amigaos(msg->tags);
-          janus_launch       =g_slist_append(janus_launch,jlaunch);
+        if(amiga_exe) {
+          if(aos3_launch_task) {
+            /* store it for the launchd to fetch and execute */
+            ObtainSemaphore(&sem_janus_launch_list);
+            jlaunch=(struct JanusLaunch *) AllocVec(sizeof(JanusLaunch),MEMF_CLEAR);
+            if(jlaunch) {
+              jlaunch->type      =CLI_TYPE_WB_ASYNC;
+              jlaunch->amiga_path=amiga_exe;
+              jlaunch->args      =convert_tags_to_amigaos(msg->tags);
+              janus_launch       =g_slist_append(janus_launch,jlaunch);
+            }
+        
+            ReleaseSemaphore(&sem_janus_launch_list);
+            JWLOG("aros_launch_thread[%lx]: uae_Signal(%lx, %lx)\n", thread, aos3_launch_task, aos3_launch_signal);
+            uae_Signal(aos3_launch_task, aos3_launch_signal);
+          }
+          else {
+            JWLOG("aros_launch_thread[%lx]: ERROR: launchd is not running!\n", thread);
+            gui_message_with_title("ERROR",
+                       "Failed to start %s\n\nJ-UAE is running, but you need to start \"launchd\" inside of amigaOS!\n\nYou can find \"launchd\" in the amiga directory of your J-UAE package.\n\nBest thing is, to start it at the end of your s:user-startup.", msg->ln_Name);
+          }
         }
-    
-        ReleaseSemaphore(&sem_janus_launch_list);
-        JWLOG("aros_launch_thread[%lx]: uae_Signal(%lx, %lx)\n", thread, aos3_launch_task, aos3_launch_signal);
-        uae_Signal(aos3_launch_task, aos3_launch_signal);
+        else {
+          JWLOG("aros_launch_thread[%lx]: ERROR: volume %s is not mounted!\n", thread, msg->ln_Name);
+          gui_message_with_title("ERROR",
+                       "Failed to start \"%s\".\n\nThis path is not available inside of amigaOS.\n\nYou need to add the AROS directory\n\n(or one of its parents) with an absolute path\n\nas an amigaOS device.\n\nBest way to do this is the \"Harddisk\" tab in the J-UAE GUI.", msg->ln_Name);
+        }
       }
       else {
-        JWLOG("aros_launch_thread[%lx]: ERROR: launchd is not running!\n", thread);
-        gui_message_with_title("ERROR",
-                   "Failed to start %s\n\nJ-UAE is running, but you need to start \"launchd\" inside of amigaOS!\n\nYou can find \"launchd\" in the amiga directory of your J-UAE package.\n\nBest thing is, to start it at the end of your s:user-startup.", msg->ln_Name);
-      }
-    }
-    else {
-      JWLOG("aros_launch_thread[%lx]: ERROR: volume %s is not mounted!\n", thread, msg->ln_Name);
-      gui_message_with_title("ERROR",
-                   "Failed to start \"%s\".\n\nThis path is not available inside of amigaOS.\n\nYou need to add the AROS directory\n\n(or one of its parents) with an absolute path\n\nas an amigaOS device.\n\nBest way to do this is the \"Harddisk\" tab in the J-UAE GUI.", msg->ln_Name);
-    }
-      }
-      else {
-    /* exit!*/
-    done=TRUE;
+        /* exit!*/
+        done=TRUE;
       }
 
       pool=msg->mempool;
