@@ -72,22 +72,27 @@ int setup_sound (void)
 
 static const char *open_AHI (void)
 {
+  kprintf("open_AHI..\n");
 #ifdef USE_AHIDEVICE
-    if ((AHImp = CreateMsgPort())) {
-	if ((AHIio[0] = (struct AHIRequest *)
-		CreateIORequest (AHImp, sizeof (struct AHIRequest)))) {
-	    AHIio[0]->ahir_Version = 4;
+  AHImp = CreateMsgPort();
+  if (AHImp!=NULL) {
+    kprintf("open_AHI.. 1\n");
+    if ((AHIio[0] = (struct AHIRequest *) CreateIORequest (AHImp, sizeof (struct AHIRequest)))) {
+      AHIio[0]->ahir_Version = 4;
+      kprintf("open_AHI.. 2: %lx\n", AHIio[0]);
 
-	    if (!OpenDevice (AHINAME, 0, (struct IORequest *)AHIio[0], 0)) {
-	        if ((AHIio[1] = malloc (sizeof(struct AHIRequest)))) {
-		    memcpy (AHIio[1], AHIio[0], sizeof(struct AHIRequest));
-		    //kprintf("AHI: AHINAME is >%s<\n", AHINAME);
-		    return AHINAME;
-		}
-	    }
-	}
+      if (!OpenDevice (AHINAME, 0, (struct IORequest *)AHIio[0], 0)) {
+        kprintf("!open device\n");
+        if ((AHIio[1] = malloc (sizeof(struct AHIRequest)))) {
+          memcpy (AHIio[1], AHIio[0], sizeof(struct AHIRequest));
+          kprintf("AHI: AHINAME is >%s<\n", AHINAME);
+          return AHINAME;
+        }
+      }
     }
+  }
 #endif
+  kprintf("open_AHI failed\n");
     return NULL;
 }
 
@@ -160,6 +165,7 @@ int init_sound (void)
     else
 	ahiopen = 0;
 
+#ifndef __AROS__
     if (!ahiopen) {
 	/* Use the plain old audio.device */
 
@@ -233,6 +239,7 @@ int init_sound (void)
 
     sound_available = 1;
     return 1;
+#endif /* !AROS */
 fail:
     sound_available = 0;
     return 0;
