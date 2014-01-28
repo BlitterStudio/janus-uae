@@ -54,7 +54,7 @@
 # include <proto/dos.h>
 #endif
 
-#define TRACING_ENABLED 1
+#define TRACING_ENABLED 0
 #if TRACING_ENABLED
 #define TRACE(x)        do { kprintf("FS %s: ",__func__);kprintf x; } while(0)
 #define DUMPLOCK(u,x)   dumplock(u,x)
@@ -872,6 +872,7 @@ static void update_child_names (Unit *unit, a_inode *a, a_inode *parent)
         char dirsep[2] = { FSDB_DIR_SEPARATOR, '\0' };
 
         a->parent = parent;
+#warning: care for ':' separator??
         name_start = strrchr (a->nname, FSDB_DIR_SEPARATOR);
         if (name_start == 0) {
             write_log ("malformed file name");
@@ -966,6 +967,7 @@ static a_inode *lookup_sub (a_inode *dir, uae_u32 uniq)
            confuse it.  */
         *cp = c->sibling;
         c->sibling = dir->child;
+        TRACE(("c->sibling = dir->child: %lx\n", dir->child));
         dir->child = c;
     }
     return retval;
@@ -1111,6 +1113,7 @@ static char *get_aname (Unit *unit, a_inode *base, char *rel)
     return my_strdup (rel);
 }
 
+/* not called for subsequent exnext calls to same directory */
 static void init_child_aino (Unit *unit, a_inode *base, a_inode *aino)
 {
     aino->uniq = ++unit->a_uniq;
@@ -1135,6 +1138,7 @@ static void init_child_aino (Unit *unit, a_inode *base, a_inode *aino)
     aino->parent = base;
     aino->child = 0;
     aino->sibling = base->child;
+    TRACE(("aino->sibling = base->child: %lx\n", base->child));
     base->child = aino;
     aino->next = aino->prev = 0;
 
@@ -1254,14 +1258,26 @@ static a_inode *lookup_child_aino_for_exnext (Unit *unit, a_inode *base, char *r
     *err = 0;
     while (c != 0) {
         int l1 = strlen (c->nname);
+        TRACE(("c->nname: %s\n", c->nname));
         /* Note: using strcmp here.  */
-        if (l0 <= l1 && strcmp (rel, c->nname + l1 - l0) == 0
-            && (l0 == l1 || c->nname[l1-l0-1] == FSDB_DIR_SEPARATOR))
+        if ( (l0 <= l1 && strcmp (rel, c->nname + l1 - l0) == 0) &&
+#ifndef TARGET_AMIGAOS
+             (l0 == l1 || c->nname[l1-l0-1] == FSDB_DIR_SEPARATOR)
+#else
+             /* AmigaOS has *two dir separators. If ':' is missing, you will get
+              * duplicate entries in dir listings, if emulated volume is mapped
+              * to a host path containing a ':'
+              */
+             (l0 == l1 || c->nname[l1-l0-1] == FSDB_DIR_SEPARATOR || c->nname[l1-l0-1] == ':' )
+#endif
+             )
             break;
         c = c->sibling;
     }
-    if (c != 0)
+    if (c != 0) {
+        TRACE(("return found aino: %x\n", c->uniq));
         return c;
+    }
     c = fsdb_lookup_aino_nname (base, rel);
     if (c == 0) {
         c = xcalloc (sizeof (a_inode), 1);
@@ -1391,6 +1407,8 @@ static Unit *startup_create_unit (UnitInfo *uinfo, uae_u32 port)
     unit->rootnode.aname = uinfo->volname;
     unit->rootnode.nname = uinfo->rootdir;
     unit->rootnode.sibling = 0;
+
+    TRACE(("unit->rootnode.sibling = 0\n"));
     unit->rootnode.next = unit->rootnode.prev = &unit->rootnode;
     unit->rootnode.uniq = 0;
     unit->rootnode.parent = 0;
@@ -2155,6 +2173,7 @@ get_fileinfo (Unit *unit, dpacket packet, uaecptr info, a_inode *aino)
     int i, n, entrytype;
     const char *x;
 
+    TRACE(("aino->parent: %d\n", aino->parent));
     if (aino->parent == 0) {
         /* Guru book says ST_ROOT = 1 (root directory, not currently used)
          * and some programs really expect 2 from root dir..
@@ -2165,17 +2184,22 @@ get_fileinfo (Unit *unit, dpacket packet, uaecptr info, a_inode *aino)
         entrytype = aino->dir ? 2 : -3;
         x = aino->aname;
     }
+    TRACE(("entrytype=%d\n", entrytype));
     put_long (info + 4, entrytype);
     /* AmigaOS docs say these have to contain the same value. */
     put_long (info + 120, entrytype);
     TRACE(("name=\"%s\"\n", x));
     n = strlen (x);
+    /* cut to 106 chars */
     if (n > 106)
         n = 106;
     i = 8;
+    /* write length */
     put_byte (info + i, n); i++;
+    /* copy filename */
     while (n--)
         put_byte (info + i, *x), i++, x++;
+    /* fill remainig space with (char) 0 */
     while (i < 108)
         put_byte (info + i, 0), i++;
 
@@ -2440,6 +2464,9 @@ static void action_examine_next (Unit *unit, dpacket packet)
     if (ek == 0) {
         write_log ("Couldn't find a matching ExKey. Prepare for trouble.\n");
         goto no_more_entries;
+    }
+    else {
+        TRACE(("curr_file: %p %s\n", ek->curr_file, ek->curr_file ? ek->curr_file->aname : "NULL"));
     }
     put_long (info, ek->uniq);
     do_examine (unit, packet, ek, info);
