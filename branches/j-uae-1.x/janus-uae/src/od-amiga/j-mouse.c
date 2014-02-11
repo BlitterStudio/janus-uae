@@ -21,6 +21,7 @@
  *
  ************************************************************************/
 
+//#define JWTRACING_ENABLED 1
 #include "j.h"
 
 //int coord_native_to_amiga_x (int x);
@@ -141,6 +142,8 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
     return TRUE;
   }
 
+  //JWLOG("ACT: janus_active_window %lx, janus_active_screen %lx, changed_prefs.jcoherence %d\n", janus_active_window, janus_active_screen, changed_prefs.jcoherence);
+  //JWLOG("ACT: uae_main_window_closed %d, changed_prefs.jmouse %d, aos3_task %lx\n", uae_main_window_closed, changed_prefs.jmouse, aos3_task);
   /* only return mouse movement, if one of our windows is active.
    * as we do not access the result, no Semaphore access is
    * necessary, so save semaphore access here.
@@ -150,6 +153,12 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
   if(!janus_active_window && !janus_active_screen && changed_prefs.jcoherence) {
     JWLOG("no active window (%lx) / no janus_active_screen (%lx) / changed_prefs.jcoherence (%d)\n",
            janus_active_window, janus_active_screen, changed_prefs.jcoherence);
+    return FALSE;
+  }
+
+  /* we are *not* coherent, only move mouse, if our main window is active */
+  if(!changed_prefs.jcoherence && !(W == IntuitionBase->ActiveWindow && W)) {
+    JWLOG("not coherent and not active window, do nothing.\n");
     return FALSE;
   }
 
