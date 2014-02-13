@@ -107,6 +107,7 @@ APTR           old_WindowLimits;
 #define PUSHA0        "move.l a0,-(SP)\n"
 #define POPA0         "move.l (SP)+,a0\n"
 
+#ifndef __AROS__
 /*********************************************************************************
  * _my_CloseWindow_SetFunc
  *
@@ -154,11 +155,11 @@ __asm__("_my_OpenWindow_SetFunc:\n"
 	"move.l (a4),d4\n"
 	"clr.l (a4)\n"
 	*/
-	"cmp.l #1,_state\n"
+  "cmp.l #1,_state\n"
 	"blt openwin_patch_disabled1\n"
-	PUSHFULLSTACK
-	"jsr _update_screens\n"
-	POPFULLSTACK
+    PUSHFULLSTACK
+    "jsr _update_screens\n"
+    POPFULLSTACK
 	"openwin_patch_disabled1:\n"
 	PUSHA3
 	"move.l _old_OpenWindow,a3\n"
@@ -170,15 +171,15 @@ __asm__("_my_OpenWindow_SetFunc:\n"
 	*/
 	"cmp.l #1,_state\n"
 	"blt openwin_patch_disabled2\n"
-	PUSHFULLSTACK
-	"move.l d0,a0\n"
-	"moveq #11,d0\n"
-	"moveq #11,d1\n"
-	"move.l _calltrap,a1\n"
-	"jsr (a1)\n"
-	POPFULLSTACK
+    PUSHFULLSTACK
+    "move.l d0,a0\n"
+    "moveq #11,d0\n"
+    "moveq #11,d1\n"
+    "move.l _calltrap,a1\n"
+    "jsr (a1)\n"
+    POPFULLSTACK
 	"openwin_patch_disabled2:\n"
-        "rts\n");
+  "rts\n");
 
 /*********************************************************************************
  * _my_OpenWindowTagList_SetFunc
@@ -205,6 +206,7 @@ __asm__("_my_OpenWindowTagList_SetFunc:\n"
 	POPFULLSTACK
 	"openwintag_patch_disabled2:\n"
         "rts\n");
+#endif /* AROS */
 
 
 struct TagItem       mytags_linked[2]={ { SA_Draggable, FALSE}, { TAG_MORE, NULL}};
@@ -219,7 +221,11 @@ struct TagItem       taglist_mytags[2]={ { SA_Draggable, FALSE}, { TAG_DONE, TAG
  *
  * set SA_Draggable to FALSE, AROS has no screen dragging ;)
  *********************************************************************************/
+#ifndef __AROS__
 ULONG remove_dragging (struct NewScreen *newscreen __asm("a0")) {
+#else
+ULONG remove_dragging (struct NewScreen *newscreen) {
+#endif
   struct TagItem      *tags;
   struct TagItem      *tstate;
   struct TagItem      *tag;
@@ -286,7 +292,11 @@ ULONG remove_dragging (struct NewScreen *newscreen __asm("a0")) {
  * use taglist_mytags_linked here and not mytags_linked, as OpenScreen might call
  * OpenScreenTagList.. and so we would cause wrong links 
  */
+#ifndef __AROS__
 ULONG remove_dragging_TagList (struct TagItem *original_tags __asm("a1")) {
+#else
+ULONG remove_dragging_TagList (struct TagItem *original_tags) {
+#endif
   struct TagItem      *tstate;
   struct TagItem      *tag;
 
@@ -322,9 +332,16 @@ BOOL is_ign(UBYTE *in) {
  *
  *  if the window title changed, change also the AROS title
  *********************************************************************************/
+#ifndef __AROS__
 ULONG set_aros_titles (struct Window *win __asm("a0"), 
                        UBYTE *windowtitle __asm("a1"), 
-		       UBYTE *screentitle __asm("a2")) {
+                       UBYTE *screentitle __asm("a2")) {
+#else
+ULONG set_aros_titles (struct Window *win, 
+                       UBYTE *windowtitle, 
+                       UBYTE *screentitle) {
+#endif
+
 
 #if 0
   DebOut("set_aros_titles(%lx, %s, %s)\n", win, windowtitle, screentitle);
@@ -403,6 +420,7 @@ ULONG set_aros_titles (struct Window *win __asm("a0"),
  * opened with sync-screen.
  *
  *********************************************************************************/
+#ifndef __AROS__
 __asm__("_my_OpenScreen_SetFunc:\n"
         PUSHA0
 	"cmp.l #1,_patch_draggable\n"
@@ -738,10 +756,10 @@ __asm__("_my_SetWindowTitles_SetFunc:\n"
 	"cmp.l #1,_state\n"
 	"blt setwindowtitles_patch_disabled_test\n"
 
-	  "movem.l d1-d7/a0-a6,-(SP)\n"    /* backup everything but D0  */
+    "movem.l d1-d7/a0-a6,-(SP)\n"    /* backup everything but D0  */
 	  "jsr _set_aros_titles\n"         /* return in D0, if there is something to change */
 	  "movem.l (SP)+,d1-d7/a0-a6\n"    /* restore everything but D0 */
-	  "move.l d0,-(SP)\n"    /* backup D0  */
+	  "move.l d0,-(SP)\n"              /* backup D0  */
 
 	"setwindowtitles_patch_disabled_test:\n"
 
@@ -823,6 +841,7 @@ __asm__("_my_WindowLimits_SetFunc:\n"
 	"move.l d6,d0\n"
 	"move.l (SP)+,d6\n"
         "rts\n");
+#endif /* AROS */
 
 /*
  * assembler functions need to be declared or used, before
@@ -854,10 +873,12 @@ void patch_functions() {
 
   ENTER
 
+#ifndef __AROS__
   old_CloseWindow=SetFunction((struct Library *)IntuitionBase, 
                               -72, 
 			      (APTR) my_CloseWindow_SetFunc);
 
+  /* AROS version uses SNOTIFY_BEFORE_OPENWINDOW */
   old_OpenWindow=SetFunction((struct Library *)IntuitionBase, 
                               -204, 
 			      (APTR) my_OpenWindow_SetFunc);
@@ -881,6 +902,7 @@ void patch_functions() {
   old_ScreenDepth=SetFunction((struct Library *)IntuitionBase, 
                               -786, 
 			      (APTR) my_ScreenDepth_SetFunc);
+#endif
 
 #if 0
   old_ModifyIDCMP=SetFunction((struct Library *)IntuitionBase, 
@@ -906,10 +928,13 @@ void patch_functions() {
 			      (APTR) my_RemoveGList_SetFunc);
 #endif
 
+#ifndef __AROS__
   old_SetWindowTitles=SetFunction((struct Library *)IntuitionBase, 
                               -276, 
 			      (APTR) my_SetWindowTitles_SetFunc);
+#endif
 
+#ifndef __AROS__
   old_WindowLimits=SetFunction((struct Library *)IntuitionBase, 
                               -318, 
 			      (APTR) my_WindowLimits_SetFunc);
@@ -921,6 +946,9 @@ void patch_functions() {
   old_RefreshGList=SetFunction((struct Library *)IntuitionBase, 
                               -432, 
 			      (APTR) my_RefreshGList_SetFunc);
+#else
+#warning TODO!!!!!!!!!!!!!!!!!!!!!!1
+#endif
 
 
 

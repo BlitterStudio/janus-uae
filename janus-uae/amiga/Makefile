@@ -8,19 +8,25 @@
 # You may want to change the TARGETDIR
 # to the path, where you keep your
 # amigaOS installation tree.
+#
+# Use -DENV_AROS to build tools specially
+# optimized for AROS. They are still
+# 68k hunk files, though. (TODO)
 #=====================================
 
-CC        = m68k-amigaos-gcc
+#CC        = m68k-amigaos-gcc
+CC        = /home/oli/svn/m68k/AROS/bin/linux-i386/tools/crosstools/m68k-aros-gcc
 
 #TARGETDIR = /home/oli/svn/v0/AROS/bin/linux-i386/AROS/m68k/
-TARGETDIR = /home/oli/svn/v0/AROS/bin/linux-i386/AROS/m68k/janus-tools/
+TARGETDIR = /home/oli/svn/v0/AROS/bin/linux-i386/AROS/icaros-aros68k/C
 
 FLAGS     = -Wall
-CDEFS     = 
+CDEFS     = -DENV_AROS
 #CDEFS     = -DDEBUG
 INCLUDES  =
 DEBUGFLAGS=
-LD_FLAGS  = -noixemul
+#LD_FLAGS  = -noixemul
+LD_FLAGS  = 
 
 CFLAGS    = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
@@ -30,10 +36,10 @@ LOBJS      = launch-daemon.o debug.o
 SOBJS      = splash.o debug.o
 SMOBJS     = clonescreenmode.o
 
-all: janusd clipd launchd janus-splash clonescreenmode
+all: janusd #clipd launchd janus-splash clonescreenmode
 
 janusd: $(JOBJS) 
-	$(CC) $(LD_FLAGS) $(JOBJS) -o janusd -lauto #-lc -lamiga -lauto
+	$(CC) $(LD_FLAGS) $(JOBJS) -o janusd #-lauto #-lc -lamiga -lauto
 	cp janusd $(TARGETDIR)
  
 clipd:  $(COBJS) 

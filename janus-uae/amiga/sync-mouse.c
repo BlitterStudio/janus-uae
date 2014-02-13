@@ -46,6 +46,9 @@
 #include <devices/timer.h>
 #include <hardware/intbits.h>
 #include <cybergraphx/cybergraphics.h>
+#ifdef __AROS__
+#include <proto/cybergraphics.h>
+#endif
 
 #include <clib/alib_protos.h>
 #include <clib/dos_protos.h>
@@ -64,13 +67,17 @@ extern struct Library *CyberGfxBase;
 #define CLIB_INTUITION_PROTOS_H
 #endif
 
+#ifndef __AROS__
 #ifndef __INLINE_MACROS_H
 #include <inline/macros.h>
 #endif
+#endif
 
+#ifndef __AROS__
 #define IsCyberModeID(modeID) \
          LP1(0x36, BOOL, IsCyberModeID, ULONG, modeID, d0, \
          , CyberGfxBase)
+#endif
 
 extern struct IntuitionBase* IntuitionBase;
 
@@ -133,8 +140,8 @@ BOOL init_sync_mouse() {
       if(NeoPix) {
         InputIO=CreateIORequest(InputMP, sizeof(struct IOStdReq));
         if(InputIO) {
-          if(!OpenDevice("input.device", NULL, 
-              (struct IORequest *)InputIO, NULL)) {
+          if(!OpenDevice((unsigned char *)"input.device", 0, 
+              (struct IORequest *)InputIO, 0)) {
              /* Zero if successful, else an error code is returned. */
              sync_mouse_device_open=TRUE;
              LEAVE
@@ -203,6 +210,7 @@ void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button,
 
   if(!NeoPix || !FakeEvent || !InputIO || !screen) {
     DebOut("ERROR: SetMouse assert failed!\n");
+    printf("ERROR: SetMouse assert failed!\n");
     return;
   }
 
@@ -215,7 +223,7 @@ void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button,
   FakeEvent->ie_Class=    IECLASS_NEWPOINTERPOS;
   FakeEvent->ie_SubClass= IESUBCLASS_PIXEL;
   FakeEvent->ie_Code=     IECODE_NOBUTTON;
-  FakeEvent->ie_Qualifier=NULL;
+  FakeEvent->ie_Qualifier=0;
 
   InputIO->io_Data=(APTR)FakeEvent;
   InputIO->io_Length=sizeof(struct InputEvent);
@@ -236,6 +244,8 @@ void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button,
       /* BUTTON UP */
       FakeEvent->ie_Code=button|IECODE_UP_PREFIX;
     }
+    FakeEvent->ie_Qualifier=0;
+
     DoIO((struct IORequest *)InputIO);
   }
 
