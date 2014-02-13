@@ -29,11 +29,13 @@
 //#include <proto/exec.h>
 #include <clib/intuition_protos.h>
 
-#if defined DEBUG
+//#define DEBUG 1
+/* remember to enable m68k debugging in od-amiga/j-debug.c, too */
+//#if defined DEBUG
 #define DebOut(...) PrintOut(__FILE__,__LINE__,__func__,__VA_ARGS__) 
-#else
-#define DebOut(...) 
-#endif
+//#else
+//#define DebOut(...) 
+//#endif
 
 #define AROSTRAPBASE 0xF0FF90
 
@@ -78,9 +80,14 @@
 
 extern ULONG state;
 
+#ifndef __AROS__
 extern ULONG (*calltrap)(ULONG __asm("d0"), 
                          ULONG __asm("d1"), 
 			 APTR  __asm("a0"));
+#else
+ULONG calltrap(ULONG arg1, ULONG arg2, ULONG *arg3);
+#endif
+
 
 /* sync-mouse.c */
 BOOL init_sync_mouse(void);
@@ -90,7 +97,9 @@ void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button, BOOL click, B
 BOOL is_cyber(struct Screen *screen);
 
 /* patch.c */
+#ifndef __AROS__
 extern ULONG patch_draggable;
+#endif
 void patch_functions(void);
 void unpatch_functions(void);
 

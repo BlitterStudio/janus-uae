@@ -23,6 +23,7 @@
  *
  ************************************************************************/
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -51,18 +52,40 @@
 #include <proto/dos.h>
 #include <proto/timer.h>
 
+#ifdef __AROS__
+#include <aros/system.h>
+#endif
+
 #include "janus-daemon.h"
 
 int __nocommandline = 0; /*???*/
 
-char verstag[] = "\0$VER: janus-daemon 0.8";
+#ifdef __AROS__
+char verstag[] = "\0$VER: janus-daemon 0.9 [AROS/m68k]";
+
+/* those registers must be reset to original values */
+#define PUSHSTACK     "movem.l %d2-%d7/%a2-%a4,-(%SP)\n"
+#define POPSTACK      "movem.l (%SP)+,%d2-%d7/%a2-%a4\n"
+#define PUSHFULLSTACK "movem.l %d0-%d7/%a0-%a6,-(%SP)\n"
+#define POPFULLSTACK  "movem.l (%SP)+,%d0-%d7/%a0-%a6\n"
+
+#else
+char verstag[] = "\0$VER: janus-daemon 0.9 [AmigaOS]";
+
+#define PUSHSTACK     "movem.l d2-d7/a2-a4,-(SP)\n"
+#define POPSTACK      "movem.l (SP)+,d2-d7/a2-a4\n"
+#define PUSHFULLSTACK "movem.l d0-d7/a0-a6,-(SP)\n"
+#define POPFULLSTACK  "movem.l (SP)+,d0-d7/a0-a6\n"
+
+#endif
+
 #if 0
 struct Window *old_MoveWindowInFront_Window,
               *old_MoveWindowInFront_BehindWindow;
 ULONG          old_MoveWindowInFront_Counter;
 #endif
 
-LONG          *cmdbuffer=NULL;
+ULONG          *cmdbuffer=NULL;
 
 /* state:
  *  0 not yet initialized / sleep until we go to coherency
@@ -84,15 +107,45 @@ struct Library *CyberGfxBase;
 /*
  * d0 is the function to be called (AD_*)
  * d1 is the size of the memory supplied by a0
- * a0 memory, where to put out command in and 
+ * a0 memory, where to put our command in and 
  *    where we store the result
  */
+#ifndef __AROS__
 ULONG (*calltrap)(ULONG __asm("d0"),
                   ULONG __asm("d1"),
 		  APTR  __asm("a0")) = (APTR) AROSTRAPBASE;
 
+#else
+
+/* AROSTRAPBASE 0xF0FF90 */
+
+ULONG calltrap(ULONG arg1, ULONG arg2, ULONG *arg3) {
+  ULONG ret=0;
+
+   /* Inline assembly is always somewhat ugly.. */
+   /* AROSTRAPBASE is 0xF0FF90 */
+
+  asm volatile ("movem.l %%d0-%%d7/%%a0-%%a6,-(%%SP)\n" \
+                "move.l %1, %%d0\n" \
+                "move.l %2, %%d1\n" \
+                "move.l %3, %%a0\n" \
+                "jsr 0xF0FF90\n" \
+                "move.l %%d0, %0\n" \
+                "movem.l (%%SP)+, %%d0-%%d7/%%a0-%%a6\n" \
+                             : "=r"(ret)                        /* %0 */
+                             : "r"(arg1), "r"(arg2), "r"(arg3)  /* %1, %2, %3 */
+                             :                                  /* nothing clobbered */
+                             );
+
+  return ret;
+}
+#endif
+
+
+
 BOOL open_libs() {
   ENTER
+#ifndef __AROS__
    if (!(IntuitionBase=(struct IntuitionBase *) OpenLibrary("intuition.library",39))) {
      printf("unable to open intuition.library\n");
      LEAVE
@@ -111,6 +164,7 @@ BOOL open_libs() {
 
    CyberGfxBase=OpenLibrary("cybergraphics.library", 0);
    DebOut("CyberGfxBase: %lx\n",CyberGfxBase);
+#endif
 
    LEAVE
    return TRUE;
@@ -157,10 +211,7 @@ int setup(struct Task *task, ULONG signal, ULONG stop) {
   return state;
 }
 
-/* those registers must be reset to original values */
-#define PUSHSTACK     "movem.l d2-d7/a2-a4,-(SP)\n"
-#define POPSTACK      "movem.l (SP)+,d2-d7/a2-a4\n"
-
+#ifndef __AROS__
 /* A1 contains the data pointer
  * you have to clear the Z flag on exit (moveq #0, D0)
  * you "should" return 0xdff000 in A0
@@ -183,6 +234,15 @@ __asm__("_vert_int:\n"
  */
 void vert_int();
 
+#else
+
+AROS_UFP4(ULONG, vert_int,
+    AROS_UFHA(ULONG, dummy, A0),
+    AROS_UFHA(void *, data, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6));
+
+#endif
 /* setup_vert_int 
  *
  * First I sent all the Signals from the UAE thread using
@@ -209,7 +269,11 @@ static int setup_vert_int(struct Task *task, ULONG signal) {
   vbint->is_Node.ln_Pri = 1;
   vbint->is_Node.ln_Name = "JanusD vbint";
   vbint->is_Data = (APTR)&intdata;
+#ifndef __AROS__
   vbint->is_Code = vert_int;
+#else
+  vbint->is_Code = (APTR) vert_int;
+#endif
 
 
   DebOut("AddIntServer(.., %lx)\n", vbint);
@@ -422,3 +486,26 @@ int main (int argc, char **argv) {
 
   exit (0);
 }
+
+#ifdef __AROS__
+#undef SysBase
+
+/* intdata[0]=(ULONG) task; */
+/* intdata[1]=        signal; */
+
+AROS_UFH4(ULONG, vert_int,
+    AROS_UFHA(ULONG, dummy, A0),
+    AROS_UFHA(ULONG *, intdata, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    Signal((struct Task *) intdata[0], intdata[1]);
+
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
+#endif

@@ -34,6 +34,7 @@
 #include <exec/memory.h>
 #include <intuition/intuitionbase.h>
 
+#define DEBUG 1
 #include "janus-daemon.h"
 
 extern struct IntuitionBase* IntuitionBase;
@@ -110,11 +111,14 @@ void closewin(struct Window *w) {
 
   ENTER
 
+  printf("closewin(%lx)\n", w);
+
   /* who knows, maybe window was closed inbetween already */
   DebOut("LockIBase()\n");
   lock=LockIBase(0);
   if(!assert_window(w)) {
     DebOut("window %lx was already closed!\n", w);
+    printf("window %lx was already closed!\n", w);
     DebOut("UnlockIBase()\n");
     UnlockIBase(lock);
     LEAVE
@@ -127,6 +131,8 @@ void closewin(struct Window *w) {
   x  =w->LeftEdge + m;
   y  =w->TopEdge + m;
   scr=w->WScreen;
+
+  printf("m %d, x %d, y %d, scr %lx\n", m, x, y, scr);
 
   DebOut("UnlockIBase()\n");
   UnlockIBase(lock);
@@ -164,12 +170,12 @@ void forward_messages() {
       type=command_mem[0];
       printf("got message (type %d)\n",(unsigned int) type);
       switch(type) {
-	case J_MSG_CLOSE:
-	  w=(struct window *) command_mem[1];
-	  closewin(w);
-	  break;
-	default:
-	  printf("unknown message type: %d\n",(unsigned int) type);
+        case J_MSG_CLOSE:
+          w=(struct window *) command_mem[1];
+          closewin(w);
+          break;
+        default:
+          printf("unknown message type: %d\n",(unsigned int) type);
       }
     }
 
