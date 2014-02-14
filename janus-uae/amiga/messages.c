@@ -111,14 +111,14 @@ void closewin(struct Window *w) {
 
   ENTER
 
-  printf("closewin(%lx)\n", w);
+  printf("closewin(%p)\n", w);
 
   /* who knows, maybe window was closed inbetween already */
   DebOut("LockIBase()\n");
   lock=LockIBase(0);
   if(!assert_window(w)) {
-    DebOut("window %lx was already closed!\n", w);
-    printf("window %lx was already closed!\n", w);
+    DebOut("window %p was already closed!\n", w);
+    printf("window %p was already closed!\n", w);
     DebOut("UnlockIBase()\n");
     UnlockIBase(lock);
     LEAVE
@@ -132,7 +132,7 @@ void closewin(struct Window *w) {
   y  =w->TopEdge + m;
   scr=w->WScreen;
 
-  printf("m %d, x %d, y %d, scr %lx\n", m, x, y, scr);
+  printf("m %d, x %d, y %d, scr %p\n", m, x, y, scr);
 
   DebOut("UnlockIBase()\n");
   UnlockIBase(lock);
