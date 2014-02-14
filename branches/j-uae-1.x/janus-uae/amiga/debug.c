@@ -23,7 +23,7 @@
  *
  ************************************************************************/
 
-#include <strings.h>
+#include <string.h>
 
 #include <exec/types.h>
 #include <exec/memory.h>
