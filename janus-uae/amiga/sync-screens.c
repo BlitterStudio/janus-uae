@@ -150,7 +150,7 @@ static void screen_fix_resolution(ULONG modeID, WORD *x, WORD *y) {
 void update_screens() {
   ULONG *command_mem;
   ULONG  i;
-  UWORD  maxwidth, maxheight;
+  WORD   maxwidth, maxheight;
   struct Screen   *screen;
   struct Rectangle rect;
 #if 0
