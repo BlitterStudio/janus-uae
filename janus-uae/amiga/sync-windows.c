@@ -249,7 +249,7 @@ void report_uae_windows() {
 
   pubname=public_screen_name(screen);
   if(pubname) {
-    lock=LockPubScreen(pubname);
+    lock=LockPubScreen((unsigned char *)pubname);
     DebOut("lock: %lx\n", lock);
   }
   win=screen->FirstWindow;
@@ -273,8 +273,8 @@ void report_uae_windows() {
 			      (win->Height - 
 			       win->BorderTop -
 			       win->BorderBottom));
-    command_mem[i+3]=NULL;
-    command_mem[i+4]=NULL;
+    command_mem[i+3]=0;
+    command_mem[i+4]=0;
 
     win=win->NextWindow;
     i=i+5;
