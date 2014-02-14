@@ -153,7 +153,7 @@ void forward_messages() {
   ULONG *command_mem;
   UBYTE  done;
   ULONG  type;
-  struct window *w;
+  struct Window *w;
 
   ENTER
 
@@ -171,7 +171,7 @@ void forward_messages() {
       printf("got message (type %d)\n",(unsigned int) type);
       switch(type) {
         case J_MSG_CLOSE:
-          w=(struct window *) command_mem[1];
+          w=(struct Window *) command_mem[1];
           closewin(w);
           break;
         default:
