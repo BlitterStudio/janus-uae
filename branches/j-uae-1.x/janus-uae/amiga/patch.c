@@ -209,10 +209,10 @@ __asm__("_my_OpenWindowTagList_SetFunc:\n"
 #endif /* AROS */
 
 
-struct TagItem       mytags_linked[2]={ { SA_Draggable, FALSE}, { TAG_MORE, NULL}};
+struct TagItem       mytags_linked[2]={ { SA_Draggable, FALSE}, { TAG_MORE, 0}};
 struct TagItem       mytags[2]={ { SA_Draggable, FALSE}, { TAG_DONE, TAG_DONE}};
 struct ExtNewScreen  nodrag_newscreen;
-struct TagItem       taglist_mytags_linked[2]={ { SA_Draggable, FALSE}, { TAG_MORE, NULL}};
+struct TagItem       taglist_mytags_linked[2]={ { SA_Draggable, FALSE}, { TAG_MORE, 0}};
 struct TagItem       taglist_mytags[2]={ { SA_Draggable, FALSE}, { TAG_DONE, TAG_DONE}};
 
 
@@ -371,7 +371,7 @@ ULONG set_aros_titles (struct Window *win,
     //DebOut("screentitle %lx == %lx\n", screentitle, win->ScreenTitle);
   }
 
-  if( !is_ign(windowtitle) && (strcmp(windowtitle, win->Title) != 0) ) {
+  if( !is_ign(windowtitle) && (strcmp((char *)windowtitle, (char *) win->Title) != 0) ) {
     DebOut("windowtitle   string != string\n");
     return 1;
   }
@@ -379,7 +379,7 @@ ULONG set_aros_titles (struct Window *win,
     //DebOut("windowtitle   string == win->Title string\n");
   }
 
-  if( !is_ign(screentitle) && (strcmp(screentitle, win->ScreenTitle) != 0) ) {
+  if( !is_ign(screentitle) && (strcmp((char *)screentitle, (char *)win->ScreenTitle) != 0) ) {
     DebOut("screentitle   string != win->ScreenTitle\n");
     return 1;
   }
