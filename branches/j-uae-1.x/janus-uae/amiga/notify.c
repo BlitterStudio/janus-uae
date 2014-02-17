@@ -6,7 +6,7 @@
  *
  * This file is part of Janus-Daemon.
  *
- * AmigaOS specific hooks/patches for syncing and triggering.
+ * AmigaOS specific hooks/patches for syncing and triggering
  *
  * Janus-Daemon is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,13 +25,94 @@
  *
  ************************************************************************/
 
-
+#if __AROS__
 #include <string.h>
+
 #include <proto/exec.h>
 #include <proto/utility.h>
+#include <proto/intuition.h>
+
 #include "janus-daemon.h"
 
-#ifndef __AROS__
+ULONG           notify_signal;
+struct MsgPort *notify_port;
+
+/*********************************************************************************
+ * setup_notify
+ *
+ * alloc notify signal
+ *********************************************************************************/
+ULONG setup_notify(void) {
+
+  DebOut("entered\n");
+
+  notify_port=CreateMsgPort();
+  if(!notify_port) {
+    DebOut("ERROR: no notify_port!?\n");
+    printf("ERROR: no notify_port!?\n");
+    exit(1);
+  }
+  notify_signal=1L << notify_port->mp_SigBit;
+
+  return notify_signal;
+}
+
+APTR do_notify(struct Screen *screen, struct MsgPort *port, ULONG class, ULONG thread) {
+  APTR notify;
+
+  ENTER
+
+  screen=IntuitionBase->FirstScreen;
+  DebOut("do_notify(class %lx, screen %lx, port %lx, thread %lx)\n", class, screen, port, thread);
+
+  if(screen) {
+    notify=StartScreenNotifyTags(SNA_MsgPort,  port,
+            SNA_UserData, screen,
+            SNA_SigTask,  thread,
+            SNA_Notify,   class,
+            TAG_END); 
+  }
+  else {
+    notify=StartScreenNotifyTags(SNA_MsgPort,  port,
+            SNA_SigTask,  thread,
+            SNA_Notify,   class,
+            TAG_END); 
+
+  }
+
+  if(!notify) {
+    DebOut("ERROR: StartScreenNotifyTags(%lx) failed\n", class);
+    printf("ERROR: StartScreenNotifyTags(%lx) failed\n", class);
+  }
+
+  LEAVE
+
+  return notify;
+}
+
+
+void patch_functions(void ) {
+  ULONG thread= (ULONG) FindTask(NULL);
+
+  ENTER
+
+  setup_notify();
+
+  DebOut("Installing notifications..\n");
+
+  do_notify(NULL, notify_port, SNOTIFY_BEFORE_OPENWINDOW |SNOTIFY_WAIT_REPLY, thread);
+  do_notify(NULL, notify_port, SNOTIFY_AFTER_OPENWINDOW  |SNOTIFY_WAIT_REPLY, thread);
+
+  do_notify(NULL, notify_port, SNOTIFY_BEFORE_CLOSEWINDOW|SNOTIFY_WAIT_REPLY, thread);
+
+  do_notify(NULL, notify_port, SNOTIFY_AFTER_OPENSCREEN  |SNOTIFY_WAIT_REPLY, thread);
+  do_notify(NULL, notify_port, SNOTIFY_BEFORE_CLOSESCREEN|SNOTIFY_WAIT_REPLY, thread);
+
+  do_notify(NULL, notify_port, SNOTIFY_SCREENDEPTH       |SNOTIFY_WAIT_REPLY, thread);
+
+  LEAVE
+}
+
 extern struct IntuitionBase* IntuitionBase;
 
 /****************************************************
@@ -322,8 +403,6 @@ ULONG remove_dragging_TagList (struct TagItem *original_tags) {
 void do_update_screens (void) {
   update_screens();
 }
-
-
 
 /*********************************************************************************
  * _my_OpenScreen_SetFunc
@@ -802,7 +881,7 @@ void my_RefreshGList_SetFunc();
  * automatically  and also takes care of the code 
  * cache itself."
  */
-void patch_functions() {
+void patch_functions_amigaos() {
 
   ENTER
 

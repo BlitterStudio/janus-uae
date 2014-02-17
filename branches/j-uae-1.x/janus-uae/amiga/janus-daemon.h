@@ -86,6 +86,10 @@ extern ULONG (*calltrap)(ULONG __asm("d0"),
 			 APTR  __asm("a0"));
 #else
 ULONG calltrap(ULONG arg1, ULONG arg2, ULONG *arg3);
+ULONG setup_notify(void);
+ULONG notify_signal;
+struct MsgPort *notify_port;
+
 #endif
 
 
