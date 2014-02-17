@@ -26,6 +26,9 @@
  ************************************************************************/
 
 #if __AROS__
+
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <proto/exec.h>
@@ -958,8 +961,6 @@ void patch_functions_amigaos() {
   old_RefreshGList=SetFunction((struct Library *)IntuitionBase, 
                               -432, 
 			      (APTR) my_RefreshGList_SetFunc);
-#else
-#warning TODO!!!!!!!!!!!!!!!!!!!!!!1
 #endif
 
 
