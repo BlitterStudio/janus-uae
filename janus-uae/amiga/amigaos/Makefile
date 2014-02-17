@@ -23,7 +23,7 @@ LD_FLAGS  =  -noixemul
 
 CFLAGS    = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
-JOBJS      = janus-daemon.o sync-mouse.o patch.o sync-windows.o sync-screens.o public-screen.o lock-window.o messages.o debug.o
+JOBJS      = janus-daemon.o sync-mouse.o patch.o sync-windows.o sync-screens.o public-screen.o lock-window.o messages.o debug.o notify.o
 COBJS      = clip-daemon.o debug.o
 LOBJS      = launch-daemon.o debug.o
 SOBJS      = splash.o debug.o

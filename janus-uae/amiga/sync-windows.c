@@ -23,6 +23,8 @@
  *
  ************************************************************************/
 
+#include <string.h>
+
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <intuition/intuition.h>
@@ -698,5 +700,80 @@ void sync_active_window() {
   ActivateWindow(win);
 
   LEAVE
+}
+
+
+BOOL is_ign(UBYTE *in) {
+
+  if((in == NULL) || (in == (UBYTE *) ~0)) {
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+
+/*********************************************************************************
+ *  SetArosWindowTitles
+ *
+ *  if the window title changed, change also the AROS title
+ *********************************************************************************/
+#ifndef __AROS__
+ULONG set_aros_titles (struct Window *win __asm("a0"), 
+                       UBYTE *windowtitle __asm("a1"), 
+                       UBYTE *screentitle __asm("a2")) {
+#else
+ULONG set_aros_titles (struct Window *win, 
+                       UBYTE *windowtitle, 
+                       UBYTE *screentitle) {
+#endif
+
+
+#if 0
+  DebOut("set_aros_titles(%lx, %s, %s)\n", win, windowtitle, screentitle);
+
+  DebOut("new win title: \"%s\"\n", windowtitle);
+  DebOut("old win title: \"%s\"\n", win->Title);
+  DebOut("new scr title: \"%s\"\n", screentitle);
+  DebOut("old scr title: \"%s\"\n", win->ScreenTitle);
+  DebOut("new win title ignore: %d\n", is_ign(windowtitle));
+  DebOut("new scr title ignore: %d\n", is_ign(screentitle));
+#endif
+
+
+  if( !is_ign(windowtitle) && (windowtitle != win->Title)) {
+    DebOut("windowtitle %lx != %lx\n", windowtitle, win->Title);
+    return 1;
+  }
+  else {
+    //DebOut("windowtitle %lx == %lx\n", windowtitle, win->Title);
+  }
+
+  if( !is_ign(screentitle) && (screentitle != win->ScreenTitle)) {
+    DebOut("screentitle %lx != %lx\n", screentitle, win->ScreenTitle);
+    return 1;
+  }
+  else {
+    //DebOut("screentitle %lx == %lx\n", screentitle, win->ScreenTitle);
+  }
+
+  if( !is_ign(windowtitle) && (strcmp((char *)windowtitle, (char *) win->Title) != 0) ) {
+    DebOut("windowtitle   string != string\n");
+    return 1;
+  }
+  else {
+    //DebOut("windowtitle   string == win->Title string\n");
+  }
+
+  if( !is_ign(screentitle) && (strcmp((char *)screentitle, (char *)win->ScreenTitle) != 0) ) {
+    DebOut("screentitle   string != win->ScreenTitle\n");
+    return 1;
+  }
+  else {
+    //DebOut("screentitle   string == win->ScreenTitle\n");
+  }
+
+  /* nothing to do */
+  return 0;
 }
 
