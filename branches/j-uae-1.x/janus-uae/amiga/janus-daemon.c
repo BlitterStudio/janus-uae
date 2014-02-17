@@ -102,7 +102,9 @@ struct Task *mytask = NULL;
 
 ULONG        intdata[2];
 
+#ifndef __AROS__
 struct Library *CyberGfxBase;
+#endif
 
 /*
  * d0 is the function to be called (AD_*)

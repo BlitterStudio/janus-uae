@@ -414,15 +414,29 @@ void no_p96_fix_viewoffset(struct Screen *screen, WORD *x, WORD *y) {
  * return, if screen is a Picasso Screen
  ***************************************/
 BOOL is_cyber(struct Screen *screen) {
-  ULONG                 modeID;
+  ULONG modeID;
 
-  if(CyberGfxBase) {  /* no CyberGfxBase, is_p96 is always FALSE */
-    modeID=GetVPModeID(&(screen->ViewPort));
-
-    if(modeID != INVALID_ID) {
-      return IsCyberModeID(modeID);
-    }
+#ifndef __AROS__
+  if(!CyberGfxBase) {  /* no CyberGfxBase, is_p96 is always FALSE */
+    return FALSE;
   }
+#endif
+
+  if(!screen) {
+    DebOut("screen is (still) NULL\n");
+    return FALSE;
+  }
+
+  /*DebOut("call GetVPModeID (screen %lx, vp: %lx)\n", screen, &(screen->ViewPort));*/
+
+  /* AROS always has CyberGfxBase */
+  modeID=GetVPModeID(&(screen->ViewPort));
+
+  if(modeID != INVALID_ID) {
+    return IsCyberModeID(modeID);
+  }
+
+  DebOut("modeID == INVALID_ID\n");
 
   return FALSE;
 }
