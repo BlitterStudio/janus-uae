@@ -57,6 +57,6 @@ clonescreenmode: $(SMOBJS) $(HEADERS)
 clean:
 	rm -f *.o janusd $(TARGETDIR)/janusd clipd $(TARGETDIR)/clipd launchd $(TARGETDIR)/launchd janus-splash $(TARGETDIR)/janus-splash clonescreenmode $(TARGETDIR)/clonescreenmode
 
-%.o: ../%.c 
+%.o: ../%.c $(HEADERS)
 	$(CC) $(CFLAGS) -o $@ -c ../$*.c
 
