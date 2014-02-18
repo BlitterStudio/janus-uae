@@ -58,6 +58,6 @@ clonescreenmode: $(SMOBJS) $(HEADERS)
 clean:
 	rm -f *.o janusd $(TARGETDIR)/janusd
 
-%.o: ../%.c 
+%.o: ../%.c  $(HEADERS)
 	$(CC) $(CFLAGS) -o $@ -c ../$*.c
 
