@@ -331,7 +331,6 @@ static void runme() {
   BOOL         set;
   ULONG        sigs;
 #ifdef __AROS__
-  ULONG        notify_class, notify_object /*, notify_code, notify_userdata*/;
   struct ScreenNotifyMessage *notify_msg;
 #endif
 
@@ -423,54 +422,10 @@ static void runme() {
       DebOut("notify_signal received\n");
 
       while((notify_msg = (struct ScreenNotifyMessage *) GetMsg (notify_port))) {
-        notify_class     = notify_msg->snm_Class;
-        //notify_code      = notify_msg->snm_Code;
-        notify_object    = notify_msg->snm_Object;
-        //notify_userdata  = notify_msg->snm_UserData;
+        
+        handle_notify_msg(notify_msg->snm_Class, notify_msg->snm_Object);
 
-        if(state==2) {
-
-          switch(notify_class) {
-            /*********** Window handling ************/
-            case SNOTIFY_BEFORE_OPENWINDOW: DebOut("SNOTIFY_BEFORE_OPENWINDOW\n");
-              update_screens();
-              break;
-            case SNOTIFY_AFTER_OPENWINDOW: DebOut("SNOTIFY_AFTER_OPENWINDOW\n");
-              calltrap(AD_GET_JOB, AD_GET_JOB_NEW_WINDOW, (ULONG *) notify_object);
-              break;
-
-            case SNOTIFY_BEFORE_CLOSEWINDOW: DebOut("SNOTIFY_BEFORE_CLOSEWINDOW\n");
-              calltrap(AD_GET_JOB, AD_GET_JOB_MARK_WINDOW_DEAD, (ULONG *) notify_object);
-              break;
-            /*case SNOTIFY_AFTER_CLOSEWINDOW: DebOut("SNOTIFY_AFTER_CLOSEWINDOW\n");
-              break;*/
-
-
-            /*********** Screen handling ************/
-            /*case SNOTIFY_BEFORE_OPENSCREEN: DebOut("SNOTIFY_BEFORE_OPENSCREEN\n");
-              remove tagging ..!? 
-              break;*/
-            case SNOTIFY_AFTER_OPENSCREEN: DebOut("SNOTIFY_AFTER_OPENSCREEN\n");
-              update_screens();
-              break;
-
-            case SNOTIFY_BEFORE_CLOSESCREEN: DebOut("SNOTIFY_BEFORE_CLOSESCREEN\n");
-              calltrap(AD_GET_JOB, AD_GET_JOB_CLOSE_SCREEN, (ULONG *) notify_object);
-              break;
-            /*case SNOTIFY_AFTER_CLOSESCREEN: DebOut("SNOTIFY_AFTER_CLOSESCREEN\n");
-              break;*/
-
-            case SNOTIFY_SCREENDEPTH: DebOut("SNOTIFY_SCREENDEPTH\n");
-              /* WARNING: THIS IS MAYBE WRONG, have a llok at the 666 hack.. */
-              calltrap(AD_GET_JOB, AD_GET_JOB_SCREEN_DEPTH, (ULONG *) notify_object);
-              break;
-
-            default: printf("unknown(%lx)\n", notify_class);
-              break;
-          }
-        }
         ReplyMsg ((struct Message*) notify_msg);
-
       }
 
     }
