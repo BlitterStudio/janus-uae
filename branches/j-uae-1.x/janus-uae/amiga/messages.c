@@ -102,6 +102,7 @@ void closewin(struct Window *w) {
 }
 #endif
 
+
 /* just "press" the button */
 void closewin(struct Window *w) {
   UWORD m;
@@ -111,7 +112,7 @@ void closewin(struct Window *w) {
 
   ENTER
 
-  printf("closewin(%p)\n", w);
+  DebOut("closewin(%p)\n", w);
 
   /* who knows, maybe window was closed inbetween already */
   DebOut("LockIBase()\n");
@@ -132,7 +133,7 @@ void closewin(struct Window *w) {
   y  =w->TopEdge + m;
   scr=w->WScreen;
 
-  printf("m %d, x %d, y %d, scr %p\n", m, x, y, scr);
+  DebOut("m %d, x %d, y %d, scr %p\n", m, x, y, scr);
 
   DebOut("UnlockIBase()\n");
   UnlockIBase(lock);
@@ -168,14 +169,14 @@ void forward_messages() {
     }
     else {
       type=command_mem[0];
-      printf("got message (type %d)\n",(unsigned int) type);
+      DebOut("got message (type %d)\n",(unsigned int) type);
       switch(type) {
         case J_MSG_CLOSE:
           w=(struct Window *) command_mem[1];
           closewin(w);
           break;
         default:
-          printf("unknown message type: %d\n",(unsigned int) type);
+          DebOut("unknown message type: %d\n",(unsigned int) type);
       }
     }
 
