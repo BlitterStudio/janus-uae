@@ -23,7 +23,7 @@ LD_FLAGS  =
 
 CFLAGS    = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
-JOBJS      = janus-daemon.o sync-mouse.o patch.o sync-windows.o sync-screens.o public-screen.o lock-window.o messages.o debug.o notify.o
+JOBJS      = janus-daemon.o sync-mouse.o patch.o sync-windows.o sync-screens.o public-screen.o lock-window.o messages.o debug.o notify.o version.o
 COBJS      = clip-daemon.o debug.o
 LOBJS      = launch-daemon.o debug.o
 SOBJS      = splash.o debug.o
@@ -32,6 +32,8 @@ SMOBJS     = clonescreenmode.o
 HEADERS    = ../janus-daemon.h ../clip-daemon.h
 
 all: janusd 
+	@rm -f version.h
+
 #clipd launchd janus-splash clonescreenmode
 
 janusd: $(JOBJS) 
@@ -57,6 +59,17 @@ clonescreenmode: $(SMOBJS) $(HEADERS)
 
 clean:
 	rm -f *.o janusd $(TARGETDIR)/janusd
+
+# not really nice, but working ;)
+# generate version.h for every build
+version.h: 
+	@echo '#define LIB_DATE      "'`date +%d.%m.%Y`'"'                                 >version.h
+	@echo '#define LIB_CPU       "[AROS/x86]"'                                        >>version.h
+	@echo '#define LIB_VER       "1.4"'                                               >>version.h
+	@echo '#define LIB_COPYRIGHT "(C) 2014 Oliver Brunner, GPL"' >>version.h
+
+version.o: version.h
+	 $(CC) $(CFLAGS) -o $@ -c $*.c
 
 %.o: ../%.c  $(HEADERS)
 	$(CC) $(CFLAGS) -o $@ -c ../$*.c

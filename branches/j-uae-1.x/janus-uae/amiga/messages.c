@@ -36,12 +36,12 @@
 #ifdef __AROS__
 #include <proto/intuition.h>
 #include <intuition/extensions.h>
+#else
+extern struct IntuitionBase* IntuitionBase;
 #endif
 
-#define DEBUG 1
 #include "janus-daemon.h"
 
-extern struct IntuitionBase* IntuitionBase;
 
 #if 0
 /* this would be a much nicer way, to forward a close message to
