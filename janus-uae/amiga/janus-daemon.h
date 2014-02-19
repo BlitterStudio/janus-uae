@@ -31,11 +31,11 @@
 
 //#define DEBUG 1
 /* remember to enable m68k debugging in od-amiga/j-debug.c, too */
-//#if defined DEBUG
+#if defined DEBUG
 #define DebOut(...) PrintOut(__FILE__,__LINE__,__func__,__VA_ARGS__) 
-//#else
-//#define DebOut(...) 
-//#endif
+#else
+#define DebOut(...) 
+#endif
 
 #define AROSTRAPBASE 0xF0FF90
 
@@ -86,9 +86,10 @@ extern ULONG (*calltrap)(ULONG __asm("d0"),
 			 APTR  __asm("a0"));
 #else
 ULONG calltrap(ULONG arg1, ULONG arg2, ULONG *arg3);
-ULONG setup_notify(void);
 ULONG notify_signal;
 struct MsgPort *notify_port;
+
+void handle_notify_msg(ULONG notify_class, ULONG notify_object);
 
 #endif
 

@@ -136,7 +136,7 @@ void patch_functions(void ) {
   do_notify(NULL, notify_port, SNOTIFY_AFTER_OPENSCREEN  |SNOTIFY_WAIT_REPLY, thread);
   do_notify(NULL, notify_port, SNOTIFY_BEFORE_CLOSESCREEN|SNOTIFY_WAIT_REPLY, thread);
 
-  do_notify(NULL, notify_port, SNOTIFY_SCREENDEPTH       |SNOTIFY_WAIT_REPLY, thread);
+  //do_notify(NULL, notify_port, SNOTIFY_SCREENDEPTH       |SNOTIFY_WAIT_REPLY, thread);
 
   LEAVE
 }
@@ -284,4 +284,53 @@ void do_update_screens (void) {
   update_screens();
 }
 
+void handle_notify_msg(ULONG notify_class, ULONG notify_object) {
+
+  //notify_code      = notify_msg->snm_Code;
+  //notify_userdata  = notify_msg->snm_UserData;
+
+  DebOut("notify_class %lx, notify_object %lx, state %d\n", notify_class, notify_object, state);
+
+  if(state) {
+
+    switch(notify_class) {
+      /*********** Window handling ************/
+      case SNOTIFY_BEFORE_OPENWINDOW: DebOut("SNOTIFY_BEFORE_OPENWINDOW\n");
+        update_screens();
+        break;
+      case SNOTIFY_AFTER_OPENWINDOW: DebOut("SNOTIFY_AFTER_OPENWINDOW\n");
+        calltrap(AD_GET_JOB, AD_GET_JOB_NEW_WINDOW, (ULONG *) notify_object);
+        break;
+
+      case SNOTIFY_BEFORE_CLOSEWINDOW: DebOut("SNOTIFY_BEFORE_CLOSEWINDOW\n");
+        calltrap(AD_GET_JOB, AD_GET_JOB_MARK_WINDOW_DEAD, (ULONG *) notify_object);
+        break;
+      /*case SNOTIFY_AFTER_CLOSEWINDOW: DebOut("SNOTIFY_AFTER_CLOSEWINDOW\n");
+        break;*/
+
+
+      /*********** Screen handling ************/
+      /*case SNOTIFY_BEFORE_OPENSCREEN: DebOut("SNOTIFY_BEFORE_OPENSCREEN\n");
+        remove tagging ..!? 
+        break;*/
+      case SNOTIFY_AFTER_OPENSCREEN: DebOut("SNOTIFY_AFTER_OPENSCREEN\n");
+        update_screens();
+        break;
+
+      case SNOTIFY_BEFORE_CLOSESCREEN: DebOut("SNOTIFY_BEFORE_CLOSESCREEN\n");
+        calltrap(AD_GET_JOB, AD_GET_JOB_CLOSE_SCREEN, (ULONG *) notify_object);
+        break;
+      /*case SNOTIFY_AFTER_CLOSESCREEN: DebOut("SNOTIFY_AFTER_CLOSESCREEN\n");
+        break;*/
+
+      case SNOTIFY_SCREENDEPTH: DebOut("SNOTIFY_SCREENDEPTH\n");
+        /* WARNING: THIS IS MAYBE WRONG, have a llok at the 666 hack.. */
+        calltrap(AD_GET_JOB, AD_GET_JOB_SCREEN_DEPTH, (ULONG *) notify_object);
+        break;
+
+      default: printf("unknown(%lx)\n", notify_class);
+        break;
+    }
+  }
+}
 #endif
