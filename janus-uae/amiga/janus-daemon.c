@@ -61,7 +61,6 @@
 int __nocommandline = 0; /*???*/
 
 #ifdef __AROS__
-char verstag[] = "\0$VER: janus-daemon 0.9 [AROS/m68k]";
 
 /* those registers must be reset to original values */
 #define PUSHSTACK     "movem.l %d2-%d7/%a2-%a4,-(%SP)\n"
