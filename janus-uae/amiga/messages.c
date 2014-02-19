@@ -33,6 +33,10 @@
 #include <exec/io.h>
 #include <exec/memory.h>
 #include <intuition/intuitionbase.h>
+#ifdef __AROS__
+#include <proto/intuition.h>
+#include <intuition/extensions.h>
+#endif
 
 #define DEBUG 1
 #include "janus-daemon.h"
@@ -41,7 +45,7 @@ extern struct IntuitionBase* IntuitionBase;
 
 #if 0
 /* this would be a much nicer way, to forward a close message to
- * the aos3 window, but:
+ * the amigaos window, but:
  * - aos3 CLI windows have no UserPort to get messages (?)
  * - it does not work always (?)
  * => so we keep it simple and stupid .. (see below)
@@ -103,6 +107,7 @@ void closewin(struct Window *w) {
 #endif
 
 
+#ifndef __AROS__
 /* just "press" the button */
 void closewin(struct Window *w) {
   UWORD m;
@@ -144,6 +149,21 @@ void closewin(struct Window *w) {
 
   /* next sync sets the mouse back to the right coordinates */
 }
+#else
+
+/* use WindowAction, safe, even if window is closed inbetween, nice. */
+void closewin(struct Window *w) {
+
+  ENTER
+
+  DebOut("send WAC_SENDIDCMPCLOSE to window %lx\n", w);
+
+  WindowActionTags(w, WAC_SENDIDCMPCLOSE,
+                   TAG_DONE);
+
+  LEAVE
+}
+#endif
 
 /*****************************************
  * check, if new IDCMP messages for 
