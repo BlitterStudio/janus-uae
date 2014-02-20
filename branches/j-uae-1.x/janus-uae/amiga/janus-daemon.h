@@ -74,6 +74,7 @@
 #define AD_GET_JOB_WINDOW_LIMITS      20
 #define AD_GET_JOB_SPLASH             21
 #define AD_GET_JOB_HOST_DATA          22 /* resolution .. */
+#define AD_GET_JOB_WINDOW_GFX_UPDATE  23 /* TRUE/FALSE enable/disable gfx copy */
 #define AD_GET_JOB_DEBUG             999
 
 #define J_MSG_CLOSE                    1

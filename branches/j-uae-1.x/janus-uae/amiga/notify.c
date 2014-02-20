@@ -296,10 +296,12 @@ void handle_notify_msg(ULONG notify_class, ULONG notify_object) {
     switch(notify_class) {
       /*********** Window handling ************/
       case SNOTIFY_BEFORE_OPENWINDOW: DebOut("SNOTIFY_BEFORE_OPENWINDOW\n");
+        calltrap(AD_GET_JOB, AD_GET_JOB_WINDOW_GFX_UPDATE, NULL);
         update_screens();
         break;
       case SNOTIFY_AFTER_OPENWINDOW: DebOut("SNOTIFY_AFTER_OPENWINDOW\n");
         calltrap(AD_GET_JOB, AD_GET_JOB_NEW_WINDOW, (ULONG *) notify_object);
+        calltrap(AD_GET_JOB, AD_GET_JOB_WINDOW_GFX_UPDATE, (ULONG *) 1);
         break;
 
       case SNOTIFY_BEFORE_CLOSEWINDOW: DebOut("SNOTIFY_BEFORE_CLOSEWINDOW\n");
