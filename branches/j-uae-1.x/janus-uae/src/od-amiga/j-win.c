@@ -355,7 +355,7 @@ uae_u32 ad_job_report_uae_windows(ULONG *m68k_results) {
   if(uae_menu_shown) {
     /* do nothing here, as AROS menus are windows, and we don't want to clone the at all! */
     LEAVE
-    return;
+    return TRUE;
   }
 
   ObtainSemaphore(&sem_janus_window_list);
@@ -381,6 +381,7 @@ uae_u32 ad_job_report_uae_windows(ULONG *m68k_results) {
       ReleaseSemaphore(&sem_janus_window_list);
       new_aos3window(aos3win);
       LEAVE
+      */
       /* IMPORTANT: return here, we have released our sem_janus_window_list */
       return;
 #endif
@@ -1222,4 +1223,27 @@ uae_u32 ad_job_window_limits (ULONG aos3win, WORD MinWidth, WORD MinHeight, UWOR
   LEAVE
   return TRUE;
 }
+
+/*********************************************************
+ * ad_job_window_gfx_update(enable)
+ *
+ * enable/disable gfx copy from guest to host windows
+ *
+ * returns former setting
+ *********************************************************/
+uae_u32 ad_job_window_gfx_update(ULONG enable) {
+  ULONG old=j_stop_window_update;
+
+  JWLOG("enable=%d\n", enable);
+
+  if(enable) {
+    j_stop_window_update=FALSE;
+  }
+  else {
+    j_stop_window_update=TRUE;
+  }
+
+  return old;
+}
+
 
