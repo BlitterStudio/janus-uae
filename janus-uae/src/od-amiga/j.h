@@ -76,10 +76,10 @@
 WORD get_lo_word(ULONG *field);
 WORD get_hi_word(ULONG *field);
 
-#define TASK_PREFIX_NAME               "AOS3 Window "
-#define SCREEN_TASK_PREFIX_NAME        "AOS3 Screen "
-#define CUSTOM_SCREEN_TASK_PREFIX_NAME "AOS3 Custom Screen "
-#define BSDSOCKET_PREFIX_NAME          "AOS3 bsdsocket.library "
+#define TASK_PREFIX_NAME               "m68k Window "
+#define SCREEN_TASK_PREFIX_NAME        "m68k Screen "
+#define CUSTOM_SCREEN_TASK_PREFIX_NAME "m68k Custom Screen "
+#define BSDSOCKET_PREFIX_NAME          "m68k bsdsocket.library "
 
 #define AD_SHUTDOWN    9
 
@@ -109,6 +109,7 @@ WORD get_hi_word(ULONG *field);
 #define AD_GET_JOB_WINDOW_LIMITS      20
 #define AD_GET_JOB_SPLASH             21
 #define AD_GET_JOB_HOST_DATA          22 /* resolution .. */
+#define AD_GET_JOB_WINDOW_GFX_UPDATE  23 /* TRUE/FALSE enable/disable gfx copy */
 #define AD_GET_JOB_DEBUG             999 
 
 #define AD_CLIP_SETUP 15
