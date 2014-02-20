@@ -27,7 +27,7 @@
 #include <intuition/gadgetclass.h>
 
 
-//#define JWTRACING_ENABLED 1
+#define JWTRACING_ENABLED 1
 //#define JW_ENTER_ENABLED 1
 #include "j.h"
 #include "memory.h"
@@ -493,7 +493,9 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
             menux=0;
             menuy=0;
 //#if !ALWAYS_SHOW_MAIN_WINDOW
+#if 0
             j_stop_window_update=TRUE;
+#endif
 //#endif
             JWLOG("IDCMP_MENUVERIFY: disable mouse..\n");
             mice[0].enabled=FALSE; /* disable mouse emulation */
@@ -714,7 +716,9 @@ static void aros_win_thread (void) {
                             IDCMP_ACTIVEWINDOW |
                             IDCMP_CHANGEWINDOW |
                             IDCMP_MENUPICK |
+#ifndef __AROS__
                             IDCMP_MENUVERIFY |
+#endif
                             IDCMP_REFRESHWINDOW |
                             IDCMP_INTUITICKS |
                             IDCMP_INACTIVEWINDOW |
@@ -732,8 +736,13 @@ static void aros_win_thread (void) {
     /* we are always WFLG_SMART_REFRESH and never BACKDROP! */
     flags=flags & 0xFFFFFEFF;  /* remove refresh bits and backdrop */
 
-    /* we always want to get a MENUVERIFY, if there is no menu, we will click right on our own*/
+#ifndef __AROS__
+    /* we always want to get a MENUVERIFY, if there is no menu, we will "click right" on our own*/
     flags=flags & ~WFLG_RMBTRAP;
+#else
+    /* we have a AROS guest, it will open a window for a menu, if necessary. Should be eough for us! */
+    flags=flags | WFLG_RMBTRAP;
+#endif
 
     flags=flags | WFLG_SMART_REFRESH | WFLG_GIMMEZEROZERO | WFLG_REPORTMOUSE;
 
