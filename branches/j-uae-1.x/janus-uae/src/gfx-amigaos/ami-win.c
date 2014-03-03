@@ -1117,9 +1117,9 @@ void show_uae_main_window(void) {
 
 void disable_uae_main_window(void) {
   JWLOG("disable_uae_main_window\n");
-//#if ALWAYS_SHOW_MAIN_WINDOW
+#ifndef ALWAYS_SHOW_MAIN_WINDOW
   uae_main_window_closed=TRUE;
-//#endif
+#endif
 }
 
 void hide_uae_main_window(void) {
@@ -1136,7 +1136,8 @@ void hide_uae_main_window(void) {
     return;
   }
 
-//#if ALWAYS_SHOW_MAIN_WINDOW
+#ifndef ALWAYS_SHOW_MAIN_WINDOW
+  /* Shouldn't we juct call HideWindow here!? */
   shape = NewRectRegion(0, 0, 0, 0);
   if(shape) {
     if(original_W != W) {
@@ -1147,7 +1148,7 @@ void hide_uae_main_window(void) {
     DisposeRegion(shape);
     disable_uae_main_window();
   }
-//#endif
+#endif
 
   release_W();
 }
@@ -2253,6 +2254,9 @@ void clone_area(WORD x, WORD y, UWORD width, UWORD height) {
     }
     ReleaseSemaphore(&sem_janus_window_list);
   }
+  else {
+    JWLOG("janus_windows==NULL\n");
+  }
   JWLOG("clone_area() exit\n");
 }
 
@@ -2426,6 +2430,7 @@ void o1i_clone_windows_task() {
 void o1i_Display_Update(int start,int i) {
 
   if(uae_no_display_update) {
+    JWLOG("uae_no_display_update!\n");
     return;
   }
 
@@ -2594,17 +2599,19 @@ static void set_screen_for_picasso_param(BOOL showme) {
       ChangeWindowBox(W, W->LeftEdge, W->TopEdge, width, height);
 
       if(showme) {
-    struct Region *shape;
+        struct Region *shape;
 
-    JWLOG("showme is TRUE, so set a reasonable shape\n");
-    shape = NewRectRegion(0, 0, width, height);
-    if(shape) {
-      if(original_W != W) {
-        JWLOG("W-WARNING: W %xl != original_W %lx\n", W, original_W);
-      }
-      ChangeWindowShape(W, shape, NULL);
-      DisposeRegion(shape);
-    }
+        JWLOG("showme is TRUE, so set a reasonable shape\n");
+        shape = NewRectRegion(0, 0, width, height);
+        if(shape) {
+          if(original_W != W) {
+            JWLOG("W-WARNING: W %xl != original_W %lx\n", W, original_W);
+          }
+#ifndef ALWAYS_SHOW_MAIN_WINDOW
+          ChangeWindowShape(W, shape, NULL);
+#endif
+          DisposeRegion(shape);
+        }
       }
     }
   }

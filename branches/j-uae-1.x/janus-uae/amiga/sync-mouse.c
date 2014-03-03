@@ -56,6 +56,7 @@
 #include <clib/timer_protos.h>
 #include <clib/graphics_protos.h>
 
+#define DEBUG 1
 #include "janus-daemon.h"
 
 /* cybergfx proto stuff, I could not find gcc includes anywhere..
@@ -507,7 +508,9 @@ void sync_mouse() {
 
   result = calltrap (AD_GET_JOB, AD_GET_JOB_GET_MOUSE, mousebuffer);
 
-  if(!result) {
+  /* 0xFFFF000 => do mothing. see j.mouse.c */
+  if(!result || (mousebuffer[8]!=0)) {
+    DebOut("AD_GET_JOB_GET_MOUSE result: DISABLED\n");
     LEAVE
     return;
   }

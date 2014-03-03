@@ -26,6 +26,8 @@
 
 #include "j.h"
 
+#warning REMOVE __AROS_GUEST__
+#define __AROS_GUEST__
 BOOL uae_menu_shown=FALSE;
 
 static void new_aos3window(ULONG aos3win);
@@ -292,13 +294,15 @@ static void fix_orphan_windows(ULONG aos3screen, ULONG *m68k_results) {
     aroswin=win->aroswin;
     if(aos3win && 
        (aos3screen == win->jscreen->aos3screen) &&
-       is_orphan_window(m68k_results, aos3win) && 
-       !win->dead) {
+       is_orphan_window(m68k_results, aos3win) 
+       /* remove this def!! */
+       && !win->dead
+       ) {
       JWLOG("  found orphan window: januswin %lx (aos3win %lx aroswin %lx)\n", list_win, aos3win, aroswin);
       win->dead=TRUE;
       JWLOG("send Signal(%lx, SIGBREAKF_CTRL_C)\n", win->task);
       if(win->task) {
-	Signal(win->task, SIGBREAKF_CTRL_C);
+        Signal(win->task, SIGBREAKF_CTRL_C);
       }
     }
     list_win=g_slist_next(list_win);
@@ -709,15 +713,22 @@ uae_u32 ad_job_mark_window_dead(ULONG aos_window) {
     if(jwin) {
       jwin->dead=TRUE;
       if(jwin->aroswin) {
-	JWLOG("ad_job_mark_window_dead(%lx) (%s)\n", aos_window, jwin->aroswin->Title);
+        JWLOG("ad_job_mark_window_dead(%lx) (%s)\n", aos_window, jwin->aroswin->Title);
       }
       else {
-	JWLOG("ad_job_mark_window_dead(%lx)\n", aos_window);
+        JWLOG("ad_job_mark_window_dead(%lx)\n", aos_window);
       }
+#ifndef __AROS_GUEST__
+      /* we just try to mark the window dead here.
+       * first we wait, until the guest window is closed,
+       * so our host window covers the gfx garbage..
+       * hope this works, too
+       */
       if(jwin->task) {
-	JWLOG("send Signal(%lx, SIGBREAKF_CTRL_C)\n", jwin->task);
-	Signal(jwin->task, SIGBREAKF_CTRL_C);
+        JWLOG("send Signal(%lx, SIGBREAKF_CTRL_C)\n", jwin->task);
+        Signal(jwin->task, SIGBREAKF_CTRL_C);
       }
+#endif
     }
     else {
       JWLOG("ERROR: ad_job_mark_window_dead: list_win->data == NULL??\n");
@@ -733,6 +744,7 @@ uae_u32 ad_job_mark_window_dead(ULONG aos_window) {
    * this is not really necessary, as it just blocks the amigaOS CloseWindow call,
    * but it should do no harm either.
    */
+#ifndef __AROS_GUEST__
   JWLOG("wait until window is closed ..\n");
   wait=100;
   while(wait && list_win) {
@@ -753,12 +765,72 @@ uae_u32 ad_job_mark_window_dead(ULONG aos_window) {
     JWLOG("ERROR: jwin %lx was not closed in time!!\n", jwin);
     result=FALSE;
   }
+#endif
 
   LEAVE
 
   return result;
 }
 
+/***************************************************
+ * ad_job_window_closed
+ *
+ * If we are called, the guest window has already
+ * been closed. janusd tells us the guest window 
+ * in aos_window
+ ***************************************************/
+uae_u32 ad_job_window_closed(ULONG aos_window) {
+  GSList        *list_win;
+  JanusWin      *jwin;
+  uae_u32        result=TRUE;
+  ULONG          wait;
+
+  ENTER
+
+  JWLOG("ad_job_window_closed(%lx)\n",aos_window);
+
+  JWLOG("ObtainSemaphore(&sem_janus_window_list)\n");
+  ObtainSemaphore(&sem_janus_window_list);
+
+  list_win=g_slist_find_custom(janus_windows,
+                               (gconstpointer) aos_window,
+                               &aos3_window_compare);
+  if(!list_win) {
+    JWLOG("WARNING: ad_job_window_closed could not find aos3 window %lx !?!\n",
+            aos_window);
+    result=TRUE;
+  }
+  else {
+    jwin=(JanusWin *) list_win->data;
+    if(jwin) {
+      jwin->dead=TRUE;
+      if(jwin->aroswin) {
+        JWLOG("ad_job_window_closed(%lx) (%s)\n", aos_window, jwin->aroswin->Title);
+      }
+      else {
+        JWLOG("ad_job_window_closed(%lx)\n", aos_window);
+      }
+      /* the guest window is closed now, no need to hide it anymore */
+      if(jwin->task) {
+        JWLOG("send Signal(%lx, SIGBREAKF_CTRL_C)\n", jwin->task);
+        Signal(jwin->task, SIGBREAKF_CTRL_C);
+      }
+    }
+    else {
+      JWLOG("ERROR: ad_job_window_closed: list_win->data == NULL??\n");
+      result=FALSE;
+    }
+  }
+
+  JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
+  ReleaseSemaphore(&sem_janus_window_list);
+
+  LEAVE
+  return result;
+}
+
+
+ 
 uae_u32 ad_job_switch_uae_window(ULONG *m68k_results) {
 
   ENTER

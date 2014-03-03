@@ -25,13 +25,13 @@
 
 #include "j.h"
 
-//#define M68K_DEBUG 1
+#define M68K_DEBUG 1
 
 uae_u32 ad_debug(ULONG *m68k_results) {
 
-#if M68K_DEBUG
+//#if M68K_DEBUG
   kprintf("m68k/%s",(char *) get_real_address(m68k_results));
-#endif
+//#endif
 
   return TRUE;
 }

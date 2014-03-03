@@ -21,7 +21,7 @@
  *
  ************************************************************************/
 
-//#define JWTRACING_ENABLED 1
+#define JWTRACING_ENABLED 1
 #include "j.h"
 
 //int coord_native_to_amiga_x (int x);
@@ -192,8 +192,7 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
 #endif
 
   is_p96=get_long_p(m68k_results);
-  JWLOG("mouse: is_p96: %d W: %lx IntuiBase->FirstScr->FirstWin %lx\n", 
-                is_p96, W, IntuitionBase->FirstScreen->FirstWindow);
+  JWLOG("mouse: is_p96: %d W: %lx\n", is_p96, W);
 
   if(mice[0].enabled || manual_mouse) {
     JWLOG("mouse: screen->x,y: %d,%d\n", screen->MouseX, screen->MouseY);
@@ -205,8 +204,9 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
       y=screen->MouseY;
 
       /* W must not be NULL .. */
-      JWLOG("mouse: uae_main_window_closed: %d\n", uae_main_window_closed);
-      if(!uae_main_window_closed && W) {
+      //if(!uae_main_window_closed && W) 
+      if(W && (W == IntuitionBase->ActiveWindow)) {
+        JWLOG("mouse: main window active\n");
         JWLOG("mouse: W->x,y: %d,%d\n", W->LeftEdge, W->TopEdge);
         JWLOG("mouse: border->x,y: %d,%d\n", W->BorderLeft, W->BorderTop);
         x=x - W->LeftEdge - W->BorderLeft;
@@ -217,7 +217,7 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
       x=manual_mouse_x;
       y=manual_mouse_y;
       manual_mouse=FALSE;
-      JWLOG("manual hit mouse at %d x %d: %d,%d\n", x, y);
+      JWLOG("manual hit mouse at %d x %d\n", x, y);
     }
 
 #if 0
@@ -226,6 +226,8 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
       left=visible_left_border; /* for center image, bigger window  etc. */
     }
 #endif
+
+    JWLOG("return x=%d, y=%d to guest\n", x,y);
 
     if(x<0) {
       x=0;
@@ -244,14 +246,20 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
     put_long_p(m68k_results+5, gfxvidinfo.height);     /* height of aros display*/
     put_long_p(m68k_results+6, XOffset);               /* XOffset */
     put_long_p(m68k_results+7, YOffset);               /* YOffset */
+    put_long_p(m68k_results+8, 0);                     /* disable == FALSE */
     JWLOG("mouse: currprefs.gfx_x/ycenter: %d %d\n", currprefs.gfx_xcenter, currprefs.gfx_ycenter);
     JWLOG("mouse: gfxvidinfo.width/height: %d %d\n", gfxvidinfo.width, gfxvidinfo.height);
   }
   else {
     if(!menux && !menuy) {
+      JWLOG("return JUST FALSE to guest !!\n");
+      /* do nothing, see sync.mouse.c */
+      put_long_p(m68k_results+8, 1);                     /* disable == TRUE */
+      /* WARNING: the FALSE here does not arrive at the calltrap guest call!? */
       return FALSE;
     }
     /* fake for menu selection */
+    JWLOG("return menux %d menuy %d to guest !!\n", menux, menuy);
     put_long_p(m68k_results,   menux); 
     put_long_p(m68k_results+1, menuy); 
     /* clear again */

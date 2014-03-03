@@ -27,6 +27,7 @@
 #include <intuition/gadgetclass.h>
 
 
+#define __AROS_GUEST__ 1
 #define JWTRACING_ENABLED 1
 //#define JW_ENTER_ENABLED 1
 #include "j.h"
@@ -326,11 +327,26 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 
     case IDCMP_GADGETDOWN:
       JWLOG("[%lx]: IDCMP_GADGETDOWN\n", thread);
+#ifndef __AROS_GUEST__
+      /* AROS and AmigaOS does not have the same prop gadget sizes and
+       * not the exactly same algorithms, so we need copperfield magic here
+       */
       gadid = ((struct Gadget *)((struct IntuiMessage *)msg)->IAddress)->GadgetID;
       handle_gadget(thread, jwin, gadid);
+#else
+      /* life can be so simple. *If* we have a perfect mouse sync and 
+       * the exact same theme, the mouse pointer *is* already
+       * over the guest gadget. If we now press the mouse button,
+       * the guest simply grabs the gadget, too. And it also
+       * moves correctly. But remember the *if* above!
+       */
+      my_setmousebuttonstate(0, 0, 1); /* just click */
+#endif
       break;
 
     case IDCMP_GADGETUP:
+      JWLOG("[%lx]: IDCMP_GADGETUP\n", thread);
+#ifndef __AROS_GUEST__
       /* avoid race conditions with handle_gadget ... 
        * TODO: find a better way for this?
        */
@@ -338,15 +354,22 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
         Delay(1);
       }
       Delay(15);
+#endif
 
       my_setmousebuttonstate(0, 0, 0); /* unclick */
+#ifndef __AROS_GUEST__
       horiz_prop_active=FALSE;
       vert_prop_active=FALSE;
       JWLOG("prop_active=FALSE\n");
       mice[0].enabled=TRUE; /* enable mouse emulation */
+#endif
       break;
 
     case IDCMP_CLOSEWINDOW:
+      /* We won't close our window here. We send the message to the guest daemon. He will
+       * close the guest window. Closing a guest window will cause sending a CTRL_C to
+       * us. Then we will close the host window and shutdown ourselves.
+       */
       if(!jwin->custom) {
         /* fake IDCMP_CLOSEWINDOW to original aos3 window */
         JWLOG("[%lx]: CLOSEWINDOW received for jwin %lx (%s)\n", 
@@ -492,11 +515,9 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
             show_pointer(jwin->aroswin);
             menux=0;
             menuy=0;
-//#if !ALWAYS_SHOW_MAIN_WINDOW
-#if 0
+#ifndef ALWAYS_SHOW_MAIN_WINDOW
             j_stop_window_update=TRUE;
 #endif
-//#endif
             JWLOG("IDCMP_MENUVERIFY: disable mouse..\n");
             mice[0].enabled=FALSE; /* disable mouse emulation */
             uae_menu_shown=TRUE;   /* disable window syncs */
@@ -1082,7 +1103,12 @@ static void aros_win_thread (void) {
   pointer_is_hidden=FALSE;
   hide_or_show_pointer(thread, jwin);
 
-  while(!done && !jwin->dead) {
+#ifndef __AROS__
+  while(!done && !jwin->dead) 
+#else
+  while(!done) 
+#endif
+  {
 
     /* wait either for a CTRL_C or a window signal */
     JWLOG("[%lx]: Wait(%lx)\n", thread, 1L << aroswin->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
@@ -1091,7 +1117,7 @@ static void aros_win_thread (void) {
 
     ObtainSemaphore(&sem_janus_win_handling);
 
-    if (signals & (1L << aroswin->UserPort->mp_SigBit)) {
+    if (signals & (1L << aroswin->UserPort->mp_SigBit) && !jwin->dead) {
       //JWLOG("[%lx]: aroswin->UserPort->mp_SigBit received\n", thread);
       //JWLOG("[%lx]: GetMsg(aroswin %lx ->UserPort %lx)\n", thread, aroswin, aroswin->UserPort);
 
