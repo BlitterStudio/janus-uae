@@ -54,6 +54,13 @@
 #include <gtk/gtk.h>
 #include "uae.h"
 
+/* for debug reasons, you can keep the main window open
+ * even in coherency mode. Not everything might
+ * work, but for debugging this is noce.
+ * Comment it in, for enable debugging.
+ */
+#define ALWAYS_SHOW_MAIN_WINDOW 1
+
 //#define JWTRACING_ENABLED 1
 #if JWTRACING_ENABLED
 #define JWLOG(...)   do { kprintf("%s:%d  %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
@@ -110,6 +117,8 @@ WORD get_hi_word(ULONG *field);
 #define AD_GET_JOB_SPLASH             21
 #define AD_GET_JOB_HOST_DATA          22 /* resolution .. */
 #define AD_GET_JOB_WINDOW_GFX_UPDATE  23 /* TRUE/FALSE enable/disable gfx copy */
+#define AD_GET_JOB_WINDOW_CLOSED      24 /* this guest window is closed now */
+
 #define AD_GET_JOB_DEBUG             999 
 
 #define AD_CLIP_SETUP 15
@@ -372,6 +381,7 @@ UWORD get_BorderBottom(ULONG m68kwin);
 /* ad_jobs */
 uae_u32 ad_job_new_window          (ULONG aos3win);
 uae_u32 ad_job_mark_window_dead    (ULONG aos3win);
+uae_u32 ad_job_window_closed       (ULONG aos3win);
 uae_u32 ad_job_active_window       (ULONG *m68k_results);
 uae_u32 ad_job_list_screens        (ULONG *m68k_results);
 uae_u32 ad_job_report_host_windows (ULONG *m68k_results);

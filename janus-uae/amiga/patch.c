@@ -122,6 +122,7 @@ APTR           old_WindowLimits;
  * for calltrap:
  * AD_GET_JOB  11 (d0)
  * AD_GET_JOB_MARK_WINDOW_DEAD 7 (d1)
+ * AD_GET_JOB_WINDOW_CLOSED 24 (d1)
  * window is already in a0
  *********************************************************************************/
 __asm__("_my_CloseWindow_SetFunc:\n"
@@ -133,12 +134,23 @@ __asm__("_my_CloseWindow_SetFunc:\n"
 	"move.l _calltrap,a1\n"
 	"jsr (a1)\n"
 	POPFULLSTACK
+	PUSHA0
 	"close_patch_disabled:\n"
 	PUSHA3
 	"move.l _old_CloseWindow, a3\n"
 	"jsr (a3)\n"
 	POPA3
-        "rts\n");
+	"cmp.l #1,_state\n"
+	"blt close_patch_disabled2\n"
+	POPA0
+	PUSHFULLSTACK
+	"moveq #11,d0\n"
+	"moveq #24,d1\n"
+	"move.l _calltrap, a1\n"
+	"jsr (a1)\n"
+	POPFULLSTACK
+	"close_patch_disabled2:\n"
+  "rts\n");
 
 /*********************************************************************************
  * _my_OpenWindow_SetFunc

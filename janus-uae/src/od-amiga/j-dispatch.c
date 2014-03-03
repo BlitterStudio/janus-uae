@@ -456,62 +456,66 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
       JWLOG("AD_GET_JOB: %d\n", job);
 
       switch(job) {
-            case AD_GET_JOB_LIST_WINDOWS: 
-                 return ad_job_update_janus_windows(m68k_results);
-            case AD_TEST: 
-                 return ad_test(m68k_results);
-            case AD_GET_JOB_DEBUG: 
-                 return ad_debug(m68k_results);
-            case AD_GET_JOB_SYNC_WINDOWS: 
-                 return ad_job_sync_windows(m68k_results);
-            case AD_GET_JOB_REPORT_UAE_WINDOWS: 
-                 return ad_job_report_uae_windows(m68k_results);
-            case AD_GET_JOB_REPORT_HOST_WINDOWS: 
-                 return ad_job_report_host_windows(m68k_results);
-            case AD_GET_JOB_MARK_WINDOW_DEAD: 
-                 return ad_job_mark_window_dead((ULONG) m68k_results);
-            case AD_GET_JOB_GET_MOUSE: 
-                 return ad_job_get_mouse(m68k_results);
-            case AD_GET_JOB_SWITCH_UAE_WINDOW: 
-                 return ad_job_switch_uae_window(m68k_results);
-            case AD_GET_JOB_ACTIVE_WINDOW: 
-                 return ad_job_active_window(m68k_results);
-            case AD_GET_JOB_NEW_WINDOW: 
-                 return ad_job_new_window((ULONG) m68k_results);
-            case AD_GET_JOB_LIST_SCREENS: 
-                 return ad_job_list_screens(m68k_results);
-            case AD_GET_JOB_MESSAGES: 
-                 return ad_job_fetch_message(m68k_results);
-            case AD_GET_JOB_OPEN_CUSTOM_SCREEN: 
-                 return ad_job_open_custom_screen(m68k_results);
-            case AD_GET_JOB_CLOSE_SCREEN: 
-                 return ad_job_close_screen(m68k_results);
-            case AD_GET_JOB_TOP_SCREEN: 
-                 return ad_job_top_screen(m68k_results);
-      case AD_GET_JOB_SCREEN_DEPTH:
-          return ad_job_screen_depth((ULONG) m68k_areg(&context->regs, 0), 
-                                     (ULONG) m68k_dreg(&context->regs, 3));
-      case AD_GET_JOB_MODIFY_IDCMP:
-          JWLOG("AD_GET_JOB_MODIFY_IDCMP(%lx,%d)\n",(ULONG) m68k_areg(&context->regs, 0),  (ULONG) m68k_dreg(&context->regs, 3));
-          return TRUE;
-      case AD_GET_JOB_UPDATE_GADGETS:
-                 return ad_job_update_gadgets((ULONG) m68k_areg(&context->regs, 3));
-      case AD_GET_JOB_SET_WINDOW_TITLES:
-                 return ad_job_set_window_titles((ULONG) m68k_areg(&context->regs, 0));
-      case AD_GET_JOB_WINDOW_LIMITS:
-                 return ad_job_window_limits( (ULONG) m68k_areg(&context->regs, 0),
-                                       ( WORD) m68k_dreg(&context->regs, 2),
-                                       ( WORD) m68k_dreg(&context->regs, 3),
-                                       (UWORD) m68k_dreg(&context->regs, 4),
-                                       (UWORD) m68k_dreg(&context->regs, 5) );
-      case AD_GET_JOB_SPLASH:
-          return ad_job_splash_screen(m68k_results);
-      case AD_GET_JOB_HOST_DATA:
-          return ad_job_host_data(m68k_results);
+        case AD_GET_JOB_LIST_WINDOWS: 
+             return ad_job_update_janus_windows(m68k_results);
+        case AD_TEST: 
+             return ad_test(m68k_results);
+        case AD_GET_JOB_DEBUG: 
+             return ad_debug(m68k_results);
+        case AD_GET_JOB_SYNC_WINDOWS: 
+             return ad_job_sync_windows(m68k_results);
+        case AD_GET_JOB_REPORT_UAE_WINDOWS: 
+             return ad_job_report_uae_windows(m68k_results);
+        case AD_GET_JOB_REPORT_HOST_WINDOWS: 
+             return ad_job_report_host_windows(m68k_results);
+        case AD_GET_JOB_MARK_WINDOW_DEAD: 
+             return ad_job_mark_window_dead((ULONG) m68k_results);
+        case AD_GET_JOB_GET_MOUSE: 
+             return ad_job_get_mouse(m68k_results);
+        case AD_GET_JOB_SWITCH_UAE_WINDOW: 
+             return ad_job_switch_uae_window(m68k_results);
+        case AD_GET_JOB_ACTIVE_WINDOW: 
+             return ad_job_active_window(m68k_results);
+        case AD_GET_JOB_NEW_WINDOW: 
+             return ad_job_new_window((ULONG) m68k_results);
+        case AD_GET_JOB_LIST_SCREENS: 
+             return ad_job_list_screens(m68k_results);
+        case AD_GET_JOB_MESSAGES: 
+             return ad_job_fetch_message(m68k_results);
+        case AD_GET_JOB_OPEN_CUSTOM_SCREEN: 
+             return ad_job_open_custom_screen(m68k_results);
+        case AD_GET_JOB_CLOSE_SCREEN: 
+             return ad_job_close_screen(m68k_results);
+        case AD_GET_JOB_TOP_SCREEN: 
+             return ad_job_top_screen(m68k_results);
+        case AD_GET_JOB_SCREEN_DEPTH:
+            return ad_job_screen_depth((ULONG) m68k_areg(&context->regs, 0), 
+                                       (ULONG) m68k_dreg(&context->regs, 3));
+        case AD_GET_JOB_MODIFY_IDCMP:
+            JWLOG("AD_GET_JOB_MODIFY_IDCMP(%lx,%d)\n",(ULONG) m68k_areg(&context->regs, 0),  (ULONG) m68k_dreg(&context->regs, 3));
+            return TRUE;
+        case AD_GET_JOB_UPDATE_GADGETS:
+            return ad_job_update_gadgets((ULONG) m68k_areg(&context->regs, 3));
+        case AD_GET_JOB_SET_WINDOW_TITLES:
+            return ad_job_set_window_titles((ULONG) m68k_areg(&context->regs, 0));
+        case AD_GET_JOB_WINDOW_LIMITS:
+            return ad_job_window_limits( (ULONG) m68k_areg(&context->regs, 0),
+                                         ( WORD) m68k_dreg(&context->regs, 2),
+                                         ( WORD) m68k_dreg(&context->regs, 3),
+                                         (UWORD) m68k_dreg(&context->regs, 4),
+                                         (UWORD) m68k_dreg(&context->regs, 5) );
+        case AD_GET_JOB_SPLASH:
+            return ad_job_splash_screen(m68k_results);
+        case AD_GET_JOB_HOST_DATA:
+            return ad_job_host_data(m68k_results);
+        case AD_GET_JOB_WINDOW_GFX_UPDATE:
+            return ad_job_window_gfx_update(m68k_results);
+        case AD_GET_JOB_WINDOW_CLOSED:
+            return ad_job_window_closed(m68k_results);
 
-      default:
-          JWLOG("ERROR!! aroshack_helper: unkown job: %d\n",m68k_dreg(&context->regs, 1));
-          return FALSE;
+        default:
+            JWLOG("ERROR!! aroshack_helper: unkown job: %d\n",m68k_dreg(&context->regs, 1));
+            return FALSE;
       }
       case AD_CLIP_JOB: {
         ULONG job=m68k_dreg(&context->regs, 1);

@@ -31,6 +31,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <intuition/intuitionbase.h>
+#include <aros/libcall.h>
+
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
@@ -132,6 +135,7 @@ void patch_functions(void ) {
   do_notify(NULL, notify_port, SNOTIFY_AFTER_OPENWINDOW  |SNOTIFY_WAIT_REPLY, thread);
 
   do_notify(NULL, notify_port, SNOTIFY_BEFORE_CLOSEWINDOW|SNOTIFY_WAIT_REPLY, thread);
+  do_notify(NULL, notify_port, SNOTIFY_AFTER_CLOSEWINDOW, thread);
 
   do_notify(NULL, notify_port, SNOTIFY_AFTER_OPENSCREEN  |SNOTIFY_WAIT_REPLY, thread);
   do_notify(NULL, notify_port, SNOTIFY_BEFORE_CLOSESCREEN|SNOTIFY_WAIT_REPLY, thread);
@@ -284,6 +288,17 @@ void do_update_screens (void) {
   update_screens();
 }
 
+AROS_LH3(void, my_SetWindowTitles_SetFunc,
+         AROS_LHA(struct Window *, window,      A0),
+         AROS_LHA(CONST_STRPTR,    windowTitle, A1),
+         AROS_LHA(CONST_STRPTR,    screenTitle, A2),
+         struct IntuitionBase *, IntuitionBase, 46, Intuition) {
+
+    AROS_LIBFUNC_INIT
+    DebOut("I AM HERE!!\n");
+    AROS_LIBFUNC_EXIT
+}
+
 void handle_notify_msg(ULONG notify_class, ULONG notify_object) {
 
   //notify_code      = notify_msg->snm_Code;
@@ -307,8 +322,9 @@ void handle_notify_msg(ULONG notify_class, ULONG notify_object) {
       case SNOTIFY_BEFORE_CLOSEWINDOW: DebOut("SNOTIFY_BEFORE_CLOSEWINDOW\n");
         calltrap(AD_GET_JOB, AD_GET_JOB_MARK_WINDOW_DEAD, (ULONG *) notify_object);
         break;
-      /*case SNOTIFY_AFTER_CLOSEWINDOW: DebOut("SNOTIFY_AFTER_CLOSEWINDOW\n");
-        break;*/
+      case SNOTIFY_AFTER_CLOSEWINDOW: DebOut("SNOTIFY_AFTER_CLOSEWINDOW\n");
+        calltrap(AD_GET_JOB, AD_GET_JOB_WINDOW_CLOSED, (ULONG *) notify_object);
+        break;
 
 
       /*********** Screen handling ************/
@@ -334,5 +350,20 @@ void handle_notify_msg(ULONG notify_class, ULONG notify_object) {
         break;
     }
   }
+
+
+/******************************************************
+ * so far, everything could be archieved with nice
+ * notifications. But there are some things, we need
+ * to patch:
+ *
+ * - setwindowtitle
+ ******************************************************/
+  APTR old_SetWindowTitles;
+
+  old_SetWindowTitles=SetFunction((struct Library *) IntuitionBase, -46 * LIB_VECTSIZE, 
+			      Intuition_46_my_SetWindowTitles_SetFunc);
+ 
 }
+  
 #endif
