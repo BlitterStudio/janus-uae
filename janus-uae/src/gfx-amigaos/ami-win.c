@@ -104,6 +104,9 @@
 # else /* not SAS/C => gcc */
 #  include CGX_CGX_H
 #  include <proto/cybergraphics.h>
+#  include <cybergraphx/cgxvideo.h>
+/*#  include <proto/cgxvideo.h>*/
+//#  define USE_CGX_OVERLAY
 # endif
 # ifndef BMF_SPECIALFMT
 #  define BMF_SPECIALFMT 0x80    /* should be cybergraphics.h but isn't for  */
@@ -196,6 +199,23 @@ static int   get_color_failed;
 static int   maxpen;
 static UBYTE pen[256];
 
+
+#ifdef USE_CGX_OVERLAY
+int use_overlay = 0;
+UWORD * vlayer_baseaddress = NULL;
+APTR VLHandle = NULL;
+BOOL attached=FALSE;
+BOOL Bilinear=TRUE;
+
+int  InitOverlay(struct Screen * screen, int width, int height);
+void CloseOverlay(void);
+int  AttachOverlay(struct Window * window);
+APTR LockAddress(void);
+void UnlockAddress(void);
+void SwapBuffer(void);
+void ToggleBilinear(void);
+#endif
+
 #ifdef PICASSO96
 /*static*/ APTR picasso_memory;
 #endif
@@ -265,6 +285,92 @@ static struct uae_hotkeyseq ami_hotkeys[] =
 
 extern UBYTE cidx[4][8*4096];
 
+
+/*****************************************************************************/
+/* Overlay window under CGX */
+#ifdef USE_CGX_OVERLAY
+int InitOverlay(struct Screen * screen, int width, int height)
+{
+	if (!(VLHandle = CreateVLayerHandleTags(screen, VOA_SrcType, SRCFMT_RGB16,
+		  VOA_SrcWidth, width, VOA_SrcHeight, height,
+		  VOA_UseColorKey, TRUE, VOA_UseBackfill, TRUE,
+		  VOA_UseFilter, Bilinear,
+		  TAG_DONE)))
+		return 0;
+	return 1;
+}
+
+int AttachOverlay(struct Window * window)
+{
+	int pubscreen = currprefs.amiga_screen_type == UAESCREENTYPE_PUBLIC ? TRUE : FALSE;
+
+	if (AttachVLayerTags(VLHandle, window,
+						pubscreen ? TAG_IGNORE : VOA_LeftIndent, XOffset,
+						pubscreen ? TAG_IGNORE : VOA_RightIndent, XOffset,
+						pubscreen ? TAG_IGNORE : VOA_TopIndent,  YOffset,
+						pubscreen ? TAG_IGNORE : VOA_BottomIndent, YOffset,
+						TAG_DONE)!=0)
+	{
+		 return 0;
+	}
+	else
+	{
+		attached=TRUE;
+
+		if (pubscreen)
+		{
+			FillPixelArray (RP, XOffset, YOffset,
+						window->Width - 2*XOffset,
+						window->Height - 2*YOffset,
+						GetVLayerAttr(VLHandle, VOA_ColorKey));
+		}
+	}
+	return 1;
+}
+
+APTR LockAddress(void)
+{
+	if (LockVLayer(VLHandle))
+		return (APTR) GetVLayerAttr(VLHandle, VOA_BaseAddress);
+	else
+		return NULL;
+}
+
+void UnlockAddress(void)
+{
+	UnlockVLayer(VLHandle);
+}
+
+void SwapBuffer(void)
+{
+}
+
+void CloseOverlay(void)
+{
+	if (VLHandle)
+	{
+		if (attached)
+		{
+			DetachVLayer(VLHandle);
+			attached=FALSE;
+		}
+		DeleteVLayerHandle(VLHandle);
+
+		VLHandle = NULL;
+	}
+}
+
+void ToggleBilinear(void)
+{
+	if (Bilinear)
+		Bilinear = FALSE;
+	else
+		Bilinear = TRUE;
+
+	if (VLHandle)
+		SetVLayerAttrTags(VLHandle, VOA_UseFilter, Bilinear, TAG_DONE);
+}
+#endif
 
 /*
  * Dummy buffer locking methods
