@@ -56,7 +56,7 @@
 #include <clib/timer_protos.h>
 #include <clib/graphics_protos.h>
 
-#define DEBUG 1
+//#define DEBUG 1
 #include "janus-daemon.h"
 
 /* cybergfx proto stuff, I could not find gcc includes anywhere..
