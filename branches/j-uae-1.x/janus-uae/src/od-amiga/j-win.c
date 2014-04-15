@@ -22,7 +22,7 @@
  ************************************************************************/
 
 //#define JW_ENTER_ENABLED  1
-//#define JWTRACING_ENABLED  1
+#define JWTRACING_ENABLED  1
 
 #include "j.h"
 
@@ -1160,6 +1160,9 @@ void set_window_titles(struct Process *thread, JanusWin *jwin) {
  * ensures, that the jwin is complete, i. e. has an
  * already opened aros window.
  *
+ * But while we are waiting for it, we might lock
+ * everything. So don't wait too long.
+ *
  * If window is on a custom screen, return NULL
  *********************************************************/
 JanusWin *get_jwin_from_aos3win_safe(struct Process *thread, ULONG aos3win) {
@@ -1181,7 +1184,7 @@ JanusWin *get_jwin_from_aos3win_safe(struct Process *thread, ULONG aos3win) {
     return NULL;
   }
 
-  wait=10;
+  wait=1;
   /* get jwin */
   while(!list_win && wait--) {
     ObtainSemaphore(&sem_janus_window_list);
@@ -1247,7 +1250,7 @@ uae_u32 ad_job_set_window_titles(ULONG aos3win) {
   jwin=get_jwin_from_aos3win_safe(thread, aos3win);
 
   if(!jwin) {
-    JWLOG("WARNING: no jwin found (is ok for custom screens)!\n");
+    JWLOG("WARNING: no jwin found (is ok for custom screens or might not yet be up)!\n");
     LEAVE
     return TRUE;
   }
@@ -1276,7 +1279,7 @@ uae_u32 ad_job_window_limits (ULONG aos3win, WORD MinWidth, WORD MinHeight, UWOR
   jwin=get_jwin_from_aos3win_safe(thread, aos3win);
 
   if(!jwin) {
-    JWLOG("WARNING: no jwin found (is ok for custom screens)!\n");
+    JWLOG("WARNING: no jwin found (is ok for custom screens or might not yet be up)!\n");
     LEAVE
     return TRUE;
   }
