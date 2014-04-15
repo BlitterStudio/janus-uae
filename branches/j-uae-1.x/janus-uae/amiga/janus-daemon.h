@@ -88,10 +88,13 @@ extern ULONG (*calltrap)(ULONG __asm("d0"),
 			 APTR  __asm("a0"));
 #else
 ULONG calltrap(ULONG arg1, ULONG arg2, ULONG *arg3);
+ULONG calltrap_d01_a0_d2345(ULONG arg0, ULONG arg1, ULONG a0, ULONG arg2, ULONG arg3, ULONG arg4, ULONG arg5);
 ULONG notify_signal;
 struct MsgPort *notify_port;
 
 void handle_notify_msg(ULONG notify_class, ULONG notify_object);
+ULONG set_aros_titles (struct Window *win, UBYTE *windowtitle, UBYTE *screentitle);
+
 
 #endif
 

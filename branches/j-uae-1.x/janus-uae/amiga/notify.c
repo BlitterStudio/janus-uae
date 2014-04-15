@@ -2,7 +2,7 @@
  *
  * Janus-Daemon
  *
- * Copyright 2009 Oliver Brunner - aros<at>oliver-brunner.de
+ * Copyright 2009-2014 Oliver Brunner - aros<at>oliver-brunner.de
  *
  * This file is part of Janus-Daemon.
  *
@@ -44,6 +44,88 @@
 /* global */
 ULONG           notify_signal;
 struct MsgPort *notify_port;
+
+/* original 68k functions */
+APTR old_SetWindowTitles;
+APTR old_WindowLimits;
+
+/* should be in libcall.h, shouldn't it !? */
+#define __AROS_CALL3(t,n,a1,a2,a3,bt,bn) \
+  AROS_UFC4(t,n,AROS_UFCA(a1),AROS_UFCA(a2),AROS_UFCA(a3),AROS_UFCA(bt,bn,A6))
+
+
+/****************************************************************************
+ * new SetWindowTitle function
+ ****************************************************************************/
+AROS_LH3(void, my_SetWindowTitles_SetFunc,
+         AROS_LHA(struct Window *, window,      A0),
+         AROS_LHA(CONST_STRPTR,    windowtitle, A1),
+         AROS_LHA(CONST_STRPTR,    screentitle, A2),
+         struct IntuitionBase *, IntuitionBase, 46, Intuition) {
+
+    AROS_LIBFUNC_INIT
+
+  DebOut("(%lx, %s, %s) state is %d\n", window, windowtitle, screentitle, state);
+    if(state) {
+      /* and this is ..? */
+      set_aros_titles(window, windowtitle, screentitle);
+    }
+
+    /* call original library function. Oh man, AROS macros are scary.. */
+    AROS_CALL3(void, old_SetWindowTitles,
+               AROS_LCA(struct Window *, window, A0),
+               AROS_LCA(CONST_STRPTR,    windowtitle, A1),
+               AROS_LCA(CONST_STRPTR,    screentitle, A2),
+               struct IntuitionBase *, IntuitionBase);
+
+    if(state) {
+      calltrap(AD_GET_JOB, AD_GET_JOB_SET_WINDOW_TITLES, (ULONG *) window);
+    }
+    AROS_LIBFUNC_EXIT
+}
+
+/****************************************************************************
+ * new WindowLimits function
+ ****************************************************************************/
+AROS_LH5(BOOL, my_WindowLimits_SetFunc,
+         AROS_LHA(struct Window *, window, A0),
+         AROS_LHA(WORD,            MinWidth, D0),
+         AROS_LHA(WORD,            MinHeight, D1),
+         AROS_LHA(UWORD,           MaxWidth, D2),
+         AROS_LHA(UWORD,           MaxHeight, D3),
+         struct IntuitionBase *, IntuitionBase, 53, Intuition) {
+
+  AROS_LIBFUNC_INIT
+
+  BOOL result;
+
+  DebOut("(%lx, %d, %d, %d, %d) state is %d\n", window, 
+               MinWidth, MinHeight, MaxWidth, MaxHeight, state);
+
+  /* call original function */
+  result=AROS_CALL5(BOOL, old_WindowLimits,
+               AROS_LCA(struct Window *, window, A0),
+               AROS_LCA(WORD,            MinWidth, D0),
+               AROS_LCA(WORD,            MinHeight, D1),
+               AROS_LCA(UWORD,           MaxWidth, D2),
+               AROS_LCA(UWORD,           MaxHeight, D3),
+               struct IntuitionBase *, IntuitionBase);
+
+  if(state) {
+    DebOut("calling AD_GET_JOB_WINDOW_LIMITS..\n");
+    calltrap_d01_a0_d2345(AD_GET_JOB, AD_GET_JOB_WINDOW_LIMITS, 
+              (ULONG) window, 
+              (ULONG) MinWidth, (ULONG) MinHeight,
+              (ULONG) MaxWidth, (ULONG) MaxHeight);
+    DebOut("called AD_GET_JOB_WINDOW_LIMITS\n");
+  }
+
+
+  return result;
+  AROS_LIBFUNC_EXIT
+}
+
+
 
 /*********************************************************************************
  * setup_notify
@@ -141,6 +223,23 @@ void patch_functions(void ) {
   do_notify(NULL, notify_port, SNOTIFY_BEFORE_CLOSESCREEN|SNOTIFY_WAIT_REPLY, thread);
 
   //do_notify(NULL, notify_port, SNOTIFY_SCREENDEPTH       |SNOTIFY_WAIT_REPLY, thread);
+
+/*
+ * so far, everything could be archieved with nice
+ * notifications. But there are some things, we need
+ * to patch:
+ *
+ * - setwindowtitle
+ */
+
+ DebOut("patch functions..\n");
+
+  old_SetWindowTitles=SetFunction((struct Library *) IntuitionBase, -46 * LIB_VECTSIZE, 
+			      Intuition_46_my_SetWindowTitles_SetFunc);
+ 
+  old_WindowLimits=SetFunction((struct Library *) IntuitionBase, -53 * LIB_VECTSIZE, 
+			      Intuition_53_my_WindowLimits_SetFunc);
+ 
 
   LEAVE
 }
@@ -288,17 +387,6 @@ void do_update_screens (void) {
   update_screens();
 }
 
-AROS_LH3(void, my_SetWindowTitles_SetFunc,
-         AROS_LHA(struct Window *, window,      A0),
-         AROS_LHA(CONST_STRPTR,    windowTitle, A1),
-         AROS_LHA(CONST_STRPTR,    screenTitle, A2),
-         struct IntuitionBase *, IntuitionBase, 46, Intuition) {
-
-    AROS_LIBFUNC_INIT
-    DebOut("I AM HERE!!\n");
-    AROS_LIBFUNC_EXIT
-}
-
 void handle_notify_msg(ULONG notify_class, ULONG notify_object) {
 
   //notify_code      = notify_msg->snm_Code;
@@ -313,10 +401,12 @@ void handle_notify_msg(ULONG notify_class, ULONG notify_object) {
       case SNOTIFY_BEFORE_OPENWINDOW: DebOut("SNOTIFY_BEFORE_OPENWINDOW\n");
         calltrap(AD_GET_JOB, AD_GET_JOB_WINDOW_GFX_UPDATE, NULL);
         update_screens();
+        DebOut("SNOTIFY_BEFORE_OPENWINDOW done\n");
         break;
       case SNOTIFY_AFTER_OPENWINDOW: DebOut("SNOTIFY_AFTER_OPENWINDOW\n");
         calltrap(AD_GET_JOB, AD_GET_JOB_NEW_WINDOW, (ULONG *) notify_object);
         calltrap(AD_GET_JOB, AD_GET_JOB_WINDOW_GFX_UPDATE, (ULONG *) 1);
+        DebOut("SNOTIFY_AFTER_OPENWINDOW done\n");
         break;
 
       case SNOTIFY_BEFORE_CLOSEWINDOW: DebOut("SNOTIFY_BEFORE_CLOSEWINDOW\n");
@@ -352,18 +442,7 @@ void handle_notify_msg(ULONG notify_class, ULONG notify_object) {
   }
 
 
-/******************************************************
- * so far, everything could be archieved with nice
- * notifications. But there are some things, we need
- * to patch:
- *
- * - setwindowtitle
- ******************************************************/
-  APTR old_SetWindowTitles;
 
-  old_SetWindowTitles=SetFunction((struct Library *) IntuitionBase, -46 * LIB_VECTSIZE, 
-			      Intuition_46_my_SetWindowTitles_SetFunc);
- 
 }
   
 #endif

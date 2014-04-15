@@ -2,7 +2,7 @@
  *
  * Janus-Daemon
  *
- * Copyright 2009 Oliver Brunner - aros<at>oliver-brunner.de
+ * Copyright 2009-2014 Oliver Brunner - aros<at>oliver-brunner.de
  *
  * This file is part of Janus-Daemon.
  *
