@@ -1,5 +1,5 @@
 /************************************************************************ 
- *
+ * 
  * Splash Control
  *
  * Copyright 2012 Oliver Brunner - aros<at>oliver-brunner.de
