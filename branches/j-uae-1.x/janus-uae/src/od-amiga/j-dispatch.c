@@ -572,6 +572,9 @@ uae_u32 REGPARAM2 aroshack_helper (TrapContext *context) {
 
    default:
       JWLOG("ERROR!! aroshack_helper: unkown service %d\n",service);
+      kprintf("ERROR!! aroshack_helper: unkown service %d\n",service);
+
+      JWLOG("d: 0: %d 1: %d 2: %d 3: %d 4: %d 5: %d a0: %lx\n", m68k_dreg(&context->regs, 0), m68k_dreg(&context->regs, 1), m68k_dreg(&context->regs, 2), m68k_dreg(&context->regs, 3), m68k_dreg(&context->regs, 4), m68k_dreg(&context->regs, 5),m68k_areg(&context->regs, 0));
       return FALSE;
   }
 
