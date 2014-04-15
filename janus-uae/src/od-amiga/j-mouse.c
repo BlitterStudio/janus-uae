@@ -21,7 +21,7 @@
  *
  ************************************************************************/
 
-#define JWTRACING_ENABLED 1
+//#define JWTRACING_ENABLED 1
 #include "j.h"
 
 //int coord_native_to_amiga_x (int x);
