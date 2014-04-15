@@ -775,6 +775,7 @@ static void aros_win_thread (void) {
     maxw=get_word((ULONG) jwin->aos3win + 20);
     maxh=get_word((ULONG) jwin->aos3win + 22);
 
+#ifndef __AROS__
     if(flags & WFLG_WBENCHWINDOW) {
       /* seems, as if WBench Windows have invalid maxw/maxh (=acth/actw).
        * I did not find that anywhere, but for aos3 this seems to
@@ -784,6 +785,7 @@ static void aros_win_thread (void) {
       maxw=0xF000;
       maxh=0xF000;
     }
+#endif
 
     w=get_word((ULONG) jwin->aos3win +  8);
     h=get_word((ULONG) jwin->aos3win + 10);
