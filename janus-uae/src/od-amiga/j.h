@@ -56,8 +56,8 @@
 
 /* for debug reasons, you can keep the main window open
  * even in coherency mode. Not everything might
- * work, but for debugging this is noce.
- * Comment it in, for enable debugging.
+ * work, but for debugging this is nice.
+ * Uncomment it for debugging.
  */
 #define ALWAYS_SHOW_MAIN_WINDOW 1
 
