@@ -71,6 +71,10 @@ version.h:
 version.o: version.h
 	 $(CC) $(CFLAGS) -o $@ -c $*.c
 
+# build notify with -O0, as gcc might use registers differently otherwise
+notify.o: ../notify.c  $(HEADERS)
+	$(CC) -O0 -Wall -o $@ -c ../$*.c
+
 %.o: ../%.c  $(HEADERS)
 	$(CC) $(CFLAGS) -o $@ -c ../$*.c
 

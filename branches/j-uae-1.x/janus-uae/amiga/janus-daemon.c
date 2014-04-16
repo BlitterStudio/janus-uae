@@ -56,7 +56,7 @@
 #include <aros/system.h>
 #endif
 
-#define DEBUG 1
+//#define DEBUG 1
 #include "janus-daemon.h"
 
 int __nocommandline = 0; /*???*/
