@@ -31,7 +31,7 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 
-#define DEBUG 1
+//#define DEBUG 1
 #include "janus-daemon.h"
 
 extern struct IntuitionBase* IntuitionBase;
