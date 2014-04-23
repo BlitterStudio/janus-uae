@@ -262,6 +262,7 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
     JWLOG("return menux %d menuy %d to guest !!\n", menux, menuy);
     put_long_p(m68k_results,   menux); 
     put_long_p(m68k_results+1, menuy); 
+    put_long_p(m68k_results+8, 0);                     /* disable == FALSE */
     /* clear again */
     menux=0;
     menuy=0;
