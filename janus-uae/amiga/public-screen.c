@@ -64,11 +64,11 @@ char *public_screen_name(struct Screen *scr) {
   if(public_screen_node) {
     while (public_screen_node) {
       if(public_screen_node->psn_Screen == scr) {
-	UnlockPubScreenList();
-	return public_screen_node->psn_Node.ln_Name;
+        UnlockPubScreenList();
+        return public_screen_node->psn_Node.ln_Name;
       }
       public_screen_node=(struct PubScreenNode *)
-			 public_screen_node->psn_Node.ln_Succ;
+      public_screen_node->psn_Node.ln_Succ;
     }
   }
 
