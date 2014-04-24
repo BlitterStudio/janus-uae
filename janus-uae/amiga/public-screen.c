@@ -39,6 +39,11 @@
  * 12 Apr 1992 john fieber (jfieber@sophia.smith.edu)
  */
 
+/* Bad thing here is, that AmigaOS seems to just do a LockIntuition for LockPubScreenList, 
+ * which is too much * here.. 
+ * but LockIntuition is just one ObtainSemaphore, maybe we can live with that.
+ */
+
 char *public_screen_name(struct Screen *scr) {
   struct List          *public_screen_list;
   struct PubScreenNode *public_screen_node;

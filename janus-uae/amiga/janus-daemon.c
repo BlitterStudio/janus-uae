@@ -212,27 +212,38 @@ BOOL open_libs() {
  ****************************************************/
 UBYTE buffer[MAXPUBSCREENNAME];
 
+ULONG *setup_command_mem=NULL;
 
 int setup(struct Task *task, ULONG signal, ULONG stop) {
-  ULONG *command_mem;
 
   ENTER
 
   DebOut("(%lx,%lx,%d)\n",(ULONG) task, signal, stop);
 
-  command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
+  if(!setup_command_mem) {
+    setup_command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
+  }
 
   //DebOut("janusd: memory: %lx\n",(ULONG) command_mem);
 
-  command_mem[ 0]=(ULONG) task;
-  command_mem[ 4]=(ULONG) signal;
-  command_mem[ 8]=(ULONG) stop;
+  setup_command_mem[ 0]=(ULONG) task;
+  setup_command_mem[ 4]=(ULONG) signal;
+  setup_command_mem[ 8]=(ULONG) stop;
 
-  state = calltrap (AD_SETUP, AD__MAXMEM, command_mem);
+  /* tell j-uae, which guest OS is running 
+   * 0: AmigaOS
+   * 1: AROS
+   */
+#ifdef __AROS__
+  setup_command_mem[12]=(ULONG) 1;
+#else
+  setup_command_mem[12]=(ULONG) stop;
+#endif
 
-  state=command_mem[8];
+  state = calltrap (AD_SETUP, AD__MAXMEM, setup_command_mem);
 
-  FreeVec(command_mem);
+  state=setup_command_mem[8];
+
 
   DebOut("result %d\n",(int) state);
 
@@ -528,6 +539,9 @@ int main (int argc, char **argv) {
   unpatch_functions();
   FreeSignal(mysignal_bit);
   free_sync_mouse();
+  if(setup_command_mem) {
+    FreeVec(setup_command_mem);
+  }
 
   DebOut("exit\n");
 
