@@ -27,8 +27,8 @@
 #include <intuition/gadgetclass.h>
 
 
-#define __AROS_GUEST__ 1
-#define JWTRACING_ENABLED 1
+//#define __AROS_GUEST__ 1
+//#define JWTRACING_ENABLED 1
 //#define JW_ENTER_ENABLED 1
 #include "j.h"
 #include "memory.h"
@@ -41,6 +41,8 @@ extern BOOL vert_prop_active;
 
 
 static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, ULONG class, UWORD code, int dmx, int dmy, WORD mx, WORD my, int qualifier, struct Process *thread, ULONG secs, ULONG micros, BOOL *done);
+
+void uae_Signal(uaecptr task, uae_u32 mask);
 
 /* we don't know those values, but we always keep the last value here */
 static UWORD estimated_border_top=25;
@@ -317,6 +319,7 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 
   ENTER
 
+JWLOG("class: %lx\n", class);
   switch (class) {
     case IDCMP_RAWKEY:
     case IDCMP_MOUSEBUTTONS:
@@ -327,42 +330,50 @@ static void handle_msg(struct Message *msg, struct Window *win, JanusWin *jwin, 
 
     case IDCMP_GADGETDOWN:
       JWLOG("[%lx]: IDCMP_GADGETDOWN\n", thread);
-#ifndef __AROS_GUEST__
-      /* AROS and AmigaOS does not have the same prop gadget sizes and
-       * not the exactly same algorithms, so we need copperfield magic here
-       */
-      gadid = ((struct Gadget *)((struct IntuiMessage *)msg)->IAddress)->GadgetID;
-      handle_gadget(thread, jwin, gadid);
-#else
-      /* life can be so simple. *If* we have a perfect mouse sync and 
-       * the exact same theme, the mouse pointer *is* already
-       * over the guest gadget. If we now press the mouse button,
-       * the guest simply grabs the gadget, too. And it also
-       * moves correctly. But remember the *if* above!
-       */
-      my_setmousebuttonstate(0, 0, 1); /* just click */
-#endif
+//#ifndef __AROS_GUEST__
+      if(guest_system==0) {
+        /* AROS and AmigaOS does not have the same prop gadget sizes and
+         * not the exactly same algorithms, so we need copperfield magic here
+         */
+        gadid = ((struct Gadget *)((struct IntuiMessage *)msg)->IAddress)->GadgetID;
+        handle_gadget(thread, jwin, gadid);
+      }
+      else {
+//#else
+        /* life can be so simple. *If* we have a perfect mouse sync and 
+        * the exact same theme, the mouse pointer *is* already
+        * over the guest gadget. If we now press the mouse button,
+        * the guest simply grabs the gadget, too. And it also
+        * moves correctly. But remember the *if* above!
+        */
+        my_setmousebuttonstate(0, 0, 1); /* just click */
+      }
+//#endif
       break;
 
     case IDCMP_GADGETUP:
       JWLOG("[%lx]: IDCMP_GADGETUP\n", thread);
-#ifndef __AROS_GUEST__
-      /* avoid race conditions with handle_gadget ... 
-       * TODO: find a better way for this?
-       */
-      while(manual_mouse) {
-        Delay(1);
+//#ifndef __AROS_GUEST__
+      if(guest_system==0) {
+        /* avoid race conditions with handle_gadget ... 
+         * TODO: find a better way for this?
+         */
+        while(manual_mouse) {
+          Delay(1);
+        }
+        Delay(15);
       }
-      Delay(15);
-#endif
+//#endif
 
       my_setmousebuttonstate(0, 0, 0); /* unclick */
-#ifndef __AROS_GUEST__
-      horiz_prop_active=FALSE;
-      vert_prop_active=FALSE;
-      JWLOG("prop_active=FALSE\n");
-      mice[0].enabled=TRUE; /* enable mouse emulation */
-#endif
+//#ifndef __AROS_GUEST__
+      if(guest_system==0) {
+        horiz_prop_active=FALSE;
+        vert_prop_active=FALSE;
+        JWLOG("prop_active=FALSE\n");
+        mice[0].enabled=TRUE; /* enable mouse emulation */
+      }
+//#endif
       break;
 
     case IDCMP_CLOSEWINDOW:
@@ -737,15 +748,20 @@ static void aros_win_thread (void) {
                             IDCMP_ACTIVEWINDOW |
                             IDCMP_CHANGEWINDOW |
                             IDCMP_MENUPICK |
-#ifndef __AROS__
-                            IDCMP_MENUVERIFY |
-#endif
+//#ifndef __AROS__
+                            //IDCMP_MENUVERIFY |
+//#endif
                             IDCMP_REFRESHWINDOW |
                             IDCMP_INTUITICKS |
                             IDCMP_INACTIVEWINDOW |
                                         IDCMP_GADGETDOWN | 
                                         IDCMP_GADGETUP | 
                                         IDCMP_MOUSEMOVE;
+
+    if(guest_system==0) {
+      /* on AmigaOS we need to catch IDCMP_MENUVERIFY, on AROS we just right-click */
+      idcmpflags=idcmpflags|IDCMP_MENUVERIFY;
+    }
 
     /* AROS and Aos3 use the same flags */
     flags     =get_long_p(jwin->aos3win + 24); 
@@ -757,13 +773,17 @@ static void aros_win_thread (void) {
     /* we are always WFLG_SMART_REFRESH and never BACKDROP! */
     flags=flags & 0xFFFFFEFF;  /* remove refresh bits and backdrop */
 
-#ifndef __AROS__
-    /* we always want to get a MENUVERIFY, if there is no menu, we will "click right" on our own*/
-    flags=flags & ~WFLG_RMBTRAP;
-#else
-    /* we have a AROS guest, it will open a window for a menu, if necessary. Should be eough for us! */
-    flags=flags | WFLG_RMBTRAP;
-#endif
+//#ifndef __AROS__
+    if(guest_system==0) {
+      /* we always want to get a MENUVERIFY, if there is no menu, we will "click right" on our own*/
+      flags=flags & ~WFLG_RMBTRAP;
+    }
+//#else
+    else {
+      /* we have a AROS guest, it will open a window for a menu, if necessary. Should be enough for us! */
+      flags=flags | WFLG_RMBTRAP;
+    }
+//#endif
 
     flags=flags | WFLG_SMART_REFRESH | WFLG_GIMMEZEROZERO | WFLG_REPORTMOUSE;
 
@@ -775,8 +795,8 @@ static void aros_win_thread (void) {
     maxw=get_word((ULONG) jwin->aos3win + 20);
     maxh=get_word((ULONG) jwin->aos3win + 22);
 
-#ifndef __AROS__
-    if(flags & WFLG_WBENCHWINDOW) {
+//#ifndef __AROS__
+    if((guest_system==0) && (flags & WFLG_WBENCHWINDOW)) {
       /* seems, as if WBench Windows have invalid maxw/maxh (=acth/actw).
        * I did not find that anywhere, but for aos3 this seems to
        * be true. FIXME?
@@ -785,7 +805,7 @@ static void aros_win_thread (void) {
       maxw=0xF000;
       maxh=0xF000;
     }
-#endif
+//#endif
 
     w=get_word((ULONG) jwin->aos3win +  8);
     h=get_word((ULONG) jwin->aos3win + 10);
@@ -909,7 +929,7 @@ static void aros_win_thread (void) {
      */
     i=20;
     JWLOG("[%lx]: locking Screen %s ..\n", thread, jwin->jscreen->pubname);
-    while(!(jwin->jscreen->arosscreen && (lock=LockPubScreen(jwin->jscreen->pubname))) && i--) {
+    while(!(jwin->jscreen->arosscreen && (lock=LockPubScreen((UBYTE *)jwin->jscreen->pubname))) && i--) {
       JWLOG("[%lx]: #%d wait for jwin->jscreen->arosscreen ..\n", thread, i);
       Delay(10);
     }
@@ -1105,11 +1125,11 @@ static void aros_win_thread (void) {
   pointer_is_hidden=FALSE;
   hide_or_show_pointer(thread, jwin);
 
-#ifndef __AROS__
-  while(!done && !jwin->dead) 
-#else
-  while(!done) 
-#endif
+//#ifndef __AROS__
+  while(!done && (guest_system || !jwin->dead)) 
+//#else
+  //while(!done) 
+//#endif
   {
 
     /* wait either for a CTRL_C or a window signal */

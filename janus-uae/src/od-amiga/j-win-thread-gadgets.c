@@ -24,8 +24,7 @@
 #include <intuition/imageclass.h>
 #include <intuition/gadgetclass.h>
 
-#define __AROS_GUEST__ 1
-#define JWTRACING_ENABLED 1
+//#define JWTRACING_ENABLED 1
 #include "j.h"
 #include "memory.h"
 
@@ -602,10 +601,10 @@ void handle_gadget(struct Process *thread, JanusWin *jwin, UWORD gadid) {
 
       JWLOG("aros_win_thread[%lx]: hit gadget %lx at %d x %d..\n", thread, jgad->aos3gadget, manual_mouse_x, manual_mouse_y);
 
-#ifndef __AROS_GUEST__
-      mice[0].enabled=FALSE; /* disable mouse emulation */
-      //JWLOG("mice[0].enabled=FALSE;\n");
-#endif
+      if(guest_system==0) {
+        mice[0].enabled=FALSE; /* disable mouse emulation */
+        //JWLOG("mice[0].enabled=FALSE;\n");
+      }
       //JWLOG("set manual_mouse=TRUE;\n");
       //sleep(3);
       manual_mouse=TRUE;

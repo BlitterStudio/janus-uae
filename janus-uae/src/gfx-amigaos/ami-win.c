@@ -2324,40 +2324,46 @@ void clone_area(WORD x, WORD y, UWORD width, UWORD height) {
       ((JanusWin *)elem->data)->aos3win &&
       ((JanusWin *)elem->data)->aroswin) {
 
-    JWLOG("clone_area: jwin %lx ->delay %d\n", elem->data, ((JanusWin *)elem->data)->delay);
+      JWLOG("clone_area: jwin %lx ->delay %d\n", elem->data, ((JanusWin *)elem->data)->delay);
 
-    /* clone only windows on actual screen !? */
-    if(((JanusWin *)elem->data)->aroswin->WScreen == IntuitionBase->FirstScreen) {
+      /* clone only windows on actual screen !? */
+      if(((JanusWin *)elem->data)->aroswin->WScreen == IntuitionBase->FirstScreen) {
+        if(((JanusWin *)elem->data)->delay) {
+          ((JanusWin *)elem->data)->delay--;
+          goto NEXT;
+        }
+
         if(!clone_window_area((JanusWin *)elem->data, x, y, width, height)) {
           JWLOG("clone_area(%3d,%3d,%3d,%3d): done nothing\n",x,y,width,height);
         }
-    }
+      }
       else {
         JWLOG("clone_area: jwin %ls is not on visible screen\n", elem->data);
-       }
+      }
 
-      }
-      else {
-    /* debug only */
-    if(elem->data) {
-      if(((JanusWin *)elem->data)->delay) {
-        JWLOG("clone_area: jwin %lx ->delay %d\n", elem->data, ((JanusWin *)elem->data)->delay);
-      }
-      else {
-        JWLOG("clone_area: jwin %lx ->delay %d\n", elem->data, ((JanusWin *)elem->data)->delay);
-        JWLOG("clone_area: => do nothing: delay %d, dead %d, aos3win %lx, aroswin %lx\n",
-           ((JanusWin *)elem->data)->delay,
-           ((JanusWin *)elem->data)->dead,
-           ((JanusWin *)elem->data)->aos3win,
-           ((JanusWin *)elem->data)->aroswin);
-      }
     }
     else {
-      JWLOG("clone_area: jwin->data 0\n");
-    }
+      /* debug only */
+      if(elem->data) {
+        if(((JanusWin *)elem->data)->delay) {
+          JWLOG("clone_area: jwin %lx ->delay %d\n", elem->data, ((JanusWin *)elem->data)->delay);
+        }
+        else {
+          JWLOG("clone_area: jwin %lx ->delay %d\n", elem->data, ((JanusWin *)elem->data)->delay);
+          JWLOG("clone_area: => do nothing: delay %d, dead %d, aos3win %lx, aroswin %lx\n",
+            ((JanusWin *)elem->data)->delay,
+            ((JanusWin *)elem->data)->dead,
+            ((JanusWin *)elem->data)->aos3win,
+            ((JanusWin *)elem->data)->aroswin);
+          }
+        }
+        else {
+          JWLOG("clone_area: jwin->data 0\n");
+        }
       }
+NEXT:
       elem=g_slist_next(elem);
-    }
+    } /* while JanusWindow */
     ReleaseSemaphore(&sem_janus_window_list);
   }
   else {
