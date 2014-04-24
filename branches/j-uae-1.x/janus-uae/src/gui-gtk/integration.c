@@ -63,6 +63,7 @@
 #include "chipsettypepanel.h"
 #include "integration.h"
 
+#include "od-amiga/j.h"
 
 /* local proto types */
 static void read_prefs                (jIntegration *j);
@@ -235,26 +236,32 @@ static void change_lock (jIntegration *j, gboolean status) {
   gboolean cdrunning;
 
   if(aos3_task) {
-    gtk_label_set_text(GTK_LABEL(j->label_coherence), "AmigaOS/janusd is running");
-    gtk_label_set_text(GTK_LABEL(j->label_mouse),     "AmigaOS/janusd is running");
+    if(guest_system == 1) {
+      gtk_label_set_text(GTK_LABEL(j->label_coherence), "AROS-68k/janusd is running");
+      gtk_label_set_text(GTK_LABEL(j->label_mouse),     "AROS-68k/janusd is running");
+    }
+    else {
+      gtk_label_set_text(GTK_LABEL(j->label_coherence), "AmigaOS/janusd is running");
+      gtk_label_set_text(GTK_LABEL(j->label_mouse),     "AmigaOS/janusd is running");
+    }
   }
   else {
-    gtk_label_set_text(GTK_LABEL(j->label_coherence), "AmigaOS/janusd is *not* running!");
-    gtk_label_set_text(GTK_LABEL(j->label_mouse),     "AmigaOS/janusd is *not* running!");
+    gtk_label_set_text(GTK_LABEL(j->label_coherence), "68k/janusd is *not* running!");
+    gtk_label_set_text(GTK_LABEL(j->label_mouse),     "68k/janusd is *not* running!");
   }
 
   if(aos3_clip_task) {
-    gtk_label_set_text(GTK_LABEL(j->label_clip), "AmigaOS/clipd is running");
+    gtk_label_set_text(GTK_LABEL(j->label_clip), "68k/clipd is running");
   }
   else {
-    gtk_label_set_text(GTK_LABEL(j->label_clip), "AmigaOS/clipd is *not* running!");
+    gtk_label_set_text(GTK_LABEL(j->label_clip), "68k/clipd is *not* running!");
   }
 
   if(aos3_launch_task) {
-    gtk_label_set_text(GTK_LABEL(j->label_launch), "AmigaOS/launchd is running");
+    gtk_label_set_text(GTK_LABEL(j->label_launch), "68k/launchd is running");
   }
   else {
-    gtk_label_set_text(GTK_LABEL(j->label_launch), "AmigaOS/launchd is *not* running!");
+    gtk_label_set_text(GTK_LABEL(j->label_launch), "68k/launchd is *not* running!");
   }
 }
 

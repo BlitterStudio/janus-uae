@@ -236,6 +236,7 @@ static uae_u32 jd_setup(TrapContext *context, ULONG *param) {
     JWLOG("Task:       %lx\n",get_long_p(param  ));
     JWLOG("Signal:     %lx\n",get_long_p(param+4));
     JWLOG("Stop:       %d\n", get_long_p(param+8));
+    JWLOG("GuestSystem:%d\n", get_long_p(param+12));
 #endif
 
     if(!init_done) {
@@ -245,6 +246,7 @@ static uae_u32 jd_setup(TrapContext *context, ULONG *param) {
        * aos3 aros-daemon is ready to take orders!
        */
 
+      guest_system=get_long_p(param+12);
       aos3_task=get_long_p(param);
       aos3_task_signal=get_long_p(param+4);
 

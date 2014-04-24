@@ -24,7 +24,7 @@
 #include <libraries/gadtools.h>
 #include <proto/gadtools.h>
 
-#define JWTRACING_ENABLED 0
+//#define JWTRACING_ENABLED 1
 #include "j.h"
 
 static ULONG  count_items(uaecptr menu);

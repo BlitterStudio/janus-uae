@@ -2,7 +2,7 @@
  *
  * j-global.c
  *
- * Copyright 2009 Oliver Brunner - aros<at>oliver-brunner.de
+ * Copyright 2009-2014 Oliver Brunner - aros<at>oliver-brunner.de
  *
  * This file is part of Janus-UAE.
  *
@@ -19,6 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
  *
+ * $Id$
+ *
  ************************************************************************/
 
 #include <exec/exec.h>
@@ -32,6 +34,9 @@
 /* we need that, to wake up the aos3 janusd */
 ULONG aos3_task=0;
 ULONG aos3_task_signal=0;
+
+/* which guest are we running? (0: AmigaOS, 1: AROS) */
+ULONG guest_system=0; 
 
 /* we need that, to wake up the aos3 clipd */
 ULONG aos3_clip_task=0;

@@ -59,7 +59,7 @@
  * work, but for debugging this is nice.
  * Uncomment it for debugging.
  */
-//#define ALWAYS_SHOW_MAIN_WINDOW 1
+#define ALWAYS_SHOW_MAIN_WINDOW 1
 
 //#define JWTRACING_ENABLED 1
 #if JWTRACING_ENABLED
@@ -143,6 +143,7 @@ extern GSList *janus_messages; /* List of JanusMsgs */
 /* janusd */
 extern ULONG aos3_task;
 extern ULONG aos3_task_signal;
+extern ULONG guest_system; /* 0: AmigaOS 3, 1: AROS */
 extern struct SignalSemaphore aos3_sem;
 extern struct SignalSemaphore sem_janus_window_list;
 extern struct SignalSemaphore sem_janus_screen_list;
@@ -401,6 +402,7 @@ uae_u32 ad_job_set_window_titles   (ULONG aos3win);
 uae_u32 ad_job_window_limits       (ULONG aos3win, 
                                     WORD MinWidth, WORD MinHeight, UWORD MaxWidth, UWORD MaxHeight);
 uae_u32 ad_job_host_data           (ULONG *m68k_results);
+uae_u32 ad_job_window_gfx_update   (ULONG enable);
 
 uae_u32 ld_job_get                 (ULONG *m68k_results);
 
