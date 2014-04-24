@@ -42,5 +42,5 @@ install: all
 	cp ../docs/manual/*            ~/releases/$(RELEASE)/janus-uae/docs/manual/
 	cp ../src/uae                  ~/releases/$(RELEASE)/janus-uae/janus-uae
 	@echo "=============== building tar $(RELEASE) ==============="
-	cd ~/releases/$(RELEASE);tar zcf janus-uae.i386.tar.gz janus-uae
+	cd ~/releases/$(RELEASE);tar zcf janus-uae.$(RELEASE).i386.tar.gz janus-uae
 
