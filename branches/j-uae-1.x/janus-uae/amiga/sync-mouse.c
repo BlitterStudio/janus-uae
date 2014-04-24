@@ -504,7 +504,7 @@ void sync_mouse() {
   is_p96=is_cyber(screen);
 
   mousebuffer[0]=is_p96;
-  DebOut("is_p96: %d\n",is_p96);
+  DebOut("is_p96: %d (TRUE is %d)\n",is_p96, TRUE);
 
   result = calltrap (AD_GET_JOB, AD_GET_JOB_GET_MOUSE, mousebuffer);
 

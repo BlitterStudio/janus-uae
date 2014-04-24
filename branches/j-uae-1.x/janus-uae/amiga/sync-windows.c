@@ -34,6 +34,7 @@
 #include <proto/layers.h>
 #include <proto/dos.h>
 
+//#define DEBUG 1
 #include "janus-daemon.h"
 
 //#define DUMPWIN
@@ -217,22 +218,32 @@ ULONG need_to_sort(ULONG *host_window, struct Layer *layer) {
  * All values are without window borders.
  * */
 
+ULONG *report_command_mem=NULL;
+
 void report_uae_windows() {
   struct Screen *screen;
   struct Window *win;
-  ULONG         *command_mem;
   ULONG          i;
   char          *pubname;
   struct Screen *lock;
 
   ENTER
 
-  command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
-  if(!command_mem) {
-    LEAVE
-    return;
+  if(!report_command_mem) {
+    report_command_mem=AllocVec(AD__MAXMEM, MEMF_CLEAR);
+    /* never freed, but you can't quit our daemon anyways */
+    if(!report_command_mem) {
+      LEAVE
+      return;
+    }
   }
 
+  /* Autodocs say:
+   *  You don't need to hold the lock when your visitor window is opened as
+   *  the pubscreen cannot be closed as long as there are visitor windows
+   *  on it. Sad thing is, we don't have an own window, so we need to
+   *  lock quite often :(
+   */
   screen=(struct Screen *) IntuitionBase->FirstScreen;
 
   DebOut("amigaos IntuitionBase->FirstScreen: %lx\n", screen);
@@ -240,12 +251,12 @@ void report_uae_windows() {
   if(!screen) {
     printf("report_uae_windows: no screen!?\n");
     DebOut("ERROR: report_uae_windows: no screen!?\n");
-    FreeVec(command_mem);
+    //FreeVec(command_mem);
     LEAVE
     return;
   }
 
-  /* Would be nice to lock the screen, but we would need to get the
+  /* Would be nice to just lock the screen, but we would need to get the
    * screen name for that. Who invented this API !?
    */
 
@@ -257,38 +268,40 @@ void report_uae_windows() {
   win=screen->FirstWindow;
 
   /* we are reporting for this screen! */
-  command_mem[0]=(ULONG) screen;
+  report_command_mem[0]=(ULONG) screen;
 
   i=1;
   while(win) {
     DebOut("add window #%d: %lx\n",i,win);
-    command_mem[i  ]=(ULONG) win;
-    command_mem[i+1]=(ULONG) ((win->LeftEdge 
+    report_command_mem[i  ]=(ULONG) win;
+    report_command_mem[i+1]=(ULONG) ((win->LeftEdge 
                                + win->BorderLeft) 
 			       * 0x10000 +
                               (win->TopEdge + 
 			       win->BorderTop));
-    command_mem[i+2]=(ULONG) ((win->Width -
+    report_command_mem[i+2]=(ULONG) ((win->Width -
                                win->BorderLeft -
 			       win->BorderRight )
                               * 0x10000 + 
 			      (win->Height - 
 			       win->BorderTop -
 			       win->BorderBottom));
-    command_mem[i+3]=0;
-    command_mem[i+4]=0;
+    report_command_mem[i+3]=0;
+    report_command_mem[i+4]=0;
 
     win=win->NextWindow;
     i=i+5;
   }
 
+  report_command_mem[i]=0; /* terminate list */
+
   if(lock) {
     UnlockPubScreen(NULL, lock);
   }
 
-  calltrap (AD_GET_JOB, AD_GET_JOB_REPORT_UAE_WINDOWS, command_mem);
+  calltrap (AD_GET_JOB, AD_GET_JOB_REPORT_UAE_WINDOWS, report_command_mem);
 
-  FreeVec(command_mem);
+  //FreeVec(command_mem);
 
   LEAVE
 }
@@ -445,6 +458,7 @@ ChangeWindowBox_with_API:
 
   DebOut("UnlockIBase()\n");
   UnlockIBase(lock);
+  /* hope window is not closed inbetween! Maybe intuition catches this for us?*/
   ChangeWindowBox(win, left, top, width, height);
 
   LEAVE
@@ -462,7 +476,7 @@ void report_host_windows() {
 
   ENTER
 
-  command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
+  command_mem=AllocVec(AD__MAXMEM, MEMF_CLEAR);
   if(!command_mem) {
     LEAVE
     return;
@@ -473,7 +487,12 @@ void report_host_windows() {
   i=0;
   while(command_mem[i] && (i*4 < AD__MAXMEM) ) {
     win=(struct Window *)command_mem[i];
-    DebOut("report_host_windows(): resize window %lx (%s)\n",(ULONG) win,win->Title);
+    DebOut("command_mem[0]: %lx\n", command_mem[i]);
+    DebOut("command_mem[1]: %lx\n", command_mem[i+1]);
+    DebOut("command_mem[2]: %lx\n", command_mem[i+2]);
+    DebOut("command_mem[3]: %lx\n", command_mem[i+3]);
+    DebOut("command_mem[4]: %lx\n", command_mem[i+4]);
+    DebOut("report_host_windows(): resize window %lx (%s)\n",(ULONG) win, win->Title);
 
     DebOut("report_host_windows():   x/y: %d x %d\n",get_hi(command_mem[i+1]),get_lo(command_mem[i+1]));
     DebOut("report_host_windows():   w/h: %d x %d\n",get_hi(command_mem[i+2]),get_lo(command_mem[i+2]));
