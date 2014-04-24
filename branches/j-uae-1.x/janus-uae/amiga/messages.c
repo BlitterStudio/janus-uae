@@ -40,6 +40,7 @@
 extern struct IntuitionBase* IntuitionBase;
 #endif
 
+#define DEBUG 1
 #include "janus-daemon.h"
 
 
@@ -143,7 +144,8 @@ void closewin(struct Window *w) {
   DebOut("UnlockIBase()\n");
   UnlockIBase(lock);
 
-  SetMouse(scr, x, y, IECODE_LBUTTON, TRUE, TRUE);
+  SetMouse(scr, x, y, IECODE_LBUTTON, TRUE, FALSE);
+  SetMouse(scr, x, y, IECODE_LBUTTON, FALSE, TRUE);
 
   LEAVE
 
