@@ -180,6 +180,18 @@ History
 ============================================================
 
 ============================================================
+J-UAE 1.4 (xx.xx.2014) 
+============================================================
+New features:
+- janusd is now available for AROS/68k guest system
+
+There were some bug reports for v1.3, so this release
+tries to fix some of them:
+- start AmigaOS programs from wbrun with an assign in path 
+  works now
+- AROS/m68k as a guest now works in coherency
+
+============================================================
 J-UAE 1.3 (27.12.2012) 
 ============================================================
 New features:
