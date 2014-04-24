@@ -26,8 +26,8 @@
 
 #include "j.h"
 
-#warning REMOVE __AROS_GUEST__
-#define __AROS_GUEST__
+//#warning REMOVE __AROS_GUEST__
+//#define __AROS_GUEST__
 BOOL uae_menu_shown=FALSE;
 
 static void new_aos3window(ULONG aos3win);
@@ -293,7 +293,7 @@ static void fix_orphan_windows(ULONG aos3screen, ULONG *m68k_results) {
     aos3win=(ULONG) win->aos3win;
     aroswin=win->aroswin;
     if(aos3win && 
-       (aos3screen == win->jscreen->aos3screen) &&
+       (aos3screen == (ULONG) win->jscreen->aos3screen) &&
        is_orphan_window(m68k_results, aos3win) 
        /* remove this def!! */
        && !win->dead
@@ -553,6 +553,9 @@ uae_u32 ad_job_report_host_windows(ULONG *m68k_results) {
   //JWLOG("ObtainSemaphore(sem_janus_window_list)\n");
   ObtainSemaphore(&sem_janus_window_list);
   list_win=janus_windows;
+  /* WARNING: no check is done, if AD__MAXMEM is big enough!
+   * but it is highly unlinkely, that so many windows change shape at once..
+   */
   while(list_win) {
     win=(JanusWin *) list_win->data;
     window=win->aroswin;
@@ -645,14 +648,15 @@ uae_u32 ad_job_report_host_windows(ULONG *m68k_results) {
     if(need_resize) {
       win->delay=WIN_DEFAULT_DELAY; 
       JWLOG("=> set jwin %lx ->delay to %d\n", win, win->delay);
-      put_long_p(m68k_results+i,(ULONG) win->aos3win);
+      put_long_p(m68k_results+i, win->aos3win);
+      JWLOG("win->aos3win: %lx\n", win->aos3win);
 
       /* put it in a ULONG, make sure, gcc does not 
        * optimize it too much */
       l=win->LeftEdge;
       l=(l*0x10000) + win->TopEdge;
       //JWLOG("report long x/y %lx\n",l);
-      put_long(m68k_results+i+1, l);
+      put_long_p(m68k_results+i+1, l);
 
       l=win->Width;
       l=l*0x10000 + win->Height;
@@ -660,11 +664,18 @@ uae_u32 ad_job_report_host_windows(ULONG *m68k_results) {
       put_long_p(m68k_results+i+2, l);
       put_long_p(m68k_results+i+3, 0); /* not used */
       put_long_p(m68k_results+i+4, 0); /* not used */
+      JWLOG("xyz: m68k_results[0]: %lx\n", get_long(m68k_results));
+      JWLOG("xyz: m68k_results[1]: %lx\n", get_long(m68k_results+1));
+      JWLOG("xyz: m68k_results[2]: %lx\n", get_long(m68k_results+2));
+      JWLOG("xyz: m68k_results[3]: %lx\n", get_long(m68k_results+3));
+      JWLOG("xyz: m68k_results[4]: %lx\n", get_long(m68k_results+4));
       i=i+5;
     }
 NEXT:
     list_win=g_slist_next(list_win);
   }
+
+  put_long_p(m68k_results+i, 0); /* terminate list */
 
   JWLOG("ReleaseSemaphore(sem_janus_window_list)\n");
   ReleaseSemaphore(&sem_janus_window_list);
@@ -687,9 +698,9 @@ NEXT:
  * So we mark it DEAD!
  ***************************************************/
 uae_u32 ad_job_mark_window_dead(ULONG aos_window) {
-  GSList        *list_win;
-  JanusWin      *jwin;
-  uae_u32        result=TRUE;
+  GSList        *list_win=NULL;
+  JanusWin      *jwin    =NULL;
+  uae_u32        result  =TRUE;
   ULONG          wait;
 
   ENTER
@@ -718,17 +729,19 @@ uae_u32 ad_job_mark_window_dead(ULONG aos_window) {
       else {
         JWLOG("ad_job_mark_window_dead(%lx)\n", aos_window);
       }
-#ifndef __AROS_GUEST__
-      /* we just try to mark the window dead here.
-       * first we wait, until the guest window is closed,
-       * so our host window covers the gfx garbage..
-       * hope this works, too
-       */
-      if(jwin->task) {
-        JWLOG("send Signal(%lx, SIGBREAKF_CTRL_C)\n", jwin->task);
-        Signal(jwin->task, SIGBREAKF_CTRL_C);
+//#ifndef __AROS_GUEST__
+      if(guest_system==0) {
+        /* we just try to mark the window dead here.
+         * first we wait, until the guest window is closed,
+         * so our host window covers the gfx garbage..
+         * hope this works, too
+         */
+        if(jwin->task) {
+          JWLOG("send Signal(%lx, SIGBREAKF_CTRL_C)\n", jwin->task);
+          Signal(jwin->task, SIGBREAKF_CTRL_C);
+        }
       }
-#endif
+//#endif
     }
     else {
       JWLOG("ERROR: ad_job_mark_window_dead: list_win->data == NULL??\n");
@@ -744,28 +757,30 @@ uae_u32 ad_job_mark_window_dead(ULONG aos_window) {
    * this is not really necessary, as it just blocks the amigaOS CloseWindow call,
    * but it should do no harm either.
    */
-#ifndef __AROS_GUEST__
-  JWLOG("wait until window is closed ..\n");
-  wait=100;
-  while(wait && list_win) {
-    wait--;
-    ObtainSemaphore(&sem_janus_window_list);
+//#ifndef __AROS_GUEST__
+  if(guest_system==0) {
+    JWLOG("wait until window is closed ..\n");
+    wait=100;
+    while(wait && list_win) {
+      wait--;
+      ObtainSemaphore(&sem_janus_window_list);
 
-    list_win=g_slist_find_custom(janus_windows,
-                               (gconstpointer) aos_window,
-                               &aos3_window_compare);
-    ReleaseSemaphore(&sem_janus_window_list);
+      list_win=g_slist_find_custom(janus_windows,
+                                 (gconstpointer) aos_window,
+                                 &aos3_window_compare);
+      ReleaseSemaphore(&sem_janus_window_list);
+      if(list_win) {
+        JWLOG("wait for jwin %lx to close (#%d)\n", jwin, wait);
+        Delay(1);
+      }
+    }
+
     if(list_win) {
-      JWLOG("wait for jwin %lx to close (#%d)\n", jwin, wait);
-      Delay(1);
+      JWLOG("ERROR: jwin %lx was not closed in time!!\n", jwin);
+      result=FALSE;
     }
   }
-
-  if(list_win) {
-    JWLOG("ERROR: jwin %lx was not closed in time!!\n", jwin);
-    result=FALSE;
-  }
-#endif
+//#endif
 
   LEAVE
 
