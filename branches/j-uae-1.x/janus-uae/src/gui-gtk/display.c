@@ -350,15 +350,21 @@ static void read_prefs (jDisplay *j) {
   /* screen resolution
    *  this is just a string compare, not nice, I know ;)
    */
-  t=g_strdup_printf("%d x %d",currprefs.gfx_width_fs,currprefs.gfx_height_fs);
-  r=j->res_items;
-  i=0;
-  while(r && strcmp(t, r->data)) {
-    i++;
-    r=g_list_next(r);
+  printf("currprefs.gfx_fs_clone: %d\n", currprefs.gfx_fs_clone);
+  if(currprefs.gfx_fs_clone) {
+    i=0;
   }
-  //printf("read_prefs: j->chipset_mask %d\n",j->chipset_mask);
-  g_free(t);
+  else {
+    t=g_strdup_printf("%d x %d",currprefs.gfx_width_fs,currprefs.gfx_height_fs);
+    r=j->res_items;
+    i=0;
+    while(r && strcmp(t, r->data)) {
+      i++;
+      r=g_list_next(r);
+    }
+    /* if not found, clone workbench! (select 0) */
+    g_free(t);
+  }
   gtk_list_select_item (GTK_LIST (GTK_COMBO (j->screen_resolutions)->list), i);
 
 }
@@ -425,25 +431,29 @@ static void unlock_it (jDisplay *j) {
 /* create possible AROS resolutions for full screen mode */
 static GList *create_resolutions(void) {
 
-    GList *result=NULL;
-    gchar *item;
-    ULONG id;
-    APTR  handle;
-    struct DimensionInfo  dim;
+  GList *result=NULL;
+  gchar *item;
+  LONG id;
+  APTR  handle;
+  struct DimensionInfo  dim;
 
-    id=INVALID_ID;
-    while ((id=NextDisplayInfo(id)) != INVALID_ID) {
-      if ((handle = FindDisplayInfo(id))) {
+  item=g_strdup_printf("Clone Workbench");
+  result=g_list_append(result,item);
 
-	if (GetDisplayInfoData(handle, (UBYTE *)&dim, sizeof(struct DimensionInfo), DTAG_DIMS, 0)) {
+  id=INVALID_ID;
+  while ((id=NextDisplayInfo(id)) != INVALID_ID) {
+    if ((handle = FindDisplayInfo(id))) {
 
-	  item=g_strdup_printf("%d x %d", dim.Nominal.MaxX-dim.Nominal.MinX+1, dim.Nominal.MaxY-dim.Nominal.MinY+1);
-  	  result=g_list_append(result,item);
-	}
+      if (GetDisplayInfoData(handle, (UBYTE *)&dim, sizeof(struct DimensionInfo), DTAG_DIMS, 0)) {
+
+        item=g_strdup_printf("%d x %d", dim.Nominal.MaxX-dim.Nominal.MinX+1, 
+                                        dim.Nominal.MaxY-dim.Nominal.MinY+1);
+        result=g_list_append(result,item);
       }
     }
+  }
 
-    return result;
+  return result;
 }
 
 /************************** callbacks *************************/
@@ -580,19 +590,35 @@ static void settings_changed(GtkWidget *me, jDisplay *j) {
 static void screen_changed(GtkWidget *me, jDisplay *j) {
   gchar **wh;
   gint selected;
+  struct Screen* screen;
 
   /* get selection number with some simple casts..*/
   selected=gtk_list_child_position(
             GTK_LIST(GTK_COMBO (j->screen_resolutions)->list),
 	    GTK_WIDGET((GList *)(GTK_LIST(GTK_COMBO (j->screen_resolutions)->list)->selection)->data));
 
-  /* GLib rules ;) */
-  wh=g_strsplit(g_list_nth_data(j->res_items,selected)," x ",2);
+  if(selected == 0) {
+    /* we need to clone workbench screen resolution */
+    currprefs.gfx_fs_clone=1;
 
-  j->gfx_width_fs =atoi(wh[0]);
-  j->gfx_height_fs=atoi(wh[1]);
+    screen=LockPubScreen(NULL);
+    j->gfx_width_fs = screen->Width;
+    j->gfx_height_fs = screen->Height;
+    //kprintf("width: %d, height: %d\n", j->gfx_width_fs, j->gfx_height_fs);
 
-  g_strfreev(wh);
+    UnlockPubScreen(NULL, screen);
+  }
+  else {
+    currprefs.gfx_fs_clone=0;
+
+    /* GLib rules ;) */
+    wh=g_strsplit(g_list_nth_data(j->res_items,selected)," x ",2);
+
+    j->gfx_width_fs =atoi(wh[0]);
+    j->gfx_height_fs=atoi(wh[1]);
+
+    g_strfreev(wh);
+  }
 
   g_signal_emit_by_name(j,"screen-changed",j);
 }

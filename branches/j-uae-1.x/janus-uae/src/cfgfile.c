@@ -30,6 +30,8 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
+#include <intuition/intuition.h>
+#include <proto/intuition.h>
 #include <ctype.h>
 
 #include "options.h"
@@ -297,7 +299,7 @@ char *cfgfile_subst_path (const char *path, const char *subst, const char *file)
         while (file[l] == '/')
             l++;
         strcat (p, "/"); strcat (p, file + l);
-        kprintf("cfgfile_subst_path: return %s\n", p);
+        //kprintf("cfgfile_subst_path: return %s\n", p);
         return p;
     }
     return my_strdup (file);
@@ -495,8 +497,14 @@ void save_options (FILE *f, const struct uae_prefs *p, int type)
     cfgfile_write (f, "gfx_height=%d\n", p->gfx_height_win); /* compatibility with old versions */
     cfgfile_write (f, "gfx_width_windowed=%d\n", p->gfx_width_win);
     cfgfile_write (f, "gfx_height_windowed=%d\n", p->gfx_height_win);
-    cfgfile_write (f, "gfx_width_fullscreen=%d\n", p->gfx_width_fs);
-    cfgfile_write (f, "gfx_height_fullscreen=%d\n", p->gfx_height_fs);
+    if(p->gfx_fs_clone) {
+      cfgfile_write (f, "gfx_width_fullscreen=0\n");
+      cfgfile_write (f, "gfx_height_fullscreen=0\n");
+    }
+    else {
+      cfgfile_write (f, "gfx_width_fullscreen=%d\n", p->gfx_width_fs);
+      cfgfile_write (f, "gfx_height_fullscreen=%d\n", p->gfx_height_fs);
+    }
     cfgfile_write (f, "gfx_refreshrate=%d\n", p->gfx_refreshrate);
     cfgfile_write (f, "gfx_vsync=%s\n", p->gfx_vsync ? "true" : "false");
     cfgfile_write (f, "gfx_lores=%s\n", p->gfx_lores ? "true" : "false");
@@ -913,6 +921,18 @@ static int cfgfile_parse_host (struct uae_prefs *p, char *option, char *value)
         || cfgfile_intval (option, value, "gfx_height_fullscreen", &p->gfx_height_fs, 1)
         || cfgfile_intval (option, value, "gfx_refreshrate", &p->gfx_refreshrate, 1))
         return 1;
+
+    if(!p->gfx_width_fs && !p->gfx_height_fs) {
+      //kprintf("gfx_width_fs/gfx_height_fs is 0! Clone me!\n");
+      struct Screen *screen;
+      p->gfx_fs_clone=1;
+      screen=LockPubScreen(NULL);
+      if(screen) {
+        p->gfx_height_fs=screen->Height;
+        p->gfx_width_fs=screen->Width;
+        UnlockPubScreen(NULL, screen);
+      }
+    }
 
 #ifdef GFXFILTER
     if (   cfgfile_intval (option, value, "gfx_filter_vert_zoom", &p->gfx_filter_vert_zoom, 1)

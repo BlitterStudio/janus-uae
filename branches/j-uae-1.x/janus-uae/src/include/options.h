@@ -117,6 +117,7 @@ struct uae_prefs {
     int gfx_framerate;
     int gfx_width_win, gfx_height_win;
     int gfx_width_fs, gfx_height_fs;
+    int gfx_fs_clone; /* 1: clone wb screen mode */
     int gfx_width, gfx_height;
     int gfx_refreshrate;
     int gfx_vsync;

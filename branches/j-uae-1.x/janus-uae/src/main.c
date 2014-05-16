@@ -111,20 +111,27 @@ BOOL gui_visible (void);
 
 void fixup_prefs_dimensions (struct uae_prefs *prefs)
 {
-    if (prefs->gfx_width_fs < 320)
-	prefs->gfx_width_fs = 320;
-    if (prefs->gfx_height_fs < 200)
-	prefs->gfx_height_fs = 200;
-    if (prefs->gfx_height_fs > 1280)
-	prefs->gfx_height_fs = 1280;
+  /* 0 means clone workbench! */
+  if (prefs->gfx_height_fs && (prefs->gfx_width_fs < 320))
+    prefs->gfx_width_fs = 320;
+
+  if (prefs->gfx_height_fs && (prefs->gfx_height_fs < 200))
+    prefs->gfx_height_fs = 200;
+
+  if (prefs->gfx_height_fs > 1280)
+    prefs->gfx_height_fs = 1280;
+
     prefs->gfx_width_fs += 7;
     prefs->gfx_width_fs &= ~7;
-    if (prefs->gfx_width_win < 320)
-	prefs->gfx_width_win = 320;
-    if (prefs->gfx_height_win < 200)
-	prefs->gfx_height_win = 200;
-    if (prefs->gfx_height_win > 1280)
-	prefs->gfx_height_win = 1280;
+  if (prefs->gfx_width_win < 320)
+    prefs->gfx_width_win = 320;
+
+  if (prefs->gfx_height_win < 200)
+    prefs->gfx_height_win = 200;
+
+  if (prefs->gfx_height_win > 1280)
+    prefs->gfx_height_win = 1280;
+
     prefs->gfx_width_win += 7;
     prefs->gfx_width_win &= ~7;
 }
@@ -389,7 +396,7 @@ static void show_version_full (void)
 {
     write_log ("\n");
     show_version ();
-    write_log ("\nCopyright 2009-2012 Oliver Brunner and contributors.\n");
+    write_log ("\nCopyright 2009-2014 Oliver Brunner and contributors.\n");
     write_log ("Based on source code from:\n");
     write_log ("UAE    - copyright 1995-2002 Bernd Schmidt;\n");
     write_log ("WinUAE - copyright 1999-2007 Toni Wilen.\n");
