@@ -45,12 +45,14 @@
 #include <dos/var.h>
 #include <exec/libraries.h>
 #include <workbench/startup.h>
+#include <devices/timer.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/alib.h>
+#include <proto/timer.h>
 #include <aros/debug.h>
 
 //#define JWTRACING_ENABLED 1
@@ -60,11 +62,17 @@
 struct Task *splash_window_task=NULL;
 
 static void aros_splash_window_thread (void);
+static struct timerequest *open_timer (void);
+static void close_timer(struct timerequest *req);
+static void set_timer(struct timerequest *req, ULONG seconds);
+static void stop_timer(struct timerequest *req);
 
-static guint32 timer     =0;
+//static guint32 timer     =0;
 static APTR    splash_win=NULL;
 static APTR    splash_app=NULL;
 static APTR    splash_txt=NULL;
+static struct timerequest *splash_req=NULL;
+static BOOL splash_timer_started=FALSE;
 
 static char process_name[]="j-uae splash window";
 
@@ -97,6 +105,7 @@ void show_splash(void) {
   Signal(splash_window_task, SIGBREAKF_CTRL_D);
 }
 
+#if 0
 static gint gtk_splash_timer (gpointer *task) {
 
   JWLOG("entered!\n");
@@ -118,6 +127,7 @@ static gint gtk_splash_timer (gpointer *task) {
 
   return FALSE;
 }
+#endif
 
 void do_splash(APTR text, int time) {
 
@@ -134,9 +144,8 @@ void do_splash(APTR text, int time) {
   }
 
   /* reset old timer */
-  if(timer) {
-    gtk_timeout_remove (timer);
-    timer=0;
+  if(splash_req) {
+    stop_timer(splash_req);
   }
 
   /* warning, race condition!!! */
@@ -145,13 +154,95 @@ void do_splash(APTR text, int time) {
   }
 
   /* set it again */
-  timer = gtk_timeout_add (time*1000, (GtkFunction) gtk_splash_timer, (gpointer) splash_window_task);
+  if(splash_req) {
+    set_timer(splash_req, time);
+  }
+  //timer = gtk_timeout_add (time*1000, (GtkFunction) gtk_splash_timer, (gpointer) splash_window_task);
+
+}
+
+static void set_timer(struct timerequest *req, ULONG seconds) {
+  struct timeval timeval;
+
+  if(req) {
+    GetSysTime (&timeval);
+    JWLOG("got systime seconds: %d\n", timeval.tv_secs);
+    JWLOG("seconds: %d\n", seconds);
+
+
+    req->tr_node.io_Command = TR_ADDREQUEST;
+    req->tr_time.tv_secs  = timeval.tv_secs + seconds;
+    req->tr_time.tv_micro = 0;
+    splash_timer_started=TRUE;
+    SendIO ((struct IORequest *)req);
+    JWLOG("timer set!\n");
+  }
+}
+
+static struct timerequest *open_timer (void) {
+  struct MsgPort *port;
+  struct timerequest *req;
+
+  if (( port=CreateMsgPort () )) {
+    if (( req=(struct timerequest *) CreateIORequest (port, sizeof(struct timerequest)) )) {
+      //if(!OpenDevice ((STRPTR) "timer.device", UNIT_VBLANK, (struct IORequest *) req, 0)) {
+      if(!OpenDevice ((STRPTR) "timer.device", UNIT_WAITUNTIL, (struct IORequest *) req, 0)) {
+        JWLOG("opened timer.device: req=%lx\n", req);
+
+        return req;
+      }
+      DeleteIORequest ((struct IORequest *)req);
+    }
+    DeleteMsgPort (port);
+  }
+  return NULL;
+}
+
+static void close_timer(struct timerequest *req) {
+  struct MsgPort *port;
+
+  JWLOG("req: %lx\n", req);
+
+  if(req) {
+    stop_timer(req);
+    port=req->tr_node.io_Message.mn_ReplyPort; /* backup */
+    CloseDevice ((struct IORequest *)req);
+    JWLOG("port was: %lx\n", port);
+    DeleteIORequest ((struct IORequest *)req);
+    DeleteMsgPort (port);
+  }
+}
+
+static void stop_timer(struct timerequest *req) {
+  BOOL done=FALSE;
+  LONG ret;
+
+  JWLOG("req=%lx\n", req);
+  JWLOG("splash_timer_started: %d\n", splash_timer_started);
+
+  if (req) {
+    if(splash_timer_started) {
+      done=TRUE;
+      //if (!CheckIO((struct IORequest *)req)) {
+        JWLOG("Abort old timer ..\n");
+        ret=AbortIO((struct IORequest *)req);
+      //}
+        JWLOG("ret: %d\n", ret);
+        JWLOG("WaitIO ..\n");
+      WaitIO((struct IORequest *)req);
+    }
+  }
+
+  if(!done) {
+    JWLOG("done nothing!\n");
+  }
 }
 
 static void aros_splash_window_thread (void) {
 
   BPTR file;
   ULONG signals=0;
+  ULONG timer_signal=0;
 
   if(( file=Open((STRPTR) "janus.png", MODE_OLDFILE) )) {
     Close(file);
@@ -208,17 +299,31 @@ static void aros_splash_window_thread (void) {
     goto EXIT;
   }
 
+  splash_req=open_timer();
+  if(!splash_req) {
+    goto EXIT;
+  }
+
+  timer_signal= 1L << splash_req->tr_node.io_Message.mn_ReplyPort->mp_SigBit;
+  JWLOG("timer_signal: %lx\n", timer_signal);
+
   DoMethod(splash_win, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
             splash_app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
   while(DoMethod(splash_app, MUIM_Application_NewInput, &signals) != MUIV_Application_ReturnID_Quit) {
-    signals = Wait(signals | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
+    signals = Wait(signals | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D | timer_signal);
+    JWLOG("got signal: %lx\n", signals);
     if (signals & SIGBREAKF_CTRL_C) {
       break;
     }
     if (signals & SIGBREAKF_CTRL_D) {
       set(splash_win, MUIA_Window_Open, TRUE);
     }
+    if (signals & timer_signal) {
+      JWLOG("GOT TIMER EVENT!!\n");
+      break;
+    }
+
 
   }
 
@@ -226,6 +331,11 @@ static void aros_splash_window_thread (void) {
   JWLOG("closing splash window ..!\n");
 
 EXIT:
+
+  if(splash_req) {
+    stop_timer(splash_req);
+    close_timer(splash_req);
+  }
 
   if(splash_win) {
     JWLOG("hide splash_win %lx\n", splash_win);
