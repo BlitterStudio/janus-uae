@@ -70,6 +70,7 @@ uae_u32 ad_job_splash_screen(ULONG *m68k_results) {
 
   do_splash(text, time);
 
+
   LEAVE
 
   return TRUE;
