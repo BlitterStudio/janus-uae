@@ -44,7 +44,7 @@
  * but LockIntuition is just one ObtainSemaphore, maybe we can live with that.
  */
 
-char *public_screen_name(struct Screen *scr) {
+char *get_public_screen_name(struct Screen *scr) {
   struct List          *public_screen_list;
   struct PubScreenNode *public_screen_node;
   ULONG                 i;

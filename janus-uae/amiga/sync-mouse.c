@@ -506,9 +506,10 @@ void sync_mouse() {
   mousebuffer[0]=is_p96;
   DebOut("is_p96: %d (TRUE is %d)\n",is_p96, TRUE);
 
-  result = calltrap (AD_GET_JOB, AD_GET_JOB_GET_MOUSE, mousebuffer);
+  calltrap (AD_GET_JOB, AD_GET_JOB_GET_MOUSE, mousebuffer);
+  result=mousebuffer[9];
 
-  /* 0xFFFF000 => do mothing. see j.mouse.c */
+  /* 0xFFFF000 => do mothing. see j-mouse.c (???) */
   if(!result || (mousebuffer[8]!=0)) {
     DebOut("AD_GET_JOB_GET_MOUSE result: DISABLED\n");
     LEAVE

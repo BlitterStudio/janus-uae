@@ -126,7 +126,8 @@ void forward_messages(void);
 void update_top_screen(void);
 
 /* public_screen.c */
-char *public_screen_name(struct Screen *scr); 
+//char *public_screen_name(struct Screen *scr); 
+char *get_public_screen_name(struct Screen *scr); 
 
 /* lock-window.c */
 

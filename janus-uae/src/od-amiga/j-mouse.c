@@ -126,6 +126,7 @@ BOOL manual_mouse=FALSE;
 WORD manual_mouse_x=0;
 WORD manual_mouse_y=0;
 
+/* as return values seem to cause probles, return TRUE/FALSE in mousebuffer[9] */
 uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
   struct Screen *screen;
   ULONG modeID;
@@ -138,6 +139,7 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
   screen=IntuitionBase->FirstScreen;
 
   if(!screen) {
+    put_long_p(m68k_results+9, TRUE);
     //DebOut("no screen available\n");
     return TRUE;
   }
@@ -153,12 +155,14 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
   if(!janus_active_window && !janus_active_screen && changed_prefs.jcoherence) {
     JWLOG("no active window (%lx) / no janus_active_screen (%lx) / changed_prefs.jcoherence (%d)\n",
            janus_active_window, janus_active_screen, changed_prefs.jcoherence);
+    put_long_p(m68k_results+9, FALSE);
     return FALSE;
   }
 
   /* we are *not* coherent, only move mouse, if our main window is active */
   if(!changed_prefs.jcoherence && !(W == IntuitionBase->ActiveWindow && W)) {
     JWLOG("not coherent and not active window, do nothing.\n");
+    put_long_p(m68k_results+9, FALSE);
     return FALSE;
   }
 
@@ -166,6 +170,7 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
   if((!uae_main_window_closed) && ((!changed_prefs.jmouse) || (aos3_task==NULL))) {
     JWLOG("((!uae_main_window_closed %d) && (!changed_prefs.jmouse %d)) || aos3_task %lx => do nothing\n", 
           uae_main_window_closed, changed_prefs.jmouse, aos3_task);
+    put_long_p(m68k_results+9, FALSE);
     return FALSE;
   }
 
@@ -268,6 +273,7 @@ uae_u32 ad_job_get_mouse(ULONG *m68k_results) {
     menuy=0;
   }
 
+  put_long_p(m68k_results+9, TRUE);
   return TRUE;
 }
 

@@ -70,7 +70,7 @@ int __nocommandline = 0; /*???*/
 #define POPFULLSTACK  "movem.l (%SP)+,%d0-%d7/%a0-%a6\n"
 
 #else
-char verstag[] = "\0$VER: janus-daemon 0.9 [AmigaOS]";
+char verstag[] = "\0$VER: janus-daemon 1.4 [AmigaOS]";
 
 #define PUSHSTACK     "movem.l d2-d7/a2-a4,-(SP)\n"
 #define POPSTACK      "movem.l (SP)+,d2-d7/a2-a4\n"
