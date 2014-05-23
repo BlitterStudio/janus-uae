@@ -22,7 +22,7 @@
  ************************************************************************/
 
 //#define JW_ENTER_ENABLED  1
-//#define JWTRACING_ENABLED  1
+#define JWTRACING_ENABLED  1
 
 #include "j.h"
 
@@ -178,26 +178,38 @@ static void new_aos3window(ULONG aos3win) {
  * ad_job_active_window
  *
  * return aos3 window, which should be active
+ *
+ * return the active window in the supplied pointer,
+ * as return values seem to be unreliable with AROS
+ * guests.
+ *
+ * so you have to pass a **win to the calltrap function
+ * from the m68k side
  **********************************************************/
 uae_u32 ad_job_active_window(ULONG *m68k_results) {
-  uae_u32 win;
+  ULONG win;
 
   ENTER
+
+  JWLOG("**win: %lx\n", m68k_results);
 
   ObtainSemaphore(&sem_janus_active_win);
 
   if(!janus_active_window) {
-    win=0;
+    JWLOG("no window active\n");
+    put_long_p(m68k_results, 0);
   }
   else {
-    win=(uae_u32) janus_active_window->aos3win;
+    win=(ULONG) janus_active_window->aos3win;
+    JWLOG("activate aos3win: %lx\n", win);
+    put_long_p(m68k_results, win);
   }
 
   ReleaseSemaphore(&sem_janus_active_win);
 
   LEAVE
 
-  return win;
+  return TRUE;
 }
 
 /**********************************************************
@@ -980,7 +992,7 @@ uae_u32 ad_job_sync_windows(ULONG *m68k_results) {
   JWLOG("UnlockIBase\n");
   UnlockIBase(intui_lock);
 
-  //JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
+  JWLOG("ReleaseSemaphore(&sem_janus_window_list)\n");
   ReleaseSemaphore(&sem_janus_window_list);
 
   LEAVE

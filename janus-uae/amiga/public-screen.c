@@ -54,10 +54,10 @@ char *public_screen_name(struct Screen *scr) {
   public_screen_list=NULL;
   i=0;
 
-  while(!(public_screen_list = (struct List *) LockPubScreenList()) && i<5) {
-    DebOut("public_screen_name(%lx): LockPubScreenList wait #%d ..\n", scr, i);
-    Delay(10);
-  }
+  DebOut("entered\n");
+
+  public_screen_list = (struct List *) LockPubScreenList();
+  DebOut("public_screen_name(%lx): LockPubScreenList succeeded\n", scr, i);
 
   if(!public_screen_list) {
     DebOut("ERROR: unable to LockPubScreenList for screen %lx\n", scr);

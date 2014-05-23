@@ -34,7 +34,7 @@
 #include <proto/layers.h>
 #include <proto/dos.h>
 
-//#define DEBUG 1
+#define DEBUG 1
 #include "janus-daemon.h"
 
 //#define DUMPWIN
@@ -260,12 +260,16 @@ void report_uae_windows() {
    * screen name for that. Who invented this API !?
    */
 
+  DebOut("bla!\n");
+
   pubname=public_screen_name(screen);
   if(pubname) {
+    DebOut("Locking screen %lx (%s)\n", screen, pubname);
     lock=LockPubScreen((unsigned char *)pubname);
     DebOut("lock: %lx\n", lock);
   }
   win=screen->FirstWindow;
+  DebOut("first window: %lx\n", win);
 
   /* we are reporting for this screen! */
   report_command_mem[0]=(ULONG) screen;
@@ -693,30 +697,28 @@ void sync_windows() {
 }
 
 void sync_active_window() {
-  struct Window *win;
+  struct Window *win=NULL;
   ULONG          lock;
 
   ENTER
 
-  win=(struct Window *) calltrap (AD_GET_JOB, 
-                                  AD_GET_JOB_ACTIVE_WINDOW, NULL);
+  calltrap (AD_GET_JOB, AD_GET_JOB_ACTIVE_WINDOW, (ULONG *) &win); /* put result in *win */
 
   DebOut("win: %lx\n", win);
 
   DebOut("LockIBase()\n");
   lock=LockIBase(0);
 
-  if(!assert_window(win)) {
-    DebOut("win %lx does not exist anymore\n", win);
-    DebOut("UnlockIBase()\n");
-    UnlockIBase(lock);
-    LEAVE
-    return;
+  if(win && !assert_window(win)) {
+    DebOut("window %lx does not exist anymore\n", win);
+    win=NULL;
   }
 
   DebOut("UnlockIBase()\n");
   UnlockIBase(lock);
-  ActivateWindow(win);
+  if(win) {
+    ActivateWindow(win);
+  }
 
   LEAVE
 }

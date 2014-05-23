@@ -40,7 +40,7 @@
 extern struct IntuitionBase* IntuitionBase;
 #endif
 
-//#define DEBUG 1
+#define DEBUG 1
 #include "janus-daemon.h"
 
 

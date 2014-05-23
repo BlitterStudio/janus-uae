@@ -56,7 +56,7 @@
 #include <aros/system.h>
 #endif
 
-//#define DEBUG 1
+#define DEBUG 1
 #include "janus-daemon.h"
 
 int __nocommandline = 0; /*???*/
@@ -134,8 +134,8 @@ ULONG calltrap(ULONG arg1, ULONG arg2, ULONG *arg3) {
                 "jsr 0xF0FF90\n" \
                 "move.l %%d0, %0\n" \
                 "movem.l (%%SP)+, %%d0-%%d7/%%a0-%%a6\n" \
-                             : "=r"(ret)                        /* %0 */
-                             : "r"(arg1), "r"(arg2), "r"(arg3)  /* %1, %2, %3 */
+                             : "=g"(ret)                        /* %0 */
+                             : "g"(arg1), "g"(arg2), "g"(arg3)  /* %1, %2, %3 */
                              :                                  /* nothing clobbered */
                              );
 

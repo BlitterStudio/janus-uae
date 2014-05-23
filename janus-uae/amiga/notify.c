@@ -38,7 +38,7 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 
-//#define DEBUG 1
+#define DEBUG 1
 #include "janus-daemon.h"
 
 /* global */
