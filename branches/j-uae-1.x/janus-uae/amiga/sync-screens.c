@@ -223,7 +223,7 @@ void update_screens() {
 
     command_mem[i++]=(ULONG) screen;
     command_mem[i++]=(ULONG) screen->RastPort.BitMap->Depth;
-    command_mem[i++]=(ULONG) public_screen_name(screen);
+    command_mem[i++]=(ULONG) get_public_screen_name(screen);
     command_mem[i++]=(ULONG) maxwidth;
     command_mem[i++]=(ULONG) maxheight;
     screen=screen->NextScreen;

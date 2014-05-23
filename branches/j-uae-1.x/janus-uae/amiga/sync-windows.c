@@ -34,7 +34,7 @@
 #include <proto/layers.h>
 #include <proto/dos.h>
 
-#define DEBUG 1
+//#define DEBUG 1
 #include "janus-daemon.h"
 
 //#define DUMPWIN
@@ -218,14 +218,18 @@ ULONG need_to_sort(ULONG *host_window, struct Layer *layer) {
  * All values are without window borders.
  * */
 
+struct Screen *fooo(void) {
+  DebOut("fooo\n");
+  return NULL;
+}
 ULONG *report_command_mem=NULL;
 
 void report_uae_windows() {
-  struct Screen *screen;
-  struct Window *win;
-  ULONG          i;
-  char          *pubname;
-  struct Screen *lock;
+  struct Screen *screen =NULL;
+  struct Window *win    =NULL;
+  ULONG          i      =0;
+  char          *pubname=NULL;
+  struct Screen *lock   =NULL;
 
   ENTER
 
@@ -256,13 +260,21 @@ void report_uae_windows() {
     return;
   }
 
+  DebOut("IntuitionBase->FirstScreen: %lx (%s)\n", screen, screen->Title);
+
   /* Would be nice to just lock the screen, but we would need to get the
    * screen name for that. Who invented this API !?
    */
 
   DebOut("bla!\n");
+  DebOut("f: %lx\n", fooo());
+  DebOut("bla 1!\n");
+  DebOut("bla 2!\n");
+  DebOut("bla3 !\n");
+  DebOut("bla 4!\n");
 
-  pubname=public_screen_name(screen);
+  pubname=get_public_screen_name(screen);
+  DebOut("bla 5!\n");
   if(pubname) {
     DebOut("Locking screen %lx (%s)\n", screen, pubname);
     lock=LockPubScreen((unsigned char *)pubname);

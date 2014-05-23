@@ -283,7 +283,7 @@ static uae_u32 jd_setup(TrapContext *context, ULONG *param) {
 
     //JWLOG("return %d\n", changed_prefs.jcoherence);
     put_long_p(param+8, changed_prefs.jcoherence);
-    return changed_prefs.jcoherence;
+    return TRUE;
 }
 
 /*********************************
