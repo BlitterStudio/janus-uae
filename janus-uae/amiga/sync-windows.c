@@ -218,10 +218,6 @@ ULONG need_to_sort(ULONG *host_window, struct Layer *layer) {
  * All values are without window borders.
  * */
 
-struct Screen *fooo(void) {
-  DebOut("fooo\n");
-  return NULL;
-}
 ULONG *report_command_mem=NULL;
 
 void report_uae_windows() {
@@ -266,15 +262,7 @@ void report_uae_windows() {
    * screen name for that. Who invented this API !?
    */
 
-  DebOut("bla!\n");
-  DebOut("f: %lx\n", fooo());
-  DebOut("bla 1!\n");
-  DebOut("bla 2!\n");
-  DebOut("bla3 !\n");
-  DebOut("bla 4!\n");
-
   pubname=get_public_screen_name(screen);
-  DebOut("bla 5!\n");
   if(pubname) {
     DebOut("Locking screen %lx (%s)\n", screen, pubname);
     lock=LockPubScreen((unsigned char *)pubname);
