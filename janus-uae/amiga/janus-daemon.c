@@ -56,7 +56,7 @@
 #include <aros/system.h>
 #endif
 
-#define DEBUG 1
+//#define DEBUG 1
 #include "janus-daemon.h"
 
 int __nocommandline = 0; /*???*/
@@ -240,7 +240,8 @@ int setup(struct Task *task, ULONG signal, ULONG stop) {
   setup_command_mem[12]=(ULONG) stop;
 #endif
 
-  state = calltrap (AD_SETUP, AD__MAXMEM, setup_command_mem);
+  /* return value is too unrealiable! */
+  calltrap (AD_SETUP, AD__MAXMEM, setup_command_mem);
 
   state=setup_command_mem[8];
 
@@ -497,6 +498,18 @@ int main (int argc, char **argv) {
 
   if(!open_libs()) {
     exit(1);
+  }
+
+  /* Just open the default public screen. Makes life easier and
+   * gets AROS guests booting without problems.
+   * AmigaOS my just work by chance, as there the booting
+   * is faster and the workbench screen might be up
+   * early enough. Not nice, but no harm done either.
+   */
+  {
+    struct Screen *s;
+    s=LockPubScreen(NULL);
+    UnlockPubScreen(NULL, s);
   }
 
   /* try to get a signal */
