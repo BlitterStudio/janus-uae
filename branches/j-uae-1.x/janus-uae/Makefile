@@ -122,7 +122,7 @@ CCASDEPMODE = depmode=gcc3
 CCASFLAGS = -O2
 CCDEPMODE = depmode=gcc3
 CDOBJS = 
-CFLAGS = -O2 -Wa,--execstack  -fomit-frame-pointer   -Wall -Wno-unused -Wno-format -W -Wmissing-prototypes -Wstrict-prototypes -Wstrict-aliasing -fno-strength-reduce -DREGPARAM="__attribute__((regparm(3)))"    
+CFLAGS = -O2 -Wa,--execstack  -fomit-frame-pointer   -Wall -Wno-unused -Wno-format -W -Wmissing-prototypes -Wstrict-prototypes -fno-strict-aliasing -fno-strength-reduce -DREGPARAM="__attribute__((regparm(3)))"    
 CPP = i386-aros-gcc -E
 CPPFLAGS =    -DCATWEASEL -DFPUEMU -DCPUEMU_0 -DCPUEMU_5 -DCPUEMU_6 -DUNALIGNED_PROFITABLE -DJIT -DAGA -DAUTOCONFIG -DFILESYS -DSUPPORT_THREADS -DFDI2RAW -DDEBUGGER -DSAVESTATE -DENFORCER -DACTION_REPLAY  
 CPUOBJS = cpuemu_0.o cpuemu_5.o cpuemu_6.o
@@ -170,10 +170,10 @@ OSDEP = od-amiga
 PACKAGE = janus-uae
 PACKAGE_BUGREPORT = 
 PACKAGE_NAME = JANUS-UAE
-PACKAGE_STRING = JANUS-UAE 1.3
+PACKAGE_STRING = JANUS-UAE 1.4
 PACKAGE_TARNAME = janus-uae
 PACKAGE_URL = 
-PACKAGE_VERSION = 1.3
+PACKAGE_VERSION = 1.4
 PATH_SEPARATOR = :
 PTHREAD_CC = i386-aros-gcc
 PTHREAD_CFLAGS = 
@@ -182,9 +182,9 @@ RANLIB = i386-aros-ranlib
 RCLPRG = not-found
 RESOBJS = 
 SCSIOBJS = scsi-none.o
-SDL_CFLAGS = 
-SDL_CONFIG = no
-SDL_LIBS = 
+SDL_CFLAGS = /SDL -D_GNU_SOURCE=1 -D_REENTRANT
+SDL_CONFIG = /usr/bin/sdl-config
+SDL_LIBS =  -lSDL
 SET_MAKE = 
 SHELL = /bin/bash
 SND_DEP = sd-amigaos
@@ -192,7 +192,7 @@ STRIP = i386-aros-strip
 TARGET = amiga
 THREADDEP = td-amigaos
 UAE_RSRCFILE = 
-VERSION = 1.3
+VERSION = 1.4
 WRCPRG = not-found
 XMKMF = 
 X_CFLAGS = 

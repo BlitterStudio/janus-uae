@@ -9,10 +9,11 @@ NOTG="|sed -e's/= -g /= /'"
 
 find . -name Makefile >/tmp/out.$$
 for i in `cat /tmp/out.$$`; 
-do cp $i $i.bak; 
-  cat $i.bak|sed -e's/-I\/usr\/include//'|sed -e's/-L\/usr\/lib//'|sed -e's/= -g /= /' >$i;
-  #cp $i $i.bak;
-  #cat $i.bak|sed -e's/= -g /= /' >$i
+do 
+  cp $i $i.bak; 
+  cat $i.bak|sed -e's/-I\/usr\/include//'|sed -e's/-L\/usr\/lib//'|sed -e's/= -g /= /'|sed -e's/-Wstrict-aliasing/-fno-strict-aliasing/' >$i;
+  cp $i $i.bak;
+  cat $i.bak|sed -e's/= -g /= /' >$i
 done
 rm /tmp/out.$$
 #find . -name Makefile.bak -exec rm -f {} \;

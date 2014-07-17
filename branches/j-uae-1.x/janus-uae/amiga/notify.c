@@ -434,7 +434,7 @@ void handle_notify_msg(ULONG notify_class, ULONG notify_object) {
         break;*/
 
       case SNOTIFY_SCREENDEPTH: DebOut("SNOTIFY_SCREENDEPTH\n");
-        /* WARNING: THIS IS MAYBE WRONG, have a llok at the 666 hack.. */
+        /* WARNING: THIS IS MAYBE WRONG, have a look at the 666 hack.. */
         calltrap(AD_GET_JOB, AD_GET_JOB_SCREEN_DEPTH, (ULONG *) notify_object);
         break;
 

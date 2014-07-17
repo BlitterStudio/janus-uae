@@ -64,6 +64,13 @@
 #include "chipsettypepanel.h"
 #include "display.h"
 
+//#define GUI_DEBUG 1
+#ifdef  GUI_DEBUG
+#define DEBUG_LOG(...) do { kprintf("%s:%d %s(): ",__FILE__,__LINE__,__func__);kprintf(__VA_ARGS__); } while(0)
+#else
+#define DEBUG_LOG(...) do ; while(0)
+#endif
+
 /* does not work, so don't enable it */
 #define ENABLE_CENTERING 0
 #define ENABLE_FULL_RTG_SETTINGS 0
@@ -350,7 +357,7 @@ static void read_prefs (jDisplay *j) {
   /* screen resolution
    *  this is just a string compare, not nice, I know ;)
    */
-  printf("currprefs.gfx_fs_clone: %d\n", currprefs.gfx_fs_clone);
+  DEBUG_LOG("currprefs.gfx_fs_clone: %d\n", currprefs.gfx_fs_clone);
   if(currprefs.gfx_fs_clone) {
     i=0;
   }
@@ -592,6 +599,8 @@ static void screen_changed(GtkWidget *me, jDisplay *j) {
   gint selected;
   struct Screen* screen;
 
+  DEBUG_LOG("currprefs.gfx_fs_clone: %d\n", currprefs.gfx_fs_clone);
+
   /* get selection number with some simple casts..*/
   selected=gtk_list_child_position(
             GTK_LIST(GTK_COMBO (j->screen_resolutions)->list),
@@ -599,12 +608,13 @@ static void screen_changed(GtkWidget *me, jDisplay *j) {
 
   if(selected == 0) {
     /* we need to clone workbench screen resolution */
+    DEBUG_LOG("clone workbench screen resolution\n");
     currprefs.gfx_fs_clone=1;
 
     screen=LockPubScreen(NULL);
     j->gfx_width_fs = screen->Width;
     j->gfx_height_fs = screen->Height;
-    //kprintf("width: %d, height: %d\n", j->gfx_width_fs, j->gfx_height_fs);
+    DEBUG_LOG("width: %d, height: %d\n", j->gfx_width_fs, j->gfx_height_fs);
 
     UnlockPubScreen(NULL, screen);
   }
@@ -617,10 +627,14 @@ static void screen_changed(GtkWidget *me, jDisplay *j) {
     j->gfx_width_fs =atoi(wh[0]);
     j->gfx_height_fs=atoi(wh[1]);
 
+    DEBUG_LOG("new fixed screen resolution: %d x %d\n", j->gfx_width_fs, j->gfx_height_fs);
+
     g_strfreev(wh);
   }
+  DEBUG_LOG("currprefs.gfx_fs_clone: %d\n", currprefs.gfx_fs_clone);
 
-  g_signal_emit_by_name(j,"screen-changed",j);
+  DEBUG_LOG("g_signal_emit_by_name(screen-changed\n)");
+  g_signal_emit_by_name(j, "screen-changed", j);
 }
 
 static void window_changed(GtkWidget *me, jDisplay *j) {
@@ -652,7 +666,7 @@ static void make_display_widgets (GtkWidget *vbox) {
     printf("ERROR: display.c: !GTK_IS_HBOX(%lx)\n",vbox);
   }
 
-  table=gtk_table_new(3,4,FALSE);
+  table=gtk_table_new(2, 3, FALSE);
 
   chipsetspeed_panel=chipsetspeedpanel_new();
   /* for historical reasons (e-uae), chipsetspeed_panel needs to
@@ -661,30 +675,31 @@ static void make_display_widgets (GtkWidget *vbox) {
    */
   j->emuspeed=chipsetspeed_panel;
 
-  gtk_table_attach_defaults(GTK_TABLE(table), chipsetspeed_panel, 0,1,3,4);
 
   frame_screen=   gtk_frame_new("AROS screen resolution");
   frame_window=   gtk_frame_new("AROS window size");
   frame_settings= gtk_frame_new("Settings");
   frame_centering=gtk_frame_new("Centering");
-  frame_linemode= gtk_frame_new("Line Mode");
+  //frame_linemode= gtk_frame_new("Line Mode");
 
   frame_screen_hbox=gtk_hbox_new(TRUE, 8);
   gtk_container_set_border_width (GTK_CONTAINER (frame_screen_hbox), 8);
   frame_window_hbox=gtk_hbox_new(FALSE, 8);
   gtk_container_set_border_width (GTK_CONTAINER (frame_window_hbox), 8);
 
+  gtk_table_attach_defaults(GTK_TABLE(table), frame_settings,  0, 2, 0, 2);
+  gtk_table_attach_defaults(GTK_TABLE(table), frame_screen,    2, 3, 0, 1);
+  gtk_table_attach_defaults(GTK_TABLE(table), frame_window,    2, 3, 1, 2);
+  //gtk_table_attach_defaults(GTK_TABLE(table), frame_linemode,  2, 3, 0, 2);
+  //gtk_table_attach_defaults(GTK_TABLE(table), frame_centering, 3, 4, 0, 2);
+
+  gtk_table_attach_defaults(GTK_TABLE(table), chipsetspeed_panel, 2, 4, 2, 3);
   /* row 1 */
-  gtk_table_attach_defaults(GTK_TABLE(table), frame_screen,    0, 1, 0, 1);
-  gtk_table_attach_defaults(GTK_TABLE(table), frame_window,    0, 1, 1, 2);
-  gtk_table_attach_defaults(GTK_TABLE(table), frame_linemode,  1, 2, 0, 2);
-  gtk_table_attach_defaults(GTK_TABLE(table), frame_centering, 2, 3, 0, 2);
 
   gtk_container_add (GTK_CONTAINER (frame_screen), frame_screen_hbox);
   gtk_container_add (GTK_CONTAINER (frame_window), frame_window_hbox);
 
   /* row 2 */
-  gtk_table_attach_defaults(GTK_TABLE(table), frame_settings,  0, 1, 2, 3);
   /* linemode frame done below */
 
   /* Amiga screen resolutions */
@@ -718,23 +733,37 @@ static void make_display_widgets (GtkWidget *vbox) {
 			  j);
 
   /* Amiga Settings */
-  table_settings=gtk_table_new(2,2,TRUE);
+  table_settings=gtk_table_new(2,2,FALSE);
   gtk_container_add (GTK_CONTAINER (frame_settings), table_settings);
-  j->settings_correctaspect=gtk_check_button_new_with_label("Correct aspect");
-  j->settings_lores=gtk_check_button_new_with_label("Lo-Res");
-  j->settings_fullscreen=gtk_check_button_new_with_label("Full-Screen");
+  //j->settings_correctaspect=gtk_check_button_new_with_label("Correct aspect");
+  j->settings_correctaspect=gtk_check_button_new_with_label(" ");
+  //j->settings_lores=gtk_check_button_new_with_label("Lo-Res");
+  j->settings_lores=gtk_check_button_new_with_label(" ");
+  //j->settings_fullscreen=gtk_check_button_new_with_label("Fullscreen");
+  j->settings_fullscreen=gtk_check_button_new_with_label(" ");
   j->settings_fullscreen_rtg=gtk_check_button_new_with_label("Full Screen RTG");
 
   gtk_table_attach_defaults(GTK_TABLE(table_settings), 
-                            j->settings_correctaspect,    0, 1, 0, 1);
+                            j->settings_fullscreen,      0, 1, 0, 1);
   gtk_table_attach_defaults(GTK_TABLE(table_settings), 
-                            j->settings_lores,            1, 2, 0, 1);
+                            gtk_label_new("Fullscreen"), 1, 2, 0, 1);
+
   gtk_table_attach_defaults(GTK_TABLE(table_settings), 
-                            j->settings_fullscreen,       0, 1, 1, 2);
+                            j->settings_correctaspect,   0, 1, 1, 2);
   gtk_table_attach_defaults(GTK_TABLE(table_settings), 
-                            j->settings_fullscreen_rtg,   1, 2, 1, 2);
+                            gtk_label_new("Correct aspect"), 1, 2, 1, 2);
+
+
+  gtk_table_attach_defaults(GTK_TABLE(table_settings), 
+                            j->settings_lores,            0, 1, 2, 3);
+  gtk_table_attach_defaults(GTK_TABLE(table_settings), 
+                            gtk_label_new("Low Resolution"), 1, 2, 2, 3);
+
+
+  //gtk_table_attach_defaults(GTK_TABLE(table_settings), 
+                            //j->settings_fullscreen_rtg,   1, 2, 1, 2);
   /* disabled TODO */
-  gtk_widget_set_sensitive(j->settings_fullscreen_rtg, FALSE);
+  //gtk_widget_set_sensitive(j->settings_fullscreen_rtg, FALSE);
 
   gtk_signal_connect (GTK_OBJECT (j->settings_correctaspect), "toggled",
 			  G_CALLBACK (settings_changed),
@@ -757,7 +786,7 @@ static void make_display_widgets (GtkWidget *vbox) {
 					j->linemode_widget, 
 					0, (void *)linemode_changed,
 					GTK_WIDGET(j));
-  gtk_table_attach_defaults(GTK_TABLE(table), frame_linemode,   1, 2, 0, 2);
+  gtk_table_attach_defaults(GTK_TABLE(table), frame_linemode,   3, 4, 0, 2);
 
   /* Centering */
   frame_centering = make_radio_group_box_param ("Centering", 
@@ -766,7 +795,7 @@ static void make_display_widgets (GtkWidget *vbox) {
 					0, (void *)centering_changed,
 					GTK_WIDGET(j));
   gtk_widget_set_sensitive(frame_centering,FALSE);
-  gtk_table_attach_defaults(GTK_TABLE(table), frame_centering,  2, 3, 0, 2);
+  //gtk_table_attach_defaults(GTK_TABLE(table), frame_centering,  2, 3, 0, 2);
 
 
   /* Chipset */
@@ -775,7 +804,7 @@ static void make_display_widgets (GtkWidget *vbox) {
 					  j->chipset_widget, 
 					  0, (void *)chipset_changed,
 					  GTK_WIDGET(j));
-  gtk_table_attach_defaults(GTK_TABLE(table), frame_chipset,   1, 2, 2, 4);
+  gtk_table_attach_defaults(GTK_TABLE(table), frame_chipset,   0, 1, 2, 4);
 
   /* PAL/NTSC */
   /*  GLib-GObject-CRITICAL **: 
@@ -785,7 +814,7 @@ static void make_display_widgets (GtkWidget *vbox) {
 					j->pal_ntsc_widget, 
 					0, (void *)palntsc_changed,
 					GTK_WIDGET(j));
-  gtk_table_attach_defaults(GTK_TABLE(table), frame_pal_ntsc,  2, 3, 2, 4);
+  gtk_table_attach_defaults(GTK_TABLE(table), frame_pal_ntsc,  1, 2, 2, 4);
 
   gtk_widget_show_all(table);
   gtk_container_add (GTK_CONTAINER (vbox), table);
