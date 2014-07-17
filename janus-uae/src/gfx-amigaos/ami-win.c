@@ -1041,46 +1041,78 @@ ULONG find_rtg_mode (ULONG *width, ULONG *height, ULONG depth)
 }
 #endif
 
-static int setup_customscreen (void)
-{
-    static struct NewWindow NewWindowStructure = {
+static int setup_customscreen (void) {
+
+  ULONG width  = 0;
+  ULONG height = 0;
+  ULONG depth  = 0; // FIXME: Need to add some way of letting user specify preferred depth
+  ULONG mode   = INVALID_ID;
+  struct Screen *screen;
+  ULONG error;
+
+  static struct NewWindow NewWindowStructure = {
     0, 0, 800, 600, 0, 1,
     IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY | IDCMP_DISKINSERTED | IDCMP_DISKREMOVED
         | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW | IDCMP_MOUSEMOVE
         | IDCMP_DELTAMOVE,
     WFLG_SMART_REFRESH | WFLG_BACKDROP | WFLG_RMBTRAP | WFLG_NOCAREREFRESH
-     | WFLG_BORDERLESS | WFLG_ACTIVATE | WFLG_REPORTMOUSE,
+        | WFLG_BORDERLESS | WFLG_ACTIVATE | WFLG_REPORTMOUSE,
     NULL, NULL, NULL, NULL, NULL, 5, 5, 800, 600,
     CUSTOMSCREEN
-    };
+  };
 
-    ULONG width  = gfxvidinfo.width;
-    ULONG height = gfxvidinfo.height;
-    ULONG depth  = 0; // FIXME: Need to add some way of letting user specify preferred depth
-    ULONG mode   = INVALID_ID;
-    struct Screen *screen;
-    ULONG error;
+  JWLOG("entered\n");
+  JWLOG("width x height: %d x %d\n", width, height);
+  JWLOG("currprefs.gfx_fs_clone: %d\n", currprefs.gfx_fs_clone);
 
-    JWLOG("entered\n");
-    JWLOG("width x height: %d x %d\n",width,height);
+  if(currprefs.gfx_fs_clone) {
+    JWLOG("we need to clone WB!\n");
+    /* how often are we doing this ..? */
+    screen=LockPubScreen(NULL);
+    if(screen) {
+      /* try to set *everything to reasonable values.. man, I hate e-uae.. */
+      width =screen->Width;
+      height=screen->Height;
+
+      currprefs.gfx_width_fs =width;
+      currprefs.gfx_height_fs=height;
+
+      currprefs.gfx_width_win =width;
+      currprefs.gfx_height_win=height;
+
+      UnlockPubScreen(NULL, screen);
+      screen=NULL;
+    }
+  }
+  else {
+    height = currprefs.gfx_height_fs;
+    width  = currprefs.gfx_width_fs;
+    JWLOG("fixed resolution: %d x %d\n", width, height);
+  }
+
+  gfxvidinfo.height=height;
+  gfxvidinfo.width =width;
+
+
+  JWLOG("width x height: %d x %d\n", width, height);
 
 #ifdef USE_CYBERGFX
-    /* First try to find an RTG screen that matches the requested size  */
-    {
+  /* First try to find an RTG screen that matches the requested size  */
+  {
     unsigned int i;
     const UBYTE preferred_depth[] = {24, 15, 16, 32, 8}; 
     /* Try depths in this order of preference */
 
     for (i = 0; i < sizeof preferred_depth && mode == (ULONG) INVALID_ID; i++) {
-        depth = preferred_depth[i];
-        mode = find_rtg_mode (&width, &height, depth);
+      depth = preferred_depth[i];
+      mode = find_rtg_mode (&width, &height, depth);
     }
-    }
+  }
 
-    if (mode != (ULONG) INVALID_ID) {
+  if (mode != (ULONG) INVALID_ID) {
     if (depth > 8)
-        use_cyb = 1;
-    } else {
+      use_cyb = 1;
+  } else {
 #endif
     /* No (suitable) RTG screen available. Try a native mode */
     depth = os39 ? 8 : (currprefs.gfx_lores ? 5 : 4);
@@ -1088,72 +1120,77 @@ static int setup_customscreen (void)
     mode = PAL_MONITOR_ID; 
 
     if (currprefs.gfx_lores)
-        mode |= (gfxvidinfo.height > 256) ? LORESLACE_KEY : LORES_KEY;
+      mode |= (gfxvidinfo.height > 256) ? LORESLACE_KEY : LORES_KEY;
     else
-        mode |= (gfxvidinfo.height > 256) ? HIRESLACE_KEY : HIRES_KEY;
+      mode |= (gfxvidinfo.height > 256) ? HIRESLACE_KEY : HIRES_KEY;
 #ifdef USE_CYBERGFX
-    }
+  }
 #endif
 
-    /* If the screen is larger than requested, centre UAE's display */
-    if (width > (ULONG) gfxvidinfo.width)
+  /* If the screen is larger than requested, centre UAE's display */
+
+  XOffset = 0;
+  YOffset = 0;
+  if (width > (ULONG) gfxvidinfo.width)
     XOffset = (width - gfxvidinfo.width) / 2;
-    if (height > (ULONG) gfxvidinfo.height)
+  if (height > (ULONG) gfxvidinfo.height)
     YOffset = (height - gfxvidinfo.height) / 2;
 
-    JWLOG("width x height: %d x %d\n",width,height);
-    JWLOG("mode: %lx\n",mode);
+  JWLOG("width x height: %d x %d\n",width,height);
+  JWLOG("mode: %lx\n",mode);
+  JWLOG("XOffset: %d\n", XOffset);
+  JWLOG("YOffset: %d\n", YOffset);
 
-    do {
-      JWLOG("depth: %d\n",depth);
-      screen = OpenScreenTags (NULL,
-                   SA_Width,     width,
-                   SA_Height,    height,
-                   SA_Depth,     depth,
-                   SA_DisplayID, mode,
-              /*     SA_Behind,    TRUE, */
-                   SA_ShowTitle, FALSE,
-                   SA_Quiet,     TRUE,
-                   SA_ErrorCode, (ULONG)&error,
-                   TAG_DONE);
-    } while (!screen && error == OSERR_TOODEEP && --depth > 1); 
-    /* Keep trying until we find a supported depth */
+  do {
+    JWLOG("depth: %d\n",depth);
+    screen = OpenScreenTags (NULL,
+                 SA_Width,     width,
+                 SA_Height,    height,
+                 SA_Depth,     depth,
+                 SA_DisplayID, mode,
+            /*     SA_Behind,    TRUE, */
+                 SA_ShowTitle, FALSE,
+                 SA_Quiet,     TRUE,
+                 SA_ErrorCode, (ULONG)&error,
+                 TAG_DONE);
+  } while (!screen && error == OSERR_TOODEEP && --depth > 1); 
+  /* Keep trying until we find a supported depth */
 
-    if (!screen) {
+  if (!screen) {
     /* TODO; Make this error report more useful based on the error code we got */
     JWLOG ("Error opening screen:%ld\n", error);
     gui_message ("Cannot open custom screen for UAE.\n");
     return 0;
-    }
+  }
 
-    JWLOG("screen: %lx (%d x %d)\n",screen,screen->Width,screen->Height);
+  JWLOG("screen: %lx (%d x %d)\n",screen,screen->Width,screen->Height);
 
-    S  = screen;
-    original_S=S;
+  S  = screen;
+  original_S=S;
 
-    CM = screen->ViewPort.ColorMap;
-    original_CM=CM;
+  CM = screen->ViewPort.ColorMap;
+  original_CM=CM;
 
-    RP = &screen->RastPort;
-    original_RP=RP;
+  RP = &screen->RastPort;
+  original_RP=RP;
 
-    NewWindowStructure.Width  = screen->Width;
-    NewWindowStructure.Height = screen->Height;
-    NewWindowStructure.Screen = screen;
+  NewWindowStructure.Width  = screen->Width;
+  NewWindowStructure.Height = screen->Height;
+  NewWindowStructure.Screen = screen;
 
-    W = (void*)OpenWindow (&NewWindowStructure);
-    if (!W) {
+  W = (void*)OpenWindow (&NewWindowStructure);
+  if (!W) {
     JWLOG ("Cannot open UAE window on custom screen.\n");
     return 0;
-    }
-    uae_main_window_visible=TRUE;
-    original_W=W;
+  }
+  uae_main_window_visible=TRUE;
+  original_W=W;
 
-    hide_pointer (W);
+  hide_pointer (W);
 
-    JWLOG("done\n");
+  JWLOG("done\n");
 
-    return 1;
+  return 1;
 }
 
 /****************************************************************************

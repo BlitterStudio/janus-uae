@@ -59,7 +59,7 @@
  * work, but for debugging this is nice.
  * Uncomment it for debugging.
  */
-//#define ALWAYS_SHOW_MAIN_WINDOW 1
+#define ALWAYS_SHOW_MAIN_WINDOW 1
 
 //#define JWTRACING_ENABLED 1
 #if JWTRACING_ENABLED

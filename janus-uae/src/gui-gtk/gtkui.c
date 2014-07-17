@@ -2552,8 +2552,12 @@ static void on_menu_saveconfigas (void) {
 
 static void on_screen_changed (jDisplay *j) {
 
+  DEBUG_LOG("currprefs.gfx_fs_clone: %d\n", currprefs.gfx_fs_clone);
+  DEBUG_LOG("changed_prefs.gfx_fs_clone: %d\n", currprefs.gfx_fs_clone);
   changed_prefs.gfx_width_fs  = j->gfx_width_fs;
   changed_prefs.gfx_height_fs = j->gfx_height_fs;
+  changed_prefs.gfx_fs_clone  = currprefs.gfx_fs_clone;
+  DEBUG_LOG("changed_prefs.gfx_fs_clone: %d\n", currprefs.gfx_fs_clone);
 }
 
 static void on_window_changed (jDisplay *j) {

@@ -14,7 +14,7 @@
 CC           = /home/oli/svn/m68k/AROS/bin/linux-i386/tools/crosstools/m68k-aros-gcc
 TARGETDIR    = /home/oli/svn/v0/AROS/bin/linux-i386/AROS/icaros-aros68k/C
 
-FLAGS     = -Wall
+FLAGS     = -Wall -fno-strict-aliasing
 CDEFS     = 
 #CDEFS     = -DDEBUG
 INCLUDES  =
@@ -73,7 +73,7 @@ version.o: version.h
 
 # build notify with -O0, as gcc might use registers differently otherwise
 notify.o: ../notify.c  $(HEADERS)
-	$(CC) -O0 -Wall -o $@ -c ../$*.c
+	$(CC) $(CFLAGS) -O0 -Wall -o $@ -c ../$*.c
 
 %.o: ../%.c  $(HEADERS)
 	$(CC) $(CFLAGS) -o $@ -c ../$*.c
