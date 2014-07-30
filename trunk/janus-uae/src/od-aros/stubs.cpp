@@ -128,11 +128,6 @@ void console_out (const TCHAR *txt)
   TODO();
 }
 
-void flush_block(int a, int b)
-{
-  TODO();
-}
-
 int fsdb_exists (TCHAR *nname)
 {
   TODO();
@@ -215,11 +210,6 @@ int uaeser_open (void *vsd, void *user, int unit)
 }
 
 int uaeser_read (void *vsd, uae_u8 *data, uae_u32 len)
-{
-  TODO();
-}
-
-void flush_screen(int a, int b)
 {
   TODO();
 }

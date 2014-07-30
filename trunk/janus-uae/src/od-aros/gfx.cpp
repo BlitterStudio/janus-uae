@@ -23,6 +23,8 @@
  *
  ************************************************************************/
 
+ /* THIS IS OBSOLETE. USE arosgfx.cpp!! */
+
 
 #include <proto/intuition.h>
 #include <proto/graphics.h>
@@ -152,6 +154,7 @@ void dump_description(vidbuf_description *vid) {
   DebOut("----------------------\n");
 }
 
+#if 0
 static int create_windows_2 (void) {
 	/* window borders */
 	int cy_top_border    = 10; /* TODO: get correct values!? */
@@ -486,6 +489,7 @@ static void flush_block_planar_nodither (struct vidbuf_description *gfxinfo, int
 	DebOut("entered\n");
 }
 #endif
+#endif
 
 /* graphics_init does not very much, just gfxmode_reset and open_windows */
 #if 0
@@ -537,6 +541,7 @@ int lockscr (int fullupdate) {
 }
 
 void enumeratedisplays (int multi) {
+  DebOut("entered\n");
 
   if (multi) {
     /*
@@ -552,6 +557,7 @@ void enumeratedisplays (int multi) {
   Displays[0].disabled = 0;
 }
 
+#if 0
 static void flushit (int line_no) {
 
 	int     xs      = 0;
@@ -639,3 +645,4 @@ void flush_line(int lineno) {
 		flushit (lineno);
 //	}
 }
+#endif
