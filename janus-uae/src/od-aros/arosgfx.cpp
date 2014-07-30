@@ -51,3 +51,71 @@ int isfullscreen (void)
 	return isfullscreen_2 (&currprefs);
 }
 
+
+static int flushymin, flushymax;
+#define FLUSH_DIFF 50
+
+static void flushit (int lineno) {
+
+  TODO();
+#if 0
+	if (!currprefs.gfx_api)
+		return;
+	if (currentmode->flags & DM_SWSCALE)
+		return;
+	if (flushymin > lineno) {
+		if (flushymin - lineno > FLUSH_DIFF && flushymax != 0) {
+			D3D_flushtexture (flushymin, flushymax);
+			flushymin = currentmode->amiga_height;
+			flushymax = 0;
+		} else {
+			flushymin = lineno;
+		}
+	}
+	if (flushymax < lineno) {
+		if (lineno - flushymax > FLUSH_DIFF && flushymax != 0) {
+			D3D_flushtexture (flushymin, flushymax);
+			flushymin = currentmode->amiga_height;
+			flushymax = 0;
+		} else {
+			flushymax = lineno;
+		}
+	}
+#endif
+}
+
+void flush_line (int lineno) {
+  TODO();
+
+	//flushit (lineno);
+}
+
+#if 0
+void flush_block (int first, int last) {
+
+	//flushit (first);
+	//flushit (last);
+}
+#endif
+
+void flush_screen (int a, int b) {
+
+  TODO();
+#if 0
+	if (dx_islost ())
+		return;
+	flushymin = 0;
+	flushymax = currentmode->amiga_height;
+	if (currentmode->flags & DM_D3D) {
+		D3D_flip ();
+#ifdef GFXFILTER
+	} else if (currentmode->flags & DM_SWSCALE) {
+		S2X_render ();
+		DirectDraw_Flip (1);
+#endif
+	} else if (currentmode->flags & DM_DDRAW) {
+		DirectDraw_Flip (1);
+	}
+#endif
+}
+

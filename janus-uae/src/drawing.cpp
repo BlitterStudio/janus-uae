@@ -270,7 +270,10 @@ static void xlinecheck (unsigned int start, unsigned int end)
 	}
 }
 #else
-#define xlinecheck
+//#define xlinecheck
+static void xlinecheck (unsigned int start, unsigned int end) {
+  DebOut("disabled (XLINECHECK undef)\n");
+}
 #endif
 
 
@@ -1205,7 +1208,7 @@ static int NOINLINE linetoscr_16_shrink2f_sh (int spix, int dpix, int stoppos, i
 // not called here, CALLED there
 static void pfield_do_linetoscr (int start, int stop)
 {
-  DebOut("entered(%s, %d)\n", start,stop);
+  DebOut("entered(%d, %d)\n", start,stop);
 	xlinecheck(start, stop);
 	if (issprites && (currprefs.chipset_mask & CSMASK_AGA)) {
 		if (res_shift == 0) {
@@ -1894,6 +1897,7 @@ static void do_flush_line_1 (int lineno)
 
 STATIC_INLINE void do_flush_line (int lineno)
 {
+  DebOut("entered\n");
 	do_flush_line_1 (lineno);
 }
 
@@ -1908,16 +1912,31 @@ STATIC_INLINE void do_flush_screen (int start, int stop)
 	/* TODO: this flush operation is executed outside locked state!
 	Should be corrected.
 	(sjo 26.9.99) */
+  DebOut("entered\n");
+
+  DebOut("start                    : %d\n", start);
+  DebOut("stop                     : %d\n", stop);
+  DebOut("gfxvidinfo.maxblocklines : %d\n", gfxvidinfo.maxblocklines);
+  DebOut("first_block_line         : %d\n", first_block_line);
+  DebOut("currprefs.gfx_afullscreen: %d\n", currprefs.gfx_afullscreen);
+  DebOut("currprefs.gfx_avsync     : %d\n", currprefs.gfx_avsync);
 
 	xlinecheck (start, stop);
 	if (gfxvidinfo.maxblocklines != 0 && first_block_line != NO_BLOCK) {
+    DebOut("=> 1\n");
 		flush_block (first_block_line, last_block_line);
 	}
 	unlockscr ();
-	if (start <= stop)
+	if (start <= stop) {
+    DebOut("=> 2\n");
 		flush_screen (start, stop);
-	else if (currprefs.gfx_afullscreen == GFX_FULLSCREEN && currprefs.gfx_avsync)
+  }
+	else if (currprefs.gfx_afullscreen == GFX_FULLSCREEN && currprefs.gfx_avsync) {
+    DebOut("=> 3\n");
 		flush_screen (0, 0); /* vsync mode */
+  }
+
+  DebOut("left\n");
 }
 
 /* We only save hardware registers during the hardware frame. Now, when
@@ -2681,7 +2700,7 @@ void finish_drawing_frame (void)
     DebOut("!lockscr !!\n");
 		return;
 	}
-
+  DebOut("finish_drawing_frame 1\n");
   DebOut("finish_drawing_frame 2\n");
 #ifndef SMART_UPDATE
 	/* @@@ This isn't exactly right yet. FIXME */

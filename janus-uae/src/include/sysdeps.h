@@ -152,7 +152,7 @@ struct utimbuf
 //int     kprintf      (const char * fmt, ...);
 
 
-#define OLI_DEBUG
+//#define OLI_DEBUG
 #if defined(OLI_DEBUG)
 #define DebOut(...) do { bug("%s:%d %s(): ",__FILE__,__LINE__,__func__);bug(__VA_ARGS__); } while(0)
 #define TODO() bug("TODO ==> %s:%d: %s\n", __FILE__, __LINE__, __PRETTY_FUNCTION__)
