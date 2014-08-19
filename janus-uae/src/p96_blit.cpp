@@ -139,4 +139,3 @@ static void NOINLINE BLT_NAME (unsigned int w, unsigned int h, uae_u8 *src, uae_
 #ifdef BLT_TEMP
 #undef BLT_TEMP
 #endif
-

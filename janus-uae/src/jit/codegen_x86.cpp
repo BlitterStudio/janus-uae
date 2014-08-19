@@ -3512,7 +3512,7 @@ static __inline__ void raw_inc_sp(int off)
 #define SIG_WRITE 2
 
 static int in_handler=0;
-uae_u8 veccode[256];
+static uae_u8 veccode[256];
 
 static void vec(int x, struct sigcontext sc)
 {

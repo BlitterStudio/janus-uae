@@ -3,10 +3,6 @@
 
 #include "picasso96_win.h"
 
-#elif defined __AROS__
-
-#include "picasso96_aros.h"
-
 #else
 /*
  * UAE - The U*nix Amiga Emulator
@@ -19,6 +15,7 @@
 #if defined PICASSO96_SUPPORTED
 
 #define PICASSO96
+
 
 /* Seems the same routines copy back and forth ;-) */
 #define PIC_READ (S_READ|S_WRITE)
@@ -95,6 +92,7 @@ struct PicassoResolution
     char name[25];
 };
 extern struct PicassoResolution DisplayModes[MAX_PICASSO_MODES];
+
 
 /* Types for RGBFormat used */
 typedef enum {
@@ -202,7 +200,6 @@ struct CLUTEntry {
 #define PSSO_BitMap_Planes 8
 #define PSSO_BitMap_sizeof 40
 
-#ifndef __AROS__
 struct BitMap
 {
     uae_u16 BytesPerRow;
@@ -212,9 +209,6 @@ struct BitMap
     uae_u16 pad;
     uae_u8 *Planes[8];
 };
-#else
-#include <graphics/gfx.h>
-#endif
 
 /************************************************************************/
 
@@ -547,7 +541,7 @@ extern int DX_FillResolutions (uae_u16 *);
 extern int DX_BitsPerCannon (void);
 extern void DX_Invalidate (int first, int last);
 extern void picasso_enablescreen (int on);
-extern void picasso_refresh (void);
+extern void picasso_refresh (int call_setpalette);
 extern void picasso_handle_vsync (void);
 
 extern uae_u8 *gfxmemory;
@@ -588,11 +582,6 @@ extern int picasso_is_special_read;
 
 extern int p96hack_vpos2;
 extern int p96refresh_active;
-
-extern void init_hz_p96 (void);
-extern void picasso_handle_hsync (void);
-extern void picasso_reset (void);
-
 #endif
 
 #endif

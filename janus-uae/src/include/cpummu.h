@@ -31,15 +31,12 @@
 #endif
 
 #define DUNUSED(x)
-#ifndef __AROS__
 #define D
 #if DEBUG
 #define bug write_log
 #else
 #define bug
 #endif
-#endif
-
 
 struct m68k_exception {
 	int prb;
@@ -52,9 +49,7 @@ struct m68k_exception {
 #define CATCH(var) catch(m68k_exception var)
 #define THROW(n) throw m68k_exception(n)
 #define THROW_AGAIN(var) throw
-#ifndef __AROS__
 #define VOLATILE
-#endif
 #define ALWAYS_INLINE __inline
 
 #define likely(x) x

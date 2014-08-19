@@ -9,10 +9,6 @@
 
 //#define TRACING_ENABLED
 
-#ifdef __AROS__
-#include <exec/types.h>
-#endif
-
 #ifdef TRACING_ENABLED
 #define BSDTRACE(x) do { write_log x; } while(0)
 #else
@@ -133,19 +129,6 @@ uae_u32 addmem (uae_u32 * dst, const uae_char *src, int len);
 extern void bsdsocklib_seterrno (SB, int);
 extern void bsdsocklib_setherrno (SB, int);
 
-#ifdef __AROS__
-#warning WPARAM and LPARAM TODO!!
-typedef struct {
-	void get();
-	void set(int value);
-} WPARAM;
-
-typedef struct {
-	void get();
-	void set(int value);
-} LPARAM;
-#endif
-
 extern void sockmsg (unsigned int, WPARAM, LPARAM);
 extern void sockabort (SB);
 
@@ -210,4 +193,3 @@ extern uae_u32 host_gethostname (uae_u32, uae_u32);
 extern uaecptr bsdlib_startup (uaecptr);
 extern void bsdlib_install (void);
 extern void bsdlib_reset (void);
-

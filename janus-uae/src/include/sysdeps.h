@@ -14,7 +14,7 @@
   *
   * Copyright 1996, 1997 Bernd Schmidt
   */
-#include <string.h>
+#include <string>
 using namespace std;
 #include <stdio.h>
 #include <stdlib.h>
@@ -110,7 +110,7 @@ struct utimbuf
 };
 #endif
 
-#if defined(__GNUC__) && defined(AMIGA) && !defined(__AROS__)
+#if defined(__GNUC__) && defined(AMIGA)
 /* gcc on the amiga need that __attribute((regparm)) must */
 /* be defined in function prototypes as well as in        */
 /* function definitions !                                 */
@@ -118,80 +118,6 @@ struct utimbuf
 #else /* not(GCC & AMIGA) */
 #define REGPARAM2
 #endif
-
-#if defined(__GNUC__) && defined(__AROS__)
-/* == AROS == */
-#define REGPARAM
-#define REGPARAM2 
-#define REGPARAM3 
-
-/* AROS has no 64 bit */
-#define _stat64 stat
-#define FILEFLAG_WRITE S_IWUSR
-#define FILEFLAG_DIR S_IFDIR
-
-#define _strdup strdup
-#define _vsnprintf vsnprintf 
-#define _stricmp stricmp 
-#define _strnicmp strnicmp 
-#define _strtoui64(x,y,z) strtoull(x,y,z)
-#define _tstol atol
-#define _tstof atof
-#define _tstoi atoi
-#define _tfopen fopen
-#define _fseeki64 fseek
-#define _ftelli64 ftell
-
-/* wide char unlink */
-#define _wunlink unlink
-
-/* Exception is used both in AROS and in uae :(.. I don't like that! */
-#undef Exception
-#include <aros/debug.h>
-//int     kprintf      (const char * fmt, ...);
-//int     kprintf      (const char * fmt, ...);
-
-
-//#define OLI_DEBUG
-#if defined(OLI_DEBUG)
-#define DebOut(...) do { bug("%s:%d %s(): ",__FILE__,__LINE__,__func__);bug(__VA_ARGS__); } while(0)
-#define TODO() bug("TODO ==> %s:%d: %s\n", __FILE__, __LINE__, __PRETTY_FUNCTION__)
-#else
-#define DebOut(...)
-#define TODO(...)
-#endif
-
-#undef Exception
-extern void REGPARAM3 Exception (int) REGPARAM;
-
-/*
- * "Microsoft Specific
- * This is the default calling convention for C and C++ programs. Because the stack is 
- * cleaned up by the caller, it can do vararg functions. The __cdecl calling convention 
- * creates larger executables than __stdcall, because it requires each function call 
- * to include stack cleanup code. "
- *
- * I have no idea, if this is correct here. I suppose, __cdecl is default for gcc anyways.
- * Don't ask me, what _cdecl is ;)
- */
-#define _cdecl
-#define __cdecl
-
-
-/************** Windows data types ****************************/
-/* DWORD - 32-bit unsigned integer. */
-#define DWORD  uint32_t
-#define UINT  uint32_t
-#define USHORT uint16_t
-
-typedef struct _RECT {
-  long left;
-  long top;
-  long right;
-  long bottom;
-} RECT, *PRECT;
-
-#endif /* AROS */
 
 /* sam: some definitions so that SAS/C can compile UAE */
 #if defined(__SASC) && defined(AMIGA)
@@ -557,13 +483,8 @@ extern void gui_message (const TCHAR *,...);
 extern int gui_message_multibutton (int flags, const TCHAR *format,...);
 #define write_log_err write_log
 extern void logging_init (void);
-#ifndef __AROS__
 extern FILE *log_open (const TCHAR *name, int append, int bootlog);
 extern void log_close (FILE *f);
-#else
-extern BPTR log_open (const TCHAR *name, int append, int bootlog);
-extern void log_close (BPTR f);
-#endif
 
 
 #ifndef O_BINARY

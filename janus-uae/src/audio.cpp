@@ -109,10 +109,7 @@ struct audio_channel_data {
 
 static int samplecnt;
 #if SOUNDSTUFF > 0
-#ifndef __AROS__
-static 
-#endif
-int extrasamples, outputsample, doublesample;
+static int extrasamples, outputsample, doublesample;
 #endif
 
 int sampleripper_enabled;
@@ -132,12 +129,12 @@ void write_wavheader (struct zfile *wavfile, uae_u32 size, uae_u32 freq)
 	int bits = 8, channels = 1;
 
 	zfile_fseek (wavfile, 0, SEEK_SET);
-	zfile_fwrite ((void *) "RIFF", 1, 4, wavfile);
+	zfile_fwrite ("RIFF", 1, 4, wavfile);
 	tl = 0;
 	if (size)
 		tl = size - 8;
 	zfile_fwrite (&tl, 1, 4, wavfile);
-	zfile_fwrite ((void *) "WAVEfmt ", 1, 8, wavfile);
+	zfile_fwrite ("WAVEfmt ", 1, 8, wavfile);
 	tl = 16;
 	zfile_fwrite (&tl, 1, 4, wavfile);
 	tw = 1;
@@ -152,7 +149,7 @@ void write_wavheader (struct zfile *wavfile, uae_u32 size, uae_u32 freq)
 	zfile_fwrite (&tw, 1, 2, wavfile);
 	tw = bits;
 	zfile_fwrite (&tw, 1, 2, wavfile);
-	zfile_fwrite ((void *) "data", 1, 4, wavfile);
+	zfile_fwrite ("data", 1, 4, wavfile);
 	tl = 0;
 	if (size)
 		tl = size - 44;
@@ -189,7 +186,7 @@ void audio_sampleripper (int mode)
 	struct ripped_sample *rs = ripped_samples;
 	int cnt = 1;
 	TCHAR path[MAX_DPATH], name[MAX_DPATH], filename[MAX_DPATH];
-	TCHAR underline[] = _T("_");
+	TCHAR underline[] = L"_";
 	TCHAR extension[4];
 	struct zfile *wavfile;
 
@@ -215,9 +212,9 @@ void audio_sampleripper (int mode)
 			if (!name[0])
 				underline[0] = 0;
 			namesplit (name);
-			_tcscpy (extension, _T("wav"));
-			_stprintf (filename, _T("%s%s%s%03.3d.%s"), path, name, underline, cnt, extension);
-			wavfile = zfile_fopen (filename, _T("wb"), 0);
+			_tcscpy (extension, L"wav");
+			_stprintf (filename, L"%s%s%s%03.3d.%s", path, name, underline, cnt, extension);
+			wavfile = zfile_fopen (filename, L"wb", 0);
 			if (wavfile) {
 				int freq = rs->per > 0 ? (currprefs.ntscmode ? 3579545 : 3546895 / rs->per) : 8000;
 				write_wavheader (wavfile, 0, 0);
@@ -226,9 +223,9 @@ void audio_sampleripper (int mode)
 				convertsample (rs->sample, rs->len);
 				write_wavheader (wavfile, zfile_ftell(wavfile), freq);
 				zfile_fclose (wavfile);
-				write_log (_T("SAMPLERIPPER: %d: %dHz %d bytes\n"), cnt, freq, rs->len);
+				write_log (L"SAMPLERIPPER: %d: %dHz %d bytes\n", cnt, freq, rs->len);
 			} else {
-				write_log (_T("SAMPLERIPPER: failed to open '%s'\n"), filename);
+				write_log (L"SAMPLERIPPER: failed to open '%s'\n", filename);
 			}
 		}
 		cnt++;
@@ -261,7 +258,7 @@ static void do_samplerip (struct audio_channel_data *adp)
 				xfree (rs->sample);
 				rs->sample = xmalloc (uae_u8, len);
 				memcpy (rs->sample, smp, len);
-				write_log (_T("SAMPLERIPPER: replaced sample %d (%d -> %d)\n"), cnt, rs->len, len);
+				write_log (L"SAMPLERIPPER: replaced sample %d (%d -> %d)\n", cnt, rs->len, len);
 				rs->len = len;
 				rs->per = adp->per / CYCLE_UNIT;
 				rs->changed = 1;
@@ -286,7 +283,7 @@ static void do_samplerip (struct audio_channel_data *adp)
 	memcpy (rs->sample, smp, len);
 	rs->next = NULL;
 	rs->changed = 1;
-	write_log (_T("SAMPLERIPPER: sample added (%06X, %d bytes), total %d samples\n"), adp->pt, len, ++cnt);
+	write_log (L"SAMPLERIPPER: sample added (%06X, %d bytes), total %d samples\n", adp->pt, len, ++cnt);
 	audio_sampleripper (0);
 }
 
@@ -295,10 +292,7 @@ int sound_available = 0;
 void (*sample_handler) (void);
 static void (*sample_prehandler) (unsigned long best_evtime);
 
-#ifndef __AROS__
-static 
-#endif
-float sample_evtime;
+static float sample_evtime;
 float scaled_sample_evtime;
 
 static unsigned long last_cycles;
@@ -532,7 +526,7 @@ static void sinc_prehandler (unsigned long best_evtime)
 		* write data into sinc queue for mixing in the BLEP */
 		if (acd->sinc_output_state != output) {
 			if (acd->sinc_queue_length > SINC_QUEUE_LENGTH - 1) {
-				//write_log (_T("warning: sinc queue truncated. Last age: %d.\n"), acd->sinc_queue[SINC_QUEUE_LENGTH-1].age);
+				//write_log (L"warning: sinc queue truncated. Last age: %d.\n", acd->sinc_queue[SINC_QUEUE_LENGTH-1].age);
 				acd->sinc_queue_length = SINC_QUEUE_LENGTH - 1;
 			}
 			/* make room for new and add the new value */
@@ -632,10 +626,7 @@ static void sample16i_anti_handler (void)
 	check_sound_buffers ();
 }
 
-#ifndef __AROS__
-static 
-#endif
-void sample16i_rh_handler (void)
+static void sample16i_rh_handler (void)
 {
 	unsigned long delta, ratio;
 
@@ -687,10 +678,7 @@ void sample16i_rh_handler (void)
 	check_sound_buffers ();
 }
 
-#ifndef __AROS__
-static 
-#endif
-void sample16i_crux_handler (void)
+static void sample16i_crux_handler (void)
 {
 	uae_u32 data0 = audio_channel[0].current_sample;
 	uae_u32 data1 = audio_channel[1].current_sample;
@@ -825,10 +813,7 @@ void sample16ss_anti_handler (void)
 	check_sound_buffers ();
 }
 
-#ifndef __AROS__
-static 
-#endif
-void sample16si_anti_handler (void)
+static void sample16si_anti_handler (void)
 {
 	int datas[4], data1, data2;
 
@@ -906,10 +891,7 @@ void sample16s_handler (void)
 	check_sound_buffers ();
 }
 
-#ifndef __AROS__
-static 
-#endif
-void sample16si_crux_handler (void)
+static void sample16si_crux_handler (void)
 {
 	uae_u32 data0 = audio_channel[0].current_sample;
 	uae_u32 data1 = audio_channel[1].current_sample;
@@ -982,10 +964,7 @@ void sample16si_crux_handler (void)
 	check_sound_buffers ();
 }
 
-#ifndef __AROS__
-static 
-#endif
-void sample16si_rh_handler (void)
+static void sample16si_rh_handler (void)
 {
 	unsigned long delta, ratio;
 
@@ -1060,7 +1039,7 @@ static void zerostate (int nr)
 {
 	struct audio_channel_data *cdp = audio_channel + nr;
 #if DEBUG_AUDIO > 0
-	write_log (_T("%d: ZEROSTATE\n"), nr);
+	write_log (L"%d: ZEROSTATE\n", nr);
 #endif
 	cdp->state = 0;
 	cdp->evtime = MAX_EV;
@@ -1162,7 +1141,7 @@ static void setirq (int nr, int which)
 	struct audio_channel_data *cdp = audio_channel + nr;
 #if DEBUG_AUDIO > 0
 	if (debugchannel (nr) && cdp->wlen > 1)
-		write_log (_T("SETIRQ%d (%d,%d) PC=%08X\n"), nr, which, isirq (nr) ? 1 : 0, M68K_GETPC);
+		write_log (L"SETIRQ%d (%d,%d) PC=%08X\n", nr, which, isirq (nr) ? 1 : 0, M68K_GETPC);
 #endif
 	INTREQ_0 (0x8000 | (0x80 << nr));
 }
@@ -1185,7 +1164,7 @@ STATIC_INLINE void setdr (int nr)
 	struct audio_channel_data *cdp = audio_channel + nr;
 #if TEST_AUDIO > 0
 	if (debugchannel (nr) && cdp->dr)
-		write_log (_T("%d: DR already active (STATE=%d)\n"), nr, cdp->state);
+		write_log (L"%d: DR already active (STATE=%d)\n", nr, cdp->state);
 #endif
 	cdp->drhpos = current_hpos ();
 	cdp->dr = true;
@@ -1193,7 +1172,7 @@ STATIC_INLINE void setdr (int nr)
 		cdp->dsr = true;
 #if DEBUG_AUDIO > 0
 		if (debugchannel (nr) && cdp->wlen > 1)
-			write_log (_T("DSR%d PT=%08X PC=%08X\n"), nr, cdp->pt, M68K_GETPC);
+			write_log (L"DSR%d PT=%08X PC=%08X\n", nr, cdp->pt, M68K_GETPC);
 #endif
 	}
 }
@@ -1220,16 +1199,16 @@ static void loaddat (int nr, bool modper)
 #if TEST_AUDIO > 0
 		if (debugchannel (nr)) {
 			if (cdp->hisample || cdp->losample)
-				write_log (_T("%d: high or low sample not used\n"), nr);
+				write_log (L"%d: high or low sample not used\n", nr);
 			if (!cdp->have_dat)
-				write_log (_T("%d: dat not updated. STATE=%d 1=%04x 2=%04x\n"), nr, cdp->state, cdp->dat, cdp->dat2);
+				write_log (L"%d: dat not updated. STATE=%d 1=%04x 2=%04x\n", nr, cdp->state, cdp->dat, cdp->dat2);
 		}
 		cdp->hisample = cdp->losample = true;
 		cdp->have_dat = false;
 #endif
 #if DEBUG_AUDIO > 1
 		if (debugchannel (nr))
-			write_log (_T("LOAD%dDAT: New:%04x, Old:%04x\n"), nr, cdp->dat, cdp->dat2);
+			write_log (L"LOAD%dDAT: New:%04x, Old:%04x\n", nr, cdp->dat, cdp->dat2);
 #endif
 		cdp->dat2 = cdp->dat;
 	}
@@ -1245,7 +1224,7 @@ STATIC_INLINE void loadper (int nr)
 
 	cdp->evtime = cdp->per;
 	if (cdp->evtime < CYCLE_UNIT)
-		write_log (_T("loadper%d bug %d\n"), nr, cdp->evtime);
+		write_log (L"loadper%d bug %d\n", nr, cdp->evtime);
 }
 
 
@@ -1271,7 +1250,7 @@ static void audio_state_channel2 (int nr, bool perfin)
 		// DMA switched off, state=2/3 and "too fast CPU": kill DMA instantly
 		// or CPU timed DMA wait routines in common tracker players will lose notes
 #if DEBUG_AUDIO > 0
-		write_log (_T("%d: INSTADMAOFF\n"), nr, M68K_GETPC);
+		write_log (L"%d: INSTADMAOFF\n", nr, M68K_GETPC);
 #endif
 		newsample (nr, (cdp->dat2 >> 0) & 0xff);
 		if (napnav)
@@ -1282,7 +1261,7 @@ static void audio_state_channel2 (int nr, bool perfin)
 
 #if DEBUG_AUDIO > 0
 	if (debugchannel (nr) && old_dma != chan_ena) {
-		write_log (_T("%d:DMA=%d IRQ=%d PC=%08x\n"), nr, chan_ena, isirq (nr) ? 1 : 0, M68K_GETPC);
+		write_log (L"%d:DMA=%d IRQ=%d PC=%08x\n", nr, chan_ena, isirq (nr) ? 1 : 0, M68K_GETPC);
 	}
 #endif
 	switch (cdp->state)
@@ -1308,7 +1287,7 @@ static void audio_state_channel2 (int nr, bool perfin)
 #endif
 #if DEBUG_AUDIO > 0
 			if (debugchannel (nr))
-				write_log (_T("%d:0>1: LEN=%d PC=%08x\n"), nr, cdp->wlen, M68K_GETPC);
+				write_log (L"%d:0>1: LEN=%d PC=%08x\n", nr, cdp->wlen, M68K_GETPC);
 #endif
 		} else if (cdp->dat_written && !isirq (nr)) {
 			cdp->state = 2;
@@ -1337,7 +1316,7 @@ static void audio_state_channel2 (int nr, bool perfin)
 			return;
 #if TEST_AUDIO > 0
 		if (debugchannel (nr) && !cdp->have_dat)
-			write_log (_T("%d: state 1 but no have_dat\n"), nr);
+			write_log (L"%d: state 1 but no have_dat\n", nr);
 		cdp->have_dat = false;
 		cdp->losample = cdp->hisample = false;
 #endif
@@ -1359,7 +1338,7 @@ static void audio_state_channel2 (int nr, bool perfin)
 			return;
 #if DEBUG_AUDIO > 0
 		if (debugchannel (nr))
-			write_log (_T("%d:>5: LEN=%d PT=%08X PC=%08X\n"), nr, cdp->wlen, cdp->pt, M68K_GETPC);
+			write_log (L"%d:>5: LEN=%d PT=%08X PC=%08X\n", nr, cdp->wlen, cdp->pt, M68K_GETPC);
 #endif
 		loaddat (nr);
 		if (napnav)
@@ -1374,7 +1353,7 @@ static void audio_state_channel2 (int nr, bool perfin)
 		if (cdp->pbufldl) {
 #if TEST_AUDIO > 0
 			if (debugchannel (nr) && cdp->hisample == false)
-				write_log (_T("%d: high sample used twice\n"), nr);
+				write_log (L"%d: high sample used twice\n", nr);
 			cdp->hisample = false;
 #endif
 			newsample (nr, (cdp->dat2 >> 8) & 0xff);
@@ -1402,7 +1381,7 @@ static void audio_state_channel2 (int nr, bool perfin)
 		if (cdp->pbufldl) {
 #if TEST_AUDIO > 0
 			if (debugchannel (nr) && cdp->losample == false)
-				write_log (_T("%d: low sample used twice\n"), nr);
+				write_log (L"%d: low sample used twice\n", nr);
 			cdp->losample = false;
 #endif
 			newsample (nr, (cdp->dat2 >> 0) & 0xff);
@@ -1420,7 +1399,7 @@ static void audio_state_channel2 (int nr, bool perfin)
 			if (isirq (nr)) {
 #if DEBUG_AUDIO > 0
 				if (debugchannel (nr))
-					write_log (_T("%d: IDLE\n"), nr);
+					write_log (L"%d: IDLE\n", nr);
 #endif			
 				zerostate (nr);
 				return;
@@ -1583,9 +1562,9 @@ void set_audio (void)
 		if (currprefs.produce_sound >= 2) {
 			if (!init_audio ()) {
 				if (! sound_available) {
-					write_log (_T("Sound is not supported.\n"));
+					write_log (L"Sound is not supported.\n");
 				} else {
-					write_log (_T("Sorry, can't initialize sound.\n"));
+					write_log (L"Sorry, can't initialize sound.\n");
 					currprefs.produce_sound = 1;
 					/* So we don't do this every frame */
 					changed_prefs.produce_sound = 1;
@@ -1766,7 +1745,7 @@ void update_audio (void)
 			if (audio_channel[i].evtime == 0) {
 				audio_state_channel (i, true);
 				if (audio_channel[i].evtime == 0) {
-					write_log (_T("evtime==0 sound bug channel %d\n"));
+					write_log (L"evtime==0 sound bug channel %d\n");
 					audio_channel[i].evtime = MAX_EV;
 				}
 			}
@@ -1801,14 +1780,14 @@ void AUDxDAT (int nr, uae_u16 v, uaecptr addr)
 
 #if DEBUG_AUDIO > 0
 	if (debugchannel (nr) && (DEBUG_AUDIO > 1 || (!chan_ena || addr == 0xffffffff || (cdp->state != 2 && cdp->state != 3))))
-		write_log (_T("AUD%dDAT: %04X ADDR=%08X LEN=%d/%d %d,%d,%d %06X\n"), nr,
+		write_log (L"AUD%dDAT: %04X ADDR=%08X LEN=%d/%d %d,%d,%d %06X\n", nr,
 		v, addr, cdp->wlen, cdp->len, cdp->state, chan_ena, isirq (nr) ? 1 : 0, M68K_GETPC);
 #endif
 	cdp->dat = v;
 	cdp->dat_written = true;
 #if TEST_AUDIO > 0
 	if (debugchannel (nr) && cdp->have_dat)
-		write_log (_T("%d: audxdat 1=%04x 2=%04x but old dat not yet used\n"), nr, cdp->dat, cdp->dat2);
+		write_log (L"%d: audxdat 1=%04x 2=%04x but old dat not yet used\n", nr, cdp->dat, cdp->dat2);
 	cdp->have_dat = true;
 #endif
 	if (cdp->state == 2 || cdp->state == 3) {
@@ -1820,7 +1799,7 @@ void AUDxDAT (int nr, uae_u16 v, uaecptr addr)
 					do_samplerip (cdp);
 #if DEBUG_AUDIO > 0
 				if (debugchannel (nr) && cdp->wlen > 1)
-					write_log (_T("AUD%d looped, IRQ=%d, LC=%08X LEN=%d\n"), nr, isirq (nr) ? 1 : 0, cdp->pt, cdp->wlen);
+					write_log (L"AUD%d looped, IRQ=%d, LC=%08X LEN=%d\n", nr, isirq (nr) ? 1 : 0, cdp->pt, cdp->wlen);
 #endif
 			} else {
 				cdp->wlen = (cdp->wlen - 1) & 0xffff;
@@ -1858,7 +1837,7 @@ void AUDxLCH (int nr, uae_u16 v)
 	cdp->lc = (cdp->lc & 0xffff) | ((uae_u32)v << 16);
 #if DEBUG_AUDIO > 0
 	if (debugchannel (nr))
-		write_log (_T("AUD%dLCH: %04X %08X\n"), nr, v, M68K_GETPC);
+		write_log (L"AUD%dLCH: %04X %08X\n", nr, v, M68K_GETPC);
 #endif
 }
 
@@ -1870,7 +1849,7 @@ void AUDxLCL (int nr, uae_u16 v)
 	cdp->lc = (cdp->lc & ~0xffff) | (v & 0xFFFE);
 #if DEBUG_AUDIO > 0
 	if (debugchannel (nr))
-		write_log (_T("AUD%dLCL: %04X %08X\n"), nr, v, M68K_GETPC);
+		write_log (L"AUD%dLCL: %04X %08X\n", nr, v, M68K_GETPC);
 #endif
 }
 
@@ -1908,7 +1887,7 @@ void AUDxPER (int nr, uae_u16 v)
 	cdp->per = per;
 #if DEBUG_AUDIO > 0
 	if (debugchannel (nr))
-		write_log (_T("AUD%dPER: %d %08X\n"), nr, v, M68K_GETPC);
+		write_log (L"AUD%dPER: %d %08X\n", nr, v, M68K_GETPC);
 #endif
 }
 
@@ -1920,7 +1899,7 @@ void AUDxLEN (int nr, uae_u16 v)
 	cdp->len = v;
 #if DEBUG_AUDIO > 0
 	if (debugchannel (nr))
-		write_log (_T("AUD%dLEN: %d %08X\n"), nr, v, M68K_GETPC);
+		write_log (L"AUD%dLEN: %d %08X\n", nr, v, M68K_GETPC);
 #endif
 }
 
@@ -1933,7 +1912,7 @@ void AUDxVOL (int nr, uae_u16 v)
 	cdp->vol = v2;
 #if DEBUG_AUDIO > 0
 	if (debugchannel (nr))
-		write_log (_T("AUD%dVOL: %d %08X\n"), nr, v2, M68K_GETPC);
+		write_log (L"AUD%dVOL: %d %08X\n", nr, v2, M68K_GETPC);
 #endif
 }
 
@@ -1949,7 +1928,7 @@ void audio_update_adkmasks (void)
 	if ((prevcon & 0xff) != (adkcon & 0xff)) {
 		audio_activate ();
 #if DEBUG_AUDIO > 0
-		write_log (_T("ADKCON=%02x %08X\n"), adkcon & 0xff, M68K_GETPC);
+		write_log (L"ADKCON=%02x %08X\n", adkcon & 0xff, M68K_GETPC);
 #endif
 		prevcon = adkcon;
 	}

@@ -131,20 +131,12 @@ int xredcolor_s, xredcolor_b, xredcolor_m;
 int xgreencolor_s, xgreencolor_b, xgreencolor_m;
 int xbluecolor_s, xbluecolor_b, xbluecolor_m;
 
-/* color values in two formats: 12 (OCS/ECS) or 24 (AGA) bit Amiga RGB (color_regs),
- * and the native color value; both for each Amiga hardware color register.
- */
-/* oli:
- * colors_for_drawing.acolors is the mapping between amigaos colors and host colors.
- * colors_for_drawing.acolors[0] is the color set for color0 in the amiga custom chipset.
- * basically the value stored in 0xDFF180 (color00)
- */
 struct color_entry colors_for_drawing;
 
 /* The size of these arrays is pretty arbitrary; it was chosen to be "more
 than enough".  The coordinates used for indexing into these arrays are
 almost, but not quite, Amiga coordinates (there's a constant offset).  */
-union __AVOID_GCC_WARNING {
+union {
 	/* Let's try to align this thing. */
 	double uupzuq;
 	long int cruxmedo;
@@ -241,8 +233,6 @@ static void xlinecheck (unsigned int start, unsigned int end)
 	int min = linetoscr_x_adjust_bytes / gfxvidinfo.pixbytes;
 	int ok = 1;
 
-  DebOut("start %d, end %d\n", start, end);
-
 	if (xstart >= gfxvidinfo.emergmem && xstart < gfxvidinfo.emergmem + 4096 * gfxvidinfo.pixbytes &&
 		xend >= gfxvidinfo.emergmem && xend < gfxvidinfo.emergmem + 4096 * gfxvidinfo.pixbytes)
 		return;
@@ -263,17 +253,14 @@ static void xlinecheck (unsigned int start, unsigned int end)
 		ok = 0;
 
 	if (!ok) {
-		write_log (_T("*** %d-%d (%dx%dx%d %d) %p\n"),
+		write_log (L"*** %d-%d (%dx%dx%d %d) %p\n",
 			start - min, end - min, gfxvidinfo.width, gfxvidinfo.height,
 			gfxvidinfo.pixbytes, gfxvidinfo.rowbytes,
 			xlinebuffer);
 	}
 }
 #else
-//#define xlinecheck
-static void xlinecheck (unsigned int start, unsigned int end) {
-  DebOut("disabled (XLINECHECK undef)\n");
-}
+#define xlinecheck
 #endif
 
 
@@ -296,7 +283,6 @@ STATIC_INLINE int xshift (int x, int shift)
 
 int coord_native_to_amiga_x (int x)
 {
-  DebOut("coord_native_to_amiga_x(%d)\n", x);
 	x += visible_left_border;
 	x = xshift (x, 1 - lores_shift);
 	return x + 2 * DISPLAY_LEFT_SHIFT - 2 * DIW_DDF_OFFSET;
@@ -323,7 +309,6 @@ STATIC_INLINE int res_shift_from_amiga (int x)
 
 void notice_screen_contents_lost (void)
 {
-  DebOut("entered\n");
 	picasso_redraw_necessary = 1;
 	frame_redraw_necessary = 2;
 }
@@ -357,8 +342,6 @@ int get_custom_limits (int *pw, int *ph, int *pdx, int *pdy)
 {
 	int w, h, dx, dy, y1, y2, dbl1, dbl2;
 	int ret = 0;
-
-  DebOut("entered\n");
 
 	if (!pw || !ph || !pdx || !pdy) {
 		reset_custom_limits ();
@@ -478,8 +461,8 @@ int get_custom_limits (int *pw, int *ph, int *pdx, int *pdy)
 	*pdx = dx;
 	*pdy = dy;
 
-	write_log (_T("Display Size: %dx%d Offset: %dx%d\n"), w, h, dx, dy);
-	write_log (_T("First: %d Last: %d MinV: %d MaxV: %d Min: %d\n"),
+	write_log (L"Display Size: %dx%d Offset: %dx%d\n", w, h, dx, dy);
+	write_log (L"First: %d Last: %d MinV: %d MaxV: %d Min: %d\n",
 		plffirstline_total, plflastline_total,
 		first_planes_vpos, last_planes_vpos, minfirstline);
 	return 1;
@@ -489,8 +472,6 @@ void get_custom_mouse_limits (int *pw, int *ph, int *pdx, int *pdy, int dbl)
 {
 	int delay1, delay2;
 	int w, h, dx, dy, dbl1, dbl2, y1, y2;
-
-  DebOut("entered\n");
 
 	w = diwlastword_total - diwfirstword_total;
 	dx = diwfirstword_total - visible_left_border;
@@ -552,7 +533,6 @@ static struct draw_info *dip_for_drawing;
 /* Record DIW of the current line for use by centering code.  */
 void record_diw_line (int plfstrt, int first, int last)
 {
-  DebOut("entered\n");
 	if (last > max_diwstop)
 		max_diwstop = last;
 	if (first < min_diwstart) {
@@ -586,15 +566,11 @@ static int seen_sprites;
 /* Initialize the variables necessary for drawing a line.
 * This involves setting up start/stop positions and display window
 * borders.  */
-
-// o1i: not called!!
 static void pfield_init_linetoscr (void)
 {
 	/* First, get data fetch start/stop in DIW coordinates.  */
 	int ddf_left = dp_for_drawing->plfleft * 2 + DIW_DDF_OFFSET;
 	int ddf_right = dp_for_drawing->plfright * 2 + DIW_DDF_OFFSET;
-
-  DebOut("entered\n");
 
 	/* Compute datafetch start/stop in pixels; native display coordinates.  */
 	native_ddf_left = coord_hw_to_window_x (ddf_left);
@@ -715,25 +691,15 @@ STATIC_INLINE xcolnr getbgc (void)
 	if (hposblank)
 		return xcolors[0xf00];
 #endif
-  DebOut("getbgc()\n");
-  //DebOut("brdblank %d, colors_for_drawing.acolors[0] %x (%d)\n", brdblank, colors_for_drawing.acolors[0], colors_for_drawing.acolors[0]);
 	return (brdblank || hposblank) ? 0 : colors_for_drawing.acolors[0];
 }
 
-/* fill the supplied xlinebuffer .. */
-// o1i: called here, *not* in juae!
 static void fill_line_16 (uae_u8 *buf, unsigned int start, unsigned int stop)
 {
 	uae_u16 *b = (uae_u16 *)buf;
 	unsigned int i;
 	unsigned int rem = 0;
-
-  DebOut("entered\n");
-
 	xcolnr col = getbgc ();
-  DebOut("fill_line_16(%lx, %d, %d): col: %d\n", buf, start, stop, col);
-
-	DebOut("col: %d (%lx)\n", col, col);
 	if (((long)&b[start]) & 1)
 		b[start++] = (uae_u16) col;
 	if (start >= stop)
@@ -742,80 +708,30 @@ static void fill_line_16 (uae_u8 *buf, unsigned int start, unsigned int stop)
 		rem++;
 		stop--;
 	}
-	//DebOut("ping\n");
-
-  /* go through the pixels of the line ..*/
 	for (i = start; i < stop; i += 2) {
-		//DebOut("i: %d\n", i);
 		uae_u32 *b2 = (uae_u32 *)&b[i];
-		//DebOut("b2: %lx\n", b2);
 		*b2 = col;
 	}
-	//DebOut("ping\n");
 	if (rem)
 		b[stop] = (uae_u16)col;
 }
 
-// o1i: not called here, CALLED there
 static void fill_line_32 (uae_u8 *buf, unsigned int start, unsigned int stop)
 {
 	uae_u32 *b = (uae_u32 *)buf;
 	unsigned int i;
 	xcolnr col = getbgc ();
-	DebOut("entered (col: %d)\n", col);
 	for (i = start; i < stop; i++)
 		b[i] = col;
 }
 
-// o1i: called here AND there
 static void pfield_do_fill_line (int start, int stop)
 {
-  int i;
-  int last;
-	DebOut("entered(gfxvidinfo.pixbytes: %d, start %d, stop %d)\n", gfxvidinfo.pixbytes, start, stop);
 	xlinecheck(start, stop);
-	DebOut("xlinebuffer: %lx, gfxvidinfo.pixbytes: %d\n", xlinebuffer, gfxvidinfo.pixbytes);
 	switch (gfxvidinfo.pixbytes) {
-    case 2: 
-      fill_line_16 (xlinebuffer, start, stop); 
-    break;
-    case 3: 
-    case 4: 
-      fill_line_32 (xlinebuffer, start, stop); 
-    break;
+	case 2: fill_line_16 (xlinebuffer, start, stop); break;
+	case 4: fill_line_32 (xlinebuffer, start, stop); break;
 	}
-  //for(i=0; i<gfxvidinfo.rowbytes; i++) {
-   // kprintf(" %02x", *(xlinebuffer+i));
-  //}
-
-#if 0
-  for(i=0; i<gfxvidinfo.rowbytes;i++) {
-    if(*(xlinebuffer + i) == 0) {
-        last++;
-    }
-    else {
-      if(last==1) {
-        kprintf(" 0x00");
-        last=0;
-      }
-      else {
-        if(last>0) {
-          kprintf("\n%d zero values skipped\n", last);
-          last=0;
-        }
-      }
-      kprintf(" 0x%02x", *(xlinebuffer + i));
-    }
-  }
-  if(last>0) {
-    kprintf("\n%d zero values skipped\n", last);
-  }
-  else {
-    DebOut("\n");
-  }
-#endif
-
-
 }
 
 STATIC_INLINE void fill_line2 (int startpos, int len)
@@ -824,8 +740,6 @@ STATIC_INLINE void fill_line2 (int startpos, int len)
 	int nints, nrem;
 	int *start;
 	xcolnr val;
-
-	DebOut("fill_line2 entered(start %d, len %d\n", startpos, len);
 
 	shift = 0;
 	if (gfxvidinfo.pixbytes == 2)
@@ -867,13 +781,9 @@ STATIC_INLINE void fill_line2 (int startpos, int len)
 	}
 }
 
-// o1i: not called here, CALLED there
 static void fill_line (void)
 {
 	int hs = coord_hw_to_window_x (hsyncstartpos * 2);
-
-	DebOut("entered\n");
-
 	if (hs >= gfxvidinfo.width || hposblank) {
 		fill_line2 (visible_left_border, gfxvidinfo.width);
 	} else {
@@ -1204,11 +1114,8 @@ static int NOINLINE linetoscr_16_shrink2f_sh (int spix, int dpix, int stoppos, i
 }
 #endif
 
-/* these functions seem to copy "Amiga Chipset Data" to the xlinebuffer .. */
-// not called here, CALLED there
 static void pfield_do_linetoscr (int start, int stop)
 {
-  DebOut("entered(%d, %d)\n", start,stop);
 	xlinecheck(start, stop);
 	if (issprites && (currprefs.chipset_mask & CSMASK_AGA)) {
 		if (res_shift == 0) {
@@ -1775,38 +1682,24 @@ static void pfield_doline (int lineno)
 void init_row_map (void)
 {
 	int i, j;
-
-	DebOut("gfxvidinfo.height %d\n", gfxvidinfo.height);
-
 	if (gfxvidinfo.height > MAX_VIDHEIGHT) {
-		write_log (_T("Resolution too high, aborting\n"));
+		write_log (L"Resolution too high, aborting\n");
 		abort ();
 	}
 	j = 0;
-  /* init row_map outside display with a save dummy ? */
-	for (i = gfxvidinfo.height; i < MAX_VIDHEIGHT + 1; i++) {
+	for (i = gfxvidinfo.height; i < MAX_VIDHEIGHT + 1; i++)
 		row_map[i] = row_tmp;
-		//DebOut("row_map[%d]=%lx\n",i, row_tmp);
-	}
-
-  /* init really used row_maps */
-	for (i = 0; i < gfxvidinfo.height; i++, j += gfxvidinfo.rowbytes) {
+	for (i = 0; i < gfxvidinfo.height; i++, j += gfxvidinfo.rowbytes)
 		row_map[i] = gfxvidinfo.bufmem + j;
-		//DebOut("row_map[%d]=%lx\n",i, gfxvidinfo.bufmem + j);
-	}
 }
 
 static void init_aspect_maps (void)
 {
 	int i, maxl;
 
-	DebOut("entered\n");
-
-	if (gfxvidinfo.height == 0) {
+	if (gfxvidinfo.height == 0)
 		/* Do nothing if the gfx driver hasn't initialized the screen yet */
-		DebOut("Do nothing, gfx driver hasn't initialized the screen yet\n");
 		return;
-	}
 
 	linedbld = linedbl = currprefs.gfx_vresolution;
 	if (doublescan > 0 && interlace_seen <= 0) {
@@ -1821,9 +1714,7 @@ static void init_aspect_maps (void)
 
 	/* At least for this array the +1 is necessary. */
 	amiga2aspect_line_map = xmalloc (int, (MAXVPOS + 1) * 2 + 1);
-	DebOut("amiga2aspect_line_map: %lx\n", amiga2aspect_line_map);
 	native2amiga_line_map = xmalloc (int, gfxvidinfo.height);
-	DebOut("native2amiga_line_map: %lx\n", native2amiga_line_map);
 
 	maxl = (MAXVPOS + 1) << linedbld;
 	min_ypos_for_screen = minfirstline << linedbl;
@@ -1861,43 +1752,31 @@ static void init_aspect_maps (void)
 * A raster line has been built in the graphics buffer. Tell the graphics code
 * to do anything necessary to display it.
 */
-
-/* o1i: HERE WE ARE! */
 static void do_flush_line_1 (int lineno)
 {
-
-  DebOut("entered, lineno %d\n", lineno);
-
 	if (lineno < first_drawn_line)
 		first_drawn_line = lineno;
 	if (lineno > last_drawn_line)
 		last_drawn_line = lineno;
 
-	if (gfxvidinfo.maxblocklines == 0) {
-    DebOut("1\n");
+	if (gfxvidinfo.maxblocklines == 0)
 		flush_line (lineno);
-  }
 	else {
-    DebOut("2\n");
 		if ((last_block_line + 2) < lineno) {
-      DebOut("2a\n");
 			if (first_block_line != NO_BLOCK)
 				flush_block (first_block_line, last_block_line);
 			first_block_line = lineno;
 		}
 		last_block_line = lineno;
 		if (last_block_line - first_block_line >= gfxvidinfo.maxblocklines) {
-      DebOut("2b\n");
 			flush_block (first_block_line, last_block_line);
 			first_block_line = last_block_line = NO_BLOCK;
 		}
 	}
-  DebOut("left!\n");
 }
 
 STATIC_INLINE void do_flush_line (int lineno)
 {
-  DebOut("entered\n");
 	do_flush_line_1 (lineno);
 }
 
@@ -1912,31 +1791,16 @@ STATIC_INLINE void do_flush_screen (int start, int stop)
 	/* TODO: this flush operation is executed outside locked state!
 	Should be corrected.
 	(sjo 26.9.99) */
-  DebOut("entered\n");
-
-  DebOut("start                    : %d\n", start);
-  DebOut("stop                     : %d\n", stop);
-  DebOut("gfxvidinfo.maxblocklines : %d\n", gfxvidinfo.maxblocklines);
-  DebOut("first_block_line         : %d\n", first_block_line);
-  DebOut("currprefs.gfx_afullscreen: %d\n", currprefs.gfx_afullscreen);
-  DebOut("currprefs.gfx_avsync     : %d\n", currprefs.gfx_avsync);
 
 	xlinecheck (start, stop);
 	if (gfxvidinfo.maxblocklines != 0 && first_block_line != NO_BLOCK) {
-    DebOut("=> 1\n");
 		flush_block (first_block_line, last_block_line);
 	}
 	unlockscr ();
-	if (start <= stop) {
-    DebOut("=> 2\n");
+	if (start <= stop)
 		flush_screen (start, stop);
-  }
-	else if (currprefs.gfx_afullscreen == GFX_FULLSCREEN && currprefs.gfx_avsync) {
-    DebOut("=> 3\n");
+	else if (currprefs.gfx_afullscreen == GFX_FULLSCREEN && currprefs.gfx_avsync)
 		flush_screen (0, 0); /* vsync mode */
-  }
-
-  DebOut("left\n");
 }
 
 /* We only save hardware registers during the hardware frame. Now, when
@@ -2043,26 +1907,19 @@ static enum { color_match_acolors, color_match_full } color_match_type;
 
 /* Set up colors_for_drawing to the state at the beginning of the currently drawn
 line.  Try to avoid copying color tables around whenever possible.  */
-
-/* o1i: TODO !? */
 static void adjust_drawing_colors (int ctable, int need_full)
 {
-  DebOut("entered(%d, %d)\n", ctable, need_full);
 	if (drawing_color_matches != ctable) {
-    DebOut("drawing_color_matches %d != ctable %d\n", drawing_color_matches, ctable);
 		if (need_full) {
-      DebOut("need_full\n");
 			color_reg_cpy (&colors_for_drawing, curr_color_tables + ctable);
 			color_match_type = color_match_full;
 		} else {
-      DebOut("not need_full\n");
 			memcpy (colors_for_drawing.acolors, curr_color_tables[ctable].acolors,
 				sizeof colors_for_drawing.acolors);
 			color_match_type = color_match_acolors;
 		}
 		drawing_color_matches = ctable;
 	} else if (need_full && color_match_type != color_match_full) {
-    DebOut("need_full && color_match_type != color_match_full\n");
 		color_reg_cpy (&colors_for_drawing, &curr_color_tables[ctable]);
 		color_match_type = color_match_full;
 	}
@@ -2074,26 +1931,20 @@ STATIC_INLINE void do_color_changes (line_draw_func worker_border, line_draw_fun
 	int lastpos = visible_left_border;
 	int endpos = visible_left_border + gfxvidinfo.width;
 
-	DebOut("entered (worker_border: %lx)\n", worker_border);
-
 	for (i = dip_for_drawing->first_color_change; i <= dip_for_drawing->last_color_change; i++) {
 		int regno = curr_color_changes[i].regno;
 		unsigned int value = curr_color_changes[i].value;
 		int nextpos, nextpos_in_range;
-
-		//DebOut("i: %d\n", i);
 
 		if (i == dip_for_drawing->last_color_change)
 			nextpos = endpos;
 		else
 			nextpos = coord_hw_to_window_x (curr_color_changes[i].linepos);
 
-		//DebOut("ping\n");
 		nextpos_in_range = nextpos;
 		if (nextpos > endpos)
 			nextpos_in_range = endpos;
 
-		//DebOut("ping\n");
 		if (nextpos_in_range > lastpos) {
 			if (lastpos < playfield_start) {
 				int t = nextpos_in_range <= playfield_start ? nextpos_in_range : playfield_start;
@@ -2101,7 +1952,6 @@ STATIC_INLINE void do_color_changes (line_draw_func worker_border, line_draw_fun
 				lastpos = t;
 			}
 		}
-		//DebOut("ping\n");
 		if (nextpos_in_range > lastpos) {
 			if (lastpos >= playfield_start && lastpos < playfield_end) {
 				int t = nextpos_in_range <= playfield_end ? nextpos_in_range : playfield_end;
@@ -2109,20 +1959,17 @@ STATIC_INLINE void do_color_changes (line_draw_func worker_border, line_draw_fun
 				lastpos = t;
 			}
 		}
-		//DebOut("ping\n");
 		if (nextpos_in_range > lastpos) {
 			if (lastpos >= playfield_end)
 				(*worker_border) (lastpos, nextpos_in_range);
 			lastpos = nextpos_in_range;
 		}
-		//DebOut("ping\n");
 		if (regno >= 0x1000) {
 			pfield_expand_dp_bplconx (regno, value);
 		} else if (regno >= 0) {
 			color_reg_set (&colors_for_drawing, regno, value);
 			colors_for_drawing.acolors[regno] = getxcolor (value);
 		}
-		//DebOut("ping\n");
 		if (lastpos >= endpos)
 			break;
 	}
@@ -2140,19 +1987,14 @@ static void pfield_draw_line (int lineno, int gfx_ypos, int follow_ypos)
 	int do_double = 0;
 	enum double_how dh;
 
-  DebOut("dh_emerg %lx dh_buf %lx\n", dh_emerg, dh_buf);
-
-	DebOut("lineno %d, gfx_ypos %d, follow_ypos %d\n", lineno, gfx_ypos, follow_ypos);
-
 	dp_for_drawing = line_decisions + lineno;
 	dip_for_drawing = curr_drawinfo + lineno;
 
-	DebOut("linestate[%d]=%d\n", lineno, linestate[lineno]);
 	switch (linestate[lineno])
 	{
 	case LINE_REMEMBERED_AS_PREVIOUS:
 //		if (!warned) // happens when program messes up with VPOSW
-//			write_log (_T("Shouldn't get here... this is a bug.\n")), warned++;
+//			write_log (L"Shouldn't get here... this is a bug.\n"), warned++;
 		return;
 
 	case LINE_BLACK:
@@ -2177,7 +2019,6 @@ static void pfield_draw_line (int lineno, int gfx_ypos, int follow_ypos)
 		return;
 
 	case LINE_DECIDED_DOUBLE:
-		/* "usual" case? o1i */
 		if (follow_ypos != -1) {
 			do_double = 1;
 			linestate[lineno + 1] = LINE_DONE_AS_PREVIOUS;
@@ -2206,7 +2047,6 @@ static void pfield_draw_line (int lineno, int gfx_ypos, int follow_ypos)
 		pfield_init_linetoscr ();
 		pfield_doline (lineno);
 
-    DebOut("call adjust_drawing_colors 1\n");
 		adjust_drawing_colors (dp_for_drawing->ctable, dp_for_drawing->ham_seen || bplehb || ecsshres);
 
 		/* The problem is that we must call decode_ham() BEFORE we do the
@@ -2219,7 +2059,6 @@ static void pfield_draw_line (int lineno, int gfx_ypos, int follow_ypos)
 				decode_ham (visible_left_border, visible_right_border);
 			} else /* Argh. */ {
 				do_color_changes (dummy_worker, decode_ham);
-        DebOut("call adjust_drawing_colors 2\n");
 				adjust_drawing_colors (dp_for_drawing->ctable, dp_for_drawing->ham_seen || bplehb);
 			}
 			bplham = dp_for_drawing->ham_at_start;
@@ -2261,14 +2100,7 @@ static void pfield_draw_line (int lineno, int gfx_ypos, int follow_ypos)
 	} else if (border == 1) {
 		int dosprites = 0;
 
-		/* usual case. o1i */
-		DebOut("border == 1\n");
-
-    /* adjust_drawing_colors gets called from here only */
-    DebOut("call adjust_drawing_colors 3\n");
 		adjust_drawing_colors (dp_for_drawing->ctable, 0);
-
-		//DebOut("border 1.1\n");
 
 #ifdef AGA /* this makes things complex.. */
 		if (brdsprt && dip_for_drawing->nr_sprites > 0) {
@@ -2279,7 +2111,6 @@ static void pfield_draw_line (int lineno, int gfx_ypos, int follow_ypos)
 		}
 #endif
 
-		//DebOut("border 1.2\n");
 		if (!dosprites && dip_for_drawing->nr_color_changes == 0) {
 			fill_line ();
 			do_flush_line (gfx_ypos);
@@ -2297,34 +2128,25 @@ static void pfield_draw_line (int lineno, int gfx_ypos, int follow_ypos)
 		}
 
 
-		//DebOut("border 1.3\n");
 		if (dosprites) {
 
 			int i;
-			//DebOut("border 1.3 a\n");
 			for (i = 0; i < dip_for_drawing->nr_sprites; i++)
 				draw_sprites_aga (curr_sprite_entries + dip_for_drawing->first_sprite_entry + i, 1);
 			do_color_changes (pfield_do_fill_line, pfield_do_linetoscr);
 
 		} else {
 
-			//DebOut("border 1.3 b\n");
 			playfield_start = visible_right_border;
 			playfield_end = visible_right_border;
 			do_color_changes (pfield_do_fill_line, pfield_do_fill_line);
 
 		}
 
-		//DebOut("memcpy to row_map %lx + gfx_ypos %d, size %d\n", row_map, gfx_ypos, gfxvidinfo.pixbytes * gfxvidinfo.width);
-		//DebOut("from xlinebuffer %lx + linetoscr_x_adjust_bytes %d)\n", xlinebuffer, linetoscr_x_adjust_bytes);
-		//DebOut("MAX_VIDHEIGHT: %d\n", MAX_VIDHEIGHT);
-		//DebOut("memcpy(%lx, %lx, %d)\n", row_map[gfx_ypos], xlinebuffer + linetoscr_x_adjust_bytes, gfxvidinfo.pixbytes * gfxvidinfo.width);
 		if (dh == dh_emerg)
 			memcpy (row_map[gfx_ypos], xlinebuffer + linetoscr_x_adjust_bytes, gfxvidinfo.pixbytes * gfxvidinfo.width);
 
-		//DebOut("border 1.4b\n");
 		do_flush_line (gfx_ypos);
-		//DebOut("border 1.5\n");
 		if (do_double) {
 			if (dh == dh_emerg)
 				memcpy (row_map[follow_ypos], xlinebuffer + linetoscr_x_adjust_bytes, gfxvidinfo.pixbytes * gfxvidinfo.width);
@@ -2334,7 +2156,6 @@ static void pfield_draw_line (int lineno, int gfx_ypos, int follow_ypos)
 		}
 
 	} else {
-		DebOut("else border\n");
 
 		int tmp = hposblank;
 		hposblank = 1;
@@ -2343,7 +2164,6 @@ static void pfield_draw_line (int lineno, int gfx_ypos, int follow_ypos)
 		hposblank = tmp;
 
 	}
-	DebOut("left\n");
 }
 
 static void center_image (void)
@@ -2384,7 +2204,7 @@ static void center_image (void)
 		visible_left_border = 0;
 	visible_left_border &= ~((xshift (1, lores_shift)) - 1);
 
-	//write_log (_T("%d %d %d %d %d\n"), max_diwlastword, gfxvidinfo.width, lores_shift, currprefs.gfx_resolution, visible_left_border);
+	//write_log (L"%d %d %d %d %d\n", max_diwlastword, gfxvidinfo.width, lores_shift, currprefs.gfx_resolution, visible_left_border);
 
 
 	linetoscr_x_adjust_bytes = visible_left_border * gfxvidinfo.pixbytes;
@@ -2437,23 +2257,11 @@ static void center_image (void)
 
 #define FRAMES_UNTIL_RES_SWITCH 1
 static int frame_res_cnt;
-
-/***************************************************************
- * init_drawing_frame
- *
- * (besides a lot more?) does line check for SMARTUPDATE:
- *  LINE_DONE_AS_PREVIOUS
- *  LINE_REMEMBERED_AS_PREVIOUS
- *  LINE_REMEMBERED_AS_BLACK
- *  LINE_UNDECIDED
- ***************************************************************/
 static void init_drawing_frame (void)
 {
 	int i, maxline;
 #if 1
 	static int frame_res_old;
-
-  DebOut("entered. This NEEDS to copy stuff to the window ..? \n");
 
 	if (currprefs.gfx_autoresolution && frame_res >= 0 && frame_res_lace >= 0) {
 		if (FRAMES_UNTIL_RES_SWITCH > 0 && frame_res_old == frame_res * 2 + frame_res_lace) {
@@ -2473,7 +2281,7 @@ static void init_drawing_frame (void)
 						if (changed_prefs.gfx_resolution != nr || changed_prefs.gfx_vresolution != nl) {
 							changed_prefs.gfx_resolution = nr;
 							changed_prefs.gfx_vresolution = nl;
-							write_log (_T("RES -> %d LINE -> %d\n"), nr, nl);
+							write_log (L"RES -> %d LINE -> %d\n", nr, nl);
 							config_changed = 1;
 						}
 						if (src->width > 0 && src->height > 0) {
@@ -2693,15 +2501,11 @@ void finish_drawing_frame (void)
 {
 	int i;
 
-	DebOut("entered\n");
-
 	if (! lockscr (false)) {
 		notice_screen_contents_lost ();
-    DebOut("!lockscr !!\n");
 		return;
 	}
-  DebOut("finish_drawing_frame 1\n");
-  DebOut("finish_drawing_frame 2\n");
+
 #ifndef SMART_UPDATE
 	/* @@@ This isn't exactly right yet. FIXME */
 	if (!interlace_seen)
@@ -2711,30 +2515,20 @@ void finish_drawing_frame (void)
 	return;
 #endif
 
-  DebOut("finish_drawing_frame 3\n");
 	for (i = 0; i < max_ypos_thisframe; i++) {
 		int i1 = i + min_ypos_for_screen;
 		int line = i + thisframe_y_adjust_real;
 		int where2;
 
-		//DebOut("i: %d\n", i);
-		//DebOut("i1: %d\n", i1);
-		//DebOut("amiga2aspect_line_map: %lx\n", amiga2aspect_line_map);
-
 		where2 = amiga2aspect_line_map[i1];
-		DebOut("i1: %d where2: %d\n", i1, where2);
-
-		//DebOut("i2: %d\n", i);
 		if (where2 >= gfxvidinfo.height)
 			break;
 		if (where2 < 0)
 			continue;
 		hposblank = 0;
-		//DebOut("i3: %d\n", i);
 		pfield_draw_line (line, where2, amiga2aspect_line_map[i1 + 1]);
 	}
 
-	//DebOut("2..\n");
 	/* clear possible old garbage at the bottom if emulated area become smaller */
 	for (i = last_max_ypos; i < gfxvidinfo.height; i++) {
 		int i1 = i + min_ypos_for_screen;
@@ -2757,8 +2551,6 @@ void finish_drawing_frame (void)
 		do_flush_line (where2);
 	}
 
-	//DebOut("3..\n");
-  DebOut("finish_drawing_frame 4\n");
 	if (currprefs.leds_on_screen) {
 		for (i = 0; i < TD_TOTAL_HEIGHT; i++) {
 			int line = gfxvidinfo.height - TD_TOTAL_HEIGHT + i;
@@ -2774,13 +2566,10 @@ void finish_drawing_frame (void)
 		}
 	}
 
-	//DebOut("4..\n");
 	if (lightpen_x > 0 || lightpen_y > 0)
 		lightpen_update ();
 
 	do_flush_screen (first_drawn_line, last_drawn_line);
-
-	//DebOut("5..\n");
 
 #ifdef ECS_DENISE
 	if (brdblank_changed) {
@@ -2789,7 +2578,6 @@ void finish_drawing_frame (void)
 		brdblank_changed = 0;
 	}
 #endif
-  DebOut("left\n");
 }
 
 void hardware_line_completed (int lineno)
@@ -2842,40 +2630,28 @@ void redraw_frame (void)
 	flush_screen (0, 0);
 }
 
-/* gets called from vsync_handler_pre */
 void vsync_handle_redraw (int long_frame, int lof_changed)
 {
-	DebOut("long_frame %d, lof_changed %d\n", long_frame, lof_changed);
 	last_redraw_point++;
 	if (lof_changed || interlace_seen <= 0 || last_redraw_point >= 2 || long_frame || doublescan < 0) {
-		DebOut("entered if\n");
 		last_redraw_point = 0;
 
-		if (framecnt == 0) {
-			DebOut("1-..\n");
+		if (framecnt == 0)
 			finish_drawing_frame ();
-		}
-		DebOut("1a..\n");
 		if (interlace_seen > 0) {
-			DebOut("1b..\n");
 			interlace_seen = -1;
 		} else if (interlace_seen == -1) {
-			DebOut("1c..\n");
 			interlace_seen = 0;
-			if (currprefs.gfx_scandoubler && currprefs.gfx_vresolution) {
-				DebOut("1d..\n");
+			if (currprefs.gfx_scandoubler && currprefs.gfx_vresolution)
 				notice_screen_contents_lost ();
-			}
 		}
-
-		DebOut("1..\n");
 
 		if (quit_program < 0) {
 #ifdef SAVESTATE
 			if (!savestate_state) {
 				if (currprefs.quitstatefile[0]) {
 					savestate_initsave (currprefs.quitstatefile, 1, 1, true); 
-					save_state (currprefs.quitstatefile, _T(""));
+					save_state (currprefs.quitstatefile, L"");
 				}
 			}
 #endif
@@ -2885,29 +2661,23 @@ void vsync_handle_redraw (int long_frame, int lof_changed)
 			return;
 		}
 
-		DebOut("2..\n");
-
 		count_frame ();
 		check_picasso ();
 
 		int changed = check_prefs_changed_gfx ();
 		if (changed > 0) {
-			DebOut("2.. changed > 0 \n");
 			reset_drawing ();
 			init_row_map ();
 			init_aspect_maps ();
 			notice_screen_contents_lost ();
 			notice_new_xcolors ();
 		} else if (changed < 0) {
-			DebOut("2.. changed =< 0 \n");
 			reset_drawing ();
 			init_row_map ();
 			init_aspect_maps ();
 			notice_screen_contents_lost ();
 			notice_new_xcolors ();
 		}
-
-		DebOut("3..\n");
 
 		check_prefs_changed_audio ();
 		check_prefs_changed_custom ();
@@ -2925,7 +2695,6 @@ void vsync_handle_redraw (int long_frame, int lof_changed)
 #ifdef AVIOUTPUT
 	frame_drawn ();
 #endif
-	DebOut("exit\n");
 }
 
 void hsync_record_line_state (int lineno, enum nln_how how, int changed)
@@ -2969,33 +2738,27 @@ void hsync_record_line_state (int lineno, enum nln_how how, int changed)
 
 static void dummy_flush_line (struct vidbuf_description *gfxinfo, int line_no)
 {
-  DebOut("XXXXXXXXXXXXXXXXXXXXXx\n");
 }
 
 static void dummy_flush_block (struct vidbuf_description *gfxinfo, int first_line, int last_line)
 {
-  DebOut("XXXXXXXXXXXXXXXXXXXXXx\n");
 }
 
 static void dummy_flush_screen (struct vidbuf_description *gfxinfo, int first_line, int last_line)
 {
-  DebOut("XXXXXXXXXXXXXXXXXXXXXx\n");
 }
 
 static void dummy_flush_clear_screen (struct vidbuf_description *gfxinfo)
 {
-  DebOut("XXXXXXXXXXXXXXXXXXXXXx\n");
 }
 
 static int  dummy_lock (struct vidbuf_description *gfxinfo)
 {
-  DebOut("XXXXXXXXXXXXXXXXXXXXXx\n");
 	return 1;
 }
 
 static void dummy_unlock (struct vidbuf_description *gfxinfo)
 {
-  DebOut("XXXXXXXXXXXXXXXXXXXXXx\n");
 }
 
 static void gfxbuffer_reset (void)
@@ -3020,8 +2783,6 @@ void notice_interlace_seen (void)
 void reset_drawing (void)
 {
 	unsigned int i;
-
-	DebOut("entered\n");
 
 	max_diwstop = 0;
 
@@ -3050,7 +2811,6 @@ void reset_drawing (void)
 
 void drawing_init (void)
 {
-  DebOut("entered\n");
 	gen_pfield_tables ();
 
 	uae_sem_init (&gui_sem, 0, 1);
@@ -3063,7 +2823,6 @@ void drawing_init (void)
 	}
 #endif
 	xlinebuffer = gfxvidinfo.bufmem;
-  DebOut("xlinebuffer: %lx\n", xlinebuffer);
 	inhibit_frame = 0;
 
 	gfxbuffer_reset ();

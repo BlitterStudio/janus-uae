@@ -461,4 +461,3 @@ extern struct cpum2c m2cregs[];
 extern bool is_cpu_tracer (void);
 extern bool set_cpu_tracer (bool force);
 extern bool can_cpu_tracer (void);
-

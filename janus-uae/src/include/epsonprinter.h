@@ -28,7 +28,7 @@
 #define __PRINTER_H
 
 #ifndef WINFONT
-#include "ft2build.h"
+s#include "ft2build.h"
 #include FT_FREETYPE_H
 #endif
 

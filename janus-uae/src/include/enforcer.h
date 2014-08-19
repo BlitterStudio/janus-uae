@@ -7,4 +7,3 @@ int enforcer_disable(void);
 extern int enforcermode;
 
 #endif
-

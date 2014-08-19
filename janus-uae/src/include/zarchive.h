@@ -147,4 +147,3 @@ extern struct zfile *archive_getzfile (struct znode *zn, unsigned int id, int fl
 extern struct zfile *archive_unpackzfile (struct zfile *zf);
 
 extern struct zfile *decompress_zfd (struct zfile*);
-

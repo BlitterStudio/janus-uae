@@ -6,4 +6,3 @@ extern uae_u16 dongle_joydat (int, uae_u16);
 extern void dongle_potgo (uae_u16);
 extern uae_u16 dongle_potgor (uae_u16);
 extern int dongle_analogjoy (int, int);
-

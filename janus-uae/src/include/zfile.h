@@ -122,4 +122,3 @@ extern void zfile_close_archive (struct zfile *d);
 extern struct zfile *zfile_open_archive (const TCHAR *path, int flags);
 extern int zfile_exists_archive (const TCHAR *path, const TCHAR *rel);
 extern bool zfile_needwrite (struct zfile*);
-

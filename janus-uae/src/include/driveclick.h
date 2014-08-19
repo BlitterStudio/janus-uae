@@ -49,4 +49,3 @@ extern void driveclick_fdrawcmd_seek (int, int);
 extern void driveclick_fdrawcmd_motor (int, int);
 extern void driveclick_fdrawcmd_vsync (void);
 extern int driveclick_pcdrivemask, driveclick_pcdrivenum;
-

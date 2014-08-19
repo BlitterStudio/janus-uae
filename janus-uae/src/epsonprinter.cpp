@@ -26,21 +26,17 @@
 #include "sysdeps.h"
 #include "uae.h"
 
-#warning ============== epsonprinter is TODO !! ==================
-#ifndef __AROS__
 #define WINFONT
 #define C_LIBPNG
 
 #include "epsonprinter.h"
-#ifndef __AROS__
 #include "win32.h"
-#endif
 #include "parser.h"
 #include "threaddep/thread.h"
 
 #include <math.h>
 
-//#define DEBUGPRINT _T("C:\\Users\\twilen\\Desktop\\CMD_file.1")
+//#define DEBUGPRINT L"C:\\Users\\twilen\\Desktop\\CMD_file.1"
 int pngprint = 0;
 
 #ifdef C_LIBPNG
@@ -54,11 +50,11 @@ int pngprint = 0;
 #define true 1
 #define false 0
 
-static TCHAR *curFontName;
 #ifdef WINFONT
 static const TCHAR *epsonprintername;
 static HFONT curFont;
 static float curFontHorizPoints, curFontVertPoints;
+static TCHAR *curFontName;
 static HDC memHDC;
 static LPOUTLINETEXTMETRIC otm;
 #else
@@ -101,10 +97,7 @@ static Bit8u msb;
 static Bit16u numPrintAsChar;
 static void *outputHandle;
 static Bit16u multipageOutput, multiPageCounter;
-#ifdef WINFONT
 static HDC printerDC;
-static HMODULE ft;
-#endif
 static int justification;
 #define CHARBUFFERSIZE 1000
 static int charcnt;
@@ -113,6 +106,7 @@ static Bit8u charbuffer[CHARBUFFERSIZE];
 static uae_u8 *page, *cpage;
 static int page_w, page_h, page_pitch;
 static int pagesize;
+static HMODULE ft;
 static int pins = 24;
 
 static void printCharBuffer(void);
@@ -466,7 +460,7 @@ static void selectCodepage(Bit16u cp)
 		mapToUse = cp866Map;
 		break;
 	default:
-		write_log(_T("Unsupported codepage %i. Using CP437 instead.\n"), cp);
+		write_log(L"Unsupported codepage %i. Using CP437 instead.\n", cp);
 		mapToUse = cp437Map;
 	}
 
@@ -526,9 +520,9 @@ static int selectfont(Bit16u style)
 			break;
 		rounds++;
 		if (style & STYLE_PROP)
-			thisFontName = curFontName = _T("Times New Roman");
+			thisFontName = curFontName = L"Times New Roman";
 		else
-			thisFontName = curFontName = _T("Courier New");
+			thisFontName = curFontName = L"Courier New";
 	}
 	if (curFont) {
 		SelectObject (memHDC, curFont);
@@ -561,15 +555,15 @@ static void updateFont(void)
 	case roman:
 	default:
 		if (prop)
-			fontName = _T("Times New Roman");
+			fontName = L"Times New Roman";
 		else
-			fontName = _T("Courier New");
+			fontName = L"Courier New";
 		break;
 	case sansserif:
 		if (prop)
-			fontName = _T("Arial");
+			fontName = L"Arial";
 		else
-			fontName = _T("Lucida Console");
+			fontName = L"Lucida Console";
 		break;
 	}
 
@@ -577,7 +571,7 @@ static void updateFont(void)
 	curFontName = fontName;
 #else
 	if (!ft) {
-		write_log(_T("EPSONPRINTER: No freetype6.dll, unable to load font %s\n"), fontName);
+		write_log(L"EPSONPRINTER: No freetype6.dll, unable to load font %s\n", fontName);
 		curFont = NULL;
 	} else if (FT_New_Face(FTlib, fontName, 0, &curFont)) {
 		char windowsdir[MAX_DPATH];
@@ -590,7 +584,7 @@ static void updateFont(void)
 			strcat (windowsdir, "\\Fonts\\");
 			strcat (windowsdir, "times.ttf");
 			if (FT_New_Face(FTlib, windowsdir, 0, &curFont)) {
-				write_log(_T("Unable to load font %s\n"), fontName);
+				write_log(L"Unable to load font %s\n", fontName);
 				curFont = NULL;
 			}
 		}
@@ -681,8 +675,8 @@ static void getfname (TCHAR *fname)
 	fetch_screenshotpath (tmp, sizeof tmp / sizeof (TCHAR));
 	for (;;) {
 		FILE *fp;
-		_stprintf (fname, _T("%sPRINT_%03d.png"), tmp, number);
-		if ((fp = _tfopen (fname, _T("rb"))) == NULL)
+		_stprintf (fname, L"%sPRINT_%03d.png", tmp, number);
+		if ((fp = _tfopen (fname, L"rb")) == NULL)
 			return;
 		number++;
 		fclose (fp);
@@ -726,7 +720,7 @@ static void *prt_thread (void *p)
 	uae_u8 *Tcpage = cpage;
 	int TcolorPrinter = colorPrinted;
 
-	write_log (_T("EPSONPRINTER: background print thread started\n"));
+	write_log (L"EPSONPRINTER: background print thread started\n");
 	prt_thread_mode = 1;
 	SetThreadPriority (GetCurrentThread (), THREAD_PRIORITY_BELOW_NORMAL);
 
@@ -738,7 +732,7 @@ static void *prt_thread (void *p)
 		int leftmargin = GetDeviceCaps (TprinterDC, PHYSICALOFFSETY);
 		HDC dc = NULL;
 
-		write_log (_T("EPSONPRINTER: HP=%d WP=%d TM=%d LM=%d W=%d H=%d\n"),
+		write_log (L"EPSONPRINTER: HP=%d WP=%d TM=%d LM=%d W=%d H=%d\n",
 			hz, vz, topmargin, leftmargin, Tpage_w, Tpage_h);
 
 		if (TcolorPrinter)
@@ -752,7 +746,7 @@ static void *prt_thread (void *p)
 		{
 			DOCINFO docinfo;
 			docinfo.cbSize = sizeof (docinfo);
-			docinfo.lpszDocName = _T("WinUAE Epson Printer");
+			docinfo.lpszDocName = L"WinUAE Epson Printer";
 			docinfo.lpszOutput = NULL;
 			docinfo.lpszDatatype = NULL;
 			docinfo.fwType = 0;
@@ -799,10 +793,10 @@ static void *prt_thread (void *p)
 
 		getfname (fname);
 		/* Open the actual file */
-		fp=_tfopen(fname,_T("wb"));
+		fp=_tfopen(fname,L"wb");
 		if (!fp) 
 		{
-			write_log(_T("EPSONPRINTER: Can't open file %s for printer output\n"), fname);
+			write_log(L"EPSONPRINTER: Can't open file %s for printer output\n", fname);
 			goto end;
 		}
 
@@ -876,7 +870,7 @@ static void *prt_thread (void *p)
 		/*clean up dynamically allocated RAM.*/
 		xfree (row_pointers);
 		xfree (bm);
-		ShellExecute (NULL, _T("open"), fname, NULL, NULL, SW_SHOWNORMAL);
+		ShellExecute (NULL, L"open", fname, NULL, NULL, SW_SHOWNORMAL);
 	}
 #endif
 end:
@@ -885,14 +879,14 @@ end:
 	if (TprinterDC)
 		DeleteObject (TprinterDC);
 	DeleteObject (TmemHDC);
-	write_log (_T("EPSONPRINTER: background thread finished\n"));
+	write_log (L"EPSONPRINTER: background thread finished\n");
 	return 0;
 }
 
 static void outputPage(void)
 {
 	prt_thread_mode = 0;
-	if (uae_start_thread (_T("epson"), prt_thread, NULL, NULL)) {
+	if (uae_start_thread (L"epson", prt_thread, NULL, NULL)) {
 		while (prt_thread_mode == 0)
 			Sleep(5);
 		memHDC = NULL;
@@ -982,7 +976,7 @@ static int printer_init(Bit16u dpi2, Bit16u width, Bit16u height, const TCHAR *p
 #ifndef WINFONT
 	if (ft == NULL || FT_Init_FreeType(&FTlib))
 	{
-		write_log(_T("EPSONPRINTER: Unable to init Freetype2. ASCII printing disabled\n"));
+		write_log(L"EPSONPRINTER: Unable to init Freetype2. ASCII printing disabled\n");
 		return 0;
 	}
 #endif
@@ -1041,7 +1035,7 @@ static int printer_init(Bit16u dpi2, Bit16u width, Bit16u height, const TCHAR *p
 	charRead = false;
 	autoFeed = false;
 	outputHandle = NULL;
-	write_log (_T("EPSONPRINTER: Page size: %dx%d DPI: %dx%d\n"),
+	write_log (L"EPSONPRINTER: Page size: %dx%d DPI: %dx%d\n",
 		page_w, page_h, dpiX, dpiY);
 
 	initPrinter();
@@ -1063,7 +1057,7 @@ static void printer_close(void)
 		if (ft)
 			FT_Done_FreeType(FTlib);
 #endif
-		write_log (_T("EPSONPRINTER: end\n"));
+		write_log (L"EPSONPRINTER: end\n");
 	}
 	xfree (otm);
 	otm = NULL;
@@ -1198,7 +1192,7 @@ static void setupBitImage(Bit8u dens, Bit16u numCols, int pin9)
 		bitGraph.bytesColumn = 6;
 		break;
 	default:
-		write_log(_T("EPSONPRINTER: Unsupported bit image density %i\n"), dens);
+		write_log(L"EPSONPRINTER: Unsupported bit image density %i\n", dens);
 	}
 	bitGraph.pin9 = false;
 	if (pins == 9) {
@@ -1303,12 +1297,12 @@ static int processCommandChar(Bit8u ch)
 		case 0x25: // Select user-defined set (ESC %)
 		case 0x26: // Define user-defined characters (ESC &)
 		case 0x3a: // Copy ROM to RAM (ESC :)
-			write_log(_T("User-defined characters not supported!\n"));
+			write_log(L"User-defined characters not supported!\n");
 			return true;
 		case 0x28: // Two bytes sequence
 			return true;
 		default:
-			write_log(_T("EPSONPRINTER: Unknown command ESC %c (%02X). Unable to skip parameters.\n"), ESCCmd, ESCCmd);
+			write_log(L"EPSONPRINTER: Unknown command ESC %c (%02X). Unable to skip parameters.\n", ESCCmd, ESCCmd);
 			neededParam = 0;
 			ESCCmd = 0;
 			return true;
@@ -1346,7 +1340,7 @@ static int processCommandChar(Bit8u ch)
 			break;
 		default:
 			// ESC ( commands are always followed by a "number of parameters" word parameter
-			write_log(_T("EPSONPRINTER: Skipping unsupported command ESC ( %c (%02X).\n"), ESCCmd, ESCCmd);
+			write_log(L"EPSONPRINTER: Skipping unsupported command ESC ( %c (%02X).\n", ESCCmd, ESCCmd);
 			neededParam = 2;
 			ESCCmd = 0x101;
 			return true;
@@ -1791,7 +1785,7 @@ static int processCommandChar(Bit8u ch)
 			updateFont();
 			break;
 		case 0x242: // Bar code setup and print (ESC (B)
-			write_log(_T("EPSONPRINTER: Barcode printing not supported\n"));
+			write_log(L"EPSONPRINTER: Barcode printing not supported\n");
 			// Find out how many bytes to skip
 			neededParam = PARAM16(0);
 			numParam = 0;
@@ -1847,9 +1841,9 @@ static int processCommandChar(Bit8u ch)
 			break;
 		default:
 			if (ESCCmd < 0x100)
-				write_log(_T("EPSONPRINTER: Skipped unsupported command ESC %c (%02X)\n"), ESCCmd, ESCCmd);
+				write_log(L"EPSONPRINTER: Skipped unsupported command ESC %c (%02X)\n", ESCCmd, ESCCmd);
 			else
-				write_log(_T("EPSONPRINTER: Skipped unsupported command ESC ( %c (%02X)\n"), ESCCmd-0x200, ESCCmd-0x200);
+				write_log(L"EPSONPRINTER: Skipped unsupported command ESC ( %c (%02X)\n", ESCCmd-0x200, ESCCmd-0x200);
 		}
 
 		ESCCmd = 0;
@@ -2342,9 +2336,9 @@ static int epson_ft (void)
 {
 #ifndef WINFONT
 	if (!ft)
-		ft = WIN32_LoadLibrary (_T("freetype6.dll"));
+		ft = WIN32_LoadLibrary (L"freetype6.dll");
 	if (!ft) {
-		write_log (_T("EPSONPRINTER: freetype6.dll not found. Text output disabled."));
+		write_log (L"EPSONPRINTER: freetype6.dll not found. Text output disabled.");
 		return 0;
 	}
 #endif
@@ -2362,7 +2356,7 @@ void epson_printchar(uae_u8 c)
 	if (printed)
 		return;
 	printed = 1;
-	struct zfile *zf = zfile_fopen (DEBUGPRINT, _T("rb"), ZFD_ALL);
+	struct zfile *zf = zfile_fopen (DEBUGPRINT, L"rb", ZFD_ALL);
 	for (;;) {
 		int v = zfile_getc (zf);
 		if (v < 0)
@@ -2381,7 +2375,7 @@ int epson_init(const TCHAR *printername, int type)
 	else
 		pins = 48;
 	epson_ft ();
-	write_log (_T("EPSONPRINTER%d: start\n"), pins);
+	write_log (L"EPSONPRINTER%d: start\n", pins);
 	return printer_init(600, 83, 117, pngprint ? NULL : printername, 0, pins);
 }
 void epson_close(void)
@@ -2394,5 +2388,3 @@ void epson_close(void)
 	printed = 0;
 #endif
 }
-
-#endif
