@@ -180,16 +180,21 @@ History
 ============================================================
 
 ============================================================
-J-UAE 1.4 (xx.xx.2014) 
+J-UAE 1.4 (22.08.2014) 
 ============================================================
 New features:
 - janusd is now available for AROS/68k guest system
+- GUI display tab reordered
+- added new AROS screen resolution option: Clone Workbench
+  (so you can now open up the emulation screen in the
+   same resoution, as your AROS native workbench screen)
 
 There were some bug reports for v1.3, so this release
 tries to fix some of them:
 - start AmigaOS programs from wbrun with an assign in path 
   works now
 - AROS/m68k as a guest now works in coherency
+- startup crashes fixed, when splash windo was used
 
 ============================================================
 J-UAE 1.3 (27.12.2012) 
