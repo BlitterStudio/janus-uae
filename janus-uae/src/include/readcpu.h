@@ -1,3 +1,6 @@
+#ifndef __READCPU_H_
+#define __READCPU_H_
+
 ENUMDECL {
   Dreg, Areg, Aind, Aipi, Apdi, Ad16, Ad8r,
   absw, absl, PC16, PC8r, imm, imm0, imm1, imm2, immi, am_unknown, am_illg
@@ -28,18 +31,13 @@ ENUMDECL {
     i_PACK, i_UNPK, i_TAS, i_BKPT, i_CALLM, i_RTM, i_TRAPcc, i_MOVES,
     i_FPP, i_FDBcc, i_FScc, i_FTRAPcc, i_FBcc, i_FSAVE, i_FRESTORE,
     i_CINVL, i_CINVP, i_CINVA, i_CPUSHL, i_CPUSHP, i_CPUSHA, i_MOVE16,
-    i_MMUOP030, i_PFLUSHN, i_PFLUSH, i_PFLUSHAN, i_PFLUSHA,
-    i_PLPAR, i_PLPAW, i_PTESTR, i_PTESTW,
-    i_LPSTOP
+    i_MMUOP
 } ENUMNAME (instrmnem);
 
-struct mnemolookup {
+extern struct mnemolookup {
     instrmnem mnemo;
-    const TCHAR *name;
-    const TCHAR *friendlyname;
-};
-
-extern struct mnemolookup lookuptab[];
+    const char *name;
+} lookuptab[];
 
 ENUMDECL {
     sz_byte, sz_word, sz_long
@@ -62,7 +60,7 @@ ENUMDECL {
 struct instr_def {
     unsigned int bits;
     int n_variable;
-    uae_u8 bitpos[16];
+    char bitpos[16];
     unsigned int mask;
     int cpulevel;
     int plevel;
@@ -70,8 +68,8 @@ struct instr_def {
 	unsigned int flaguse:3;
 	unsigned int flagset:3;
     } flaginfo[5];
-    uae_u8 sduse;
-    const TCHAR *opcstr;
+    unsigned char sduse;
+    const char *opcstr;
 };
 
 extern struct instr_def defs68k[];
@@ -105,3 +103,4 @@ extern void do_merges (void);
 extern int get_no_mismatches (void);
 extern int nr_cpuop_funcs;
 
+#endif

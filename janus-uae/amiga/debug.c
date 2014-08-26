@@ -23,7 +23,7 @@
  *
  ************************************************************************/
 
-#include <strings.h>
+#include <string.h>
 
 #include <exec/types.h>
 #include <exec/memory.h>
@@ -46,6 +46,8 @@ void PrintOut(const char *file, unsigned int line, const char *func, const char 
 
   snprintf(command_mem, AD__MAXMEM-1, "%s:%d %s(): ", file, line, func);
   len=strlen(command_mem);
+
+  printf("PrintOut..\n");
 
   va_start(args, format);
   vsnprintf(command_mem+len, AD__MAXMEM-1-len, format, args);

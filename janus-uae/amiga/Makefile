@@ -1,49 +1,46 @@
-#=====================================
-# simple Makefile for janusd and clipd
-#
-# (c) Oliver Brunner 2009
-# 
-# $Id$
-#
-# You may want to change the TARGETDIR
-# to the path, where you keep your
-# amigaOS installation tree.
-#=====================================
+#=======================================
+# global makefile stub
+#=======================================
 
-CC        = m68k-amigaos-gcc
+RELEASE=$(shell date +%Y%m%d)
 
-TARGETDIR = /home/oli/svn/aros/AROS/bin/linux-i386/AROS/m68k/
-
-FLAGS     = -Wall
-CDEFS     = 
-#CDEFS     = -DDEBUG
-INCLUDES  =
-DEBUGFLAGS=
-LD_FLAGS  = -noixemul
-
-CFLAGS    = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
-
-JOBJS      = janus-daemon.o sync-mouse.o patch.o sync-windows.o sync-screens.o public-screen.o lock-window.o messages.o debug.o
-COBJS      = clip-daemon.o debug.o
-LOBJS      = launch-daemon.o debug.o
-
-all: janusd clipd launchd 
-
-janusd: $(JOBJS) 
-	$(CC) $(LD_FLAGS) $(JOBJS) -o janusd -lauto #-lc -lamiga -lauto
-	cp janusd $(TARGETDIR)
- 
-clipd:  $(COBJS) 
-	$(CC) $(LD_FLAGS) $(COBJS) -o clipd 
-	cp clipd  $(TARGETDIR)
-
-launchd:  $(LOBJS) 
-	$(CC) $(LD_FLAGS) $(LOBJS) -o launchd 
-	cp launchd  $(TARGETDIR)
+all:
+	@cd amigaos;make
+	@cd aros;make
 
 clean:
-	@rm -f $(JOBJS) $(COBJS) janusd clipd
+	@cd amigaos;make clean
+	@cd aros;make clean
 
-%.o: %.c janus-daemon.h clip-daemon.h
-	$(CC) $(CFLAGS) -o $@ -c $*.c
+install: all 
+	@(cd ..;make)
+	@echo "=============== building package $(RELEASE) ==============="
+	@mkdir -p ~/releases/$(RELEASE)
+	@mkdir -p ~/releases/$(RELEASE)/janus-uae
+	@mkdir -p ~/releases/$(RELEASE)/janus-uae/68k-AmigaOS
+	@mkdir -p ~/releases/$(RELEASE)/janus-uae/68k-AROS
+	@mkdir -p ~/releases/$(RELEASE)/janus-uae/docs
+	@mkdir -p ~/releases/$(RELEASE)/janus-uae/docs/manual
+	cp amigaos/janusd              ~/releases/$(RELEASE)/janus-uae/68k-AmigaOS/
+	cp amigaos/clipd               ~/releases/$(RELEASE)/janus-uae/68k-AmigaOS/
+	cp amigaos/clonescreenmode     ~/releases/$(RELEASE)/janus-uae/68k-AmigaOS/
+	cp amigaos/launchd             ~/releases/$(RELEASE)/janus-uae/68k-AmigaOS/
+	cp amigaos/janus-splash        ~/releases/$(RELEASE)/janus-uae/68k-AmigaOS/
+	cp var/rtg.library             ~/releases/$(RELEASE)/janus-uae/68k-AmigaOS/
+	cp var/transdisk               ~/releases/$(RELEASE)/janus-uae/68k-AmigaOS/
+	cp var/transrom                ~/releases/$(RELEASE)/janus-uae/68k-AmigaOS/
+	cp var/rtg.library             ~/releases/$(RELEASE)/janus-uae/68k-AmigaOS/
+	cp aros/janusd                 ~/releases/$(RELEASE)/janus-uae/68k-AROS/
+	cp amigaos/clipd               ~/releases/$(RELEASE)/janus-uae/68k-AROS/
+	cp amigaos/clonescreenmode     ~/releases/$(RELEASE)/janus-uae/68k-AROS/
+	cp amigaos/launchd             ~/releases/$(RELEASE)/janus-uae/68k-AROS/
+	cp amigaos/janus-splash        ~/releases/$(RELEASE)/janus-uae/68k-AROS/
+	cp var/transdisk               ~/releases/$(RELEASE)/janus-uae/68k-AROS/
+	@chmod 755 ~/releases/$(RELEASE)/janus-uae/68k-AROS/* ~/releases/$(RELEASE)/janus-uae/68k-AmigaOS/*
+	cp ../docs/C*                  ~/releases/$(RELEASE)/janus-uae/docs/
+	cp ../docs/Readme.txt          ~/releases/$(RELEASE)/janus-uae/docs/
+	cp ../docs/manual/*            ~/releases/$(RELEASE)/janus-uae/docs/manual/
+	cp ../src/uae                  ~/releases/$(RELEASE)/janus-uae/janus-uae
+	@echo "=============== building tar $(RELEASE) ==============="
+	cd ~/releases/$(RELEASE);tar zcf janus-uae.$(RELEASE).i386.tar.gz janus-uae
 

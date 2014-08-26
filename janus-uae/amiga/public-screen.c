@@ -39,7 +39,12 @@
  * 12 Apr 1992 john fieber (jfieber@sophia.smith.edu)
  */
 
-char *public_screen_name(struct Screen *scr) {
+/* Bad thing here is, that AmigaOS seems to just do a LockIntuition for LockPubScreenList, 
+ * which is too much * here.. 
+ * but LockIntuition is just one ObtainSemaphore, maybe we can live with that.
+ */
+
+char *get_public_screen_name(struct Screen *scr) {
   struct List          *public_screen_list;
   struct PubScreenNode *public_screen_node;
   ULONG                 i;
@@ -49,10 +54,10 @@ char *public_screen_name(struct Screen *scr) {
   public_screen_list=NULL;
   i=0;
 
-  while(!(public_screen_list = (struct List *) LockPubScreenList()) && i<5) {
-    DebOut("public_screen_name(%lx): LockPubScreenList wait #%d ..\n", scr, i);
-    Delay(10);
-  }
+  DebOut("entered\n");
+
+  public_screen_list = (struct List *) LockPubScreenList();
+  DebOut("public_screen_name(%lx): LockPubScreenList succeeded\n", scr, i);
 
   if(!public_screen_list) {
     DebOut("ERROR: unable to LockPubScreenList for screen %lx\n", scr);
@@ -64,11 +69,11 @@ char *public_screen_name(struct Screen *scr) {
   if(public_screen_node) {
     while (public_screen_node) {
       if(public_screen_node->psn_Screen == scr) {
-	UnlockPubScreenList();
-	return public_screen_node->psn_Node.ln_Name;
+        UnlockPubScreenList();
+        return public_screen_node->psn_Node.ln_Name;
       }
       public_screen_node=(struct PubScreenNode *)
-			 public_screen_node->psn_Node.ln_Succ;
+      public_screen_node->psn_Node.ln_Succ;
     }
   }
 

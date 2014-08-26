@@ -31,6 +31,7 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 
+//#define DEBUG 1
 #include "janus-daemon.h"
 
 extern struct IntuitionBase* IntuitionBase;
@@ -75,21 +76,26 @@ void screen_test() {
  * AROS screen is a pure native AROS screen.
  ****************************************************/
 void update_top_screen() {
+#ifndef __AROS__
   struct Screen *screen;
   ULONG foo[10];
+#endif
 
   ENTER
 
+#ifndef __AROS__
   foo[0]=(ULONG) IntuitionBase->FirstScreen;
 
   screen=(struct Screen *) calltrap (AD_GET_JOB, AD_GET_JOB_TOP_SCREEN, foo);
 
   if(screen && (screen != IntuitionBase->FirstScreen)) {
     if(screen->Title) {
-      DebOut("update_top_screen(): bring screen %lx to front (%s)\n",screen,screen->Title);
+      DebOut("update_top_screen(): bring screen %lx (%s) to front (FirstScreen %lx)\n",
+             screen, screen->Title, IntuitionBase->FirstScreen);
     }
     else {
-      DebOut("update_top_screen(): bring screen %lx to front\n", screen);
+      DebOut("update_top_screen(): bring screen %lx to front (FirstScreen %lx)\n", 
+             screen, IntuitionBase->FirstScreen);
     }
     /* ScreenToFront(screen);
      *
@@ -98,6 +104,9 @@ void update_top_screen() {
      * for us ;) ! */
     ScreenDepth(screen, SDEPTH_TOFRONT, (APTR) 666);
   }
+#else
+#warning ScreenDepth is TODO!
+#endif
 
   LEAVE
 }
@@ -149,7 +158,7 @@ static void screen_fix_resolution(ULONG modeID, WORD *x, WORD *y) {
 void update_screens() {
   ULONG *command_mem;
   ULONG  i;
-  UWORD  maxwidth, maxheight;
+  WORD   maxwidth, maxheight;
   struct Screen   *screen;
   struct Rectangle rect;
 #if 0
@@ -214,7 +223,7 @@ void update_screens() {
 
     command_mem[i++]=(ULONG) screen;
     command_mem[i++]=(ULONG) screen->RastPort.BitMap->Depth;
-    command_mem[i++]=(ULONG) public_screen_name(screen);
+    command_mem[i++]=(ULONG) get_public_screen_name(screen);
     command_mem[i++]=(ULONG) maxwidth;
     command_mem[i++]=(ULONG) maxheight;
     screen=screen->NextScreen;

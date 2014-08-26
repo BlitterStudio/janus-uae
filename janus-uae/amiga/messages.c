@@ -33,14 +33,20 @@
 #include <exec/io.h>
 #include <exec/memory.h>
 #include <intuition/intuitionbase.h>
+#ifdef __AROS__
+#include <proto/intuition.h>
+#include <intuition/extensions.h>
+#else
+extern struct IntuitionBase* IntuitionBase;
+#endif
 
+//#define DEBUG 1
 #include "janus-daemon.h"
 
-extern struct IntuitionBase* IntuitionBase;
 
 #if 0
 /* this would be a much nicer way, to forward a close message to
- * the aos3 window, but:
+ * the amigaos window, but:
  * - aos3 CLI windows have no UserPort to get messages (?)
  * - it does not work always (?)
  * => so we keep it simple and stupid .. (see below)
@@ -101,6 +107,8 @@ void closewin(struct Window *w) {
 }
 #endif
 
+
+#ifndef __AROS__
 /* just "press" the button */
 void closewin(struct Window *w) {
   UWORD m;
@@ -110,11 +118,14 @@ void closewin(struct Window *w) {
 
   ENTER
 
+  DebOut("closewin(%p)\n", w);
+
   /* who knows, maybe window was closed inbetween already */
   DebOut("LockIBase()\n");
   lock=LockIBase(0);
   if(!assert_window(w)) {
-    DebOut("window %lx was already closed!\n", w);
+    DebOut("window %p was already closed!\n", w);
+    printf("window %p was already closed!\n", w);
     DebOut("UnlockIBase()\n");
     UnlockIBase(lock);
     LEAVE
@@ -128,15 +139,33 @@ void closewin(struct Window *w) {
   y  =w->TopEdge + m;
   scr=w->WScreen;
 
+  DebOut("m %d, x %d, y %d, scr %p\n", m, x, y, scr);
+
   DebOut("UnlockIBase()\n");
   UnlockIBase(lock);
 
-  SetMouse(scr, x, y, IECODE_LBUTTON, TRUE, TRUE);
+  SetMouse(scr, x, y, IECODE_LBUTTON, TRUE, FALSE);
+  SetMouse(scr, x, y, IECODE_LBUTTON, FALSE, TRUE);
 
   LEAVE
 
   /* next sync sets the mouse back to the right coordinates */
 }
+#else
+
+/* use WindowAction, safe, even if window is closed inbetween, nice. */
+void closewin(struct Window *w) {
+
+  ENTER
+
+  DebOut("send WAC_SENDIDCMPCLOSE to window %lx\n", w);
+
+  WindowActionTags(w, WAC_SENDIDCMPCLOSE,
+                   TAG_DONE);
+
+  LEAVE
+}
+#endif
 
 /*****************************************
  * check, if new IDCMP messages for 
@@ -147,7 +176,7 @@ void forward_messages() {
   ULONG *command_mem;
   UBYTE  done;
   ULONG  type;
-  struct window *w;
+  struct Window *w;
 
   ENTER
 
@@ -162,14 +191,14 @@ void forward_messages() {
     }
     else {
       type=command_mem[0];
-      printf("got message (type %d)\n",(unsigned int) type);
+      DebOut("got message (type %d)\n",(unsigned int) type);
       switch(type) {
-	case J_MSG_CLOSE:
-	  w=(struct window *) command_mem[1];
-	  closewin(w);
-	  break;
-	default:
-	  printf("unknown message type: %d\n",(unsigned int) type);
+        case J_MSG_CLOSE:
+          w=(struct Window *) command_mem[1];
+          closewin(w);
+          break;
+        default:
+          DebOut("unknown message type: %d\n",(unsigned int) type);
       }
     }
 

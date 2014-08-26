@@ -46,6 +46,9 @@
 #include <devices/timer.h>
 #include <hardware/intbits.h>
 #include <cybergraphx/cybergraphics.h>
+#ifdef __AROS__
+#include <proto/cybergraphics.h>
+#endif
 
 #include <clib/alib_protos.h>
 #include <clib/dos_protos.h>
@@ -53,6 +56,7 @@
 #include <clib/timer_protos.h>
 #include <clib/graphics_protos.h>
 
+//#define DEBUG 1
 #include "janus-daemon.h"
 
 /* cybergfx proto stuff, I could not find gcc includes anywhere..
@@ -64,13 +68,17 @@ extern struct Library *CyberGfxBase;
 #define CLIB_INTUITION_PROTOS_H
 #endif
 
+#ifndef __AROS__
 #ifndef __INLINE_MACROS_H
 #include <inline/macros.h>
 #endif
+#endif
 
+#ifndef __AROS__
 #define IsCyberModeID(modeID) \
-	 LP1(0x36, BOOL, IsCyberModeID, ULONG, modeID, d0, \
-	 , CyberGfxBase)
+         LP1(0x36, BOOL, IsCyberModeID, ULONG, modeID, d0, \
+         , CyberGfxBase)
+#endif
 
 extern struct IntuitionBase* IntuitionBase;
 
@@ -78,6 +86,7 @@ ULONG *mousebuffer=NULL;
 
 struct MsgPort        *InputMP;
 struct InputEvent     *FakeEvent;
+struct InputEvent     *FakeClickEvent;
 struct IEPointerPixel *NeoPix;
 struct IOStdReq       *InputIO;
 
@@ -106,6 +115,11 @@ void free_sync_mouse() {
     FakeEvent=NULL;
   }
 
+  if(FakeClickEvent) {
+    FreeVec(FakeClickEvent);
+    FakeClickEvent=NULL;
+  }
+
   if(InputMP) {
     DeleteMsgPort(InputMP);
     InputMP=NULL;
@@ -121,32 +135,70 @@ BOOL init_sync_mouse() {
   InputMP=CreateMsgPort();
   if(InputMP) {
     FakeEvent=AllocVec(sizeof(struct InputEvent), MEMF_PUBLIC);
-    if(FakeEvent) {
+    FakeClickEvent=AllocVec(sizeof(struct InputEvent), MEMF_PUBLIC);
+    if(FakeEvent && FakeClickEvent) {
       NeoPix=AllocVec(sizeof(struct IEPointerPixel), MEMF_PUBLIC);
       if(NeoPix) {
-	InputIO=CreateIORequest(InputMP, sizeof(struct IOStdReq));
-	if(InputIO) {
-	  if(!OpenDevice("input.device", NULL, 
-	      (struct IORequest *)InputIO, NULL)) {
+        InputIO=CreateIORequest(InputMP, sizeof(struct IOStdReq));
+        if(InputIO) {
+          if(!OpenDevice((unsigned char *)"input.device", 0, 
+              (struct IORequest *)InputIO, 0)) {
              /* Zero if successful, else an error code is returned. */
-	     sync_mouse_device_open=TRUE;
-	     LEAVE
-	     return TRUE;
-	  }
-	}
+             sync_mouse_device_open=TRUE;
+             LEAVE
+             return TRUE;
+          }
+        }
       }
     }
   }
 
   printf("ERROR: init_sync_mouse failed (%lx, %lx, %lx, %lx)\n",
-	  (ULONG) InputMP, (ULONG) FakeEvent, 
-	  (ULONG) NeoPix, (ULONG) InputIO);
+          (ULONG) InputMP, (ULONG) FakeEvent, 
+          (ULONG) NeoPix, (ULONG) InputIO);
 
   free_sync_mouse();
 
   LEAVE
 
   return FALSE;
+}
+
+/* just click ..
+ * 
+ * not tested, not used. Might work.
+ */
+void MouseClick(struct Screen *screen, UWORD button,BOOL click, BOOL release) {
+
+  if(!NeoPix || !FakeClickEvent || !InputIO || !screen) {
+    DebOut("ERROR: MouseClick assert failed!\n");
+    return;
+  }
+
+  if(!click && !release) {
+    return;
+  }
+
+  if(button==IECODE_NOBUTTON) {
+    return;
+  }
+
+  FakeClickEvent->ie_EventAddress=NULL;
+  FakeClickEvent->ie_Class       =IECLASS_RAWMOUSE;
+  FakeClickEvent->ie_SubClass    =0;
+
+  if(click) {
+    FakeClickEvent->ie_Code=button;
+  }
+  else {
+    FakeClickEvent->ie_Code=button|IECODE_UP_PREFIX;
+  }
+
+  InputIO->io_Data   =(APTR)FakeClickEvent;
+  InputIO->io_Length =sizeof(struct InputEvent);
+  InputIO->io_Command=IND_WRITEEVENT;
+ 
+  DoIO((struct IORequest *)InputIO);
 }
 
 /* SetMouse is based on SetMouse (Freeware)
@@ -159,6 +211,7 @@ void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button,
 
   if(!NeoPix || !FakeEvent || !InputIO || !screen) {
     DebOut("ERROR: SetMouse assert failed!\n");
+    printf("ERROR: SetMouse assert failed!\n");
     return;
   }
 
@@ -168,31 +221,33 @@ void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button,
 
   FakeEvent->ie_EventAddress=(APTR)NeoPix;
   FakeEvent->ie_NextEvent=NULL;
-  FakeEvent->ie_Class=IECLASS_NEWPOINTERPOS;
-  FakeEvent->ie_SubClass=IESUBCLASS_PIXEL;
-  FakeEvent->ie_Code=0;
-  FakeEvent->ie_Qualifier=NULL;
+  FakeEvent->ie_Class=    IECLASS_NEWPOINTERPOS;
+  FakeEvent->ie_SubClass= IESUBCLASS_PIXEL;
+  FakeEvent->ie_Code=     IECODE_NOBUTTON;
+  FakeEvent->ie_Qualifier=0;
 
   InputIO->io_Data=(APTR)FakeEvent;
   InputIO->io_Length=sizeof(struct InputEvent);
   InputIO->io_Command=IND_WRITEEVENT;
   DoIO((struct IORequest *)InputIO);
 
-  if(button!=IECODE_NOBUTTON) {
+  if((button!=IECODE_NOBUTTON) && (click || release)) {
+    FakeEvent->ie_EventAddress=NULL;
+    FakeEvent->ie_Class=IECLASS_RAWMOUSE;
+    FakeEvent->ie_SubClass=0;
+
     if(click) {
       /* BUTTON DOWN */
-
-      FakeEvent->ie_EventAddress=NULL;
-      FakeEvent->ie_Class=IECLASS_RAWMOUSE;
       FakeEvent->ie_Code=button;
-      DoIO((struct IORequest *)InputIO);
     }
 
     if(release) {
       /* BUTTON UP */
       FakeEvent->ie_Code=button|IECODE_UP_PREFIX;
-      DoIO((struct IORequest *)InputIO);
     }
+    FakeEvent->ie_Qualifier=0;
+
+    DoIO((struct IORequest *)InputIO);
   }
 
   LEAVE
@@ -277,9 +332,9 @@ void no_p96_fix_left(struct Screen *screen, WORD *x, WORD *y, LONG left) {
 
 void no_p96_fix_center(struct Screen *screen, 
                        WORD *x, WORD *y, 
-		       ULONG gfx_xcenter, ULONG gfx_ycenter, 
+                       ULONG gfx_xcenter, ULONG gfx_ycenter, 
                        ULONG aros_width,  ULONG aros_height,
-		       LONG XOffset,      LONG YOffset) {
+                       LONG XOffset,      LONG YOffset) {
 
 #if 0
   ULONG width, height;
@@ -288,7 +343,7 @@ void no_p96_fix_center(struct Screen *screen,
 
   DebOut("no_p96_fix_center(%d, %d, %d, %d, %d, %d)\n", *x, *y, 
                                                         gfx_xcenter, gfx_ycenter,
-							aros_width,  aros_height);
+                                                        aros_width,  aros_height);
 
 #if 0
   modeID=GetVPModeID(&(screen->ViewPort));
@@ -360,15 +415,29 @@ void no_p96_fix_viewoffset(struct Screen *screen, WORD *x, WORD *y) {
  * return, if screen is a Picasso Screen
  ***************************************/
 BOOL is_cyber(struct Screen *screen) {
-  ULONG                 modeID;
+  ULONG modeID;
 
-  if(CyberGfxBase) {  /* no CyberGfxBase, is_p96 is always FALSE */
-    modeID=GetVPModeID(&(screen->ViewPort));
-
-    if(modeID != INVALID_ID) {
-      return IsCyberModeID(modeID);
-    }
+#ifndef __AROS__
+  if(!CyberGfxBase) {  /* no CyberGfxBase, is_p96 is always FALSE */
+    return FALSE;
   }
+#endif
+
+  if(!screen) {
+    DebOut("screen is (still) NULL\n");
+    return FALSE;
+  }
+
+  /*DebOut("call GetVPModeID (screen %lx, vp: %lx)\n", screen, &(screen->ViewPort));*/
+
+  /* AROS always has CyberGfxBase */
+  modeID=GetVPModeID(&(screen->ViewPort));
+
+  if(modeID != INVALID_ID) {
+    return IsCyberModeID(modeID);
+  }
+
+  DebOut("modeID == INVALID_ID\n");
 
   return FALSE;
 }
@@ -435,11 +504,14 @@ void sync_mouse() {
   is_p96=is_cyber(screen);
 
   mousebuffer[0]=is_p96;
-  DebOut("is_p96: %d\n",is_p96);
+  DebOut("is_p96: %d (TRUE is %d)\n",is_p96, TRUE);
 
-  result = calltrap (AD_GET_JOB, AD_GET_JOB_GET_MOUSE, mousebuffer);
+  calltrap (AD_GET_JOB, AD_GET_JOB_GET_MOUSE, mousebuffer);
+  result=mousebuffer[9];
 
-  if(!result) {
+  /* 0xFFFF000 => do mothing. see j-mouse.c (???) */
+  if(!result || (mousebuffer[8]!=0)) {
+    DebOut("AD_GET_JOB_GET_MOUSE result: DISABLED\n");
     LEAVE
     return;
   }
@@ -461,8 +533,8 @@ void sync_mouse() {
 
     no_p96_fix_center    (screen, &x, &y, 
                           gfx_xcenter, gfx_ycenter, 
-			  aros_width,  aros_height,
-			  aros_xoffset, aros_yoffset);
+                          aros_width,  aros_height,
+                          aros_xoffset, aros_yoffset);
     no_p96_fix_viewoffset(screen, &x, &y);
     no_p96_fix_resolution(screen, &x, &y);
     no_p96_fix_overscan  (screen, &x, &y);

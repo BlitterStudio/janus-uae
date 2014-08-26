@@ -23,6 +23,7 @@
  *
  ************************************************************************/
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -51,18 +52,40 @@
 #include <proto/dos.h>
 #include <proto/timer.h>
 
+#ifdef __AROS__
+#include <aros/system.h>
+#endif
+
+//#define DEBUG 1
 #include "janus-daemon.h"
 
 int __nocommandline = 0; /*???*/
 
-char verstag[] = "\0$VER: janus-daemon 0.8";
+#ifdef __AROS__
+
+/* those registers must be reset to original values */
+#define PUSHSTACK     "movem.l %d2-%d7/%a2-%a4,-(%SP)\n"
+#define POPSTACK      "movem.l (%SP)+,%d2-%d7/%a2-%a4\n"
+#define PUSHFULLSTACK "movem.l %d0-%d7/%a0-%a6,-(%SP)\n"
+#define POPFULLSTACK  "movem.l (%SP)+,%d0-%d7/%a0-%a6\n"
+
+#else
+char verstag[] = "\0$VER: janus-daemon 1.4 [AmigaOS]";
+
+#define PUSHSTACK     "movem.l d2-d7/a2-a4,-(SP)\n"
+#define POPSTACK      "movem.l (SP)+,d2-d7/a2-a4\n"
+#define PUSHFULLSTACK "movem.l d0-d7/a0-a6,-(SP)\n"
+#define POPFULLSTACK  "movem.l (SP)+,d0-d7/a0-a6\n"
+
+#endif
+
 #if 0
 struct Window *old_MoveWindowInFront_Window,
               *old_MoveWindowInFront_BehindWindow;
 ULONG          old_MoveWindowInFront_Counter;
 #endif
 
-LONG          *cmdbuffer=NULL;
+ULONG          *cmdbuffer=NULL;
 
 /* state:
  *  0 not yet initialized / sleep until we go to coherency
@@ -79,20 +102,80 @@ struct Task *mytask = NULL;
 
 ULONG        intdata[2];
 
+#ifndef __AROS__
 struct Library *CyberGfxBase;
+#endif
 
 /*
  * d0 is the function to be called (AD_*)
  * d1 is the size of the memory supplied by a0
- * a0 memory, where to put out command in and 
+ * a0 memory, where to put our command in and 
  *    where we store the result
  */
+#ifndef __AROS__
 ULONG (*calltrap)(ULONG __asm("d0"),
                   ULONG __asm("d1"),
 		  APTR  __asm("a0")) = (APTR) AROSTRAPBASE;
 
+#else
+
+/* AROSTRAPBASE 0xF0FF90 */
+
+ULONG calltrap(ULONG arg1, ULONG arg2, ULONG *arg3) {
+  ULONG ret=0;
+
+   /* Inline assembly is always somewhat ugly.. */
+   /* AROSTRAPBASE is 0xF0FF90 */
+
+  asm volatile ("movem.l %%d0-%%d7/%%a0-%%a6,-(%%SP)\n" \
+                "move.l %1, %%d0\n" \
+                "move.l %2, %%d1\n" \
+                "move.l %3, %%a0\n" \
+                "jsr 0xF0FF90\n" \
+                "move.l %%d0, %0\n" \
+                "movem.l (%%SP)+, %%d0-%%d7/%%a0-%%a6\n" \
+                             : "=g"(ret)                        /* %0 */
+                             : "g"(arg1), "g"(arg2), "g"(arg3)  /* %1, %2, %3 */
+                             :                                  /* nothing clobbered */
+                             );
+
+  return ret;
+}
+
+ULONG calltrap_d01_a0_d2345(ULONG r_d0, ULONG r_d1, ULONG r_a0, ULONG r_d2, ULONG r_d3, ULONG r_d4, ULONG r_d5){
+  ULONG ret=0;
+
+   /* Inline assembly is always somewhat ugly.. */
+   /* AROSTRAPBASE is 0xF0FF90 */
+
+  /* DebOut("r_d0 %d, r_d1 %d, r_a0 %lx, r_d2 %d, r_d3 %d, r_d4 %d, r_d5 %d)\n", r_d0, r_d1, r_a0, r_d2, r_d3, r_d4, r_d5); */
+
+  asm volatile ("movem.l %%d0-%%d7/%%a0-%%a6,-(%%SP)\n" \
+                "move.l %1, %%d0\n" \
+                "move.l %2, %%d1\n" \
+                "move.l %3, %%a0\n" \
+                "move.l %4, %%d2\n" \
+                "move.l %5, %%d3\n" \
+                "move.l %6, %%d4\n" \
+                "move.l %7, %%d5\n" \
+                "jsr 0xF0FF90\n" \
+                "move.l %%d0, %0\n" \
+                "movem.l (%%SP)+, %%d0-%%d7/%%a0-%%a6\n" \
+                             : "=r"(ret)                        /* %0 */
+                             : "m"(r_d0), "m"(r_d1), "m"(r_a0), "m"(r_d2), "m"(r_d3), "m"(r_d4), "m"(r_d5)  
+                             :                                  /* nothing clobbered */
+                             );
+
+  return ret;
+
+}
+#endif
+
+
+
 BOOL open_libs() {
   ENTER
+#ifndef __AROS__
    if (!(IntuitionBase=(struct IntuitionBase *) OpenLibrary("intuition.library",39))) {
      printf("unable to open intuition.library\n");
      LEAVE
@@ -111,6 +194,7 @@ BOOL open_libs() {
 
    CyberGfxBase=OpenLibrary("cybergraphics.library", 0);
    DebOut("CyberGfxBase: %lx\n",CyberGfxBase);
+#endif
 
    LEAVE
    return TRUE;
@@ -128,27 +212,39 @@ BOOL open_libs() {
  ****************************************************/
 UBYTE buffer[MAXPUBSCREENNAME];
 
+ULONG *setup_command_mem=NULL;
 
 int setup(struct Task *task, ULONG signal, ULONG stop) {
-  ULONG *command_mem;
 
   ENTER
 
   DebOut("(%lx,%lx,%d)\n",(ULONG) task, signal, stop);
 
-  command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
+  if(!setup_command_mem) {
+    setup_command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
+  }
 
   //DebOut("janusd: memory: %lx\n",(ULONG) command_mem);
 
-  command_mem[ 0]=(ULONG) task;
-  command_mem[ 4]=(ULONG) signal;
-  command_mem[ 8]=(ULONG) stop;
+  setup_command_mem[ 0]=(ULONG) task;
+  setup_command_mem[ 4]=(ULONG) signal;
+  setup_command_mem[ 8]=(ULONG) stop;
 
-  state = calltrap (AD_SETUP, AD__MAXMEM, command_mem);
+  /* tell j-uae, which guest OS is running 
+   * 0: AmigaOS
+   * 1: AROS
+   */
+#ifdef __AROS__
+  setup_command_mem[12]=(ULONG) 1;
+#else
+  setup_command_mem[12]=(ULONG) stop;
+#endif
 
-  state=command_mem[8];
+  /* return value is too unrealiable! */
+  calltrap (AD_SETUP, AD__MAXMEM, setup_command_mem);
 
-  FreeVec(command_mem);
+  state=setup_command_mem[8];
+
 
   DebOut("result %d\n",(int) state);
 
@@ -157,10 +253,7 @@ int setup(struct Task *task, ULONG signal, ULONG stop) {
   return state;
 }
 
-/* those registers must be reset to original values */
-#define PUSHSTACK     "movem.l d2-d7/a2-a4,-(SP)\n"
-#define POPSTACK      "movem.l (SP)+,d2-d7/a2-a4\n"
-
+#ifndef __AROS__
 /* A1 contains the data pointer
  * you have to clear the Z flag on exit (moveq #0, D0)
  * you "should" return 0xdff000 in A0
@@ -183,9 +276,18 @@ __asm__("_vert_int:\n"
  */
 void vert_int();
 
+#else
+
+AROS_UFP4(ULONG, vert_int,
+    AROS_UFHA(ULONG, dummy, A0),
+    AROS_UFHA(void *, data, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6));
+
+#endif
 /* setup_vert_int 
  *
- * First I sent all the Signals from the UAE thread using
+ * First, I sent all the Signals from the UAE thread using
  * uae_Signal. This works well, as long as AmigaOS is
  * healthy. As soon as it crashes, it might take down
  * the UAE thread doing uae_Signal :(. As signals
@@ -209,7 +311,11 @@ static int setup_vert_int(struct Task *task, ULONG signal) {
   vbint->is_Node.ln_Pri = 1;
   vbint->is_Node.ln_Name = "JanusD vbint";
   vbint->is_Data = (APTR)&intdata;
+#ifndef __AROS__
   vbint->is_Code = vert_int;
+#else
+  vbint->is_Code = (APTR) vert_int;
+#endif
 
 
   DebOut("AddIntServer(.., %lx)\n", vbint);
@@ -263,6 +369,10 @@ static void runme() {
   BOOL         done;
   BOOL         init;
   BOOL         set;
+  ULONG        sigs;
+#ifdef __AROS__
+  struct ScreenNotifyMessage *notify_msg;
+#endif
 
   ENTER
 
@@ -270,72 +380,97 @@ static void runme() {
 
   DebOut("running (CTRL-C to go to normal mode, CTRL-D to rootless mode)..\n");
 
+  sigs=SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D | SIGBREAKF_CTRL_F;
+#ifdef __AROS__
+  sigs=sigs|notify_signal;
+#endif
+
   done=FALSE;
   init=FALSE;
   while(!done) {
     DebOut("Wait() ..\n");
-    newsignals=Wait(mysignal | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
+    newsignals=Wait(mysignal | sigs);
     set=setup(mytask, mysignal, 0);
     if(newsignals & mysignal) {
       if(set) {
-	/* we are active */
+        /* we are active */
 
-	if(!init) {
-	  /* disabled -> enabled */
-	  init=TRUE;
-	  DebOut("update screens ..\n");
-	  update_screens(); /* report all open screens once, 
-			     * updates again at every openwindow patch
-			     * call
-			     */
-	  DebOut("screens updated\n");
+        if(!init) {
+          /* disabled -> enabled */
+          init=TRUE;
+          DebOut("update screens ..\n");
+          update_screens(); /* report all open screens once, 
+                             * updates again at every openwindow patch
+                  			     * call
+                  			     */
+          DebOut("screens updated\n");
 
-	  DebOut("update windows ..\n");
-	  update_windows(); /* report all open windows once,
-			     * new windows will be handled by the patches
-			     */
-	  DebOut("windows updated\n");
-	}
+          DebOut("update windows ..\n");
+          update_windows(); /* report all open windows once,
+			                       * new windows will be handled by the patches
+			                       */
+          DebOut("windows updated\n");
+        }
 
-	update_top_screen();
-	sync_windows();
-	report_uae_windows();
-	report_host_windows(); /* bad! */
-	sync_active_window();
-	forward_messages();
+        update_top_screen();
+        sync_windows();
+        report_uae_windows();
+        report_host_windows(); /* bad! */
+        sync_active_window();
+        forward_messages();
       }
       sync_mouse();
     }
-
     if((newsignals & SIGBREAKF_CTRL_C) ||
       (!set && (newsignals & mysignal))) {
       DebOut("!set || got SIGBREAKF_CTRL_C..\n");
       if(init) {
-	DebOut("tell uae, that we received a SIGBREAKF_CTRL_C\n");
-	init=FALSE;
-	/* cose all windows */
+        DebOut("tell uae, that we received a SIGBREAKF_CTRL_C\n");
+        init=FALSE;
+        /* cose all windows */
       	command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
-	calltrap (AD_GET_JOB, AD_GET_JOB_LIST_WINDOWS, command_mem); /* this is a NOOP!!!*/
-	FreeVec(command_mem);
-	setup(mytask, mysignal, 1); /* we are tired */
+        calltrap (AD_GET_JOB, AD_GET_JOB_LIST_WINDOWS, command_mem); /* this is a NOOP!!!*/
+        FreeVec(command_mem);
+        setup(mytask, mysignal, 1); /* we are tired */
       }
       else {
-	DebOut("we are already inactive\n");
+        DebOut("we are already inactive\n");
       }
     }
-
     if(newsignals & SIGBREAKF_CTRL_D) {
       DebOut("got SIGBREAKF_CTRL_D..\n");
 //      switch_uae_window();
       if(!init) {
-	DebOut("janusd: tell uae, that we received a SIGBREAKF_CTRL_D\n");
-	setup(mytask, mysignal, 2); /* we are back again */
+        DebOut("janusd: tell uae, that we received a SIGBREAKF_CTRL_D\n");
+        setup(mytask, mysignal, 2); /* we are back again */
       }
       else {
-	DebOut("we are already active\n");
+        DebOut("we are already active\n");
       }
 
     }
+    if(set && (newsignals & SIGBREAKF_CTRL_F)) {
+      /* force a manual update of all windows */
+      DebOut("complete update of 68k windows ..\n");
+      update_windows(); /* report all open windows once,
+            * new windows will be handled by the patches
+            */
+      DebOut("windows updated\n");
+    }
+#ifdef __AROS__
+    if(newsignals & notify_signal) {
+      DebOut("notify_signal received\n");
+
+      while((notify_msg = (struct ScreenNotifyMessage *) GetMsg (notify_port))) {
+        
+        handle_notify_msg(notify_msg->snm_Class, notify_msg->snm_Object);
+
+        ReplyMsg ((struct Message*) notify_msg);
+      }
+
+    }
+#endif
+
   }
 
   /* never arrive here */
@@ -363,6 +498,18 @@ int main (int argc, char **argv) {
 
   if(!open_libs()) {
     exit(1);
+  }
+
+  /* Just open the default public screen. Makes life easier and
+   * gets AROS guests booting without problems.
+   * AmigaOS my just work by chance, as there the booting
+   * is faster and the workbench screen might be up
+   * early enough. Not nice, but no harm done either.
+   */
+  {
+    struct Screen *s;
+    s=LockPubScreen(NULL);
+    UnlockPubScreen(NULL, s);
   }
 
   /* try to get a signal */
@@ -405,6 +552,9 @@ int main (int argc, char **argv) {
   unpatch_functions();
   FreeSignal(mysignal_bit);
   free_sync_mouse();
+  if(setup_command_mem) {
+    FreeVec(setup_command_mem);
+  }
 
   DebOut("exit\n");
 
@@ -412,3 +562,26 @@ int main (int argc, char **argv) {
 
   exit (0);
 }
+
+#ifdef __AROS__
+#undef SysBase
+
+/* intdata[0]=(ULONG) task; */
+/* intdata[1]=        signal; */
+
+AROS_UFH4(ULONG, vert_int,
+    AROS_UFHA(ULONG, dummy, A0),
+    AROS_UFHA(ULONG *, intdata, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    Signal((struct Task *) intdata[0], intdata[1]);
+
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
+#endif

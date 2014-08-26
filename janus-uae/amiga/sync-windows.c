@@ -23,6 +23,8 @@
  *
  ************************************************************************/
 
+#include <string.h>
+
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <intuition/intuition.h>
@@ -32,6 +34,7 @@
 #include <proto/layers.h>
 #include <proto/dos.h>
 
+//#define DEBUG 1
 #include "janus-daemon.h"
 
 //#define DUMPWIN
@@ -215,22 +218,32 @@ ULONG need_to_sort(ULONG *host_window, struct Layer *layer) {
  * All values are without window borders.
  * */
 
+ULONG *report_command_mem=NULL;
+
 void report_uae_windows() {
-  struct Screen *screen;
-  struct Window *win;
-  ULONG         *command_mem;
-  ULONG          i;
-  char          *pubname;
-  struct Screen *lock;
+  struct Screen *screen =NULL;
+  struct Window *win    =NULL;
+  ULONG          i      =0;
+  char          *pubname=NULL;
+  struct Screen *lock   =NULL;
 
   ENTER
 
-  command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
-  if(!command_mem) {
-    LEAVE
-    return;
+  if(!report_command_mem) {
+    report_command_mem=AllocVec(AD__MAXMEM, MEMF_CLEAR);
+    /* never freed, but you can't quit our daemon anyways */
+    if(!report_command_mem) {
+      LEAVE
+      return;
+    }
   }
 
+  /* Autodocs say:
+   *  You don't need to hold the lock when your visitor window is opened as
+   *  the pubscreen cannot be closed as long as there are visitor windows
+   *  on it. Sad thing is, we don't have an own window, so we need to
+   *  lock quite often :(
+   */
   screen=(struct Screen *) IntuitionBase->FirstScreen;
 
   DebOut("amigaos IntuitionBase->FirstScreen: %lx\n", screen);
@@ -238,55 +251,61 @@ void report_uae_windows() {
   if(!screen) {
     printf("report_uae_windows: no screen!?\n");
     DebOut("ERROR: report_uae_windows: no screen!?\n");
-    FreeVec(command_mem);
+    //FreeVec(command_mem);
     LEAVE
     return;
   }
 
-  /* Would be nice to lock the screen, but we would need to get the
+  DebOut("IntuitionBase->FirstScreen: %lx (%s)\n", screen, screen->Title);
+
+  /* Would be nice to just lock the screen, but we would need to get the
    * screen name for that. Who invented this API !?
    */
 
-  pubname=public_screen_name(screen);
+  pubname=get_public_screen_name(screen);
   if(pubname) {
-    lock=LockPubScreen(pubname);
+    DebOut("Locking screen %lx (%s)\n", screen, pubname);
+    lock=LockPubScreen((unsigned char *)pubname);
     DebOut("lock: %lx\n", lock);
   }
   win=screen->FirstWindow;
+  DebOut("first window: %lx\n", win);
 
   /* we are reporting for this screen! */
-  command_mem[0]=(ULONG) screen;
+  report_command_mem[0]=(ULONG) screen;
 
   i=1;
   while(win) {
     DebOut("add window #%d: %lx\n",i,win);
-    command_mem[i  ]=(ULONG) win;
-    command_mem[i+1]=(ULONG) ((win->LeftEdge 
+    report_command_mem[i  ]=(ULONG) win;
+    report_command_mem[i+1]=(ULONG) ((win->LeftEdge 
                                + win->BorderLeft) 
 			       * 0x10000 +
                               (win->TopEdge + 
 			       win->BorderTop));
-    command_mem[i+2]=(ULONG) ((win->Width -
+    report_command_mem[i+2]=(ULONG) ((win->Width -
                                win->BorderLeft -
 			       win->BorderRight )
                               * 0x10000 + 
 			      (win->Height - 
 			       win->BorderTop -
 			       win->BorderBottom));
-    command_mem[i+3]=NULL;
-    command_mem[i+4]=NULL;
+    report_command_mem[i+3]=0;
+    report_command_mem[i+4]=0;
 
     win=win->NextWindow;
     i=i+5;
   }
 
+  report_command_mem[i]=0; /* terminate list */
+
   if(lock) {
     UnlockPubScreen(NULL, lock);
   }
 
-  calltrap (AD_GET_JOB, AD_GET_JOB_REPORT_UAE_WINDOWS, command_mem);
+  calltrap (AD_GET_JOB, AD_GET_JOB_REPORT_UAE_WINDOWS, report_command_mem);
 
-  FreeVec(command_mem);
+  //FreeVec(command_mem);
 
   LEAVE
 }
@@ -443,6 +462,7 @@ ChangeWindowBox_with_API:
 
   DebOut("UnlockIBase()\n");
   UnlockIBase(lock);
+  /* hope window is not closed inbetween! Maybe intuition catches this for us?*/
   ChangeWindowBox(win, left, top, width, height);
 
   LEAVE
@@ -460,7 +480,7 @@ void report_host_windows() {
 
   ENTER
 
-  command_mem=AllocVec(AD__MAXMEM,MEMF_CLEAR);
+  command_mem=AllocVec(AD__MAXMEM, MEMF_CLEAR);
   if(!command_mem) {
     LEAVE
     return;
@@ -471,7 +491,12 @@ void report_host_windows() {
   i=0;
   while(command_mem[i] && (i*4 < AD__MAXMEM) ) {
     win=(struct Window *)command_mem[i];
-    DebOut("report_host_windows(): resize window %lx (%s)\n",(ULONG) win,win->Title);
+    DebOut("command_mem[0]: %lx\n", command_mem[i]);
+    DebOut("command_mem[1]: %lx\n", command_mem[i+1]);
+    DebOut("command_mem[2]: %lx\n", command_mem[i+2]);
+    DebOut("command_mem[3]: %lx\n", command_mem[i+3]);
+    DebOut("command_mem[4]: %lx\n", command_mem[i+4]);
+    DebOut("report_host_windows(): resize window %lx (%s)\n",(ULONG) win, win->Title);
 
     DebOut("report_host_windows():   x/y: %d x %d\n",get_hi(command_mem[i+1]),get_lo(command_mem[i+1]));
     DebOut("report_host_windows():   w/h: %d x %d\n",get_hi(command_mem[i+2]),get_lo(command_mem[i+2]));
@@ -672,31 +697,104 @@ void sync_windows() {
 }
 
 void sync_active_window() {
-  struct Window *win;
+  struct Window *win=NULL;
   ULONG          lock;
 
   ENTER
 
-  win=(struct Window *) calltrap (AD_GET_JOB, 
-                                  AD_GET_JOB_ACTIVE_WINDOW, NULL);
+  calltrap (AD_GET_JOB, AD_GET_JOB_ACTIVE_WINDOW, (ULONG *) &win); /* put result in *win */
 
   DebOut("win: %lx\n", win);
 
   DebOut("LockIBase()\n");
   lock=LockIBase(0);
 
-  if(!assert_window(win)) {
-    DebOut("win %lx does not exist anymore\n", win);
-    DebOut("UnlockIBase()\n");
-    UnlockIBase(lock);
-    LEAVE
-    return;
+  if(win && !assert_window(win)) {
+    DebOut("window %lx does not exist anymore\n", win);
+    win=NULL;
   }
 
   DebOut("UnlockIBase()\n");
   UnlockIBase(lock);
-  ActivateWindow(win);
+  if(win) {
+    ActivateWindow(win);
+  }
 
   LEAVE
+}
+
+
+BOOL is_ign(UBYTE *in) {
+
+  if((in == NULL) || (in == (UBYTE *) ~0)) {
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+
+/*********************************************************************************
+ *  SetArosWindowTitles
+ *
+ *  if the window title changed, change also the AROS title
+ *********************************************************************************/
+#ifndef __AROS__
+ULONG set_aros_titles (struct Window *win __asm("a0"), 
+                       UBYTE *windowtitle __asm("a1"), 
+                       UBYTE *screentitle __asm("a2")) {
+#else
+ULONG set_aros_titles (struct Window *win, 
+                       UBYTE *windowtitle, 
+                       UBYTE *screentitle) {
+#endif
+
+
+#if 0
+  DebOut("set_aros_titles(%lx, %s, %s)\n", win, windowtitle, screentitle);
+
+  DebOut("new win title: \"%s\"\n", windowtitle);
+  DebOut("old win title: \"%s\"\n", win->Title);
+  DebOut("new scr title: \"%s\"\n", screentitle);
+  DebOut("old scr title: \"%s\"\n", win->ScreenTitle);
+  DebOut("new win title ignore: %d\n", is_ign(windowtitle));
+  DebOut("new scr title ignore: %d\n", is_ign(screentitle));
+#endif
+
+
+  if( !is_ign(windowtitle) && (windowtitle != win->Title)) {
+    DebOut("windowtitle %lx != %lx\n", windowtitle, win->Title);
+    return 1;
+  }
+  else {
+    //DebOut("windowtitle %lx == %lx\n", windowtitle, win->Title);
+  }
+
+  if( !is_ign(screentitle) && (screentitle != win->ScreenTitle)) {
+    DebOut("screentitle %lx != %lx\n", screentitle, win->ScreenTitle);
+    return 1;
+  }
+  else {
+    //DebOut("screentitle %lx == %lx\n", screentitle, win->ScreenTitle);
+  }
+
+  if( !is_ign(windowtitle) && (strcmp((char *)windowtitle, (char *) win->Title) != 0) ) {
+    DebOut("windowtitle   string != string\n");
+    return 1;
+  }
+  else {
+    //DebOut("windowtitle   string == win->Title string\n");
+  }
+
+  if( !is_ign(screentitle) && (strcmp((char *)screentitle, (char *)win->ScreenTitle) != 0) ) {
+    DebOut("screentitle   string != win->ScreenTitle\n");
+    return 1;
+  }
+  else {
+    //DebOut("screentitle   string == win->ScreenTitle\n");
+  }
+
+  /* nothing to do */
+  return 0;
 }
 

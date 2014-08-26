@@ -29,6 +29,8 @@
 //#include <proto/exec.h>
 #include <clib/intuition_protos.h>
 
+//#define DEBUG 1
+/* remember to enable m68k debugging in od-amiga/j-debug.c, too */
 #if defined DEBUG
 #define DebOut(...) PrintOut(__FILE__,__LINE__,__func__,__VA_ARGS__) 
 #else
@@ -70,15 +72,32 @@
 #define AD_GET_JOB_UPDATE_GADGETS     18
 #define AD_GET_JOB_SET_WINDOW_TITLES  19
 #define AD_GET_JOB_WINDOW_LIMITS      20
+#define AD_GET_JOB_SPLASH             21
+#define AD_GET_JOB_HOST_DATA          22 /* resolution .. */
+#define AD_GET_JOB_WINDOW_GFX_UPDATE  23 /* TRUE/FALSE enable/disable gfx copy */
+#define AD_GET_JOB_WINDOW_CLOSED      24 /* this guest window is closed now */
 #define AD_GET_JOB_DEBUG             999
 
 #define J_MSG_CLOSE                    1
 
 extern ULONG state;
 
+#ifndef __AROS__
 extern ULONG (*calltrap)(ULONG __asm("d0"), 
                          ULONG __asm("d1"), 
 			 APTR  __asm("a0"));
+#else
+ULONG calltrap(ULONG arg1, ULONG arg2, ULONG *arg3);
+ULONG calltrap_d01_a0_d2345(ULONG arg0, ULONG arg1, ULONG a0, ULONG arg2, ULONG arg3, ULONG arg4, ULONG arg5);
+ULONG notify_signal;
+struct MsgPort *notify_port;
+
+void handle_notify_msg(ULONG notify_class, ULONG notify_object);
+ULONG set_aros_titles (struct Window *win, UBYTE *windowtitle, UBYTE *screentitle);
+
+
+#endif
+
 
 /* sync-mouse.c */
 BOOL init_sync_mouse(void);
@@ -88,7 +107,9 @@ void SetMouse(struct Screen *screen, WORD x, WORD y, UWORD button, BOOL click, B
 BOOL is_cyber(struct Screen *screen);
 
 /* patch.c */
+#ifndef __AROS__
 extern ULONG patch_draggable;
+#endif
 void patch_functions(void);
 void unpatch_functions(void);
 
@@ -105,7 +126,8 @@ void forward_messages(void);
 void update_top_screen(void);
 
 /* public_screen.c */
-char *public_screen_name(struct Screen *scr); 
+//char *public_screen_name(struct Screen *scr); 
+char *get_public_screen_name(struct Screen *scr); 
 
 /* lock-window.c */
 
