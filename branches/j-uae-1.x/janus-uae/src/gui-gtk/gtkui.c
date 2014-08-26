@@ -2347,16 +2347,16 @@ static void make_about_widgets (GtkWidget *dvbox) {
     add_centered_to_vbox (dvbox, thing);
 #endif
 #ifdef GTKMUI
-    thing = gtk_label_new ("GTK UI built with GTK-MUI");
+    thing = gtk_label_new ("Contact: aros -at- oliver-brunner.de");
     gtk_widget_show (thing);
     add_centered_to_vbox (dvbox, thing);
-    thing = gtk_label_new ("gtk-mui -at- oliver-brunner.de");
+    thing = gtk_label_new ("GTK UI built with GTK-MUI");
     gtk_widget_show (thing);
     add_centered_to_vbox (dvbox, thing);
 
 #endif
 /* TEST VERSION */
-//#if 0
+#if 0
     thing = gtk_label_new ("*** THIS IS AN INTERNAL BETA TEST VERSION ***");
     gtk_widget_show (thing);
     add_centered_to_vbox (dvbox, thing);
@@ -2367,7 +2367,7 @@ static void make_about_widgets (GtkWidget *dvbox) {
     thing = gtk_label_new ("*** PLEASE DO NOT DISTRIBUTE ***");
     gtk_widget_show (thing);
     add_centered_to_vbox (dvbox, thing);
-//#endif
+#endif
 
     add_empty_vbox (dvbox);
 
