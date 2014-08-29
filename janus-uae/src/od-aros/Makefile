@@ -33,7 +33,8 @@ CPP        = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-g++
 AR         = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-ar
 LD         = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-ld
 
-FLAGS      = -O2 #-Wall
+# suppress warning: deprecated conversion from string constant to ‘char*’
+FLAGS      = -Wno-write-strings -O2 #-Wall
 DEBUGFLAGS = -g
 
 CDEFS   =
