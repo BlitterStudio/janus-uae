@@ -29,7 +29,8 @@ LD         = i386-aros-ld
 
 HOST_CC    = gcc
 
-FLAGS      = -O2 -Wall
+# suppress warning: deprecated conversion from string constant to ‘char*’
+FLAGS      = -Wno-write-strings -O2 #-Wall
 DEBUGFLAGS = -g
 
 CDEFS   =
@@ -74,7 +75,7 @@ build68k: $(BUILD68K_OBJS)
 	$(HOST_CPP) -Wall $(BUILD68K_OBJS) -o build68k
 
 #GENCPU_OBJS=gencpu.o missing.o readcpu.o unix_missing.o cpudefs.o od-aros/unicode.o 
-GENCPU_OBJS=gencpu.o missing.o host_readcpu.o cpudefs.o
+GENCPU_OBJS=gencpu.o missing.o host_readcpu.o cpudefs.o readcpu.o
 gencpu: $(GENCPU_OBJS)
 	$(HOST_CPP) -Wall $(GENCPU_OBJS) -o gencpu
 
