@@ -13,6 +13,8 @@
 
 #include "genblitter.h"
 
+struct blitop blitops[256];
+
 /* Here is the minterm table used in blitter function generation */
 
 static unsigned char blttbl[]= {
