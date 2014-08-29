@@ -157,6 +157,7 @@ COMMON_OBJS= \
 	keyboard.o \
 	sdlgfx.o \
 	shm.o \
+	posixemu.o \
 	stubs.o
 
 	#../picasso96.o \

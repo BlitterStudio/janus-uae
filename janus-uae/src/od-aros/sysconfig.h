@@ -35,6 +35,8 @@
 #define GFXFILTER
 #define PICASSO96
 
+#define SAVESTATE /* State file support */
+
 #if 0
 #define CPUEMU_0
 #define CPUEMU_20

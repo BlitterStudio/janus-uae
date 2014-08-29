@@ -146,6 +146,7 @@ void REGPARAM2 m68k_handle_trap (unsigned int trap_num)
 	int has_retval = (trap->flags & TRAPFLAG_NO_RETVAL) == 0;
 	int implicit_rts = (trap->flags & TRAPFLAG_DORET) != 0;
 
+  write_log("m68k_handle_trap(%d) entered (trapcount is %d)\n", trap_num, trap_count);
 	if (trap->name && trap->name[0] != 0 && trace_traps)
 		write_log (_T("TRAP: %s\n"), trap->name);
 
@@ -156,8 +157,10 @@ void REGPARAM2 m68k_handle_trap (unsigned int trap_num)
 			* space via a separate, dedicated simple trap which the trap
 			* handler causes to be invoked when it is done.
 			*/
+      write_log("m68k_handle_trap(%d): extended\n");
 			trap_HandleExtendedTrap (trap->handler, has_retval);
 		} else {
+      write_log("m68k_handle_trap(%d): simple\n");
 			/* Handle simple trap */
 			retval = (trap->handler) (NULL);
 
@@ -171,6 +174,8 @@ void REGPARAM2 m68k_handle_trap (unsigned int trap_num)
 		}
 	} else
 		write_log (_T("Illegal emulator trap\n"));
+
+  write_log("m68k_handle_trap(%d) left\n", trap_num);
 }
 
 
@@ -227,9 +232,12 @@ static void *trap_thread (void *arg)
 {
 	TrapContext *context = (TrapContext *) arg;
 
+  DebOut("trap_thread entered\n");
+
 	/* Wait until main thread is ready to switch to the
 	* this trap context. */
 	uae_sem_wait (&context->switch_to_trap_sem);
+  DebOut("trap_thread got context->switch_to_trap_sem\n");
 
 	/* Execute trap handler function. */
 	context->trap_retval = context->trap_handler (context);
@@ -271,14 +279,20 @@ static void trap_HandleExtendedTrap (TrapHandler handler_func, int has_retval)
 {
 	struct TrapContext *context = xcalloc (TrapContext, 1);
 
+  write_log("trap_HandleExtendedTrap(%lx, %d)\n", handler_func, has_retval);
+
 	if (context) {
+    write_log("1..\n");
 		uae_sem_init (&context->switch_to_trap_sem, 0, 0);
+    write_log("2..\n");
 		uae_sem_init (&context->switch_to_emu_sem, 0, 0);
+    write_log("3..\n");
 
 		context->trap_handler = handler_func;
 		context->trap_has_retval = has_retval;
 
 		context->saved_regs = regs;
+    write_log("start thread..\n");
 
 		/* Start thread to handle new trap context. */
 		uae_start_thread_fast (trap_thread, (void *)context, &context->thread);
@@ -286,13 +300,16 @@ static void trap_HandleExtendedTrap (TrapHandler handler_func, int has_retval)
 		/* Switch to trap context to begin execution of
 		* trap handler function.
 		*/
+    write_log("4..\n");
 		uae_sem_post (&context->switch_to_trap_sem);
 
 		/* Wait for trap context to switch back to us.
 		*
 		* It'll do this when the trap handler is done - or when
 		* the handler wants to call 68k code. */
+    write_log("5..\n");
 		uae_sem_wait (&context->switch_to_emu_sem);
+    write_log("6..\n");
 	}
 }
 

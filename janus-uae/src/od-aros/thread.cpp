@@ -25,6 +25,8 @@
  *
  ************************************************************************/
 
+#define OLI_DEBUG
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -79,6 +81,7 @@ void uae_sem_post (uae_sem_t *sem) {
 #endif
 
 	/* is it legal, to release a sempahore more than once !? */
+	DebOut("ReleaseSemaphore(%lx)\n", sem);
 	ReleaseSemaphore(sem);
 }
 
