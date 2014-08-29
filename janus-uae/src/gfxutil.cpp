@@ -13,6 +13,7 @@
 #include "rtgmodes.h"
 #include "xwin.h"
 #include "gfxfilter.h"
+#include "picasso96.h"
 
 #include <math.h>
 
