@@ -18,6 +18,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
 #
+#---------------------------------------------------------------------
+# Bug: cpuemu_11.cpp and compstbl.cpp fail to get generated on the first run.
+#      => run make again and it will be there. Sorry for that.
+#---------------------------------------------------------------------
 
 # you have to adjust this of course..
 TARGET     = /home/oli/svn/aros/AROS/bin/linux-i386/AROS/wuae

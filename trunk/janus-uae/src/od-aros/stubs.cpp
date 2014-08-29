@@ -23,6 +23,7 @@
  *
  ************************************************************************/
 
+//#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -578,12 +579,12 @@ void toggle_mousegrab (void)
 {
   TODO();
 }
-#endif
 
 int uae_start_thread (const TCHAR *name, void *(*f)(void *), void *arg, uae_thread_id *tid)
 {
   TODO();
 }
+#endif
 
 struct netdriverdata *uaenet_enumerate (struct netdriverdata **out, const TCHAR *name)
 {
@@ -892,10 +893,12 @@ uae_u8 *save_custom_agacolors (int *len, uae_u8 *dstptr)
   TODO();
 }
 
+#if 0
 int uae_start_thread_fast (void *(*f)(void *), void *arg, uae_thread_id *tid)
 {
   TODO();
 }
+#endif
 
 void uaenet_enumerate_free (struct netdriverdata *tcp)
 {
@@ -1278,6 +1281,7 @@ void setid_af (struct uae_input_device *uid, int i, int slot, int sub, int port,
   TODO();
 }
 
+#if 0
 void restore_fram(int a, unsigned intb) {
   TODO();
 }
@@ -1285,19 +1289,23 @@ void restore_fram(int a, unsigned intb) {
 void restore_zram(int a, unsigned int b, int c) {
   TODO();
 }
+#endif
 
 void save_bootrom(int* a) {
   TODO();
 }
 
+#if 0
 void save_expansion(int* a, unsigned char* b) {
   TODO();
 }
+#endif
 
 void restore_bootrom(int a, unsigned int b) {
   TODO();
 }
 
+#if 0
 void restore_expansion(unsigned char* a) {
   TODO();
 }
@@ -1309,6 +1317,7 @@ void save_fram(int* a)       {
 void save_zram(int* a, int b)  {
   TODO();
 }
+#endif
 
 void clipboard_vsync (void) {
   TODO();
