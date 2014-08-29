@@ -125,6 +125,8 @@ struct utimbuf
 #define REGPARAM2 
 #define REGPARAM3 
 
+#define null NULL
+
 /* AROS has no 64 bit */
 #define _stat64 stat
 #define FILEFLAG_WRITE S_IWUSR
