@@ -75,7 +75,7 @@ build68k: $(BUILD68K_OBJS)
 	$(HOST_CPP) -Wall $(BUILD68K_OBJS) -o build68k
 
 #GENCPU_OBJS=gencpu.o missing.o readcpu.o unix_missing.o cpudefs.o od-aros/unicode.o 
-GENCPU_OBJS=gencpu.o missing.o host_readcpu.o cpudefs.o readcpu.o
+GENCPU_OBJS=gencpu.o missing.o host_readcpu.o cpudefs.o 
 gencpu: $(GENCPU_OBJS)
 	$(HOST_CPP) -Wall $(GENCPU_OBJS) -o gencpu
 
@@ -88,7 +88,7 @@ gencomp: $(GENCOMP_OBJS)
 # this gets linked both by host and AROS crosscompiler!
 # so have to build and link two different object files..
 host_readcpu.o: readcpu.cpp
-	$(HOST_CPP) $(HOST_FLAGS) $(INCLUDES) -o host_readcpu.o -c host_readcpu.cpp  
+	$(HOST_CPP) $(HOST_FLAGS) $(INCLUDES) -o host_readcpu.o -c readcpu.cpp  
 
 genlinetoscr: genlinetoscr.o
 	$(HOST_CPP) -Wall -o genlinetoscr genlinetoscr.o
