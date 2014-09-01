@@ -6,6 +6,9 @@
 * (c) 1995 Bernd Schmidt
 */
 
+#ifndef CUSTOM_H
+#define CUSTOM_H
+
 #include "machdep/rpt.h"
 
 /* These are the masks that are ORed together in the chipset_mask option.
@@ -15,11 +18,19 @@
 #define CSMASK_AGA 4
 #define CSMASK_MASK (CSMASK_ECS_AGNUS | CSMASK_ECS_DENISE | CSMASK_AGA)
 
+#define CHIPSET_CLOCK_PAL  3546895
+#define CHIPSET_CLOCK_NTSC 3579545
+
+#define MAXHPOS_ROWS 256
+#define MAXVPOS_LINES_ECS 2048
+#define MAXVPOS_LINES_OCS 512
+#define HPOS_SHIFT 3
+
 uae_u32 get_copper_address (int copno);
 
 extern int custom_init (void);
 extern void custom_prepare (void);
-extern void custom_reset (int hardreset);
+extern void custom_reset (bool hardreset, bool keyboardreset);
 extern int intlev (void);
 extern void dumpcustom (void);
 
@@ -44,7 +55,7 @@ extern unsigned long int hsync_counter, vsync_counter;
 extern uae_u16 dmacon;
 extern uae_u16 intena, intreq, intreqr;
 
-extern int vpos;
+extern int vpos, lof_store;
 
 extern int find_copper_record (uaecptr, int *, int *);
 
@@ -59,7 +70,6 @@ STATIC_INLINE int dmaen (unsigned int dmamask)
 #define SPCFLAG_COPPER 4
 #define SPCFLAG_INT 8
 #define SPCFLAG_BRK 16
-#define SPCFLAG_EXTRA_CYCLES 32
 #define SPCFLAG_TRACE 64
 #define SPCFLAG_DOTRACE 128
 #define SPCFLAG_DOINT 256 /* arg, JIT fails without this.. */
@@ -78,7 +88,7 @@ extern unsigned int joy0dir, joy1dir;
 extern int joy0button, joy1button;
 
 extern void INTREQ (uae_u16);
-extern void INTREQ_0 (uae_u16);
+extern bool INTREQ_0 (uae_u16);
 extern void INTREQ_f (uae_u16);
 extern void send_interrupt (int num, int delay);
 extern uae_u16 INTREQR (void);
@@ -97,23 +107,29 @@ extern uae_u16 INTREQR (void);
 
 #define MAXHPOS_PAL 227
 #define MAXHPOS_NTSC 227
+// short field maxvpos
 #define MAXVPOS_PAL 312
 #define MAXVPOS_NTSC 262
+// following endlines = first visible line
 #define VBLANK_ENDLINE_PAL 26
 #define VBLANK_ENDLINE_NTSC 21
+// line when sprite DMA fetches first control words
 #define VBLANK_SPRITE_PAL 25
 #define VBLANK_SPRITE_NTSC 20
 #define VBLANK_HZ_PAL 50
 #define VBLANK_HZ_NTSC 60
-#define EQU_ENDLINE_PAL 9
+#define VSYNC_ENDLINE_PAL 5
+#define VSYNC_ENDLINE_NTSC 6
+#define EQU_ENDLINE_PAL 8
 #define EQU_ENDLINE_NTSC 10
 
 extern int maxhpos, maxhpos_short;
-extern int maxvpos, maxvpos_nom;
-extern int hsyncstartpos;
+extern int maxvpos, maxvpos_nom, maxvpos_display;
+extern int hsyncstartpos, hsyncendpos;
 extern int minfirstline, vblank_endline, numscrlines;
-extern int vblank_hz, fake_vblank_hz, vblank_skip, doublescan;
-extern frame_time_t syncbase;
+extern double vblank_hz, fake_vblank_hz;
+extern int vblank_skip, doublescan;
+extern bool programmedmode;
 
 #define DMA_AUD0      0x0001
 #define DMA_AUD1      0x0002
@@ -127,17 +143,19 @@ extern frame_time_t syncbase;
 #define DMA_MASTER    0x0200
 #define DMA_BLITPRI   0x0400
 
-#define CYCLE_REFRESH	0x01
-#define CYCLE_STROBE	0x02
-#define CYCLE_MISC		0x04
-#define CYCLE_SPRITE	0x08
-#define CYCLE_COPPER	0x10
-#define CYCLE_BLITTER	0x20
-#define CYCLE_CPU		0x40
-#define CYCLE_CPUNASTY	0x80
+#define CYCLE_REFRESH	1
+#define CYCLE_STROBE	2
+#define CYCLE_MISC		3
+#define CYCLE_SPRITE	4
+#define CYCLE_COPPER	5
+#define CYCLE_BLITTER	6
+#define CYCLE_CPU		7
+#define CYCLE_CPUNASTY	8
+#define CYCLE_COPPER_SPECIAL 0x10
+
+#define CYCLE_MASK 0x0f
 
 extern unsigned long frametime, timeframes;
-extern int plfstrt, plfstop, plffirstline, plflastline;
 extern uae_u16 htotal, vtotal, beamcon0;
 
 /* 100 words give you 1600 horizontal pixels. Should be more than enough for
@@ -180,13 +198,13 @@ STATIC_INLINE int GET_RES_DENISE (uae_u16 con0)
 {
 	if (!(currprefs.chipset_mask & CSMASK_ECS_DENISE))
 		con0 &= ~0x40; // SUPERHIRES
-	return ((con0) & 0x8000) ? RES_HIRES : ((con0) & 0x40) ? RES_SUPERHIRES : RES_LORES;
+	return ((con0) & 0x40) ? RES_SUPERHIRES : ((con0) & 0x8000) ? RES_HIRES : RES_LORES;
 }
 STATIC_INLINE int GET_RES_AGNUS (uae_u16 con0)
 {
 	if (!(currprefs.chipset_mask & CSMASK_ECS_AGNUS))
 		con0 &= ~0x40; // SUPERHIRES
-	return ((con0) & 0x8000) ? RES_HIRES : ((con0) & 0x40) ? RES_SUPERHIRES : RES_LORES;
+	return ((con0) & 0x40) ? RES_SUPERHIRES : ((con0) & 0x8000) ? RES_HIRES : RES_LORES;
 }
 /* get sprite width from FMODE */
 #define GET_SPRITEWIDTH(FMODE) ((((FMODE) >> 2) & 3) == 3 ? 64 : (((FMODE) >> 2) & 3) == 0 ? 16 : 32)
@@ -202,7 +220,7 @@ STATIC_INLINE int GET_PLANES(uae_u16 bplcon0)
 
 extern void fpscounter_reset (void);
 extern unsigned long idletime;
-extern int lightpen_x, lightpen_y, lightpen_cx, lightpen_cy;
+extern int lightpen_x, lightpen_y, lightpen_cx, lightpen_cy, lightpen_active, lightpen_enabled;
 
 struct customhack {
 	uae_u16 v;
@@ -211,6 +229,10 @@ struct customhack {
 void customhack_put (struct customhack *ch, uae_u16 v, int hpos);
 uae_u16 customhack_get (struct customhack *ch, int hpos);
 extern void alloc_cycle_ext (int, int);
+extern void alloc_cycle_blitter (int hpos, uaecptr *ptr, int);
 extern bool ispal (void);
 extern int current_maxvpos (void);
+extern struct chipset_refresh *get_chipset_refresh (void);
+extern void compute_framesync (void);
 
+#endif /* CUSTOM_H */

@@ -50,6 +50,7 @@
 #define CPUEMU_0 /* generic 680x0 emulation */
 #define CPUEMU_11 /* 68000+prefetch emulation */
 #define CPUEMU_12 /* 68000 cycle-exact cpu&blitter */
+#define CPUEMU_13 /* 68000/68010 cycle-exact cpu&blitter */
 #define CPUEMU_20 /* 68020 "cycle-exact" + blitter */
 #define CPUEMU_21 /* 68030 (040/060) "cycle-exact" + blitter */
 #define CPUEMU_31 /* 68040 Aranym MMU */
