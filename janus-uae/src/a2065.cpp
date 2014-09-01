@@ -15,14 +15,17 @@
 #include "custom.h"
 #include "newcpu.h"
 #include "a2065.h"
+#include "ethernet.h"
 
 #ifndef __AROS__
 
-#include "win32_uaenet.h"
 #include "crc32.h"
 #include "savestate.h"
 #include "autoconf.h"
 
+#define DUMPPACKET 0
+
+#define MEM_MIN 0x8100
 int log_a2065 = 0;
 static int log_transmit = 1;
 static int log_receive = 1;
@@ -52,7 +55,7 @@ static uae_u64 am_ladrf;
 static uae_u32 am_rdr, am_rdr_rlen, am_rdr_rdra;
 static uae_u32 am_tdr, am_tdr_tlen, am_tdr_tdra;
 static int tdr_offset, rdr_offset;
-static int byteswap, prom, fakeprom;
+static int dbyteswap, prom, fakeprom;
 static uae_u8 fakemac[6], realmac[6];
 static uae_u8 broadcast[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
@@ -111,6 +114,20 @@ static uae_u8 broadcast[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 #define RX_STP 0x0200
 #define RX_ENP 0x0100
 
+static uae_u16 gword2 (uae_u8 *p)
+{
+	return (p[0] << 8) | p[1];
+}
+static uae_u16 gword (uae_u8 *p)
+{
+	return (p[0] << 8) | p[1];
+}
+static void pword (uae_u8 *p, uae_u16 v)
+{
+	p[0] = v >> 8;
+	p[1] = v;
+}
+
 static void ew (int addr, uae_u32 value)
 {
 	addr &= 0xffff;
@@ -126,27 +143,31 @@ static void ew (int addr, uae_u32 value)
 void a2065_reset (void)
 {
 	am_initialized = 0;
-	csr[0] = csr[1] = csr[2] = csr[3] = 0;
+	csr[0] = CSR0_STOP;
+	csr[1] = csr[2] = csr[3] = 0;
+	dbyteswap = 0;
 	rap = 0;
 
-	uaenet_close (sysdata);
+	ethernet_close (td, sysdata);
 	xfree (sysdata);
 	sysdata = NULL;
 	td = NULL;
 }
 
-static void dumppacket (TCHAR *n, uae_u8 *packet, int len)
+#if DUMPPACKET
+static void dumppacket (const TCHAR *n, uae_u8 *packet, int len)
 {
 	int i;
 	TCHAR buf[10000];
 
 	for (i = 0; i < len; i++) {
-		_stprintf (buf + i * 3, L".%02X", packet[i]);
+		_stprintf (buf + i * 3, _T(".%02X"), packet[i]);
 	}
-	write_log (L"%s %d: ", n, len);
+	write_log (_T("%s %d: "), n, len);
 	write_log (buf);
-	write_log (L"\n\n");
+	write_log (_T("\n\n"));
 }
+#endif
 
 #define MAX_PACKET_SIZE 4000
 static uae_u8 transmitbuffer[MAX_PACKET_SIZE];
@@ -175,9 +196,11 @@ static int mungepacket (uae_u8 *packet, int len)
 	uae_u16 type;
 	int ret = 0;
 
-	if (len < 60)
+	if (len < 20)
 		return 0;
-	//dumppacket (L"pre:", packet, len);
+#if DUMPPACKET
+	dumppacket (_T("pre:"), packet, len);
+#endif
 	data = packet + 14;
 	type = (packet[12] << 8) | packet[13];
 	// switch destination mac
@@ -229,7 +252,9 @@ static int mungepacket (uae_u8 *packet, int len)
 			// this all just to translate single DHCP MAC..
 		}
 	}
-	//dumppacket (L"post:", packet, len);
+#if DUMPPACKET
+	dumppacket (_T("post:"), packet, len);
+#endif
 	return ret;
 }
 
@@ -254,7 +279,7 @@ static void gotfunc (struct s2devstruct *dev, const uae_u8 *databuf, int len)
 	if (log_a2065 > 1 && log_receive) {
 		dstmac = databuf;
 		srcmac = databuf + 6;
-		write_log (L"A2065<!DST:%02X.%02X.%02X.%02X.%02X.%02X SRC:%02X.%02X.%02X.%02X.%02X.%02X E=%04X S=%d\n",
+		write_log (_T("A2065<!DST:%02X.%02X.%02X.%02X.%02X.%02X SRC:%02X.%02X.%02X.%02X.%02X.%02X E=%04X S=%d\n"),
 			dstmac[0], dstmac[1], dstmac[2], dstmac[3], dstmac[4], dstmac[5],
 			srcmac[6], srcmac[7], srcmac[8], srcmac[9], srcmac[10], srcmac[11],
 			(databuf[12] << 8) | databuf[13], len);
@@ -262,9 +287,9 @@ static void gotfunc (struct s2devstruct *dev, const uae_u8 *databuf, int len)
 
 	if (!(csr[0] & CSR0_RXON)) // receiver off?
 		return;
-	if (len < 60) { // too short
+	if (len < 20) { // too short
 		if (log_a2065)
-			write_log (L"A2065: short frame, %d bytes\n", len);
+			write_log (_T("A2065: short frame, %d bytes\n"), len);
 		return;
 	}
 
@@ -275,14 +300,14 @@ static void gotfunc (struct s2devstruct *dev, const uae_u8 *databuf, int len)
 		// multicast
 		if (!mcfilter (dstmac)) {
 			if (log_a2065 > 1)
-				write_log (L"mc filtered\n");
+				write_log (_T("mc filtered\n"));
 			return;
 		}
 	} else {
 		// !promiscuous and dst != me and dst != broadcast
 		if (!prom && (memcmp (dstmac, realmac, sizeof realmac) != 0 && memcmp (dstmac, broadcast, sizeof broadcast) != 0)) {
 			if (log_a2065 > 1)
-				write_log (L"not for me1\n");
+				write_log (_T("not for me1\n"));
 			return;
 		}
 	}
@@ -290,13 +315,13 @@ static void gotfunc (struct s2devstruct *dev, const uae_u8 *databuf, int len)
 	// src and dst = me? right, better drop it.
 	if (memcmp (dstmac, realmac, sizeof realmac) == 0 && memcmp (srcmac, realmac, sizeof realmac) == 0) {
 		if (log_a2065 > 1)
-			write_log (L"not for me2\n");
+			write_log (_T("not for me2\n"));
 		return;
 	}
 	// dst = broadcast and src = me? no thanks.
 	if (memcmp (dstmac, broadcast, sizeof broadcast) == 0 && memcmp (srcmac, realmac, sizeof realmac) == 0) {
 		if (log_a2065 > 1)
-			write_log (L"not for me3\n");
+			write_log (_T("not for me3\n"));
 		return;
 	}
 
@@ -321,7 +346,7 @@ static void gotfunc (struct s2devstruct *dev, const uae_u8 *databuf, int len)
 	srcmac = d + 6;
 	if (log_a2065 && log_receive) {
 		if (memcmp (dstmac, realmac, sizeof realmac) == 0) {
-			write_log (L"A2065<-DST:%02X.%02X.%02X.%02X.%02X.%02X SRC:%02X.%02X.%02X.%02X.%02X.%02X E=%04X S=%d\n",
+			write_log (_T("A2065<-DST:%02X.%02X.%02X.%02X.%02X.%02X SRC:%02X.%02X.%02X.%02X.%02X.%02X E=%04X S=%d\n"),
 				dstmac[0], dstmac[1], dstmac[2], dstmac[3], dstmac[4], dstmac[5],
 				srcmac[6], srcmac[7], srcmac[8], srcmac[9], srcmac[10], srcmac[11],
 				(d[12] << 8) | d[13], len);
@@ -329,7 +354,7 @@ static void gotfunc (struct s2devstruct *dev, const uae_u8 *databuf, int len)
 	}
 	if (mungepacket (d, len)) {
 		if (log_a2065 && log_receive) {
-			write_log (L"A2065<*DST:%02X.%02X.%02X.%02X.%02X.%02X SRC:%02X.%02X.%02X.%02X.%02X.%02X E=%04X S=%d\n",
+			write_log (_T("A2065<*DST:%02X.%02X.%02X.%02X.%02X.%02X SRC:%02X.%02X.%02X.%02X.%02X.%02X E=%04X S=%d\n"),
 				dstmac[0], dstmac[1], dstmac[2], dstmac[3], dstmac[4], dstmac[5],
 				srcmac[6], srcmac[7], srcmac[8], srcmac[9], srcmac[10], srcmac[11],
 				(d[12] << 8) | d[13], len);
@@ -351,23 +376,22 @@ static void gotfunc (struct s2devstruct *dev, const uae_u8 *databuf, int len)
 	for (;;) {
 		rdr_offset %= am_rdr_rlen;
 		p = boardram + ((am_rdr_rdra + rdr_offset * 8) & RAM_MASK);
-		rmd0 = (p[1] << 8) | (p[0] << 0);
-		rmd1 = (p[3] << 8) | (p[2] << 0);
-		rmd2 = (p[5] << 8) | (p[4] << 0);
-		rmd3 = (p[7] << 8) | (p[6] << 0);
+		rmd0 = gword (p + 0);
+		rmd1 = gword (p + 2);
+		rmd2 = gword (p + 4);
+		rmd3 = gword (p + 6);
 		addr = rmd0 | ((rmd1 & 0xff) << 16);
 		addr &= RAM_MASK;
 
 		if (!(rmd1 & RX_OWN)) {
-			write_log (L"A2065: RECEIVE BUFFER ERROR\n");
+			write_log (_T("A2065: RECEIVE BUFFER ERROR\n"));
 			if (!first) {
 				rmd1 |= RX_BUFF | RX_OFLO;
 				csr[0] &= ~CSR0_RXON;
 			} else {
 				csr[0] |= CSR0_MISS;
 			}
-			p[3] = rmd1 >> 8;
-			p[2] = rmd1 >> 0;
+			pword (p + 2, rmd1);
 			rethink_a2065 ();
 			return;
 		}
@@ -382,16 +406,14 @@ static void gotfunc (struct s2devstruct *dev, const uae_u8 *databuf, int len)
 
 		size = 65536 - rmd2;
 		for (i = 0; i < size && insize < len; i++, insize++)
-			boardram[((addr + i) ^ byteswap) & RAM_MASK] = data[insize];
+			boardram[((addr + i) ^ 0) & RAM_MASK] = data[insize];
 		if (insize >= len) {
 			rmd1 |= RX_ENP;
 			rmd3 = len;
 		}
 
-		p[3] = rmd1 >> 8;
-		p[2] = rmd1 >> 0;
-		p[7] = rmd3 >> 8;
-		p[6] = rmd3 >> 0;
+		pword (p + 2, rmd1);
+		pword (p + 6, rmd3);
 
 		if (insize >= len)
 			break;
@@ -406,7 +428,7 @@ static int getfunc (struct s2devstruct *dev, uae_u8 *d, int *len)
 	if (transmitlen <= 0)
 		return 0;
 	if (transmitlen > *len) {
-		write_log (L"A2065: too large packet transmission attempt %d > %d\n", transmitlen, *len);
+		write_log (_T("A2065: too large packet transmission attempt %d > %d\n"), transmitlen, *len);
 		transmitlen = 0;
 		return 0;
 	}
@@ -422,7 +444,7 @@ static void do_transmit (void)
 	int i;
 	int size, outsize;
 	int err, add_fcs;
-	uae_u32 addr;
+	uae_u32 addr, bufaddr;
 	uae_u8 *p;
 	uae_u16 tmd0, tmd1, tmd2, tmd3;
 
@@ -431,24 +453,25 @@ static void do_transmit (void)
 	outsize = 0;
 
 	tdr_offset %= am_tdr_tlen;
-	p = boardram + ((am_tdr_tdra + tdr_offset * 8) & RAM_MASK);
-	tmd1 = (p[3] << 8) | (p[2] << 0);
+	bufaddr = am_tdr_tdra + tdr_offset * 8;
+	p = boardram + (bufaddr & RAM_MASK);
+	tmd1 = gword (p + 2);
 	if (!(tmd1 & TX_OWN) || !(tmd1 & TX_STP)) {
 		tdr_offset++;
 		return;
 	}
 	if (!(tmd1 & TX_ENP) && log_a2065 > 0)
-		write_log (L"A2065: chained transmit!?\n");
+		write_log (_T("A2065: chained transmit!?\n"));
 
 	add_fcs = tmd1 & TX_ADD_FCS;
 
 	for (;;) {
 		tdr_offset %= am_tdr_tlen;
 		p = boardram + ((am_tdr_tdra + tdr_offset * 8) & RAM_MASK);
-		tmd0 = (p[1] << 8) | (p[0] << 0);
-		tmd1 = (p[3] << 8) | (p[2] << 0);
-		tmd2 = (p[5] << 8) | (p[4] << 0);
-		tmd3 = (p[7] << 8) | (p[6] << 0);
+		tmd0 = gword (p + 0);
+		tmd1 = gword (p + 2);
+		tmd2 = gword (p + 4);
+		tmd3 = gword (p + 6);
 		addr = tmd0 | ((tmd1 & 0xff) << 16);
 		addr &= RAM_MASK;
 
@@ -456,7 +479,7 @@ static void do_transmit (void)
 			tmd3 |= TX_BUFF | TX_UFLO;
 			tmd1 |= TX_ERR;
 			csr[0] &= ~CSR0_TXON;
-			write_log (L"A2065: TRANSMIT OWN NOT SET\n");
+			write_log (_T("A2065: TRANSMIT OWN NOT SET\n"));
 			err = 1;
 		} else {
 			tmd1 &= ~TX_OWN;
@@ -464,13 +487,11 @@ static void do_transmit (void)
 			if (size > MAX_PACKET_SIZE)
 				size = MAX_PACKET_SIZE;
 			for (i = 0; i < size; i++)
-				transmitbuffer[outsize++] = boardram[((addr + i) ^ byteswap) & RAM_MASK];
+				transmitbuffer[outsize++] = boardram[((addr + i) ^ 0) & RAM_MASK];
 			tdr_offset++;
 		}
-		p[3] = tmd1 >> 8;
-		p[2] = tmd1 >> 0;
-		p[7] = tmd3 >> 8;
-		p[6] = tmd3 >> 0;
+		pword (p + 2, tmd1);
+		pword (p + 6, tmd3);
 		if ((tmd1 & TX_ENP) || err)
 			break;
 	}
@@ -478,12 +499,10 @@ static void do_transmit (void)
 		tmd3 |= TX_BUFF | TX_UFLO;
 		tmd1 |= TX_ERR;
 		csr[0] &= ~CSR0_TXON;
-		write_log (L"A2065: TRANSMIT UNDERFLOW %d\n", outsize);
+		write_log (_T("A2065: TRANSMIT UNDERFLOW %d\n"), outsize);
 		err = 1;
-		p[3] = tmd1 >> 8;
-		p[2] = tmd1 >> 0;
-		p[7] = tmd3 >> 8;
-		p[6] = tmd3 >> 0;
+		pword (p + 2, tmd1);
+		pword (p + 6, tmd3);
 	}
 
 	if (!err) {
@@ -491,21 +510,21 @@ static void do_transmit (void)
 		if ((am_mode & MODE_DTCR) && !add_fcs)
 			outsize -= 4; // do not include checksum bytes
 		if (log_a2065 && log_transmit) {
-			write_log (L"A2065->DST:%02X.%02X.%02X.%02X.%02X.%02X SRC:%02X.%02X.%02X.%02X.%02X.%02X E=%04X S=%d\n",
+			write_log (_T("A2065->DST:%02X.%02X.%02X.%02X.%02X.%02X SRC:%02X.%02X.%02X.%02X.%02X.%02X E=%04X S=%d ADDR=%04X\n"),
 				d[0], d[1], d[2], d[3], d[4], d[5],
 				d[6], d[7], d[8], d[9], d[10], d[11],
-				(d[12] << 8) | d[13], outsize);
+				(d[12] << 8) | d[13], outsize, bufaddr);
 		}
 		transmitlen = outsize;
 		if (mungepacket (d, transmitlen)) {
 			if (log_a2065 && log_transmit) {
-				write_log (L"A2065*>DST:%02X.%02X.%02X.%02X.%02X.%02X SRC:%02X.%02X.%02X.%02X.%02X.%02X E=%04X S=%d\n",
+				write_log (_T("A2065*>DST:%02X.%02X.%02X.%02X.%02X.%02X SRC:%02X.%02X.%02X.%02X.%02X.%02X E=%04X S=%d\n"),
 					d[0], d[1], d[2], d[3], d[4], d[5],
 					d[6], d[7], d[8], d[9], d[10], d[11],
 					(d[12] << 8) | d[13], outsize);
 			}
 		}
-		uaenet_trigger (sysdata);
+		ethernet_trigger (sysdata);
 	}
 	csr[0] |= CSR0_TINT;
 	rethink_a2065 ();
@@ -549,15 +568,15 @@ static void chip_init (void)
 	uae_u32 iaddr = ((csr[2] & 0xff) << 16) | csr[1];
 	uae_u8 *p = boardram + (iaddr & RAM_MASK);
 
-	write_log (L"A2065: Initialization block2:\n");
+	write_log (_T("A2065: Initialization block2:\n"));
 	for (int i = 0; i < 24; i++)
-		write_log (L".%02X", p[i]);
-	write_log (L"\n");
+		write_log (_T(".%02X"), p[i]);
+	write_log (_T("\n"));
 
-	am_mode = (p[0] << 8) | (p[1] << 0);
-	am_ladrf = ((uae_u64)p[15] << 56) | ((uae_u64)p[14] << 48) | ((uae_u64)p[13] << 40) | ((uae_u64)p[12] << 32) | (p[11] << 24) | (p[10] << 16) | (p[9] << 8) | (p[8] << 0);
-	am_rdr = (p[19] << 24) | (p[18] << 16) | (p[17] << 8) | (p[16] << 0);
-	am_tdr = (p[23] << 24) | (p[22] << 16) | (p[21] << 8) | (p[20] << 0);
+	am_mode = gword2 (p + 0);
+	am_ladrf = (((uae_u64)gword2 (p + 14)) << 48) | (((uae_u64)gword2 (p + 12)) << 32) | (((uae_u64)gword2 (p + 10)) << 16) | gword2 (p + 8);
+	am_rdr = (gword2 (p + 18) << 16) | gword2 (p + 16);
+	am_tdr = (gword2 (p + 22) << 16) | gword2 (p + 20);
 
 	am_rdr_rlen = 1 << ((am_rdr >> 29) & 7);
 	am_tdr_tlen = 1 << ((am_tdr >> 29) & 7);
@@ -567,28 +586,27 @@ static void chip_init (void)
 	prom = (am_mode & MODE_PROM) ? 1 : 0;
 	fakeprom = a2065_promiscuous ? 1 : 0;
 	
-	fakemac[0] = p[2];
-	fakemac[1] = p[3];
-	fakemac[2] = p[4];
-	fakemac[3] = p[5];
-	fakemac[4] = p[6];
-	fakemac[5] = p[7];
+	fakemac[0] = p[3];
+	fakemac[1] = p[2];
+	fakemac[2] = p[5];
+	fakemac[3] = p[4];
+	fakemac[4] = p[7];
+	fakemac[5] = p[6];
 
-	write_log (L"A2065: %04X %06X %d %d %d %d %06X %06X %02X:%02X:%02X:%02X:%02X:%02X\n",
+	write_log (_T("A2065: %04X %06X %d %d %d %d %06X %06X %02X:%02X:%02X:%02X:%02X:%02X\n"),
 		am_mode, iaddr, prom, fakeprom, am_rdr_rlen, am_tdr_tlen, am_rdr_rdra, am_tdr_tdra,
 		fakemac[0], fakemac[1], fakemac[2], fakemac[3], fakemac[4], fakemac[5]);
-
 
 	am_rdr_rdra &= RAM_MASK;
 	am_tdr_tdra &= RAM_MASK;
 	tdr_offset = rdr_offset = 0;
 
-	uaenet_close (sysdata);
+	ethernet_close (td, sysdata);
 	if (td != NULL) {
 		if (!sysdata)
-			sysdata = xcalloc (uae_u8, uaenet_getdatalenght());
-		if (!uaenet_open (sysdata, td, NULL, gotfunc, getfunc, prom || fakeprom)) {
-			write_log (L"A2065: failed to initialize winpcap driver\n");
+			sysdata = xcalloc (uae_u8, ethernet_getdatalenght (td));
+		if (!ethernet_open (td, sysdata, NULL, gotfunc, getfunc, prom || fakeprom)) {
+			write_log (_T("A2065: failed to initialize winpcap driver\n"));
 		}
 	}
 }
@@ -597,14 +615,14 @@ static uae_u16 chip_wget (uaecptr addr)
 {
 	if (addr == RAP) {
 		return rap;
-	} else if (addr = RDP) {
+	} else if (addr == RDP) {
 		uae_u16 v = csr[rap];
 		if (rap == 0) {
 			if (v & (CSR0_BABL | CSR0_CERR | CSR0_MISS | CSR0_MERR))
 				v |= CSR0_ERR;
 		}
 		if (log_a2065 > 2)
-			write_log (L"A2065_CHIPWGET: CSR%d=%04X PC=%08X\n", rap, v, M68K_GETPC);
+			write_log (_T("A2065_CHIPWGET: CSR%d=%04X PC=%08X\n"), rap, v, M68K_GETPC);
 		return v;
 	}
 	return 0xffff;
@@ -623,7 +641,7 @@ static void chip_wput (uaecptr addr, uae_u16 v)
 		uae_u16 t;
 
 		if (log_a2065 > 2)
-			write_log (L"A2065_CHIPWPUT: CSR%d=%04X PC=%08X\n", rap, v & 0xffff, M68K_GETPC);
+			write_log (_T("A2065_CHIPWPUT: CSR%d=%04X PC=%08X\n"), rap, v & 0xffff, M68K_GETPC);
 
 		switch (rap)
 		{
@@ -637,35 +655,40 @@ static void chip_wput (uaecptr addr, uae_u16 v)
 			csr[0] &= ~t;
 			csr[0] &= ~CSR0_ERR;
 
-			if ((csr[0] & (CSR0_STOP | CSR0_STRT | CSR0_INIT)) == (CSR0_STOP | CSR0_STRT | CSR0_INIT))
-				csr[0] &= ~(CSR0_STRT | CSR0_INIT);
-			if (csr[0] & CSR0_INIT)
-				csr[0] &= ~CSR0_STOP;
+			if ((csr[0] & CSR0_STOP) && !(oreg & CSR0_STOP)) {
 
-			if ((csr[0] & CSR0_STRT) && !(oreg & CSR0_STRT)) {
+				csr[0] = CSR0_STOP;
+				if (log_a2065)
+					write_log (_T("A2065: STOP. %04X -> %04X -> %04X\n"), oreg, v, csr[0]);
+				csr[3] = 0;
+				dbyteswap = 0;
+
+			} else if ((csr[0] & CSR0_STRT) && !(oreg & CSR0_STRT) && (oreg & (CSR0_STOP | CSR0_INIT))) {
+
 				csr[0] &= ~CSR0_STOP;
 				if (!(am_mode & MODE_DTX))
 					csr[0] |= CSR0_TXON;
 				if (!(am_mode & MODE_DRX))
 					csr[0] |= CSR0_RXON;
+				if ((csr[0] & CSR0_INIT) && !(oreg & CSR0_INIT)) {
+					chip_init ();
+					csr[0] |= CSR0_IDON;
+					am_initialized = 1;
+					if (log_a2065)
+						write_log (_T("A2065: INIT+START. %04X -> %04X -> %04X\n"), oreg, v, csr[0]);
+				}
 				if (log_a2065)
-					write_log (L"A2065: START.\n");
-			}
+					write_log (_T("A2065: START. %04X -> %04X -> %04X\n"), oreg, v, csr[0]);
+			
+			} else if ((csr[0] & CSR0_INIT) && !(oreg & CSR0_INIT) && (oreg & CSR0_STOP)) {
 
-			if ((csr[0] & CSR0_STOP) && !(oreg & CSR0_STOP)) {
-				csr[0] = CSR0_STOP;
-				if (log_a2065)
-					write_log (L"A2065: STOP.\n");
-				csr[3] = 0;
-				am_initialized = 0;
-			}
-
-			if ((csr[0] & CSR0_INIT) && am_initialized == 0) {
-				if (log_a2065)
-					write_log (L"A2065: INIT.\n");
 				chip_init ();
 				csr[0] |= CSR0_IDON;
+				csr[0] &= ~(CSR0_RXON | CSR0_TXON | CSR0_STOP);
 				am_initialized = 1;
+				csr[3] = 0;
+				if (log_a2065)
+					write_log (_T("A2065: INIT. %04X -> %04X -> %04X\n"), oreg, v, csr[0]);
 			}
 
 			if ((csr[0] & CSR0_STRT) && am_initialized) {
@@ -693,7 +716,12 @@ static void chip_wput (uaecptr addr, uae_u16 v)
 				csr[3] = v;
 				csr[3] &= 7;
 			}
-			byteswap = (csr[3] & CSR3_BSWP) ? 1 : 0;
+			dbyteswap = 0;
+			/*
+			 * Some drivers set this but only work if no byteswapping
+			 * is done. Weird..
+			 * dbyteswap = (csr[3] & CSR3_BSWP) ? 1 : 0;
+			*/
 			break;
 
 		}
@@ -705,23 +733,17 @@ static uae_u32 a2065_bget2 (uaecptr addr)
 {
 	uae_u32 v = 0;
 
-	if (addr < 0x40) {
-		v = config[addr];
-	} else if (addr >= RAM_OFFSET) {
-		v = boardram[(addr & RAM_MASK) ^ 1];
+	if (addr >= RAM_OFFSET) {
+		v = boardram[(addr & RAM_MASK)];
 	}
-	if (log_a2065 > 2)
-		write_log (L"A2065_BGET: %08X -> %02X PC=%08X\n", addr, v & 0xff, M68K_GETPC);
 	return v;
 }
 
 static void a2065_bput2 (uaecptr addr, uae_u32 v)
 {
 	if (addr >= RAM_OFFSET) {
-		boardram[(addr & RAM_MASK) ^ 1] = v;
+		boardram[(addr & RAM_MASK)] = v;
 	}
-	if (log_a2065 > 2)
-		write_log (L"A2065_BPUT: %08X <- %02X PC=%08X\n", addr, v & 0xff, M68K_GETPC);
 }
 
 static uae_u32 REGPARAM2 a2065_wget (uaecptr addr)
@@ -734,9 +756,16 @@ static uae_u32 REGPARAM2 a2065_wget (uaecptr addr)
 	if (addr == CHIP_OFFSET || addr == CHIP_OFFSET + 2) {
 		v = chip_wget (addr);
 	} else {
-		v = a2065_bget2 (addr) << 8;
+#if 1
+		v = a2065_bget2 (addr + 0) << 8;
 		v |= a2065_bget2 (addr + 1);
+#else
+		v = a2065_bget2 (addr + 1) << 8;
+		v |= a2065_bget2 (addr + 0);
+#endif
 	} 
+	if (log_a2065 > 3 && addr < MEM_MIN)
+		write_log (_T("A2065_WGET: %08X -> %04X PC=%08X\n"), addr, v & 0xffff, M68K_GETPC);
 	return v;
 }
 
@@ -759,9 +788,15 @@ static uae_u32 REGPARAM2 a2065_bget (uaecptr addr)
 	special_mem |= S_READ;
 #endif
 	addr &= 65535;
-	v = a2065_bget2 (addr);
-	if (!configured)
-		return v;
+	if (addr < 0x40) {
+		v = config[addr];
+	} else {
+		if (!configured)
+			return 0;
+		v = a2065_bget2 (addr ^ 0);
+	}
+	if (log_a2065 > 3 && addr < MEM_MIN)
+		write_log (_T("A2065_BGET: %08X -> %02X PC=%08X\n"), addr, v & 0xff, M68K_GETPC);
 	return v;
 }
 
@@ -774,9 +809,16 @@ static void REGPARAM2 a2065_wput (uaecptr addr, uae_u32 w)
 	if (addr == CHIP_OFFSET || addr == CHIP_OFFSET + 2) {
 		chip_wput (addr, w);
 	} else {
+#if 1
 		a2065_bput2 (addr, w >> 8);
 		a2065_bput2 (addr + 1, w);
+#else
+		a2065_bput2 (addr + 1, w >> 8);
+		a2065_bput2 (addr + 0, w);
+#endif
 	}
+	if (log_a2065 > 3 && addr < MEM_MIN)
+		write_log (_T("A2065_WPUT: %08X <- %04X PC=%08X\n"), addr, w & 0xffff, M68K_GETPC);
 }
 
 static void REGPARAM2 a2065_lput (uaecptr addr, uae_u32 l)
@@ -800,20 +842,22 @@ static void REGPARAM2 a2065_bput (uaecptr addr, uae_u32 b)
 	addr &= 65535;
 	if (addr == 0x48 && !configured) {
 		map_banks (&a2065_bank, b, 0x10000 >> 16, 0x10000);
-		write_log (L"A2065 Z2 autoconfigured at %02X0000\n", b);
+		write_log (_T("A2065 Z2 autoconfigured at %02X0000\n"), b);
 		configured = b;
 		expamem_next ();
 		return;
 	}
 	if (addr == 0x4c && !configured) {
-		write_log (L"A2065 DMAC AUTOCONFIG SHUT-UP!\n");
+		write_log (_T("A2065 DMAC AUTOCONFIG SHUT-UP!\n"));
 		configured = 0xff;
 		expamem_next ();
 		return;
 	}
 	if (!configured)
 		return;
-	a2065_bput2 (addr, b);
+	if (log_a2065 > 3 && addr < MEM_MIN)
+		write_log (_T("A2065_BPUT: %08X <- %02X PC=%08X\n"), addr, b & 0xff, M68K_GETPC);
+	a2065_bput2 (addr ^ 0, b);
 }
 
 static uae_u32 REGPARAM2 a2065_wgeti (uaecptr addr)
@@ -839,7 +883,7 @@ static uae_u32 REGPARAM2 a2065_lgeti (uaecptr addr)
 static addrbank a2065_bank = {
 	a2065_lget, a2065_wget, a2065_bget,
 	a2065_lput, a2065_wput, a2065_bput,
-	default_xlate, default_check, NULL, L"A2065 Z2 Ethernet",
+	default_xlate, default_check, NULL, _T("A2065 Z2 Ethernet"),
 	a2065_lgeti, a2065_wgeti, ABFLAG_IO
 };
 
@@ -854,9 +898,9 @@ static void a2065_config (void)
 	ew (0x14, 0x02);
 
 	td = NULL;
-	if ((td = uaenet_enumerate (NULL, currprefs.a2065name))) {
+	if (ethernet_enumerate (&td, currprefs.a2065name)) {
 		memcpy (realmac, td->mac, sizeof realmac);
-		write_log (L"A2065: '%s' %02X:%02X:%02X:%02X:%02X:%02X\n",
+		write_log (_T("A2065: '%s' %02X:%02X:%02X:%02X:%02X:%02X\n"),
 			td->name, td->mac[0], td->mac[1], td->mac[2], td->mac[3], td->mac[4], td->mac[5]);
 	} else {
 		realmac[0] = 0x00;
@@ -865,7 +909,7 @@ static void a2065_config (void)
 		realmac[3] = 4;
 		realmac[4] = 3;
 		realmac[5] = 2;
-		write_log (L"A2065: Disconnected mode %02X:%02X:%02X:%02X:%02X:%02X\n",
+		write_log (_T("A2065: Disconnected mode %02X:%02X:%02X:%02X:%02X:%02X\n"),
 			realmac[0], realmac[1], realmac[2], realmac[3], realmac[4], realmac[5]);
 	}
 
@@ -930,11 +974,8 @@ void a2065_init (void)
 
 #else
 #warning ============= enable A2065 again ===============
-
 void a2065_init (void)
 {
-	TODO();
+  TODO();
 }
-
-
 #endif /* __AROS__ */
