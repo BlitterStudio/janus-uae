@@ -8,3 +8,4 @@ struct picasso_vidbuf_description {
     uae_u32 clut[256];
 };
 
+unsigned int GetDriveType(const TCHAR *pathname);

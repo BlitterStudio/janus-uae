@@ -39,7 +39,7 @@ typedef struct {
 #endif
 
 
-typedef struct SignalSemaphore uae_sem_t;
+typedef struct SignalSemaphore *uae_sem_t;
 typedef void *uae_thread_id;
 
 extern void uae_sem_destroy (uae_sem_t*);
