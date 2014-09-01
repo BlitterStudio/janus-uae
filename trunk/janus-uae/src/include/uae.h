@@ -11,26 +11,34 @@ extern void do_leave_program (void);
 extern void start_program (void);
 extern void leave_program (void);
 extern void real_main (int, TCHAR **);
+extern void virtualdevice_init (void);
 extern void usage (void);
-extern void parse_cmdline (int argc, TCHAR **argv);
 extern void sleep_millis (int ms);
+extern void sleep_millis_main (int ms);
 extern void sleep_millis_busy (int ms);
 extern int sleep_resolution;
 
-extern void uae_reset (int);
+#define UAE_QUIT 1
+#define UAE_RESET 2
+#define UAE_RESET_KEYBOARD 3
+#define UAE_RESET_HARD 4
+
+extern void uae_reset (int, int);
 extern void uae_quit (void);
-extern void uae_restart (int, TCHAR*);
+extern void uae_restart (int, const TCHAR*);
 extern void reset_all_systems (void);
 extern void target_reset (void);
 extern void target_addtorecent (const TCHAR*, int);
 extern void target_run (void);
 extern void target_quit (void);
+extern void target_restart (void);
 extern bool get_plugin_path (TCHAR *out, int size, const TCHAR *path);
 extern void stripslashes (TCHAR *p);
 extern void fixtrailing (TCHAR *p);
 extern void fullpath (TCHAR *path, int size);
 extern void getpathpart (TCHAR *outpath, int size, const TCHAR *inpath);
 extern void getfilepart (TCHAR *out, int size, const TCHAR *path);
+extern uae_u32 getlocaltime (void);
 
 extern int quit_program;
 extern bool console_emulation;
@@ -57,11 +65,13 @@ struct bstring {
 extern TCHAR *colormodes[];
 extern void fetch_saveimagepath (TCHAR*, int, int);
 extern void fetch_configurationpath (TCHAR *out, int size);
+extern void fetch_luapath (TCHAR *out, int size);
 extern void fetch_screenshotpath (TCHAR *out, int size);
 extern void fetch_ripperpath (TCHAR *out, int size);
 extern void fetch_statefilepath (TCHAR *out, int size);
 extern void fetch_inputfilepath (TCHAR *out, int size);
 extern void fetch_datapath (TCHAR *out, int size);
+extern void fetch_rompath (TCHAR *out, int size);
 extern uae_u32 uaerand (void);
 extern uae_u32 uaesrand (uae_u32 seed);
 extern uae_u32 uaerandgetseed (void);
