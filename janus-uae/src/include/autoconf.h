@@ -8,6 +8,11 @@
 
 #define RTAREA_DEFAULT 0xf00000
 #define RTAREA_BACKUP  0xef0000
+#define RTAREA_SIZE 0x10000
+#define RTAREA_TRAPS 0x2000
+#define RTAREA_RTG 0x3000
+#define RTAREA_FSBOARD 0xFFEC
+#define RTAREA_INT 0xFFEB
 
 extern uae_u32 addr (int);
 extern void db (uae_u8);
@@ -15,6 +20,7 @@ extern void dw (uae_u16);
 extern void dl (uae_u32);
 extern uae_u32 ds_ansi (const uae_char*);
 extern uae_u32 ds (const TCHAR*);
+extern uae_u32 ds_bstr_ansi (const uae_char*);
 extern uae_u8 dbg (uaecptr);
 extern void calltrap (uae_u32);
 extern void org (uae_u32);
@@ -23,7 +29,7 @@ extern uaecptr makedatatable (uaecptr resid, uaecptr resname, uae_u8 type, uae_s
 
 extern void align (int);
 
-extern volatile int uae_int_requested;
+extern volatile int uae_int_requested, uaenet_int_requested;
 extern void set_uae_int_flag (void);
 
 #define RTS 0x4e75
@@ -46,10 +52,11 @@ extern uaecptr need_uae_boot_rom (void);
 
 struct mountedinfo
 {
-    uae_u64 size;
+    uae_s64 size;
     bool ismounted;
     bool ismedia;
     int nrcyls;
+	TCHAR rootdir[MAX_DPATH];
 };
 
 extern int add_filesys_unitconfig (struct uae_prefs *p, int index, TCHAR *error);
@@ -59,9 +66,9 @@ extern int move_filesys_unitconfig (struct uae_prefs *p, int nr, int to);
 extern TCHAR *validatedevicename (TCHAR *s);
 extern TCHAR *validatevolumename (TCHAR *s);
 
-int filesys_insert (int nr, TCHAR *volume, const TCHAR *rootdir, bool readonly, int flags);
+int filesys_insert (int nr, const TCHAR *volume, const TCHAR *rootdir, bool readonly, int flags);
 int filesys_eject (int nr);
-int filesys_media_change (const TCHAR *rootdir, int inserted, struct uaedev_config_info *uci);
+int filesys_media_change (const TCHAR *rootdir, int inserted, struct uaedev_config_data *uci);
 
 extern TCHAR *filesys_createvolname (const TCHAR *volname, const TCHAR *rootdir, const TCHAR *def);
 extern int target_get_volume_name (struct uaedev_mount_info *mtinf, const TCHAR *volumepath, TCHAR *volumename, int size, bool inserted, bool fullcheck);
@@ -86,6 +93,6 @@ extern void expansion_init (void);
 extern void expansion_cleanup (void);
 extern void expansion_clear (void);
 
-extern void uaegfx_install_code (void);
+extern void uaegfx_install_code (uaecptr);
 
 extern uae_u32 emulib_target_getcpurate (uae_u32, uae_u32*);
