@@ -1,30 +1,11 @@
-/************************************************************************ 
- *
- * sound.h
- *
- * Support for sound
- *
- * Copyright 1997 Bernd Schmidt
- * Copyright 2011 Oliver Brunner - aros<at>oliver-brunner.de
- *
- * This file is part of Janus-UAE.
- *
- * Janus-UAE is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Janus-UAE is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
- *
- * $Id$
- *
- ************************************************************************/
+/*
+* UAE - The Un*x Amiga Emulator
+*
+* Support for Linux/USS sound
+*
+* Copyright 1997 Bernd Schmidt
+*/
+
 #define SOUNDSTUFF 1
 
 extern uae_u16 paula_sndbuffer[];
@@ -32,6 +13,7 @@ extern uae_u16 *paula_sndbufpt;
 extern int paula_sndbufsize;
 extern void finish_sound_buffer (void);
 extern void restart_sound_buffer (void);
+extern void pause_sound_buffer (void);
 extern int init_sound (void);
 extern void close_sound (void);
 extern int setup_sound (void);
@@ -52,6 +34,7 @@ struct sound_dp;
 struct sound_data
 {
 	int waiting_for_buffer;
+	int deactive;
 	int devicetype;
 	int obtainedfreq;
 	int paused;
@@ -60,6 +43,8 @@ struct sound_data
 	int freq;
 	int samplesize;
 	int sndbufsize;
+	int sndbufframes;
+	int softvolume;
 	struct sound_dp *data;
 };
 
@@ -89,8 +74,6 @@ STATIC_INLINE void set_sound_buffers (void)
 
 STATIC_INLINE void check_sound_buffers (void)
 {
-	TODO();
-#if 0
 #if SOUNDSTUFF > 1
 	int len;
 #endif
@@ -137,16 +120,12 @@ STATIC_INLINE void check_sound_buffers (void)
 		}
 	}
 #endif
-#endif
 }
 
 STATIC_INLINE void clear_sound_buffers (void)
 {
-	TODO();
-#if 0
 	memset (paula_sndbuffer, 0, paula_sndbufsize);
 	paula_sndbufpt = paula_sndbuffer;
-#endif
 }
 
 #define PUT_SOUND_WORD(b) do { *(uae_u16 *)paula_sndbufpt = b; paula_sndbufpt = (uae_u16 *)(((uae_u8 *)paula_sndbufpt) + 2); } while (0)
@@ -174,7 +153,7 @@ STATIC_INLINE void clear_sound_buffers (void)
 
 struct dsaudiomodes {
 	int ch;
-	uae_u32 ksmode;
+	DWORD ksmode;
 };
 
 extern int sounddrivermask;
@@ -182,3 +161,5 @@ extern int sounddrivermask;
 #define SOUNDDRIVER_WASAPI 2
 #define SOUNDDRIVER_OPENAL 4
 #define SOUNDDRIVER_PORTAUDIO 8
+#define SOUNDDRIVE_XAUDIO2 16
+
