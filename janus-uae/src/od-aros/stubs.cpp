@@ -1322,6 +1322,11 @@ void save_zram(int* a, int b)  {
 void clipboard_vsync (void) {
   TODO();
 }
+
+void pause_sound_buffer (void) {
+  TODO();
+}
+
 /******/
 int screen_was_picasso;
 
