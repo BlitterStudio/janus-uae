@@ -67,6 +67,9 @@
 #define NO_A2091_SCSI
 #define NO_WD_SCSI
 
+/* missing types, maybe move somewhere else? */
+#define WPARAM APTR
+#define LPARAM ULONG
 /* old */
 
 /* Define to 1 if you have the `alarm' function. */

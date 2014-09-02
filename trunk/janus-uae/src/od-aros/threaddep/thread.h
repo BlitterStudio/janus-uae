@@ -25,6 +25,9 @@
  *
  ************************************************************************/
 
+#ifndef __THREAD_H__
+#define __THREAD_H__
+
 #warning ==== sem_handle is TODO ====
 #if 0
 typedef struct {
@@ -62,3 +65,6 @@ STATIC_INLINE void uae_wait_thread (uae_thread_id tid)
     CloseHandle (tid);
 #endif
 }
+
+#endif /* __THREAD_H__ */
+
