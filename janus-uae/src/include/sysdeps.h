@@ -327,25 +327,19 @@ extern void to_lower (TCHAR *s, int len);
 extern void to_upper (TCHAR *s, int len);
 /* We can only rely on GNU C getting enums right. Mickeysoft VSC++ is known
  * to have problems, and it's likely that other compilers choke too. */
-#ifdef __GNUC__
-#ifndef __AROS__
-#define ENUMDECL typedef enum
-#define ENUMNAME(name) name
-#else
- /* more gcc related, than AROS..? */
 #define ENUMDECL enum
 #define ENUMNAME(name) ; typedef int name
-#endif
 
+#ifndef __GNUC__
 /* While we're here, make abort more useful.  */
 #define abort() \
   do { \
     write_log ("Internal error; file %s, line %d\n", __FILE__, __LINE__); \
     (abort) (); \
 } while (0)
-#else
-#define ENUMDECL enum
-#define ENUMNAME(name) ; typedef int name
+//#else
+//#define ENUMDECL enum
+//#define ENUMNAME(name) ; typedef int name
 #endif
 
 /*
