@@ -119,6 +119,10 @@ struct utimbuf
 #define REGPARAM2
 #endif
 
+#if defined(__GNUC__)
+#define _vsnprintf vsnprintf 
+#endif
+
 #if defined(__GNUC__) && defined(__AROS__)
 /* == AROS == */
 #define REGPARAM
@@ -133,7 +137,6 @@ struct utimbuf
 #define FILEFLAG_DIR S_IFDIR
 
 #define _strdup strdup
-#define _vsnprintf vsnprintf 
 #define _stricmp stricmp 
 #define _strnicmp strnicmp 
 #define _strtoui64(x,y,z) strtoull(x,y,z)
@@ -325,8 +328,14 @@ extern void to_upper (TCHAR *s, int len);
 /* We can only rely on GNU C getting enums right. Mickeysoft VSC++ is known
  * to have problems, and it's likely that other compilers choke too. */
 #ifdef __GNUC__
+#ifndef __AROS__
 #define ENUMDECL typedef enum
 #define ENUMNAME(name) name
+#else
+ /* more gcc related, than AROS..? */
+#define ENUMDECL enum
+#define ENUMNAME(name) ; typedef int name
+#endif
 
 /* While we're here, make abort more useful.  */
 #define abort() \
