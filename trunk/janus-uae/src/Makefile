@@ -84,7 +84,7 @@ gencpu: $(GENCPU_OBJS)
 	$(HOST_CPP) -Wall $(GENCPU_OBJS) -o gencpu
 
 #missing.o
-GENCOMP_OBJS=jit/gencomp.o host_readcpu.o cpudefs.o unix_missing.o 
+GENCOMP_OBJS=jit/gencomp.o host_readcpu.o cpudefs.o unix_missing2.o 
 gencomp: $(GENCOMP_OBJS)
 	$(HOST_CPP) -Wall $(GENCOMP_OBJS) -o gencomp
 

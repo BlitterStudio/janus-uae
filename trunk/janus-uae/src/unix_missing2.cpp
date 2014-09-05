@@ -25,21 +25,7 @@
 #include <string.h>
 #include "tchar.h"
 
-#define WRITE_LOG_BUF_SIZE 4096
-void write_log (const char *format, ...)
-{
-
-#warning write_log is TODO
-#if 0
-	int count;
-	TCHAR buffer[WRITE_LOG_BUF_SIZE];
-	va_list parms;
-	va_start (parms, format);
-	if (debug) {
-		count = _vsntprintf (buffer, WRITE_LOG_BUF_SIZE - 1, format, parms);
-		_tprintf (buffer);
-	}
-	va_end (parms);
-#endif
+char *ua (const TCHAR *s) {
+      return strdup(s);
 }
 
