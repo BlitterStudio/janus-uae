@@ -360,7 +360,7 @@ out1:
 		mnemonic[mnp] = 0;
 
 		/* now, we have read the mnemonic and the size */
-		while (opcstr[pos] && _istspace(opcstr[pos]))
+		while (opcstr[pos] && _istspace(opcstr[pos])) 
 			pos++;
 
 		/* A goto a day keeps the D******a away. */
