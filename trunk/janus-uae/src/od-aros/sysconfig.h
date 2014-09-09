@@ -34,6 +34,7 @@
 #define CDTV
 #define GFXFILTER
 #define PICASSO96
+#define A2091
 
 #define SAVESTATE /* State file support */
 
