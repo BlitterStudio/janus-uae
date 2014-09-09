@@ -53,7 +53,7 @@
 #define MODEL_NAME "MATSHITA0.96"
 /* also MATSHITA0.97 exists but is apparently rare */
 
-#define MAX_SUBCODEBUFFER 16
+#define MAX_SUBCODEBUFFER 36
 static volatile int subcodebufferoffset, subcodebufferoffsetw, subcodeoffset;
 static uae_u8 subcodebufferinuse[MAX_SUBCODEBUFFER];
 static uae_u8 subcodebuffer[MAX_SUBCODEBUFFER * SUB_CHANNEL_SIZE];
@@ -1049,6 +1049,16 @@ static void dmac_start_dma (void)
 {
 	if (!(dmac_cntr & CNTR_PDMD)) { // non-scsi dma
 		write_comm_pipe_u32 (&requests, 0x0100, 1);
+	} else {
+		scsi_dmac_start_dma ();
+	}
+}
+static void dmac_stop_dma (void)
+{
+	if (!(dmac_cntr & CNTR_PDMD)) { // non-scsi dma
+		;
+	} else {
+		scsi_dmac_stop_dma ();
 	}
 }
 
@@ -1061,15 +1071,11 @@ static void checkint (void)
 {
 	int irq = 0;
 
-#ifdef A2091
 	if (currprefs.cs_cdtvscsi && (wdscsi_getauxstatus () & 0x80)) {
 		dmac_istr |= ISTR_INTS;
 		if ((dmac_cntr & CNTR_INTEN) && (dmac_istr & ISTR_INTS))
 			irq = 1;
 	}
-#else
-#warning enable A2091 <=======
-#endif
 	if ((dmac_cntr & CNTR_INTEN) && (dmac_istr & ISTR_E_INT))
 		irq = 1;
 	if (irq)
@@ -1134,11 +1140,12 @@ void CDTV_hsync_handler (void)
 		cd_finished = 1;
 		cd_paused = 0;
 		//cd_error = 1;
+		write_log (_T("audio finished\n"));
 		activate_stch = 1;
 	}
 
 	static int subchannelcounter;
-	int cntmax = maxvpos * vblank_hz / 75 - 6;
+	int cntmax = (int)(maxvpos * vblank_hz / 75 - 6);
 	if (subchannelcounter > 0)
 		subchannelcounter--;
 	if (subchannelcounter <= 0) {
@@ -1240,6 +1247,7 @@ static void cdtv_reset_int (void)
 	cd_finished = 0;
 	cd_led = 0;
 	stch = 1;
+	frontpanel = 1;
 }
 
 static uae_u32 dmac_bget2 (uaecptr addr)
@@ -1274,7 +1282,6 @@ static uae_u32 dmac_bget2 (uaecptr addr)
 	case 0x43:
 		v = dmac_cntr;
 		break;
-#ifdef A2091
 	case 0x91:
 		if (currprefs.cs_cdtvscsi)
 			v = wdscsi_getauxstatus ();
@@ -1285,7 +1292,6 @@ static uae_u32 dmac_bget2 (uaecptr addr)
 			checkint ();
 		}
 		break;
-#endif
 	case 0xa1:
 		sten = 0;
 		if (cdrom_command_cnt_out >= 0) {
@@ -1383,7 +1389,6 @@ static void dmac_bput2 (uaecptr addr, uae_u32 b)
 		dmac_dawr &= 0xff00;
 		dmac_dawr |= b << 0;
 		break;
-#ifdef A2091
 	case 0x91:
 		if (currprefs.cs_cdtvscsi) {
 			wdscsi_sasr (b);
@@ -1395,7 +1400,6 @@ static void dmac_bput2 (uaecptr addr, uae_u32 b)
 			wdscsi_put (b);
 			checkint ();
 		}
-#endif
 		break;
 	case 0xa1:
 		cdrom_command (b);
@@ -1409,7 +1413,10 @@ static void dmac_bput2 (uaecptr addr, uae_u32 b)
 		break;
 	case 0xe2:
 	case 0xe3:
-		dmac_dma = 0;
+		if (dmac_dma) {
+			dmac_dma = 0;
+			dmac_stop_dma ();
+		}
 		dma_finished = 0;
 		break;
 	case 0xe4:
@@ -1664,15 +1671,9 @@ uae_u8 cdtv_battram_read (int addr)
 	return v;
 }
 
-int cdtv_add_scsi_unit(int ch, TCHAR *path, int blocksize, int readonly,
-	TCHAR *devname, int sectors, int surfaces, int reserved,
-	int bootpri, TCHAR *filesys)
+int cdtv_add_scsi_hd_unit (int ch, struct uaedev_config_info *ci)
 {
-#ifdef A2091
-	return addscsi (ch, path, blocksize, readonly, devname, sectors, surfaces, reserved, bootpri, filesys, 1);
-#else
-	return NULL;
-#endif
+	return add_scsi_hd (ch, NULL, ci, 1);
 }
 
 void cdtv_free (void)
@@ -1693,7 +1694,6 @@ void cdtv_free (void)
 
 
 #ifdef ROMHACK2
-extern uae_u8 *extendedkickmemory, *cardmemory;
 static void romhack (void)
 {
 	struct zfile *z;
@@ -1740,7 +1740,7 @@ void cdtv_init (void)
 		init_comm_pipe (&requests, 100, 1);
 		uae_start_thread (_T("cdtv"), dev_thread, NULL, NULL);
 		while (!thread_alive)
-			sleep_millis(10);
+			sleep_millis (10);
 		uae_sem_init (&sub_sem, 0, 1);
 	}
 	write_comm_pipe_u32 (&requests, 0x0104, 1);
@@ -1762,6 +1762,7 @@ void cdtv_init (void)
 	/* KS autoconfig handles the rest */
 	map_banks (&dmac_bank, 0xe80000 >> 16, 0x10000 >> 16, 0x10000);
 	if (!savestate_state) {
+		cdtv_reset_int ();
 		configured = 0;
 		tp_a = tp_b = tp_c = tp_ad = tp_bd = tp_cd = 0;
 		tp_imask = tp_cr = tp_air = tp_ilatch = 0;
@@ -1773,6 +1774,9 @@ void cdtv_init (void)
 
 	cdtv_battram_reset ();
 	open_unit ();
+	gui_flicker_led (LED_CD, 0, -1);
+	if (currprefs.cs_cdtvscsi)
+		init_scsi ();
 }
 
 void cdtv_check_banks (void)
@@ -1783,7 +1787,7 @@ void cdtv_check_banks (void)
 
 #ifdef SAVESTATE
 
-uae_u8 *save_dmac (int *len, uae_u8 *dstptr)
+uae_u8 *save_cdtv_dmac (int *len, uae_u8 *dstptr)
 {
 	uae_u8 *dstbak, *dst;
 	
@@ -1809,7 +1813,7 @@ uae_u8 *save_dmac (int *len, uae_u8 *dstptr)
 
 }
 
-uae_u8 *restore_dmac (uae_u8 *src)
+uae_u8 *restore_cdtv_dmac (uae_u8 *src)
 {
 	restore_u32 ();
 	restore_u32 ();
