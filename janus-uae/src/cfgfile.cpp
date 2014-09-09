@@ -238,7 +238,11 @@ static const TCHAR *obsolete[] = {
 	NULL
 };
 
+#ifndef __AROS__
 #define UNEXPANDED _T("$(FILE_PATH)")
+#else
+#define UNEXPANDED _T("PROGDIR:")
+#endif
 
 
 static void trimwsa (char *s)
@@ -5294,9 +5298,15 @@ void default_prefs (struct uae_prefs *p, int type)
 	_tcscpy (p->cartfile, _T(""));
 	_tcscpy (p->rtcfile, _T(""));
 
+#ifndef __AROS__
 	_tcscpy (p->path_rom.path[0], _T("./"));
 	_tcscpy (p->path_floppy.path[0], _T("./"));
 	_tcscpy (p->path_hardfile.path[0], _T("./"));
+#else
+	_tcscpy (p->path_rom.path[0], _T("PROGDIR:"));
+	_tcscpy (p->path_floppy.path[0], _T("PROGDIR:"));
+	_tcscpy (p->path_hardfile.path[0], _T("PROGDIR:"));
+#endif
 
 	p->prtname[0] = 0;
 	p->sername[0] = 0;
