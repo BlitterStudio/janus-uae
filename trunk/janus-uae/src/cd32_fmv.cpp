@@ -64,7 +64,7 @@
 
 static int fmv_mask;
 static uae_u8 *rom;
-static int rom_size = 262144;
+static int fmv_rom_size = 262144;
 static uaecptr fmv_start = 0x00200000;
 static int fmv_size = 1048576;
 
@@ -303,8 +303,6 @@ static void REGPARAM2 fmv_lput (uaecptr addr, uae_u32 w)
 	fmv_wput (addr + 2, w >>  0);
 }
 
-extern addrbank fmv_bank;
-
 static void REGPARAM2 fmv_bput (uaecptr addr, uae_u32 w)
 {
 	addr -= fmv_start & fmv_mask;
@@ -330,7 +328,7 @@ static uae_u32 REGPARAM2 fmv_wgeti (uaecptr addr)
 	addr -= fmv_start & fmv_mask;
 	addr &= fmv_mask;
 	m = rom + addr;
-	if (addr < rom_size)
+	if (addr < fmv_rom_size)
 		return do_get_mem_word ((uae_u16 *)m);
 #ifdef FMV_DEBUG
 	write_log (_T("fmv_wgeti %08X %08X PC=%08X\n"), addr, v, M68K_GETPC);
@@ -348,7 +346,7 @@ static uae_u32 REGPARAM2 fmv_lgeti (uaecptr addr)
 	addr -= fmv_start & fmv_mask;
 	addr &= fmv_mask;
 	m = rom + addr;
-	if (addr < rom_size)
+	if (addr < fmv_rom_size)
 		return do_get_mem_long ((uae_u32 *)m);
 #ifdef FMV_DEBUG
 	write_log (_T("fmv_lgeti %08X %08X PC=%08X\n"), addr, v, M68K_GETPC);
@@ -370,10 +368,7 @@ static uae_u8 *REGPARAM2 fmv_xlate (uaecptr addr)
 	return rom + addr;
 }
 
-#ifndef __AROS__
-static 
-#endif
-addrbank fmv_bank = {
+static addrbank fmv_bank = {
 	fmv_lget, fmv_wget, fmv_bget,
 	fmv_lput, fmv_wput, fmv_bput,
 	fmv_xlate, fmv_check, NULL, _T("CD32 FMV module"),
@@ -384,7 +379,7 @@ addrbank fmv_bank = {
 
 void cd32_fmv_init (uaecptr start)
 {
-	int ids[] = { 23, -1 };
+	int ids[] = { 23, 74, -1 };
 	struct romlist *rl = getromlistbyids (ids);
 	struct romdata *rd;
 	struct zfile *z;
@@ -395,7 +390,13 @@ void cd32_fmv_init (uaecptr start)
 	if (!rl)
 		return;
 	rd = rl->rd;
+#warning !?
+#ifndef __AROS__
+	z = read_rom (rd);
+#else
 	z = read_rom (&rd);
+#endif
+
 	if (z) {
 		write_log (_T("CD32 FMV ROM %d.%d\n"), rd->ver, rd->rev);
 		rom = mapped_malloc (fmv_size, _T("fast"));
