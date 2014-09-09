@@ -35,6 +35,7 @@
 #define GFXFILTER
 #define PICASSO96
 #define A2091
+#define WITH_SLIRP
 
 #define SAVESTATE /* State file support */
 
