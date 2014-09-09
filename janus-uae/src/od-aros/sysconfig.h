@@ -46,6 +46,7 @@
 #undef NATMEM_OFFSET 
 #define AUTOCONFIG
 #define FILESYS
+#define PICASSO96_SUPPORTED
 
 #define CPUEMU_0 /* generic 680x0 emulation */
 #define CPUEMU_11 /* 68000+prefetch emulation */

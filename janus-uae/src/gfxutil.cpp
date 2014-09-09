@@ -13,14 +13,30 @@
 #include "rtgmodes.h"
 #include "xwin.h"
 #include "gfxfilter.h"
+#ifdef __AROS__
 #include "picasso96.h"
+#endif
 
 #include <math.h>
 
-int getvsyncrate (int hz)
+double getvsyncrate (double hz, int *mult)
 {
-	if (hz > 85)
+	struct apmode *ap = picasso_on ? &currprefs.gfx_apmode[1] : &currprefs.gfx_apmode[0];
+
+	if (hz < 0)
+		return 0;
+	if (hz > 85) {
+		*mult = -1;
 		return hz / 2;
+	}
+	if (hz < 35 && hz > 0) {
+		if (ap->gfx_interlaced)
+			*mult = 0;
+		else
+			*mult = 1;
+		return hz * 2;
+	}
+	*mult = 0;
 	return hz;
 }
 
@@ -31,7 +47,7 @@ int getvsyncrate (int hz)
 unsigned int doMask (int p, int bits, int shift)
 {
 	/* scale to 0..255, shift to align msb with mask, and apply mask */
-	unsigned long val;
+	uae_u32 val;
 
 	if (flashscreen)
 		p ^= 0xff;
@@ -57,6 +73,8 @@ int bits_in_mask (unsigned long mask)
 int mask_shift (unsigned long mask)
 {
 	int n = 0;
+	if (!mask)
+		return 0;
 	while (!(mask & 1)) {
 		n++;
 		mask >>= 1;
@@ -125,12 +143,11 @@ static void video_calc_gammatable (void)
 	float bri, con, gam, v;
 	uae_u32 vi;
 
-	bri = ((float)(currprefs.gfx_luminance))
-		* (128.0f / 1000.0f);
+	bri = ((float)(currprefs.gfx_luminance)) * (128.0f / 1000.0f);
 	con = ((float)(currprefs.gfx_contrast + 1000)) / 1000.0f;
 	gam = ((float)(1000 - currprefs.gfx_gamma)) / 1000.0f;
 
-	lf = 64 * currprefs.gfx_filter_blur / 1000;
+	lf = 64 * currprefs.gf[picasso_on].gfx_filter_blur / 1000;
 	hf = 256 - lf * 2;
 
 	for (i = 0; i < (256 * 3); i++) {
@@ -149,7 +166,7 @@ static void video_calc_gammatable (void)
 
 static uae_u32 limit256 (double v)
 {
-	v = v * (double)(currprefs.gfx_filter_contrast + 1000) / 1000.0 + currprefs.gfx_filter_luminance / 10.0;
+	v = v * (double)(currprefs.gf[picasso_on].gfx_filter_contrast + 1000) / 1000.0 + currprefs.gf[picasso_on].gfx_filter_luminance / 10.0;
 	if (v < 0)
 		v = 0;
 	if (v > 255)
@@ -158,7 +175,7 @@ static uae_u32 limit256 (double v)
 }
 static uae_u32 limit256rb (double v)
 {
-	v *= (double)(currprefs.gfx_filter_saturation + 1000) / 1000.0;
+	v *= (double)(currprefs.gf[picasso_on].gfx_filter_saturation + 1000) / 1000.0;
 	if (v < -128)
 		v = -128;
 	if (v > 127)
@@ -201,6 +218,7 @@ static uae_u32 lowbits (int v, int shift, int lsize)
 
 void alloc_colors_picasso (int rw, int gw, int bw, int rs, int gs, int bs, int rgbfmt)
 {
+#ifdef PICASSO96
 	int byte_swap = 0;
 	int i;
 	int red_bits = 0, green_bits, blue_bits;
@@ -284,6 +302,7 @@ void alloc_colors_picasso (int rw, int gw, int bw, int rs, int gs, int bs, int r
 			p96_rgbx16[i] = c;
 		}
 	}
+#endif
 }
 
 void alloc_colors_rgb (int rw, int gw, int bw, int rs, int gs, int bs, int aw, int as, int alpha, int byte_swap,
@@ -295,7 +314,7 @@ void alloc_colors_rgb (int rw, int gw, int bw, int rs, int gs, int bs, int aw, i
 		int j;
 
 		if (currprefs.gfx_blackerthanblack) {
-			j = i * 15 / 16;
+			j = i * 15 / 16 + 15;
 		} else {  
 			j = i;
 		}
@@ -330,7 +349,7 @@ void alloc_colors64k (int rw, int gw, int bw, int rs, int gs, int bs, int aw, in
 	int bpp = rw + gw + bw + aw;
 	int i, j;
 
-	video_calc_gammatable();
+	video_calc_gammatable ();
 	j = 256;
 	for (i = 0; i < 4096; i++) {
 		int r = ((i >> 8) << 4) | (i >> 8);
@@ -366,6 +385,7 @@ void alloc_colors64k (int rw, int gw, int bw, int rs, int gs, int bs, int aw, in
 		grec[2 * 256 + i] = xgreencolors[255];
 		bluc[2 * 256 + i] = xbluecolors[255];
 	}
+#ifdef GFXFILTER
 	if (usedfilter && usedfilter->yuv) {
 		/* create internal 5:6:5 color tables */
 		for (i = 0; i < 256; i++) {
@@ -417,6 +437,7 @@ void alloc_colors64k (int rw, int gw, int bw, int rs, int gs, int bs, int aw, in
 			tcrrgb[i] = ((uae_s8)get_cr (r, g, b)) * 256;
 		}
 	}
+#endif
 
 #endif
 	xredcolor_b = rw;
