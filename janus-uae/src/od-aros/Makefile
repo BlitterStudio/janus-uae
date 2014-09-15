@@ -105,8 +105,8 @@ COMMON_OBJS= \
 	../filesys.o \
 	../fpp.o \
 	../fsdb.o \
-	\
 	../fsusage.o \
+	\
 	../gayle.o \
 	../gfxutil.o \
 	../hardfile.o \
