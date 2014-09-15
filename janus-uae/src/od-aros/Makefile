@@ -112,9 +112,9 @@ COMMON_OBJS= \
 	../identify.o \
 	../inputdevice.o \
 	../inputrecord.o \
-	\
 	../keybuf.o \
 	../main.o \
+	\
 	../memory.o \
 	../native2amiga.o \
 	../ncr_scsi.o \
