@@ -91,9 +91,9 @@ COMMON_OBJS= \
 	../cpustbl.o \
 	../crc32.o \
 	../custom.o \
-	\
 	../debug.o \
 	../disk.o \
+	\
 	../diskutil.o \
 	../dongle.o \
 	../drawing.o \
