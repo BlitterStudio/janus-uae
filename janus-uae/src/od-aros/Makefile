@@ -106,10 +106,10 @@ COMMON_OBJS= \
 	../fpp.o \
 	../fsdb.o \
 	../fsusage.o \
-	\
 	../gayle.o \
 	../gfxutil.o \
 	../hardfile.o \
+	\
 	../identify.o \
 	../inputdevice.o \
 	../inputrecord.o \
