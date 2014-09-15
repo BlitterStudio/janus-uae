@@ -93,8 +93,8 @@ COMMON_OBJS= \
 	../custom.o \
 	../debug.o \
 	../disk.o \
-	\
 	../diskutil.o \
+	\
 	../dongle.o \
 	../drawing.o \
 	../driveclick.o \
