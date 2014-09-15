@@ -9,6 +9,10 @@
   * Modified 2005 Peter Keunecke
   */
 
+#ifdef __AROS__
+#include <math.h>
+#endif
+
 #define	FPCR_ROUNDING_MODE	0x00000030
 #define	FPCR_ROUND_NEAR		0x00000000
 #define	FPCR_ROUND_ZERO		0x00000010

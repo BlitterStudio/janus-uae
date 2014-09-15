@@ -116,8 +116,8 @@ COMMON_OBJS= \
 	../main.o \
 	../memory.o \
 	../native2amiga.o \
-	\
 	../ncr_scsi.o \
+	\
 	../newcpu.o \
 	../rommgr.o \
 	../readcpu.o \
