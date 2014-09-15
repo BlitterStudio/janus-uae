@@ -8,7 +8,7 @@
 */
 
 #define INPUTRECORD_DEBUG 1
-#define ENABLE_DEBUGGER 1
+#define ENABLE_DEBUGGER 0
 
 #define HEADERSIZE 12
 
@@ -24,6 +24,7 @@
 #include "events.h"
 #include "uae.h"
 #include "disk.h"
+#include "fsdb.h"
 
 #if INPUTRECORD_DEBUG > 0
 #include "memory.h"
@@ -516,16 +517,16 @@ void inprec_close (bool clear)
 
 static void setwriteprotect (const TCHAR *fname, bool readonly)
 {
-	struct _stat64 st;
+	struct mystat st;
 	int mode, oldmode;
-	if (stat (fname, &st))
+	if (!my_stat (fname, &st))
 		return;
-	oldmode = mode = st.st_mode;
+	oldmode = mode = st.mode;
 	mode &= ~FILEFLAG_WRITE;
 	if (!readonly)
 		mode |= FILEFLAG_WRITE;
 	if (mode != oldmode)
-		chmod (fname, mode);
+		my_chmod (fname, mode);
 }
 
 void inprec_playdiskchange (void)
@@ -940,8 +941,8 @@ void inprec_getstatus (TCHAR *title)
 	p = title + _tcslen (title);
 	int mvp = current_maxvpos ();
 	_stprintf (p, _T("%03d %02d:%02d:%02d/%02d:%02d:%02d"), replaypos,
-		lasthsync / (vblank_hz * mvp * 60), (lasthsync / (vblank_hz * mvp) % 60), (lasthsync / mvp) % vblank_hz,
-		endhsync / (vblank_hz * mvp * 60), (endhsync / (vblank_hz * mvp) % 60), (endhsync / mvp) % vblank_hz);
+		lasthsync / (vblank_hz * mvp * 60), ((int)(lasthsync / (vblank_hz * mvp)) % 60), (lasthsync / mvp) % (int)vblank_hz,
+		endhsync / (vblank_hz * mvp * 60), ((int)(endhsync / (vblank_hz * mvp)) % 60), (endhsync / mvp) % (int)vblank_hz);
 	p += _tcslen (p);
 	_tcscat (p, _T("] "));
 
