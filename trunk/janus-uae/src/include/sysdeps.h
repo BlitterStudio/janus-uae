@@ -302,6 +302,8 @@ typedef uae_u32 uaecptr;
 #define uae_u64 unsigned long;
 #define VAL64(a) (a ## l)
 #define UVAL64(a) (a ## ul)
+#else
+#error NO REAL LONG LONG??
 #endif
 
 #ifdef HAVE_STRDUP

@@ -109,9 +109,9 @@ COMMON_OBJS= \
 	../gayle.o \
 	../gfxutil.o \
 	../hardfile.o \
-	\
 	../identify.o \
 	../inputdevice.o \
+	\
 	../inputrecord.o \
 	../keybuf.o \
 	../main.o \
