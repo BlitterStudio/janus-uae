@@ -114,9 +114,9 @@ COMMON_OBJS= \
 	../inputrecord.o \
 	../keybuf.o \
 	../main.o \
-	\
 	../memory.o \
 	../native2amiga.o \
+	\
 	../ncr_scsi.o \
 	../newcpu.o \
 	../rommgr.o \
