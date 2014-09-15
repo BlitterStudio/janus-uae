@@ -25,6 +25,10 @@
 
 #define ARCADIA /* Arcadia arcade system */
 #define CPUEMU_12 /*  */
+#define CPUEMU_22 /*  */
+#define CPUEMU_32 /*  */
+#define CPUEMU_33 /*  */
+
 #define DEBUGGER
 #define AGA
 #define FPUEMU
