@@ -661,3 +661,7 @@ extern void xfree (const void*);
 #define xfree(T) free(T)
 
 #endif
+
+/* debug.cpp */
+extern void activate_console (void);
+extern bool console_isch (void);

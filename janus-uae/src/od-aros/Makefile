@@ -79,7 +79,6 @@ COMMON_OBJS= \
 	../cdrom.o \
 	../cdtv.o \
 	../cfgfile.o \
-	\
 	../cia.o \
 	../cpudefs.o \
 	../cpuemu_0.o \
@@ -92,6 +91,7 @@ COMMON_OBJS= \
 	../cpustbl.o \
 	../crc32.o \
 	../custom.o \
+	\
 	../debug.o \
 	../disk.o \
 	../diskutil.o \

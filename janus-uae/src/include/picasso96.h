@@ -3,6 +3,10 @@
 
 #include "picasso96_win.h"
 
+#elif defined __AROS__
+
+#include "picasso96_aros.h"
+
 #else
 /*
  * UAE - The U*nix Amiga Emulator

@@ -12,7 +12,7 @@ extern void gui_exit (void);
 extern void gui_led (int, int);
 extern void gui_handle_events (void);
 extern void gui_filename (int, const TCHAR *);
-extern void gui_fps (int fps, int idle);
+extern void gui_fps (int fps, int idle, int color);
 extern void gui_changesettings (void);
 extern void gui_lock (void);
 extern void gui_unlock (void);
@@ -51,11 +51,13 @@ struct gui_info
     bool drive_disabled[4];		/* drive is disabled */
     bool powerled;				/* state of power led */
     uae_u8 powerled_brightness;	/* 0 to 255 */
-    uae_u8 drive_side;			/* floppy side */
-    uae_u8 hd;					/* harddrive */
-    uae_u8 cd;					/* CD */
-	uae_u8 md;					/* CD32 or CDTV internal storage */
-    int fps, idle;
+    uae_s8 drive_side;			/* floppy side */
+    uae_s8 hd;					/* harddrive */
+    uae_s8 cd;					/* CD */
+	uae_s8 md;					/* CD32 or CDTV internal storage */
+    bool cpu_halted;
+	int fps, idle;
+	int fps_color;
     int sndbuf, sndbuf_status;
     TCHAR df[4][256];			/* inserted image */
     uae_u32 crc32[4];			/* crc32 of image */
@@ -77,6 +79,7 @@ typedef enum {
     NUMSG_MODRIP_NOTFOUND, NUMSG_MODRIP_FINISHED, NUMSG_MODRIP_SAVE,
     NUMSG_KS68EC020, NUMSG_KS68020, NUMSG_KS68030,
     NUMSG_ROMNEED, NUMSG_EXPROMNEED, NUMSG_NOZLIB, NUMSG_STATEHD,
-    NUMSG_NOCAPS, NUMSG_OLDCAPS, NUMSG_KICKREP, NUMSG_KICKREPNO
+    NUMSG_NOCAPS, NUMSG_OLDCAPS, NUMSG_KICKREP, NUMSG_KICKREPNO,
+	NUMSG_KS68030PLUS
 } notify_user_msg;
 
