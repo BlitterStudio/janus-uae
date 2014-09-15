@@ -16,11 +16,9 @@
 #endif
 
 /* AmigaOS errors */
-#ifndef __AROS__
-/* TODO!? ERROR_BAD_NUMBER is defined as 115 in AROS !? */
-#define ERROR_BAD_NUMBER			  6
-#endif
 #define ERROR_NO_FREE_STORE			103
+#define ERROR_BAD_NUMBER			115
+#define ERROR_LINE_TOO_LONG			120
 #define ERROR_OBJECT_IN_USE			202
 #define ERROR_OBJECT_EXISTS			203
 #define ERROR_DIR_NOT_FOUND			204
@@ -40,6 +38,7 @@
 #define ERROR_NOT_A_DOS_DISK		225
 #define ERROR_NO_DISK				226
 #define ERROR_NO_MORE_ENTRIES		232
+#define ERROR_IS_SOFT_LINK			233
 #define ERROR_NOT_IMPLEMENTED		236
 #define ERROR_RECORD_NOT_LOCKED		240
 #define ERROR_LOCK_COLLISION		241
@@ -84,6 +83,7 @@ typedef struct a_inode_struct {
     int shlock;
     long db_offset;
     unsigned int dir:1;
+    unsigned int softlink:2;
     unsigned int elock:1;
     /* Nonzero if this came from an entry in our database.  */
     unsigned int has_dbentry:1;
@@ -98,6 +98,7 @@ typedef struct a_inode_struct {
     unsigned int volflags;
     /* not equaling unit.mountcount -> not in this volume */
     unsigned int mountcount;
+	uae_u64 uniq_external;
 #ifdef AINO_DEBUG
     uae_u32 checksum2;
 #endif
@@ -115,11 +116,12 @@ extern void fsdb_dir_writeback (a_inode *);
 extern int fsdb_used_as_nname (a_inode *base, const TCHAR *);
 extern a_inode *fsdb_lookup_aino_aname (a_inode *base, const TCHAR *);
 extern a_inode *fsdb_lookup_aino_nname (a_inode *base, const TCHAR *);
-extern int fsdb_exists (TCHAR *nname);
+extern int fsdb_exists (const TCHAR *nname);
 extern int same_aname (const TCHAR *an1, const TCHAR *an2);
 
 /* Filesystem-dependent functions.  */
 extern int fsdb_name_invalid (const TCHAR *n);
+extern int fsdb_name_invalid_dir (const TCHAR *n);
 extern int fsdb_fill_file_attrs (a_inode *, a_inode *);
 extern int fsdb_set_file_attrs (a_inode *);
 extern int fsdb_mode_representable_p (const a_inode *, int);
@@ -145,6 +147,7 @@ void my_setfilehidden (const TCHAR *path, bool hidden);
 extern struct my_openfile_s *my_open (const TCHAR*, int);
 extern void my_close (struct my_openfile_s*);
 extern uae_s64 my_lseek (struct my_openfile_s*, uae_s64, int);
+extern uae_s64 my_fsize (struct my_openfile_s*);
 extern unsigned int my_read (struct my_openfile_s*, void*, unsigned int);
 extern unsigned int my_write (struct my_openfile_s*, void*, unsigned int);
 extern int my_truncate (const TCHAR *name, uae_u64 len);
@@ -152,6 +155,18 @@ extern int dos_errno (void);
 extern int my_existsfile (const TCHAR *name);
 extern int my_existsdir (const TCHAR *name);
 extern FILE *my_opentext (const TCHAR*);
+
+extern bool my_stat (const TCHAR *name, struct mystat *ms);
+extern bool my_utime (const TCHAR *name, struct mytimeval *tv);
+extern bool my_chmod (const TCHAR *name, uae_u32 mode);
+extern bool my_resolveshortcut(TCHAR *linkfile, int size);
+extern bool my_resolvessymboliclink(TCHAR *linkfile, int size);
+extern bool my_resolvesoftlink(TCHAR *linkfile, int size);
+extern void my_canonicalize_path(const TCHAR *path, TCHAR *out, int size);
+extern int my_issamevolume(const TCHAR *path1, const TCHAR *path2, TCHAR *path);
+extern bool my_createsoftlink(const TCHAR *path, const TCHAR *target);
+extern bool my_createshortcut(const TCHAR *source, const TCHAR *target, const TCHAR *description);
+
 
 extern char *custom_fsdb_search_dir (const char *dirname, TCHAR *rel);
 extern a_inode *custom_fsdb_lookup_aino_aname (a_inode *base, const TCHAR *aname);
@@ -162,5 +177,6 @@ extern int custom_fsdb_used_as_nname (a_inode *base, const TCHAR *nname);
 #define MYVOLUMEINFO_STREAMS 2
 #define MYVOLUMEINFO_ARCHIVE 4
 #define MYVOLUMEINFO_REUSABLE 8
+#define MYVOLUMEINFO_CDFS 16
 
 extern int my_getvolumeinfo (const TCHAR *root);
