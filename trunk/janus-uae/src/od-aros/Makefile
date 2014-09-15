@@ -95,8 +95,8 @@ COMMON_OBJS= \
 	../disk.o \
 	../diskutil.o \
 	../dongle.o \
-	\
 	../drawing.o \
+	\
 	../driveclick.o \
 	../enforcer.o \
 	../epsonprinter.o \
