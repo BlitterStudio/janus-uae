@@ -101,8 +101,8 @@ COMMON_OBJS= \
 	../epsonprinter.o \
 	../ersatz.o \
 	../expansion.o \
-	\
 	../fdi2raw.o \
+	\
 	../filesys.o \
 	../fpp.o \
 	../fsdb.o \
