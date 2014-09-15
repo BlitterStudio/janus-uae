@@ -46,7 +46,7 @@ static long adjust_blocks (long blocks, int fromsize, int tosize)
 		return (blocks + (blocks < 0 ? -1 : 1)) / (tosize / fromsize);
 }
 
-#ifdef _WIN32
+#ifdef WINDOWS
 #include "od-win32/posixemu.h"
 #include <windows.h>
 int get_fs_usage (const TCHAR *path, const TCHAR *disk, struct fs_usage *fsp)
@@ -55,13 +55,13 @@ int get_fs_usage (const TCHAR *path, const TCHAR *disk, struct fs_usage *fsp)
 	ULARGE_INTEGER FreeBytesAvailable, TotalNumberOfBytes, TotalNumberOfFreeBytes;
 
 	if (!GetFullPathName (path, sizeof buf2 / sizeof (TCHAR), buf2, NULL)) {
-		write_log (L"GetFullPathName() failed err=%d\n", GetLastError());
+		write_log (_T("GetFullPathName('%s') failed err=%d\n"), path, GetLastError ());
 		return -1;
 	}
 
-	if (!_tcsncmp (buf2, L"\\\\", 2)) {
+	if (!_tcsncmp (buf2, _T("\\\\"), 2)) {
 		TCHAR *p;
-		_tcscat (buf2, L"\\");
+		_tcscat (buf2, _T("\\"));
 		p = _tcschr (buf2 + 2, '\\');
 		if (!p)
 			return -1;
@@ -74,7 +74,7 @@ int get_fs_usage (const TCHAR *path, const TCHAR *disk, struct fs_usage *fsp)
 	}
 
 	if (!GetDiskFreeSpaceEx (buf2, &FreeBytesAvailable, &TotalNumberOfBytes, &TotalNumberOfFreeBytes)) {
-		write_log (L"GetDiskFreeSpaceEx() failed err=%d\n", GetLastError());
+		write_log (_T("GetDiskFreeSpaceEx('%s') failed err=%d\n"), buf2, GetLastError ());
 		return -1;
 	}
 
@@ -136,8 +136,7 @@ int statvfs ();
 Return the actual number of bytes read, zero for EOF, or negative
 for an error.  */
 
-int
-	safe_read (int desc, TCHAR *ptr, int len)
+int safe_read (int desc, TCHAR *ptr, int len)
 {
 	int n_chars;
 
@@ -164,10 +163,9 @@ methods that need to know it.
 Return 0 if successful, -1 if not.  When returning -1, ensure that
 ERRNO is either a system error value, or zero if DISK is NULL
 on a system that requires a non-NULL value.  */
-int
-	get_fs_usage (const TCHAR *path, const TCHAR *disk, struct fs_usage *fsp)
+#ifndef WINDOWS
+int get_fs_usage (const TCHAR *path, const TCHAR *disk, struct fs_usage *fsp)
 {
-#if 0
 #ifdef STAT_STATFS3_OSF1
 # define CONVERT_BLOCKS(B) adjust_blocks ((B), fsd.f_fsize, 512)
 
@@ -299,7 +297,8 @@ int
 
 #endif /* STAT_STATVFS */
 
-#if !defined(STAT_STATFS2_FS_DATA) && !defined(STAT_READ_FILSYS)
+#warning ================== please check for AROS =============================
+#if !defined(STAT_STATFS2_FS_DATA) && !defined(STAT_READ_FILSYS) && !defined __AROS__
 	/* !Ultrix && !SVR2 */
 
 	fsp->fsu_blocks = CONVERT_BLOCKS (fsd.f_blocks);
@@ -310,10 +309,9 @@ int
 
 #endif /* not STAT_STATFS2_FS_DATA && not STAT_READ_FILSYS */
 
-#endif
-TODO();
 	return 0;
 }
+#endif
 
 #if defined(_AIX) && defined(_I386)
 /* AIX PS/2 does not supply statfs.  */
