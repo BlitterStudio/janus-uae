@@ -96,12 +96,12 @@ COMMON_OBJS= \
 	../diskutil.o \
 	../dongle.o \
 	../drawing.o \
-	\
 	../driveclick.o \
 	../enforcer.o \
 	../epsonprinter.o \
 	../ersatz.o \
 	../expansion.o \
+	\
 	../fdi2raw.o \
 	../filesys.o \
 	../fpp.o \
