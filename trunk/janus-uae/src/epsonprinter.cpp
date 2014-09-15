@@ -26,15 +26,14 @@
 #include "sysdeps.h"
 #include "uae.h"
 
-#warning ============== epsonprinter is TODO !! ==================
-#ifndef __AROS__
 #define WINFONT
 #define C_LIBPNG
 
-#include "epsonprinter.h"
+#warning ============== epsonprinter is TODO !! ==================
 #ifndef __AROS__
+
+#include "epsonprinter.h"
 #include "win32.h"
-#endif
 #include "parser.h"
 #include "threaddep/thread.h"
 
@@ -44,6 +43,7 @@
 int pngprint = 0;
 
 #ifdef C_LIBPNG
+#include <zlib.h>
 #include <png.h>
 #endif
 
@@ -54,11 +54,11 @@ int pngprint = 0;
 #define true 1
 #define false 0
 
-static TCHAR *curFontName;
 #ifdef WINFONT
 static const TCHAR *epsonprintername;
 static HFONT curFont;
 static float curFontHorizPoints, curFontVertPoints;
+static TCHAR *curFontName;
 static HDC memHDC;
 static LPOUTLINETEXTMETRIC otm;
 #else
@@ -101,10 +101,7 @@ static Bit8u msb;
 static Bit16u numPrintAsChar;
 static void *outputHandle;
 static Bit16u multipageOutput, multiPageCounter;
-#ifdef WINFONT
 static HDC printerDC;
-static HMODULE ft;
-#endif
 static int justification;
 #define CHARBUFFERSIZE 1000
 static int charcnt;
@@ -113,6 +110,7 @@ static Bit8u charbuffer[CHARBUFFERSIZE];
 static uae_u8 *page, *cpage;
 static int page_w, page_h, page_pitch;
 static int pagesize;
+static HMODULE ft;
 static int pins = 24;
 
 static void printCharBuffer(void);
@@ -771,7 +769,7 @@ static void *prt_thread (void *p)
 				Bit8u r, g, b;
 				getcolor (Tpage, Tcpage, x, y, Tpage_pitch, &r, &g, &b);
 				if (r != 255 || g != 255 || b != 255)
-					SetPixel (TmemHDC, x, y, (r << 16) | (g << 8) | b);
+					SetPixel (TmemHDC, x, y, RGB(r, g, b));
 			}
 		}
 
@@ -1204,7 +1202,7 @@ static void setupBitImage(Bit8u dens, Bit16u numCols, int pin9)
 	if (pins == 9) {
 		if (pin9) {
 			bitGraph.pin9 = true;
-			bitGraph.bytesColumn = 2;
+			bitGraph.bytesColumn = 1;
 		}	
 		bitGraph.vertDens = 72;
 	}
@@ -2396,3 +2394,4 @@ void epson_close(void)
 }
 
 #endif
+
