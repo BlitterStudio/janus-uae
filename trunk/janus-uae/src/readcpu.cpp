@@ -6,15 +6,10 @@
 * Copyright 1995,1996 Bernd Schmidt
 */
 
-
 #include "sysconfig.h"
 #include "sysdeps.h"
-
-#ifndef __AROS__
 #include <ctype.h>
-#else
-#include "od-aros/tchar.h"
-#endif
+
 #include "readcpu.h"
 
 int nr_cpuop_funcs;
@@ -159,29 +154,7 @@ struct mnemolookup lookuptab[] = {
 
 struct instr *table68k;
 
-static int specialcase (uae_u16 opcode, int cpu_lev)
-{
-	int mode = (opcode >> 3) & 7;
-	int reg = opcode & 7;
-
-	if (cpu_lev >= 2)
-		return cpu_lev;
-	/* TST.W A0, TST.L A0, TST.x (d16,PC) and TST.x (d8,PC,Xn) are 68020+ only */
-	if ((opcode & 0xff00) == 0x4a00) {
-		if (mode == 7 && (reg == 4 || reg == 2 || reg == 3))
-			return 2;
-		if (mode == 1) /* Ax */
-			return 2;
-	}
-	/* CMPI.W #x,(d16,PC) and CMPI.W #x,(d8,PC,Xn) are 68020+ only */
-	if ((opcode & 0xff00) == 0x0c00) {
-		if (mode == 7 && (reg == 2 || reg == 3))
-			return 2;
-	}
-	return cpu_lev;
-}
-
-static unsigned int mode_from_str (const TCHAR *str)
+static amodes mode_from_str (const TCHAR *str)
 {
 	if (_tcsncmp (str, _T("Dreg"), 4) == 0) return Dreg;
 	if (_tcsncmp (str, _T("Areg"), 4) == 0) return Areg;
@@ -199,7 +172,7 @@ static unsigned int mode_from_str (const TCHAR *str)
 	return 0;
 }
 
-STATIC_INLINE unsigned int mode_from_mr (int mode, int reg)
+STATIC_INLINE amodes mode_from_mr (int mode, int reg)
 {
 	switch (mode) {
 	case 0: return Dreg;
@@ -279,7 +252,9 @@ out1:
 		int pos = 0;
 		int mnp = 0;
 		int bitno = 0;
+		int unsized = 1;
 		TCHAR mnemonic[10];
+		int mnemo;
 
 		wordsizes sz = sz_long;
 		int srcgather = 0, dstgather = 0;
@@ -287,7 +262,7 @@ out1:
 		int srctype = 0;
 		int srcpos = -1, dstpos = -1;
 
-		unsigned int srcmode = am_unknown, destmode = am_unknown;
+		amodes srcmode = am_unknown, destmode = am_unknown;
 		int srcreg = -1, destreg = -1;
 
 		for (i = 0; i < lastbit; i++)
@@ -328,6 +303,7 @@ out1:
 		while (opcstr[pos] && !_istspace(opcstr[pos])) {
 			if (opcstr[pos] == '.') {
 				pos++;
+				unsized = 0;
 				switch (opcstr[pos]) {
 
 				case 'B': sz = sz_byte; break;
@@ -360,7 +336,7 @@ out1:
 		mnemonic[mnp] = 0;
 
 		/* now, we have read the mnemonic and the size */
-		while (opcstr[pos] && _istspace(opcstr[pos])) 
+		while (opcstr[pos] && _istspace(opcstr[pos]))
 			pos++;
 
 		/* A goto a day keeps the D******a away. */
@@ -738,14 +714,22 @@ endofline:
 			table68k[opc].mnemo = lookuptab[find].mnemo;
 		}
 		table68k[opc].cc = bitval[bitc];
-		if (table68k[opc].mnemo == i_BTST
-			|| table68k[opc].mnemo == i_BSET
-			|| table68k[opc].mnemo == i_BCLR
-			|| table68k[opc].mnemo == i_BCHG)
+		mnemo = table68k[opc].mnemo;
+		if (mnemo == i_BTST
+			|| mnemo == i_BSET
+			|| mnemo == i_BCLR
+			|| mnemo == i_BCHG)
 		{
 			sz = destmode == Dreg ? sz_long : sz_byte;
+			unsized = 0;
 		}
+		if (mnemo == i_JSR || mnemo == i_JMP) {
+			unsized = 1;
+		}
+
 		table68k[opc].size = sz;
+		table68k[opc].unsized = unsized;
+		table68k[opc].sduse = id.sduse;
 		table68k[opc].sreg = srcreg;
 		table68k[opc].dreg = destreg;
 		table68k[opc].smode = srcmode;
@@ -756,7 +740,12 @@ endofline:
 		table68k[opc].duse = usedst;
 		table68k[opc].stype = srctype;
 		table68k[opc].plev = id.plevel;
-		table68k[opc].clev = specialcase(opc, id.cpulevel);
+		table68k[opc].clev = id.cpulevel;
+		table68k[opc].unimpclev = id.unimpcpulevel;
+		table68k[opc].head = id.head;
+		table68k[opc].tail = id.tail;
+		table68k[opc].clocks = id.clocks;
+		table68k[opc].fetchmode = id.fetchmode;
 
 #if 0
 		for (i = 0; i < 5; i++) {
