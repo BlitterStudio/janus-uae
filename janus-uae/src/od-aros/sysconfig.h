@@ -136,7 +136,7 @@
 /* #undef HAVE_INTTYPES_H_WITH_UINTMAX */
 
 /* Define to 1 if you have the `isinf' function. */
-#define HAVE_ISINF 1
+//#define HAVE_ISINF 1
 
 /* Define to 1 if you have the `isnan' function. */
 #define HAVE_ISNAN 1
