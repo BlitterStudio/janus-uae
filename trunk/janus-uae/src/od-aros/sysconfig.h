@@ -70,6 +70,7 @@
 #define NO_A2091_SCSI
 #define NO_WD_SCSI
 
+#define UAE_RAND_MAX RAND_MAX
 /* missing types, maybe move somewhere else? */
 #define WPARAM APTR
 #define LPARAM ULONG
