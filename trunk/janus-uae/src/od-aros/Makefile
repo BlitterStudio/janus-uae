@@ -102,8 +102,8 @@ COMMON_OBJS= \
 	../ersatz.o \
 	../expansion.o \
 	../fdi2raw.o \
-	\
 	../filesys.o \
+	\
 	../fpp.o \
 	../fsdb.o \
 	../fsusage.o \
