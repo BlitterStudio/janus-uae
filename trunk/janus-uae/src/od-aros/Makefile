@@ -79,6 +79,7 @@ COMMON_OBJS= \
 	../cdrom.o \
 	../cdtv.o \
 	../cfgfile.o \
+	\
 	../cia.o \
 	../cpudefs.o \
 	../cpuemu_0.o \
