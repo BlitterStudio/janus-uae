@@ -9,6 +9,8 @@
 #include "options.h"
 #include "zfile.h"
 #include "inputdevice.h"
+#include "debug.h"
+#include "uae.h"
 
 #ifndef __AROS__
 #include <windows.h>
@@ -18,10 +20,11 @@
 #define MAX_OUTMESSAGES 30
 #define MAX_BINMESSAGE 32
 
+static int ipcmode;
+
 struct uaeipc
 {
 #ifndef __AROS__
-	
 	HANDLE hipc, olevent;
 	OVERLAPPED ol;
 	uae_u8 buffer[IPC_BUFFER_SIZE], outbuf[IPC_BUFFER_SIZE];
@@ -36,14 +39,54 @@ struct uaeipc
 
 static void parsemessage(TCHAR *in, struct uae_prefs *p, TCHAR *out, int outsize)
 {
-	TODO();
+  TODO();
 #if 0
+	int mode;
+
 	out[0] = 0;
-	if (!_tcsncmp (in, _T("CFG "), 4) || !_tcsncmp (in, _T("EVT "), 4)) {
+
+	my_trim (in);
+	if (!_tcsicmp (in, _T("IPC_QUIT"))) {
+		uae_quit ();
+		return;
+	}
+	if (!_tcsicmp (in, _T("ipc_config"))) {
+		ipcmode = 1;
+		_tcscat (out, _T("200\n"));
+		return;
+	} else if (!_tcsicmp (in, _T("ipc_event"))) {
+		ipcmode = 2;
+		_tcscat (out, _T("200\n"));
+		return;
+	} else if (!_tcsicmp (in, _T("ipc_debug"))) {
+		ipcmode = 3;
+		_tcscat (out, _T("200\n"));
+		return;
+	} else if (!_tcsicmp (in, _T("ipc_restore"))) {
+		ipcmode = 0;
+		_tcscat (out, _T("200\n"));
+		return;
+	}
+
+	mode = 0;
+	if (ipcmode == 1) {
+		mode = 1;
+	} else if (ipcmode == 2) {
+		mode = 1;
+	} else if (ipcmode == 3) {
+		mode = 2;
+	} else if (!_tcsnicmp (in, _T("CFG "), 4) || !_tcsnicmp (in, _T("EVT "), 4)) {
+		mode = 1;
+		in += 4;
+	} else if (!_tcsnicmp (in, _T("DBG "), 4)) {
+		mode = 2;
+		in += 4;
+	}
+
+	if (mode == 1) {
 		TCHAR tmpout[256];
 		int index = -1;
 		int cnt = 0;
-		in += 4;
 		for (;;) {
 			int ret;
 			tmpout[0] = 0;
@@ -59,19 +102,21 @@ static void parsemessage(TCHAR *in, struct uae_prefs *p, TCHAR *out, int outsize
 			if (ret >= 0)
 				break;
 		}
-		if (_tcslen (out) == 0)
+		if (out[0] == 0)
 			_tcscat (out, _T("404"));
+	} else if (mode == 2) {
+		debug_parser (in, out, outsize);
+		if (!out[0])
+			_tcscpy (out, _T("404"));
 	} else {
 		_tcscpy (out, _T("501"));
 	}
 #endif
 }
 
+#if 0
 static int listenIPC (void *vipc)
 {
-	TODO();
-	return 0;
-#if 0
 	struct uaeipc *ipc = (struct uaeipc*)vipc;
 	DWORD err;
 
@@ -95,13 +140,10 @@ static int listenIPC (void *vipc)
 		return 0;
 	}
 	return 1;
-#endif
 }
 
 static void disconnectIPC (void *vipc)
 {
-	TODO();
-#if 0
 	struct uaeipc *ipc = (struct uaeipc*)vipc;
 	ipc->readpending = ipc->writepending = FALSE;
 	if (ipc->connected) {
@@ -109,22 +151,19 @@ static void disconnectIPC (void *vipc)
 			write_log (_T("IPC: DisconnectNamedPipe failed, err=%d\n"), GetLastError());
 		ipc->connected = FALSE;
 	}
-#endif
 }
 
 static void resetIPC (void *vipc)
 {
-	TODO();
-#if 0
 	struct uaeipc *ipc = (struct uaeipc*)vipc;
 	disconnectIPC (ipc);
 	listenIPC (ipc);
-#endif
 }
+#endif
 
 void closeIPC (void *vipc)
 {
-	TODO();
+  TODO();
 #if 0
 	struct uaeipc *ipc = (struct uaeipc*)vipc;
 	if (!ipc)
@@ -143,7 +182,7 @@ void closeIPC (void *vipc)
 
 void *createIPC (const TCHAR *name, int binary)
 {
-	TODO();
+  TODO();
 #if 0
 	TCHAR tmpname[100];
 	int cnt = 0;
@@ -154,7 +193,7 @@ void *createIPC (const TCHAR *name, int binary)
 	ipc->readpending = FALSE;
 	ipc->writepending = FALSE;
 	ipc->olevent = INVALID_HANDLE_VALUE;
-	ipc->binary = 1;
+	ipc->binary = 0;
 	while (cnt < 10) {
 		_stprintf (tmpname, _T("\\\\.\\pipe\\%s"), name);
 		if (cnt > 0) {
@@ -181,25 +220,26 @@ void *createIPC (const TCHAR *name, int binary)
 	if (listenIPC(ipc))
 		return ipc;
 	closeIPC(ipc);
+	return NULL;
 #endif
 	return NULL;
 }
 
 void *geteventhandleIPC (void *vipc)
 {
-	TODO();
+  TODO();
 #if 0
 	struct uaeipc *ipc = (struct uaeipc*)vipc;
 	if (!ipc)
 		return INVALID_HANDLE_VALUE;
 	return ipc->olevent;
 #endif
-	return NULL;
+return NULL;
 }
 
 int sendIPC (void *vipc, TCHAR *msg)
 {
-	TODO();
+  TODO();
 #if 0
 	struct uaeipc *ipc = (struct uaeipc*)vipc;
 	if (ipc->hipc == INVALID_HANDLE_VALUE)
@@ -211,11 +251,11 @@ int sendIPC (void *vipc, TCHAR *msg)
 		SetEvent (ipc->olevent);
 	return 1;
 #endif
-	return 0;
+  return 0;
 }
 int sendBinIPC (void *vipc, uae_u8 *msg, int len)
 {
-	TODO();
+  TODO();
 #if 0
 	struct uaeipc *ipc = (struct uaeipc*)vipc;
 	if (ipc->hipc == INVALID_HANDLE_VALUE)
@@ -228,12 +268,12 @@ int sendBinIPC (void *vipc, uae_u8 *msg, int len)
 		SetEvent (ipc->olevent);
 	return 1;
 #endif
-	return 0;
+  return 0;
 }
 
 int checkIPC (void *vipc, struct uae_prefs *p)
 {
-	TODO();
+  TODO();
 #if 0
 	struct uaeipc *ipc = (struct uaeipc*)vipc;
 	BOOL ok;
@@ -270,6 +310,7 @@ int checkIPC (void *vipc, struct uae_prefs *p)
 			if (err == ERROR_IO_INCOMPLETE)
 				return 0;
 			write_log (_T("IPC: GetOverlappedResult error %d\n"), err);
+			ipc->connected = TRUE;
 			resetIPC (ipc);
 			return 0;
 		}
@@ -287,6 +328,8 @@ int checkIPC (void *vipc, struct uae_prefs *p)
 		}
 	}
 	if (!ipc->readpending) {
+		ipc->buffer[0] = ipc->buffer[1] = 0;
+		ipc->buffer[2] = ipc->buffer[3] = 0;
 		ok = ReadFile (ipc->hipc, ipc->buffer, IPC_BUFFER_SIZE, &ret, &ipc->ol);
 		err = GetLastError ();
 		if (!ok) {
@@ -306,11 +349,39 @@ int checkIPC (void *vipc, struct uae_prefs *p)
 	if (ipc->binary) {
 
 	} else {
-		write_log (_T("IPC: got message '%s'\n"), ipc->buffer);
-		parsemessage ((TCHAR*)ipc->buffer, p, (TCHAR*)ipc->outbuf, sizeof ipc->outbuf);
+		TCHAR out[IPC_BUFFER_SIZE];
+		int outlen;
+		TCHAR *msg;
+		bool freeit = false;
+		int type = 0;
+		if (ipc->buffer[0] == 0xef && ipc->buffer[1] == 0xbb && ipc->buffer[2] == 0xbf) {
+			msg = utf8u ((char*)ipc->buffer + 3);
+			type = 1;
+		} else if (ipc->buffer[0] == 0xff && ipc->buffer[1] == 0xfe) {
+			msg = my_strdup ((TCHAR*)(ipc->buffer + 2));
+			type = 2;
+		} else {
+			msg = au ((uae_char*)ipc->buffer);
+		}
+		parsemessage (msg, p, out, sizeof out / sizeof (TCHAR));
+		xfree (msg);
+		if (type == 1) {
+			char *outp = uutf8 (out);
+			strcpy ((char*)ipc->outbuf, outp);
+			outlen = strlen ((char*)ipc->outbuf) + sizeof (char);
+			xfree (outp);
+		} else if (type == 2) {
+			if (_tcslen (out) >= IPC_BUFFER_SIZE)
+				out[IPC_BUFFER_SIZE - 1] = 0;
+			_tcscpy ((TCHAR*)ipc->outbuf, out);
+			outlen = _tcsclen ((TCHAR*)ipc->outbuf) + sizeof (TCHAR);
+		} else {
+			ua_copy ((uae_char*)ipc->outbuf, sizeof ipc->outbuf, out);
+			outlen = strlen ((char*)ipc->outbuf) + sizeof (char);
+		}
 		memset (&ipc->ol, 0, sizeof (OVERLAPPED));
 		ipc->ol.hEvent = ipc->olevent;
-		ok = WriteFile (ipc->hipc, ipc->outbuf, strlen ((char*)ipc->outbuf) + 1, &ret, &ipc->ol);
+		ok = WriteFile (ipc->hipc, ipc->outbuf, outlen, &ret, &ipc->ol);
 		err = GetLastError ();
 		if (!ok && err != ERROR_IO_PENDING) {
 			write_log (_T("IPC: WriteFile() err=%d\n"), err);
@@ -321,12 +392,12 @@ int checkIPC (void *vipc, struct uae_prefs *p)
 	}
 	return 1;
 #endif
-	return 0;
+  return 0;
 }
 
 int isIPC (const TCHAR *pipename)
 {
-	TODO();
+  TODO();
 #if 0
 	HANDLE p;
 
@@ -343,5 +414,5 @@ int isIPC (const TCHAR *pipename)
 	CloseHandle (p);
 	return 1;
 #endif
-	return 0;
+  return 0;
 }
