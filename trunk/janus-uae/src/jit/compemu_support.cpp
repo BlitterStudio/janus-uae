@@ -360,7 +360,7 @@ STATIC_INLINE void attached_state(blockinfo* bi)
 {
 	bi->havestate=1;
 	if (bi->direct_handler_to_use==bi->direct_handler)
-		set_dhtu(bi,(void *)bi->direct_pen);
+		set_dhtu(bi,(void *) bi->direct_pen);
 	bi->direct_handler=bi->direct_pen;
 	bi->status=BI_TARGETTED;
 }
@@ -4000,38 +4000,6 @@ MENDFUNC(1,fcuts_r,(FRW r))
 }
 MENDFUNC(1,fcut_r,(FRW r))
 
-	MIDFUNC(2,fmovl_ri,(FW r, IMMS i))
-{
-	r=f_writereg(r);
-	raw_fmovl_ri(r,i);
-	f_unlock(r);
-}
-MENDFUNC(2,fmovl_ri,(FW r, IMMS i))
-
-	MIDFUNC(2,fmovs_ri,(FW r, IMM i))
-{
-	r=f_writereg(r);
-	raw_fmovs_ri(r,i);
-	f_unlock(r);
-}
-MENDFUNC(2,fmovs_ri,(FW r, IMM i))
-
-	MIDFUNC(3,fmov_ri,(FW r, IMM i1, IMM i2))
-{
-	r=f_writereg(r);
-	raw_fmov_ri(r,i1,i2);
-	f_unlock(r);
-}
-MENDFUNC(3,fmov_ri,(FW r, IMM i1, IMM i2))
-
-	MIDFUNC(4,fmov_ext_ri,(FW r, IMM i1, IMM i2, IMM i3))
-{
-	r=f_writereg(r);
-	raw_fmov_ext_ri(r,i1,i2,i3);
-	f_unlock(r);
-}
-MENDFUNC(4,fmov_ext_ri,(FW r, IMM i1, IMM i2, IMM i3))
-
 	MIDFUNC(2,fmov_ext_mr,(MEMW m, FR r))
 {
 	r=f_readreg(r);
@@ -4498,7 +4466,7 @@ void init_comp(void)
 
 	for (i=0;i<VREGS;i++) {
 		if (i<16) { /* First 16 registers map to 68k registers */
-			live.state[i].mem=((uae_u32*)&regs)+i;
+			live.state[i].mem=&regs.regs[i];
 			live.state[i].needflush=NF_TOMEM;
 			set_status(i,INMEM);
 		}
@@ -4522,7 +4490,7 @@ void init_comp(void)
 
 	for (i=0;i<VFREGS;i++) {
 		if (i<8) { /* First 8 registers map to 68k FPU registers */
-			live.fate[i].mem=(uae_u32*)(((fptype*)regs.fp)+i);
+			live.fate[i].mem=(uae_u32*)(&regs.fp[i].fp);
 			live.fate[i].needflush=NF_TOMEM;
 			live.fate[i].status=INMEM;
 		}
@@ -4893,11 +4861,10 @@ static void align_target(uae_u32 a)
 		*target++=0x90;
 }
 
-extern uae_u8* kickmemory;
 STATIC_INLINE int isinrom(uae_u32 addr)
 {
-	return (addr>=(uae_u32)kickmemory &&
-		addr<(uae_u32)kickmemory+8*65536);
+	return (addr>=(uae_u32)kickmem_bank.baseaddr &&
+		addr<(uae_u32)kickmem_bank.baseaddr+8*65536);
 }
 
 static void flush_all(void)
@@ -5047,7 +5014,8 @@ STATIC_INLINE void writemem(int address, int source, int offset, int size, int t
 
 void writebyte(int address, int source, int tmp)
 {
-	int  distrust;
+	int distrust = currprefs.comptrustbyte;
+#if 0
 	switch (currprefs.comptrustbyte) {
 	case 0: distrust=0; break;
 	case 1: distrust=1; break;
@@ -5055,7 +5023,7 @@ void writebyte(int address, int source, int tmp)
 	case 3: distrust=!have_done_picasso; break;
 	default: abort();
 	}
-
+#endif
 	if ((special_mem&S_WRITE) || distrust)
 		writemem_special(address,source,20,1,tmp);
 	else
@@ -5065,7 +5033,8 @@ void writebyte(int address, int source, int tmp)
 STATIC_INLINE void writeword_general(int address, int source, int tmp,
 	int clobber)
 {
-	int  distrust;
+	int distrust = currprefs.comptrustword;
+#if 0
 	switch (currprefs.comptrustword) {
 	case 0: distrust=0; break;
 	case 1: distrust=1; break;
@@ -5073,7 +5042,7 @@ STATIC_INLINE void writeword_general(int address, int source, int tmp,
 	case 3: distrust=!have_done_picasso; break;
 	default: abort();
 	}
-
+#endif
 	if ((special_mem&S_WRITE) || distrust)
 		writemem_special(address,source,16,2,tmp);
 	else
@@ -5093,7 +5062,8 @@ void writeword(int address, int source, int tmp)
 STATIC_INLINE void writelong_general(int address, int source, int tmp,
 	int clobber)
 {
-	int  distrust;
+	int  distrust = currprefs.comptrustlong;
+#if 0
 	switch (currprefs.comptrustlong) {
 	case 0: distrust=0; break;
 	case 1: distrust=1; break;
@@ -5101,7 +5071,7 @@ STATIC_INLINE void writelong_general(int address, int source, int tmp,
 	case 3: distrust=!have_done_picasso; break;
 	default: abort();
 	}
-
+#endif
 	if ((special_mem&S_WRITE) || distrust)
 		writemem_special(address,source,12,4,tmp);
 	else
@@ -5174,7 +5144,8 @@ STATIC_INLINE void readmem(int address, int dest, int offset, int size, int tmp)
 
 void readbyte(int address, int dest, int tmp)
 {
-	int  distrust;
+	int distrust = currprefs.comptrustbyte;
+#if 0
 	switch (currprefs.comptrustbyte) {
 	case 0: distrust=0; break;
 	case 1: distrust=1; break;
@@ -5182,7 +5153,7 @@ void readbyte(int address, int dest, int tmp)
 	case 3: distrust=!have_done_picasso; break;
 	default: abort();
 	}
-
+#endif
 	if ((special_mem&S_READ) || distrust)
 		readmem_special(address,dest,8,1,tmp);
 	else
@@ -5191,7 +5162,8 @@ void readbyte(int address, int dest, int tmp)
 
 void readword(int address, int dest, int tmp)
 {
-	int  distrust;
+	int distrust = currprefs.comptrustword;
+#if 0
 	switch (currprefs.comptrustword) {
 	case 0: distrust=0; break;
 	case 1: distrust=1; break;
@@ -5199,7 +5171,7 @@ void readword(int address, int dest, int tmp)
 	case 3: distrust=!have_done_picasso; break;
 	default: abort();
 	}
-
+#endif
 	if ((special_mem&S_READ) || distrust)
 		readmem_special(address,dest,4,2,tmp);
 	else
@@ -5208,7 +5180,8 @@ void readword(int address, int dest, int tmp)
 
 void readlong(int address, int dest, int tmp)
 {
-	int  distrust;
+	int distrust = currprefs.comptrustlong;
+#if 0
 	switch (currprefs.comptrustlong) {
 	case 0: distrust=0; break;
 	case 1: distrust=1; break;
@@ -5216,7 +5189,7 @@ void readlong(int address, int dest, int tmp)
 	case 3: distrust=!have_done_picasso; break;
 	default: abort();
 	}
-
+#endif
 	if ((special_mem&S_READ) || distrust)
 		readmem_special(address,dest,0,4,tmp);
 	else
@@ -5254,7 +5227,8 @@ STATIC_INLINE void get_n_addr_real(int address, int dest, int tmp)
 
 void get_n_addr(int address, int dest, int tmp)
 {
-	int  distrust;
+	int distrust = currprefs.comptrustnaddr;
+#if 0
 	switch (currprefs.comptrustnaddr) {
 	case 0: distrust=0; break;
 	case 1: distrust=1; break;
@@ -5262,7 +5236,7 @@ void get_n_addr(int address, int dest, int tmp)
 	case 3: distrust=!have_done_picasso; break;
 	default: abort();
 	}
-
+#endif
 	if (special_mem || distrust)
 		get_n_addr_old(address,dest,tmp);
 	else
@@ -5378,8 +5352,6 @@ uae_u32 get_jitted_size(void)
 	return 0;
 }
 
-extern uae_u8* veccode;
-
 void alloc_cache(void)
 {
 	if (compiled_code) {
@@ -5387,7 +5359,7 @@ void alloc_cache(void)
 		cache_free(compiled_code);
 	}
 	if (veccode == NULL)
-		veccode = (uae_u8*)cache_alloc (256);
+		veccode = cache_alloc (256);
 	if (popallspace == NULL)
 		popallspace = cache_alloc (1024);
 	compiled_code = NULL;
