@@ -126,8 +126,8 @@ COMMON_OBJS= \
 	../scsiemul.o \
 	../traps.o \
 	../uaeexe.o \
-	\
 	../uaeipc.o \
+	\
 	../uaelib.o \
 	../uaeresource.o \
 	../uaeserial.o \
