@@ -127,12 +127,12 @@ COMMON_OBJS= \
 	../traps.o \
 	../uaeexe.o \
 	../uaeipc.o \
-	\
 	../uaelib.o \
 	../uaeresource.o \
 	../uaeserial.o \
 	../jit/compemu.o \
 	../jit/compemu_fpp.o \
+	\
 	../jit/compemu_support.o \
 	../jit/compstbl.o \
 	../nogui.o \
