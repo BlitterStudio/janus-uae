@@ -121,9 +121,9 @@ COMMON_OBJS= \
 	../rommgr.o \
 	../readcpu.o \
 	../sana2.o \
-	\
 	../savestate.o \
 	../scsi.o \
+	\
 	../scsiemul.o \
 	../traps.o \
 	../uaeexe.o \
