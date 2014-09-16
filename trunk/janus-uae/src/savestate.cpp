@@ -49,9 +49,6 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
-#ifdef __AROS__
-#include <exec/types.h>
-#endif
 #include "options.h"
 #include "memory.h"
 #include "zfile.h"
@@ -256,10 +253,11 @@ TCHAR *restore_string_func (uae_u8 **dstp)
 TCHAR *restore_path_func (uae_u8 **dstp, int type)
 {
 	TCHAR *newpath;
-	TCHAR *s = restore_string_func (dstp);
+	TCHAR *s;
 	TCHAR *out = NULL;
 	TCHAR tmp[MAX_DPATH], tmp2[MAX_DPATH];
 
+	s = restore_string_func (dstp);
 	if (s[0] == 0)
 		return s;
 	if (zfile_exists (s))
@@ -282,6 +280,7 @@ TCHAR *restore_path_func (uae_u8 **dstp, int type)
 		if (newpath == NULL || newpath[0] == 0)
 			break;
 		_tcscpy (tmp2, newpath);
+		fixtrailing (tmp2);
 		_tcscat (tmp2, tmp);
 		fullpath (tmp2, sizeof tmp2 / sizeof (TCHAR));
 		if (zfile_exists (tmp2)) {
@@ -289,7 +288,7 @@ TCHAR *restore_path_func (uae_u8 **dstp, int type)
 			return my_strdup (tmp2);
 		}
 	}
-	getpathpart(tmp2, sizeof tmp2 / sizeof (TCHAR), savestate_fname);
+	getpathpart (tmp2, sizeof tmp2 / sizeof (TCHAR), savestate_fname);
 	_tcscat (tmp2, tmp);
 	if (zfile_exists (tmp2)) {
 		xfree (s);
@@ -412,7 +411,9 @@ static uae_u8 *restore_chunk (struct zfile *f, TCHAR *name, size_t *len, size_t 
 		&& _tcscmp (name, _T("ZCRM")) != 0
 		&& _tcscmp (name, _T("PRAM")) != 0
 		&& _tcscmp (name, _T("A3K1")) != 0
-		&& _tcscmp (name, _T("A3K2")) != 0)
+		&& _tcscmp (name, _T("A3K2")) != 0
+		&& _tcscmp (name, _T("BORO")) != 0
+	)
 	{
 		/* extra bytes at the end needed to handle old statefiles that now have new fields */
 		mem = xcalloc (uae_u8, *totallen + 100);
@@ -460,7 +461,7 @@ void restore_ram (size_t filepos, uae_u8 *memory)
 	}
 }
 
-uae_u8 *restore_log (uae_u8 *src)
+static uae_u8 *restore_log (uae_u8 *src)
 {
 #if OPEN_LOG > 0
 	TCHAR *s = utf8u (src);
@@ -512,11 +513,12 @@ void restore_state (const TCHAR *filename)
 		write_log (_T("%s is not an AmigaStateFile\n"), filename);
 		goto error;
 	}
-	write_log (_T("STATERESTORE:\n"));
-	config_changed = 1;
+	write_log (_T("STATERESTORE: '%s'\n"), filename);
+	set_config_changed ();
 	savestate_file = f;
 	restore_header (chunk);
 	xfree (chunk);
+	restore_cia_start ();
 	changed_prefs.bogomem_size = 0;
 	changed_prefs.chipmem_size = 0;
 	changed_prefs.fastmem_size = 0;
@@ -675,8 +677,14 @@ void restore_state (const TCHAR *filename)
 		else if (!_tcscmp (name, _T("CDTV")))
 			end = restore_cdtv (chunk);
 		else if (!_tcscmp (name, _T("DMAC")))
-			end = restore_dmac (chunk);
+			end = restore_cdtv_dmac (chunk);
 #endif
+		else if (!_tcscmp (name, _T("DMC2")))
+			end = restore_scsi_dmac (chunk);
+		else if (!_tcscmp (name, _T("SCSI")))
+			end = restore_scsi_device (chunk);
+		else if (!_tcscmp (name, _T("SCSD")))
+			end = restore_scsidev (chunk);
 		else if (!_tcscmp (name, _T("GAYL")))
 			end = restore_gayle (chunk);
 		else if (!_tcscmp (name, _T("IDE ")))
@@ -729,10 +737,17 @@ void savestate_restore_finish (void)
 	restore_disk_finish ();
 	restore_blitter_finish ();
 	restore_akiko_finish ();
+#ifdef CDTV
 	restore_cdtv_finish ();
+#endif
+#ifdef PICASSO96
 	restore_p96_finish ();
+#endif
+#ifdef A2065
 	restore_a2065_finish ();
+#endif
 	restore_cia_finish ();
+	restore_debug_memwatch_finish ();
 	savestate_state = 0;
 	init_hz_full ();
 	audio_activate ();
@@ -950,11 +965,23 @@ static int save_state_internal (struct zfile *f, const TCHAR *description, int c
 	dst = save_cdtv (&len, NULL);
 	save_chunk (f, dst, len, _T("CDTV"), 0);
 	xfree (dst);
-	dst = save_dmac (&len, NULL);
+	dst = save_cdtv_dmac (&len, NULL);
 	save_chunk (f, dst, len, _T("DMAC"), 0);
 	xfree (dst);
 #endif
-
+	dst = save_scsi_dmac (&len, NULL);
+	save_chunk (f, dst, len, _T("DMC2"), 0);
+	xfree (dst);
+	for (i = 0; i < 8; i++) {
+		dst = save_scsi_device (i, &len, NULL);
+		save_chunk (f, dst, len, _T("SCSI"), 0);
+		xfree (dst);
+	}
+	for (i = 0; i < MAX_TOTAL_SCSI_DEVICES; i++) {
+		dst = save_scsidev (i, &len, NULL);
+		save_chunk (f, dst, len, _T("SCSD"), 0);
+		xfree (dst);
+	}
 #ifdef ACTION_REPLAY
 	dst = save_action_replay (&len, NULL);
 	save_chunk (f, dst, len, _T("ACTR"), comp);
@@ -1005,7 +1032,7 @@ static int save_state_internal (struct zfile *f, const TCHAR *description, int c
 	/* move this if you want to use CONF or LOG hunks when restoring state */
 	zfile_fwrite (endhunk, 1, 8, f);
 
-	dst = save_configuration (&len);
+	dst = save_configuration (&len, false);
 	if (dst) {
 		save_chunk (f, dst, len, _T("CONF"), comp);
 		xfree(dst);
@@ -1240,7 +1267,7 @@ void savestate_rewind (void)
 		p = restore_p96 (p);
 #endif
 	len = restore_u32_func (&p);
-	memcpy (chipmemory, p, currprefs.chipmem_size > len ? len : currprefs.chipmem_size);
+	memcpy (chipmem_bank.baseaddr, p, currprefs.chipmem_size > len ? len : currprefs.chipmem_size);
 	p += len;
 	len = restore_u32_func (&p);
 	memcpy (save_bram (&dummy), p, currprefs.bogomem_size > len ? len : currprefs.bogomem_size);
@@ -1267,8 +1294,10 @@ void savestate_rewind (void)
 	if (restore_u32_func (&p))
 		p = restore_cdtv (p);
 	if (restore_u32_func (&p))
-		p = restore_dmac (p);
+		p = restore_cdtv_dmac (p);
 #endif
+	if (restore_u32_func (&p))
+		p = restore_scsi_dmac (p);
 	if (restore_u32_func (&p))
 		p = restore_gayle (p);
 	for (i = 0; i < 4; i++) {
@@ -1278,7 +1307,7 @@ void savestate_rewind (void)
 	p += 4;
 	if (p != p2) {
 		gui_message (_T("reload failure, address mismatch %p != %p"), p, p2);
-		uae_reset (0);
+		uae_reset (0, 0);
 		return;
 	}
 	inprec_setposition (st->inprecoffset, pos);
@@ -1605,12 +1634,22 @@ retry2:
 	p3 = p;
 	save_u32_func (&p, 0);
 	tlen += 4;
-	if (save_dmac (&len, p)) {
+	if (save_cdtv_dmac (&len, p)) {
 		save_u32_func (&p3, 1);
 		tlen += len;
 		p += len;
 	}
 #endif
+	if (bufcheck (st, p, 0))
+		goto retry;
+	p3 = p;
+	save_u32_func (&p, 0);
+	tlen += 4;
+	if (save_scsi_dmac (&len, p)) {
+		save_u32_func (&p3, 1);
+		tlen += len;
+		p += len;
+	}
 	if (bufcheck (st, p, 0))
 		goto retry;
 	p3 = p;
@@ -1657,7 +1696,7 @@ retry2:
 		input_record++;
 		for (i = 0; i < 4; i++) {
 			bool wp = true;
-			DISK_validate_filename (currprefs.floppyslots[i].df, false, &wp, NULL, NULL);
+			DISK_validate_filename (&currprefs, currprefs.floppyslots[i].df, false, &wp, NULL, NULL);
 			inprec_recorddiskchange (i, currprefs.floppyslots[i].df, wp);
 		}
 		input_record--;
