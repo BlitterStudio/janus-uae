@@ -41,13 +41,13 @@ static uae_u32 emulib_GetVersion (void)
 */
 static uae_u32 emulib_HardReset (void)
 {
-	uae_reset(0);
+	uae_reset(1, 1);
 	return 0;
 }
 
 static uae_u32 emulib_Reset (void)
 {
-	uae_reset(0);
+	uae_reset(0, 0);
 	return 0;
 }
 
@@ -140,7 +140,7 @@ static uae_u32 REGPARAM2 emulib_ChgCMemSize (uae_u32 memsize)
 	m68k_dreg (regs, 0) = 0;
 
 	changed_prefs.chipmem_size = memsize;
-	uae_reset(0);
+	uae_reset(1, 1);
 	return 1;
 }
 
@@ -158,7 +158,7 @@ static uae_u32 REGPARAM2 emulib_ChgSMemSize (uae_u32 memsize)
 
 	m68k_dreg (regs, 0) = 0;
 	changed_prefs.bogomem_size = memsize;
-	uae_reset (0);
+	uae_reset (1, 1);
 	return 1;
 }
 
@@ -175,7 +175,7 @@ static uae_u32 REGPARAM2 emulib_ChgFMemSize (uae_u32 memsize)
 	}
 	m68k_dreg (regs, 0) = 0;
 	changed_prefs.fastmem_size = memsize;
-	uae_reset (0);
+	uae_reset (1, 1);
 	return 0;
 }
 
@@ -221,9 +221,9 @@ static uae_u32 emulib_GetUaeConfig (uaecptr place)
 	int i, j;
 
 	put_long (place, version);
-	put_long (place + 4, allocated_chipmem);
-	put_long (place + 8, allocated_bogomem);
-	put_long (place + 12, allocated_fastmem);
+	put_long (place + 4, chipmem_bank.allocated);
+	put_long (place + 8, bogomem_bank.allocated);
+	put_long (place + 12, fastmem_bank.allocated);
 	put_long (place + 16, currprefs.gfx_framerate);
 	put_long (place + 20, currprefs.produce_sound);
 	put_long (place + 24, currprefs.jports[0].id | (currprefs.jports[1].id << 8));
@@ -371,8 +371,10 @@ static uae_u32 REGPARAM2 uaelib_demux2 (TrapContext *context)
 #define ARG4 (get_long (m68k_areg (regs, 7) + 20))
 #define ARG5 (get_long (m68k_areg (regs, 7) + 24))
 
+#ifdef PICASSO96
 	if (ARG0 >= 16 && ARG0 <= 39)
 		return picasso_demux (ARG0, context);
+#endif
 
 	switch (ARG0)
 	{
@@ -399,7 +401,12 @@ static uae_u32 REGPARAM2 uaelib_demux2 (TrapContext *context)
 
 	case 70: return 0; /* RESERVED. Something uses this.. */
 
-	case 80: return currprefs.maprom ? currprefs.maprom : 0xffffffff;
+	case 80:
+		if (!currprefs.maprom)
+			return 0xffffffff;
+		/* Disable possible ROM protection */
+		unprotect_maprom ();
+		return currprefs.maprom;
 	case 81: return cfgfile_uaelib (ARG1, ARG2, ARG3, ARG4);
 	case 82: return cfgfile_uaelib_modify (ARG1, ARG2, ARG3, ARG4, ARG5);
 	case 83: currprefs.mmkeyboard = ARG1 ? 1 : 0; return currprefs.mmkeyboard;
@@ -450,14 +457,9 @@ static uae_u32 REGPARAM2 uaelib_demux (TrapContext *context)
 void emulib_install (void)
 {
 	uaecptr a;
-
-  DebOut("entered\n");
-	if (!uae_boot_rom) {
-    DebOut("!uae_boot_rom\n");
+	if (!uae_boot_rom)
 		return;
-  }
 	a = here ();
-  DebOut("a=%lx\n", a);
 	currprefs.mmkeyboard = 0;
 	org (rtarea_base + 0xFF60);
 #if 0
@@ -465,9 +467,7 @@ void emulib_install (void)
 	dw ((rtarea_base >> 16) | get_word (rtarea_base + 36));
 	dw (get_word (rtarea_base + 38) + 12);
 #endif
-  DebOut("calltrap..\n");
 	calltrap (deftrapres (uaelib_demux, 0, _T("uaelib_demux")));
 	dw (RTS);
 	org (a);
-  DebOut("done\n");
 }
