@@ -132,9 +132,9 @@ COMMON_OBJS= \
 	../uaeserial.o \
 	../jit/compemu.o \
 	../jit/compemu_fpp.o \
-	\
 	../jit/compemu_support.o \
 	../jit/compstbl.o \
+	\
 	../nogui.o \
 	../zfile.o \
 	main.o \

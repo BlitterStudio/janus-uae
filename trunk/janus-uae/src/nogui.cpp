@@ -120,6 +120,8 @@ void gui_message (const char *format,...)
        write_log (msg);
 }
 
+#if 0
+/* needed for AROS!? */
 void gui_display (int shortcut) {
 	TODO();
 
@@ -144,3 +146,5 @@ void gui_gameport_axis_change (int port, int axis, int state, int max) {
 void gui_gameport_button_change (int port, int button, int onoff) {
 	TODO();
 }
+#endif
+
