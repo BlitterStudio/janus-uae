@@ -584,7 +584,7 @@ typedef enum {
 struct picasso96_state_struct
 {
     RGBFTYPE             RGBFormat;   /* true-colour, CLUT, hi-colour, etc.*/
-    //struct MyCLUTEntry  CLUT[256];   /* Duh! */
+    struct MyCLUTEntry  CLUT[256];   /* Duh! */
     uaecptr             Address;     /* Active screen address (Amiga-side)*/
     uaecptr             Extent;      /* End address of screen (Amiga-side)*/
     uae_u16             Width;       /* Active display width  (From SetGC)*/
@@ -648,7 +648,7 @@ extern void gfx_set_picasso_modeinfo (uae_u32 w, uae_u32 h, uae_u32 d, RGBFTYPE 
 extern void gfx_set_picasso_colors (RGBFTYPE rgbfmt);
 extern void gfx_set_picasso_baseaddr (uaecptr);
 extern void gfx_set_picasso_state (int on);
-extern uae_u8 *gfx_lock_picasso (int);
+extern uae_u8 *gfx_lock_picasso (bool, bool);
 extern void gfx_unlock_picasso (bool);
 extern void picasso_clip_mouse (int *, int *);
 extern int createwindowscursor (uaecptr src, int w, int h, int hiressprite, int doubledsprite, int chipset);
@@ -670,10 +670,10 @@ extern int p96hsync_counter;
 #define CARD_PORTSIRQ (CARD_VBLANKIRQ + 22)
 #define CARD_IRQFLAG (CARD_PORTSIRQ + 22)
 #define CARD_IRQPTR (CARD_IRQFLAG + 4)
-#define CARD_IRQCODE (CARD_IRQPTR + 4)
+#define CARD_IRQEXECBASE (CARD_IRQPTR + 4)
+#define CARD_IRQCODE (CARD_IRQEXECBASE + 4)
 #define CARD_END (CARD_IRQCODE + 11 * 2)
 #define CARD_SIZEOF CARD_END
-
 
 #if 0
 typedef enum {

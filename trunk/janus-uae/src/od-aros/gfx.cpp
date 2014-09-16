@@ -58,9 +58,6 @@
 #include "rp.h"
 #endif
 
-#define AMIGA_WIDTH_MAX (752 / 2)
-#define AMIGA_HEIGHT_MAX (574 / 2)
-
 #define DM_DX_FULLSCREEN 1
 #define DM_W_FULLSCREEN 2
 #define DM_D3D_FULLSCREEN 16
@@ -553,8 +550,10 @@ void enumeratedisplays (int multi) {
   }
   write_log (_T("Multimonitor detection disabled\n"));
   Displays[0].primary = 1;
-  Displays[0].name = _T("Display");
-  Displays[0].disabled = 0;
+  Displays[0].adaptername = my_strdup(_T("Display"));
+  Displays[0].monitorname = my_strdup(_T("Display"));
+
+  //Displays[0].disabled = 0;
 }
 
 #if 0

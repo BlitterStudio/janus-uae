@@ -240,9 +240,10 @@ static struct MultiDisplay *getdisplay2 (struct uae_prefs *p, int index)
 #endif
 
 	write_log ("Multimonitor detection disabled\n");
-	Displays[0].primary  = 1;
-	Displays[0].name     = (TCHAR *) "Display";
-  Displays[0].disabled = 0;
+	Displays[0].primary  = TRUE;
+	Displays[0].adaptername     = (TCHAR *) "Display";
+	Displays[0].monitorname     = (TCHAR *) "Display";
+  //Displays[0].disabled = 0;
 
 	return &Displays[0];
 }
