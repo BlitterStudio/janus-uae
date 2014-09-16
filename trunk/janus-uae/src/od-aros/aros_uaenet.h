@@ -1,11 +1,4 @@
-struct netdriverdata
-{
-    TCHAR *name;
-    TCHAR *desc;
-    int mtu;
-    uae_u8 mac[6];
-    int active;
-};
+#include "ethernet.h"
 
 typedef void (uaenet_gotfunc)(struct s2devstruct *dev, const uae_u8 *data, int len);
 typedef int (uaenet_getfunc)(struct s2devstruct *dev, uae_u8 *d, int *len);
