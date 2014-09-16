@@ -314,3 +314,4 @@ int scsi_receive_data(struct scsi_data *sd, uae_u8 *b)
 		return 1; // requested length got
 	return 0;
 }
+
