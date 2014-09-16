@@ -136,7 +136,6 @@ COMMON_OBJS= \
 	../jit/compstbl.o \
 	../nogui.o \
 	../zfile.o \
-	\
 	main.o \
 	unicode.o \
 	sounddep/sound.o \
@@ -156,9 +155,9 @@ COMMON_OBJS= \
 	mman.o \
 	writelog.o \
 	keyboard.o \
-	sdlgfx.o \
 	shm.o \
 	posixemu.o \
+	sdlgfx.o \
 	stubs.o
 
 	#../picasso96.o \
