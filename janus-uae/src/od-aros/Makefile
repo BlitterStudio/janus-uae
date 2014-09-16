@@ -134,9 +134,9 @@ COMMON_OBJS= \
 	../jit/compemu_fpp.o \
 	../jit/compemu_support.o \
 	../jit/compstbl.o \
-	\
 	../nogui.o \
 	../zfile.o \
+	\
 	main.o \
 	unicode.o \
 	sounddep/sound.o \

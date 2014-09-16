@@ -40,10 +40,9 @@ int default_freq = 0;
 
 static int isfullscreen_2 (struct uae_prefs *p)
 {
-	if (screen_is_picasso)
-		return p->gfx_pfullscreen == GFX_FULLSCREEN ? 1 : (p->gfx_pfullscreen == GFX_FULLWINDOW ? -1 : 0);
-	else
-		return p->gfx_afullscreen == GFX_FULLSCREEN ? 1 : (p->gfx_afullscreen == GFX_FULLWINDOW ? -1 : 0);
+	int idx = screen_is_picasso ? 1 : 0;
+
+	return p->gfx_apmode[idx].gfx_fullscreen == GFX_FULLSCREEN ? 1 : (p->gfx_apmode[idx].gfx_fullscreen == GFX_FULLWINDOW ? -1 : 0);
 }
 
 int isfullscreen (void)
