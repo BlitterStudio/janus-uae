@@ -35,17 +35,22 @@
 #include "threaddep/thread.h"
 
 void uae_sem_init (uae_sem_t *sem, int manual_reset, int initial_state) {
+  struct SignalSemaphore *s;
 
 	if(!sem) {
 		DebOut("WARNING: sem==NULL!\n");
 		return;
 	}
 
-	DebOut("new semaphore: %lx\n", sem);
-	InitSemaphore(sem);
+  s=(SignalSemaphore *) sem;
+
+	DebOut("uae_sem_init(%lx)\n", s);
+
+	InitSemaphore(s);
+  sem->init_done=TRUE;
 
 	if(initial_state) {
-		ObtainSemaphore(sem);
+		ObtainSemaphore(s);
 	}
 
 #if 0
@@ -62,14 +67,14 @@ void uae_sem_init (uae_sem_t *sem, int manual_reset, int initial_state) {
 
 void uae_sem_wait (uae_sem_t *sem) {
 
-	if(!sem) {
+	if(!sem || !sem->init_done) {
 		DebOut("WARNING: sem==NULL!\n");
 		return;
 	}
 
 	DebOut("ObtainSemaphore(%lx)\n", sem);
 
-	ObtainSemaphore(sem);
+	ObtainSemaphore((struct SignalSemaphore *) sem);
 #if 0
 	WaitForSingleObject (*event, INFINITE);
 #endif
@@ -82,13 +87,18 @@ void uae_sem_post (uae_sem_t *sem) {
 
 	/* is it legal, to release a sempahore more than once !? */
 	DebOut("ReleaseSemaphore(%lx)\n", sem);
-	ReleaseSemaphore(sem);
+	ReleaseSemaphore((struct SignalSemaphore *) sem);
 }
 
 int uae_sem_trywait (uae_sem_t *sem) {
 	ULONG result;
 
-	result=AttemptSemaphore(sem);
+	if(!sem || !sem->init_done) {
+		DebOut("WARNING: sem==NULL!\n");
+		return 0;
+	}
+
+	result=AttemptSemaphore((struct SignalSemaphore *) sem);
 
 	DebOut("AttemptSemaphore(%lx)=%d\n", sem, result);
 
@@ -102,6 +112,13 @@ int uae_sem_trywait (uae_sem_t *sem) {
 void uae_sem_destroy (uae_sem_t *sem) {
 
 	DebOut("uae_sem_destroy(%lx)\n", sem);
+
+	if(!sem) {
+		DebOut("WARNING: sem==NULL!\n");
+		return;
+	}
+
+  sem->init_done=FALSE;
 
 	/* nothing to do here */
 #if 0

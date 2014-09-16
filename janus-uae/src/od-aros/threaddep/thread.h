@@ -28,13 +28,13 @@
 #ifndef __THREAD_H__
 #define __THREAD_H__
 
-#warning ==== sem_handle is TODO ====
-#if 0
+#warning ==== sem_handle is TODO !?  ====
 typedef struct {
-	int foo;
-	int foo2;
+  struct SignalSemaphore sigSem;
+  bool init_done;
 } uae_sem_t;
 
+#if 0
 typedef struct {
 	int foo;
 	int foo2;
@@ -42,7 +42,7 @@ typedef struct {
 #endif
 
 
-typedef struct SignalSemaphore *uae_sem_t;
+//typedef struct SignalSemaphore *uae_sem_t;
 typedef void *uae_thread_id;
 
 extern void uae_sem_destroy (uae_sem_t*);
