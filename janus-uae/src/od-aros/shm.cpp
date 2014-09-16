@@ -1,6 +1,6 @@
 /************************************************************************ 
  *
- * SHM functins
+ * SHM functions
  *
  * Copyright 2011 Oliver Brunner - aros<at>oliver-brunner.de
  *
@@ -36,6 +36,7 @@
 
 #ifdef NATMEM_OFFSET
 void init_shm (void) {
+  TODO();
 
   canbang = 1;
 }
@@ -43,6 +44,7 @@ void init_shm (void) {
 
 #endif /* JIT */
 
+#if 0
 void p96memstart (void) {
   //uae_u32 rtgbarrier, z3chipbarrier, rtgextra;
 
@@ -65,7 +67,6 @@ void p96memstart (void) {
   
 
 }
-
 bool init_mem() {
   LONG biggest;
   LONG all;
@@ -85,3 +86,4 @@ bool init_mem() {
 #warning  p96memstart();
 }
 
+#endif
