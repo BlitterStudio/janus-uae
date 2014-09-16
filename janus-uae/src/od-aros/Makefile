@@ -120,8 +120,8 @@ COMMON_OBJS= \
 	../newcpu.o \
 	../rommgr.o \
 	../readcpu.o \
-	\
 	../sana2.o \
+	\
 	../savestate.o \
 	../scsi.o \
 	../scsiemul.o \

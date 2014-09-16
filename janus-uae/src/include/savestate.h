@@ -113,6 +113,7 @@ extern void restore_audio_finish (void);
 extern uae_u8 *restore_cia (int, uae_u8 *);
 extern uae_u8 *save_cia (int, int *, uae_u8 *);
 extern void restore_cia_finish (void);
+extern void restore_cia_start (void);
 
 extern uae_u8 *restore_expansion (uae_u8 *);
 extern uae_u8 *save_expansion (int *, uae_u8 *);
@@ -132,8 +133,16 @@ extern uae_u8 *restore_cdtv (uae_u8 *src);
 extern uae_u8 *save_cdtv (int *len, uae_u8*);
 extern void restore_cdtv_finish (void);
 
-extern uae_u8 *restore_dmac (uae_u8 *src);
-extern uae_u8 *save_dmac (int *len, uae_u8*);
+extern uae_u8 *restore_cdtv_dmac (uae_u8 *src);
+extern uae_u8 *save_cdtv_dmac (int *len, uae_u8*);
+extern uae_u8 *restore_scsi_dmac (uae_u8 *src);
+extern uae_u8 *save_scsi_dmac (int *len, uae_u8*);
+
+extern uae_u8 *save_scsi_device (int num, int *len, uae_u8 *dstptr);
+extern uae_u8 *restore_scsi_device (uae_u8 *src);
+
+extern uae_u8 *save_scsidev (int num, int *len, uae_u8 *dstptr);
+extern uae_u8 *restore_scsidev (uae_u8 *src);
 
 extern uae_u8 *restore_filesys (uae_u8 *src);
 extern uae_u8 *save_filesys (int num, int *len);
@@ -148,11 +157,12 @@ extern uae_u8 *save_ide (int num, int *len, uae_u8*);
 
 extern uae_u8 *save_cd (int num, int *len);
 extern uae_u8 *restore_cd (int, uae_u8 *src);
+extern void restore_cd_finish (void);
 
-extern uae_u8 *save_configuration (int *len);
+extern uae_u8 *save_configuration (int *len, bool fullconfig);
 extern uae_u8 *restore_configuration (uae_u8 *src);
 extern uae_u8 *save_log (int, int *len);
-extern uae_u8 *restore_log (uae_u8 *src);
+//extern uae_u8 *restore_log (uae_u8 *src);
 
 extern uae_u8 *restore_input (uae_u8 *src);
 extern uae_u8 *save_input (int *len, uae_u8 *dstptr);
@@ -167,6 +177,7 @@ extern void restore_a2065_finish (void);
 
 extern uae_u8 *restore_debug_memwatch (uae_u8 *src);
 extern uae_u8 *save_debug_memwatch (int *len, uae_u8 *dstptr);
+extern void restore_debug_memwatch_finish (void);
 
 extern uae_u8 *save_cycles (int *len, uae_u8 *dstptr);
 extern uae_u8 *restore_cycles (uae_u8 *src);
