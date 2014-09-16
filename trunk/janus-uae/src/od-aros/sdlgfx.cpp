@@ -853,16 +853,16 @@ static void sdl_flush_line (struct vidbuf_description *gfxinfo, int line_no)
  ** Buffer methods for SDL surfaces that don't need locking
  **/
 
-static int sdl_lock_nolock (struct vidbuf_description *gfxinfo)
+static int sdl_lock_nolock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 {
     return 1;
 }
 
-static void sdl_unlock_nolock (struct vidbuf_description *gfxinfo)
+static void sdl_unlock_nolock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 {
 }
 
-STATIC_INLINE void sdl_flush_block_nolock (struct vidbuf_description *gfxinfo, int first_line, int last_line) {
+STATIC_INLINE void sdl_flush_block_nolock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb, int first_line, int last_line) {
 
   DebOut("entered (display %lx, firstline %d, current_width %d, last_line %d)\n");
   SDL_UpdateRect (display, 0, first_line, current_width, last_line - first_line + 1);
@@ -872,13 +872,16 @@ STATIC_INLINE void sdl_flush_block_nolock (struct vidbuf_description *gfxinfo, i
  ** Buffer methods for SDL surfaces that must be locked
  **/
 
-static int sdl_lock (struct vidbuf_description *gfxinfo)
+static int sdl_lock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 {
     int success = 0;
 
     DEBUG_LOG ("Function: lock\n");
 
     if (SDL_LockSurface (display) == 0) {
+      /* TODO !? */
+
+#if 0
         gfxinfo->bufmem   = (uae_u8 *)display->pixels;
         gfxinfo->rowbytes = display->pitch;
 
@@ -888,36 +891,37 @@ static int sdl_lock (struct vidbuf_description *gfxinfo)
             init_row_map ();
             old_pixels = display->pixels;
         }
+#endif
         success = 1;
     }
     return success;
 }
 
-static void sdl_unlock (struct vidbuf_description *gfxinfo)
+static void sdl_unlock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 {
     DEBUG_LOG ("Function: unlock\n");
 
     SDL_UnlockSurface (display);
 }
 
-static void sdl_flush_block (struct vidbuf_description *gfxinfo, int first_line, int last_line)
+static void sdl_flush_block (struct vidbuf_description *gfxinfo, struct vidbuffer *vb, int first_line, int last_line)
 {
     DEBUG_LOG ("Function: flush_block %d %d\n", first_line, last_line);
 
     SDL_UnlockSurface (display);
 
-    sdl_flush_block_nolock (gfxinfo, first_line, last_line);
+    sdl_flush_block_nolock (gfxinfo, vb, first_line, last_line);
 
     SDL_LockSurface (display);
 }
 
-static void sdl_flush_screen_dummy (struct vidbuf_description *gfxinfo, int first_line, int last_line)
+static void sdl_flush_screen_dummy (struct vidbuf_description *gfxinfo, struct vidbuffer *vb, int first_line, int last_line)
 {
 }
 
 //#include "hrtimer.h"
 
-static void sdl_flush_screen_flip (struct vidbuf_description *gfxinfo, int first_line, int last_line)
+static void sdl_flush_screen_flip (struct vidbuf_description *gfxinfo, struct vidbuffer *vb, int first_line, int last_line)
 {
     frame_time_t start_time;
     frame_time_t sleep_time;
@@ -932,7 +936,7 @@ static void sdl_flush_screen_flip (struct vidbuf_description *gfxinfo, int first
     idletime += sleep_time;
 }
 
-static void sdl_flush_clear_screen (struct vidbuf_description *gfxinfo)
+static void sdl_flush_clear_screen (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 {
     DEBUG_LOG ("Function: flush_clear_screen\n");
 
@@ -1242,29 +1246,29 @@ static int graphics_subinit (void)
 
     /* Set up buffer methods */
     if (SDL_MUSTLOCK (screen)) {
-        gfxvidinfo.lockscr     = sdl_lock;
-        gfxvidinfo.unlockscr   = sdl_unlock;
-        gfxvidinfo.flush_block = sdl_flush_block;
+        gfxvidinfo.drawbuffer.lockscr     = sdl_lock;
+        gfxvidinfo.drawbuffer.unlockscr   = sdl_unlock;
+        gfxvidinfo.drawbuffer.flush_block = sdl_flush_block;
     } else {
-        gfxvidinfo.lockscr     = sdl_lock_nolock;
-        gfxvidinfo.unlockscr   = sdl_unlock_nolock;
-        gfxvidinfo.flush_block = sdl_flush_block_nolock;
+        gfxvidinfo.drawbuffer.lockscr     = sdl_lock_nolock;
+        gfxvidinfo.drawbuffer.unlockscr   = sdl_unlock_nolock;
+        gfxvidinfo.drawbuffer.flush_block = sdl_flush_block_nolock;
     }
-    gfxvidinfo.flush_clear_screen = sdl_flush_clear_screen;
+    gfxvidinfo.drawbuffer.flush_clear_screen = sdl_flush_clear_screen;
 
 
     if (vsync) {
         display = SDL_CreateRGBSurface(SDL_HWSURFACE, screen->w, screen->h, screen->format->BitsPerPixel, screen->format->Rmask, screen->format->Gmask, screen->format->Bmask, 0);
-        gfxvidinfo.flush_screen = sdl_flush_screen_flip;
+        gfxvidinfo.drawbuffer.flush_screen = sdl_flush_screen_flip;
     } else {
         display = screen;
-        gfxvidinfo.flush_screen = sdl_flush_screen_dummy;
+        gfxvidinfo.drawbuffer.flush_screen = sdl_flush_screen_dummy;
     }
 
-    gfxvidinfo.width =screen->w;
-    gfxvidinfo.height=screen->h;
-    DEBUG_LOG ("Window width   : %d\n", gfxvidinfo.width);
-    DEBUG_LOG ("Window height  : %d\n", gfxvidinfo.height);
+    gfxvidinfo.drawbuffer.width_allocated =screen->w;
+    gfxvidinfo.drawbuffer.height_allocated=screen->h;
+    DEBUG_LOG ("Window width   : %d\n", gfxvidinfo.drawbuffer.width_allocated);
+    DEBUG_LOG ("Window height  : %d\n", gfxvidinfo.drawbuffer.height_allocated);
 
 #ifdef PICASSO96
     if (!screen_is_picasso) {
@@ -1272,21 +1276,21 @@ static int graphics_subinit (void)
         /* Initialize structure for Amiga video modes */
         if (is_hwsurface) {
             SDL_LockSurface (display);
-            gfxvidinfo.bufmem    = 0;
-            gfxvidinfo.emergmem  = (uae_u8 *)malloc (display->pitch);
+            gfxvidinfo.drawbuffer.bufmem    = 0;
+            gfxvidinfo.drawbuffer.emergmem  = (uae_u8 *)malloc (display->pitch);
             SDL_UnlockSurface (display);
         }
 
         if (!is_hwsurface) {
-            gfxvidinfo.bufmem    = (uae_u8 *)display->pixels;
-            gfxvidinfo.emergmem  = 0;
+            gfxvidinfo.drawbuffer.bufmem    = (uae_u8 *)display->pixels;
+            gfxvidinfo.drawbuffer.emergmem  = 0;
         }
         gfxvidinfo.maxblocklines    = MAXBLOCKLINES_MAX;
-        gfxvidinfo.linemem      = 0;
-        gfxvidinfo.pixbytes     = display->format->BytesPerPixel;
-        DebOut("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.pixbytes);
+        gfxvidinfo.drawbuffer.linemem      = 0;
+        gfxvidinfo.drawbuffer.pixbytes     = display->format->BytesPerPixel;
+        DebOut("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.drawbuffer.pixbytes);
 
-        gfxvidinfo.rowbytes     = display->pitch;
+        gfxvidinfo.drawbuffer.rowbytes     = display->pitch;
 
 
         SDL_SetColors (display, arSDLColors, 0, 256);
@@ -1435,7 +1439,7 @@ void graphics_notify_state (int state)
     }
 }
 
-void handle_events (void)
+bool handle_events (void)
 {
     SDL_Event rEvent = { SDL_NOEVENT };
     int istest = inputdevice_istest ();
@@ -1653,7 +1657,7 @@ void handle_events (void)
 /*
     return pause_emulation != 0;
 */
-    return;
+    return 0;
 }
 
 static void switch_keymaps (void)
@@ -2392,8 +2396,8 @@ void setmaintitle (void)
 
 extern struct vidbuf_description gfxvidinfo;
 
-void flush_block (int first, int last) {
-  sdl_flush_block_nolock (&gfxvidinfo, first, last);
+void flush_block (struct vidbuffer *vb, int first, int last) {
+  sdl_flush_block_nolock (&gfxvidinfo, vb, first, last);
 }
 
 
