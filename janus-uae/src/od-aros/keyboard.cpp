@@ -126,11 +126,18 @@ struct inputdevice_functions inputdevicefunc_keyboard =
 };
 #endif
 
-static struct uae_input_device_kbr_default keytrans[] = {
-
+static struct uae_input_device_kbr_default keytrans_amiga[] = {
 	/* TODO ?? */
-
 	{ -1, 0 }
+};
+
+static struct uae_input_device_kbr_default *keytrans[] = {
+	/* TODO ?? */
+  keytrans_amiga,
+  keytrans_amiga,
+  keytrans_amiga
+
+
 };
 
 static int kb_np[] = { -1, 0 };
