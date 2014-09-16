@@ -119,8 +119,8 @@ COMMON_OBJS= \
 	../ncr_scsi.o \
 	../newcpu.o \
 	../rommgr.o \
-	\
 	../readcpu.o \
+	\
 	../sana2.o \
 	../savestate.o \
 	../scsi.o \
