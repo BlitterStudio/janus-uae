@@ -390,12 +390,7 @@ void cd32_fmv_init (uaecptr start)
 	if (!rl)
 		return;
 	rd = rl->rd;
-#warning !?
-#ifndef __AROS__
 	z = read_rom (rd);
-#else
-	z = read_rom (&rd);
-#endif
 
 	if (z) {
 		write_log (_T("CD32 FMV ROM %d.%d\n"), rd->ver, rd->rev);
