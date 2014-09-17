@@ -34,24 +34,54 @@
 
 #include "threaddep/thread.h"
 
-void uae_sem_init (uae_sem_t *sem, int manual_reset, int initial_state) {
-  struct SignalSemaphore *s;
+#define AROS_MAX_SEM 1024
 
+typedef struct {
+  struct SignalSemaphore sigSem;
+  bool init_done;
+} aros_sem;
+
+/* we use a static lookup table here for speed reasons! */
+/* TODO: protect access with a semaphore! */
+static aros_sem sem_table[AROS_MAX_SEM+1];
+
+/* sem is a ULONG * to store number in it! */
+void uae_sem_init (uae_sem_t sem, int manual_reset, int initial_state) {
+  struct SignalSemaphore *s;
+  int nr=1; /* leave first slot empty */
+
+	DebOut("uae_sem_init(%lx)\n", sem);
+
+  /* test for NULL pointer */
 	if(!sem) {
 		DebOut("WARNING: sem==NULL!\n");
 		return;
 	}
 
-  s=(SignalSemaphore *) sem;
+  while((nr<AROS_MAX_SEM) && (sem_table[nr].init_done!=FALSE)) {
+    nr++;
+  }
 
-	DebOut("uae_sem_init(%lx)\n", s);
+  if(nr==AROS_MAX_SEM) {
+    write_log("FATAL ERROR in thread.cpp: Too many Semaphores used!\n");
+    exit(1);
+  }
 
-	InitSemaphore(s);
-  sem->init_done=TRUE;
+  /* now we have found a slot */
+
+  DebOut("Init aros_sem nr %d\n", nr);
+
+	InitSemaphore(&sem_table[nr].sigSem);
+  sem_table[nr].init_done=TRUE;
 
 	if(initial_state) {
-		ObtainSemaphore(s);
+		ObtainSemaphore(&sem_table[nr].sigSem);
 	}
+
+  /* return new semaphore handle */
+  *sem=nr;
+
+
 
 #if 0
 	if(*event) {
@@ -65,42 +95,54 @@ void uae_sem_init (uae_sem_t *sem, int manual_reset, int initial_state) {
 #endif
 }
 
-void uae_sem_wait (uae_sem_t *sem) {
+void uae_sem_wait (uae_sem_t sem) {
+  ULONG nr=*sem;
 
-	if(!sem || !sem->init_done) {
+  DebOut("uae_sem_wait for nr %d\n", nr);
+
+	if(!sem || !(sem_table[nr].init_done)) {
 		DebOut("WARNING: sem==NULL!\n");
 		return;
 	}
 
-	DebOut("ObtainSemaphore(%lx)\n", sem);
+	DebOut("ObtainSemaphore(%d)\n", sem);
 
-	ObtainSemaphore((struct SignalSemaphore *) sem);
+	ObtainSemaphore(&sem_table[nr].sigSem);
 #if 0
 	WaitForSingleObject (*event, INFINITE);
 #endif
 }
 
-void uae_sem_post (uae_sem_t *sem) {
+void uae_sem_post (uae_sem_t sem) {
+  ULONG nr=*sem;
+
+	if(!sem || !(sem_table[nr].init_done)) {
+		DebOut("WARNING: sem==NULL!\n");
+		return;
+	}
+
+
 #if 0
 	SetEvent (*event);
 #endif
 
 	/* is it legal, to release a sempahore more than once !? */
-	DebOut("ReleaseSemaphore(%lx)\n", sem);
-	ReleaseSemaphore((struct SignalSemaphore *) sem);
+	DebOut("ReleaseSemaphore(nr %d)\n", nr);
+	ReleaseSemaphore(&sem_table[nr].sigSem);
 }
 
-int uae_sem_trywait (uae_sem_t *sem) {
+int uae_sem_trywait (uae_sem_t sem) {
+  ULONG nr=*sem;
 	ULONG result;
 
-	if(!sem || !sem->init_done) {
+	if(!sem || !(sem_table[nr].init_done)) {
 		DebOut("WARNING: sem==NULL!\n");
 		return 0;
 	}
 
-	result=AttemptSemaphore((struct SignalSemaphore *) sem);
+	result=AttemptSemaphore(&sem_table[nr].sigSem);
 
-	DebOut("AttemptSemaphore(%lx)=%d\n", sem, result);
+	DebOut("AttemptSemaphore(nr %d)=%d\n", nr, result);
 
 	return result;
 
@@ -109,16 +151,17 @@ int uae_sem_trywait (uae_sem_t *sem) {
 #endif
 }
 
-void uae_sem_destroy (uae_sem_t *sem) {
+void uae_sem_destroy (uae_sem_t sem) {
+  ULONG nr=*sem;
 
-	DebOut("uae_sem_destroy(%lx)\n", sem);
+	DebOut("uae_sem_destroy(nr %d)\n", nr);
 
 	if(!sem) {
 		DebOut("WARNING: sem==NULL!\n");
 		return;
 	}
 
-  sem->init_done=FALSE;
+  sem_table[nr].init_done=FALSE;
 
 	/* nothing to do here */
 #if 0
