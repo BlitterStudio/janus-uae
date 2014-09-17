@@ -46,9 +46,9 @@ typedef struct {
 static aros_sem sem_table[AROS_MAX_SEM+1];
 
 /* sem is a ULONG * to store number in it! */
-void uae_sem_init (uae_sem_t sem, int manual_reset, int initial_state) {
+void uae_sem_init (uae_sem_t *sem, int manual_reset, int initial_state) {
   struct SignalSemaphore *s;
-  int nr=1; /* leave first slot empty */
+  ULONG nr=1; /* leave first slot empty */
 
 	DebOut("uae_sem_init(%lx)\n", sem);
 
@@ -95,7 +95,7 @@ void uae_sem_init (uae_sem_t sem, int manual_reset, int initial_state) {
 #endif
 }
 
-void uae_sem_wait (uae_sem_t sem) {
+void uae_sem_wait (uae_sem_t *sem) {
   ULONG nr=*sem;
 
   DebOut("uae_sem_wait for nr %d\n", nr);
@@ -113,7 +113,7 @@ void uae_sem_wait (uae_sem_t sem) {
 #endif
 }
 
-void uae_sem_post (uae_sem_t sem) {
+void uae_sem_post (uae_sem_t *sem) {
   ULONG nr=*sem;
 
 	if(!sem || !(sem_table[nr].init_done)) {
@@ -131,7 +131,7 @@ void uae_sem_post (uae_sem_t sem) {
 	ReleaseSemaphore(&sem_table[nr].sigSem);
 }
 
-int uae_sem_trywait (uae_sem_t sem) {
+int uae_sem_trywait (uae_sem_t *sem) {
   ULONG nr=*sem;
 	ULONG result;
 
@@ -151,7 +151,7 @@ int uae_sem_trywait (uae_sem_t sem) {
 #endif
 }
 
-void uae_sem_destroy (uae_sem_t sem) {
+void uae_sem_destroy (uae_sem_t *sem) {
   ULONG nr=*sem;
 
 	DebOut("uae_sem_destroy(nr %d)\n", nr);

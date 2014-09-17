@@ -30,7 +30,7 @@
 
 #warning ==== sem_handle is TODO !?  ====
 
-#define uae_sem_t ULONG *
+#define uae_sem_t ULONG
 
 #if 0
 typedef struct {
