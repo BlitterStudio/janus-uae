@@ -79,11 +79,14 @@ void init_ersatz_rom (uae_u8 *data)
 	*data++ = 0x4E; *data++ = 0x75;
 }
 
+#if 0
+/* not used? at least uncompilable.. */
 void ersatz_chipcopy (void)
 {
 	/* because CPU emulation is updated and retrieves SP and PC from chip ram */
 	memcpy (chipmemory, kickmemory, 256);
 }
+#endif
 
 static void ersatz_failed (void)
 {
@@ -196,7 +199,7 @@ static void ersatz_init (void)
 
 		m68k_setpc (0xFC0002);
 		fill_prefetch ();
-		uae_reset (0);
+		uae_reset (0, 0);
 		ersatzkickfile = 0;
 		return;
 	}
