@@ -91,6 +91,7 @@ COMMON_OBJS= \
 	../cpuemu_31.o \
 	../cpuemu_33.o \
 	../cpummu.o \
+	../cpummu30.o \
 	../cpustbl.o \
 	../crc32.o \
 	../custom.o \
