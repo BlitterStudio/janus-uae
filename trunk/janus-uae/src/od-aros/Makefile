@@ -61,6 +61,8 @@ AROS_OBJS=
 
 COMMON_OBJS= \
 	aros.o \
+	thread.o \
+	../blkdev.o \
 	../a2065.o \
 	../a2091.o \
 	../akiko.o \
@@ -72,7 +74,6 @@ COMMON_OBJS= \
 	../blitfunc.o \
 	../blittable.o \
 	../blitter.o \
-	../blkdev.o \
 	../bsdsocket.o \
 	../catweasel.o \
 	../cd32_fmv.o \
@@ -148,7 +149,6 @@ COMMON_OBJS= \
 	picasso96_aros.o \
 	options.o \
 	gfx.o \
-	thread.o \
 	nogui.o \
 	fsdb.o \
 	mman.o \

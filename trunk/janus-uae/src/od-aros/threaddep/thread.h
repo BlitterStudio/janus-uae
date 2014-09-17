@@ -29,10 +29,15 @@
 #define __THREAD_H__
 
 #warning ==== sem_handle is TODO !?  ====
+
+#define uae_sem_t ULONG *
+
+#if 0
 typedef struct {
   struct SignalSemaphore sigSem;
   bool init_done;
-} uae_sem_t;
+} aros_sem;
+#endif
 
 #if 0
 typedef struct {
