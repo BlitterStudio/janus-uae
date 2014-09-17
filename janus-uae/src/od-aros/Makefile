@@ -84,9 +84,12 @@ COMMON_OBJS= \
 	../cpudefs.o \
 	../cpuemu_0.o \
 	../cpuemu_11.o \
-	../cpuemu_21.o \
+	../cpuemu_13.o \
 	../cpuemu_20.o \
+	../cpuemu_21.o \
+	../cpuemu_22.o \
 	../cpuemu_31.o \
+	../cpuemu_33.o \
 	../cpummu.o \
 	../cpustbl.o \
 	../crc32.o \
