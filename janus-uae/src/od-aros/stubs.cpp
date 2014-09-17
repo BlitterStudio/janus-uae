@@ -76,17 +76,7 @@ int my_readdir (struct my_opendir_s *mod, TCHAR *name)
   TODO();
 }
 
-uae_u8 *restore_cd (int num, uae_u8 *src)
-{
-  TODO();
-}
-
 int same_aname (const TCHAR *an1, const TCHAR *an2)
-{
-  TODO();
-}
-
-uae_u8 *save_disk2 (int num, int *len, uae_u8 *dstptr) 
 {
   TODO();
 }
@@ -164,31 +154,6 @@ void reset_sound (void)
   TODO();
 }
 
-uae_u8 *restore_cia (int num, uae_u8 *src)
-{
-  TODO();
-}
-
-uae_u8 *restore_cpu (uae_u8 *src) 
-{
-  TODO();
-}
-
-uae_u8 *restore_rom (uae_u8 *src)
-{
-  TODO();
-}
-
-uae_u8 *save_cycles (int *len, uae_u8 *dstptr)
-{
-  TODO();
-}
-
-uae_u8 *save_floppy (int *len, uae_u8 *dstptr) 
-{
-  TODO();
-}
-
 /* disable sound for now */
 int setup_sound (void)
 {
@@ -235,26 +200,6 @@ int my_existsdir (const TCHAR *name)
   TODO();
 }
 
-void restore_bram (int len, size_t filepos)
-{
-  TODO();
-}
-
-uae_u8 *restore_cdtv (uae_u8 *src)
-{
-  TODO();
-}
-
-void restore_cram (int len, size_t filepos)
-{
-  TODO();
-}
-
-uae_u8 *restore_disk (int num,uae_u8 *src) 
-{
-  TODO();
-}
-
 uae_u8 *restore_dmac (uae_u8 *src)
 {
   TODO();
@@ -271,11 +216,6 @@ void sampler_free (void)
 }
 
 int sampler_init (void)
-{
-  TODO();
-}
-
-uae_u8 *save_blitter (int *len, uae_u8 *dstptr) 
 {
   TODO();
 }
@@ -340,17 +280,7 @@ void console_out_f (const TCHAR *format,...)
   TODO();
 }
 
-uae_u8 *restore_disk2 (int num,uae_u8 *src) 
-{
-  TODO();
-}
-
 void sampler_vsync (void)
-{
-  TODO();
-}
-
-uae_u8 *save_keyboard (int *len, uae_u8 *dstptr)
 {
   TODO();
 }
@@ -399,41 +329,6 @@ void put_long_ce030 (uaecptr addr, uae_u32 v)
 }
 
 void put_word_ce030 (uaecptr addr, uae_u32 v)
-{
-  TODO();
-}
-
-uae_u8 *restore_custom (uae_u8 *src)
-{
-  TODO();
-}
-
-uae_u8 *restore_cycles (uae_u8 *src)
-{
-  TODO();
-}
-
-uae_u8 *restore_floppy (uae_u8 *src)
-{
-  TODO();
-}
-
-uae_u8 *save_a3000hram (int *len)
-{
-  TODO();
-}
-
-uae_u8 *save_a3000lram (int *len)
-{
-  TODO();
-}
-
-uae_u8 *save_cpu_extra (int *len, uae_u8 *dstptr)
-{
-  TODO();
-}
-
-uae_u8 *save_cpu_trace (int *len, uae_u8 *dstptr)
 {
   TODO();
 }
@@ -493,11 +388,6 @@ static void picasso96_alloc2 (TrapContext *ctx)
   TODO();
 }
 
-uae_u8 *restore_blitter (uae_u8 *src) 
-{
-  TODO();
-}
-
 
 USHORT DMS_Process_File(struct zfile *fi, struct zfile *fo, USHORT cmd, USHORT opt, USHORT PCRC, USHORT pwd, int part, struct zfile **extra)
 {
@@ -540,16 +430,6 @@ uae_u32 next_ilong_030ce (void)
 }
 
 uae_u32 next_iword_030ce (void)
-{
-  TODO();
-}
-
-uae_u8 *restore_keyboard (uae_u8 *src)
-{
-  TODO();
-}
-
-uae_u8 *save_blitter_new (int *len, uae_u8 *dstptr)
 {
   TODO();
 }
@@ -616,31 +496,6 @@ void notify_user_parms (int msg, const TCHAR *parms, ...)
   TODO();
 }
 
-void restore_a3000hram (int len, size_t filepos)
-{
-  TODO();
-}
-
-void restore_a3000lram (int len, size_t filepos)
-{
-  TODO();
-}
-
-uae_u8 *restore_cpu_extra (uae_u8 *src)
-{
-  TODO();
-}
-
-uae_u8 *restore_cpu_trace (uae_u8 *src)
-{
-  TODO();
-}
-
-uae_u8 *save_custom_extra (int *len, uae_u8 *dstptr)
-{
-  TODO();
-}
-
 #if 0
 void toggle_fullscreen (int mode)
 {
@@ -664,21 +519,6 @@ struct zfile *archive_access_lzx (struct znode *zn)
 }
 
 void consolehook_config (struct uae_prefs *p)
-{
-  TODO();
-}
-
-void restore_cia_finish (void)
-{
-  TODO();
-}
-
-void restore_cpu_finish (void)
-{
-  TODO();
-}
-
-uae_u8 *save_custom_sprite (int num, int *len, uae_u8 *dstptr)
 {
   TODO();
 }
@@ -748,21 +588,6 @@ frame_time_t read_processor_time (void)
   TODO();
 }
 
-uae_u8 *restore_blitter_new (uae_u8 *src)
-{
-  TODO();
-}
-
-void restore_cdtv_finish (void)
-{
-  TODO();
-}
-
-void restore_disk_finish (void) 
-{
-  TODO();
-}
-
 /* seems to be necessary, calls ... => hsyncstuff ! */
 void serial_hsynchandler (void)
 {
@@ -800,16 +625,6 @@ void restart_sound_buffer (void)
 }
 
 void restore_a2065_finish (void)
-{
-  TODO();
-}
-
-void restore_akiko_finish (void)
-{
-  TODO();
-}
-
-uae_u8 *restore_custom_extra (uae_u8 *src)
 {
   TODO();
 }
@@ -883,16 +698,6 @@ void gfx_set_picasso_state (int on)
 }
 #endif
 
-uae_u8 *restore_custom_sprite (int num, uae_u8 *src)
-{
-  TODO();
-}
-
-uae_u8 *save_custom_agacolors (int *len, uae_u8 *dstptr)
-{
-  TODO();
-}
-
 #if 0
 int uae_start_thread_fast (void *(*f)(void *), void *arg, uae_thread_id *tid)
 {
@@ -901,11 +706,6 @@ int uae_start_thread_fast (void *(*f)(void *), void *arg, uae_thread_id *tid)
 #endif
 
 void uaenet_enumerate_free (struct netdriverdata *tcp)
-{
-  TODO();
-}
-
-void restore_blitter_finish (void)
 {
   TODO();
 }
@@ -937,10 +737,6 @@ int input_get_default_mouse (struct uae_input_device *uid, int i, int port, int 
   TODO();
 }
 
-uae_u8 *save_custom_event_delay (int *len, uae_u8 *dstptr)
-{
-  TODO();
-}
 
 void uae_set_thread_priority (uae_thread_id *tid, int pri)
 {
@@ -957,10 +753,6 @@ void bsdsock_fake_int_handler(void)
   TODO();
 }
 
-void custom_prepare_savestate (void)
-{
-  TODO();
-}
 
 uae_u32 emulib_target_getcpurate (uae_u32 v, uae_u32 *low)
 {
@@ -972,10 +764,6 @@ TCHAR *fsdb_create_unique_nname (a_inode *base, const TCHAR *suggestion)
   TODO();
 }
 
-uae_u8 *restore_custom_agacolors (uae_u8 *src)
-{
-  TODO();
-}
 
 int amiga_clipboard_want_data (void)
 {
@@ -1014,11 +802,6 @@ int input_get_default_keyboard (int i)
 }
 
 int input_get_default_lightpen (struct uae_input_device *uid, int i, int port, int af)
-{
-  TODO();
-}
-
-uae_u8 *restore_custom_event_delay (uae_u8 *src)
 {
   TODO();
 }
@@ -1093,10 +876,6 @@ struct my_openfile_s *my_open (const TCHAR *name, int flags)
   TODO();
 }
 
-uae_u8 *save_cd (int num, int *len) 
-{
-  TODO();
-}
 
 char *ua_copy (char *dst, int maxlen, const TCHAR *src)
 {
@@ -1123,22 +902,7 @@ int my_rmdir (const TCHAR *name)
   TODO();
 }
 
-uae_u8 *save_cia (int num, int *len, uae_u8 *dstptr)
-{
-  TODO();
-}
-
-uae_u8 *save_cpu (int *len, uae_u8 *dstptr)
-{
-  TODO();
-}
-
 uae_u8 *save_log (int bootlog, int *len)
-{
-  TODO();
-}
-
-uae_u8 *save_rom (int first, int *len, uae_u8 *dstptr)
 {
   TODO();
 }
@@ -1174,26 +938,6 @@ int my_rename (const TCHAR *oldname, const TCHAR *newname)
 }
 
 int my_unlink (const TCHAR *name)
-{
-  TODO();
-}
-
-uae_u8 *save_bram (int *len)
-{
-  TODO();
-}
-
-uae_u8 *save_cdtv (int *len, uae_u8 *dstptr)
-{
-  TODO();
-}
-
-uae_u8 *save_cram (int *len)
-{
-  TODO();
-}
-
-uae_u8 *save_disk (int num, int *len, uae_u8 *dstptr, bool usepath) 
 {
   TODO();
 }
@@ -1291,19 +1035,11 @@ void restore_zram(int a, unsigned int b, int c) {
 }
 #endif
 
-void save_bootrom(int* a) {
-  TODO();
-}
-
 #if 0
 void save_expansion(int* a, unsigned char* b) {
   TODO();
 }
 #endif
-
-void restore_bootrom(int a, unsigned int b) {
-  TODO();
-}
 
 #if 0
 void restore_expansion(unsigned char* a) {

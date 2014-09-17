@@ -704,7 +704,7 @@ static void mouseupdate (void)
 #endif
 }
 
-int framecnt;
+extern int framecnt;
 int p96skipmode = -1;
 static int doskip (void)
 {
