@@ -83,7 +83,6 @@ COMMON_OBJS= \
 	../cpudefs.o \
 	../cpuemu_0.o \
 	../cpuemu_11.o \
-	../cpuemu_12.o \
 	../cpuemu_21.o \
 	../cpuemu_20.o \
 	../cpuemu_31.o \
