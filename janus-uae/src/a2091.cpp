@@ -2022,4 +2022,65 @@ uae_u8 *restore_scsi_device (uae_u8 *src)
 
 #else
 #warning enable again!
+void a2091_free(void) {
+  TODO();
+}
+void a2091_init(void) {
+  TODO();
+}
+void scsi_hsync(void) {
+  TODO();
+}
+
+uae_u8 wdscsi_get (void) {
+  TODO();
+  return 0;
+}
+
+void wdscsi_put (uae_u8 d) {
+  TODO();
+}
+
+void a2091_reset (void) {
+  TODO();
+}
+
+int add_scsi_hd (int ch, struct hd_hardfiledata *hfd, struct uaedev_config_info *ci, int scsi_level) {
+  TODO();
+  return 0;
+}
+
+void wdscsi_sasr (uae_u8 b) {
+  TODO();
+}
+
+void a3000scsi_free (void) {
+  TODO();
+}
+void a3000scsi_reset (void) {
+  TODO();
+}
+uae_u8 *restore_scsi_dmac (uae_u8 *src) {
+  TODO();
+  return 0;
+}
+
+uae_u8 *save_scsi_device (int num, int *len, uae_u8 *dstptr) {
+  TODO();
+  return 0;
+}
+
+void scsi_dmac_stop_dma (void) {
+  TODO();
+}
+
+int a2091_add_scsi_unit (int ch, struct uaedev_config_info *ci) {
+  TODO();
+  return 0;
+}
+
+int a3000_add_scsi_unit (int ch, struct uaedev_config_info *ci) {
+  TODO();
+}
+
 #endif

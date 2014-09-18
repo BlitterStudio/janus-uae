@@ -123,12 +123,14 @@ COMMON_OBJS= \
 	../native2amiga.o \
 	../ncr_scsi.o \
 	../newcpu.o \
+	../newcpu_common.o \
 	../rommgr.o \
 	../readcpu.o \
 	../sana2.o \
 	../savestate.o \
 	../scsi.o \
 	../scsiemul.o \
+	../scsitape.o \
 	../traps.o \
 	../uaeexe.o \
 	../uaeipc.o \
@@ -140,6 +142,7 @@ COMMON_OBJS= \
 	../jit/compemu_support.o \
 	../jit/compstbl.o \
 	../nogui.o \
+	../isofs.o \
 	../zfile.o \
 	main.o \
 	unicode.o \
