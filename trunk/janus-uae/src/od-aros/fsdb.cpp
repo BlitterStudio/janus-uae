@@ -93,3 +93,17 @@ FILE *my_opentext (const TCHAR *name) {
 	}
 	return fopen (name, "r");
 }
+
+
+int fsdb_exists (const TCHAR *nname) {
+  BPTR lock;
+
+  lock=Lock(nname, SHARED_LOCK);
+  if(lock) {
+    UnLock(lock);
+    return TRUE;
+  }
+
+  return FALSE;
+
+}
