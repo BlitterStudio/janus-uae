@@ -104,7 +104,6 @@ COMMON_OBJS= \
 	../driveclick.o \
 	../enforcer.o \
 	../epsonprinter.o \
-	../ersatz.o \
 	../expansion.o \
 	../fdi2raw.o \
 	../filesys.o \
@@ -129,8 +128,9 @@ COMMON_OBJS= \
 	../sana2.o \
 	../savestate.o \
 	../scsi.o \
-	../scsiemul.o \
 	../scsitape.o \
+	../scsiemul.o \
+	../specialmonitors.o \
 	../traps.o \
 	../uaeexe.o \
 	../uaeipc.o \
@@ -168,6 +168,7 @@ COMMON_OBJS= \
 	stubs.o
 
 	#../picasso96.o \
+	#../ersatz.o \
 #../zfile_archive.o 
 #gui.o \
 
