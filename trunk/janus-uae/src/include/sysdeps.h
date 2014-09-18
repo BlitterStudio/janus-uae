@@ -133,8 +133,20 @@ struct utimbuf
 
 /* AROS has no 64 bit */
 #define _stat64 stat
-#define FILEFLAG_WRITE S_IWUSR
-#define FILEFLAG_DIR S_IFDIR
+//#define FILEFLAG_READ    S_IRUSR
+//#define FILEFLAG_WRITE   S_IWUSR
+//#define FILEFLAG_DIR     S_IFDIR
+//#define FILEFLAG_EXECUTE S_IXUSR
+
+#define FILEFLAG_DIR     0x1
+#define FILEFLAG_ARCHIVE 0x2
+#define FILEFLAG_WRITE   0x4
+#define FILEFLAG_READ    0x8
+#define FILEFLAG_EXECUTE 0x10
+#define FILEFLAG_SCRIPT  0x20
+#define FILEFLAG_PURE    0x40
+
+
 
 #define _strdup strdup
 #define _stricmp stricmp 

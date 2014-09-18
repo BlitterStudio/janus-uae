@@ -29,6 +29,7 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
+#include "zfile.h"
 #include "options.h"
 
 int my_existsfile (const TCHAR *name) {
@@ -105,5 +106,52 @@ int fsdb_exists (const TCHAR *nname) {
   }
 
   return FALSE;
+}
+
+/*
+istruct mystat^M
+{^M
+  uae_s64 size;^M
+    uae_u32 mode;^M
+      struct mytimeval mtime;^M
+};^M
+*/
+
+bool my_stat (const TCHAR *name, struct mystat *statbuf) {
+  struct FileInfoBlock *fib;
+  BPTR lock;
+  bool result=FALSE;
+
+  DebOut("my_stat(%s)\n", name);
+
+  lock=Lock(name, SHARED_LOCK);
+  if(!lock) {
+    DebOut("unable to stat %s\n", name);
+    goto exit;
+  }
+
+  if(!(fib=(struct FileInfoBlock *) AllocDosObject(DOS_FIB, NULL)) || !Examine(lock, fib)) {
+    DebOut("unable to examine %s\n", name);
+    goto exit;
+  }
+
+  statbuf->size=fib->fib_Size;
+  if(fib->fib_DiskKey) statbuf->mode |= FILEFLAG_DIR;
+  /* fib_Protection: active-low, i.e. not set means the action is allowed! (who invented this !??) */
+  if(! (fib->fib_Protection & FIBF_READ))    statbuf->mode |= FILEFLAG_WRITE;
+  if(! (fib->fib_Protection & FIBF_WRITE))   statbuf->mode |= FILEFLAG_READ;
+  if(! (fib->fib_Protection & FIBF_EXECUTE)) statbuf->mode |= FILEFLAG_EXECUTE;
+  if(! (fib->fib_Protection & FIBF_ARCHIVE)) statbuf->mode |= FILEFLAG_ARCHIVE;
+  if(! (fib->fib_Protection & FIBF_PURE))    statbuf->mode |= FILEFLAG_PURE;
+  if(! (fib->fib_Protection & FIBF_SCRIPT))  statbuf->mode |= FILEFLAG_SCRIPT;
+
+  statbuf->mtime.tv_sec = fib->fib_Date.ds_Days*24 + fib->fib_Date.ds_Minute*60 + fib->fib_Date.ds_Tick*50;
+  statbuf->mtime.tv_usec= 0;
+
+exit:
+  if(lock) UnLock(lock);
+  if(fib) FreeDosObject(DOS_FIB, fib);
+
+  return result;
 }
 
