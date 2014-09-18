@@ -105,5 +105,5 @@ int fsdb_exists (const TCHAR *nname) {
   }
 
   return FALSE;
-
 }
+
