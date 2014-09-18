@@ -83,7 +83,7 @@ static void flushit (int lineno) {
 #endif
 }
 
-void flush_line (int lineno) {
+void flush_line (struct vidbuffer *vb, int lineno) {
   TODO();
 
 	//flushit (lineno);
@@ -97,7 +97,7 @@ void flush_block (int first, int last) {
 }
 #endif
 
-void flush_screen (int a, int b) {
+void flush_screen (struct vidbuffer *vb, int a, int b) {
 
   TODO();
 #if 0

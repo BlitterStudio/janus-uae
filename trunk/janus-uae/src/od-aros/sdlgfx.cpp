@@ -1745,10 +1745,41 @@ void LED (int on)
 }
 
 #ifdef PICASSO96
-void DX_Invalidate (int first, int last)
+/* TODO: x and width */
+void DX_Invalidate (int x, int y, int width, int height)
 {
-    DEBUG_LOG ("Function: DX_Invalidate %i - %i\n", first, last);
 
+  int last, lastx;
+
+  DEBUG_LOG ("Function: DX_Invalidate(x %d, y %d, width %d, height %d)\n", x, y, width, height);
+
+  if (width == 0 || height == 0)
+    return;
+  if (y < 0 || height < 0) {
+    y = 0;
+    height = picasso_vidinfo.height;
+  }
+  if (x < 0 || width < 0) {
+    x = 0;
+    width = picasso_vidinfo.width;
+  }
+	last = y + height - 1;
+  lastx = x + width - 1;
+#if 0
+  /* new */
+  p96_double_buffer_first = y;
+  p96_double_buffer_last  = last;
+  p96_double_buffer_firstx = x;
+  p96_double_buffer_lastx = lastx;
+  p96_double_buffer_needs_flushing = 1;
+#endif
+
+  picasso_has_invalid_lines = 1;
+  picasso_invalid_start = y;
+  picasso_invalid_stop = last;
+  
+#if 0
+/* was: */
     if (is_hwsurface)
         return;
 
@@ -1765,6 +1796,7 @@ void DX_Invalidate (int first, int last)
         picasso_invalid_lines[first] = 1;
         first++;
     }
+#endif
 }
 
 static int palette_update_start = 256;
@@ -1820,7 +1852,7 @@ int DX_Fill (int dstx, int dsty, int width, int height, int color, unsigned int 
     DEBUG_LOG ("DX_Fill (x:%d y:%d w:%d h:%d color=%08x)\n", dstx, dsty, width, height, color);
 
     if (SDL_FillRect (screen, &rect, color) == 0) {
-        DX_Invalidate (dsty, dsty + height - 1);
+        DX_Invalidate (0, dsty, width, height - 1);
         result = 1;
     }
 #ifdef USE_GL

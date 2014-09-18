@@ -89,6 +89,7 @@ COMMON_OBJS= \
 	../cpuemu_21.o \
 	../cpuemu_22.o \
 	../cpuemu_31.o \
+	../cpuemu_32.o \
 	../cpuemu_33.o \
 	../cpummu.o \
 	../cpummu30.o \
@@ -221,7 +222,7 @@ string_resource.h: ../od-win32/resources/winuae.rc
 
 # ============== clean ====================
 clean: 
-	rm -f $(COMMON_OBJS)
+	rm -f $(COMMON_OBJS) $(EXE)
 
 
 # ============== dependencies ====================
