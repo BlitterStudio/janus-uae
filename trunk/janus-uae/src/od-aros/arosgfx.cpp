@@ -32,7 +32,11 @@
 #include "sysdeps.h"
 
 #include "options.h"
+#include "custom.h"
+#include "memory.h"
+#include "gfxboard.h"
 
+#include "picasso96_aros.h"
 #include "aros.h"
 
 struct uae_filter *usedfilter;
@@ -116,5 +120,33 @@ void flush_screen (struct vidbuffer *vb, int a, int b) {
 		DirectDraw_Flip (1);
 	}
 #endif
+}
+
+bool toggle_rtg (int mode) {
+
+	if (mode == 0) {
+		if (!picasso_on)
+			return false;
+	} else if (mode > 0) {
+		if (picasso_on)
+			return false;
+	}
+	if (currprefs.rtgmem_type >= GFXBOARD_HARDWARE) {
+		return gfxboard_toggle (mode);
+	} else {
+		// can always switch from RTG to custom
+		if (picasso_requested_on && picasso_on) {
+			picasso_requested_on = false;
+			return true;
+		}
+		if (picasso_on)
+			return false;
+		// can only switch from custom to RTG if there is some mode active
+		if (picasso_is_active ()) {
+			picasso_requested_on = true;
+			return true;
+		}
+	}
+	return false;
 }
 
