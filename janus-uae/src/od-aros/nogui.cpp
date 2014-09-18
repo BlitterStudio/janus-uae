@@ -108,3 +108,26 @@ void notify_user (int msg)
   EasyRequestArgs(NULL, &req, NULL, NULL );
 }
 
+void gui_display(int shortcut) {
+  TODO();
+}
+
+void gui_flicker_led(int led, int unitnum, int status) {
+  TODO();
+}
+
+void gui_disk_image_change (int unitnum, const TCHAR *name, bool writeprotected) {
+  TODO();
+}
+
+void gui_gameport_axis_change (int port, int axis, int state, int max) {
+  TODO();
+}
+
+void gui_gameport_button_change (int port, int button, int onoff) {
+  TODO();
+}
+
+void gui_fps (int fps, int idle, int color) {
+  TODO();
+}
