@@ -150,3 +150,73 @@ bool toggle_rtg (int mode) {
 	return false;
 }
 
+void show_screen (int mode) {
+  TODO();
+}
+
+static volatile bool render_ok, wait_render;
+
+bool render_screen (bool immediate)
+{
+	bool v = false;
+	int cnt;
+
+	render_ok = false;
+	if (/*minimized ||*/ picasso_on /*|| monitor_off || dx_islost ()*/)
+		return render_ok;
+	cnt = 0;
+	while (wait_render) {
+		sleep_millis (1);
+		cnt++;
+		if (cnt > 500)
+			return render_ok;
+	}
+
+  TODO();
+#if 0
+	flushymin = 0;
+	flushymax = currentmode->amiga_height;
+	EnterCriticalSection (&screen_cs);
+	if (currentmode->flags & DM_D3D) {
+		v = D3D_renderframe (immediate);
+	} else if (currentmode->flags & DM_SWSCALE) {
+		S2X_render ();
+		v = true;
+	} else if (currentmode->flags & DM_DDRAW) {
+		v = true;
+	}
+	render_ok = v;
+	LeaveCriticalSection (&screen_cs);
+#endif
+	return render_ok;
+}
+
+static bool vblank_sync_started;
+
+bool vsync_isdone (void)
+{
+  TODO();
+#if 0
+	if (isvsync () == 0)
+		return false;
+	if (!isthreadedvsync ()) {
+		int vp = -2;
+		getvblankpos (&vp, true);
+		if (!vblankthread_oddeven_got) {
+			// need to get odd/even state early
+			while (vp < 0) {
+				if (!getvblankpos (&vp, true))
+					break;
+			}
+			vblankthread_oddeven = (vp & 1) != 0;
+			vblankthread_oddeven_got = true;
+		}
+	}
+	if (dooddevenskip)
+		return true;
+	if (vblank_found_chipset)
+		return true;
+#endif
+	return false;
+}
+

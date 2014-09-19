@@ -104,6 +104,7 @@ COMMON_OBJS= \
 	../driveclick.o \
 	../enforcer.o \
 	../epsonprinter.o \
+	../events.o \
 	../expansion.o \
 	../fdi2raw.o \
 	../filesys.o \

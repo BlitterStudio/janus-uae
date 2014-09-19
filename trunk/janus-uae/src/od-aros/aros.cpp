@@ -316,3 +316,22 @@ int WIN32GFX_IsPicassoScreen (void)
     return screen_is_picasso;
 }
 
+static void sleep_millis2 (int ms, bool main) {
+
+  if(main) {
+    DebOut("warning: main is %s (not cared for)\n");
+  }
+
+  Delay(ms);
+}
+
+void sleep_millis_main (int ms) {
+
+	sleep_millis2 (ms, true);
+}
+
+void sleep_millis (int ms) {
+
+	sleep_millis2 (ms, false);
+}
+
