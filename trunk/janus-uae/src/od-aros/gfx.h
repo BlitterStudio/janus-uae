@@ -2,6 +2,9 @@
 
 #include "aros.h"
 
+#define REFRESH_RATE_RAW 1
+#define REFRESH_RATE_LACE 2
+
 void DX_Invalidate (int x, int y, int width, int height);
 int DX_Fill (int dstx, int dsty, int width, int height, int color, unsigned int rgbtype);
 double getcurrentvblankrate (void);
@@ -32,7 +35,7 @@ extern struct PicassoResolution DisplayModes[MAX_PICASSO_MODES];
 /* in od-win/dxwrap.h */
 #define MAX_DISPLAYS 10
 #define MAX_REFRESH_RATES 100
-#define MAX_PICASSO_MODES 64
+#define MAX_PICASSO_MODES 300
 
 struct MultiDisplay {
   bool primary;

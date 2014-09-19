@@ -36,11 +36,56 @@
 #include "memory.h"
 #include "gfxboard.h"
 
+#include "gfx.h"
 #include "picasso96_aros.h"
 #include "aros.h"
 
+
+
+#define DM_DX_FULLSCREEN 1
+#define DM_W_FULLSCREEN 2
+#define DM_D3D_FULLSCREEN 16
+#define DM_PICASSO96 32
+#define DM_DDRAW 64
+#define DM_DC 128
+#define DM_D3D 256
+#define DM_SWSCALE 1024
+
+#define SM_WINDOW 0
+#define SM_FULLSCREEN_DX 2
+#define SM_OPENGL_WINDOW 3
+#define SM_OPENGL_FULLWINDOW 9
+#define SM_OPENGL_FULLSCREEN_DX 4
+#define SM_D3D_WINDOW 5
+#define SM_D3D_FULLWINDOW 10
+#define SM_D3D_FULLSCREEN_DX 6
+#define SM_FULLWINDOW 7
+#define SM_NONE 11
+
 struct uae_filter *usedfilter;
 int default_freq = 0;
+int scalepicasso;
+
+struct winuae_currentmode {
+	unsigned int flags;
+	int native_width, native_height, native_depth, pitch;
+	int current_width, current_height, current_depth;
+	int amiga_width, amiga_height;
+	int initdone;
+	int fullfill;
+	int vsync;
+	int freq;
+};
+
+static struct winuae_currentmode currentmodestruct;
+static struct winuae_currentmode *currentmode = &currentmodestruct;
+static int screen_is_initialized;
+static int display_change_requested;
+int window_led_drives, window_led_drives_end;
+int window_led_hd, window_led_hd_end;
+int window_led_joys, window_led_joys_end, window_led_joy_start;
+extern int console_logging;
+int window_extra_width, window_extra_height;
 
 static int isfullscreen_2 (struct uae_prefs *p)
 {
@@ -53,6 +98,7 @@ int isfullscreen (void)
 {
 	return isfullscreen_2 (&currprefs);
 }
+
 
 
 static int flushymin, flushymax;
@@ -220,3 +266,101 @@ bool vsync_isdone (void)
 	return false;
 }
 
+
+
+bool vsync_switchmode (int hz)
+{
+	static struct PicassoResolution *oldmode;
+	static int oldhz;
+	int w = currentmode->native_width;
+	int h = currentmode->native_height;
+	int d = currentmode->native_depth / 8;
+	struct MultiDisplay *md = getdisplay (&currprefs);
+	struct PicassoResolution *found;
+	int newh, i, cnt;
+	bool preferdouble = 0, preferlace = 0;
+	bool lace = false;
+
+	if (currprefs.gfx_apmode[APMODE_NATIVE].gfx_refreshrate > 85) {
+		preferdouble = 1;
+	} else if (currprefs.gfx_apmode[APMODE_NATIVE].gfx_interlaced) {
+		preferlace = 1;
+	}
+
+	if (hz >= 55)
+		hz = 60;
+	else
+		hz = 50;
+
+	newh = h * (currprefs.ntscmode ? 60 : 50) / hz;
+
+	found = NULL;
+	for (cnt = 0; cnt <= abs (newh - h) + 1 && !found; cnt++) {
+		for (int dbl = 0; dbl < 2 && !found; dbl++) {
+			bool doublecheck = false;
+			bool lacecheck = false;
+			if (preferdouble && dbl == 0)
+				doublecheck = true;
+			else if (preferlace && dbl == 0)
+				lacecheck = true;
+
+			for (int extra = 1; extra >= -1 && !found; extra--) {
+				for (i = 0; md->DisplayModes[i].depth >= 0 && !found; i++) {
+					struct PicassoResolution *r = &md->DisplayModes[i];
+					if (r->res.width == w && (r->res.height == newh + cnt || r->res.height == newh - cnt) && r->depth == d) {
+						int j;
+						for (j = 0; r->refresh[j] > 0; j++) {
+							if (doublecheck) {
+								if (r->refreshtype[j] & REFRESH_RATE_LACE)
+									continue;
+								if (r->refresh[j] == hz * 2 + extra) {
+									found = r;
+									hz = r->refresh[j];
+									break;
+								}
+							} else if (lacecheck) {
+								if (!(r->refreshtype[j] & REFRESH_RATE_LACE))
+									continue;
+								if (r->refresh[j] * 2 == hz + extra) {
+									found = r;
+									lace = true;
+									hz = r->refresh[j];
+									break;
+								}
+							} else {
+								if (r->refresh[j] == hz + extra) {
+									found = r;
+									hz = r->refresh[j];
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	if (found == oldmode && hz == oldhz)
+		return true;
+	oldmode = found;
+	oldhz = hz;
+	if (!found) {
+		changed_prefs.gfx_apmode[APMODE_NATIVE].gfx_vsync = 0;
+		if (currprefs.gfx_apmode[APMODE_NATIVE].gfx_vsync != changed_prefs.gfx_apmode[APMODE_NATIVE].gfx_vsync) {
+			set_config_changed ();
+		}
+		write_log (_T("refresh rate changed to %d%s but no matching screenmode found, vsync disabled\n"), hz, lace ? _T("i") : _T("p"));
+		return false;
+	} else {
+		newh = found->res.height;
+		changed_prefs.gfx_size_fs.height = newh;
+		changed_prefs.gfx_apmode[APMODE_NATIVE].gfx_refreshrate = hz;
+		changed_prefs.gfx_apmode[APMODE_NATIVE].gfx_interlaced = lace;
+		if (changed_prefs.gfx_size_fs.height != currprefs.gfx_size_fs.height ||
+			changed_prefs.gfx_apmode[APMODE_NATIVE].gfx_refreshrate != currprefs.gfx_apmode[APMODE_NATIVE].gfx_refreshrate) {
+			write_log (_T("refresh rate changed to %d%s, new screenmode %dx%d\n"), hz, lace ? _T("i") : _T("p"), w, newh);
+			set_config_changed ();
+		}
+		return true;
+	}
+}
