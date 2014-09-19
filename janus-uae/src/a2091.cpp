@@ -2083,4 +2083,14 @@ int a3000_add_scsi_unit (int ch, struct uaedev_config_info *ci) {
   TODO();
 }
 
+void rethink_a2091 (void)
+{
+	if (currprefs.cs_cdtvscsi)
+		return;
+
+  TODO();
+}
+
+
+
 #endif
