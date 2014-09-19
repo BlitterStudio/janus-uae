@@ -1345,7 +1345,7 @@ static int graphics_subinit (void)
     return 1;
 }
 
-int graphics_init (void)
+int graphics_init (bool b)
 {
     int success = 0;
 
