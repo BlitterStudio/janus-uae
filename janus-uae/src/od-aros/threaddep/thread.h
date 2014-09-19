@@ -31,6 +31,7 @@
 #warning ==== sem_handle is TODO !?  ====
 
 #define uae_sem_t ULONG
+#define CRITICAL_SECTION struct SignalSemaphore
 
 #if 0
 typedef struct {
