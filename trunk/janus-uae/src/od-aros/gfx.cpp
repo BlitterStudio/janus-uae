@@ -58,45 +58,8 @@
 #include "rp.h"
 #endif
 
-#define DM_DX_FULLSCREEN 1
-#define DM_W_FULLSCREEN 2
-#define DM_D3D_FULLSCREEN 16
-#define DM_PICASSO96 32
-#define DM_DDRAW 64
-#define DM_DC 128
-#define DM_D3D 256
-#define DM_SWSCALE 1024
-
-#define SM_WINDOW 0
-#define SM_FULLSCREEN_DX 2
-#define SM_OPENGL_WINDOW 3
-#define SM_OPENGL_FULLWINDOW 9
-#define SM_OPENGL_FULLSCREEN_DX 4
-#define SM_D3D_WINDOW 5
-#define SM_D3D_FULLWINDOW 10
-#define SM_D3D_FULLSCREEN_DX 6
-#define SM_FULLWINDOW 7
-#define SM_NONE 11
-
-
-
-struct winuae_currentmode {
-	unsigned int flags;
-	int native_width, native_height, native_depth, pitch;
-	int current_width, current_height, current_depth;
-	int amiga_width, amiga_height;
-	int frequency;
-	int initdone;
-	int fullfill;
-	int vsync;
-};
-
-static struct winuae_currentmode currentmodestruct;
-static struct winuae_currentmode *currentmode = &currentmodestruct;
-
 //struct Window *hAmigaWnd;
 //struct RastPort  *TempRPort;
-int screen_is_picasso = 0;
 
 static uae_u8 scrlinebuf[4096 * 4]; /* this is too large, but let's rather play on the safe side here */
 

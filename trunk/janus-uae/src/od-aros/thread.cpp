@@ -172,6 +172,7 @@ void uae_sem_destroy (uae_sem_t *sem) {
 #endif
 }
 
+/* Windows API */
 void InitializeCriticalSection(CRITICAL_SECTION *section) {
   DebOut("InitializeCriticalSection(%lx)\n", section);
 

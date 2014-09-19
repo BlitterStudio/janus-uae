@@ -33,7 +33,6 @@ extern struct PicassoResolution DisplayModes[MAX_PICASSO_MODES];
 #endif
 
 /* in od-win/dxwrap.h */
-#define MAX_DISPLAYS 10
 #define MAX_REFRESH_RATES 100
 #define MAX_PICASSO_MODES 300
 
@@ -46,8 +45,6 @@ struct MultiDisplay {
   struct PicassoResolution *DisplayModes;
   //RECT rect;
 };
-
-extern struct MultiDisplay Displays[MAX_DISPLAYS];
 
 struct ScreenResolution {
 

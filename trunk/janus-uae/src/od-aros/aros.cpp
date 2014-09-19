@@ -227,9 +227,6 @@ void fullpath (TCHAR *path, int size) {
 
 /* taken from puae/misc.c */
 
-#define MAX_DISPLAYS 10
-struct MultiDisplay Displays[MAX_DISPLAYS];
-
 static struct MultiDisplay *getdisplay2 (struct uae_prefs *p, int index)
 {
 	int max;
