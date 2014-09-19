@@ -35,3 +35,7 @@ extern char *_tzname[2];
 /* ? */
 void _tzset(void);
 
+
+extern void sleep_millis (int ms);
+extern void sleep_millis_main (int ms);
+extern void sleep_millis_busy (int ms);

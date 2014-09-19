@@ -220,11 +220,6 @@ int sampler_init (void)
   TODO();
 }
 
-void sleep_millis (int ms) 
-{
-  TODO();
-}
-
 void sound_volume (int dir) 
 {
   TODO();
@@ -1066,5 +1061,10 @@ void pause_sound_buffer (void) {
 /******/
 int screen_was_picasso;
 
+void update_sound(double foo) {
+  /* nowhere in WinUAE ..?? */
+
+  TODO();
+}
 
 
