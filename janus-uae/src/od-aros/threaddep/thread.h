@@ -33,6 +33,10 @@
 #define uae_sem_t ULONG
 #define CRITICAL_SECTION struct SignalSemaphore
 
+void InitializeCriticalSection(CRITICAL_SECTION *section);
+void EnterCriticalSection(CRITICAL_SECTION *section);
+void LeaveCriticalSection(CRITICAL_SECTION *section);
+
 #if 0
 typedef struct {
   struct SignalSemaphore sigSem;

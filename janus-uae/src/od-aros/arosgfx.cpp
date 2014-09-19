@@ -1,6 +1,6 @@
 /************************************************************************ 
  *
- * AROS Drawing infterface
+ * AROS Drawing interface
  *
  * Copyright 2011 Oliver Brunner <aros<at>oliver-brunner.de>
  *
@@ -23,12 +23,11 @@
  *
  ************************************************************************/
 
+#include "sysconfig.h"
 
 #include <stdlib.h>
 #include <stdarg.h>
 
-
-#include "sysconfig.h"
 #include "sysdeps.h"
 
 #include "options.h"
@@ -39,7 +38,7 @@
 #include "gfx.h"
 #include "picasso96_aros.h"
 #include "aros.h"
-
+#include "threaddep/thread.h"
 
 
 #define DM_DX_FULLSCREEN 1
@@ -63,7 +62,6 @@
 #define SM_NONE 11
 
 struct uae_filter *usedfilter;
-int default_freq = 0;
 int scalepicasso;
 
 struct winuae_currentmode {
@@ -77,8 +75,9 @@ struct winuae_currentmode {
 	int freq;
 };
 
+struct MultiDisplay Displays[MAX_DISPLAYS+1];
+
 static struct winuae_currentmode currentmodestruct;
-static struct winuae_currentmode *currentmode = &currentmodestruct;
 static int screen_is_initialized;
 static int display_change_requested;
 int window_led_drives, window_led_drives_end;
@@ -87,6 +86,66 @@ int window_led_joys, window_led_joys_end, window_led_joy_start;
 extern int console_logging;
 int window_extra_width, window_extra_height;
 
+static struct winuae_currentmode *currentmode = &currentmodestruct;
+static int wasfullwindow_a, wasfullwindow_p;
+
+static int vblankbasewait1, vblankbasewait2, vblankbasewait3, vblankbasefull, vblankbaseadjust;
+static bool vblankbaselace;
+static int vblankbaselace_chipset;
+static bool vblankthread_oddeven, vblankthread_oddeven_got;
+static int graphics_mode_changed;
+int vsync_modechangetimeout = 10;
+
+int screen_is_picasso = 0;
+
+extern int reopen (int, bool);
+
+#define VBLANKTH_KILL 0
+#define VBLANKTH_CALIBRATE 1
+#define VBLANKTH_IDLE 2
+#define VBLANKTH_ACTIVE_WAIT 3
+#define VBLANKTH_ACTIVE 4
+#define VBLANKTH_ACTIVE_START 5
+#define VBLANKTH_ACTIVE_SKIPFRAME 6
+#define VBLANKTH_ACTIVE_SKIPFRAME2 7
+
+static volatile bool vblank_found;
+static volatile int flipthread_mode;
+volatile bool vblank_found_chipset;
+volatile bool vblank_found_rtg;
+//static HANDLE flipevent, flipevent2, vblankwaitevent;
+static volatile int flipevent_mode;
+static CRITICAL_SECTION screen_cs;
+
+void gfx_lock (void)
+{
+	EnterCriticalSection (&screen_cs);
+}
+void gfx_unlock (void)
+{
+	LeaveCriticalSection (&screen_cs);
+}
+
+int vsync_busy_wait_mode;
+
+static void vsync_sleep (bool preferbusy)
+{
+	struct apmode *ap = picasso_on ? &currprefs.gfx_apmode[1] : &currprefs.gfx_apmode[0];
+	bool dowait;
+
+	if (vsync_busy_wait_mode == 0) {
+		dowait = ap->gfx_vflip || !preferbusy;
+		//dowait = !preferbusy;
+	} else if (vsync_busy_wait_mode < 0) {
+		dowait = true;
+	} else {
+		dowait = false;
+	}
+	if (dowait && (currprefs.m68k_speed >= 0 || currprefs.m68k_speed_throttle < 0))
+		sleep_millis_main (1);
+}
+
+/* merged til here .. */
 static int isfullscreen_2 (struct uae_prefs *p)
 {
 	int idx = screen_is_picasso ? 1 : 0;
@@ -364,3 +423,5 @@ bool vsync_switchmode (int hz)
 		return true;
 	}
 }
+
+int default_freq = 0;
