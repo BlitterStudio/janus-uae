@@ -146,6 +146,7 @@ COMMON_OBJS= \
 	../isofs.o \
 	../zfile.o \
 	main.o \
+	avioutput.o \
 	unicode.o \
 	sounddep/sound.o \
 	serial.o \
