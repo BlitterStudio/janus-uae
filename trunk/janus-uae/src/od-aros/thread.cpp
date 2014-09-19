@@ -172,3 +172,23 @@ void uae_sem_destroy (uae_sem_t *sem) {
 #endif
 }
 
+void InitializeCriticalSection(CRITICAL_SECTION *section) {
+  DebOut("InitializeCriticalSection(%lx)\n", section);
+
+  InitSemaphore(section);
+}
+
+void EnterCriticalSection(CRITICAL_SECTION *section) {
+  DebOut("EnterCriticalSection(%lx)\n", section);
+
+  ObtainSemaphore(section);
+}
+
+void LeaveCriticalSection(CRITICAL_SECTION *section) {
+  DebOut("LeaveCriticalSection(%lx)\n", section);
+
+  ReleaseSemaphore(section);
+}
+
+
+
