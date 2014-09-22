@@ -11,6 +11,7 @@
 *
 */
 
+#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -976,6 +977,8 @@ static int drive_insert (drive * drv, struct uae_prefs *p, int dnum, const TCHAR
 	trackid *tid;
 	int num_tracks, size;
 	int canauto;
+
+  DebOut("drive %lx, fname: %s, p: %lx, dnum: %d, fake: %d, forcedwriteprotect: %d)\n", drv, fname, p, dnum, fake, forcedwriteprotect);
 
 	drive_image_free (drv);
 	DISK_validate_filename (p, fname, 1, &drv->wrprot, &drv->crc32, &drv->diskfile);
@@ -3823,6 +3826,7 @@ void DISK_init (void)
 	int dr;
 
 	for (dr = 0; dr < MAX_FLOPPY_DRIVES; dr++) {
+    DebOut("dr: %d, currprefs.floppyslots[%d].df: %s\n", dr, dr, currprefs.floppyslots[dr].df);
 		drive *drv = &floppy[dr];
 		/* reset all drive types to 3.5 DD */
 		drive_settype_id (drv);
