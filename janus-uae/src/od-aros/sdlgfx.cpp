@@ -1840,9 +1840,8 @@ void DX_SetPalette_vsync(void)
     }
 }
 
-int DX_Fill (int dstx, int dsty, int width, int height, int color, unsigned int rgbtype)
+void DX_Fill (int dstx, int dsty, int width, int height, uae_u32 color)
 {
-    int result = 0;
     DebOut("entered\n");
 #ifdef USE_GL /* TODO think about optimization for GL */
     if (!currprefs.use_gl) {
@@ -1853,12 +1852,11 @@ int DX_Fill (int dstx, int dsty, int width, int height, int color, unsigned int 
 
     if (SDL_FillRect (screen, &rect, color) == 0) {
         DX_Invalidate (0, dsty, width, height - 1);
-        result = 1;
     }
 #ifdef USE_GL
     }
 #endif /* USE_GL */
-    return result;
+    return;
 }
 
 int DX_Blit (int srcx, int srcy, int dstx, int dsty, int width, int height, BLIT_OPCODE opcode)
