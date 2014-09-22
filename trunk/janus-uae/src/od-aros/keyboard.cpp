@@ -126,6 +126,7 @@ struct inputdevice_functions inputdevicefunc_keyboard =
 };
 #endif
 
+#if 0
 static struct uae_input_device_kbr_default keytrans_amiga[] = {
 	/* TODO ?? */
 	{ -1, 0 }
@@ -144,6 +145,50 @@ static int kb_np[] = { -1, 0 };
 
 static int *kbmaps[] = {
 	kb_np
+};
+#endif
+
+static struct uae_input_device_kbr_default keytrans_amiga[] = {
+  { -1, 0 }
+};
+
+static struct uae_input_device_kbr_default keytrans_pc1[] = {
+  { -1, 0 }
+};
+
+static struct uae_input_device_kbr_default keytrans_pc2[] = {
+  { -1, 0 }
+};
+
+static struct uae_input_device_kbr_default *keytrans[] = {
+  keytrans_amiga,
+  keytrans_pc1,
+  keytrans_pc2
+};
+
+static int kb_np[] = { -1, -1 };
+static int kb_ck[] = { -1, -1 };
+static int kb_se[] = { -1, -1 };
+static int kb_np3[] = { -1, -1 };
+static int kb_ck3[] = { -1, -1 };
+static int kb_se3[] = { -1, -1 };
+
+
+static int kb_cd32_np[] = { -1, -1 };
+static int kb_cd32_ck[] = { -1, -1 };
+static int kb_cd32_se[] = { -1, -1 };
+
+static int kb_cdtv[] = { -1, -1 };
+
+static int kb_xa1[] = { -1, -1 };
+static int kb_xa2[] = { -1, -1 };
+static int kb_arcadia[] = { -1, -1 };
+static int kb_arcadiaxa[] = { -1, -1 };
+
+static int *kbmaps[] = {
+	kb_np, kb_ck, kb_se, kb_np3, kb_ck3, kb_se3,
+	kb_cd32_np, kb_cd32_ck, kb_cd32_se,
+	kb_xa1, kb_xa2, kb_arcadia, kb_arcadiaxa, kb_cdtv
 };
 
 void keyboard_settrans (void)
