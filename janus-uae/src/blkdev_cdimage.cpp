@@ -22,8 +22,10 @@
 #include "fsdb.h"
 #include "threaddep/thread.h"
 #include "scsidev.h"
+#ifndef __AROS__
 #include "mp3decoder.h"
 #include "cda_play.h"
+#endif
 #include "memory.h"
 #ifdef RETROPLATFORM
 #include "rp.h"
@@ -84,6 +86,8 @@ struct cdunit {
 	uae_sem_t sub_sem;
 	struct device_info di;
 };
+
+#ifndef __AROS__
 
 static struct cdunit cdunits[MAX_TOTAL_SCSI_DEVICES];
 static int bus_open;
@@ -1672,9 +1676,10 @@ static int open_bus (int flags)
 	write_log (L"Image driver open.\n");
 	return 1;
 }
+#endif /* AROS */
 
 struct device_functions devicefunc_cdimage = {
-	L"IMAGE",
+	_T("IMAGE"),
 	open_bus, close_bus, open_device, close_device, info_device,
 	0, 0, 0,
 	command_pause, command_stop, command_play, command_volume, command_qcode,

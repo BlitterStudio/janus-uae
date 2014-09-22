@@ -3524,23 +3524,21 @@ static uae_u32 REGPARAM2 picasso_SetDisplay (TrapContext *ctx)
 
 void init_hz_p96 (void)
 {
-	if (currprefs.win32_rtgvblankrate < 0 || isvsync_rtg ())  {
-		double rate = getcurrentvblankrate ();
-		if (rate < 0)
-			p96vblank = vblank_hz;
-		else
-			p96vblank = getcurrentvblankrate ();
-	} else if (currprefs.win32_rtgvblankrate == 0) {
+	if (currprefs.win32_rtgvblankrate < 0 || isvsync ()) {
+		//p96vblank = DirectDraw_CurrentRefreshRate ();
+    TODO();
 		p96vblank = vblank_hz;
-	} else {
+  }
+	else if (currprefs.win32_rtgvblankrate == 0)
+		p96vblank = vblank_hz;
+	else
 		p96vblank = currprefs.win32_rtgvblankrate;
-	}
 	if (p96vblank <= 0)
 		p96vblank = 60;
 	if (p96vblank >= 300)
 		p96vblank = 300;
-	p96syncrate = maxvpos_nom * vblank_hz / p96vblank;
-	write_log (_T("RTGFREQ: %d*%.4f = %.4f / %.1f = %d\n"), maxvpos_nom, vblank_hz, maxvpos_nom * vblank_hz, p96vblank, p96syncrate);
+	p96syncrate = maxvpos * vblank_hz / p96vblank;
+	write_log (_T("P96FREQ: %d*%d = %d / %d = %d\n"), maxvpos, vblank_hz, maxvpos_nom * vblank_hz, p96vblank, p96syncrate);
 }
 
 /* NOTE: Watch for those planeptrs of 0x00000000 and 0xFFFFFFFF for all zero / all one bitmaps !!!! */

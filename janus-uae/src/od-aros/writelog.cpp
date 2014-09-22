@@ -308,7 +308,7 @@ void logging_init (void)
 		_T("\n(c) 1996-1999 Mathias Ortmann - Win32 port and bsdsocket support.")
 		_T("\n(c) 2000-2001 Bernd Meyer     - JIT engine.")
 		_T("\n(c) 2000-2005 Bernd Roesch    - MIDI input, many fixes.")
-		_T("\n(c) 2011      Oliver Brunner  - AROS port")
+		_T("\n(c) 2011-2014 Oliver Brunner  - AROS port")
 		_T("\n"));
 	GetCurrentDirName(tmp , sizeof tmp  / sizeof (TCHAR));
 	GetProgramName   (tmp2, sizeof tmp2 / sizeof (TCHAR));
@@ -325,4 +325,8 @@ void logging_init (void)
 
 }
 
-
+void activate_console (void)
+{
+  if (!consoleopen) return;
+  TODO();
+}

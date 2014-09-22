@@ -98,6 +98,8 @@ int vsync_modechangetimeout = 10;
 
 int screen_is_picasso = 0;
 
+static bool panel_done, panel_active_done;
+
 extern int reopen (int, bool);
 
 #define VBLANKTH_KILL 0
@@ -143,6 +145,29 @@ static void vsync_sleep (bool preferbusy)
 	}
 	if (dowait && (currprefs.m68k_speed >= 0 || currprefs.m68k_speed_throttle < 0))
 		sleep_millis_main (1);
+}
+
+
+void graphics_reset(void) {
+
+	display_change_requested = 2;
+}
+
+
+const TCHAR *target_get_display_name (int num, bool friendlyname)
+{
+	if (num <= 0)
+		return NULL;
+#if 0
+	struct MultiDisplay *md = getdisplay2 (NULL, num - 1);
+	if (!md)
+		return NULL;
+	if (friendlyname)
+		return md->monitorname;
+	return md->monitorid;
+#endif
+  TODO();
+  return "Default Monitor";
 }
 
 /* merged til here .. */
@@ -425,3 +450,10 @@ bool vsync_switchmode (int hz)
 }
 
 int default_freq = 0;
+
+
+void gui_restart (void)
+{
+	panel_done = panel_active_done = false;
+}
+

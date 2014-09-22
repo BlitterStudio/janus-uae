@@ -40,6 +40,8 @@ extern char *_tzname[2];
 void _tzset(void);
 
 
-extern void sleep_millis (int ms);
-extern void sleep_millis_main (int ms);
-extern void sleep_millis_busy (int ms);
+void sleep_millis (int ms);
+void sleep_millis_main (int ms);
+void sleep_millis_busy (int ms);
+void gui_restart (void);
+void fetch_path (const TCHAR *name, TCHAR *out, int size);

@@ -34,13 +34,15 @@
 
 #ifdef JIT
 
-#ifdef NATMEM_OFFSET
 void init_shm (void) {
-  TODO();
 
   canbang = 1;
-}
+#ifdef NATMEM_OFFSET
+  TODO();
 #endif
+}
+
+
 
 #endif /* JIT */
 

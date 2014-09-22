@@ -23,7 +23,7 @@
  *
  ************************************************************************/
 
-//#define OLI_DEBUG
+#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -47,6 +47,11 @@
 #include "od-aros/threaddep/thread.h"
 #include "od-aros/stubs.h"
 
+volatile int bsd_int_requested;
+
+#warning arosrom/arosrom_len never defined in WinUAE !?
+unsigned int arosrom_len;
+unsigned char arosrom[10];
 #if 0
 int debuggable(void) 
 {
@@ -1067,4 +1072,132 @@ void update_sound(double foo) {
   TODO();
 }
 
+void unlockscr (struct vidbuffer *vb) {
+  TODO();
+}
 
+int lockscr (struct vidbuffer *vb, bool fullupdate) {
+  TODO();
+  return 1;
+}
+
+void init_scsi (void) {
+  TODO();
+}
+
+bool my_utime (const TCHAR *name, struct mytimeval *tv) {
+  TODO();
+  return TRUE;
+}
+
+uae_s64 int my_fsize (struct my_openfile_s *mos) {
+  TODO();
+  return -1;
+}
+
+bool my_chmod (const TCHAR *name, uae_u32 mode) {
+  TODO();
+  return TRUE;
+}
+
+int my_issamevolume(const TCHAR *path1, const TCHAR *path2, TCHAR *path) {
+  TODO();
+  return FALSE;
+}
+
+int input_get_default_joystick_analog (struct uae_input_device *uid, int i, int port, int af, bool gp, bool joymouseswap) {
+  TODO();
+  return 0;
+}
+
+int input_get_default_lightpen (struct uae_input_device *uid, int i, int port, int af, bool gp, bool joymouseswap) {
+  TODO();
+  return 0;
+}
+
+int input_get_default_joystick (struct uae_input_device *uid, int i, int port, int af, int mode, bool gp, bool joymouseswap) {
+  TODO();
+  return 0;
+}
+
+int input_get_default_mouse (struct uae_input_device *uid, int i, int port, int af, bool gp, bool wheel, bool joymouseswap) {
+  TODO();
+  return 0;
+}
+
+bool target_graphics_buffer_update (void) {
+  TODO();
+  return FALSE;
+}
+
+void ethernet_enumerate_free (void) {
+  TODO();
+}
+
+int ethernet_getdatalenght (struct netdriverdata *ndd) {
+  TODO();
+  return 0;
+}
+
+bool ethernet_enumerate (struct netdriverdata **nddp, const TCHAR *name) {
+  TODO();
+  return FALSE;
+}
+
+int ethernet_open (struct netdriverdata *ndd, void *vsd, void *user, ethernet_gotfunc *gotfunc, ethernet_getfunc *getfunc, int promiscuous) {
+  TODO();
+  return 0;
+}
+
+void ethernet_close (struct netdriverdata *ndd, void *vsd) {
+  TODO();
+}
+
+void ethernet_trigger (void *vsd) {
+  TODO();
+}
+
+int fsdb_name_invalid_dir (const TCHAR *n) {
+  TODO();
+  return TRUE;
+}
+
+void vsync_busywait_start (void) {
+  TODO();
+}
+
+void filesys_addexternals (void) {
+  TODO();
+}
+
+void fetch_path (const TCHAR *name, TCHAR *out, int size) {
+  _tcscpy (out, name);
+  TODO();
+}
+
+TCHAR console_getch (void) {
+  TODO();
+  return 'X';
+}
+
+void protect_roms (bool protect) {
+  TODO();
+}
+
+uae_u32 getlocaltime (void) {
+  TODO();
+  return 1;
+}
+
+void getgfxoffset (float *dxp, float *dyp, float *mxp, float *myp) {
+  TODO();
+}
+
+bool console_isch (void) {
+  TODO();
+  return FALSE;
+}
+
+void ncr_io_bput (uaecptr addr, uae_u32 val) {
+  TODO();
+}

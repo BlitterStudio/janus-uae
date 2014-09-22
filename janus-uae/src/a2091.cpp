@@ -2091,6 +2091,76 @@ void rethink_a2091 (void)
   TODO();
 }
 
+uae_u8 wdscsi_getauxstatus (void) {
+  TODO();
+  return 0;
+}
 
+void scsi_dmac_start_dma (void) {
+  TODO();
+}
 
+uae_u8 *restore_scsi_device (uae_u8 *src) {
+  TODO();
+  return NULL;
+}
+
+void finish_sound_buffer (void) {
+  TODO();
+}
+
+frame_time_t vsync_busywait_end (int *foo) {
+  TODO();
+  return NULL;
+}
+
+int target_get_display(char const *foo) {
+  TODO();
+  return 1;
+}
+
+bool my_resolvesoftlink(TCHAR *linkfile, int size) {
+  TODO();
+  return FALSE;
+}
+
+int vsync_busywait_do (int *a, bool b, bool c) {
+  TODO();
+  return 1;
+}
+
+void statusline_getpos (int *x, int *y, int width, int height) {
+  TODO();
+}
+
+bool show_screen_maybe (bool a) {
+  TODO();
+  return TRUE;
+}
+
+bool my_createshortcut(const TCHAR *source, const TCHAR *target, const TCHAR *description) {
+  TODO();
+  return TRUE;
+}
+
+double vblank_calibrate (double a, bool b) {
+  TODO();
+  return 0.0;
+}
+
+void unprotect_maprom (void) {
+  TODO();
+}
+
+uae_u8 *save_scsi_dmac (int *len, uae_u8 *dstptr) {
+  TODO();
+  return NULL;
+}
+
+bool ismouseactive (void) {
+  TODO();
+  return TRUE;
+}
 #endif
+
+
