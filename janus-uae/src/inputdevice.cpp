@@ -18,6 +18,7 @@
 
 //#define DONGLE_DEBUG
 
+#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -5043,6 +5044,8 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 	int used[MAX_INPUT_DEVICES] = { 0 };
 	int i, joy;
 
+  DebOut("compatibility_copy(%lx, %d)\n", prefs, gameports);
+
 	for (i = 0; i < MAX_JPORTS; i++) {
 		joymodes[i] = prefs->jports[i].mode;
 		joyinputs[i] = NULL;
@@ -5227,9 +5230,12 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 		}
 	}
 
+  DebOut("gameports: %d\n", gameports);
+
 	if (gameports) {
 		// replace possible old mappings with default keyboard mapping
 		for (i = KBR_DEFAULT_MAP_FIRST; i <= KBR_DEFAULT_MAP_LAST; i++) {
+      DebOut("i: %d\n", i);
 			checkcompakb (keyboard_default_kbmaps[i], ip_joy2);
 			checkcompakb (keyboard_default_kbmaps[i], ip_joy1);
 			checkcompakb (keyboard_default_kbmaps[i], ip_joypad2);
@@ -5244,6 +5250,8 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 			checkcompakb (keyboard_default_kbmaps[i], ip_joycd322);
 		}
 	}
+
+  DebOut("ok..\n");
 
 	for (i = 0; i < 2; i++) {
 		if (prefs->jports[i].id >= 0) {
@@ -5722,6 +5730,7 @@ void inputdevice_default_prefs (struct uae_prefs *p)
 // set default keyboard and keyboard>joystick layouts
 void inputdevice_setkeytranslation (struct uae_input_device_kbr_default **trans, int **kbmaps)
 {
+  DebOut("inputdevice_setkeytranslation(%lx, %lx)\n", trans, kbmaps);
 	keyboard_default_table = trans;
 	keyboard_default_kbmaps = kbmaps;
 }
