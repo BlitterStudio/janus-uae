@@ -105,6 +105,7 @@ COMMON_OBJS= \
 	../driveclick.o \
 	../enforcer.o \
 	../epsonprinter.o \
+	../ethernet.o \
 	../events.o \
 	../expansion.o \
 	../fdi2raw.o \
@@ -113,6 +114,10 @@ COMMON_OBJS= \
 	../fsdb.o \
 	../fsusage.o \
 	../gayle.o \
+	../gfxboard.o \
+	../qemuvga/cirrus_vga.o \
+	../qemuvga/qemuuaeglue.o \
+	../qemuvga/vga.o \
 	../gfxutil.o \
 	../hardfile.o \
 	../hrtmon.rom.o \
