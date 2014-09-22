@@ -75,6 +75,7 @@ COMMON_OBJS= \
 	../blittable.o \
 	../blitter.o \
 	../bsdsocket.o \
+	../calc.o \
 	../catweasel.o \
 	../cd32_fmv.o \
 	../cdrom.o \
@@ -114,6 +115,7 @@ COMMON_OBJS= \
 	../gayle.o \
 	../gfxutil.o \
 	../hardfile.o \
+	../hrtmon.rom.o \
 	../identify.o \
 	../inputdevice.o \
 	../inputrecord.o \
