@@ -9,6 +9,7 @@
 
 #define RECURSIVE_ARCHIVES 1
 //#define ZFILE_DEBUG
+#define OLI_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -2132,8 +2133,11 @@ uae_s64 zfile_size (struct zfile *z)
 
 uae_s64 zfile_ftell (struct zfile *z)
 {
-	if (z->data || z->dataseek || z->parent)
+	if (z->data || z->dataseek || z->parent) {
+    DebOut("z->seek: %d\n", z->seek);
 		return z->seek;
+  }
+  DebOut("ftell: %d\n", ftell(z->f));
 	return _ftelli64 (z->f);
 
 }
@@ -2451,9 +2455,11 @@ uae_u32 zfile_crc32 (struct zfile *f)
 	if (f->data)
 		return get_crc32 (f->data, f->size);
 	pos = zfile_ftell (f);
+  DebOut("pos: %d\n", pos);
 	zfile_fseek (f, 0, SEEK_END);
 	size = zfile_ftell (f);
 	p = xmalloc (uae_u8, size);
+  DebOut("p: %lx, size: %d\n",p, size);
 	if (!p)
 		return 0;
 	memset (p, 0, size);

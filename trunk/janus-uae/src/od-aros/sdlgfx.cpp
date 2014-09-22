@@ -1017,6 +1017,10 @@ int graphics_setup (void)
 {
     int result = 0;
 
+    max_uae_width = 8192;
+    max_uae_height = 8192;
+
+
     if (SDL_InitSubSystem (SDL_INIT_VIDEO) == 0) {
 
         const SDL_version   *version = SDL_Linked_Version ();
