@@ -101,6 +101,16 @@ int pissoff_value = 25000;
 int log_scsi;
 int log_net;
 
+/* missing symbols from various od-win32 sources */
+int tablet_log=0;
+int seriallog =0;
+int max_uae_width;
+int max_uae_height;
+int log_vsync, debug_vsync_min_delay, debug_vsync_forced_delay;
+int extraframewait;
+
+/* end */
+
 int pause_emulation;
 int sleep_resolution;
 int uaelib_debug;
@@ -330,5 +340,17 @@ void sleep_millis_main (int ms) {
 void sleep_millis (int ms) {
 
 	sleep_millis2 (ms, false);
+}
+
+
+void target_restart (void)
+{
+	gui_restart ();
+}
+
+
+void fetch_rompath (TCHAR *out, int size)
+{
+	fetch_path (_T("KickstartPath"), out, size);
 }
 

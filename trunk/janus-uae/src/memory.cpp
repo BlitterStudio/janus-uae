@@ -1374,6 +1374,11 @@ extern int seriallog;
 static bool load_kickstart_replacement (void)
 {
 	struct zfile *f;
+
+#ifdef __AROS__
+  TODO();
+  return FALSE;
+#endif
 	
 	f = zfile_fopen_data (_T("aros.gz"), arosrom_len, arosrom);
 	if (!f)

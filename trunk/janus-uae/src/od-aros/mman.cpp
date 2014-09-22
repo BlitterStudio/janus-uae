@@ -36,6 +36,13 @@ void cache_free (uae_u8 *cache) {
 	free(cache);
 }
 
+void free_shm (void) {
+  TODO();
+#if 0
+  resetmem (true);
+  clear_shm ();
+#endif
+}
 
 uae_u32 max_z3fastmem;
 uae_u8 *natmem_offset, *natmem_offset_end;

@@ -14,4 +14,10 @@
 
 #include "memory.h"
 
+#define SND_MAX_BUFFER2 524288
+#define SND_MAX_BUFFER 8192
+
 uae_u16 *paula_sndbufpt;
+int paula_sndbufsize;
+uae_u16 paula_sndbuffer[SND_MAX_BUFFER];
+

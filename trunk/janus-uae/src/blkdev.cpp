@@ -143,6 +143,7 @@ extern struct device_functions devicefunc_win32_ioctl;
 
 #endif
 
+#ifndef __AROS__
 extern struct device_functions devicefunc_cdimage;
 
 static struct device_functions *devicetable[] = {
@@ -154,10 +155,12 @@ static struct device_functions *devicetable[] = {
 #endif
 	NULL
 };
+#endif
 static int driver_installed[6];
 
 static void install_driver (int flags)
 {
+#ifndef __AROS__
 	for (int i = 0; i < MAX_TOTAL_SCSI_DEVICES; i++) {
 		struct blkdevstate *st = &state[i];
 		st->scsiemu = false;
@@ -207,6 +210,10 @@ static void install_driver (int flags)
 			}
 		}
 	}
+#else
+  TODO();
+  return;
+#endif
 
 }
 
