@@ -47,12 +47,14 @@ struct startupmsg
     void           *arg;
 };
 
-static void do_thread (void)
-{
+static void do_thread (void) {
+
    struct Process *pr = (struct Process *) FindTask (NULL);
    struct startupmsg *msg;
    void *(*func) (void *);
    void *arg;
+
+   DebOut("New task started: %lx\n", pr);
 
    WaitPort (&pr->pr_MsgPort);
    msg = (struct startupmsg *) GetMsg(&pr->pr_MsgPort);
@@ -63,21 +65,27 @@ static void do_thread (void)
    func (arg);
 }
 
+static char default_name[]="ArosUAE thread";
+
 int uae_start_thread (const TCHAR *name, void *(*f)(void *), void *arg, uae_thread_id *tid) {
 
   struct MsgPort *replyport = CreateMsgPort();
-  char default_name[]="ArosUAE thread";
+  struct Process *newtask;
 
 #warning Do we need to care for priorities here? WinUAE does..
 
-  DebOut("uae_start_thread_fast(%s, %lx, %lx, %lx)\n", name, f, arg, tid);
+  DebOut("uae_start_thread(name %s, f %lx, arg %lx, tid %lx)\n", name, f, arg, tid);
+
+  if(!replyport) {
+    write_log("ERROR: Unable to create MsgPort!\n");
+  }
 
   if(!name) {
     name=default_name;
   }
 
   if (replyport) {
-    *tid = (struct Task *)CreateNewProcTags (//NP_Output,		   Output (),
+    newtask = CreateNewProcTags (//NP_Output,		   Output (),
              //NP_Input,		   Input (),
              NP_Name,	   (ULONG) name,
              //NP_CloseOutput,	   FALSE,
@@ -86,19 +94,23 @@ int uae_start_thread (const TCHAR *name, void *(*f)(void *), void *arg, uae_thre
              NP_Entry,	   (ULONG) do_thread,
              TAG_DONE);
 
-    if(*tid) {
+    DebOut("New task: %lx\n", newtask);
+
+
+    if(newtask) {
       struct startupmsg msg;
       
       msg.msg.mn_ReplyPort = replyport;
       msg.msg.mn_Length    = sizeof msg;
       msg.func             = f;
       msg.arg              = arg;
-      PutMsg (&((struct Process*)*tid)->pr_MsgPort, (struct Message*)&msg);
+      PutMsg (&newtask->pr_MsgPort, (struct Message*)&msg);
       WaitPort (replyport);
     }
     DeleteMsgPort (replyport);
   }
 
+  *tid=newtask;
   DebOut("thread \"%s\" started with id %lx\n", name, *tid);
 
   return *tid!=0;
