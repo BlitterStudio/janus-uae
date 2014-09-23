@@ -7,7 +7,7 @@
 #define WINUAEPUBLICBETA 0
 
 #define WINUAEBETA ""
-#define WINUAEDATE MAKEBD(2011, 2, 26)
+#define WINUAEDATE MAKEBD(2014, 6, 18)
 #define WINUAEEXTRA ""
 #define WINUAEREV ""
 #define MAKEBD(x,y,z) ((((x) - 2000) * 10000 + (y)) * 100 + (z))
