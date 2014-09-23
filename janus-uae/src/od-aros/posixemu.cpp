@@ -110,10 +110,12 @@ int uae_start_thread (const TCHAR *name, void *(*f)(void *), void *arg, uae_thre
     DeleteMsgPort (replyport);
   }
 
-  *tid=newtask;
-  DebOut("thread \"%s\" started with id %lx\n", name, *tid);
+  if(tid) {
+    *tid=newtask;
+  }
+  DebOut("thread %lx (\"%s\") started\n", name, newtask);
 
-  return *tid!=0;
+  return newtask!=0;
 }
 
 

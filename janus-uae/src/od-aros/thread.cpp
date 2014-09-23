@@ -71,6 +71,7 @@ void uae_sem_init (uae_sem_t *sem, int manual_reset, int initial_state) {
 
   DebOut("Init aros_sem nr %d\n", nr);
 
+  DebOut("InitSemaphore(%lx)\n", &sem_table[nr].sigSem);
 	InitSemaphore(&sem_table[nr].sigSem);
   sem_table[nr].init_done=TRUE;
 
@@ -105,7 +106,7 @@ void uae_sem_wait (uae_sem_t *sem) {
 		return;
 	}
 
-	DebOut("ObtainSemaphore(%d)\n", sem);
+	DebOut("ObtainSemaphore(%lx)\n", &sem_table[nr].sigSem);
 
 	ObtainSemaphore(&sem_table[nr].sigSem);
 #if 0
