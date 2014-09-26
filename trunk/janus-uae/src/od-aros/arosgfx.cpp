@@ -23,6 +23,7 @@
  *
  ************************************************************************/
 
+#define OLI_DEBUG
 #include "sysconfig.h"
 
 #include <stdlib.h>
@@ -455,5 +456,21 @@ int default_freq = 0;
 void gui_restart (void)
 {
 	panel_done = panel_active_done = false;
+}
+
+
+void updatedisplayarea (void) {
+	if (!screen_is_initialized) {
+    DebOut("screen_is_initialized==FALSE\n");
+		return;
+  }
+
+  DX_Invalidate(0, 0, -1, -1);
+}
+
+bool target_graphics_buffer_update (void) {
+  TODO();
+  //updatedisplayarea();
+  return TRUE;
 }
 
