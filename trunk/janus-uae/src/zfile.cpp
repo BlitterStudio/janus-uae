@@ -30,6 +30,11 @@
 #include "archivers/dms/pfile.h"
 #include "archivers/wrp/warp.h"
 
+#ifdef __AROS__
+#include <proto/dos.h>
+#include <dos/dos.h>
+#endif
+
 static struct zfile *zlist = 0;
 
 const TCHAR *uae_archive_extensions[] = { _T("zip"), _T("rar"), _T("7z"), _T("lha"), _T("lzh"), _T("lzx"), _T("tar"), NULL };
@@ -56,6 +61,63 @@ struct zcache
 	time_t tm;
 };
 static struct zcache *zcachedata;
+
+
+/* AROS crashes in reading from a handle, if it was an fopened directory, which succeeded */
+static bool is_file(const TCHAR *name) 
+{
+#ifdef __AROS__
+
+  struct FileInfoBlock *fib;
+  BPTR file=NULL;
+  bool ret=FALSE;
+
+  DebOut("name: %s\n", name);
+
+  fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, TAG_END);
+  if(!fib) 
+  {
+    DebOut("no FileInfoBlock!\n");
+    goto NOFILE;
+  }
+
+  if(!(file=Lock(name, SHARED_LOCK))) 
+  {
+    DebOut("no lock..\n");
+    goto NOFILE;
+  }
+
+  if (!Examine(file, fib)) 
+  {
+    DebOut("Examine failed\n");
+    goto NOFILE;
+  }
+
+  if(fib->fib_DirEntryType <0) 
+  {
+    DebOut("FILE!\n");
+    ret=TRUE;
+  }
+  else 
+  {
+    DebOut("directory..\n");
+  }
+
+NOFILE:
+  if(fib) 
+  {
+    FreeDosObject(DOS_FIB, fib);
+  }
+  if(file) 
+  {
+    UnLock(file);
+  }
+
+  return ret;
+#else
+  return TRUE;
+#endif
+}
 
 static struct zcache *cache_get (const TCHAR *name)
 {
@@ -1607,7 +1669,7 @@ static struct zfile *zfile_fopen_nozip (const TCHAR *name, const TCHAR *mode)
 	struct zfile *l;
 	FILE *f;
 
-	if(*name == '\0')
+	if(*name == '\0' || !is_file(name))
 		return NULL;
 	l = zfile_create (NULL);
 	l->name = my_strdup (name);
@@ -1669,7 +1731,7 @@ static struct zfile *zfile_fopen_2 (const TCHAR *name, const TCHAR *mode, int ma
 	struct zfile *l;
 	FILE *f;
 
-	if(*name == '\0')
+	if(*name == '\0' || !is_file(name))
 		return NULL;
 #ifdef SINGLEFILE
 	if (zfile_opensinglefile (l))
@@ -1906,6 +1968,7 @@ static struct zfile *zfile_fopenx2 (const TCHAR *name, const TCHAR *mode, int ma
 		return f;
 	if (_tcslen (name) <= 2)
 		return NULL;
+#ifndef __AROS__
 	if (name[1] != ':') {
 		_tcscpy (tmp, start_path_data);
 		_tcscat (tmp, name);
@@ -1913,6 +1976,17 @@ static struct zfile *zfile_fopenx2 (const TCHAR *name, const TCHAR *mode, int ma
 		if (f)
 			return f;
 	}
+#else
+  /* search in PROGDIR: */
+  if(!strchr(name, ':') && !strncmp(name, "PROGDIR:", strlen("PROGDIR:"))) {
+    /* string does not begin with PROGDIR */
+		_tcscpy (tmp, "PROGDIR:");
+		_tcscat (tmp, name);
+    DebOut("try: %s\n", tmp);
+		f = zfile_fopen_x (tmp, mode, mask, index);
+    DebOut("f: %lx\n", f);
+  }
+#endif
 #if 0
 	name += 2;
 	if (name[0] == '/' || name[0] == '\\')
@@ -1980,6 +2054,10 @@ struct zfile *zfile_dup (struct zfile *zf)
 			if (nzf)
 				return nzf;
 		}
+    if(!is_file(zf->name)) {
+      return NULL;
+    }
+
 		FILE *ff = _tfopen (zf->name, zf->mode);
 		if (!ff)
 			return NULL;
