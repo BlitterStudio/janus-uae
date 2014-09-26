@@ -717,11 +717,6 @@ int check_prefs_changed_gfx (void)
 }
 #endif
 
-void draw_status_line_single (uae_u8 *buf, int bpp, int y, int totalwidth, uae_u32 *rc, uae_u32 *gc, uae_u32 *bc, uae_u32 *alpha)
-{
-  TODO();
-}
-
 int input_get_default_mouse (struct uae_input_device *uid, int i, int port, int af)
 {
   TODO();

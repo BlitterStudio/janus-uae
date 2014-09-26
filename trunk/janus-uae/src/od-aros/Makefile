@@ -139,6 +139,7 @@ COMMON_OBJS= \
 	../scsitape.o \
 	../scsiemul.o \
 	../specialmonitors.o \
+	../statusline.o \
 	../traps.o \
 	../uaeexe.o \
 	../uaeipc.o \
