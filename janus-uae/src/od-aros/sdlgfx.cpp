@@ -17,6 +17,7 @@
  * OpenGL support by Jochen Becher, Richard Drummond
  */
 
+#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include "keymap.h"
@@ -864,7 +865,7 @@ static void sdl_unlock_nolock (struct vidbuf_description *gfxinfo, struct vidbuf
 
 STATIC_INLINE void sdl_flush_block_nolock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb, int first_line, int last_line) {
 
-  DebOut("entered (display %lx, firstline %d, current_width %d, last_line %d)\n");
+  DebOut("entered (vidbuf_description %lx, firstline %d, last_line %d)\n", gfxinfo, first_line, last_line);
   SDL_UpdateRect (display, 0, first_line, current_width, last_line - first_line + 1);
 }
 
@@ -946,6 +947,34 @@ static void sdl_flush_clear_screen (struct vidbuf_description *gfxinfo, struct v
         SDL_UpdateRect (display, 0, 0, rect.w, rect.h);
     }
 }
+
+void flush_screen (struct vidbuffer *vb, int first_line, int last_line) {
+
+  DebOut("vidbuffer %lx, %d, %d)\n", vb, first_line, last_line);
+
+  SDL_UpdateRect (display, 0, first_line, current_width, last_line - first_line + 1);
+
+
+#if 0
+	if (dx_islost ())
+		return;
+	flushymin = 0;
+	flushymax = currentmode->amiga_height;
+	if (currentmode->flags & DM_D3D) {
+		D3D_flip ();
+#ifdef GFXFILTER
+	} else if (currentmode->flags & DM_SWSCALE) {
+		S2X_render ();
+		DirectDraw_Flip (1);
+#endif
+	} else if (currentmode->flags & DM_DDRAW) {
+		DirectDraw_Flip (1);
+	}
+#endif
+}
+
+
+
 
 #ifdef USE_GL
 
@@ -1449,6 +1478,8 @@ bool handle_events (void)
     int istest = inputdevice_istest ();
     int scancode     = 0;
 
+    DebOut("entered\n");
+
     while (SDL_PollEvent (&rEvent)) {
     switch (rEvent.type) {
         case SDL_QUIT:
@@ -1893,7 +1924,7 @@ void gfx_set_picasso_modeinfo (uae_u32 w, uae_u32 h, uae_u32 depth, RGBFTYPE rgb
     picasso_vidinfo.height = h;
     picasso_vidinfo.depth = depth;
     picasso_vidinfo.pixbytes = bit_unit >> 3;
-    DebOut("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.pixbytes);
+    DebOut("gfxvidinfo.pixbytes: %d\n", picasso_vidinfo.pixbytes);
     if (screen_is_picasso)
         set_window_for_picasso();
 }

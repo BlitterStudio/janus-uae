@@ -232,27 +232,6 @@ void flush_block (int first, int last) {
 }
 #endif
 
-void flush_screen (struct vidbuffer *vb, int a, int b) {
-
-  TODO();
-#if 0
-	if (dx_islost ())
-		return;
-	flushymin = 0;
-	flushymax = currentmode->amiga_height;
-	if (currentmode->flags & DM_D3D) {
-		D3D_flip ();
-#ifdef GFXFILTER
-	} else if (currentmode->flags & DM_SWSCALE) {
-		S2X_render ();
-		DirectDraw_Flip (1);
-#endif
-	} else if (currentmode->flags & DM_DDRAW) {
-		DirectDraw_Flip (1);
-	}
-#endif
-}
-
 bool toggle_rtg (int mode) {
 
 	if (mode == 0) {
