@@ -155,3 +155,52 @@ exit:
   return result;
 }
 
+int my_existsdir (const TCHAR *name) {
+
+  struct FileInfoBlock *fib;
+  BPTR file=NULL;
+  int ret=0;
+
+  DebOut("name: %s\n", name);
+
+  fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, TAG_END);
+  if(!fib) 
+  {
+    DebOut("no FileInfoBlock!\n");
+    goto EXIT;
+  }
+
+  if(!(file=Lock(name, SHARED_LOCK))) 
+  {
+    DebOut("no lock..\n");
+    goto EXIT;
+  }
+
+  if (!Examine(file, fib)) 
+  {
+    DebOut("Examine failed\n");
+    goto EXIT;
+  }
+
+  if(fib->fib_DirEntryType >0) 
+  {
+    DebOut("DIRECTORY!\n");
+    ret=1;
+  }
+  else 
+  {
+    DebOut("file..\n");
+  }
+
+EXIT:
+  if(fib) 
+  {
+    FreeDosObject(DOS_FIB, fib);
+  }
+  if(file) 
+  {
+    UnLock(file);
+  }
+
+  return ret;
+}

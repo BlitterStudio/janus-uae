@@ -200,11 +200,6 @@ void machdep_free (void)
   TODO();
 }
 
-int my_existsdir (const TCHAR *name)
-{
-  TODO();
-}
-
 uae_u8 *restore_dmac (uae_u8 *src)
 {
   TODO();
@@ -504,11 +499,6 @@ void toggle_fullscreen (int mode)
 #endif
 
 void update_debug_info(void)
-{
-  TODO();
-}
-
-void updatedisplayarea (void)
 {
   TODO();
 }
@@ -1125,11 +1115,6 @@ int input_get_default_joystick (struct uae_input_device *uid, int i, int port, i
 int input_get_default_mouse (struct uae_input_device *uid, int i, int port, int af, bool gp, bool wheel, bool joymouseswap) {
   TODO();
   return 0;
-}
-
-bool target_graphics_buffer_update (void) {
-  TODO();
-  return FALSE;
 }
 
 void ethernet_enumerate_free (void) {
