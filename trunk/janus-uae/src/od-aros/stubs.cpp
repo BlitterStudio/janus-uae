@@ -786,13 +786,6 @@ int input_get_default_joystick (struct uae_input_device *uid, int i, int port, i
   TODO();
 }
 
-int input_get_default_keyboard (int i)
-{
-  TODO();
-  DebOut("i: %d\n", i);
-  return 0;
-}
-
 int input_get_default_lightpen (struct uae_input_device *uid, int i, int port, int af)
 {
   TODO();

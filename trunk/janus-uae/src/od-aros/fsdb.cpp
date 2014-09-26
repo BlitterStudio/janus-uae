@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <proto/dos.h>
 
+#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
