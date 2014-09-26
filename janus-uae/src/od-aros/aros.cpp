@@ -354,3 +354,18 @@ void fetch_rompath (TCHAR *out, int size)
 	fetch_path (_T("KickstartPath"), out, size);
 }
 
+static bool rawinput_enabled_mouse;
+static bool rawinput_enabled_keyboard=FALSE;
+
+int input_get_default_keyboard (int i)
+{
+  if (rawinput_enabled_keyboard) {
+    return 1;
+  } else {
+    if (i == 0)
+      return 1;
+    return 0;
+  }
+}
+
+
