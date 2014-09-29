@@ -1556,14 +1556,15 @@ bool handle_events (void)
         }
 
         case SDL_MOUSEMOTION:
-            //DEBUG_LOG ("Event: mouse motion\n");
 
             if (!fullscreen && !mousegrab) {
                 setmousestate (0, 0,rEvent.motion.x, 1);
                 setmousestate (0, 1,rEvent.motion.y, 1);
+                DEBUG_LOG ("Event: mouse motion abs (%d, %d)\n", rEvent.motion.x, rEvent.motion.y);
             } else {
                 setmousestate (0, 0, rEvent.motion.xrel, 0);
                 setmousestate (0, 1, rEvent.motion.yrel, 0);
+                DEBUG_LOG ("Event: mouse motion rel (%d, %d)\n", rEvent.motion.xrel, rEvent.motion.yrel);
             }
             break;
 
@@ -2335,30 +2336,56 @@ void setcapslockstate (int state)
     //TODO:
 }
 
+
+static void setid (struct uae_input_device *uid, int i, int slot, int sub, int port, int evt, bool gp)
+{
+	if (gp)
+		inputdevice_sparecopy (&uid[i], slot, 0);
+	uid[i].eventid[slot][sub] = evt;
+	uid[i].port[slot][sub] = port + 1;
+}
+static void setid (struct uae_input_device *uid, int i, int slot, int sub, int port, int evt, int af, bool gp)
+{
+	setid (uid, i, slot, sub, port, evt, gp);
+	uid[i].flags[slot][sub] &= ~ID_FLAG_AUTOFIRE_MASK;
+	if (af >= JPORT_AF_NORMAL)
+		uid[i].flags[slot][sub] |= ID_FLAG_AUTOFIRE;
+	if (af == JPORT_AF_TOGGLE)
+		uid[i].flags[slot][sub] |= ID_FLAG_TOGGLE;
+	if (af == JPORT_AF_ALWAYS)
+		uid[i].flags[slot][sub] |= ID_FLAG_INVERTTOGGLE;
+}
+
 /*
  * Default inputdevice config for SDL mouse
  */
-int input_get_default_mouse (struct uae_input_device *uid, int num, int port, int af, bool gp, bool wheel)
+//int input_get_default_mouse (struct uae_input_device *uid, int num, int port, int af)
+int input_get_default_mouse (struct uae_input_device *uid, int num, int port, int af, bool gp, bool wheel, bool joymouseswap)
 {
+  DebOut("uid %lx, num %d, port %d, af %d\n", uid, num, port, af);
+  DebOut("input_get_default_mouse: ignore parameter gp %d, wheel %d, joymouseswap %d\n", gp, wheel, joymouseswap);
     /* SDL supports only one mouse */
-    setid (uid, num, ID_AXIS_OFFSET + 0, 0, port, port ? INPUTEVENT_MOUSE2_HORIZ : INPUTEVENT_MOUSE1_HORIZ);
-    setid (uid, num, ID_AXIS_OFFSET + 1, 0, port, port ? INPUTEVENT_MOUSE2_VERT : INPUTEVENT_MOUSE1_VERT);
-    setid (uid, num, ID_AXIS_OFFSET + 2, 0, port, port ? 0 : INPUTEVENT_MOUSE1_WHEEL);
-    setid_af (uid, num, ID_BUTTON_OFFSET + 0, 0, port, port ? INPUTEVENT_JOY2_FIRE_BUTTON : INPUTEVENT_JOY1_FIRE_BUTTON, af);
-    setid (uid, num, ID_BUTTON_OFFSET + 1, 0, port, port ? INPUTEVENT_JOY2_2ND_BUTTON : INPUTEVENT_JOY1_2ND_BUTTON);
-    setid (uid, num, ID_BUTTON_OFFSET + 2, 0, port, port ? INPUTEVENT_JOY2_3RD_BUTTON : INPUTEVENT_JOY1_3RD_BUTTON);
+    setid (uid, num, ID_AXIS_OFFSET + 0, 0, port, port ? INPUTEVENT_MOUSE2_HORIZ : INPUTEVENT_MOUSE1_HORIZ, gp);
+    setid (uid, num, ID_AXIS_OFFSET + 1, 0, port, port ? INPUTEVENT_MOUSE2_VERT : INPUTEVENT_MOUSE1_VERT, gp);
+    setid (uid, num, ID_AXIS_OFFSET + 2, 0, port, port ? 0 : INPUTEVENT_MOUSE1_WHEEL, gp);
+    setid (uid, num, ID_BUTTON_OFFSET + 0, 0, port, port ? INPUTEVENT_JOY2_FIRE_BUTTON : INPUTEVENT_JOY1_FIRE_BUTTON, af, gp);
+    setid (uid, num, ID_BUTTON_OFFSET + 1, 0, port, port ? INPUTEVENT_JOY2_2ND_BUTTON : INPUTEVENT_JOY1_2ND_BUTTON, gp);
+    setid (uid, num, ID_BUTTON_OFFSET + 2, 0, port, port ? INPUTEVENT_JOY2_3RD_BUTTON : INPUTEVENT_JOY1_3RD_BUTTON, gp);
     if (port == 0) { /* map back and forward to ALT+LCUR and ALT+RCUR */
 //                if (isrealbutton (did, 3)) {
-                        setid (uid, num, ID_BUTTON_OFFSET + 3, 0, port, INPUTEVENT_KEY_ALT_LEFT);
-                        setid (uid, num, ID_BUTTON_OFFSET + 3, 1, port, INPUTEVENT_KEY_CURSOR_LEFT);
+      setid (uid, num, ID_BUTTON_OFFSET + 3, 0, port, INPUTEVENT_KEY_ALT_LEFT, gp);
+      setid (uid, num, ID_BUTTON_OFFSET + 3, 1, port, INPUTEVENT_KEY_CURSOR_LEFT, gp);
 //                        if (isrealbutton (did, 4)) {
-                                setid (uid, num, ID_BUTTON_OFFSET + 4, 0, port, INPUTEVENT_KEY_ALT_LEFT);
-                                setid (uid, num, ID_BUTTON_OFFSET + 4, 1, port, INPUTEVENT_KEY_CURSOR_RIGHT);
+      setid (uid, num, ID_BUTTON_OFFSET + 4, 0, port, INPUTEVENT_KEY_ALT_LEFT, gp);
+      setid (uid, num, ID_BUTTON_OFFSET + 4, 1, port, INPUTEVENT_KEY_CURSOR_RIGHT, gp);
 //                        }
 //                }
     }
-    if (num == 0)
-        return 1;
+    if (num == 0) {
+      DebOut("return 1\n");
+      return 1;
+    }
+    DebOut("return 0\n");
     return 0;
 }
 
