@@ -717,12 +717,6 @@ int check_prefs_changed_gfx (void)
 }
 #endif
 
-int input_get_default_mouse (struct uae_input_device *uid, int i, int port, int af)
-{
-  TODO();
-}
-
-
 void uae_set_thread_priority (uae_thread_id *tid, int pri)
 {
   TODO();
@@ -993,15 +987,7 @@ void alloc_colors256 (int (*)(int, int, int, unsigned int*)) {
   TODO();
 }
 
-void setid (struct uae_input_device *uid, int i, int slot, int sub, int port, int evt) {
-  TODO();
-}
-
 int sdlk2dik (int key) {
-  TODO();
-}
-
-void setid_af (struct uae_input_device *uid, int i, int slot, int sub, int port, int evt, int af) {
   TODO();
 }
 
@@ -1100,10 +1086,12 @@ int input_get_default_joystick (struct uae_input_device *uid, int i, int port, i
   return 0;
 }
 
+#if 0
 int input_get_default_mouse (struct uae_input_device *uid, int i, int port, int af, bool gp, bool wheel, bool joymouseswap) {
   TODO();
   return 0;
 }
+#endif
 
 void ethernet_enumerate_free (void) {
   TODO();

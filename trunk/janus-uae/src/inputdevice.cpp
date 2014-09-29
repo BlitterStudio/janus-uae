@@ -7045,6 +7045,8 @@ void setmousestate (int mouse, int axis, int data, int isabs)
 	struct uae_input_device *id = &mice[mouse];
 	static float fract[MAX_INPUT_DEVICES][MAX_INPUT_DEVICE_EVENTS];
 
+  DebOut("Entered\n");
+
 	if (testmode) {
 		inputdevice_testrecord (IDTYPE_MOUSE, mouse, IDEV_WIDGET_AXIS, axis, data, -1);
 		// fake "release" event
