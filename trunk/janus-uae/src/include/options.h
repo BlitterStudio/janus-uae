@@ -14,7 +14,7 @@
 #define UAEMINOR 8
 #define UAESUBREV 1
 
-typedef enum { KBD_LANG_US, KBD_LANG_DK, KBD_LANG_DE, KBD_LANG_SE, KBD_LANG_FR, KBD_LANG_IT, KBD_LANG_ES } KbdLang;
+typedef enum { KBD_LANG_US, KBD_LANG_DK, KBD_LANG_DE, KBD_LANG_SE, KBD_LANG_FR, KBD_LANG_IT, KBD_LANG_ES, KBD_LANG_FI, KBD_LANG_TR } KbdLang;
 
 extern long int version;
 

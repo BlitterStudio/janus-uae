@@ -120,6 +120,8 @@ volatile bool vblank_found_rtg;
 static volatile int flipevent_mode;
 static CRITICAL_SECTION screen_cs;
 
+static int dooddevenskip;
+
 void gfx_lock (void)
 {
 	EnterCriticalSection (&screen_cs);
@@ -301,12 +303,50 @@ bool render_screen (bool immediate)
 	return render_ok;
 }
 
+static bool getvblankpos (int *vp, bool updateprev)
+{
+#ifndef __AROS__
+	int sl;
+#if 0
+	frame_time_t t = read_processor_time ();
+#endif
+	*vp = -2;
+	if (currprefs.gfx_api) {
+		if (!D3D_getvblankpos (&sl))
+			return false;
+	} else {
+		if (!DD_getvblankpos (&sl))
+			return false;
+	}
+#if 0
+	t = read_processor_time () - t;
+	write_log (_T("(%d:%d)"), t, sl);
+#endif
+	if (updateprev && sl > prevvblankpos)
+		prevvblankpos = sl;
+	if (sl > maxscanline)
+		maxscanline = sl;
+	if (sl > 0) {
+		if (sl < minscanline || minscanline < 0)
+			minscanline = sl;
+	}
+	*vp = sl;
+	return true;
+#else
+  return FALSE;
+#endif
+}
+
+static bool isthreadedvsync (void)
+{
+	struct apmode *ap = picasso_on ? &currprefs.gfx_apmode[1] : &currprefs.gfx_apmode[0];
+	return isvsync_chipset () <= -2 || isvsync_rtg () < 0 || ap->gfx_strobo;
+}
+
 static bool vblank_sync_started;
 
 bool vsync_isdone (void)
 {
-  TODO();
-#if 0
 	if (isvsync () == 0)
 		return false;
 	if (!isthreadedvsync ()) {
@@ -326,7 +366,6 @@ bool vsync_isdone (void)
 		return true;
 	if (vblank_found_chipset)
 		return true;
-#endif
 	return false;
 }
 
@@ -452,4 +491,5 @@ bool target_graphics_buffer_update (void) {
   //updatedisplayarea();
   return TRUE;
 }
+
 

@@ -7,6 +7,7 @@
 * Copyright 1998 Brian King, Bernd Schmidt
 */
 
+#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -3436,6 +3437,8 @@ static int cfgfile_parse_hardware (struct uae_prefs *p, const TCHAR *option, TCH
 	TCHAR *section = 0;
 	TCHAR tmpbuf[CONFIG_BLEN];
 
+  DebOut("entered (%s: %s)\n", option, value);
+
 	if (cfgfile_yesno (option, value, _T("cpu_cycle_exact"), &p->cpu_cycle_exact)
 		|| cfgfile_yesno (option, value, _T("blitter_cycle_exact"), &p->blitter_cycle_exact)) {
 			if (p->cpu_model >= 68020 && p->cachesize > 0)
@@ -3671,6 +3674,7 @@ static int cfgfile_parse_hardware (struct uae_prefs *p, const TCHAR *option, TCH
 	}
 
 	if (cfgfile_string (option, value, _T("cpu_model"), tmpbuf, sizeof tmpbuf / sizeof (TCHAR))) {
+    DebOut("cpu_model: %s\n", tmpbuf);
 		p->cpu_model = _tstol (tmpbuf);
 		p->fpu_model = 0;
 		return 1;
@@ -4483,6 +4487,7 @@ argh:
 
 static void parse_cpu_specs (struct uae_prefs *p, const TCHAR *spec)
 {
+DebOut("spec: %s\n", spec);
 	if (*spec < '0' || *spec > '4') {
 		write_log (_T("CPU parameter string must begin with '0', '1', '2', '3' or '4'.\n"));
 		return;
@@ -5986,6 +5991,7 @@ int built_in_prefs (struct uae_prefs *p, int model, int config, int compa, int r
 	int v = 0;
 
 	buildin_default_prefs (p);
+  DebOut("model: %d\n", model);
 	switch (model)
 	{
 	case 0:

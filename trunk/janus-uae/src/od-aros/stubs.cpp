@@ -563,10 +563,16 @@ frame_time_t read_processor_time (void)
   TODO();
 }
 
+static unsigned int serial_hsynchandler_count;
 /* seems to be necessary, calls ... => hsyncstuff ! */
 void serial_hsynchandler (void)
 {
-  TODO();
+  if((serial_hsynchandler_count % 2000) == 0) {
+    DebOut("serial_hsynchandler was called %d times\n", serial_hsynchandler_count);
+    TODO();
+  }
+
+  serial_hsynchandler_count++;
 }
 
 void uaeser_clearbuffers (void *vsd)
@@ -866,9 +872,15 @@ void to_lower (TCHAR *s, int len)
   TODO();
 }
 
+static unsigned int ahi_hsync_count;
 void ahi_hsync (void)
 {
-  TODO();
+  if((ahi_hsync_count % 2000) == 0) {
+    DebOut("ahi_hsync was called %d times\n", ahi_hsync_count);
+    TODO();
+  }
+
+  ahi_hsync_count++;
 }
 
 int dos_errno (void)
@@ -960,10 +972,6 @@ uae_u8 veccode[256];
 
 
 void alloc_colors256 (int (*)(int, int, int, unsigned int*)) {
-  TODO();
-}
-
-int sdlk2dik (int key) {
   TODO();
 }
 
