@@ -18,6 +18,7 @@ static uaecptr beginio;
 
 void consolehook_config (struct uae_prefs *p)
 {
+	struct uaedev_config_info ci = { 0 };
 	int roms[] = { 15, 31, 16, 46, -1 };
 
 	default_prefs (p, 0);
@@ -25,7 +26,8 @@ void consolehook_config (struct uae_prefs *p)
 	p->produce_sound = 0;
 	p->gfx_resolution = 0;
 	p->gfx_vresolution = 0;
-	p->gfx_scanlines = false;
+	p->gfx_iscanlines = 0;
+	p->gfx_pscanlines = 0;
 	p->gfx_framerate = 10;
 	p->immediate_blits = 1;
 	p->collision_level = 0;
@@ -49,7 +51,12 @@ void consolehook_config (struct uae_prefs *p)
 	//p->win32_automount_drives = 2;
 	//p->win32_automount_cddrives = 2;
 
-	add_filesys_config (p, -1, L"DH0", L"CLIBOOT", L".", 1, 0, 0, 0, 0, 15, NULL, 0, 0);
+	_tcscpy (ci.rootdir, _T("."));
+	_tcscpy (ci.volname, _T("CLIBOOT"));
+	_tcscpy (ci.devname, _T("DH0"));
+	ci.bootpri = 15;
+	ci.type = UAEDEV_DIR;
+	add_filesys_config (p, -1, &ci);
 }
 
 static void *console_thread (void *v)
@@ -59,13 +66,14 @@ static void *console_thread (void *v)
 		TCHAR wc = console_getch ();
 		char c[2];
 
-		write_log (L"*");
+		write_log (_T("*"));
 		c[0] = 0;
 		c[1] = 0;
 		ua_copy (c, 1, &wc);
 		record_key_direct ((0x10 << 1) | 0);
 		record_key_direct ((0x10 << 1) | 1);
 	}
+	return NULL;
 }
 
 int consolehook_activate (void)
@@ -76,9 +84,9 @@ int consolehook_activate (void)
 void consolehook_ret (uaecptr condev, uaecptr oldbeginio)
 {
 	beginio = oldbeginio;
-	write_log (L"console.device at %08X\n", condev);
+	write_log (_T("console.device at %08X\n"), condev);
 
-	uae_start_thread (L"consolereader", console_thread, NULL, NULL);
+	uae_start_thread (_T("consolereader"), console_thread, NULL, NULL);
 }
 
 uaecptr consolehook_beginio (uaecptr request)
@@ -98,11 +106,11 @@ uaecptr consolehook_beginio (uaecptr request)
 		buf = xmalloc (TCHAR, len + 1);
 		au_copy (buf, len, src);
 		buf[len] = 0;
-		f_out (L"%s", buf);
+		f_out (NULL, _T("%s"), buf);
 		xfree (buf);
 	} else if (cmd == CMD_READ) {
 
-		write_log (L"%08x: CMD=%d LEN=%d OFF=%d ACT=%d\n", request, cmd, io_length, io_offset, io_actual);
+		write_log (_T("%08x: CMD=%d LEN=%d OFF=%d ACT=%d\n"), request, cmd, io_length, io_offset, io_actual);
 	}
 	return beginio;
 }

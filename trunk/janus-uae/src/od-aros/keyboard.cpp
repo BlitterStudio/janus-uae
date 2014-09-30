@@ -89,7 +89,7 @@ static void unacquire_kb (int num)
 
 static TCHAR *get_kb_name (int kb)
 {
-    return "Default keyboard";
+    return "Default AROS keyboard";
 }
 
 

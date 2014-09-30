@@ -348,11 +348,6 @@ void uaeser_trigger (void *vsd)
   TODO();
 }
 
-void consolehook_ret (uaecptr condev, uaecptr oldbeginio)
-{
-  TODO();
-}
-
 void debugger_change (int mode)
 {
   TODO();
@@ -508,11 +503,6 @@ struct zfile *archive_access_lzx (struct znode *zn)
   TODO();
 }
 
-void consolehook_config (struct uae_prefs *p)
-{
-  TODO();
-}
-
 void target_addtorecent (const TCHAR *name, int t)
 {
   TODO();
@@ -529,11 +519,6 @@ void archive_access_scan (struct zfile *zf, zfile_callback zc, void *user, unsig
 }
 
 struct zfile *archive_unpackzfile (struct zfile *zf)
-{
-  TODO();
-}
-
-uaecptr consolehook_beginio (uaecptr request)
 {
   TODO();
 }
@@ -600,11 +585,6 @@ void archive_access_close (void *handle, unsigned int id)
 }
 
 struct zvolume *archive_directory_7z (struct zfile *z)
-{
-  TODO();
-}
-
-int consolehook_activate (void)
 {
   TODO();
 }
@@ -978,10 +958,6 @@ void fetch_inputfilepath (TCHAR *out, int size)
 
 uae_u8 veccode[256];
 
-
-void my_kbd_handler (int keyboard, int scancode, int newstate) {
-  TODO();
-}
 
 void alloc_colors256 (int (*)(int, int, int, unsigned int*)) {
   TODO();
