@@ -2164,7 +2164,6 @@ static void do_flush_line_1 (struct vidbuffer *vb, int lineno)
 
 STATIC_INLINE void do_flush_line (struct vidbuffer *vb, int lineno)
 {
-DebOut("do_flush_line(%lx, lineno %d)\n", vb, lineno);
 	if (vb)
 		do_flush_line_1 (vb, lineno);
 }

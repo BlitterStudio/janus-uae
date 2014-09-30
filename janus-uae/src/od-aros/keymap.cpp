@@ -7,6 +7,7 @@
  *           2010-2011 Mustafa Tufan
  */
 
+#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -359,12 +360,12 @@ static const int np[] = {
 
 void my_kbd_handler (int keyboard, int scancode, int newstate)
 {
-        int code = 0;
-        int scancode_new;
-        int defaultguikey;
-        bool amode = currprefs.input_keyboard_type == 0;
-        bool special = false;
-        static int swapperdrive = 0;
+  int code = 0;
+  int scancode_new;
+  int defaultguikey;
+  bool amode = currprefs.input_keyboard_type == 0;
+  bool special = false;
+  static int swapperdrive = 0;
 
 	scancode_new = scancode;
 	if (!specialpressed () && inputdevice_iskeymapped (keyboard, scancode))
@@ -372,95 +373,99 @@ void my_kbd_handler (int keyboard, int scancode, int newstate)
 
 	defaultguikey = amode ? DIK_F12 : DIK_NUMLOCK;
 
-        if (newstate && code == 0 && amode) {
+  DebOut("keyboard %d, scancode %d, newstate %d\n", keyboard, scancode, newstate);
 
-                switch (scancode)
-                {
-                case DIK_1:
-                case DIK_2:
-                case DIK_3:
-                case DIK_4:
-                case DIK_5:
-                case DIK_6:
-                case DIK_7:
-                case DIK_8:
-                case DIK_9:
-                case DIK_0:
-                        if (specialpressed ()) {
-                                int num = scancode - DIK_1;
-                                if (shiftpressed ())
-                                        num += 10;
-                                if (ctrlpressed ()) {
-                                       swapperdrive = num;
-                                        if (swapperdrive > 3)
-                                                swapperdrive = 0;
-                                } else {
-                                        int i;
-                                        for (i = 0; i < 4; i++) {
-                                                if (!_tcscmp (currprefs.floppyslots[i].df, currprefs.dfxlist[num]))
-                                                        changed_prefs.floppyslots[i].df[0] = 0;
-                                        }
-                                        _tcscpy (changed_prefs.floppyslots[swapperdrive].df, currprefs.dfxlist[num]);
-                                        config_changed = 1;
-                                }
-                                                                special = true;
-                        }
-                        break;
-                case DIK_NUMPAD0:
-                case DIK_NUMPAD1:
-                case DIK_NUMPAD2:
-                case DIK_NUMPAD3:
-                case DIK_NUMPAD4:
-                case DIK_NUMPAD5:
-                case DIK_NUMPAD6:
-                case DIK_NUMPAD7:
-                case DIK_NUMPAD8:
-                case DIK_NUMPAD9:
-                case DIK_NUMPADPERIOD:
-                        if (specialpressed ()) {
-                                int i = 0, v = -1;
-                                while (np[i] >= 0) {
-                                        v = np[i + 1];
-                                        if (np[i] == scancode)
-                                                break;
-                                        i += 2;
-                                }
-                                if (v >= 0)
-                                        code = AKS_STATESAVEQUICK + v * 2 + ((shiftpressed () || ctrlpressed ()) ? 0 : 1);
-                        }
-                        break;
-                }
+  if (newstate && code == 0 && amode) {
+
+    switch (scancode)
+    {
+      case DIK_1:
+      case DIK_2:
+      case DIK_3:
+      case DIK_4:
+      case DIK_5:
+      case DIK_6:
+      case DIK_7:
+      case DIK_8:
+      case DIK_9:
+      case DIK_0:
+        if (specialpressed ()) {
+          int num = scancode - DIK_1;
+          if (shiftpressed ())
+            num += 10;
+          if (ctrlpressed ()) {
+            swapperdrive = num;
+          if (swapperdrive > 3)
+            swapperdrive = 0;
+        } else {
+          int i;
+          for (i = 0; i < 4; i++) {
+            if (!_tcscmp (currprefs.floppyslots[i].df, currprefs.dfxlist[num]))
+                    changed_prefs.floppyslots[i].df[0] = 0;
+          }
+          _tcscpy (changed_prefs.floppyslots[swapperdrive].df, currprefs.dfxlist[num]);
+          config_changed = 1;
         }
-
-        if (code) {
-                inputdevice_add_inputcode (code, 1);
-                return;
-        }
-
-        scancode = scancode_new;
-        if (!specialpressed () && newstate) {
-                if (scancode == DIK_CAPITAL) {
-                        host_capslockstate = host_capslockstate ? 0 : 1;
-                        capslockstate = host_capslockstate;
-                }
-                if (scancode == DIK_NUMLOCK) {
-                        host_numlockstate = host_numlockstate ? 0 : 1;
-                        capslockstate = host_numlockstate;
-                }
-                if (scancode == DIK_SCROLL) {
-                        host_scrolllockstate = host_scrolllockstate ? 0 : 1;
-                        capslockstate = host_scrolllockstate;
-                }
-        }
-
-		if (special) {
-			inputdevice_checkqualifierkeycode (keyboard, scancode, newstate);
-			return;
-		}
-
+        special = true;
+      }
+      break;
+      case DIK_NUMPAD0:
+      case DIK_NUMPAD1:
+      case DIK_NUMPAD2:
+      case DIK_NUMPAD3:
+      case DIK_NUMPAD4:
+      case DIK_NUMPAD5:
+      case DIK_NUMPAD6:
+      case DIK_NUMPAD7:
+      case DIK_NUMPAD8:
+      case DIK_NUMPAD9:
+      case DIK_NUMPADPERIOD:
+      if (specialpressed ()) {
+          int i = 0, v = -1;
+          while (np[i] >= 0) {
+                  v = np[i + 1];
+                  if (np[i] == scancode)
+                          break;
+                  i += 2;
+          }
+          if (v >= 0)
+                  code = AKS_STATESAVEQUICK + v * 2 + ((shiftpressed () || ctrlpressed ()) ? 0 : 1);
+      }
+      break;
+      } /* end switch */
+    }
+      
+    if (code) {
+      DebOut("call inputdevice_add_inputcode(%d, 1)\n", code);
+      inputdevice_add_inputcode (code, 1);
+      return;
+    }
+      
+    scancode = scancode_new;
+    if (!specialpressed () && newstate) {
+      if (scancode == DIK_CAPITAL) {
+        host_capslockstate = host_capslockstate ? 0 : 1;
+        capslockstate = host_capslockstate;
+      }
+      if (scancode == DIK_NUMLOCK) {
+        host_numlockstate = host_numlockstate ? 0 : 1;
+        capslockstate = host_numlockstate;
+      }
+      if (scancode == DIK_SCROLL) {
+        host_scrolllockstate = host_scrolllockstate ? 0 : 1;
+        capslockstate = host_scrolllockstate;
+      }
+    }
+      
+    if (special) {
+      inputdevice_checkqualifierkeycode (keyboard, scancode, newstate);
+      return;
+    }
+      
 //	write_log ("KBDHANDLER_2: kbd2= %d, scancode= %d (0x%02x), state= %d\n", keyboard, scancode, scancode, newstate);
 
-        inputdevice_translatekeycode (keyboard, scancode, newstate);
+  DebOut("call inputdevice_translatekeycode..\n");
+  inputdevice_translatekeycode (keyboard, scancode, newstate);
 }
 
 void keyboard_settrans (void)

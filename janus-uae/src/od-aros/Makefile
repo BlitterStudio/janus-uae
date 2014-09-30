@@ -176,6 +176,7 @@ COMMON_OBJS= \
 	shm.o \
 	posixemu.o \
 	sdlgfx.o \
+	sdlkeys_dik.o \
 	stubs.o
 
 	#../picasso96.o \
