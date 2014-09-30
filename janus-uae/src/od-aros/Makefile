@@ -82,6 +82,7 @@ COMMON_OBJS= \
 	../cdtv.o \
 	../cfgfile.o \
 	../cia.o \
+	../consolehook.o \
 	../cpudefs.o \
 	../cpuemu_0.o \
 	../cpuemu_11.o \
@@ -171,7 +172,7 @@ COMMON_OBJS= \
 	fsdb.o \
 	mman.o \
 	writelog.o \
-	keyboard.o \
+	keymap.o \
 	shm.o \
 	posixemu.o \
 	sdlgfx.o \
@@ -179,6 +180,7 @@ COMMON_OBJS= \
 
 	#../picasso96.o \
 	#../ersatz.o \
+	#keyboard.o \
 #../zfile_archive.o 
 #gui.o \
 

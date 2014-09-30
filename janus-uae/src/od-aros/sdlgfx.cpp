@@ -1544,6 +1544,7 @@ bool handle_events (void)
                 keycode = rEvent.key.keysym.sym;
 #endif
                 keycode = rEvent.key.keysym.sym;
+                DebOut("keycode: %d\n", keycode);
 
 //              write_log ("Event: key: %d to: %d  %s\n", keycode, sdlk2dik (keycode), state ? "down" : "up");
 /*              if (!istest)
@@ -2451,15 +2452,9 @@ int target_checkcapslock (int scancode, int *state)
 extern TCHAR VersionStr[];
 void makeverstr (TCHAR *s);
 
-#ifdef __AROS__
-#define OLI_PACKAGE_NAME "PUAE 2.6.0 (31.1.2013) for AROS - v0.1 - ALPHA RELEASE!"
-#else
-#define OLI_PACKAGE_NAME PACKAGE_NAME
-#endif
 void setmaintitle (void)
 {
     TCHAR txt[1000], txt2[500];
-    //const char *title = OLI_PACKAGE_NAME;
     DebOut("entered\n");
 
     makeverstr(VersionStr);

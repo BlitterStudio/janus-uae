@@ -2312,7 +2312,9 @@ static int inputdelay;
 
 void inputdevice_read (void)
 {
+  DebOut("entered\n");
 	do {
+    DebOut("do.. \n");
 		handle_msgpump ();
 		idev[IDTYPE_MOUSE].read ();
 		idev[IDTYPE_JOYSTICK].read ();
