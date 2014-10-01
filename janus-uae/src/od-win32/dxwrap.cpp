@@ -6,6 +6,7 @@
 #include "dxwrap.h"
 #include "win32gfx.h"
 #include "statusline.h"
+#include "xwin.h"
 
 #include <d3d9.h>
 #include <dxerr.h>
@@ -15,6 +16,8 @@ struct ddstuff dxdata;
 struct ddcaps dxcaps;
 static int flipinterval_supported = 1;
 int ddforceram = DDFORCED_DEFAULT;
+static int statuswidth = 800;
+static int statusheight = TD_TOTAL_HEIGHT;
 
 HRESULT DirectDraw_GetDisplayMode (void)
 {
@@ -23,7 +26,7 @@ HRESULT DirectDraw_GetDisplayMode (void)
 	dxdata.native.dwSize = sizeof (DDSURFACEDESC2);
 	ddrval = IDirectDraw7_GetDisplayMode (dxdata.maindd, &dxdata.native);
 	if (FAILED (ddrval))
-		write_log (L"IDirectDraw7_GetDisplayMode: %s\n", DXError (ddrval));
+		write_log (_T("IDirectDraw7_GetDisplayMode: %s\n"), DXError (ddrval));
 	return ddrval;
 }
 
@@ -31,7 +34,7 @@ HRESULT DirectDraw_GetDisplayMode (void)
 
 static LPDIRECTDRAWSURFACE7 getlocksurface (void)
 {
-	if (dxdata.backbuffers > 0 && currprefs.gfx_afullscreen > 0 && !WIN32GFX_IsPicassoScreen ())
+	if (dxdata.backbuffers > 0 && currprefs.gfx_apmode[APMODE_NATIVE].gfx_fullscreen > 0 && !WIN32GFX_IsPicassoScreen ())
 		return dxdata.flipping[0];
 	return dxdata.secondary;
 }
@@ -76,7 +79,7 @@ HRESULT restoresurface (LPDIRECTDRAWSURFACE7 surf)
 		return ddrval;
 	ddrval = IDirectDrawSurface7_Restore (surf);
 	if (FAILED (ddrval)) {
-		write_log (L"IDirectDrawSurface7_Restore: %s\n", DXError (ddrval));
+		write_log (_T("IDirectDrawSurface7_Restore: %s\n"), DXError (ddrval));
 	}
 	return ddrval;
 }
@@ -114,7 +117,7 @@ static void clearsurf (LPDIRECTDRAWSURFACE7 surf, DWORD color)
 	}
 }
 
-void clearsurface (LPDIRECTDRAWSURFACE7 surf)
+void DirectDraw_ClearSurface (LPDIRECTDRAWSURFACE7 surf)
 {
 	if (surf == NULL)
 		surf = getlocksurface ();
@@ -122,7 +125,7 @@ void clearsurface (LPDIRECTDRAWSURFACE7 surf)
 }
 
 
-int locksurface (LPDIRECTDRAWSURFACE7 surf, LPDDSURFACEDESC2 desc)
+int DirectDraw_LockSurface (LPDIRECTDRAWSURFACE7 surf, LPDDSURFACEDESC2 desc)
 {
 	static int cnt = 50;
 	HRESULT ddrval;
@@ -135,20 +138,20 @@ int locksurface (LPDIRECTDRAWSURFACE7 surf, LPDDSURFACEDESC2 desc)
 		} else if (ddrval != DDERR_SURFACEBUSY) {
 			if (cnt > 0) {
 				cnt--;
-				write_log (L"locksurface %d: %s\n", cnt, DXError (ddrval));
+				write_log (_T("locksurface %d: %s\n"), cnt, DXError (ddrval));
 			}
 			return 0;
 		}
 	}
 	return 1;
 }
-void unlocksurface (LPDIRECTDRAWSURFACE7 surf)
+void DirectDraw_UnlockSurface (LPDIRECTDRAWSURFACE7 surf)
 {
 	HRESULT ddrval;
 
 	ddrval = IDirectDrawSurface7_Unlock (surf, NULL);
 	if (FAILED (ddrval))
-		write_log (L"IDirectDrawSurface7_Unlock: %s\n", DXError (ddrval));
+		write_log (_T("IDirectDrawSurface7_Unlock: %s\n"), DXError (ddrval));
 }
 
 static void setsurfacecap (DDSURFACEDESC2 *desc, int w, int h, int mode)
@@ -169,7 +172,7 @@ STATIC_INLINE uae_u16 rgb32torgb16pc (uae_u32 rgb)
 	return (((rgb >> (16 + 3)) & 0x1f) << 11) | (((rgb >> (8 + 2)) & 0x3f) << 5) | (((rgb >> (0 + 3)) & 0x1f) << 0);
 }
 
-static TCHAR *alloctexts[] = { L"NonLocalVRAM", L"DefaultRAM", L"VRAM", L"RAM" };
+static TCHAR *alloctexts[] = { _T("NonLocalVRAM"), _T("DefaultRAM"), _T("VRAM"), _T("RAM") };
 static LPDIRECTDRAWSURFACE7 allocsurface_3 (int width, int height, uae_u8 *ptr, int pitch, int ck, int forcemode)
 {
 	HRESULT ddrval;
@@ -203,10 +206,10 @@ static LPDIRECTDRAWSURFACE7 allocsurface_3 (int width, int height, uae_u8 *ptr, 
 	}
 	ddrval = IDirectDraw7_CreateSurface (dxdata.maindd, &desc, &surf, NULL);
 	if (FAILED (ddrval)) {
-		write_log (L"IDirectDraw7_CreateSurface (%dx%d,%s): %s\n", width, height, alloctexts[forcemode], DXError (ddrval));
+		write_log (_T("IDirectDraw7_CreateSurface (%dx%d,%s): %s\n"), width, height, alloctexts[forcemode], DXError (ddrval));
 	} else {
-		write_log (L"Created %dx%dx%d (%p) surface in %s (%d)%s\n", width, height, desc.ddpfPixelFormat.dwRGBBitCount, surf,
-			alloctexts[forcemode], forcemode, ck ? (dxcaps.cancolorkey ? L" hardware colorkey" : L" software colorkey") : L"");
+		write_log (_T("Created %dx%dx%d (%p) surface in %s (%d)%s\n"), width, height, desc.ddpfPixelFormat.dwRGBBitCount, surf,
+			alloctexts[forcemode], forcemode, ck ? (dxcaps.cancolorkey ? _T(" hardware colorkey") : _T(" software colorkey")) : _T(""));
 	}
 	return surf;
 }
@@ -310,7 +313,7 @@ int dx_testck (void)
 	clearsurface (cksurf);
 	clearsurface (tmp);
 	if (failed) {
-		write_log (L"Color key test failure, display driver bug, falling back to software emulation.\n");
+		write_log (_T("Color key test failure, display driver bug, falling back to software emulation.\n"));
 		dxcaps.cancolorkey = 0;
 		releaser (dxdata.cursorsurface1, IDirectDrawSurface7_Release);
 		dxdata.cursorsurface1 = allocsurface_2 (dxcaps.cursorwidth, dxcaps.cursorheight, TRUE);
@@ -323,7 +326,7 @@ int dx_testck (void)
 static void createstatussurface (void)
 {
 	releaser (dxdata.statussurface, IDirectDrawSurface7_Release);
-	dxdata.statussurface = allocsurface_2 (dxdata.statuswidth, dxdata.statusheight, FALSE);
+	dxdata.statussurface = allocsurface_2 (statuswidth, statusheight, FALSE);
 	if (dxdata.statussurface)
 		clearsurf (dxdata.statussurface, 0);
 }
@@ -333,6 +336,7 @@ HRESULT DirectDraw_CreateMainSurface (int width, int height)
 	HRESULT ddrval;
 	DDSURFACEDESC2 desc = { 0 };
 	LPDIRECTDRAWSURFACE7 surf;
+	struct apmode *ap = WIN32GFX_IsPicassoScreen () ? &currprefs.gfx_apmode[1] : &currprefs.gfx_apmode[0];
 
 	width = (width + 7) & ~7;
 	desc.dwSize = sizeof (desc);
@@ -344,23 +348,24 @@ HRESULT DirectDraw_CreateMainSurface (int width, int height)
 		DWORD oldflags = desc.dwFlags;
 		desc.dwFlags |= DDSD_BACKBUFFERCOUNT;
 		desc.ddsCaps.dwCaps |= DDSCAPS_COMPLEX | DDSCAPS_FLIP;
-		desc.dwBackBufferCount = currprefs.gfx_backbuffers;
+		//desc.dwBackBufferCount = ap->gfx_backbuffers == 0 ? 1 : ap->gfx_backbuffers;
+		desc.dwBackBufferCount = ap->gfx_backbuffers;
 		if (desc.dwBackBufferCount > 0) {
 			ddrval = IDirectDraw7_CreateSurface (dxdata.maindd, &desc, &dxdata.primary, NULL);
 			if (SUCCEEDED (ddrval)) {
 				DDSCAPS2 ddscaps;
-				memset (&ddscaps, 0, sizeof (ddscaps));
+				memset (&ddscaps, 0, sizeof ddscaps);
 				ddscaps.dwCaps = DDSCAPS_BACKBUFFER;
 				ddrval = IDirectDrawSurface7_GetAttachedSurface (dxdata.primary, &ddscaps, &dxdata.flipping[0]);
 				if(SUCCEEDED (ddrval)) {
 					if (desc.dwBackBufferCount > 1) {
-						memset (&ddscaps, 0, sizeof (ddscaps));
+						memset (&ddscaps, 0, sizeof ddscaps);
 						ddscaps.dwCaps = DDSCAPS_FLIP;
 						ddrval = IDirectDrawSurface7_GetAttachedSurface (dxdata.flipping[0], &ddscaps, &dxdata.flipping[1]);
 					}
 				}
 				if (FAILED (ddrval))
-					write_log (L"IDirectDrawSurface7_GetAttachedSurface: %s\n", DXError (ddrval));
+					write_log (_T("IDirectDrawSurface7_GetAttachedSurface: %s\n"), DXError (ddrval));
 				ok = 1;
 			}
 		}
@@ -374,13 +379,13 @@ HRESULT DirectDraw_CreateMainSurface (int width, int height)
 		ddrval = IDirectDraw7_CreateSurface (dxdata.maindd, &desc, &dxdata.primary, NULL);
 	}
 	if (FAILED (ddrval)) {
-		write_log (L"IDirectDraw7_CreateSurface: %s\n", DXError (ddrval));
+		write_log (_T("IDirectDraw7_CreateSurface: %s\n"), DXError (ddrval));
 		return ddrval;
 	}
 	dxdata.native.dwSize = sizeof (DDSURFACEDESC2);
 	ddrval = IDirectDrawSurface7_GetSurfaceDesc (dxdata.primary, &dxdata.native);
 	if (FAILED (ddrval))
-		write_log (L"IDirectDrawSurface7_GetSurfaceDesc: %s\n", DXError (ddrval));
+		write_log (_T("IDirectDrawSurface7_GetSurfaceDesc: %s\n"), DXError (ddrval));
 	if (dxdata.fsmodeset) {
 		clearsurf (dxdata.primary, 0);
 		dxdata.fsmodeset = 1;
@@ -394,18 +399,21 @@ HRESULT DirectDraw_CreateMainSurface (int width, int height)
 		dxdata.swidth = width;
 		dxdata.sheight = height;
 		dxdata.pitch = 0;
-		if (locksurface (surf, &desc)) {
+		if (DirectDraw_LockSurface (surf, &desc)) {
 			dxdata.pitch = desc.lPitch;
-			unlocksurface (surf);
+			DirectDraw_UnlockSurface (surf);
 		} else {
-			write_log (L"Couldn't get surface pitch!\n");
+			write_log (_T("Couldn't get surface pitch!\n"));
 		}
 		createstatussurface ();
 	} else {
 		ddrval = DD_FALSE;
 	}
-	write_log (L"DDRAW: primary surface %p, secondary %p (%dx%dx%d) bb=%d\n",
-		dxdata.primary, surf, width, height, dxdata.native.ddpfPixelFormat.dwRGBBitCount, dxdata.backbuffers);
+	write_log (_T("DDRAW: %dx%d B=%d%s %d-bit\n"),
+		width, height,
+		ap->gfx_backbuffers, ap->gfx_vflip < 0 ? _T("WE") : (ap->gfx_vflip > 0 ? _T("WS") : _T("I")),
+		dxdata.native.ddpfPixelFormat.dwRGBBitCount
+		);
 	return ddrval;
 }
 
@@ -416,9 +424,12 @@ HRESULT DirectDraw_SetDisplayMode (int width, int height, int bits, int freq)
 	if (dxdata.fsmodeset && dxdata.width == width && dxdata.height == height &&
 		dxdata.depth == bits && dxdata.freq == freq)
 		return DD_OK;
+
+	getvsyncrate (freq, &dxdata.vblank_skip);
+	dxdata.vblank_skip_cnt = 0;
 	ddrval = IDirectDraw7_SetDisplayMode (dxdata.maindd, width, height, bits, freq, 0);
 	if (FAILED (ddrval)) {
-		write_log (L"IDirectDraw7_SetDisplayMode: %s\n", DXError (ddrval));
+		write_log (_T("IDirectDraw7_SetDisplayMode(%d,%d,%d,%d): %s\n"), width, height, bits, freq, DXError (ddrval));
 		IDirectDraw7_RestoreDisplayMode (dxdata.maindd);
 		dxdata.fsmodeset = 0;
 	} else {
@@ -440,11 +451,11 @@ HRESULT DirectDraw_SetCooperativeLevel (HWND window, int fullscreen, int doset)
 		ddrval = IDirectDraw7_SetCooperativeLevel (dxdata.maindd, window, fullscreen ?
 			DDSCL_ALLOWREBOOT | DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN : DDSCL_NORMAL);
 		if (FAILED (ddrval))
-			write_log (L"IDirectDraw7_SetCooperativeLevel: SET %s\n", DXError (ddrval));
+			write_log (_T("IDirectDraw7_SetCooperativeLevel: SET %s\n"), DXError (ddrval));
 	} else {
 		ddrval = IDirectDraw7_SetCooperativeLevel (dxdata.maindd, dxdata.hwnd, DDSCL_NORMAL);
 		if (FAILED (ddrval))
-			write_log (L"IDirectDraw7_SetCooperativeLevel: RESET %s\n", DXError (ddrval));
+			write_log (_T("IDirectDraw7_SetCooperativeLevel: RESET %s\n"), DXError (ddrval));
 	}
 	return ddrval;
 }
@@ -455,7 +466,7 @@ HRESULT DirectDraw_CreateClipper (void)
 
 	ddrval = IDirectDraw7_CreateClipper (dxdata.maindd, 0, &dxdata.dclip, NULL);
 	if (FAILED (ddrval))
-		write_log (L"IDirectDraw7_CreateClipper: %s\n", DXError (ddrval));
+		write_log (_T("IDirectDraw7_CreateClipper: %s\n"), DXError (ddrval));
 	return ddrval;
 }
 
@@ -467,11 +478,11 @@ HRESULT DirectDraw_SetClipper (HWND hWnd)
 		return DD_FALSE;
 	ddrval = IDirectDrawSurface7_SetClipper (dxdata.primary, hWnd ? dxdata.dclip : NULL);
 	if (FAILED (ddrval))
-		write_log (L"IDirectDrawSurface7_SetClipper: %s\n", DXError (ddrval));
+		write_log (_T("IDirectDrawSurface7_SetClipper: %s\n"), DXError (ddrval));
 	if(hWnd && SUCCEEDED (ddrval)) {
 		ddrval = IDirectDrawClipper_SetHWnd (dxdata.dclip, 0, hWnd);
 		if (FAILED (ddrval))
-			write_log (L"IDirectDrawClipper_SetHWnd: %s\n", DXError (ddrval));
+			write_log (_T("IDirectDrawClipper_SetHWnd: %s\n"), DXError (ddrval));
 	}
 	return ddrval;
 }
@@ -481,8 +492,8 @@ TCHAR *outGUID (const GUID *guid)
 {
 	static TCHAR gb[64];
 	if (guid == NULL)
-		return L"NULL";
-	_stprintf (gb, L"%08X-%04X-%04X-%02X%02X%02X%02X%02X%02X%02X%02X",
+		return _T("NULL");
+	_stprintf (gb, _T("{%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}"),
 		guid->Data1, guid->Data2, guid->Data3,
 		guid->Data4[0], guid->Data4[1], guid->Data4[2], guid->Data4[3],
 		guid->Data4[4], guid->Data4[5], guid->Data4[6], guid->Data4[7]);
@@ -492,7 +503,7 @@ TCHAR *outGUID (const GUID *guid)
 const TCHAR *DXError (HRESULT ddrval)
 {
 	static TCHAR dderr[1000];
-	_stprintf (dderr, L"%08X S=%d F=%04X C=%04X (%d) (%s)",
+	_stprintf (dderr, _T("%08X S=%d F=%04X C=%04X (%d) (%s)"),
 		ddrval, (ddrval & 0x80000000) ? 1 : 0,
 		HRESULT_FACILITY(ddrval),
 		HRESULT_CODE(ddrval),
@@ -557,7 +568,7 @@ RGBFTYPE DirectDraw_GetSurfacePixelFormat (LPDDSURFACEDESC2 surface)
 		break;
 
 	default:
-		write_log (L"Unknown %d bit format %d %d %d\n", pfp->dwRGBBitCount, r, g, b);
+		write_log (_T("Unknown %d bit format %d %d %d\n"), pfp->dwRGBBitCount, r, g, b);
 		break;
 	}
 	return RGBFB_NONE;
@@ -604,7 +615,7 @@ int DirectDraw_SurfaceLock (void)
 	}
 	if (dxdata.lockcnt > 0)
 		return 1;
-	ok = locksurface (getlocksurface (), &dxdata.locksurface);
+	ok = DirectDraw_LockSurface (getlocksurface (), &dxdata.locksurface);
 	if (ok)
 		dxdata.lockcnt++;
 	return ok;
@@ -612,11 +623,11 @@ int DirectDraw_SurfaceLock (void)
 void DirectDraw_SurfaceUnlock (void)
 {
 	if (dxdata.lockcnt < 0)
-		write_log (L"DirectDraw_SurfaceUnlock negative lock count %d!\n", dxdata.lockcnt);
+		write_log (_T("DirectDraw_SurfaceUnlock negative lock count %d!\n"), dxdata.lockcnt);
 	if (dxdata.lockcnt == 0)
 		return;
 	dxdata.lockcnt--;
-	unlocksurface (getlocksurface ());
+	DirectDraw_UnlockSurface (getlocksurface ());
 }
 
 uae_u8 *DirectDraw_GetSurfacePointer (void)
@@ -672,9 +683,11 @@ HRESULT DirectDraw_ReleaseDC (HDC hdc)
 int DirectDraw_GetVerticalBlankStatus (void)
 {
 	BOOL status;
+	if (!dxdata.ddinit)
+		return -1;
 	if (FAILED (IDirectDraw7_GetVerticalBlankStatus (dxdata.maindd, &status)))
 		return -1;
-	return status;
+	return status ? 1 : 0;
 }
 void DirectDraw_GetPrimaryPixelFormat (DDSURFACEDESC2 *desc)
 {
@@ -683,6 +696,8 @@ void DirectDraw_GetPrimaryPixelFormat (DDSURFACEDESC2 *desc)
 }
 DWORD DirectDraw_CurrentRefreshRate (void)
 {
+	if (!dxdata.ddinit)
+		return -1;
 	DirectDraw_GetDisplayMode ();
 	return dxdata.native.dwRefreshRate;
 }
@@ -714,11 +729,11 @@ int DirectDraw_BlitToPrimaryScale (RECT *dstrect, RECT *srcrect)
 			if (FAILED (ddrval))
 				return 0;
 		} else if (ddrval != DDERR_SURFACEBUSY) {
-			write_log (L"DirectDraw_BlitToPrimary: %s\n", DXError (ddrval));
+			write_log (_T("DirectDraw_BlitToPrimary: %s\n"), DXError (ddrval));
 			if (srcrect)
-				write_log (L"SRC=%dx%d %dx%d\n", srcrect->left, srcrect->top, srcrect->right, srcrect->bottom);
+				write_log (_T("SRC=%dx%d %dx%d\n"), srcrect->left, srcrect->top, srcrect->right, srcrect->bottom);
 			if (srcrect)
-				write_log (L"DST=%dx%d %dx%d\n", dstrect->left, dstrect->top, dstrect->right, dstrect->bottom);
+				write_log (_T("DST=%dx%d %dx%d\n"), dstrect->left, dstrect->top, dstrect->right, dstrect->bottom);
 			break;
 		}
 	}
@@ -758,7 +773,7 @@ static int DirectDraw_BlitToPrimary2 (RECT *rect, int dooffset)
 			if (FAILED (ddrval))
 				return 0;
 		} else if (ddrval != DDERR_SURFACEBUSY) {
-			write_log (L"DirectDraw_BlitToPrimary: %s\n", DXError (ddrval));
+			write_log (_T("DirectDraw_BlitToPrimary: %s\n"), DXError (ddrval));
 			break;
 		}
 	}
@@ -791,8 +806,8 @@ static int DirectDraw_Blt_EmuCK (LPDIRECTDRAWSURFACE7 dst, RECT *dstrect, LPDIRE
 		dx = dstrect->left;
 		dy = dstrect->top;
 	}
-	if (locksurface (dst, &dstd)) {
-		if (locksurface (src, &srcd)) {
+	if (DirectDraw_LockSurface (dst, &dstd)) {
+		if (DirectDraw_LockSurface (src, &srcd)) {
 			bpp = srcd.ddpfPixelFormat.dwRGBBitCount / 8;
 			h = srcd.dwHeight;
 			w = srcd.dwWidth;
@@ -817,9 +832,9 @@ static int DirectDraw_Blt_EmuCK (LPDIRECTDRAWSURFACE7 dst, RECT *dstrect, LPDIRE
 				}
 			}
 			ok = 1;
-			unlocksurface (src);
+			DirectDraw_UnlockSurface (src);
 		}
-		unlocksurface (dst);
+		DirectDraw_UnlockSurface (dst);
 	}
 	return ok;
 }
@@ -842,7 +857,7 @@ static int DirectDraw_Blt (LPDIRECTDRAWSURFACE7 dst, RECT *dstrect, LPDIRECTDRAW
 			if (FAILED (ddrval))
 				return 0;
 		} else if (ddrval != DDERR_SURFACEBUSY) {
-			write_log (L"DirectDraw_Blit: %s\n", DXError (ddrval));
+			write_log (_T("DirectDraw_Blit: %s\n"), DXError (ddrval));
 			return 0;
 		}
 	}
@@ -856,12 +871,12 @@ int DirectDraw_BlitRect (LPDIRECTDRAWSURFACE7 dst, RECT *dstrect, LPDIRECTDRAWSU
 {
 	return DirectDraw_Blt (dst, dstrect, src, scrrect, FALSE);
 }
-int DirectDraw_BlitRectCK (LPDIRECTDRAWSURFACE7 dst, RECT *dstrect, LPDIRECTDRAWSURFACE7 src, RECT *scrrect)
+static int DirectDraw_BlitRectCK (LPDIRECTDRAWSURFACE7 dst, RECT *dstrect, LPDIRECTDRAWSURFACE7 src, RECT *scrrect)
 {
 	return DirectDraw_Blt (dst, dstrect, src, scrrect, TRUE);
 }
 
-void DirectDraw_FillSurface (LPDIRECTDRAWSURFACE7 dst, RECT *rect, uae_u32 color)
+static void DirectDraw_FillSurface (LPDIRECTDRAWSURFACE7 dst, RECT *rect, uae_u32 color)
 {
 	HRESULT ddrval;
 	DDBLTFX ddbltfx;
@@ -877,7 +892,7 @@ void DirectDraw_FillSurface (LPDIRECTDRAWSURFACE7 dst, RECT *rect, uae_u32 color
 			if (FAILED (ddrval))
 				break;
 		} else if (ddrval != DDERR_SURFACEBUSY) {
-			write_log (L"DirectDraw_Fill: %s\n", DXError (ddrval));
+			write_log (_T("DirectDraw_Fill: %s\n"), DXError (ddrval));
 			break;
 		}
 	}
@@ -894,22 +909,39 @@ void DirectDraw_FillPrimary (void)
 	DirectDraw_FillSurface (dxdata.primary, NULL, 0);
 }
 
-extern int vblank_skip;
 static void flip (void)
 {
 	int result = 0;
 	HRESULT ddrval = DD_OK;
-	DWORD flags = DDFLIP_WAIT;
+	DWORD flags = 0; // Why did I put DDFLIP_DONOTWAIT here?
+	int vsync = isvsync ();
+	bool novsync = false;
+	struct apmode *ap = WIN32GFX_IsPicassoScreen () ? &currprefs.gfx_apmode[1] : &currprefs.gfx_apmode[0];
 
-	if (currprefs.turbo_emulation)
+	if (currprefs.turbo_emulation || !ap->gfx_vflip) {
+		novsync = true;
 		flags |= DDFLIP_NOVSYNC;
+	}
 	if (dxdata.backbuffers == 2) {
 		DirectDraw_Blit (dxdata.flipping[1], dxdata.flipping[0]);
-		if (currprefs.gfx_avsync) {
-			if (vblank_skip >= 0 || currprefs.turbo_emulation) {
-				ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags);
+		if (vsync) {
+			if (ap->gfx_strobo) {
+				if (currprefs.turbo_emulation) {
+					ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags);
+				} else {
+					ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags);
+					DirectDraw_FillSurface (dxdata.flipping[0], NULL, 0);
+					ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags);
+				}
 			} else {
-				if (flipinterval_supported) {
+				if (currprefs.turbo_emulation || dxdata.vblank_skip == 0) {
+					ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags);
+				} else if (dxdata.vblank_skip > 0) {
+					dxdata.vblank_skip_cnt ^= 1;
+					if (dxdata.vblank_skip_cnt == 0)
+						return;
+					ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags);
+				} else if (flipinterval_supported && !novsync) {
 					ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags | DDFLIP_INTERVAL2);
 				} else {
 					ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags);
@@ -918,15 +950,39 @@ static void flip (void)
 				}
 			}
 		} else {
-			ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags| DDFLIP_NOVSYNC);
+			ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags);
 		}
 	} else if(dxdata.backbuffers == 1) {
-		if (currprefs.gfx_avsync) { 
-			ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags);
+		if (vsync) {
+			if (ap->gfx_strobo) {
+				if (currprefs.turbo_emulation) {
+					ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags);
+				} else {
+					ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags);
+					DirectDraw_FillSurface (dxdata.flipping[0], NULL, 0);
+					ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags);
+				}
+			} else {
+				if (currprefs.turbo_emulation || dxdata.vblank_skip == 0) {
+					ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags);
+				} else if (dxdata.vblank_skip > 0) {
+					dxdata.vblank_skip_cnt ^= 1;
+					if (dxdata.vblank_skip_cnt == 0)
+						return;
+					ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags);
+				} else if (flipinterval_supported && !novsync) {
+					ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags | DDFLIP_INTERVAL2);
+				} else {
+					ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags);
+					DirectDraw_Blit (dxdata.flipping[0], dxdata.primary);
+					ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags);
+					DirectDraw_Blit (dxdata.flipping[0], dxdata.primary);
+				}
+			}
 		} else {
-			ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags | DDFLIP_NOVSYNC);
+			ddrval = IDirectDrawSurface7_Flip (dxdata.primary, NULL, flags);
+			DirectDraw_Blit (dxdata.flipping[0], dxdata.primary);
 		}
-		DirectDraw_Blit (dxdata.flipping[0], dxdata.primary);
 	}
 	if (ddrval == DDERR_SURFACELOST) {
 		static int recurse;
@@ -937,7 +993,7 @@ static void flip (void)
 			recurse--;
 		}
 	} else if (FAILED (ddrval)) {
-		write_log (L"IDirectDrawSurface7_Flip: %s\n", DXError (ddrval));
+		write_log (_T("IDirectDrawSurface7_Flip: %s\n"), DXError (ddrval));
 	}
 }
 
@@ -982,45 +1038,45 @@ struct dxcap {
 };
 static struct dxcap dxcapsinfo[] = 
 {
-	{ 1, L"DDCAPS_BLT", DDCAPS_BLT },
-	{ 1, L"DDCAPS_BLTQUEUE", DDCAPS_BLTQUEUE },
-	{ 1, L"DDCAPS_BLTFOURCC", DDCAPS_BLTFOURCC },
-	{ 1, L"DDCAPS_BLTCOLORFILL", DDCAPS_BLTSTRETCH },
-	{ 1, L"DDCAPS_BLTSTRETCH", DDCAPS_BLTSTRETCH },
-	{ 1, L"DDCAPS_CANBLTSYSMEM", DDCAPS_CANBLTSYSMEM },
-	{ 1, L"DDCAPS_CANCLIP", DDCAPS_CANCLIP },
-	{ 1, L"DDCAPS_CANCLIPSTRETCHED", DDCAPS_CANCLIPSTRETCHED },
-	{ 1, L"DDCAPS_COLORKEY", DDCAPS_COLORKEY },
-	{ 1, L"DDCAPS_COLORKEYHWASSIST", DDCAPS_COLORKEYHWASSIST },
-	{ 1, L"DDCAPS_GDI", DDCAPS_GDI },
-	{ 1, L"DDCAPS_NOHARDWARE", DDCAPS_NOHARDWARE },
-	{ 1, L"DDCAPS_OVERLAY", DDCAPS_OVERLAY },
-	{ 1, L"DDCAPS_VBI", DDCAPS_VBI },
-	{ 1, L"DDCAPS_3D", DDCAPS_3D },
-	{ 1, L"DDCAPS_BANKSWITCHED", DDCAPS_BANKSWITCHED },
-	{ 1, L"DDCAPS_PALETTE", DDCAPS_PALETTE },
-	{ 1, L"DDCAPS_PALETTEVSYNC", DDCAPS_PALETTEVSYNC },
-	{ 1, L"DDCAPS_READSCANLINE", DDCAPS_READSCANLINE },
-	{ 2, L"DDCAPS2_CERTIFIED", DDCAPS2_CERTIFIED },
-	{ 2, L"DDCAPS2_CANRENDERWINDOWED", DDCAPS2_CANRENDERWINDOWED },
-	{ 2, L"DDCAPS2_NOPAGELOCKREQUIRED", DDCAPS2_NOPAGELOCKREQUIRED },
-	{ 2, L"DDCAPS2_FLIPNOVSYNC", DDCAPS2_FLIPNOVSYNC },
-	{ 2, L"DDCAPS2_FLIPINTERVAL", DDCAPS2_FLIPINTERVAL },
-	{ 2, L"DDCAPS2_NO2DDURING3DSCENE", DDCAPS2_NO2DDURING3DSCENE },
-	{ 2, L"DDCAPS2_NONLOCALVIDMEM", DDCAPS2_NONLOCALVIDMEM },
-	{ 2, L"DDCAPS2_NONLOCALVIDMEMCAPS", DDCAPS2_NONLOCALVIDMEMCAPS },
-	{ 2, L"DDCAPS2_WIDESURFACES", DDCAPS2_WIDESURFACES },
-	{ 3, L"DDCKEYCAPS_DESTBLT", DDCKEYCAPS_DESTBLT },
-	{ 3, L"DDCKEYCAPS_DESTBLTCLRSPACE", DDCKEYCAPS_DESTBLTCLRSPACE },
-	{ 3, L"DDCKEYCAPS_SRCBLT", DDCKEYCAPS_SRCBLT },
-	{ 3, L"DDCKEYCAPS_SRCBLTCLRSPACE", DDCKEYCAPS_SRCBLTCLRSPACE },
+	{ 1, _T("DDCAPS_BLT"), DDCAPS_BLT },
+	{ 1, _T("DDCAPS_BLTQUEUE"), DDCAPS_BLTQUEUE },
+	{ 1, _T("DDCAPS_BLTFOURCC"), DDCAPS_BLTFOURCC },
+	{ 1, _T("DDCAPS_BLTCOLORFILL"), DDCAPS_BLTSTRETCH },
+	{ 1, _T("DDCAPS_BLTSTRETCH"), DDCAPS_BLTSTRETCH },
+	{ 1, _T("DDCAPS_CANBLTSYSMEM"), DDCAPS_CANBLTSYSMEM },
+	{ 1, _T("DDCAPS_CANCLIP"), DDCAPS_CANCLIP },
+	{ 1, _T("DDCAPS_CANCLIPSTRETCHED"), DDCAPS_CANCLIPSTRETCHED },
+	{ 1, _T("DDCAPS_COLORKEY"), DDCAPS_COLORKEY },
+	{ 1, _T("DDCAPS_COLORKEYHWASSIST"), DDCAPS_COLORKEYHWASSIST },
+	{ 1, _T("DDCAPS_GDI"), DDCAPS_GDI },
+	{ 1, _T("DDCAPS_NOHARDWARE"), DDCAPS_NOHARDWARE },
+	{ 1, _T("DDCAPS_OVERLAY"), DDCAPS_OVERLAY },
+	{ 1, _T("DDCAPS_VBI"), DDCAPS_VBI },
+	{ 1, _T("DDCAPS_3D"), DDCAPS_3D },
+	{ 1, _T("DDCAPS_BANKSWITCHED"), DDCAPS_BANKSWITCHED },
+	{ 1, _T("DDCAPS_PALETTE"), DDCAPS_PALETTE },
+	{ 1, _T("DDCAPS_PALETTEVSYNC"), DDCAPS_PALETTEVSYNC },
+	{ 1, _T("DDCAPS_READSCANLINE"), DDCAPS_READSCANLINE },
+	{ 2, _T("DDCAPS2_CERTIFIED"), DDCAPS2_CERTIFIED },
+	{ 2, _T("DDCAPS2_CANRENDERWINDOWED"), DDCAPS2_CANRENDERWINDOWED },
+	{ 2, _T("DDCAPS2_NOPAGELOCKREQUIRED"), DDCAPS2_NOPAGELOCKREQUIRED },
+	{ 2, _T("DDCAPS2_FLIPNOVSYNC"), DDCAPS2_FLIPNOVSYNC },
+	{ 2, _T("DDCAPS2_FLIPINTERVAL"), DDCAPS2_FLIPINTERVAL },
+	{ 2, _T("DDCAPS2_NO2DDURING3DSCENE"), DDCAPS2_NO2DDURING3DSCENE },
+	{ 2, _T("DDCAPS2_NONLOCALVIDMEM"), DDCAPS2_NONLOCALVIDMEM },
+	{ 2, _T("DDCAPS2_NONLOCALVIDMEMCAPS"), DDCAPS2_NONLOCALVIDMEMCAPS },
+	{ 2, _T("DDCAPS2_WIDESURFACES"), DDCAPS2_WIDESURFACES },
+	{ 3, _T("DDCKEYCAPS_DESTBLT"), DDCKEYCAPS_DESTBLT },
+	{ 3, _T("DDCKEYCAPS_DESTBLTCLRSPACE"), DDCKEYCAPS_DESTBLTCLRSPACE },
+	{ 3, _T("DDCKEYCAPS_SRCBLT"), DDCKEYCAPS_SRCBLT },
+	{ 3, _T("DDCKEYCAPS_SRCBLTCLRSPACE"), DDCKEYCAPS_SRCBLTCLRSPACE },
 	{ 0, NULL }
 };
 
 static void showcaps (DDCAPS_DX7 *dc)
 {
 	int i, out;
-	write_log (L"%08x %08x %08x %08x %08x %08x\n",
+	write_log (_T("%08x %08x %08x %08x %08x %08x\n"),
 		dc->dwCaps, dc->dwCaps2, dc->dwCKeyCaps, dc->dwFXCaps, dc->dwFXAlphaCaps, dc->dwPalCaps, dc->ddsCaps);
 	out = 0;
 	for (i = 0;  dxcapsinfo[i].name; i++) {
@@ -1039,13 +1095,13 @@ static void showcaps (DDCAPS_DX7 *dc)
 		}
 		if (caps & dxcapsinfo[i].mask) {
 			if (out > 0)
-				write_log (L",");
-			write_log (L"%s", dxcapsinfo[i].name);
+				write_log (_T(","));
+			write_log (_T("%s"), dxcapsinfo[i].name);
 			out++;
 		}
 	}
 	if (out > 0)
-		write_log (L"\n");
+		write_log (_T("\n"));
 	if ((dc->dwCaps & DDCAPS_COLORKEY) && (dc->dwCKeyCaps & DDCKEYCAPS_SRCBLT))
 		dxcaps.cancolorkey = TRUE;
 	if (dc->dwCaps2 & DDCAPS2_NONLOCALVIDMEM)
@@ -1064,24 +1120,98 @@ static void getcaps (void)
 	hc.dwSize = sizeof hc;
 	hr = IDirectDraw7_GetCaps (dxdata.maindd, &dc, &hc);
 	if (FAILED (hr)) {
-		write_log (L"IDirectDraw7_GetCaps() failed %s\n", DXError (hr));
+		write_log (_T("IDirectDraw7_GetCaps() failed %s\n"), DXError (hr));
 		return;
 	}
-	write_log (L"DriverCaps: ");
+	write_log (_T("DriverCaps: "));
 	showcaps (&dc);
-	write_log (L"HELCaps   : ");
+	write_log (_T("HELCaps   : "));
 	showcaps (&hc);
 }
 
-int DirectDraw_Start (GUID *guid)
+static GUID monitorguids[MAX_DISPLAYS];
+
+static BOOL CALLBACK displaysCallback (GUID *guid, char *adesc, char *aname, LPVOID ctx, HMONITOR hm)
 {
-	static int d3ddone;
-	static int first;
+	HMONITOR winmon;
+	POINT pt;
+	int i;
+
+	if (guid == NULL)
+		return TRUE;
+	for (i = 0; Displays[i].monitorname; i++) {
+		struct MultiDisplay *md = &Displays[i];
+		pt.x = (md->rect.right - md->rect.left) / 2 + md->rect.left;
+		pt.y = (md->rect.bottom - md->rect.top) / 2 + md->rect.top;
+		winmon = MonitorFromPoint (pt, MONITOR_DEFAULTTONEAREST);
+		if (hm == winmon) {
+			write_log(_T("%s = %s\n"), md->fullname, outGUID (guid));
+			memcpy (&monitorguids[i], guid, sizeof GUID);
+			memcpy (&md->ddguid, guid, sizeof GUID);
+			return TRUE;
+		}
+	}
+	return TRUE;
+}
+
+void DirectDraw_get_GUIDs (void)
+{
+	static bool guidsenumerated;
+	if (guidsenumerated)
+		return;
+	guidsenumerated = true;
+	write_log (_T("DirectDraw displays:\n"));
+	DirectDrawEnumerateExA (displaysCallback, 0, DDENUM_DETACHEDSECONDARYDEVICES | DDENUM_ATTACHEDSECONDARYDEVICES);
+	write_log (_T("End\n"));
+}
+
+int DirectDraw_Start (void)
+{
+	static int first, firstdd;
 	HRESULT ddrval;
 	LPDIRECT3D9 d3d;
 	D3DCAPS9 d3dCaps;
 	HINSTANCE d3dDLL;
+	GUID *guid;
 
+	if (!first) {
+		d3dDLL = LoadLibrary (_T("D3D9.DLL"));
+		if (d3dDLL) {
+			d3d = Direct3DCreate9 (D3D9b_SDK_VERSION);
+			if (d3d) {
+				if (SUCCEEDED (IDirect3D9_GetDeviceCaps (d3d, 0, D3DDEVTYPE_HAL, &d3dCaps))) {
+					dxcaps.maxwidth = d3dCaps.MaxTextureWidth;
+					dxcaps.maxheight = d3dCaps.MaxTextureHeight;
+					write_log (_T("Max hardware surface size: %dx%d\n"), dxcaps.maxwidth, dxcaps.maxheight);
+				}
+				IDirect3D9_Release (d3d);
+			}
+			FreeLibrary (d3dDLL);
+		}
+		if (dxcaps.maxwidth < 2048)
+			dxcaps.maxwidth = 2048;
+		if (dxcaps.maxheight < 2048)
+			dxcaps.maxheight = 2048;
+
+		first = 1;
+	}
+
+	if (currprefs.gfx_api) {
+		return 1;
+	}
+
+	DirectDraw_get_GUIDs ();
+
+	guid = NULL;
+	if (isfullscreen ()) {
+		MultiDisplay *md = getdisplay (&currprefs);
+		int disp = md - Displays;
+		if (disp < 0)
+			disp = 0;
+		if (disp >= MAX_DISPLAYS)
+			disp = 0;
+		guid = &monitorguids[disp];
+	}
 	dxdata.islost = 0;
 	if (dxdata.ddinit) {
 		if (guid == NULL && dxdata.ddzeroguid)
@@ -1094,7 +1224,7 @@ int DirectDraw_Start (GUID *guid)
 	LPDIRECTDRAW dd;
 	ddrval = DirectDrawCreate (guid, &dd, NULL);
 	if (FAILED (ddrval)) {
-		write_log (L"DirectDrawCreate() failed, %s\n", DXError (ddrval));
+		write_log (_T("DirectDrawCreate() failed, %s\n"), DXError (ddrval));
 		if (guid != NULL)
 			return 0;
 		goto oops;
@@ -1102,46 +1232,22 @@ int DirectDraw_Start (GUID *guid)
 	ddrval = IDirectDraw_QueryInterface (dd, &IID_IDirectDraw7, &dxdata.maindd);
 	IDirectDraw_Release (dd);
 	if (FAILED (ddrval)) {
-		write_log (L"IDirectDraw_QueryInterface() failed, %s\n", DXError (ddrval));
+		write_log (_T("IDirectDraw_QueryInterface() failed, %s\n"), DXError (ddrval));
 		goto oops;
 	}
 #else
 	ddrval = DirectDrawCreateEx (guid, (void**)&dxdata.maindd, IID_IDirectDraw7, NULL);
 	if (FAILED (ddrval)) {
-		write_log (L"DirectDrawCreateEx() failed, %s\n", DXError (ddrval));
+		write_log (_T("DirectDrawCreateEx() failed, %s\n"), DXError (ddrval));
 		if (guid != NULL)
 			return 0;
 		goto oops;
 	}
 #endif
 
-	dxdata.statuswidth = 800;
-	dxdata.statusheight = TD_TOTAL_HEIGHT;
-	if (!d3ddone) {
-		d3dDLL = LoadLibrary (L"D3D9.DLL");
-		if (d3dDLL) {
-			d3d = Direct3DCreate9 (D3D9b_SDK_VERSION);
-			if (d3d) {
-				if (SUCCEEDED (IDirect3D9_GetDeviceCaps (d3d, 0, D3DDEVTYPE_HAL, &d3dCaps))) {
-					dxcaps.maxwidth = d3dCaps.MaxTextureWidth;
-					dxcaps.maxheight = d3dCaps.MaxTextureHeight;
-					write_log (L"Max hardware surface size: %dx%d\n", dxcaps.maxwidth, dxcaps.maxheight);
-				}
-				IDirect3D9_Release (d3d);
-			}
-			FreeLibrary (d3dDLL);
-		}
-		d3ddone = 1;
-	}
-	if (dxcaps.maxwidth < 2048)
-		dxcaps.maxwidth = 2048;
-	if (dxcaps.maxheight < 2048)
-		dxcaps.maxheight = 2048;
-
-	if (!first) {
-		first = 1;
+	if (!firstdd)
 		getcaps ();
-	}
+	firstdd = 1;
 
 	if (SUCCEEDED (DirectDraw_GetDisplayMode ())) {
 		dxdata.ddinit = 1;
@@ -1150,10 +1256,11 @@ int DirectDraw_Start (GUID *guid)
 			dxdata.ddzeroguid = 0;
 			memcpy (&dxdata.ddguid, guid, sizeof (GUID));
 		}
+		write_log (_T("DirectDraw Display GUID = %s\n"), outGUID (guid));
 		return 1;
 	}
 oops:
-	write_log (L"DirectDraw_Start: %s\n", DXError (ddrval));
+	write_log (_T("DirectDraw_Start: %s\n"), DXError (ddrval));
 	DirectDraw_Release ();
 	return 0;
 }
@@ -1173,4 +1280,59 @@ void dx_check (void)
 	if (IDirectDrawSurface7_Restore (dxdata.primary) != DDERR_WRONGMODE)
 		return;
 	dxdata.islost = 1;
+}
+
+bool DD_getvblankpos (int *vpos)
+{
+	HRESULT hr;
+	DWORD sl, slstate;
+	BOOL vbs;
+
+	*vpos = -10;
+	if ((dxdata.primary == NULL && dxdata.fsmodeset > 0) || dxdata.islost || !dxdata.maindd)
+		return false;
+	hr = IDirectDraw7_GetVerticalBlankStatus (dxdata.maindd, &vbs);
+	if (FAILED (hr)) {
+		write_log (_T("IDirectDraw7_GetVerticalBlankStatus() failed, %s\n"), DXError (hr));
+		return false;
+	}
+	slstate = 4;
+	sl = -1;
+	if (!vbs) {
+		slstate = 3;
+		hr = IDirectDraw7_GetScanLine (dxdata.maindd, &sl);
+		if (hr == 0x88760219) { // "vertical blank is in progress"
+			vbs = TRUE;
+			slstate = 2;
+			sl = -1;
+		} else if (FAILED (hr) ) {
+			write_log (_T("IDirectDraw7_GetScanLine() failed, %s\n"), DXError (hr));
+			return false;
+		}
+	}
+	if (vbs)
+		*vpos = -1;
+	else
+		*vpos = sl;
+
+#if 0
+	static DWORD oldsl, oldslstate;
+	if (oldsl != sl || oldslstate != slstate) {
+		write_log (_T("%d:%d "), sl, slstate);
+		oldsl = sl;
+		oldslstate = slstate;
+	}
+#endif
+
+	return true;
+}
+
+void DD_vblank_reset (double freq)
+{
+	getvsyncrate (freq, &dxdata.vblank_skip);
+	dxdata.vblank_skip_cnt = 0;
+	dx_check ();
+	if ((dxdata.primary == NULL && dxdata.fsmodeset > 0) || dxdata.islost || !dxdata.maindd)
+		return;
+	IDirectDraw7_WaitForVerticalBlank (dxdata.maindd, DDWAITVB_BLOCKBEGIN, NULL);
 }

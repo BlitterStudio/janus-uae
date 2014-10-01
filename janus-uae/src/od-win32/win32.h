@@ -17,24 +17,36 @@
 
 #define WINUAEPUBLICBETA 0
 #define LANG_DLL 1
+#define LANG_DLL_FULL_VERSION_MATCH 0
 
-#define WINUAEBETA L""
-#define WINUAEDATE MAKEBD(2011, 2, 26)
-#define WINUAEEXTRA L""
-#define WINUAEREV L""
+#if WINUAEPUBLICBETA
+#define WINUAEBETA _T("8")
+#else
+#define WINUAEBETA _T("")
+#endif
+
+#define WINUAEDATE MAKEBD(2014, 6, 18)
+
+//#define WINUAEEXTRA _T("AmiKit Preview")
+//#define WINUAEEXTRA _T("Amiga Forever Edition")
+
+#ifndef WINUAEEXTRA
+#define WINUAEEXTRA _T("")
+#endif
+#ifndef WINUAEREV
+#define WINUAEREV _T("")
+#endif
 
 #define IHF_WINDOWHIDDEN 6
-#define NORMAL_WINDOW_STYLE (WS_BORDER | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU | WS_SIZEBOX)
-
-#define WINUAEAPPNAME L"Arabuusimiehet.WinUAE"
+#define WINUAEAPPNAME _T("Arabuusimiehet.WinUAE")
 extern HMODULE hUIDLL;
 extern HWND hAmigaWnd, hMainWnd, hHiddenWnd, hGUIWnd;
 extern RECT amigawin_rect, mainwin_rect;
 extern int in_sizemove;
 extern int manual_painting_needed;
-extern int manual_palette_refresh_needed;
 extern int mouseactive;
-extern int ignore_messages_all;
+extern int minimized;
+extern int monitor_off;
 extern void *globalipc, *serialipc;
 
 extern TCHAR start_path_exe[MAX_DPATH];
@@ -50,20 +62,24 @@ int WIN32_RegisterClasses (void);
 int WIN32_InitHtmlHelp (void);
 int WIN32_InitLibraries (void);
 int WIN32_CleanupLibraries (void);
-void WIN32_MouseDefaults (int, int);
 void WIN32_HandleRegistryStuff (void);
 extern void setup_brkhandler (void);
 extern void remove_brkhandler (void);
 extern void disablecapture (void);
 extern void fullscreentoggle (void);
 extern int isfocus (void);
+extern void gui_restart (void);
 
 extern void setmouseactive (int active);
 extern void minimizewindow (void);
 extern uae_u32 OSDEP_minimize_uae (void);
+extern void updatemouseclip (void);
+extern void updatewinrect (bool);
 
-extern void resumepaused (int priority);
-extern void setpaused (int priority);
+extern bool resumepaused (int priority);
+extern bool setpaused (int priority);
+extern void unsetminimized (void);
+extern void setminimized (void);
 
 void finishjob (void);
 void init_colors (void);
@@ -71,26 +87,29 @@ void init_colors (void);
 extern int pause_emulation;
 extern int sound_available;
 extern int framecnt;
-extern TCHAR prtname[];
 extern TCHAR VersionStr[256];
 extern TCHAR BetaStr[64];
-extern int os_winnt_admin, os_64bit, os_vista, os_winxp, os_win7;
+extern int os_winnt_admin, os_64bit, os_vista, os_winxp, os_win7, cpu_number;
 extern OSVERSIONINFO osVersion;
 extern int paraport_mask;
 extern int gui_active;
 extern int quickstart, configurationcache, relativepaths;
 
 extern HKEY hWinUAEKey;
-extern int screen_is_picasso, scalepicasso;
+extern int screen_is_picasso;
 extern HINSTANCE hInst;
 extern int win_x_diff, win_y_diff;
 extern int window_extra_width, window_extra_height;
 extern int af_path_2005;
 extern TCHAR start_path_new1[MAX_DPATH], start_path_new2[MAX_DPATH];
+extern TCHAR bootlogpath[MAX_DPATH];
+extern TCHAR logpath[MAX_DPATH];
+extern bool winuaelog_temporary_enable;
 enum pathtype { PATH_TYPE_DEFAULT, PATH_TYPE_WINUAE, PATH_TYPE_NEWWINUAE, PATH_TYPE_NEWAF, PATH_TYPE_AMIGAFOREVERDATA, PATH_TYPE_END };
 void setpathmode (pathtype pt);
 
 extern void sleep_millis (int ms);
+extern void sleep_millis_main (int ms);
 extern void sleep_millis_busy (int ms);
 extern void wait_keyrelease (void);
 extern void keyboard_settrans (void);
@@ -119,7 +138,7 @@ extern void send_tablet_proximity (int);
 
 void addnotifications (HWND hwnd, int remove, int isgui);
 int win32_hardfile_media_change (const TCHAR *drvname, int inserted);
-extern int CheckRM (TCHAR *DriveName);
+extern int CheckRM (const TCHAR *DriveName);
 void systray (HWND hwnd, int remove);
 void systraymenu (HWND hwnd);
 void exit_gui (int);
@@ -129,12 +148,13 @@ void set_path (const TCHAR *name, TCHAR *path, pathtype);
 void read_rom_list (void);
 void associate_file_extensions (void);
 
-#define WIN32_PLUGINDIR L"plugins\\"
+#define WIN32_PLUGINDIR _T("plugins\\")
 HMODULE WIN32_LoadLibrary (const TCHAR *);
 HMODULE WIN32_LoadLibrary2 (const TCHAR *);
 int isdllversion (const TCHAR *name, int version, int revision, int subver, int subrev);
 
 extern int screenshot_prepare (void);
+extern int screenshot_prepare (int);
 extern void screenshot_free (void);
 
 struct winuae_lang
@@ -153,11 +173,13 @@ extern void logging_cleanup (void);
 
 extern LONG WINAPI WIN32_ExceptionFilter (struct _EXCEPTION_POINTERS *pExceptionPointers, DWORD ec);
 
-#define MAX_SOUND_DEVICES 32
+#define MAX_SOUND_DEVICES 100
 #define SOUND_DEVICE_DS 1
 #define SOUND_DEVICE_AL 2
 #define SOUND_DEVICE_PA 3
 #define SOUND_DEVICE_WASAPI 4
+#define SOUND_DEVICE_WASAPI_EXCLUSIVE 5
+#define SOUND_DEVICE_XAUDIO2 6
 
 struct sound_device
 {
@@ -168,8 +190,8 @@ struct sound_device
     int panum;
     int type;
 };
-extern struct sound_device sound_devices[MAX_SOUND_DEVICES];
-extern struct sound_device record_devices[MAX_SOUND_DEVICES];
+extern struct sound_device *sound_devices[MAX_SOUND_DEVICES];
+extern struct sound_device *record_devices[MAX_SOUND_DEVICES];
 
 struct contextcommand
 {
@@ -187,5 +209,9 @@ struct assext {
 };
 struct assext exts[];
 void associate_file_extensions (void);
+
+#define PATHPREFIX _T("\\\\?\\")
+DWORD GetFileAttributesSafe (const TCHAR *name);
+BOOL SetFileAttributesSafe (const TCHAR *name, DWORD attr);
 
 #endif

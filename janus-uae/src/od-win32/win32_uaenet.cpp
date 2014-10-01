@@ -6,7 +6,7 @@
 * Copyright 2007 Toni Wilen
 */
 
-#include "sysconfig.h"
+#include "slirp/slirp.h"
 
 #include <stdio.h>
 
@@ -160,7 +160,7 @@ static void *uaenet_trap_threadr (void *arg)
 			uae_sem_post (&sd->change_sem);
 		}
 		if (r < 0) {
-			write_log (L"pcap_next_ex failed, err=%d\n", r);
+			write_log (_T("pcap_next_ex failed, err=%d\n"), r);
 			break;
 		}
 	}
@@ -211,7 +211,7 @@ int uaenet_open (void *vsd, struct netdriverdata *tc, void *user, uaenet_gotfunc
 	xfree (s);
 	if (sd->fp == NULL) {
 		TCHAR *ss = au (sd->errbuf);
-		write_log (L"'%s' failed to open: %s\n", tc->name, ss);
+		write_log (_T("'%s' failed to open: %s\n"), tc->name, ss);
 		xfree (ss);
 		return 0;
 	}
@@ -229,12 +229,12 @@ int uaenet_open (void *vsd, struct netdriverdata *tc, void *user, uaenet_gotfunc
 
 	uae_sem_init (&sd->change_sem, 0, 1);
 	uae_sem_init (&sd->sync_semr, 0, 0);
-	uae_start_thread (L"uaenet_win32r", uaenet_trap_threadr, sd, &sd->tidr);
+	uae_start_thread (_T("uaenet_win32r"), uaenet_trap_threadr, sd, &sd->tidr);
 	uae_sem_wait (&sd->sync_semr);
 	uae_sem_init (&sd->sync_semw, 0, 0);
-	uae_start_thread (L"uaenet_win32w", uaenet_trap_threadw, sd, &sd->tidw);
+	uae_start_thread (_T("uaenet_win32w"), uaenet_trap_threadw, sd, &sd->tidw);
 	uae_sem_wait (&sd->sync_semw);
-	write_log (L"uaenet_win32 initialized\n");
+	write_log (_T("uaenet_win32 initialized\n"));
 	return 1;
 
 end:
@@ -257,14 +257,14 @@ void uaenet_close (void *vsd)
 	if (sd->threadactiver) {
 		while (sd->threadactiver)
 			Sleep(10);
-		write_log (L"uaenet_win32 thread %d killed\n", sd->tidr);
+		write_log (_T("uaenet_win32 thread %d killed\n"), sd->tidr);
 		uae_end_thread (&sd->tidr);
 	}
 	if (sd->threadactivew) {
 		while (sd->threadactivew)
 			Sleep(10);
 		CloseHandle (sd->evttw);
-		write_log (L"uaenet_win32 thread %d killed\n", sd->tidw);
+		write_log (_T("uaenet_win32 thread %d killed\n"), sd->tidw);
 		uae_end_thread (&sd->tidw);
 	}
 	xfree (sd->readbuffer);
@@ -272,21 +272,19 @@ void uaenet_close (void *vsd)
 	if (sd->fp)
 		pcap_close (sd->fp);
 	uaeser_initdata (sd, sd->user);
-	write_log (L"uaenet_win32 closed\n");
+	write_log (_T("uaenet_win32 closed\n"));
 }
 
-void uaenet_enumerate_free (struct netdriverdata *tcp)
+void uaenet_enumerate_free (void)
 {
 	int i;
 
-	if (!tcp)
-		return;
 	for (i = 0; i < MAX_TOTAL_NET_DEVICES; i++) {
-		xfree (tcp[i].name);
-		xfree (tcp[i].desc);
-		tcp[i].name = NULL;
-		tcp[i].desc = NULL;
-		tcp[i].active = 0;
+		xfree (tds[i].name);
+		xfree (tds[i].desc);
+		tds[i].name = NULL;
+		tds[i].desc = NULL;
+		tds[i].active = 0;
 	}
 }
 
@@ -296,7 +294,7 @@ static struct netdriverdata *enumit (const TCHAR *name)
 	for (cnt = 0; cnt < MAX_TOTAL_NET_DEVICES; cnt++) {
 		TCHAR mac[20];
 		struct netdriverdata *tc = tds + cnt;
-		_stprintf (mac, L"%02X:%02X:%02X:%02X:%02X:%02X",
+		_stprintf (mac, _T("%02X:%02X:%02X:%02X:%02X:%02X"),
 			tc->mac[0], tc->mac[1], tc->mac[2], tc->mac[3], tc->mac[4], tc->mac[5]);
 		if (tc->active && name && (!_tcsicmp (name, tc->name) || !_tcsicmp (name, mac)))
 			return tc;
@@ -304,7 +302,7 @@ static struct netdriverdata *enumit (const TCHAR *name)
 	return NULL;
 }
 
-struct netdriverdata *uaenet_enumerate (struct netdriverdata **out, const TCHAR *name)
+struct netdriverdata *uaenet_enumerate (const TCHAR *name)
 {
 	static int done;
 	char errbuf[PCAP_ERRBUF_SIZE];
@@ -319,64 +317,62 @@ struct netdriverdata *uaenet_enumerate (struct netdriverdata **out, const TCHAR 
 	TCHAR *ss;
 
 	if (enumerated) {
-		if (out)
-			*out = tds;
 		return enumit (name);
 	}
 	tcp = tds;
-	hm = LoadLibrary (L"wpcap.dll");
+	hm = LoadLibrary (_T("wpcap.dll"));
 	if (hm == NULL) {
-		write_log (L"uaenet: winpcap not installed (wpcap.dll)\n");
+		write_log (_T("uaenet: winpcap not installed (wpcap.dll)\n"));
 		return NULL;
 	}
 	FreeLibrary (hm);
-	hm = LoadLibrary (L"packet.dll");
+	hm = LoadLibrary (_T("packet.dll"));
 	if (hm == NULL) {
-		write_log (L"uaenet: winpcap not installed (packet.dll)\n");
+		write_log (_T("uaenet: winpcap not installed (packet.dll)\n"));
 		return NULL;
 	}
 	FreeLibrary (hm);
-	if (!isdllversion (L"wpcap.dll", 4, 0, 0, 0)) {
-		write_log (L"uaenet: too old winpcap, v4 or newer required\n");
+	if (!isdllversion (_T("wpcap.dll"), 4, 0, 0, 0)) {
+		write_log (_T("uaenet: too old winpcap, v4 or newer required\n"));
 		return NULL;
 	}
 
 	ss = au (pcap_lib_version ());
 	if (!done)
-		write_log (L"uaenet: %s\n", ss);
+		write_log (_T("uaenet: %s\n"), ss);
 	xfree (ss);
 
 	if (pcap_findalldevs_ex (PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1) {
 		ss = au (errbuf);
-		write_log (L"uaenet: failed to get interfaces: %s\n", ss);
+		write_log (_T("uaenet: failed to get interfaces: %s\n"), ss);
 		xfree (ss);
 		return NULL;
 	}
 
 	if (!done)
-		write_log (L"uaenet: detecting interfaces\n");
+		write_log (_T("uaenet: detecting interfaces\n"));
 	for(cnt = 0, d = alldevs; d != NULL; d = d->next) {
 		char *n2;
 		TCHAR *ss2;
 		tc = tcp + cnt;
 		if (cnt >= MAX_TOTAL_NET_DEVICES) {
-			write_log (L"buffer overflow\n");
+			write_log (_T("buffer overflow\n"));
 			break;
 		}
 		ss = au (d->name);
-		ss2 = d->description ? au (d->description) : L"(no description)";
-		write_log (L"%s\n- %s\n", ss, ss2);
+		ss2 = d->description ? au (d->description) : _T("(no description)");
+		write_log (_T("%s\n- %s\n"), ss, ss2);
 		xfree (ss2);
 		xfree (ss);
 		n2 = d->name;
 		if (strlen (n2) <= strlen (PCAP_SRC_IF_STRING)) {
-			write_log (L"- corrupt name\n");
+			write_log (_T("- corrupt name\n"));
 			continue;
 		}
 		fp = pcap_open (d->name, 65536, 0, 0, NULL, errbuf);
 		if (!fp) {
 			ss = au (errbuf);
-			write_log (L"- pcap_open() failed: %s\n", ss);
+			write_log (_T("- pcap_open() failed: %s\n"), ss);
 			xfree (ss);
 			continue;
 		}
@@ -384,14 +380,14 @@ struct netdriverdata *uaenet_enumerate (struct netdriverdata **out, const TCHAR 
 		pcap_close (fp);
 		if (val != DLT_EN10MB) {
 			if (!done)
-				write_log (L"- not an ethernet adapter (%d)\n", val);
+				write_log (_T("- not an ethernet adapter (%d)\n"), val);
 			continue;
 		}
 
 		lpAdapter = PacketOpenAdapter (n2 + strlen (PCAP_SRC_IF_STRING));
 		if (lpAdapter == NULL) {
 			if (!done)
-				write_log (L"- PacketOpenAdapter() failed\n");
+				write_log (_T("- PacketOpenAdapter() failed\n"));
 			continue;
 		}
 		OidData = (PPACKET_OID_DATA)xcalloc (uae_u8, 6 + sizeof(PACKET_OID_DATA));
@@ -401,27 +397,26 @@ struct netdriverdata *uaenet_enumerate (struct netdriverdata **out, const TCHAR 
 			if (PacketRequest (lpAdapter, FALSE, OidData)) {
 				memcpy (tc->mac, OidData->Data, 6);
 				if (!done)
-					write_log (L"- MAC %02X:%02X:%02X:%02X:%02X:%02X (%d)\n",
+					write_log (_T("- MAC %02X:%02X:%02X:%02X:%02X:%02X (%d)\n"),
 					tc->mac[0], tc->mac[1], tc->mac[2],
 					tc->mac[3], tc->mac[4], tc->mac[5], cnt++);
+				tc->type = UAENET_PCAP;
 				tc->active = 1;
 				tc->mtu = 1522;
 				tc->name = au (d->name);
 				tc->desc = au (d->description);
 			} else {
-				write_log (L" - failed to get MAC\n");
+				write_log (_T(" - failed to get MAC\n"));
 			}
 			xfree (OidData);
 		}
 		PacketCloseAdapter (lpAdapter);
 	}
 	if (!done)
-		write_log (L"uaenet: end of detection\n");
+		write_log (_T("uaenet: end of detection\n"));
 	done = 1;
 	pcap_freealldevs (alldevs);
 	enumerated = 1;
-	if (out)
-		*out = tds;
 	return enumit (name);
 }
 
@@ -437,3 +432,64 @@ void uaenet_close_driver (struct netdriverdata *tc)
 }
 
 
+static volatile int slirp_thread_active;
+static HANDLE slirp_thread;
+static uae_thread_id slirp_tid;
+extern uae_sem_t slirp_sem2;
+
+static void *slirp_receive_func(void *arg)
+{
+	slirp_thread_active = 1;
+	while (slirp_thread_active) {
+		// Wait for packets to arrive
+		fd_set rfds, wfds, xfds;
+		SOCKET nfds;
+		int ret, timeout;
+
+		// ... in the output queue
+		nfds = -1;
+		FD_ZERO(&rfds);
+		FD_ZERO(&wfds);
+		FD_ZERO(&xfds);
+		uae_sem_wait (&slirp_sem2);
+		timeout = slirp_select_fill(&nfds, &rfds, &wfds, &xfds);
+		uae_sem_post (&slirp_sem2);
+		if (nfds < 0) {
+			/* Windows does not honour the timeout if there is not
+			   descriptor to wait for */
+			sleep_millis (timeout / 1000);
+			ret = 0;
+		}
+		else {
+			struct timeval tv;
+			tv.tv_sec = 0;
+			tv.tv_usec = timeout;
+			ret = select(0, &rfds, &wfds, &xfds, &tv);
+		}
+		if (ret >= 0) {
+			uae_sem_wait (&slirp_sem2);
+			slirp_select_poll(&rfds, &wfds, &xfds);
+			uae_sem_post (&slirp_sem2);
+		}
+	}
+	slirp_thread_active = -1;
+	return 0;
+}
+
+bool slirp_start (void)
+{
+	slirp_end ();
+	uae_start_thread_fast (slirp_receive_func, NULL, &slirp_tid);
+	return true;
+}
+void slirp_end (void)
+{
+	if (slirp_thread_active > 0) {
+		slirp_thread_active = 0;
+		while (slirp_thread_active == 0) {
+			sleep_millis (10);
+		}
+		uae_end_thread (&slirp_tid);
+	}
+	slirp_thread_active = 0;
+}

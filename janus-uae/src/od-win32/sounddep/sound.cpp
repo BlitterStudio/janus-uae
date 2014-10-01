@@ -27,6 +27,7 @@
 #include "savestate.h"
 #include "driveclick.h"
 #include "gensound.h"
+#include "xwin.h"
 
 #include <windows.h>
 #include <mmsystem.h>
@@ -37,7 +38,7 @@
 #include <Audioclient.h>
 #include <Mmdeviceapi.h>
 #include <Functiondiscoverykeys_devpkey.h>
-
+#include <xaudio2.h>
 #include <al.h>
 #include <alc.h>
 
@@ -64,6 +65,7 @@ struct sound_dp
 	// openal
 
 #define AL_BUFFERS 2
+
 	ALCdevice *al_dev;
 	ALCcontext *al_ctx;
 	ALuint al_Buffers[AL_BUFFERS];
@@ -76,16 +78,18 @@ struct sound_dp
 
 	// portaudio
 
-	volatile int patoggle;
-	volatile int pacounter;
-	uae_u8 *pasoundbuffer[2];
+#define PA_BUFFERSIZE (262144 * 4)
+#define PA_CALLBACKBUFFERS 8
+
+	uae_u8 *pasoundbuffer;
+	volatile int pareadoffset, pawriteoffset;
 	int pasndbufsize;
 	int paframesperbuffer;
 	PaStream *pastream;
-	HANDLE paevent;
-	int opacounter;
 	int pablocking;
 	int pavolume;
+	int pacallbacksize;
+	bool pafinishsb;
 
 	// wasapi
 
@@ -102,17 +106,33 @@ struct sound_dp
 	UINT32 bufferFrameCount;
 	UINT64 wasapiframes;
 	int wasapiexclusive;
-	int framecounter;
 	int sndbuf;
 	int wasapigoodsize;
-	int sndbufframes;
+
+	// xaudio2
+
+#define XA_BUFFERS 8
+
+	IXAudio2 *xaudio2;
+	IXAudio2MasteringVoice *xmaster;
+	IXAudio2SourceVoice *xsource;
+	XAUDIO2_BUFFER xbuffer[XA_BUFFERS];
+	uae_u8 *xdata[XA_BUFFERS];
+	int xabufcnt;
+	int xsamplesplayed;
+	int xextrasamples;
+
+	double avg_correct;
+	double cnt_correct;
 };
 
-#define ADJUST_SIZE 30
-#define EXP 2.1
+#define SND_STATUSCNT 10
 
-#define ADJUST_VSSIZE 10
-#define EXPVS 1.3
+#define ADJUST_SIZE 20
+#define EXP 1.9
+
+#define ADJUST_VSSIZE 12
+#define EXPVS 1.6
 
 int sound_debug = 0;
 int sound_mode_skip = 0;
@@ -130,8 +150,8 @@ int paula_sndbufsize;
 
 static uae_sem_t sound_sem, sound_init_sem;
 
-struct sound_device sound_devices[MAX_SOUND_DEVICES];
-struct sound_device record_devices[MAX_SOUND_DEVICES];
+struct sound_device *sound_devices[MAX_SOUND_DEVICES];
+struct sound_device *record_devices[MAX_SOUND_DEVICES];
 static int num_sound_devices, num_record_devices;
 
 static struct sound_data sdpaula;
@@ -143,48 +163,112 @@ int setup_sound (void)
 	return 1;
 }
 
-static int isvsync (void)
-{
-	return currprefs.gfx_avsync && currprefs.gfx_afullscreen == GFX_FULLSCREEN;
-}
-
+float sound_sync_multiplier = 1.0;
 float scaled_sample_evtime_orig;
 extern float sampler_evtime;
-void update_sound (int freq, int longframe, int linetoggle)
+
+void update_sound (double clk)
 
 {
-	static int lastfreq;
-	float lines = 0;
-	float hpos;
-
-	if (freq < 0)
-		freq = lastfreq;
-	lastfreq = freq;
-
 	if (!have_sound)
 		return;
-
-	if (linetoggle) {
-		hpos = maxhpos_short + 0.5;
-		lines += 0.5;
-	} else {
-		if (longframe < 0)
-			lines += 0.5;
-		else if (longframe > 0)
-			lines += 1.0;
-		hpos = maxhpos_short;
-	}
-	lines += maxvpos_nom;
-	scaled_sample_evtime_orig = hpos * lines * freq * CYCLE_UNIT / (float)sdp->obtainedfreq;
+	scaled_sample_evtime_orig = clk * CYCLE_UNIT * sound_sync_multiplier / sdp->obtainedfreq;
 	scaled_sample_evtime = scaled_sample_evtime_orig;
-	sampler_evtime = hpos * lines * freq * CYCLE_UNIT;
-#if 0
-	lines -= maxvpos_nom;
-	write_log (L"%d.%d %d.%d %.2f\n",
-		maxhpos_short, linetoggle ? 5 : 0,
-		maxvpos_nom + (lines == 1.0 ? 1 : 0), lines > 0 && lines < 1 ? 5 : 0,
-		scaled_sample_evtime);
+	sampler_evtime = clk * CYCLE_UNIT * sound_sync_multiplier;
+}
+
+extern int vsynctimebase_orig;
+
+#ifndef AVIOUTPUT
+static int avioutput_audio;
 #endif
+
+#define ADJUST_LIMIT 6
+#define ADJUST_LIMIT2 1
+
+void sound_setadjust (double v)
+{
+	float mult;
+
+	if (v < -ADJUST_LIMIT)
+		v = -ADJUST_LIMIT;
+	if (v > ADJUST_LIMIT)
+		v = ADJUST_LIMIT;
+
+	mult = (1000.0 + v);
+	if (avioutput_audio && avioutput_enabled && avioutput_nosoundsync)
+		mult = 1000.0;
+	if (isvsync_chipset () || (avioutput_audio && avioutput_enabled && !currprefs.cachesize)) {
+		vsynctimebase = vsynctimebase_orig;
+		scaled_sample_evtime = scaled_sample_evtime_orig * mult / 1000.0;
+	} else if (currprefs.cachesize || currprefs.m68k_speed != 0) {
+		vsynctimebase = (int)(((double)vsynctimebase_orig) * mult / 1000.0);
+		scaled_sample_evtime = scaled_sample_evtime_orig;
+	} else {
+		vsynctimebase = (int)(((double)vsynctimebase_orig) * mult / 1000.0);
+		scaled_sample_evtime = scaled_sample_evtime_orig;
+	}
+}
+
+
+static void docorrection (struct sound_dp *s, int sndbuf, double sync, int granulaty)
+{
+	static int tfprev;
+
+	s->avg_correct += sync;
+	s->cnt_correct++;
+
+	if (granulaty < 10)
+		granulaty = 10;
+
+	if (tfprev != timeframes) {
+		double skipmode, avgskipmode;
+		double avg = s->avg_correct / s->cnt_correct;
+
+		skipmode = sync / 100.0;
+		avgskipmode = avg / (10000.0 / granulaty);
+
+		if ((0 || sound_debug) && (tfprev % 10) == 0) {
+			write_log (_T("%+05d S=%7.1f AVG=%7.1f (IMM=%7.1f + AVG=%7.1f = %7.1f)\n"), sndbuf, sync, avg, skipmode, avgskipmode, skipmode + avgskipmode);
+		}
+		gui_data.sndbuf = sndbuf;
+
+		if (skipmode > ADJUST_LIMIT2)
+			skipmode = ADJUST_LIMIT2;
+		if (skipmode < -ADJUST_LIMIT2)
+			skipmode = -ADJUST_LIMIT2;
+
+		sound_setadjust (skipmode + avgskipmode);
+		tfprev = timeframes;
+	}
+}
+
+
+static double sync_sound (double m)
+{
+	double skipmode;
+	if (isvsync ()) {
+
+		skipmode = pow (m < 0 ? -m : m, EXPVS) / 2;
+		if (m < 0)
+			skipmode = -skipmode;
+		if (skipmode < -ADJUST_VSSIZE)
+			skipmode = -ADJUST_VSSIZE;
+		if (skipmode > ADJUST_VSSIZE)
+			skipmode = ADJUST_VSSIZE;
+
+	} else if (1) {
+
+		skipmode = pow (m < 0 ? -m : m, EXP) / 2;
+		if (m < 0)
+			skipmode = -skipmode;
+		if (skipmode < -ADJUST_SIZE)
+			skipmode = -ADJUST_SIZE;
+		if (skipmode > ADJUST_SIZE)
+			skipmode = ADJUST_SIZE;
+	}
+
+	return skipmode;
 }
 
 static void clearbuffer_ds (struct sound_data *sd)
@@ -199,7 +283,7 @@ static void clearbuffer_ds (struct sound_data *sd)
 		hr = IDirectSoundBuffer_Lock (s->lpDSBsecondary, 0, s->dsoundbuf, &buffer, &size, NULL, NULL, 0);
 	}
 	if (FAILED (hr)) {
-		write_log (L"DSSOUND: failed to Lock sound buffer (clear): %s\n", DXError (hr));
+		write_log (_T("DS: failed to Lock sound buffer (clear): %s\n"), DXError (hr));
 		return;
 	}
 	memset (buffer, 0, size);
@@ -212,6 +296,43 @@ static void clearbuffer (struct sound_data *sd)
 		clearbuffer_ds (sd);
 }
 
+static void pause_audio_xaudio2 (struct sound_data *sd)
+{
+	struct sound_dp *s = sd->data;
+
+	s->xsource->Stop ();
+	s->xsource->FlushSourceBuffers ();
+	s->xaudio2->StopEngine ();
+}
+static void resume_audio_xaudio2 (struct sound_data *sd)
+{
+	struct sound_dp *s = sd->data;
+	XAUDIO2_VOICE_STATE state;
+	HRESULT hr;
+	int i;
+	
+	hr = s->xaudio2->StartEngine ();
+	if (FAILED (hr))
+		write_log (_T("XAUDIO2: StartEngine() %08X\n"), hr);
+	s->xsource->FlushSourceBuffers ();
+	s->xsource->GetState (&state);
+	s->xsamplesplayed = state.SamplesPlayed;
+	s->xextrasamples = 0;
+	for (i = 0; i < XA_BUFFERS / 2; i++) {
+		XAUDIO2_BUFFER *buffer = &s->xbuffer[s->xabufcnt];
+		buffer->AudioBytes = sd->sndbufsize;
+		buffer->pAudioData = (BYTE*)s->xdata[s->xabufcnt];
+		hr = s->xsource->SubmitSourceBuffer (buffer);
+		if (FAILED (hr)) 
+			write_log (_T("XAUDIO2: SubmitSourceBuffer %08X\n"), hr);
+		s->xsamplesplayed += sd->sndbufframes;
+		s->xabufcnt = (s->xabufcnt + 1) & (XA_BUFFERS - 1);
+	}
+	hr = s->xsource->Start (0, 0);
+	if (FAILED (hr))
+		write_log (_T("XAUDIO2: Start() %08X\n"), hr);
+}
+
 static void pause_audio_wasapi (struct sound_data *sd)
 {
 	struct sound_dp *s = sd->data;
@@ -219,7 +340,7 @@ static void pause_audio_wasapi (struct sound_data *sd)
 
 	hr = s->pAudioClient->Stop ();
 	if (FAILED (hr))
-		write_log (L"WASAPI: Stop() %08X\n", hr);
+		write_log (_T("WASAPI: Stop() %08X\n"), hr);
 }
 static void resume_audio_wasapi (struct sound_data *sd)
 {
@@ -230,7 +351,7 @@ static void resume_audio_wasapi (struct sound_data *sd)
 
 	hr = s->pAudioClient->Reset ();
 	if (FAILED (hr))
-		write_log (L"WASAPI: Reset() %08X\n", hr);
+		write_log (_T("WASAPI: Reset() %08X\n"), hr);
 	framecnt = s->wasapigoodsize;
 	hr = s->pRenderClient->GetBuffer (framecnt, &pData);
 	if (FAILED (hr))
@@ -238,9 +359,8 @@ static void resume_audio_wasapi (struct sound_data *sd)
 	hr = s->pRenderClient->ReleaseBuffer (framecnt, AUDCLNT_BUFFERFLAGS_SILENT);
 	hr = s->pAudioClient->Start ();
 	if (FAILED (hr))
-		write_log (L"WASAPI: Start() %08X\n", hr);
+		write_log (_T("WASAPI: Start() %08X\n"), hr);
 	s->wasapiframes = 0;
-	s->framecounter = 0;
 	s->sndbuf = 0;
 }
 
@@ -252,31 +372,38 @@ static void pause_audio_ds (struct sound_data *sd)
 	sd->waiting_for_buffer = 0;
 	hr = IDirectSoundBuffer_Stop (s->lpDSBsecondary);
 	if (FAILED (hr))
-		write_log (L"DSSOUND: DirectSoundBuffer_Stop failed, %s\n", DXError (hr));
+		write_log (_T("DS: DirectSoundBuffer_Stop failed, %s\n"), DXError (hr));
 	hr = IDirectSoundBuffer_SetCurrentPosition (s->lpDSBsecondary, 0);
 	if (FAILED (hr))
-		write_log (L"DSSOUND: DirectSoundBuffer_SetCurretPosition failed, %s\n", DXError (hr));
+		write_log (_T("DS: DirectSoundBuffer_SetCurretPosition failed, %s\n"), DXError (hr));
 	clearbuffer (sd);
 }
 static void resume_audio_ds (struct sound_data *sd)
 {
+	struct sound_dp *s = sd->data;
 	sd->paused = 0;
 	clearbuffer (sd);
 	sd->waiting_for_buffer = 1;
+	s->avg_correct = 0;
+	s->cnt_correct = 0;
 }
 static void pause_audio_pa (struct sound_data *sd)
 {
 	struct sound_dp *s = sd->data;
 	PaError err = Pa_StopStream (s->pastream);
 	if (err != paNoError)
-		write_log (L"PASOUND: Pa_StopStream() error %d (%s)\n", err, Pa_GetErrorText (err));
+		write_log (_T("PASOUND: Pa_StopStream() error %d (%s)\n"), err, Pa_GetErrorText (err));
 }
 static void resume_audio_pa (struct sound_data *sd)
 {
 	struct sound_dp *s = sd->data;
+	s->pawriteoffset = 0;
+	s->pareadoffset = 0;
+	s->pacallbacksize = 0;
+	s->pafinishsb = false;
 	PaError err = Pa_StartStream (s->pastream);
 	if (err != paNoError)
-		write_log (L"PASOUND: Pa_StartStream() error %d (%s)\n", err, Pa_GetErrorText (err));
+		write_log (_T("PASOUND: Pa_StartStream() error %d (%s)\n"), err, Pa_GetErrorText (err));
 	sd->paused = 0;
 }
 static void pause_audio_al (struct sound_data *sd)
@@ -298,10 +425,10 @@ static int restore_ds (struct sound_data *sd, DWORD hr)
 	if (hr != DSERR_BUFFERLOST)
 		return 0;
 	if (sound_debug)
-		write_log (L"DSSOUND: sound buffer lost\n");
+		write_log (_T("DS: sound buffer lost\n"));
 	hr = IDirectSoundBuffer_Restore (s->lpDSBsecondary);
 	if (FAILED (hr)) {
-		write_log (L"DSSOUND: restore failed %s\n", DXError (hr));
+		write_log (_T("DS: restore failed %s\n"), DXError (hr));
 		return 1;
 	}
 	pause_audio_ds (sd);
@@ -334,7 +461,7 @@ static void close_audio_ds (struct sound_data *sd)
 #endif
 	if (s->lpDS) {
 		IDirectSound_Release (s->lpDS);
-		write_log (L"DSSOUND: DirectSound driver freed\n");
+		write_log (_T("DS: DirectSound driver freed\n"));
 	}
 	s->lpDS = 0;
 }
@@ -357,7 +484,8 @@ void set_volume_sound_device (struct sound_data *sd, int volume, int mute)
 			vol = (LONG)((DSBVOLUME_MIN / 2) + (-DSBVOLUME_MIN / 2) * log (1 + (2.718281828 - 1) * (1 - volume / 100.0)));
 		hr = IDirectSoundBuffer_SetVolume (s->lpDSBsecondary, vol);
 		if (FAILED (hr))
-			write_log (L"DSSOUND: SetVolume(%d) failed: %s\n", vol, DXError (hr));
+			write_log (_T("DS: SetVolume(%d) failed: %s\n"), vol, DXError (hr));
+#if 0
 	} else if (sd->devicetype == SOUND_DEVICE_WASAPI) {
 		if (s->pAudioVolume) {
 			float vol = 0.0;
@@ -365,14 +493,30 @@ void set_volume_sound_device (struct sound_data *sd, int volume, int mute)
 				vol = (100 - volume) / 100.0;
 			hr = s->pAudioVolume->SetMasterVolume (vol, NULL);
 			if (FAILED (hr))
-				write_log (L"AudioVolume->SetMasterVolume(%.2f) failed: %08Xs\n", vol, hr);
+				write_log (_T("AudioVolume->SetMasterVolume(%.2f) failed: %08Xs\n"), vol, hr);
 			hr = s->pAudioVolume->SetMute (mute, NULL);
 			if (FAILED (hr))
-				write_log (L"pAudioVolume->SetMute(%d) failed: %08Xs\n", mute, hr);
+				write_log (_T("pAudioVolume->SetMute(%d) failed: %08Xs\n"), mute, hr);
 		}
+#endif
 	} else if (sd->devicetype == SOUND_DEVICE_PA) {
 		s->pavolume = volume;
+	} else if (sd->devicetype == SOUND_DEVICE_XAUDIO2) {
+		s->xmaster->SetVolume (mute ? 0.0 : (float)(100 - volume) / 100.0);
+	} else if (sd->devicetype == SOUND_DEVICE_WASAPI_EXCLUSIVE || sd->devicetype == SOUND_DEVICE_WASAPI) {
+		sd->softvolume = -1;
+		hr = s->pAudioVolume->SetMasterVolume (1.0, NULL);
+		if (FAILED (hr))
+			write_log (_T("AudioVolume->SetMasterVolume(1.0) failed: %08Xs\n"), hr);
+		if (volume < 100 && !mute) {
+			sd->softvolume = (100 - volume) * 32768 / 100.0;
+			if (sd->softvolume >= 32768)
+				sd->softvolume = -1;
+		}
+		if (mute || volume >= 100)
+			sd->softvolume = 0;
 	}
+
 }
 
 void set_volume (int volume, int mute)
@@ -476,10 +620,23 @@ static DWORD fillsupportedmodes (struct sound_data *sd, int freq, struct dsaudio
 	return speakerconfig;
 }
 
+static int padiff (int write, int read)
+{
+	int diff;
+	diff = write - read;
+	if (diff > PA_BUFFERSIZE / 2)
+		diff = PA_BUFFERSIZE - write + read;
+	else if (diff < -PA_BUFFERSIZE / 2)
+		diff = PA_BUFFERSIZE - read + write;
+	return diff;
+}
 
 static void finish_sound_buffer_pa (struct sound_data *sd, uae_u16 *sndbuffer)
 {
 	struct sound_dp *s = sd->data;
+
+	s->pafinishsb = true;
+
 	if (s->pavolume) {
 		int vol = 65536 - s->pavolume * 655;
 		for (int i = 0; i < sd->sndbufsize / sizeof (uae_u16); i++) {
@@ -488,17 +645,52 @@ static void finish_sound_buffer_pa (struct sound_data *sd, uae_u16 *sndbuffer)
 		}
 	}
 	if (s->pablocking) {
-		if (s->paframesperbuffer != sd->sndbufsize / (sd->channels * 2)) {
-			write_log (L"sound buffer size mistmatch %d <> %d\n", s->paframesperbuffer, sd->sndbufsize / (sd->channels * 2));
-		} else {
-			Pa_WriteStream (s->pastream, sndbuffer, s->paframesperbuffer); 
+
+		int avail;
+		time_t t = 0;
+		for (;;) {
+			avail = Pa_GetStreamWriteAvailable (s->pastream);
+			if (avail < 0 || avail >= s->pasndbufsize)
+				break;
+			if (!t) {
+				t = time (NULL) + 2;
+			} else if (time (NULL) >= t) {
+				write_log (_T("PA: audio stuck!? %d\n"), avail);
+				break;
+			}
+			sleep_millis (1);
 		}
+		int pos = avail - s->paframesperbuffer;
+		docorrection (s, -pos * 1000 / (s->paframesperbuffer), -pos, 100);
+		Pa_WriteStream (s->pastream, sndbuffer, s->pasndbufsize); 
+
 	} else {
-		int cnt = 2000 / 10;
-		while (s->opacounter == s->pacounter && s->pastream && !sd->paused && cnt-- >= 0)
-			WaitForSingleObject (s->paevent, 10);
-		s->opacounter = s->pacounter;
-		memcpy (s->pasoundbuffer[s->patoggle], sndbuffer, sd->sndbufsize);
+
+		if (!s->pacallbacksize)
+			return;
+
+		int diff = padiff (s->pawriteoffset, s->pareadoffset);
+		int samplediff = diff / sd->samplesize;
+		samplediff -= s->pacallbacksize * PA_CALLBACKBUFFERS;
+		docorrection (s, samplediff * 1000 / (s->pacallbacksize * PA_CALLBACKBUFFERS / 2), samplediff, s->pacallbacksize);
+
+		while (diff > PA_BUFFERSIZE / 4 && s->pastream && !sd->paused) {
+			gui_data.sndbuf_status = 1;
+			statuscnt = SND_STATUSCNT;
+			sleep_millis (1);
+			diff = padiff (s->pawriteoffset, s->pareadoffset);
+		}
+
+		if (sd->sndbufsize + s->pawriteoffset > PA_BUFFERSIZE) {
+			int partsize = PA_BUFFERSIZE - s->pawriteoffset;
+			memcpy (s->pasoundbuffer + s->pawriteoffset, sndbuffer, partsize);
+			memcpy (s->pasoundbuffer, (uae_u8*)sndbuffer + partsize, sd->sndbufsize - partsize);
+			s->pawriteoffset = sd->sndbufsize - partsize;
+		} else {
+			memcpy (s->pasoundbuffer + s->pawriteoffset, sndbuffer, sd->sndbufsize);
+			s->pawriteoffset = s->pawriteoffset + sd->sndbufsize;
+		}
+
 	}
 }
 
@@ -510,45 +702,57 @@ static int _cdecl portAudioCallback (const void *inputBuffer, void *outputBuffer
 {
 	struct sound_data *sd = (struct sound_data*)userData;
 	struct sound_dp *s = sd->data;
+	int bytestocopy;
+	int diff;
 
-	if (framesPerBuffer != sd->sndbufsize / (sd->channels * 2)) {
-		write_log (L"sound buffer size mistmatch %d <> %d\n", framesPerBuffer, sd->sndbufsize / (sd->channels * 2));
-	} else {
-		memcpy (outputBuffer, s->pasoundbuffer[s->patoggle], sd->sndbufsize);
+	if (!framesPerBuffer || !s->pafinishsb || sdp->deactive)
+		return paContinue;
+
+	if (!s->pacallbacksize)
+		s->pawriteoffset = (PA_CALLBACKBUFFERS + 1) * framesPerBuffer * sd->samplesize;
+	
+	s->pacallbacksize = framesPerBuffer;
+
+	bytestocopy = framesPerBuffer * sd->samplesize;
+	diff = padiff (s->pawriteoffset, s->pareadoffset + bytestocopy);
+	if (diff <= 0) {
+		memset (outputBuffer, 0, bytestocopy);
+		gui_data.sndbuf_status = 2;
+		bytestocopy -= -diff;
+		statuscnt = SND_STATUSCNT;
 	}
-	s->patoggle ^= 1;
-	s->pacounter++;
-	SetEvent (s->paevent);
+	if (bytestocopy > 0) {
+		if (bytestocopy + s->pareadoffset > PA_BUFFERSIZE) {
+			int partsize = PA_BUFFERSIZE - s->pareadoffset;
+			memcpy (outputBuffer, s->pasoundbuffer + s->pareadoffset, partsize);
+			memcpy ((uae_u8*)outputBuffer + partsize, s->pasoundbuffer, bytestocopy - partsize);
+			s->pareadoffset = bytestocopy - partsize;
+		} else {
+			memcpy (outputBuffer, s->pasoundbuffer + s->pareadoffset, bytestocopy);
+			s->pareadoffset = s->pareadoffset + bytestocopy;
+		}
+	}
+
 	return paContinue;
 }
 
 static void close_audio_pa (struct sound_data *sd)
 {
 	struct sound_dp *s = sd->data;
-	int i;
 
 	if (s->pastream)
 		Pa_CloseStream (s->pastream);
 	s->pastream = NULL;
-	for (i = 0; i < 2; i++) {
-		xfree (s->pasoundbuffer[i]);
-		s->pasoundbuffer[i] = NULL;
-	}
-	if (s->paevent) {
-		SetEvent (s->paevent);
-		CloseHandle (s->paevent);
-	}
-	s->paevent = NULL;
+	xfree (s->pasoundbuffer);
+	s->pasoundbuffer = NULL;
 }
 
 static int open_audio_pa (struct sound_data *sd, int index)
 {
 	struct sound_dp *s = sd->data;
-	int i;
 	int freq = sd->freq;
 	int ch = sd->channels;
-	int size;
-	int dev = sound_devices[index].panum;
+	int dev = sound_devices[index]->panum;
 	const PaDeviceInfo *di;
 	PaStreamParameters p;
 	PaError err;
@@ -556,71 +760,89 @@ static int open_audio_pa (struct sound_data *sd, int index)
 	TCHAR *errtxt;
 	int defaultrate = 0;
 
-	size = sd->sndbufsize;
-	s->paframesperbuffer = size;
+	s->paframesperbuffer = sd->sndbufsize; 
+	s->pasndbufsize = sd->sndbufsize / 32;
+	sd->sndbufsize = s->pasndbufsize * ch * 2;
+	if (sd->sndbufsize > SND_MAX_BUFFER)
+		sd->sndbufsize = SND_MAX_BUFFER;
+
 	sd->devicetype = SOUND_DEVICE_PA;
 	memset (&p, 0, sizeof p);
 	di = Pa_GetDeviceInfo (dev);
 	for (;;) {
-		int err2;
-		p.channelCount = ch;
-		p.device = dev;
-		p.hostApiSpecificStreamInfo = NULL;
-		p.sampleFormat = paInt16;
-		p.suggestedLatency = di->defaultLowOutputLatency;
-		p.hostApiSpecificStreamInfo = NULL; 
+		for (;;) {
+			int err2;
+			p.channelCount = ch;
+			p.device = dev;
+			p.hostApiSpecificStreamInfo = NULL;
+			p.sampleFormat = paInt16;
+			p.suggestedLatency = di->defaultLowOutputLatency;
+			p.hostApiSpecificStreamInfo = NULL; 
 
-		err = Pa_IsFormatSupported (NULL, &p, freq);
-		if (err == paFormatIsSupported)
-			break;
-		err2 = err;
-		errtxt = au (Pa_GetErrorText (err));
-		write_log (L"PASOUND: sound format not supported, ch=%d, rate=%d. %s\n", freq, ch, errtxt);
-		xfree (errtxt);
-		if (err == paInvalidChannelCount) {
-			if (ch > 2) {
-				ch = sd->channels = 2;
+			err = Pa_IsFormatSupported (NULL, &p, freq);
+			if (err == paFormatIsSupported)
+				break;
+fixfreq:
+			err2 = err;
+			errtxt = au (Pa_GetErrorText (err));
+			write_log (_T("PASOUND: sound format not supported, ch=%d, rate=%d. %s\n"), freq, ch, errtxt);
+			xfree (errtxt);
+			if (err == paInvalidChannelCount) {
+				if (ch > 2) {
+					ch = sd->channels = 2;
+					continue;
+				}
+				goto end;
+			}
+			if (freq < 44000 && err == paInvalidSampleRate) {
+				freq = 44000;
+				sd->freq = freq;
+				continue;
+			}
+			if (freq < 48000 && err == paInvalidSampleRate) {
+				freq = 48000;
+				sd->freq = freq;
+				continue;
+			}
+			if (freq != di->defaultSampleRate && err == paInvalidSampleRate && !defaultrate) {
+				freq = di->defaultSampleRate;
+				sd->freq = freq;
+				defaultrate = 1;
 				continue;
 			}
 			goto end;
 		}
-		if (freq < 44000 && err == paInvalidSampleRate) {
-			freq = 44000;
-			sd->freq = freq;
-			continue;
+
+		sd->samplesize = ch * 16 / 8;
+#if 0
+		s->pablocking = 1;
+		err = Pa_OpenStream (&s->pastream, NULL, &p, freq, s->paframesperbuffer, paNoFlag, NULL, NULL);
+#else
+		err = paUnanticipatedHostError;
+#endif
+		if (err == paUnanticipatedHostError) { // could be "blocking not supported"
+			s->pablocking = 0;
+			err = Pa_OpenStream (&s->pastream, NULL, &p, freq, paFramesPerBufferUnspecified, paNoFlag, portAudioCallback, sd);
 		}
-		if (freq < 48000 && err == paInvalidSampleRate) {
-			freq = 48000;
-			sd->freq = freq;
-			continue;
+		if (err == paInvalidSampleRate || err == paInvalidChannelCount)
+			goto fixfreq;
+		if (err != paNoError) {
+			errtxt = au (Pa_GetErrorText (err));
+			write_log (_T("PASOUND: Pa_OpenStream() error %d (%s)\n"), err, errtxt);
+			xfree (errtxt);
+			goto end;
 		}
-		if (freq != di->defaultSampleRate && err == paInvalidSampleRate && !defaultrate) {
-			freq = di->defaultSampleRate;
-			sd->freq = freq;
-			defaultrate = 1;
-			continue;
-		}
-		goto end;
+		break;
 	}
-	sd->sndbufsize = size * ch * 2;
-	//    s->pablocking = 1;
-	//    err = Pa_OpenStream (&s->pastream, NULL, &p, freq, s->paframesperbuffer, paNoFlag, NULL, NULL);
-	//    if (err != paNoError) {
-	s->pablocking = 0;
-	err = Pa_OpenStream (&s->pastream, NULL, &p, freq, s->paframesperbuffer, paNoFlag, portAudioCallback, sd);
-	if (err != paNoError) {
-		errtxt = au (Pa_GetErrorText (err));
-		write_log (L"PASOUND: Pa_OpenStream() error %d (%s)\n", err, errtxt);
-		xfree (errtxt);
-		goto end;
+
+	if (!s->pablocking) {
+		s->pasoundbuffer = xcalloc (uae_u8, PA_BUFFERSIZE);
 	}
-	//    }
-	s->paevent = CreateEvent (NULL, FALSE, FALSE, NULL);
-	for (i = 0; i < 2; i++)
-		s->pasoundbuffer[i] = xcalloc (uae_u8, sd->sndbufsize);
+
 	name = au (di->name);
-	write_log (L"PASOUND: CH=%d,FREQ=%d (%s) '%s' buffer %d\n",
-		ch, freq, sound_devices[index].name, name, sd->sndbufsize);
+	write_log (_T("PASOUND: CH=%d,FREQ=%d (%s) '%s' buffer %d/%d (%s)\n"),
+		ch, freq, sound_devices[index]->name, name,
+		s->pasndbufsize, s->paframesperbuffer, s->pablocking ? _T("push") : _T("pull"));
 	xfree (name);
 	return 1;
 end:
@@ -667,7 +889,7 @@ static int open_audio_al (struct sound_data *sd, int index)
 		sd->sndbufsize = SND_MAX_BUFFER;
 	s->al_bufsize = size;
 	s->al_bigbuffer = xcalloc (uae_u8, s->al_bufsize);
-	name = ua (sound_devices[index].alname);
+	name = ua (sound_devices[index]->alname);
 	s->al_dev = alcOpenDevice (name);
 	xfree (name);
 	if (!s->al_dev)
@@ -698,14 +920,131 @@ static int open_audio_al (struct sound_data *sd, int index)
 	if (s->al_format == 0)
 		goto error;
 
-	write_log (L"ALSOUND: %08X,CH=%d,FREQ=%d '%s' buffer %d (%d)\n",
-		s->al_format, ch, freq, sound_devices[index].alname,
+	write_log (_T("ALSOUND: %08X,CH=%d,FREQ=%d '%s' buffer %d (%d)\n"),
+		s->al_format, ch, freq, sound_devices[index]->alname,
 		sd->sndbufsize, s->al_bufsize);
 	return 1;
 
 error:
 	close_audio_al (sd);
 	return 0;
+}
+
+static void setwavfmt (WAVEFORMATEXTENSIBLE *wavfmt, struct sound_data *sd, DWORD channelmask)
+{
+	memset (wavfmt, 0, sizeof WAVEFORMATEXTENSIBLE);
+	wavfmt->Format.nChannels = sd->channels;
+	wavfmt->Format.nSamplesPerSec = sd->freq;
+	wavfmt->Format.wBitsPerSample = 16;
+	wavfmt->Format.wFormatTag = WAVE_FORMAT_EXTENSIBLE;
+	wavfmt->Format.cbSize = sizeof (WAVEFORMATEXTENSIBLE) - sizeof (WAVEFORMATEX);
+	wavfmt->SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
+	wavfmt->Samples.wValidBitsPerSample = 16;
+	wavfmt->dwChannelMask = channelmask;
+	wavfmt->Format.nBlockAlign = wavfmt->Format.wBitsPerSample / 8 * wavfmt->Format.nChannels;
+	wavfmt->Format.nAvgBytesPerSec = wavfmt->Format.nBlockAlign * wavfmt->Format.nSamplesPerSec;
+}
+
+static void close_audio_xaudio2 (struct sound_data *sd)
+{
+	struct sound_dp *s = sd->data;
+	int i;
+
+	if (s->xsource)
+		s->xsource->DestroyVoice ();
+	s->xsource = NULL;
+	if (s->xmaster)
+		s->xmaster->DestroyVoice();
+	s->xmaster = NULL;
+	if (s->xaudio2)
+		s->xaudio2->Release();
+	s->xaudio2 = NULL;
+	for (i = 0; i < XA_BUFFERS; i++) {
+		xfree (s->xdata[i]);
+		s->xdata[i] = NULL;
+	}
+}
+
+static int open_audio_xaudio2 (struct sound_data *sd, int index)
+{
+	struct sound_dp *s = sd->data;
+	HRESULT hr;
+	WAVEFORMATEXTENSIBLE wavfmt;
+	int rncnt, i;
+
+	hr = XAudio2Create (&s->xaudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
+	if (FAILED (hr)) {
+		write_log (_T("XAudio2 enumeration failed, %08x\n"), hr);
+		return 0;
+	}
+
+	sd->devicetype = SOUND_DEVICE_XAUDIO2;
+
+	rncnt = 0;
+	for (;;) {
+		DWORD rn[4];
+		if (sd->channels == 6) {
+			rn[0] = KSAUDIO_SPEAKER_5POINT1;
+			rn[1] = KSAUDIO_SPEAKER_5POINT1_SURROUND;
+			rn[2] = 0;
+		} else if (sd->channels == 4) {
+			rn[0] = KSAUDIO_SPEAKER_QUAD;
+			rn[1] = KSAUDIO_SPEAKER_QUAD_SURROUND;
+			rn[2] = KSAUDIO_SPEAKER_SURROUND;
+			rn[3] = 0;
+		} else if (sd->channels == 2) {
+			rn[0] = KSAUDIO_SPEAKER_STEREO;
+			rn[1] = 0;
+		} else {
+			rn[0] = KSAUDIO_SPEAKER_MONO;
+			rn[1] = 0;
+		}
+		setwavfmt (&wavfmt, sd, rn[rncnt]);
+			
+		hr = s->xaudio2->CreateMasteringVoice (&s->xmaster, sd->channels, sd->freq, 0, sound_devices[index]->panum, NULL);
+		if (SUCCEEDED (hr)) {
+			hr = s->xaudio2->CreateSourceVoice (&s->xsource, &wavfmt.Format, XAUDIO2_VOICE_NOPITCH | XAUDIO2_VOICE_NOSRC, 1.0f, NULL, NULL, NULL);
+ 			if (SUCCEEDED (hr))
+				break;
+			s->xmaster->DestroyVoice ();
+			s->xmaster = NULL;
+		}
+
+		rncnt++;
+		if (rn[rncnt])
+			continue;
+
+		if (sd->freq < 44100) {
+			sd->freq = 44100;
+			continue;
+		}
+		if (sd->freq < 48000) {
+			sd->freq = 48000;
+			continue;
+		}
+		if (sd->channels != 2) {
+			sd->channels = 2;
+			continue;
+		}
+
+		write_log (_T("XAUDIO2: open failed %08X\n"), hr);
+		return 0;
+
+	}
+
+	sd->samplesize = sd->channels * 16 / 8;
+	sd->sndbufsize = sd->sndbufsize * sd->samplesize / 32;
+
+	write_log(_T("XAUDIO2: '%s' CH=%d FREQ=%d BUF=%d\n"),
+		sound_devices[index]->cfgname, sd->channels, sd->freq, sd->sndbufsize);
+	
+	sd->sndbufsize = sd->sndbufsize * sd->samplesize;
+
+	for (i = 0; i < XA_BUFFERS; i++)
+		s->xdata[i] = xcalloc (uae_u8, sd->sndbufsize);
+	
+	return 1;
+
 }
 
 static void close_audio_wasapi (struct sound_data *sd)
@@ -738,9 +1077,9 @@ static int open_audio_wasapi (struct sound_data *sd, int index, int exclusive)
 	LPWSTR name = NULL;
 	int rn[4], rncnt;
 	AUDCLNT_SHAREMODE sharemode;
-	int size, v;
+	int v;
 
-	sd->devicetype = SOUND_DEVICE_WASAPI;
+	sd->devicetype = exclusive ? SOUND_DEVICE_WASAPI_EXCLUSIVE : SOUND_DEVICE_WASAPI;
 	s->wasapiexclusive = exclusive;
 
 	if (s->wasapiexclusive)
@@ -752,40 +1091,40 @@ static int open_audio_wasapi (struct sound_data *sd, int index, int exclusive)
 		CLSCTX_ALL, __uuidof(IMMDeviceEnumerator),
 		(void**)&s->pEnumerator);
 	if (FAILED (hr)) {
-		write_log (L"WASAPI: %d\n", hr);
+		write_log (_T("WASAPI: %d\n"), hr);
 		goto error;
 	}
 
-	if (sound_devices[index].alname == NULL)
+	if (sound_devices[index]->alname == NULL)
 		hr = s->pEnumerator->GetDefaultAudioEndpoint (eRender, eMultimedia, &s->pDevice);
 	else
-		hr = s->pEnumerator->GetDevice (sound_devices[index].alname, &s->pDevice);
+		hr = s->pEnumerator->GetDevice (sound_devices[index]->alname, &s->pDevice);
 	if (FAILED (hr)) {
-		write_log (L"WASAPI: GetDevice(%s) %08X\n", sound_devices[index].alname ? sound_devices[index].alname : L"NULL", hr);
+		write_log (_T("WASAPI: GetDevice(%s) %08X\n"), sound_devices[index]->alname ? sound_devices[index]->alname : _T("NULL"), hr);
 		goto error;
 	}
 
 	hr = s->pDevice->GetId (&name);
 	if (FAILED (hr)) {
-		write_log (L"WASAPI: GetId() %08X\n", hr);
+		write_log (_T("WASAPI: GetId() %08X\n"), hr);
 		goto error;
 	}
 
 	hr = s->pDevice->Activate (__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&s->pAudioClient);
 	if (FAILED (hr)) {
-		write_log (L"WASAPI: Activate() %d\n", hr);
+		write_log (_T("WASAPI: Activate() %d\n"), hr);
 		goto error;
 	}
 
 	hr = s->pAudioClient->GetMixFormat (&pwfx);
 	if (FAILED (hr)) {
-		write_log (L"WASAPI: GetMixFormat() %08X\n", hr);
+		write_log (_T("WASAPI: GetMixFormat() %08X\n"), hr);
 		goto error;
 	}
 
 	hr = s->pAudioClient->GetDevicePeriod (NULL, &s->hnsRequestedDuration);
 	if (FAILED (hr)) {
-		write_log (L"WASAPI: GetDevicePeriod() %08X\n", hr);
+		write_log (_T("WASAPI: GetDevicePeriod() %08X\n"), hr);
 		goto error;
 	}
 
@@ -811,23 +1150,14 @@ static int open_audio_wasapi (struct sound_data *sd, int index, int exclusive)
 			rn[1] = 0;
 		}
 
-		memset (&wavfmt, 0, sizeof wavfmt);
-		wavfmt.Format.nChannels = sd->channels;
-		wavfmt.Format.nSamplesPerSec = sd->freq;
-		wavfmt.Format.wBitsPerSample = 16;
-		wavfmt.Format.wFormatTag = WAVE_FORMAT_EXTENSIBLE;
-		wavfmt.Format.cbSize = sizeof (WAVEFORMATEXTENSIBLE) - sizeof (WAVEFORMATEX);
-		wavfmt.SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
-		wavfmt.Samples.wValidBitsPerSample = 16;
-		wavfmt.dwChannelMask = rn[rncnt];
-		wavfmt.Format.nBlockAlign = wavfmt.Format.wBitsPerSample / 8 * wavfmt.Format.nChannels;
-		wavfmt.Format.nAvgBytesPerSec = wavfmt.Format.nBlockAlign * wavfmt.Format.nSamplesPerSec;
+		setwavfmt (&wavfmt, sd, rn[rncnt]);
+
 		CoTaskMemFree (pwfx);
 		pwfx = NULL;
 		hr = s->pAudioClient->IsFormatSupported (sharemode, &wavfmt.Format, &pwfx);
 		if (SUCCEEDED (hr) && hr != S_FALSE)
 			break;
-		write_log (L"WASAPI: IsFormatSupported(%d,%08X,%d) (%d,%d) %08X\n",
+		write_log (_T("WASAPI: IsFormatSupported(%d,%08X,%d) (%d,%d) %08X\n"),
 			sd->channels, rn[rncnt], sd->freq,
 			pwfx ? pwfx->nChannels : -1, pwfx ? pwfx->nSamplesPerSec : -1,
 			hr);
@@ -872,10 +1202,8 @@ static int open_audio_wasapi (struct sound_data *sd, int index, int exclusive)
 		sd->freq = pwfx_saved->nSamplesPerSec;
 	}
 
-	size = sd->sndbufsize * sd->channels * 16 / 8;
-	s->snd_configsize = size;
-	sd->sndbufsize = size / 32;
-	size /= (sd->channels * 16 / 8);
+	sd->samplesize = sd->channels * 16 / 8;
+	s->snd_configsize = sd->sndbufsize * sd->samplesize;
 
 	s->bufferFrameCount = (UINT32)( // frames =
 		1.0 * s->hnsRequestedDuration * // hns *
@@ -884,8 +1212,8 @@ static int open_audio_wasapi (struct sound_data *sd, int index, int exclusive)
 		10000 // (hns / s) /
 		+ 0.5); // rounding
 
-	if (s->bufferFrameCount < size) {
-		s->bufferFrameCount = size;
+	if (s->bufferFrameCount < sd->sndbufsize) {
+		s->bufferFrameCount = sd->sndbufsize;
 		s->hnsRequestedDuration = // hns =
 			(REFERENCE_TIME)(
 			10000.0 * // (hns / ms) *
@@ -901,7 +1229,7 @@ static int open_audio_wasapi (struct sound_data *sd, int index, int exclusive)
 	if (hr == AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED) {
 		hr = s->pAudioClient->GetBufferSize (&s->bufferFrameCount);
 		if (FAILED (hr)) {
-			write_log (L"WASAPI: GetBufferSize() %08X\n", hr);
+			write_log (_T("WASAPI: GetBufferSize() %08X\n"), hr);
 			goto error;
 		}
 		s->pAudioClient->Release ();
@@ -916,20 +1244,20 @@ static int open_audio_wasapi (struct sound_data *sd, int index, int exclusive)
 		s->hnsRequestedDuration *= sd->sndbufsize / 512;
 		hr = s->pDevice->Activate (__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&s->pAudioClient);
 		if (FAILED (hr)) {
-			write_log (L"WASAPI: Activate() %08X\n", hr);
+			write_log (_T("WASAPI: Activate() %08X\n"), hr);
 			goto error;
 		}
 		hr = s->pAudioClient->Initialize (sharemode, AUDCLNT_STREAMFLAGS_NOPERSIST,
 			s->hnsRequestedDuration, s->wasapiexclusive ? s->hnsRequestedDuration : 0, pwfx ? pwfx : &wavfmt.Format, NULL);
 	}
 	if (FAILED (hr)) {
-		write_log (L"WASAPI: Initialize() %08X\n", hr);
+		write_log (_T("WASAPI: Initialize() %08X\n"), hr);
 		goto error;
 	}
 
 	hr = s->pAudioClient->GetBufferSize (&s->bufferFrameCount);
 	if (FAILED (hr)) {
-		write_log (L"WASAPI: GetBufferSize() %08X\n", hr);
+		write_log (_T("WASAPI: GetBufferSize() %08X\n"), hr);
 		goto error;
 	}
 
@@ -944,34 +1272,34 @@ static int open_audio_wasapi (struct sound_data *sd, int index, int exclusive)
 
 	hr = s->pAudioClient->GetService (__uuidof(IAudioRenderClient), (void**)&s->pRenderClient);
 	if (FAILED (hr)) {
-		write_log (L"WASAPI: GetService(IAudioRenderClient) %08X\n", hr);
+		write_log (_T("WASAPI: GetService(IAudioRenderClient) %08X\n"), hr);
 		goto error;
 	}
 	hr = s->pAudioClient->GetService (__uuidof(ISimpleAudioVolume), (void**)&s->pAudioVolume );
 	if (FAILED (hr)) {
-		write_log (L"WASAPI: GetService(ISimpleAudioVolume) %08X\n", hr);
+		write_log (_T("WASAPI: GetService(ISimpleAudioVolume) %08X\n"), hr);
 		goto error;
 	}
 #if 0
 	hr = s->pAudioClient->GetService (IAudioClock, (void**)&s->pAudioClock);
 	if (FAILED (hr)) {
-		write_log (L"WASAPI: GetService(IAudioClock) %08X\n", hr);
+		write_log (_T("WASAPI: GetService(IAudioClock) %08X\n"), hr);
 	} else {
 		hr = s->pAudioClock->GetFrequency (&s->wasapiclock);
 		if (FAILED (hr)) {
-			write_log (L"WASAPI: GetFrequency() %08X\n", hr);
+			write_log (_T("WASAPI: GetFrequency() %08X\n"), hr);
 		}
 	}
 #endif
-	v = s->bufferFrameCount * sd->channels * 16 / 8;
+	sd->sndbufsize = (s->bufferFrameCount / 8) * sd->samplesize;
+	v = s->bufferFrameCount * sd->samplesize;
 	v /= 2;
 	if (sd->sndbufsize > v)
 		sd->sndbufsize = v;
-	s->wasapigoodsize =s->bufferFrameCount / 2;
-	s->sndbufframes = sd->sndbufsize / (sd->channels * 16 / 8);
+	s->wasapigoodsize = s->bufferFrameCount / 2;
 
-	write_log(L"WASAPI: '%s'\nWASAPI: EX=%d CH=%d FREQ=%d BUF=%d (%d)\n",
-		name, s->wasapiexclusive, sd->channels, sd->freq, sd->sndbufsize, s->bufferFrameCount);
+	write_log(_T("WASAPI: '%s'\nWASAPI: EX=%d CH=%d FREQ=%d BUF=%d (%d)\n"),
+		name, s->wasapiexclusive, sd->channels, sd->freq, sd->sndbufsize / sd->samplesize, s->bufferFrameCount);
 
 	CoTaskMemFree (pwfx);
 	CoTaskMemFree (pwfx_saved);
@@ -1024,15 +1352,15 @@ static int open_audio_ds (struct sound_data *sd, int index)
 
 	recalc_offsets (sd);
 
-	hr = DirectSoundCreate8 (&sound_devices[index].guid, &s->lpDS, NULL);
+	hr = DirectSoundCreate8 (&sound_devices[index]->guid, &s->lpDS, NULL);
 	if (FAILED (hr))  {
-		write_log (L"DSSOUND: DirectSoundCreate8() failure: %s\n", DXError (hr));
+		write_log (_T("DS: DirectSoundCreate8() failure: %s\n"), DXError (hr));
 		return 0;
 	}
 
 	hr = IDirectSound_SetCooperativeLevel (s->lpDS, hMainWnd, DSSCL_PRIORITY);
 	if (FAILED (hr)) {
-		write_log (L"DSSOUND: Can't set cooperativelevel: %s\n", DXError (hr));
+		write_log (_T("DS: Can't set cooperativelevel: %s\n"), DXError (hr));
 		goto error;
 	}
 
@@ -1040,11 +1368,11 @@ static int open_audio_ds (struct sound_data *sd, int index)
 	DSCaps.dwSize = sizeof (DSCaps);
 	hr = IDirectSound_GetCaps (s->lpDS, &DSCaps);
 	if (FAILED(hr)) {
-		write_log (L"DSSOUND: Error getting DirectSound capabilities: %s\n", DXError (hr));
+		write_log (_T("DS: Error getting DirectSound capabilities: %s\n"), DXError (hr));
 		goto error;
 	}
 	if (DSCaps.dwFlags & DSCAPS_EMULDRIVER) {
-		write_log (L"DSSOUND: Emulated DirectSound driver detected, don't complain if sound quality is crap :)\n");
+		write_log (_T("DS: Emulated DirectSound driver detected, don't complain if sound quality is crap :)\n"));
 	}
 	if (DSCaps.dwFlags & DSCAPS_CONTINUOUSRATE) {
 		int minfreq = DSCaps.dwMinSecondarySampleRate;
@@ -1052,20 +1380,20 @@ static int open_audio_ds (struct sound_data *sd, int index)
 		if (minfreq > freq && freq < 22050) {
 			freq = minfreq;
 			sd->freq = freq;
-			write_log (L"DSSOUND: minimum supported frequency: %d\n", minfreq);
+			write_log (_T("DS: minimum supported frequency: %d\n"), minfreq);
 		}
 		if (maxfreq < freq && freq > 44100) {
 			freq = maxfreq;
 			sd->freq = freq;
-			write_log (L"DSSOUND: maximum supported frequency: %d\n", maxfreq);
+			write_log (_T("DS: maximum supported frequency: %d\n"), maxfreq);
 		}
 	}
 
 	speakerconfig = fillsupportedmodes (sd, freq, supportedmodes);
-	write_log (L"DSSOUND: %08X ", speakerconfig);
+	write_log (_T("DS: %08X "), speakerconfig);
 	for (i = 0; supportedmodes[i].ch; i++)
-		write_log (L"%d:%08X ", supportedmodes[i].ch, supportedmodes[i].ksmode);
-	write_log (L"\n");
+		write_log (_T("%d:%08X "), supportedmodes[i].ch, supportedmodes[i].ksmode);
+	write_log (_T("\n"));
 
 	for (round = 0; supportedmodes[round].ch; round++) {
 		DWORD ksmode = 0;
@@ -1091,9 +1419,9 @@ static int open_audio_ds (struct sound_data *sd, int index)
 		wavfmt.Format.nBlockAlign = wavfmt.Format.wBitsPerSample / 8 * wavfmt.Format.nChannels;
 		wavfmt.Format.nAvgBytesPerSec = wavfmt.Format.nBlockAlign * wavfmt.Format.nSamplesPerSec;
 
-		write_log (L"DSSOUND: %08X,CH=%d,FREQ=%d '%s' buffer %d (%d), dist %d\n",
-			ksmode, ch, freq, sound_devices[index].name,
-			s->max_sndbufsize / sd->samplesize, s->max_sndbufsize, s->snd_configsize / sd->samplesize);
+		write_log (_T("DS: %08X,CH=%d,FREQ=%d '%s' buffer %d, dist %d\n"),
+			ksmode, ch, freq, sound_devices[index]->name,
+			s->max_sndbufsize / sd->samplesize, s->snd_configsize / sd->samplesize);
 
 		memset (&sound_buffer, 0, sizeof (sound_buffer));
 		sound_buffer.dwSize = sizeof (sound_buffer);
@@ -1112,11 +1440,11 @@ static int open_audio_ds (struct sound_data *sd, int index)
 			sound_buffer.dwFlags |=  DSBCAPS_LOCSOFTWARE;
 			hr = IDirectSound_CreateSoundBuffer (s->lpDS, &sound_buffer, &pdsb, NULL);
 			if (SUCCEEDED(hr)) {
-				//write_log (L"DSSOUND: Couldn't use hardware buffer (switched to software): %s\n", DXError (hr2));
+				//write_log (_T("DS: Couldn't use hardware buffer (switched to software): %s\n"), DXError (hr2));
 				break;
 			}
 		}
-		write_log (L"DSSOUND: Secondary CreateSoundBuffer() failure: %s\n", DXError (hr));
+		write_log (_T("DS: Secondary CreateSoundBuffer() failure: %s\n"), DXError (hr));
 	}
 
 	if (pdsb == NULL)
@@ -1124,7 +1452,7 @@ static int open_audio_ds (struct sound_data *sd, int index)
 	hr = pdsb->QueryInterface (IID_IDirectSoundBuffer8, (LPVOID*)&s->lpDSBsecondary);
 	IDirectSound_Release (pdsb);
 	if (FAILED (hr))  {
-		write_log (L"DSSOUND: Secondary QueryInterface() failure: %s\n", DXError (hr));
+		write_log (_T("DS: Secondary QueryInterface() failure: %s\n"), DXError (hr));
 		goto error;
 	}
 	clearbuffer (sd);
@@ -1136,24 +1464,29 @@ error:
 	return 0;
 }
 
-int open_sound_device (struct sound_data *sd, int index, int exclusive, int bufsize, int freq, int channels)
+int open_sound_device (struct sound_data *sd, int index, int bufsize, int freq, int channels)
 {
 	int ret = 0;
 	struct sound_dp *sdp = xcalloc (struct sound_dp, 1);
+	int type = sound_devices[index]->type;
+	
 	sd->data = sdp;
 	sd->sndbufsize = bufsize;
 	sd->freq = freq;
 	sd->channels = channels;
 	sd->paused = 1;
-	if (sound_devices[index].type == SOUND_DEVICE_AL)
+	if (type == SOUND_DEVICE_AL)
 		ret = open_audio_al (sd, index);
-	else if (sound_devices[index].type == SOUND_DEVICE_DS)
+	else if (type == SOUND_DEVICE_DS)
 		ret = open_audio_ds (sd, index);
-	else if (sound_devices[index].type == SOUND_DEVICE_PA)
+	else if (type == SOUND_DEVICE_PA)
 		ret = open_audio_pa (sd, index);
-	else if (sound_devices[index].type == SOUND_DEVICE_WASAPI)
-		ret = open_audio_wasapi (sd, index, exclusive);
+	else if (type == SOUND_DEVICE_WASAPI || type == SOUND_DEVICE_WASAPI_EXCLUSIVE)
+		ret = open_audio_wasapi (sd, index, type == SOUND_DEVICE_WASAPI_EXCLUSIVE);
+	else if (type == SOUND_DEVICE_XAUDIO2)
+		ret = open_audio_xaudio2 (sd, index);
 	sd->samplesize = sd->channels * 2;
+	sd->sndbufframes = sd->sndbufsize / sd->samplesize;
 	return ret;
 }
 void close_sound_device (struct sound_data *sd)
@@ -1165,8 +1498,10 @@ void close_sound_device (struct sound_data *sd)
 		close_audio_ds (sd);
 	else if (sd->devicetype == SOUND_DEVICE_PA)
 		close_audio_pa (sd);
-	else if (sd->devicetype == SOUND_DEVICE_WASAPI)
+	else if (sd->devicetype == SOUND_DEVICE_WASAPI || sd->devicetype == SOUND_DEVICE_WASAPI_EXCLUSIVE)
 		close_audio_wasapi (sd);
+	else if (sd->devicetype == SOUND_DEVICE_XAUDIO2)
+		close_audio_xaudio2 (sd);
 	xfree (sd->data);
 	sd->data = NULL;
 }
@@ -1179,8 +1514,10 @@ void pause_sound_device (struct sound_data *sd)
 		pause_audio_ds (sd);
 	else if (sd->devicetype == SOUND_DEVICE_PA)
 		pause_audio_pa (sd);
-	else if (sd->devicetype == SOUND_DEVICE_WASAPI)
+	else if (sd->devicetype == SOUND_DEVICE_WASAPI || sd->devicetype == SOUND_DEVICE_WASAPI_EXCLUSIVE)
 		pause_audio_wasapi (sd);
+	else if (sd->devicetype == SOUND_DEVICE_XAUDIO2)
+		pause_audio_xaudio2 (sd);
 }
 void resume_sound_device (struct sound_data *sd)
 {
@@ -1190,8 +1527,10 @@ void resume_sound_device (struct sound_data *sd)
 		resume_audio_ds (sd);
 	else if (sd->devicetype == SOUND_DEVICE_PA)
 		resume_audio_pa (sd);
-	else if (sd->devicetype == SOUND_DEVICE_WASAPI)
+	else if (sd->devicetype == SOUND_DEVICE_WASAPI || sd->devicetype == SOUND_DEVICE_WASAPI_EXCLUSIVE)
 		resume_audio_wasapi (sd);
+	else if (sd->devicetype == SOUND_DEVICE_XAUDIO2)
+		resume_audio_xaudio2 (sd);
 	sd->paused = 0;
 }
 
@@ -1210,16 +1549,18 @@ static int open_sound (void)
 	stereo would have been enabled and we'd have done the shift by
 	two anyway).  */
 	size >>= 2;
-	if (size & (size - 1))
-		size = DEFAULT_SOUND_MAXB;
-	if (size < 512)
-		size = 512;
+	size &= ~63;
+	if (size < 64)
+		size = 64;
 
+	sdp->softvolume = -1;
 	num = enumerate_sound_devices ();
 	if (currprefs.win32_soundcard >= num)
 		currprefs.win32_soundcard = changed_prefs.win32_soundcard = 0;
+	if (num == 0)
+		return 0;
 	ch = get_audio_nativechannels (currprefs.sound_stereo);
-	ret = open_sound_device (sdp, currprefs.win32_soundcard, currprefs.win32_soundexclusive, size, currprefs.sound_freq, ch);
+	ret = open_sound_device (sdp, currprefs.win32_soundcard, size, currprefs.sound_freq, ch);
 	if (!ret)
 		return 0;
 	currprefs.sound_freq = changed_prefs.sound_freq = sdp->freq;
@@ -1236,7 +1577,6 @@ static int open_sound (void)
 
 	have_sound = 1;
 	sound_available = 1;
-	update_sound (fake_vblank_hz, 1, currprefs.ntscmode);
 	paula_sndbufsize = sdp->sndbufsize;
 	paula_sndbufpt = paula_sndbuffer;
 	driveclick_init ();
@@ -1253,24 +1593,6 @@ void close_sound (void)
 		return;
 	close_sound_device (sdp);
 	have_sound = 0;
-}
-
-int init_sound (void)
-{
-	gui_data.sndbuf_status = 3;
-	gui_data.sndbuf = 0;
-	if (!sound_available)
-		return 0;
-	if (currprefs.produce_sound <= 1)
-		return 0;
-	if (have_sound)
-		return 1;
-	if (!open_sound ())
-		return 0;
-	sdp->paused = 1;
-	driveclick_reset ();
-	resume_sound ();
-	return 1;
 }
 
 void pause_sound (void)
@@ -1298,6 +1620,31 @@ void reset_sound (void)
 	clearbuffer (sdp);
 }
 
+int init_sound (void)
+{
+	bool started = false;
+	gui_data.sndbuf_status = 3;
+	gui_data.sndbuf = 0;
+	if (!sound_available)
+		return 0;
+	if (currprefs.produce_sound <= 1)
+		return 0;
+	if (have_sound)
+		return 1;
+	if (!open_sound ())
+		return 0;
+	sdp->paused = 1;
+	driveclick_reset ();
+	reset_sound ();
+	resume_sound ();
+	if (!started &&
+		(currprefs.win32_start_minimized && currprefs.win32_iconified_nosound ||
+		currprefs.win32_start_uncaptured && currprefs.win32_inactive_nosound))
+		pause_sound ();
+	started = true;
+	return 1;
+}
+
 static void disable_sound (void)
 {
 	close_sound ();
@@ -1309,37 +1656,6 @@ static void reopen_sound (void)
 	close_sound ();
 	open_sound ();
 }
-
-
-extern int vsynctime_orig;
-
-#ifndef AVIOUTPUT
-static int avioutput_audio;
-#endif
-
-void sound_setadjust (double v)
-{
-	float mult;
-
-	if (v >= -5 && v <= 5)
-		v = 0;
-
-	mult = (1000.0 + v);
-	if (avioutput_audio && avioutput_enabled && avioutput_nosoundsync)
-		mult = 1000.0;
-	if (isvsync () || (avioutput_audio && avioutput_enabled && !currprefs.cachesize)) {
-		vsynctime = vsynctime_orig;
-		scaled_sample_evtime = scaled_sample_evtime_orig * mult / 1000.0;
-	} else if (currprefs.cachesize || currprefs.m68k_speed != 0) {
-		vsynctime = (long)(((double)vsynctime_orig) * mult / 1000.0);
-		scaled_sample_evtime = scaled_sample_evtime_orig;
-	} else {
-		vsynctime = (long)(((double)vsynctime_orig) * mult / 1000.0);
-		scaled_sample_evtime = scaled_sample_evtime_orig;
-	}
-}
-
-#define SND_STATUSCNT 10
 
 #define cf(x) if ((x) >= s->dsoundbuf) (x) -= s->dsoundbuf;
 
@@ -1355,7 +1671,7 @@ static void restart_sound_buffer2 (struct sound_data *sd)
 		return;
 	hr = IDirectSoundBuffer_GetCurrentPosition (s->lpDSBsecondary, &playpos, &safed);
 	if (FAILED (hr)) {
-		write_log (L"DSSOUND: DirectSoundBuffer_GetCurrentPosition failed, %s\n", DXError (hr));
+		write_log (_T("DS: DirectSoundBuffer_GetCurrentPosition failed, %s\n"), DXError (hr));
 		return;
 	}
 	s->writepos = safed + s->snd_writeoffset;
@@ -1364,8 +1680,15 @@ static void restart_sound_buffer2 (struct sound_data *sd)
 	cf (s->writepos);
 }
 
+void pause_sound_buffer (void)
+{
+	sdp->deactive = true;
+	reset_sound ();
+}
+
 void restart_sound_buffer (void)
 {
+	sdp->deactive = false;
 	restart_sound_buffer2 (sdp);
 }
 
@@ -1378,8 +1701,8 @@ static int alcheck (struct sound_data *sd, int v)
 		alGetSourcei (s->al_Source, AL_BUFFERS_PROCESSED, &v1);
 		alGetSourcei (s->al_Source, AL_BUFFERS_QUEUED, &v2);
 		alGetSourcei (s->al_Source, AL_SOURCE_STATE, &v3);
-		write_log (L"OpenAL %d: error %d. PROC=%d QUEUE=%d STATE=%d\n", v, err, v1, v2, v3);
-		write_log (L"           %d %08x %08x %08x %d %d\n",
+		write_log (_T("OpenAL %d: error %d. PROC=%d QUEUE=%d STATE=%d\n"), v, err, v1, v2, v3);
+		write_log (_T("           %d %08x %08x %08x %d %d\n"),
 			s->al_toggle, s->al_Buffers[s->al_toggle], s->al_format, s->al_bigbuffer, s->al_bufsize, sd->freq);
 		return 1;
 	}
@@ -1390,24 +1713,13 @@ static void finish_sound_buffer_al (struct sound_data *sd, uae_u16 *sndbuffer)
 {
 	struct sound_dp *s = sd->data;
 	static int tfprev;
-	static int statuscnt;
 	int v, v2;
-	double m, skipmode;
 
 	if (!sd->waiting_for_buffer)
 		return;
 	if (savestate_state)
 		return;
 
-	if (sd == sdp) {
-		if (statuscnt > 0) {
-			statuscnt--;
-			if (statuscnt == 0)
-				gui_data.sndbuf_status = 0;
-		}
-		if (gui_data.sndbuf_status == 3)
-			gui_data.sndbuf_status = 0;
-	}
 	alGetError ();
 
 	memcpy (s->al_bigbuffer + s->al_offset, sndbuffer, sd->sndbufsize);
@@ -1426,7 +1738,7 @@ static void finish_sound_buffer_al (struct sound_data *sd, uae_u16 *sndbuffer)
 		alSourceUnqueueBuffers (s->al_Source, 1, &tmp);
 		alGetError ();
 
-		//	write_log (L"           %d %08x %08x %08x %d %d\n",
+		//	write_log (_T("           %d %08x %08x %08x %d %d\n"),
 		//	    al_toggle, al_Buffers[al_toggle], al_format, al_bigbuffer, al_bufsize, currprefs.sound_freq);
 
 		alBufferData (s->al_Buffers[s->al_toggle], s->al_format, s->al_bigbuffer, s->al_bufsize, sd->freq);
@@ -1443,7 +1755,7 @@ static void finish_sound_buffer_al (struct sound_data *sd, uae_u16 *sndbuffer)
 		alcheck (sd, 3);
 		if (v != AL_PLAYING && v2 >= AL_BUFFERS) {
 			if (sd->waiting_for_buffer > 0) {
-				write_log (L"AL SOUND PLAY!\n");
+				write_log (_T("AL SOUND PLAY!\n"));
 				alSourcePlay (s->al_Source);
 				sd->waiting_for_buffer = -1;
 				tfprev = timeframes + 10;
@@ -1451,7 +1763,7 @@ static void finish_sound_buffer_al (struct sound_data *sd, uae_u16 *sndbuffer)
 			} else {
 				gui_data.sndbuf_status = 2;
 				statuscnt = SND_STATUSCNT;
-				write_log (L"AL underflow\n");
+				write_log (_T("AL underflow\n"));
 				clearbuffer (sd);
 				sd->waiting_for_buffer = 1;
 			}
@@ -1467,6 +1779,10 @@ static void finish_sound_buffer_al (struct sound_data *sd, uae_u16 *sndbuffer)
 		alGetSourcei (s->al_Source, AL_BYTE_OFFSET, &v);
 		alcheck (sd, 7);
 		v -= s->al_offset;
+
+		docorrection (s, 100 * v / sd->sndbufsize, v / sd->samplesize, 100);
+
+#if 0
 		gui_data.sndbuf = 100 * v / sd->sndbufsize;
 		m = gui_data.sndbuf / 100.0;
 
@@ -1493,10 +1809,11 @@ static void finish_sound_buffer_al (struct sound_data *sd, uae_u16 *sndbuffer)
 		}
 		if (tfprev != timeframes) {
 			if ((0 || sound_debug) && !(tfprev % 10))
-				write_log (L"s=%+02.1f\n", skipmode);
+				write_log (_T("s=%+02.1f\n"), skipmode);
 			tfprev = timeframes;
 			sound_setadjust (skipmode);
 		}
+#endif
 	}
 
 	alcheck (sd, 0);
@@ -1515,7 +1832,7 @@ int blocking_sound_device (struct sound_data *sd)
 		hr = IDirectSoundBuffer_GetCurrentPosition (s->lpDSBsecondary, &playpos, &safepos);
 		if (FAILED (hr)) {
 			restore_ds (sd, hr);
-			write_log (L"DSSOUND: GetCurrentPosition failed: %s\n", DXError (hr));
+			write_log (_T("DS: GetCurrentPosition failed: %s\n"), DXError (hr));
 			return -1;
 		}
 		if (s->writepos >= safepos)
@@ -1537,7 +1854,7 @@ int blocking_sound_device (struct sound_data *sd)
 			return 0;
 		return 1;
 
-	} else if (sd->devicetype == SOUND_DEVICE_WASAPI) {
+	} else if (sd->devicetype == SOUND_DEVICE_WASAPI || sd->devicetype == SOUND_DEVICE_WASAPI_EXCLUSIVE) {
 
 		//	if (WaitForSingleObject (s->wasapihandle, 0) == WAIT_TIMEOUT)
 		//	    return 0;
@@ -1573,31 +1890,56 @@ int get_offset_sound_device (struct sound_data *sd)
 	return -1;
 }
 
-static double sync_sound (double m)
+
+static void finish_sound_buffer_xaudio2 (struct sound_data *sd, uae_u16 *sndbuffer)
 {
-	double skipmode;
-	if (isvsync ()) {
+	struct sound_dp *s = sd->data;
+	HRESULT hr;
+	int stuck = 2000;
+	int oldpadding = 0;
+	int avail;
+	XAUDIO2_BUFFER *buffer;
+	int goodsize = XA_BUFFERS * sd->sndbufframes / 2;
 
-		skipmode = pow (m < 0 ? -m : m, EXP) / 10;
-		if (m < 0)
-			skipmode = -skipmode;
-		if (skipmode < -ADJUST_VSSIZE)
-			skipmode = -ADJUST_VSSIZE;
-		if (skipmode > ADJUST_VSSIZE)
-			skipmode = ADJUST_VSSIZE;
-
-	} else if (1) {
-
-		skipmode = pow (m < 0 ? -m : m, EXP) / 2;
-		if (m < 0)
-			skipmode = -skipmode;
-		if (skipmode < -ADJUST_SIZE)
-			skipmode = -ADJUST_SIZE;
-		if (skipmode > ADJUST_SIZE)
-			skipmode = ADJUST_SIZE;
+	for (;;) {
+		XAUDIO2_VOICE_STATE state;
+		s->xsource->GetState (&state);
+		avail = s->xsamplesplayed - state.SamplesPlayed;
+		//write_log (_T("%d %d\n"), state.BuffersQueued,  goodsize - avail);
+		if (state.BuffersQueued == 0 || (avail >= sd->sndbufframes && state.BuffersQueued < XA_BUFFERS)) {
+			if (avail >= 2 * XA_BUFFERS * sd->sndbufframes) {
+				statuscnt = SND_STATUSCNT;
+				gui_data.sndbuf_status = 2;
+			}
+			break;
+		}
+		gui_data.sndbuf_status = 1;
+		statuscnt = SND_STATUSCNT;
+		sleep_millis (1);
+		if (oldpadding == avail) {
+			if (stuck-- < 0) {
+				write_log (_T("XAUDIO2: sound stuck %d !?\n"), avail, sd->sndbufframes);
+				reopen_sound ();
+				return;
+			}
+		}
+		oldpadding = avail;
 	}
 
-	return skipmode;
+	docorrection (s, (goodsize - avail) * 1000 / goodsize, goodsize - avail, 100);
+
+	memcpy (s->xdata[s->xabufcnt], sndbuffer, sd->sndbufsize);
+	buffer = &s->xbuffer[s->xabufcnt];
+	buffer->AudioBytes = sd->sndbufsize;
+	buffer->pAudioData = (BYTE*)s->xdata[s->xabufcnt];
+	hr = s->xsource->SubmitSourceBuffer (buffer);
+	if (FAILED (hr)) {
+		write_log (_T("XAUDIO2: SubmitSourceBuffer %08X\n"), hr);
+		return;
+	}
+	s->xsamplesplayed += sd->sndbufframes;
+	s->xabufcnt = (s->xabufcnt + 1) & (XA_BUFFERS - 1);
+
 }
 
 static void finish_sound_buffer_wasapi (struct sound_data *sd, uae_u16 *sndbuffer)
@@ -1605,52 +1947,44 @@ static void finish_sound_buffer_wasapi (struct sound_data *sd, uae_u16 *sndbuffe
 	struct sound_dp *s = sd->data;
 	HRESULT hr;
 	BYTE *pData;
-	double skipmode;
 	UINT32 numFramesPadding;
 	int avail;
 	int stuck = 2000;
 	int oldpadding = 0;
 
-	if (sd->paused)
-		return;
-
-	s->framecounter++;
-	if (s->framecounter > 50) {
-		s->sndbuf = s->sndbuf / s->framecounter;
-		s->framecounter = 2;
-	}
-
 	for (;;) {
 		hr = s->pAudioClient->GetCurrentPadding (&numFramesPadding);
 		if (FAILED (hr)) {
-			write_log (L"WASAPI: GetCurrentPadding() %08X\n", hr);
+			write_log (_T("WASAPI: GetCurrentPadding() %08X\n"), hr);
 			return;
 		}
 		avail = s->bufferFrameCount - numFramesPadding;
-		if (avail >= s->sndbufframes)
+		if (avail >= sd->sndbufframes) {
+			if (avail >= s->wasapigoodsize * 2 - sd->sndbufframes * 1) {
+				statuscnt = SND_STATUSCNT;
+				gui_data.sndbuf_status = 2;
+			}
 			break;
+		}
 		gui_data.sndbuf_status = 1;
 		statuscnt = SND_STATUSCNT;
 		sleep_millis (1);
 		if (oldpadding == numFramesPadding) {
 			if (stuck-- < 0) {
-				write_log (L"WASAPI: sound stuck %d %d %d !?\n", s->bufferFrameCount, numFramesPadding, s->sndbufframes);
+				write_log (_T("WASAPI: sound stuck %d %d %d !?\n"), s->bufferFrameCount, numFramesPadding, sd->sndbufframes);
 				reopen_sound ();
 				return;
 			}
 		}
 		oldpadding = numFramesPadding;
 	}
-	s->sndbuf += (s->wasapigoodsize - avail) * 1000 / s->wasapigoodsize;
-	gui_data.sndbuf = s->sndbuf / s->framecounter;
-	if (s->framecounter == 2) {
-		skipmode = sync_sound (gui_data.sndbuf / 70.0);
-		sound_setadjust (skipmode);
-	}
-	hr = s->pRenderClient->GetBuffer (s->sndbufframes, &pData);
+
+	docorrection (s, (s->wasapigoodsize - avail) * 1000 / s->wasapigoodsize, s->wasapigoodsize - avail, 100);
+
+	hr = s->pRenderClient->GetBuffer (sd->sndbufframes, &pData);
 	if (SUCCEEDED (hr)) {
 		memcpy (pData, sndbuffer, sd->sndbufsize);
-		s->pRenderClient->ReleaseBuffer (s->sndbufframes, 0);
+		s->pRenderClient->ReleaseBuffer (sd->sndbufframes, 0);
 	}
 
 }
@@ -1672,14 +2006,14 @@ static void finish_sound_buffer_ds (struct sound_data *sd, uae_u16 *sndbuffer)
 	if (sd->waiting_for_buffer == 1) {
 		hr = s->lpDSBsecondary->Play (0, 0, DSBPLAY_LOOPING);
 		if (FAILED (hr)) {
-			write_log (L"DSSOUND: Play failed: %s\n", DXError (hr));
+			write_log (_T("DS: Play failed: %s\n"), DXError (hr));
 			restore_ds (sd, DSERR_BUFFERLOST);
 			sd->waiting_for_buffer = 0;
 			return;
 		}
 		hr = s->lpDSBsecondary->SetCurrentPosition (0);
 		if (FAILED (hr)) {
-			write_log (L"DSSOUND: 1st SetCurrentPosition failed: %s\n", DXError (hr));
+			write_log (_T("DS: 1st SetCurrentPosition failed: %s\n"), DXError (hr));
 			restore_ds (sd, DSERR_BUFFERLOST);
 			sd->waiting_for_buffer = 0;
 			return;
@@ -1693,12 +2027,12 @@ static void finish_sound_buffer_ds (struct sound_data *sd, uae_u16 *sndbuffer)
 			sleep_millis (1);
 			counter--;
 			if (counter < 0) {
-				write_log (L"DSSOUND: stuck?!?!\n");
+				write_log (_T("DS: stuck?!?!\n"));
 				disable_sound ();
-				break;
+				return;
 			}
 		}
-		write_log (L"DSSOUND: %d = (%d - %d)\n", (s->safedist - playpos) / sd->samplesize, s->safedist / sd->samplesize, playpos / sd->samplesize);
+		write_log (_T("DS: %d = (%d - %d)\n"), (s->safedist - playpos) / sd->samplesize, s->safedist / sd->samplesize, playpos / sd->samplesize);
 		recalc_offsets (sd);
 		s->safedist -= playpos;
 		if (s->safedist < 64)
@@ -1716,7 +2050,7 @@ static void finish_sound_buffer_ds (struct sound_data *sd, uae_u16 *sndbuffer)
 #endif
 		sd->waiting_for_buffer = -1;
 		restart_sound_buffer2 (sd);
-		write_log (L"DSSOUND: bs=%d w=%d max=%d tof=%d tuf=%d\n",
+		write_log (_T("DS: bs=%d w=%d max=%d tof=%d tuf=%d\n"),
 			sd->sndbufsize / sd->samplesize, s->snd_writeoffset / sd->samplesize,
 			s->snd_maxoffset / sd->samplesize, s->snd_totalmaxoffset_of / sd->samplesize,
 			s->snd_totalmaxoffset_uf / sd->samplesize);
@@ -1727,17 +2061,17 @@ static void finish_sound_buffer_ds (struct sound_data *sd, uae_u16 *sndbuffer)
 	counter = 5000;
 	hr = s->lpDSBsecondary->GetStatus (&status);
 	if (FAILED (hr)) {
-		write_log (L"DSSOUND: GetStatus() failed: %s\n", DXError (hr));
+		write_log (_T("DS: GetStatus() failed: %s\n"), DXError (hr));
 		restore_ds (sd, DSERR_BUFFERLOST);
 		return;
 	}
 	if (status & DSBSTATUS_BUFFERLOST) {
-		write_log (L"DSSOUND: buffer lost\n");
+		write_log (_T("DS: buffer lost\n"));
 		restore_ds (sd, DSERR_BUFFERLOST);
 		return;
 	}
 	if ((status & (DSBSTATUS_PLAYING | DSBSTATUS_LOOPING)) != (DSBSTATUS_PLAYING | DSBSTATUS_LOOPING)) {
-		write_log (L"DSSOUND: status = %08X\n", status);
+		write_log (_T("DS: status = %08X\n"), status);
 		restore_ds (sd, DSERR_BUFFERLOST);
 		return;
 	}
@@ -1745,7 +2079,7 @@ static void finish_sound_buffer_ds (struct sound_data *sd, uae_u16 *sndbuffer)
 		hr = s->lpDSBsecondary->GetCurrentPosition (&playpos, &safepos);
 		if (FAILED (hr)) {
 			restore_ds (sd, hr);
-			write_log (L"DSSOUND: GetCurrentPosition failed: %s\n", DXError (hr));
+			write_log (_T("DS: GetCurrentPosition failed: %s\n"), DXError (hr));
 			return;
 		}
 		if (s->writepos >= safepos)
@@ -1778,7 +2112,7 @@ static void finish_sound_buffer_ds (struct sound_data *sd, uae_u16 *sndbuffer)
 			statuscnt = SND_STATUSCNT;
 			restart_sound_buffer2 (sd);
 			diff = s->snd_writeoffset;
-			write_log (L"DSSOUND: underflow (%d %d)\n", diff / sd->samplesize, s->snd_totalmaxoffset_of / sd->samplesize);
+			write_log (_T("DS: underflow (%d %d)\n"), diff / sd->samplesize, s->snd_totalmaxoffset_of / sd->samplesize);
 			break;
 		}
 
@@ -1788,7 +2122,7 @@ static void finish_sound_buffer_ds (struct sound_data *sd, uae_u16 *sndbuffer)
 			sleep_millis (1);
 			counter--;
 			if (counter < 0) {
-				write_log (L"DSSOUND: sound system got stuck!?\n");
+				write_log (_T("DS: sound system got stuck!?\n"));
 				restore_ds (sd, DSERR_BUFFERLOST);
 				reopen_sound ();
 				return;
@@ -1802,7 +2136,7 @@ static void finish_sound_buffer_ds (struct sound_data *sd, uae_u16 *sndbuffer)
 	if (restore_ds (sd, hr))
 		return;
 	if (FAILED (hr)) {
-		write_log (L"DSSOUND: lock failed: %s (%d %d)\n", DXError (hr), s->writepos / sd->samplesize, sd->sndbufsize / sd->samplesize);
+		write_log (_T("DS: lock failed: %s (%d %d)\n"), DXError (hr), s->writepos / sd->samplesize, sd->sndbufsize / sd->samplesize);
 		return;
 	}
 	memcpy (b1, sndbuffer, s1);
@@ -1813,18 +2147,25 @@ static void finish_sound_buffer_ds (struct sound_data *sd, uae_u16 *sndbuffer)
 	if (sd == sdp) {
 		double vdiff, m, skipmode;
 
-		vdiff = diff - s->snd_writeoffset;
-		m = 100.0 * vdiff / s->max_sndbufsize;
+		vdiff = (diff - s->snd_writeoffset) / sd->samplesize;
+		m = 100.0 * vdiff / (s->max_sndbufsize / sd->samplesize);
 		skipmode = sync_sound (m);
 
 		if (tfprev != timeframes) {
 			gui_data.sndbuf = vdiff * 1000 / (s->snd_maxoffset - s->snd_writeoffset);
+			s->avg_correct += vdiff;
+			s->cnt_correct++;
+			double adj = (s->avg_correct / s->cnt_correct) / 50.0;
 			if ((0 || sound_debug) && !(tfprev % 10))
-				write_log (L"b=%4d,%5d,%5d,%5d d=%5d vd=%5.0f s=%+02.1f\n",
+				write_log (_T("%d,%d,%d,%d d%5d vd%5.0f s%+02.1f %.0f %+02.1f\n"),
 				sd->sndbufsize / sd->samplesize, s->snd_configsize / sd->samplesize, s->max_sndbufsize / sd->samplesize,
-				s->dsoundbuf / sd->samplesize, diff / sd->samplesize, vdiff, skipmode);
+				s->dsoundbuf / sd->samplesize, diff / sd->samplesize, vdiff, skipmode, s->avg_correct / s->cnt_correct, adj);
 			tfprev = timeframes;
-			sound_setadjust (skipmode);
+			if (skipmode > ADJUST_LIMIT2)
+				skipmode = ADJUST_LIMIT2;
+			if (skipmode < -ADJUST_LIMIT2)
+				skipmode = -ADJUST_LIMIT2;
+			sound_setadjust (skipmode + adj);
 		}
 	}
 
@@ -1858,20 +2199,33 @@ static void channelswap6 (uae_s16 *sndbuffer, int len)
 
 void send_sound (struct sound_data *sd, uae_u16 *sndbuffer)
 {
+	int type = sd->devicetype;
 	if (savestate_state)
 		return;
-	if (sd->devicetype == SOUND_DEVICE_AL)
+	if (sd->paused)
+		return;
+	if (sd->softvolume >= 0) {
+		uae_s16 *p = (uae_s16*)sndbuffer;
+		for (int i = 0; i < sd->sndbufsize / 2; i++) {
+			p[i] = p[i] * sd->softvolume / 32768;
+		}
+	}
+	if (type == SOUND_DEVICE_AL)
 		finish_sound_buffer_al (sd, sndbuffer);
-	else if (sd->devicetype == SOUND_DEVICE_DS)
+	else if (type == SOUND_DEVICE_DS)
 		finish_sound_buffer_ds (sd, sndbuffer);
-	else if (sd->devicetype == SOUND_DEVICE_PA)
+	else if (type == SOUND_DEVICE_PA)
 		finish_sound_buffer_pa (sd, sndbuffer);
-	else if (sd->devicetype == SOUND_DEVICE_WASAPI)
+	else if (type == SOUND_DEVICE_WASAPI || type == SOUND_DEVICE_WASAPI_EXCLUSIVE)
 		finish_sound_buffer_wasapi (sd, sndbuffer);
+	else if (type == SOUND_DEVICE_XAUDIO2)
+		finish_sound_buffer_xaudio2 (sd, sndbuffer);
 }
 
 void finish_sound_buffer (void)
 {
+	static unsigned long tframe;
+
 	if (currprefs.turbo_emulation)
 		return;
 	if (currprefs.sound_stereo_swap_paula) {
@@ -1891,7 +2245,9 @@ void finish_sound_buffer (void)
 #endif
 	if (!have_sound)
 		return;
-	if (statuscnt > 0) {
+
+	if (statuscnt > 0 && tframe != timeframes) {
+		tframe = timeframes;
 		statuscnt--;
 		if (statuscnt == 0)
 			gui_data.sndbuf_status = 0;
@@ -1903,38 +2259,40 @@ void finish_sound_buffer (void)
 
 static BOOL CALLBACK DSEnumProc (LPGUID lpGUID, LPCTSTR lpszDesc, LPCTSTR lpszDrvName, LPVOID lpContext)
 {
-	struct sound_device *sd = (struct sound_device*)lpContext;
+	struct sound_device **sd = (struct sound_device**)lpContext;
 	int i;
 
 	for (i = 0; i < MAX_SOUND_DEVICES; i++) {
-		if (sd[i].name == NULL)
+		if (sd[i] == NULL)
 			break;
 	}
 	if (i >= MAX_SOUND_DEVICES)
 		return TRUE;
+
+	sd[i] = xcalloc (struct sound_device, 1);
 	if (lpGUID != NULL)
-		memcpy (&sd[i].guid, lpGUID, sizeof (GUID));
-	sd[i].name = my_strdup (lpszDesc);
-	sd[i].type = SOUND_DEVICE_DS;
-	sd[i].cfgname = my_strdup (sd[i].name);
+		memcpy (&sd[i]->guid, lpGUID, sizeof (GUID));
+	sd[i]->name = my_strdup (lpszDesc);
+	sd[i]->type = SOUND_DEVICE_DS;
+	sd[i]->cfgname = my_strdup (sd[i]->name);
 	return TRUE;
 }
 
-static void wasapi_enum (struct sound_device *sd)
+static void wasapi_enum (struct sound_device **sdp)
 {
 	HRESULT hr;
 	IMMDeviceEnumerator *enumerator;
 	IMMDeviceCollection *col;
-	int i, cnt;
+	int i, cnt, cnt2, start;
 
-	write_log (L"Enumerating WASAPI devices...\n");
+	write_log (_T("Enumerating WASAPI devices...\n"));
 	for (cnt = 0; cnt < MAX_SOUND_DEVICES; cnt++) {
-		if (sd->name == NULL)
+		if (sdp[cnt] == NULL)
 			break;
-		sd++;
 	}
 	if (cnt >= MAX_SOUND_DEVICES)
 		return;
+	start = cnt;
 
 	hr = CoCreateInstance (__uuidof(MMDeviceEnumerator), NULL,
 		CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&enumerator);
@@ -1966,22 +2324,20 @@ static void wasapi_enum (struct sound_device *sd)
 						dev->Release ();
 					}
 					if (devid && devname) {
-						TCHAR tmp[MAX_DPATH];
 						if (i == 0) {
-							sd->cfgname = my_strdup (L"WASAPI:Default Audio Device");
-							sd->type = SOUND_DEVICE_WASAPI;
-							sd->name = my_strdup (L"Default Audio Device");
-							sd->alname = NULL;
-							sd++;
+							sdp[cnt] = xcalloc (struct sound_device, 1);
+							sdp[cnt]->cfgname = my_strdup (_T("Default Audio Device"));
+							sdp[cnt]->type = SOUND_DEVICE_WASAPI;
+							sdp[cnt]->name = my_strdup (_T("Default Audio Device"));
+							sdp[cnt]->alname = NULL;
 							cnt++;
 						}
 						if (cnt < MAX_SOUND_DEVICES) {
-							_stprintf (tmp, L"WASAPI:%s", devname);
-							sd->cfgname = my_strdup (tmp);
-							sd->type = SOUND_DEVICE_WASAPI;
-							sd->name = my_strdup (devname);
-							sd->alname = my_strdup (devid);
-							sd++;
+							sdp[cnt] = xcalloc (struct sound_device, 1);
+							sdp[cnt]->cfgname = my_strdup (devname);
+							sdp[cnt]->type = SOUND_DEVICE_WASAPI;
+							sdp[cnt]->name = my_strdup (devname);
+							sdp[cnt]->alname = my_strdup (devid);
 							cnt++;
 						}
 					}
@@ -1993,22 +2349,37 @@ static void wasapi_enum (struct sound_device *sd)
 		}
 		enumerator->Release ();
 	}
+	cnt2 = cnt;
+	for (i = start; i < cnt2; i++) {
+		TCHAR buf[1000];
+		_stprintf (buf, _T("WASAPIX:%s"), sdp[i]->cfgname);
+		sdp[cnt] = xcalloc (struct sound_device, 1);
+		sdp[cnt]->cfgname = my_strdup (buf);
+		sdp[cnt]->name = my_strdup (sdp[i]->name);
+		sdp[cnt]->alname = sdp[i]->alname ? my_strdup (sdp[i]->alname) : NULL;
+		_stprintf (buf, _T("WASAPI:%s"), sdp[i]->cfgname);
+		sdp[cnt]->type = SOUND_DEVICE_WASAPI_EXCLUSIVE;
+		xfree (sdp[i]->cfgname);
+		sdp[i]->cfgname = my_strdup (buf);
+		cnt++;
+	}
+
 }
 
-static void OpenALEnumerate (struct sound_device *sds, const char *pDeviceNames, const char *ppDefaultDevice, int skipdetect)
+static void OpenALEnumerate (struct sound_device **sds, const char *pDeviceNames, const char *ppDefaultDevice, int skipdetect)
 {
-	struct sound_device *sd;
 	while (pDeviceNames && *pDeviceNames) {
 		ALCdevice *pDevice;
 		const char *devname;
 		int i, ok;
+
 		for (i = 0; i < MAX_SOUND_DEVICES; i++) {
-			sd = &sds[i];
-			if (sd->name == NULL)
+			if (sds[i] == NULL)
 				break;
 		}
 		if (i >= MAX_SOUND_DEVICES)
 			return;
+
 		devname = pDeviceNames;
 		if (ppDefaultDevice)
 			devname = ppDefaultDevice;
@@ -2035,19 +2406,20 @@ static void OpenALEnumerate (struct sound_device *sds, const char *pDeviceNames,
 		}
 		if (ok) {
 			TCHAR tmp[MAX_DPATH];
-			sd->type = SOUND_DEVICE_AL;
+			sds[i] = xcalloc (struct sound_device, 1);
+			sds[i]->type = SOUND_DEVICE_AL;
 			if (ppDefaultDevice) {
 				TCHAR *tdevname = au (devname);
-				_stprintf (tmp, L"Default [%s]", tdevname);
+				_stprintf (tmp, _T("Default [%s]"), tdevname);
 				xfree (tdevname);
-				sd->alname = my_strdup_ansi (ppDefaultDevice);
-				sd->name = my_strdup (tmp);
+				sds[i]->alname = my_strdup_ansi (ppDefaultDevice);
+				sds[i]->name = my_strdup (tmp);
 			} else {
-				sd->alname = my_strdup_ansi (pDeviceNames);
-				sd->name = my_strdup_ansi (pDeviceNames);
+				sds[i]->alname = my_strdup_ansi (pDeviceNames);
+				sds[i]->name = my_strdup_ansi (pDeviceNames);
 			}
-			_stprintf (tmp, L"OPENAL:%s", sd->alname);
-			sd->cfgname = my_strdup (tmp);
+			_stprintf (tmp, _T("OPENAL:%s"), sds[i]->alname);
+			sds[i]->cfgname = my_strdup (tmp);
 		}
 		if (ppDefaultDevice)
 			ppDefaultDevice = NULL;
@@ -2055,11 +2427,46 @@ static void OpenALEnumerate (struct sound_device *sds, const char *pDeviceNames,
 			pDeviceNames += strlen (pDeviceNames) + 1;
 	}
 }
+
+static void xaudioenumerate (struct sound_device **sds)
+{
+	IXAudio2 *xaudio2 = NULL;
+	HRESULT hr;
+	int i, j;
+	UINT32 num;
+
+	hr = XAudio2Create (&xaudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
+	if (FAILED (hr)) {
+		write_log (_T("XAudio2 enumeration failed, %08x\n"), hr);
+		return;
+	}
+	hr = xaudio2->GetDeviceCount (&num);
+	if (SUCCEEDED (hr)) {
+		for (i = 0; i < num; i++) {
+			XAUDIO2_DEVICE_DETAILS dd;
+			hr = xaudio2->GetDeviceDetails (i, &dd);
+			if (FAILED (hr))
+				continue;
+			for (j = 0; j < MAX_SOUND_DEVICES; j++) {
+				if (sds[j] == NULL)
+					break;
+			}
+			if (j < MAX_SOUND_DEVICES) {
+				sds[j] = xcalloc (struct sound_device, 1);
+				sds[j]->type = SOUND_DEVICE_XAUDIO2;
+				sds[j]->panum = i;
+				sds[j]->name = my_strdup (dd.DisplayName);
+				sds[j]->cfgname = my_strdup (dd.DeviceID);
+			}
+		}
+	}
+	xaudio2->Release();
+}
+
 #define PORTAUDIO 1
 #if PORTAUDIO
-static void PortAudioEnumerate (struct sound_device *sds)
+static void PortAudioEnumerate (struct sound_device **sds)
 {
-	struct sound_device *sd;
 	int num;
 	int i, j;
 	TCHAR tmp[MAX_DPATH], tmp2[MAX_DPATH], *s1, *s2;
@@ -2067,7 +2474,7 @@ static void PortAudioEnumerate (struct sound_device *sds)
 	num = Pa_GetDeviceCount ();
 	if (num < 0) {
 		TCHAR *errtxt = au (Pa_GetErrorText (num));
-		write_log (L"PA: Pa_GetDeviceCount() failed: %08x (%s)\n", num, errtxt);
+		write_log (_T("PA: Pa_GetDeviceCount() failed: %08x (%s)\n"), num, errtxt);
 		xfree (errtxt);
 		return;
 	}
@@ -2083,22 +2490,22 @@ static void PortAudioEnumerate (struct sound_device *sds)
 		if (hai->type == paDirectSound || hai->type == paMME)
 			continue;
 		for (i = 0; i < MAX_SOUND_DEVICES; i++) {
-			sd = &sds[i];
-			if (sd->name == NULL)
+			if (sds[i] == NULL)
 				break;
 		}
 		if (i >= MAX_SOUND_DEVICES)
 			return;
+		sds[i] = xcalloc (struct sound_device, 1);
 		s1 = au (hai->name);
 		s2 = au (di->name);
-		_stprintf (tmp, L"[%s] %s", s1, s2);
+		_stprintf (tmp, _T("[%s] %s"), s1, s2);
 		xfree (s2);
 		xfree (s1);
-		sd->type = SOUND_DEVICE_PA;
-		sd->name = my_strdup (tmp);
-		_stprintf (tmp2, L"PORTAUDIO:%s", tmp);
-		sd->cfgname = my_strdup (tmp2);
-		sd->panum = j;
+		sds[i]->type = SOUND_DEVICE_PA;
+		sds[i]->name = my_strdup (tmp);
+		_stprintf (tmp2, _T("PORTAUDIO:%s"), tmp);
+		sds[i]->cfgname = my_strdup (tmp2);
+		sds[i]->panum = j;
 	}
 }
 #endif
@@ -2113,17 +2520,19 @@ int enumerate_sound_devices (void)
 {
 	if (!num_sound_devices) {
 		HMODULE l = NULL;
-		write_log (L"Enumerating DirectSound devices..\n");
-		if (os_vista && (sounddrivermask & SOUNDDRIVER_WASAPI))
-			wasapi_enum (sound_devices);
+		write_log (_T("Enumerating DirectSound devices..\n"));
 		if ((1 || force_directsound || !os_vista) && (sounddrivermask & SOUNDDRIVER_DS)) {
 			DirectSoundEnumerate ((LPDSENUMCALLBACK)DSEnumProc, sound_devices);
 		}
 		DirectSoundCaptureEnumerate ((LPDSENUMCALLBACK)DSEnumProc, record_devices);
+		if (os_vista && (sounddrivermask & SOUNDDRIVER_WASAPI))
+			wasapi_enum (sound_devices);
+		if (sounddrivermask & SOUNDDRIVE_XAUDIO2)
+			xaudioenumerate (sound_devices);
 		if (sounddrivermask & SOUNDDRIVER_OPENAL) {
 			__try {
-				if (isdllversion (L"openal32.dll", 6, 14, 357, 22)) {
-					write_log (L"Enumerating OpenAL devices..\n");
+				if (isdllversion (_T("openal32.dll"), 6, 14, 357, 22)) {
+					write_log (_T("Enumerating OpenAL devices..\n"));
 					if (alcIsExtensionPresent (NULL, "ALC_ENUMERATION_EXT")) {
 						const char* ppDefaultDevice = alcGetString (NULL, ALC_DEFAULT_DEVICE_SPECIFIER);
 						const char* pDeviceNames = alcGetString (NULL, ALC_DEVICE_SPECIFIER);
@@ -2138,20 +2547,24 @@ int enumerate_sound_devices (void)
 					}
 				}
 			} __except(ExceptionFilter (GetExceptionInformation (), GetExceptionCode ())) {
-				write_log (L"OpenAL enumeration crashed!\n");
+				write_log (_T("OpenAL enumeration crashed!\n"));
 				flush_log ();
 			}
 		}
 #if PORTAUDIO
 		if (sounddrivermask & SOUNDDRIVER_PORTAUDIO) {
 			__try {
-				HMODULE hm = WIN32_LoadLibrary (L"portaudio_x86.dll");
+#ifdef CPU_64_BIT
+				HMODULE hm = WIN32_LoadLibrary (_T("portaudio.dll"));
+#else
+				HMODULE hm = WIN32_LoadLibrary (_T("portaudio_x86.dll"));
+#endif
 				if (hm) {
 					TCHAR *s;
 					PaError err;
-					write_log (L"Enumerating PortAudio devices..\n");
+					write_log (_T("Enumerating PortAudio devices..\n"));
 					s = au (Pa_GetVersionText ());
-					write_log (L"%s (%d)\n", s, Pa_GetVersion ());
+					write_log (_T("%s (%d)\n"), s, Pa_GetVersion ());
 					xfree (s);
 					if (Pa_GetVersion () >= 1899) {
 						err = Pa_Initialize ();
@@ -2159,29 +2572,29 @@ int enumerate_sound_devices (void)
 							PortAudioEnumerate (sound_devices);
 						} else {
 							s = au (Pa_GetErrorText (err));
-							write_log (L"Portaudio initialization failed: %d (%s)\n",
+							write_log (_T("Portaudio initialization failed: %d (%s)\n"),
 								err, s);
 							xfree (s);
 							FreeLibrary (hm);
 						}
 					} else {
-						write_log (L"Too old PortAudio library\n");
+						write_log (_T("Too old PortAudio library\n"));
 						flush_log ();
 						FreeLibrary (hm);
 					}
 				}
 			} __except(ExceptionFilter (GetExceptionInformation (), GetExceptionCode ())) {
-				write_log (L"Portaudio enumeration crashed!\n");
+				write_log (_T("Portaudio enumeration crashed!\n"));
 			}
 		}
 #endif
-		write_log (L"Enumeration end\n");
+		write_log (_T("Enumeration end\n"));
 		for (num_sound_devices = 0; num_sound_devices < MAX_SOUND_DEVICES; num_sound_devices++) {
-			if (sound_devices[num_sound_devices].name == NULL)
+			if (sound_devices[num_sound_devices] == NULL)
 				break;
 		}
 		for (num_record_devices = 0; num_record_devices < MAX_SOUND_DEVICES; num_record_devices++) {
-			if (record_devices[num_record_devices].name == NULL)
+			if (record_devices[num_record_devices] == NULL)
 				break;
 		}
 	}
@@ -2244,9 +2657,9 @@ static void mcierr (const TCHAR *str, DWORD err)
 	if (err == MMSYSERR_NOERROR)
 		return;
 	if (mciGetErrorString (err, es, sizeof es / sizeof (TCHAR)))
-		write_log (L"MCIErr: %s: %d = '%s'\n", str, err, es);
+		write_log (_T("MCIErr: %s: %d = '%s'\n"), str, err, es);
 	else
-		write_log (L"%s, errcode=%d\n", str, err);
+		write_log (_T("%s, errcode=%d\n"), str, err);
 }
 /* from http://www.codeproject.com/audio/mixerSetControlDetails.asp */
 static int setget_master_volume_xp (int setvolume, int *volume, int *mute)
@@ -2310,14 +2723,14 @@ static int setget_master_volume_xp (int setvolume, int *volume, int *mute)
 					if (result == MMSYSERR_NOERROR)
 						ok = 1;
 				} else
-					mcierr (L"mixerGetLineControls Mute", result);
+					mcierr (_T("mixerGetLineControls Mute"), result);
 			} else
-				mcierr (L"mixerGetLineControls Volume", result);
+				mcierr (_T("mixerGetLineControls Volume"), result);
 		} else
-			mcierr (L"mixerGetLineInfo", result);
+			mcierr (_T("mixerGetLineInfo"), result);
 		mixerClose (hMixer);
 	} else
-		mcierr (L"mixerOpen", result);
+		mcierr (_T("mixerOpen"), result);
 	return ok;
 }
 
@@ -2351,11 +2764,17 @@ void sound_mute (int newmute)
 void sound_volume (int dir)
 {
 	currprefs.sound_volume -= dir * 10;
+	currprefs.sound_volume_cd -= dir * 10;
 	if (currprefs.sound_volume < 0)
 		currprefs.sound_volume = 0;
 	if (currprefs.sound_volume > 100)
 		currprefs.sound_volume = 100;
 	changed_prefs.sound_volume = currprefs.sound_volume;
+	if (currprefs.sound_volume_cd < 0)
+		currprefs.sound_volume_cd = 0;
+	if (currprefs.sound_volume_cd > 100)
+		currprefs.sound_volume_cd = 100;
+	changed_prefs.sound_volume_cd = currprefs.sound_volume_cd;
 	set_volume (currprefs.sound_volume, sdp->mute);
 	config_changed = 1;
 }

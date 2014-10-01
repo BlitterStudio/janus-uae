@@ -6,13 +6,15 @@ typedef struct UAEREG {
 } UAEREG;
 
 extern int getregmode (void);
-extern int reginitializeinit (const TCHAR *path);
+extern int reginitializeinit (TCHAR **path);
 extern void regstatus (void);
 
 extern int regsetstr (UAEREG*, const TCHAR *name, const TCHAR *str);
 extern int regsetint (UAEREG*, const TCHAR *name, int val);
 extern int regqueryint (UAEREG*, const TCHAR *name, int *val);
 extern int regquerystr (UAEREG*, const TCHAR *name, TCHAR *str, int *size);
+extern int regsetlonglong (UAEREG *root, const TCHAR *name, ULONGLONG val);
+extern int regquerylonglong (UAEREG *root, const TCHAR *name, ULONGLONG *val);
 
 extern int regdelete (UAEREG*, const TCHAR *name);
 extern void regdeletetree (UAEREG*, const TCHAR *name);

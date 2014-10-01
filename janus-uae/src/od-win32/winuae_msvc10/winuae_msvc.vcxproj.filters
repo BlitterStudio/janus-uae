@@ -41,6 +41,15 @@
     <Filter Include="unpackers\zip">
       <UniqueIdentifier>{93fcf20a-8921-43e8-b4b9-e5fceb81332d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="unpackers\chd">
+      <UniqueIdentifier>{67d1b86d-3ebd-40fe-9fc2-c749eb7a890b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="slirp">
+      <UniqueIdentifier>{04629b2c-8cce-42aa-a9a7-e000e87ad1c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="qemu">
+      <UniqueIdentifier>{736531a2-213e-4aef-ab15-c2a3a0025147}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ahidsound_dsonly.cpp">
@@ -50,9 +59,6 @@
       <Filter>win32</Filter>
     </ClCompile>
     <ClCompile Include="..\avioutput.cpp">
-      <Filter>win32</Filter>
-    </ClCompile>
-    <ClCompile Include="..\blkdev_win32_aspi.cpp">
       <Filter>win32</Filter>
     </ClCompile>
     <ClCompile Include="..\blkdev_win32_ioctl.cpp">
@@ -238,9 +244,6 @@
     <ClCompile Include="..\..\cpuemu_11.cpp">
       <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\cpuemu_12.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\cpuemu_20.cpp">
       <Filter>common</Filter>
     </ClCompile>
@@ -281,9 +284,6 @@
       <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\epsonprinter.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\ersatz.cpp">
       <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\expansion.cpp">
@@ -493,6 +493,141 @@
     <ClCompile Include="..\..\statusline.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\hrtmon.rom.cpp">
+      <Filter>win32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\aros.rom.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\specialmonitors.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\events.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\calc.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\isofs.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cpuemu_22.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cpuemu_32.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cpummu30.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cpuemu_33.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\archivers\chd\astring.cpp">
+      <Filter>unpackers\chd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\archivers\chd\chd.cpp">
+      <Filter>unpackers\chd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\archivers\chd\chdcdrom.cpp">
+      <Filter>unpackers\chd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\archivers\chd\chdcodec.cpp">
+      <Filter>unpackers\chd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\archivers\chd\flac.cpp">
+      <Filter>unpackers\chd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\archivers\chd\hashing.cpp">
+      <Filter>unpackers\chd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\archivers\chd\huffman.cpp">
+      <Filter>unpackers\chd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\archivers\chd\md5.cpp">
+      <Filter>unpackers\chd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\archivers\chd\sha1.cpp">
+      <Filter>unpackers\chd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\scsitape.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ethernet.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\slirp\bootp.cpp">
+      <Filter>slirp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\slirp\cksum.cpp">
+      <Filter>slirp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\slirp\if.cpp">
+      <Filter>slirp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\slirp\ip_icmp.cpp">
+      <Filter>slirp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\slirp\ip_input.cpp">
+      <Filter>slirp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\slirp\ip_output.cpp">
+      <Filter>slirp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\slirp\mbuf.cpp">
+      <Filter>slirp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\slirp\misc.cpp">
+      <Filter>slirp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\slirp\sbuf.cpp">
+      <Filter>slirp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\slirp\slirp.cpp">
+      <Filter>slirp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\slirp\slirpdebug.cpp">
+      <Filter>slirp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\slirp\socket.cpp">
+      <Filter>slirp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\slirp\tcp_input.cpp">
+      <Filter>slirp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\slirp\tcp_output.cpp">
+      <Filter>slirp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\slirp\tcp_subr.cpp">
+      <Filter>slirp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\slirp\tcp_timer.cpp">
+      <Filter>slirp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\slirp\tftp.cpp">
+      <Filter>slirp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\slirp\udp.cpp">
+      <Filter>slirp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\qemuvga\cirrus_vga.cpp">
+      <Filter>qemu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\qemuvga\qemuuaeglue.cpp">
+      <Filter>qemu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\qemuvga\vga.cpp">
+      <Filter>qemu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfxboard.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\luascript.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cpuemu_13.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\resources\35floppy.ico">
@@ -593,7 +728,6 @@
     <None Include="..\resources\drive_spin.wav" />
     <None Include="..\resources\drive_spinnd.wav" />
     <None Include="..\resources\drive_startup.wav" />
-    <None Include="..\resources\resource" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\resources\winuae.rc">
@@ -607,5 +741,8 @@
     <Library Include="..\hq3x32.obj" />
     <Library Include="..\hq4x16.obj" />
     <Library Include="..\hq4x32.obj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\resources\resource.h" />
   </ItemGroup>
 </Project>

@@ -14,6 +14,10 @@
 //#define X86_MSVC_ASSEMBLY_MEMACCESS
 #define OPTIMIZED_FLAGS
 #define __i386__
+#define WINDOWS
+#define ZLIB_WINAPI
+//#define USE_SOFT_LONG_DOUBLE
+#define PACKAGE_STRING "WinUAE"
 
 #ifndef UAE_MINI
 
@@ -43,19 +47,24 @@
 #define UAESERIAL /* uaeserial.device emulation */
 #define FPUEMU /* FPU emulation */
 #define FPU_UAE
+#define USE_LONG_DOUBLE 0
 #define MMUEMU /* Aranym 68040 MMU */
 #define FULLMMU /* Aranym 68040 MMU */
 #define CPUEMU_0 /* generic 680x0 emulation */
-#define CPUEMU_11 /* 68000+prefetch emulation */
-#define CPUEMU_12 /* 68000 cycle-exact cpu&blitter */
-#define CPUEMU_20 /* 68020 "cycle-exact" + blitter */
-#define CPUEMU_21 /* 68030 (040/060) "cycle-exact" + blitter */
-#define CPUEMU_31 /* 68040 Aranym MMU */
+#define CPUEMU_11 /* 68000/68010 prefetch emulation */
+#define CPUEMU_13 /* 68000/68010 cycle-exact cpu&blitter */
+#define CPUEMU_20 /* 68020 prefetch */
+#define CPUEMU_21 /* 68020 "cycle-exact" + blitter */
+#define CPUEMU_22 /* 68030 (040/060) "cycle-exact" + blitter */
+#define CPUEMU_31 /* Aranym 68040 MMU */
+#define CPUEMU_32 /* Previous 68030 MMU */
+#define CPUEMU_33 /* 68060 MMU */
 #define ACTION_REPLAY /* Action Replay 1/2/3 support */
 #define PICASSO96 /* Picasso96 display card emulation */
 #define UAEGFX_INTERNAL /* built-in libs:picasso96/uaegfx.card */
 #define BSDSOCKET /* bsdsocket.library emulation */
 #define CAPS /* CAPS-image support */
+#define SCP /* SuperCardPro */
 #define FDI2RAW /* FDI 1.0 and 2.x image support */
 #define AVIOUTPUT /* Avioutput support */
 #define PROWIZARD /* Pro-Wizard module ripper */
@@ -65,10 +74,16 @@
 #define SAVESTATE /* State file support */
 #define A2091 /* A590/A2091 SCSI */
 #define A2065 /* A2065 Ethernet card */
+#define GFXBOARD /* Hardware graphics board */
 #define NCR /* A4000T/A4091 SCSI */
 #define SANA2 /* SANA2 network driver */
 #define AMAX /* A-Max ROM adapater emulation */
 #define RETROPLATFORM /* Cloanto RetroPlayer support */
+#define WITH_CHD
+#define WITH_LUA /* lua scripting */
+#define WITH_UAENATIVE
+#define WITH_SLIRP
+#define WITH_TABLETLIBRARY
 
 #else
 
@@ -83,11 +98,25 @@
 #define OPENGL
 #endif
 #define CAPS
-#define CPUEMU_12
+#define CPUEMU_13
 #define CPUEMU_11
 
 
 #endif
+
+#define A_ZIP
+#define A_RAR
+#define A_7Z
+#define A_LHA
+#define A_LZX
+#define A_DMS
+#define A_WRP
+
+#ifndef PATH_MAX
+#define PATH_MAX 256
+#endif
+
+#define UAE_RAND_MAX RAND_MAX
 
 #ifndef GFXFILTER
 #undef OPENGL
@@ -99,6 +128,8 @@
 #include <stdlib.h>
 #include <crtdbg.h>
 #endif
+
+#include <stdint.h>
 
 #ifdef WIN64
 #undef X86_MSVC_ASSEMBLY
@@ -270,7 +301,7 @@
 #define SIZEOF_DOUBLE 8
 
 #define HAVE_ISNAN
-#define HAVE_ISINF
+#undef HAVE_ISINF
 #define isnan _isnan
 
 /* Define if you have the bcopy function.  */
@@ -519,4 +550,4 @@
 #define HAVE_WINDOWS_H 1
 
 #define FSDB_DIR_SEPARATOR '\\'
-#define FSDB_DIR_SEPARATOR_S L"\\"
+#define FSDB_DIR_SEPARATOR_S _T("\\")

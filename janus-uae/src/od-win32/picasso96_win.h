@@ -540,9 +540,6 @@ struct picasso96_state_struct
 
 extern void InitPicasso96 (void);
 
-extern uae_u32 gfxmem_mask;
-extern uae_u8 *gfxmemory;
-
 extern int uaegfx_card_found;
 
 extern struct picasso96_state_struct picasso96_state;
@@ -550,12 +547,20 @@ extern uae_u16 picasso96_pixel_format;
 
 extern void picasso_enablescreen (int on);
 extern void picasso_refresh (void);
-extern void picasso_handle_vsync (void);
 extern void init_hz_p96 (void);
 extern void picasso_handle_hsync (void);
+extern void picasso_handle_vsync (void);
+extern void picasso_trigger_vblank (void);
 extern void picasso_reset (void);
+extern bool picasso_is_active (void);
 extern int picasso_setwincursor (void);
 extern int picasso_palette (void);
+extern bool picasso_flushpixels (uae_u8 *src, int offset);
+extern void picasso_allocatewritewatch (int gfxmemsize);
+extern void picasso_getwritewatch (int offset);
+extern bool picasso_is_vram_dirty (uaecptr addr, int size);
+extern void picasso_statusline (uae_u8 *dst);
+extern void picasso_invalidate (int x, int y, int w, int h);
 
 /* This structure describes the UAE-side framebuffer for the Picasso
  * screen.  */
@@ -574,8 +579,8 @@ extern void gfx_set_picasso_modeinfo (uae_u32 w, uae_u32 h, uae_u32 d, RGBFTYPE 
 extern void gfx_set_picasso_colors (RGBFTYPE rgbfmt);
 extern void gfx_set_picasso_baseaddr (uaecptr);
 extern void gfx_set_picasso_state (int on);
-extern uae_u8 *gfx_lock_picasso (int);
-extern void gfx_unlock_picasso (void);
+extern uae_u8 *gfx_lock_picasso (bool, bool);
+extern void gfx_unlock_picasso (bool);
 extern void picasso_clip_mouse (int *, int *);
 extern int createwindowscursor (uaecptr src, int w, int h, int hiressprite, int doubledsprite, int chipset);
 
@@ -596,7 +601,8 @@ extern int p96hsync_counter;
 #define CARD_PORTSIRQ (CARD_VBLANKIRQ + 22)
 #define CARD_IRQFLAG (CARD_PORTSIRQ + 22)
 #define CARD_IRQPTR (CARD_IRQFLAG + 4)
-#define CARD_IRQCODE (CARD_IRQPTR + 4)
+#define CARD_IRQEXECBASE (CARD_IRQPTR + 4)
+#define CARD_IRQCODE (CARD_IRQEXECBASE + 4)
 #define CARD_END (CARD_IRQCODE + 11 * 2)
 #define CARD_SIZEOF CARD_END
 
