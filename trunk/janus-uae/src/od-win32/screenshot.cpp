@@ -17,6 +17,7 @@
 #include "opengl.h"
 #include "registry.h"
 #include "gfxfilter.h"
+#include "xwin.h"
 
 #include "png.h"
 
@@ -68,7 +69,7 @@ static int toclipboard (BITMAPINFO *bi, void *bmp)
 }
 
 static HDC surface_dc, offscreen_dc;
-static BITMAPINFO bi; // bitmap info
+static BITMAPINFO *bi; // bitmap info
 static LPVOID lpvBits = NULL; // pointer to bitmap bits array
 static HBITMAP offscreen_bitmap;
 static int screenshot_prepared;
@@ -92,7 +93,7 @@ void screenshot_free (void)
 
 static int rgb_rb, rgb_gb, rgb_bb, rgb_rs, rgb_gs, rgb_bs;
 
-int screenshot_prepare (void)
+static int screenshot_prepare (int imagemode, struct vidbuffer *vb)
 {
 	int width, height;
 	HGDIOBJ hgdiobj;
@@ -100,67 +101,118 @@ int screenshot_prepare (void)
 
 	screenshot_free ();
 
-	regqueryint (NULL, L"Screenshot_Original", &screenshot_originalsize);
+	regqueryint (NULL, _T("Screenshot_Original"), &screenshot_originalsize);
+	if (imagemode < 0)
+		imagemode = screenshot_originalsize;
 
-	if (screenshot_originalsize && !WIN32GFX_IsPicassoScreen ()) {
+	if (imagemode) {
 		int spitch, dpitch, x, y;
-		uae_u8 *src, *dst;
+		uae_u8 *src, *dst, *mem;
+		uae_u8 *palette = NULL;
+		int rgb_bb2, rgb_gb2, rgb_rb2;
+		int rgb_bs2, rgb_gs2, rgb_rs2;
+		uae_u8 pal[256 * 3];
 		
-		src = getfilterbuffer (&width, &height, &spitch, &bits);
+		if (WIN32GFX_IsPicassoScreen ()) {
+			src = mem = getrtgbuffer (&width, &height, &spitch, &bits, pal);
+			rgb_bb2 = 8;
+			rgb_gb2 = 8;
+			rgb_rb2 = 8;
+			rgb_bs2 = 0;
+			rgb_gs2 = 8;
+			rgb_rs2 = 16;
+		} else if (vb) {
+			width = vb->outwidth;
+			height = vb->outheight;
+			spitch = vb->rowbytes;
+			bits = vb->pixbytes * 8;
+			src = mem = vb->bufmem;
+			rgb_bb2 = rgb_bb;
+			rgb_gb2 = rgb_gb;
+			rgb_rb2 = rgb_rb;
+			rgb_bs2 = rgb_bs;
+			rgb_gs2 = rgb_gs;
+			rgb_rs2 = rgb_rs;
+		} else {
+			src = mem = getfilterbuffer (&width, &height, &spitch, &bits);
+			rgb_bb2 = rgb_bb;
+			rgb_gb2 = rgb_gb;
+			rgb_rb2 = rgb_rb;
+			rgb_bs2 = rgb_bs;
+			rgb_gs2 = rgb_gs;
+			rgb_rs2 = rgb_rs;
+		}
 		if (src == NULL || width == 0 || height == 0)
 			goto donormal;
-		ZeroMemory (&bi, sizeof(bi));
-		bi.bmiHeader.biSize = sizeof (BITMAPINFOHEADER);
-		bi.bmiHeader.biWidth = width;
-		bi.bmiHeader.biHeight = height;
-		bi.bmiHeader.biPlanes = 1;
-		bi.bmiHeader.biBitCount = 24;
-		bi.bmiHeader.biCompression = BI_RGB;
-		dpitch = ((bi.bmiHeader.biWidth * bi.bmiHeader.biBitCount + 31) & ~31) / 8;
-		bi.bmiHeader.biSizeImage = dpitch * bi.bmiHeader.biHeight;
-		bi.bmiHeader.biXPelsPerMeter = 0;
-		bi.bmiHeader.biYPelsPerMeter = 0;
-		bi.bmiHeader.biClrUsed = 0;
-		bi.bmiHeader.biClrImportant = 0;
-		if (!(lpvBits = xmalloc (uae_u8, bi.bmiHeader.biSizeImage)))
+		ZeroMemory (bi, sizeof(bi));
+		bi->bmiHeader.biSize = sizeof (BITMAPINFOHEADER);
+		bi->bmiHeader.biWidth = width;
+		bi->bmiHeader.biHeight = height;
+		bi->bmiHeader.biPlanes = 1;
+		bi->bmiHeader.biBitCount = bits <= 8 ? 8 : 24;
+		bi->bmiHeader.biCompression = BI_RGB;
+		dpitch = ((bi->bmiHeader.biWidth * bi->bmiHeader.biBitCount + 31) & ~31) / 8;
+		bi->bmiHeader.biSizeImage = dpitch * bi->bmiHeader.biHeight;
+		bi->bmiHeader.biXPelsPerMeter = 0;
+		bi->bmiHeader.biYPelsPerMeter = 0;
+		bi->bmiHeader.biClrUsed = bits <= 8 ? (1 << bits) : 0;
+		bi->bmiHeader.biClrImportant = 0;
+		if (bits <= 8) {
+			for (int i = 0; i < bi->bmiHeader.biClrUsed; i++) {
+				bi->bmiColors[i].rgbRed = pal[i * 3  + 0];
+				bi->bmiColors[i].rgbGreen = pal[i * 3  + 1];
+				bi->bmiColors[i].rgbBlue = pal[i * 3  + 2];
+			}
+		}
+		if (!(lpvBits = xmalloc (uae_u8, bi->bmiHeader.biSizeImage)))
 			goto oops;
 		dst = (uae_u8*)lpvBits + (height - 1) * dpitch;
-		for (y = 0; y < height; y++) {
-			for (x = 0; x < width; x++) {
-				int shift;
-				uae_u32 v = 0;
-				uae_u32 v2;
-
-				if (bits == 16)
-					v = ((uae_u16*)src)[x];
-				else if (bits == 32)
-					v = ((uae_u32*)src)[x];
-
-				shift = 8 - rgb_bb;
-				v2 = (v >> rgb_bs) & ((1 << rgb_bb) - 1);
-				v2 <<= shift;
-				if (rgb_bb < 8)
-					v2 |= (v2 >> shift) & ((1 < shift) - 1);
-				dst[x * 3 + 0] = v2;
-
-				shift = 8 - rgb_gb;
-				v2 = (v >> rgb_gs) & ((1 << rgb_gb) - 1);
-				v2 <<= (8 - rgb_gb);
-				if (rgb_gb < 8)
-					v2 |= (v2 >> shift) & ((1 < shift) - 1);
-				dst[x * 3 + 1] = v2;
-
-				shift = 8 - rgb_rb;
-				v2 = (v >> rgb_rs) & ((1 << rgb_rb) - 1);
-				v2 <<= (8 - rgb_rb);
-				if (rgb_rb < 8)
-					v2 |= (v2 >> shift) & ((1 < shift) - 1);
-				dst[x * 3 + 2] = v2;
-
+		if (bits <=8) {
+			for (y = 0; y < height; y++) {
+				memcpy (dst, src, width);
+				src += spitch;
+				dst -= dpitch;
 			}
-			src += spitch;
-			dst -= dpitch;
+		} else {
+			for (y = 0; y < height; y++) {
+				for (x = 0; x < width; x++) {
+					int shift;
+					uae_u32 v = 0;
+					uae_u32 v2;
+
+					if (bits == 16)
+						v = ((uae_u16*)src)[x];
+					else if (bits == 32)
+						v = ((uae_u32*)src)[x];
+
+					shift = 8 - rgb_bb2;
+					v2 = (v >> rgb_bs2) & ((1 << rgb_bb2) - 1);
+					v2 <<= shift;
+					if (rgb_bb2 < 8)
+						v2 |= (v2 >> shift) & ((1 < shift) - 1);
+					dst[x * 3 + 0] = v2;
+
+					shift = 8 - rgb_gb2;
+					v2 = (v >> rgb_gs2) & ((1 << rgb_gb2) - 1);
+					v2 <<= (8 - rgb_gb2);
+					if (rgb_gb < 8)
+						v2 |= (v2 >> shift) & ((1 < shift) - 1);
+					dst[x * 3 + 1] = v2;
+
+					shift = 8 - rgb_rb2;
+					v2 = (v >> rgb_rs2) & ((1 << rgb_rb2) - 1);
+					v2 <<= (8 - rgb_rb2);
+					if (rgb_rb < 8)
+						v2 |= (v2 >> shift) & ((1 < shift) - 1);
+					dst[x * 3 + 2] = v2;
+
+				}
+				src += spitch;
+				dst -= dpitch;
+			}
 		}
+		if (WIN32GFX_IsPicassoScreen () && !vb)
+			freertgbuffer (mem);
 
 	} else {
 donormal:
@@ -189,25 +241,25 @@ donormal:
 		// de-select offscreen_bitmap
 		SelectObject (offscreen_dc, hgdiobj);
 
-		ZeroMemory (&bi, sizeof(bi));
-		bi.bmiHeader.biSize = sizeof (BITMAPINFOHEADER);
-		bi.bmiHeader.biWidth = width;
-		bi.bmiHeader.biHeight = height;
-		bi.bmiHeader.biPlanes = 1;
-		bi.bmiHeader.biBitCount = 24;
-		bi.bmiHeader.biCompression = BI_RGB;
-		bi.bmiHeader.biSizeImage = (((bi.bmiHeader.biWidth * bi.bmiHeader.biBitCount + 31) & ~31) / 8) * bi.bmiHeader.biHeight;
-		bi.bmiHeader.biXPelsPerMeter = 0;
-		bi.bmiHeader.biYPelsPerMeter = 0;
-		bi.bmiHeader.biClrUsed = 0;
-		bi.bmiHeader.biClrImportant = 0;
+		ZeroMemory (bi, sizeof(bi));
+		bi->bmiHeader.biSize = sizeof (BITMAPINFOHEADER);
+		bi->bmiHeader.biWidth = width;
+		bi->bmiHeader.biHeight = height;
+		bi->bmiHeader.biPlanes = 1;
+		bi->bmiHeader.biBitCount = 24;
+		bi->bmiHeader.biCompression = BI_RGB;
+		bi->bmiHeader.biSizeImage = (((bi->bmiHeader.biWidth * bi->bmiHeader.biBitCount + 31) & ~31) / 8) * bi->bmiHeader.biHeight;
+		bi->bmiHeader.biXPelsPerMeter = 0;
+		bi->bmiHeader.biYPelsPerMeter = 0;
+		bi->bmiHeader.biClrUsed = 0;
+		bi->bmiHeader.biClrImportant = 0;
 
 		// Reserve memory for bitmap bits
-		if (!(lpvBits = xmalloc (uae_u8, bi.bmiHeader.biSizeImage)))
+		if (!(lpvBits = xmalloc (uae_u8, bi->bmiHeader.biSizeImage)))
 			goto oops; // out of memory
 
 		// Have GetDIBits convert offscreen_bitmap to a DIB (device-independent bitmap):
-		if (!GetDIBits (offscreen_dc, offscreen_bitmap, 0, bi.bmiHeader.biHeight, lpvBits, &bi, DIB_RGB_COLORS))
+		if (!GetDIBits (offscreen_dc, offscreen_bitmap, 0, bi->bmiHeader.biHeight, lpvBits, bi, DIB_RGB_COLORS))
 			goto oops; // GetDIBits FAILED
 
 		releasehdc (surface_dc);
@@ -221,8 +273,23 @@ oops:
 	return 0;
 }
 
+int screenshot_prepare (struct vidbuffer *vb)
+{
+	return screenshot_prepare (1, vb);
+}
+int screenshot_prepare (int imagemode)
+{
+	return screenshot_prepare (imagemode, NULL);
+}
+int screenshot_prepare (void)
+{
+	return screenshot_prepare (-1);
+}
+
 void Screenshot_RGBinfo (int rb, int gb, int bb, int rs, int gs, int bs)
 {
+	if (!bi)
+		bi = xcalloc (BITMAPINFO, sizeof BITMAPINFO + 256 * sizeof RGBQUAD);
 	rgb_rb = rb;
 	rgb_gb = gb;
 	rgb_bb = rb;
@@ -235,11 +302,13 @@ void Screenshot_RGBinfo (int rb, int gb, int bb, int rs, int gs, int bs)
 
 static void _cdecl pngtest_blah (png_structp png_ptr, png_const_charp message)
 {
+#if 0
 	TCHAR *name = au ("unknown");
 	if (png_ptr != NULL && png_ptr->error_ptr != NULL)
 		name = au ((char*)png_ptr->error_ptr);
-	write_log (L"%s: libpng warning: %s\n", name, message);
+	write_log (_T("%s: libpng warning: %s\n"), name, message);
 	xfree (name);
+#endif
 }
 
 static int savepng (FILE *fp)
@@ -247,8 +316,10 @@ static int savepng (FILE *fp)
 	png_structp png_ptr;
 	png_infop info_ptr;
 	png_bytep *row_pointers;
-	int h = bi.bmiHeader.biHeight;
-	int w = bi.bmiHeader.biWidth;
+	int h = bi->bmiHeader.biHeight;
+	int w = bi->bmiHeader.biWidth;
+	int d = bi->bmiHeader.biBitCount;
+	png_color pngpal[256];
 	int i;
 
 	png_ptr = png_create_write_struct (PNG_LIBPNG_VER_STRING, pngtest_blah, pngtest_blah, pngtest_blah);
@@ -267,16 +338,25 @@ static int savepng (FILE *fp)
 	png_init_io (png_ptr, fp);
 	png_set_filter (png_ptr, 0, PNG_FILTER_NONE);
 	png_set_IHDR (png_ptr, info_ptr,
-		w, h, 8, PNG_COLOR_TYPE_RGB,
+		w, h, 8, d <= 8 ? PNG_COLOR_TYPE_PALETTE : PNG_COLOR_TYPE_RGB,
 		PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+	if (d <= 8) {
+		for (i = 0; i < (1 << d); i++) {
+			pngpal[i].red = bi->bmiColors[i].rgbRed;
+			pngpal[i].green = bi->bmiColors[i].rgbGreen;
+			pngpal[i].blue = bi->bmiColors[i].rgbBlue;
+		}
+		png_set_PLTE (png_ptr, info_ptr, pngpal, 1 << d);
+	}
 	row_pointers = xmalloc (png_bytep, h);
 	for (i = 0; i < h; i++) {
 		int j = h - i - 1;
-		row_pointers[i] = (uae_u8*)lpvBits + j * (((w * 24 + 31) & ~31) / 8);
+		row_pointers[i] = (uae_u8*)lpvBits + j * (((w * (d <= 8 ? 8 : 24) + 31) & ~31) / 8);
 	}
 	png_set_rows (png_ptr, info_ptr, row_pointers);
 	png_write_png (png_ptr,info_ptr, PNG_TRANSFORM_BGR, NULL);
 	png_destroy_write_struct (&png_ptr, &info_ptr);
+	xfree (row_pointers);
 	return 1;
 }
 #endif
@@ -286,15 +366,19 @@ static int savebmp (FILE *fp)
 	BITMAPFILEHEADER bfh;
 	// write the file header, bitmap information and pixel data
 	bfh.bfType = 19778;
-	bfh.bfSize = sizeof (BITMAPFILEHEADER) + sizeof (BITMAPINFOHEADER) + bi.bmiHeader.biSizeImage;
+	bfh.bfSize = sizeof (BITMAPFILEHEADER) + sizeof (BITMAPINFOHEADER) + (bi->bmiHeader.biClrUsed * sizeof RGBQUAD) + bi->bmiHeader.biSizeImage;
 	bfh.bfReserved1 = 0;
 	bfh.bfReserved2 = 0;
-	bfh.bfOffBits = sizeof (BITMAPFILEHEADER) + sizeof (BITMAPINFOHEADER);
+	bfh.bfOffBits = sizeof (BITMAPFILEHEADER) + sizeof (BITMAPINFOHEADER) + bi->bmiHeader.biClrUsed * sizeof RGBQUAD;
 	if (fwrite (&bfh, 1, sizeof (BITMAPFILEHEADER), fp) < sizeof (BITMAPFILEHEADER))
 		return 0; // failed to write bitmap file header
-	if (fwrite (&bi, 1, sizeof (BITMAPINFOHEADER), fp) < sizeof (BITMAPINFOHEADER))
+	if (fwrite (bi, 1, sizeof (BITMAPINFOHEADER), fp) < sizeof (BITMAPINFOHEADER))
 		return 0; // failed to write bitmap infomation header
-	if (fwrite (lpvBits, 1, bi.bmiHeader.biSizeImage, fp) < bi.bmiHeader.biSizeImage)
+	if (bi->bmiHeader.biClrUsed) {
+		if (fwrite (bi->bmiColors, 1, bi->bmiHeader.biClrUsed * sizeof RGBQUAD, fp) < bi->bmiHeader.biClrUsed * sizeof RGBQUAD)
+			return 0; // failed to write bitmap file header
+	}
+	if (fwrite (lpvBits, 1, bi->bmiHeader.biSizeImage, fp) < bi->bmiHeader.biSizeImage)
 		return 0; // failed to write the bitmap
 	return 1;
 }
@@ -302,7 +386,7 @@ static int savebmp (FILE *fp)
 /*
 Captures the Amiga display (DirectDraw, D3D or OpenGL) surface and saves it to file as a 24bit bitmap.
 */
-int screenshotf (const TCHAR *spath, int mode, int doprepare)
+int screenshotf (const TCHAR *spath, int mode, int doprepare, int imagemode, struct vidbuffer *vb)
 {
 	static int recursive;
 	FILE *fp = NULL;
@@ -316,22 +400,25 @@ int screenshotf (const TCHAR *spath, int mode, int doprepare)
 
 	recursive++;
 
-	if (!screenshot_prepared || doprepare) {
-		if (!screenshot_prepare ())
+	if (vb) {
+		if (!screenshot_prepare (vb))
+			goto oops;
+	} else if (!screenshot_prepared || doprepare) {	
+		if (!screenshot_prepare (imagemode))
 			goto oops;
 	}
 
 	if (mode == 0) {
-		toclipboard (&bi, lpvBits);
+		toclipboard (bi, lpvBits);
 	} else {
 		TCHAR filename[MAX_DPATH];
 		TCHAR path[MAX_DPATH];
 		TCHAR name[MAX_DPATH];
-		TCHAR underline[] = L"_";
+		TCHAR underline[] = _T("_");
 		int number = 0;
 
 		if (spath) {
-			fp = _tfopen (spath, L"wb");
+			fp = _tfopen (spath, _T("wb"));
 			if (fp) {
 #if PNG_SCREENSHOTS > 0
 				if (screenshotmode)
@@ -344,7 +431,7 @@ int screenshotf (const TCHAR *spath, int mode, int doprepare)
 				goto oops;
 			}
 		}
-		fetch_path (L"ScreenshotPath", path, sizeof (path) / sizeof (TCHAR));
+		fetch_path (_T("ScreenshotPath"), path, sizeof (path) / sizeof (TCHAR));
 		CreateDirectory (path, NULL);
 		name[0] = 0;
 		if (currprefs.floppyslots[0].dfxtype >= 0)
@@ -357,11 +444,11 @@ int screenshotf (const TCHAR *spath, int mode, int doprepare)
 
 		while(++number < 1000) // limit 999 iterations / screenshots
 		{
-			_stprintf (filename, L"%s%s%s%03d.%s", path, name, underline, number, screenshotmode ? L"png" : L"bmp");
-			if ((fp = _tfopen (filename, L"rb")) == NULL) // does file not exist?
+			_stprintf (filename, _T("%s%s%s%03d.%s"), path, name, underline, number, screenshotmode ? _T("png") : _T("bmp"));
+			if ((fp = _tfopen (filename, _T("rb"))) == NULL) // does file not exist?
 			{
 				int ok = 0;
-				if ((fp = _tfopen (filename, L"wb")) == NULL)
+				if ((fp = _tfopen (filename, _T("wb"))) == NULL)
 					goto oops; // error
 #if PNG_SCREENSHOTS > 0
 				if (screenshotmode)
@@ -373,7 +460,7 @@ int screenshotf (const TCHAR *spath, int mode, int doprepare)
 				fp = NULL;
 				if (!ok)
 					goto oops;
-				write_log (L"Screenshot saved as \"%s\"\n", filename);
+				write_log (_T("Screenshot saved as \"%s\"\n"), filename);
 				allok = 1;
 				break;
 			}
@@ -387,14 +474,33 @@ oops:
 		fclose (fp);
 
 	if (doprepare)
-		screenshot_free();
+		screenshot_free ();
 
 	recursive--;
 
 	return allok;
 }
 
+#include "drawing.h"
+
 void screenshot (int mode, int doprepare)
 {
-	screenshotf (NULL, mode, doprepare);
+#if 1
+	screenshotf (NULL, mode, doprepare, -1, NULL);
+#else
+	struct vidbuffer vb;
+	int w = gfxvidinfo.drawbuffer.inwidth;
+	int h = gfxvidinfo.drawbuffer.inheight;
+	if (!programmedmode) {
+		h = (maxvpos + lof_store - minfirstline) << currprefs.gfx_vresolution;
+	}
+	if (interlace_seen && currprefs.gfx_vresolution > 0)
+		h -= 1 << (currprefs.gfx_vresolution - 1);
+	allocvidbuffer (&vb, w, h, gfxvidinfo.drawbuffer.pixbytes * 8);
+	set_custom_limits (-1, -1, -1, -1);
+	draw_frame (&vb);
+	screenshotmode = 0;
+	screenshotf (_T("c:\\temp\\1.bmp"), 1, 1, 1, &vb);
+	freevidbuffer (&vb);
+#endif
 }

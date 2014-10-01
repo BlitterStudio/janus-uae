@@ -1,13 +1,13 @@
 
 
 /* Determines if this drive-letter currently has a disk inserted */
-int CheckRM (TCHAR *DriveName)
+int CheckRM (const TCHAR *DriveName)
 {
 	TCHAR filename[MAX_DPATH];
 	DWORD dwHold;
 	BOOL result = FALSE;
 
-	_stprintf (filename, L"%s.", DriveName);
+	_stprintf (filename, _T("%s."), DriveName);
 	dwHold = GetFileAttributes (filename);
 	if(dwHold != 0xFFFFFFFF)
 		result = TRUE;
@@ -16,9 +16,9 @@ int CheckRM (TCHAR *DriveName)
 
 /* This function makes sure the volume-name being requested is not already in use, or any of the following
 illegal values: */
-static TCHAR *illegal_volumenames[] = { L"SYS", L"DEVS", L"LIBS", L"FONTS", L"C", L"L", L"S" };
+static const TCHAR *illegal_volumenames[] = { _T("SYS"), _T("DEVS"), _T("LIBS"), _T("FONTS"), _T("C"), _T("L"), _T("S") };
 
-static int valid_volumename (struct uaedev_mount_info *mountinfo, TCHAR *volumename, int fullcheck)
+static int valid_volumename (struct uaedev_mount_info *mountinfo, const TCHAR *volumename, int fullcheck)
 {
 	int i, result = 1, illegal_count = sizeof (illegal_volumenames) / sizeof(TCHAR*);
 	for (i = 0; i < illegal_count; i++) {
@@ -51,12 +51,12 @@ int target_get_volume_name (struct uaedev_mount_info *mtinf, const TCHAR *volume
 			volumename[0] && 
 			valid_volumename (mtinf, volumename, fullcheck)) {
 				// +++Bernd Roesch
-				if(!_tcscmp (volumename, L"AmigaOS35"))
-					_tcscpy (volumename, L"AmigaOS3.5");
-				if(!_tcscmp (volumename, L"AmigaOS39"))
-					_tcscpy (volumename, L"AmigaOS3.9");
-				if(!_tcscmp (volumename, L"AmigaOS_XL"))
-					_tcscpy (volumename, L"AmigaOS XL");
+				if(!_tcscmp (volumename, _T("AmigaOS35")))
+					_tcscpy (volumename, _T("AmigaOS3.5"));
+				if(!_tcscmp (volumename, _T("AmigaOS39")))
+					_tcscpy (volumename, _T("AmigaOS3.9"));
+				if(!_tcscmp (volumename, _T("AmigaOS_XL")))
+					_tcscpy (volumename, _T("AmigaOS XL"));
 				// ---Bernd Roesch
 				if (_tcslen (volumename) > 0)
 					result = 1;
@@ -67,19 +67,19 @@ int target_get_volume_name (struct uaedev_mount_info *mtinf, const TCHAR *volume
 		switch(drivetype)
 		{
 		case DRIVE_FIXED:
-			_stprintf (volumename, L"WinDH_%c", volumepath[0]);
+			_stprintf (volumename, _T("WinDH_%c"), volumepath[0]);
 			break;
 		case DRIVE_CDROM:
-			_stprintf (volumename, L"WinCD_%c", volumepath[0]);
+			_stprintf (volumename, _T("WinCD_%c"), volumepath[0]);
 			break;
 		case DRIVE_REMOVABLE:
-			_stprintf (volumename, L"WinRMV_%c", volumepath[0]);
+			_stprintf (volumename, _T("WinRMV_%c"), volumepath[0]);
 			break;
 		case DRIVE_REMOTE:
-			_stprintf (volumename, L"WinNET_%c", volumepath[0]);
+			_stprintf (volumename, _T("WinNET_%c"), volumepath[0]);
 			break;
 		case DRIVE_RAMDISK:
-			_stprintf (volumename, L"WinRAM_%c", volumepath[0]);
+			_stprintf (volumename, _T("WinRAM_%c"), volumepath[0]);
 			break;
 		case DRIVE_UNKNOWN:
 		case DRIVE_NO_ROOT_DIR:
@@ -114,7 +114,7 @@ static int hfdcheck (TCHAR drive)
 	TCHAR tmp[16];
 	int disknum, i;
 
-	_stprintf (tmp, L"\\\\.\\%c:", drive);
+	_stprintf (tmp, _T("\\\\.\\%c:"), drive);
 	h = CreateFile (tmp, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (h == INVALID_HANDLE_VALUE)
 		return 0;
@@ -131,12 +131,10 @@ static int hfdcheck (TCHAR drive)
 	return 0;
 }
 
-static void filesys_addexternals (void)
+void filesys_addexternals (void)
 {
 	int drive, drivetype;
 	UINT errormode;
-	TCHAR volumename[MAX_DPATH] = L"";
-	TCHAR volumepath[16];
 	DWORD dwDriveMask;
 	int drvnum = 0;
 
@@ -148,27 +146,22 @@ static void filesys_addexternals (void)
 	dwDriveMask >>= 2; // Skip A and B drives...
 
 	for(drive = 'C'; drive <= 'Z'; ++drive) {
-		_stprintf (volumepath, L"%c:\\", drive);
+		struct uaedev_config_info ci = { 0 };
+		_stprintf (ci.rootdir, _T("%c:\\"), drive);
 		/* Is this drive-letter valid (it used to check for media in drive) */
 		if(dwDriveMask & 1) {
-			TCHAR devname[MAX_DPATH];
-			bool inserted = CheckRM (volumepath) != 0; /* Is there a disk inserted? */
+			bool inserted = CheckRM (ci.rootdir) != 0; /* Is there a disk inserted? */
 			int nok = FALSE;
 			int rw = 1;
-			drivetype = GetDriveType (volumepath);
+
+			drivetype = GetDriveType (ci.rootdir);
 			if (inserted && drivetype != DRIVE_NO_ROOT_DIR && drivetype != DRIVE_UNKNOWN) {
 				if (hfdcheck (drive)) {
-					write_log (L"Drive %c:\\ ignored, was configured as a harddrive\n", drive);
+					write_log (_T("Drive %c:\\ ignored, was configured as a harddrive\n"), drive);
 					continue;
 				}
 			}
-			devname[0] = 0;
 			for (;;) {
-				if (drivetype == DRIVE_CDROM && currprefs.win32_automount_cddrives) {
-					_stprintf (devname, L"WinCD_%c", drive);
-					rw = 0;
-					break;
-				}
 				if (!inserted) {
 					nok = TRUE;
 					break;
@@ -184,24 +177,25 @@ static void filesys_addexternals (void)
 			}
 			if (nok)
 				continue;
-			volumename[0] = 0;
 			if (inserted) {
-				target_get_volume_name (&mountinfo, volumepath, volumename, MAX_DPATH, inserted, true);
-				if (!volumename[0])
-					_stprintf (volumename, L"WinUNK_%c", drive);
+				target_get_volume_name (&mountinfo, ci.rootdir, ci.volname, MAX_DPATH, inserted, true);
+				if (!ci.volname[0])
+					_stprintf (ci.volname, _T("WinUNK_%c"), drive);
 			}
 			if (drivetype == DRIVE_REMOTE)
-				_tcscat (volumepath, L".");
+				_tcscat (ci.rootdir, _T("."));
 			else
-				_tcscat (volumepath, L"..");
+				_tcscat (ci.rootdir, _T(".."));
 #if 0
 			if (currprefs.win32_automount_drives > 1) {
 				devname[0] = drive;
 				devname[1] = 0;
 			}
 #endif
-			//write_log (L"Drive type %d: '%s' '%s'\n", drivetype, volumepath, volumename);
-			add_filesys_unit (devname[0] ? devname : NULL, volumename, volumepath, !rw, 0, 0, 0, 0, -20 - drvnum, 0, 1, 0, 0, 0);
+			ci.readonly = !rw;
+			ci.bootpri = -20 - drvnum;
+			//write_log (_T("Drive type %d: '%s' '%s'\n"), drivetype, volumepath, volumename);
+			add_filesys_unit (&ci);
 			drvnum++;
 		} /* if drivemask */
 		dwDriveMask >>= 1;

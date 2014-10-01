@@ -10,7 +10,7 @@
 
 static int inimode = 0;
 static TCHAR *inipath;
-#define PUPPA L"eitätäoo"
+#define PUPPA _T("eitätäoo")
 
 static HKEY gr (UAEREG *root)
 {
@@ -21,7 +21,7 @@ static HKEY gr (UAEREG *root)
 static TCHAR *gs (UAEREG *root)
 {
 	if (!root)
-		return L"WinUAE";
+		return _T("WinUAE");
 	return root->inipath;
 }
 static TCHAR *gsn (UAEREG *root, const TCHAR *name)
@@ -31,7 +31,7 @@ static TCHAR *gsn (UAEREG *root, const TCHAR *name)
 		return my_strdup (name);
 	r = gs (root);
 	s = xmalloc (TCHAR, _tcslen (r) + 1 + _tcslen (name) + 1);
-	_stprintf (s, L"%s/%s", r, name);
+	_stprintf (s, _T("%s/%s"), r, name);
 	return s;
 }
 
@@ -54,7 +54,7 @@ int regsetint (UAEREG *root, const TCHAR *name, int val)
 	if (inimode) {
 		DWORD ret;
 		TCHAR tmp[100];
-		_stprintf (tmp, L"%d", val);
+		_stprintf (tmp, _T("%d"), val);
 		ret = WritePrivateProfileString (gs (root), name, tmp, inipath);
 		return ret;
 	} else {
@@ -87,6 +87,45 @@ int regqueryint (UAEREG *root, const TCHAR *name, int *val)
 	}
 }
 
+int regsetlonglong (UAEREG *root, const TCHAR *name, ULONGLONG val)
+{
+	if (inimode) {
+		DWORD ret;
+		TCHAR tmp[100];
+		_stprintf (tmp, _T("%I64d"), val);
+		ret = WritePrivateProfileString (gs (root), name, tmp, inipath);
+		return ret;
+	} else {
+		ULONGLONG v = val;
+		HKEY rk = gr (root);
+		if (!rk)
+			return 0;
+		return RegSetValueEx(rk, name, 0, REG_QWORD, (CONST BYTE*)&v, sizeof (ULONGLONG)) == ERROR_SUCCESS;
+	}
+}
+
+int regquerylonglong (UAEREG *root, const TCHAR *name, ULONGLONG *val)
+{
+	if (inimode) {
+		int ret = 0;
+		TCHAR tmp[100];
+		GetPrivateProfileString (gs (root), name, PUPPA, tmp, sizeof (tmp) / sizeof (TCHAR), inipath);
+		if (_tcscmp (tmp, PUPPA)) {
+			*val = _tstoi64 (tmp);
+			ret = 1;
+		}
+		return ret;
+	} else {
+		DWORD dwType = REG_QWORD;
+		DWORD size = sizeof (ULONGLONG);
+		HKEY rk = gr (root);
+		if (!rk)
+			return 0;
+		return RegQueryValueEx (rk, name, 0, &dwType, (LPBYTE)val, &size) == ERROR_SUCCESS;
+	}
+}
+
+
 int regquerystr (UAEREG *root, const TCHAR *name, TCHAR *str, int *size)
 {
 	if (inimode) {
@@ -100,12 +139,12 @@ int regquerystr (UAEREG *root, const TCHAR *name, TCHAR *str, int *size)
 		xfree (tmp);
 		return ret;
 	} else {
-		DWORD size2 = *size;
+		DWORD size2 = *size * sizeof (TCHAR);
 		HKEY rk = gr (root);
 		if (!rk)
 			return 0;
 		int v = RegQueryValueEx (rk, name, 0, NULL, (LPBYTE)str, &size2) == ERROR_SUCCESS;
-		*size = size2;
+		*size = size2 / sizeof (TCHAR);
 		return v;
 	}
 }
@@ -180,7 +219,7 @@ int regsetdata (UAEREG *root, const TCHAR *name, const void *str, int size)
 		int i;
 		TCHAR *tmp = xmalloc (TCHAR, size * 2 + 1);
 		for (i = 0; i < size; i++)
-			_stprintf (tmp + i * 2, L"%02X", in[i]); 
+			_stprintf (tmp + i * 2, _T("%02X"), in[i]); 
 		ret = WritePrivateProfileString (gs (root), name, tmp, inipath);
 		xfree (tmp);
 		return ret;
@@ -273,7 +312,7 @@ void regdeletetree (UAEREG *root, const TCHAR *name)
 		TCHAR *s = gsn (root, name);
 		if (!s)
 			return;
-		WritePrivateProfileSection (s, L"", inipath);
+		WritePrivateProfileSection (s, _T(""), inipath);
 		xfree (s);
 	} else {
 		HKEY rk = gr (root);
@@ -335,7 +374,7 @@ UAEREG *regcreatetree (UAEREG *root, const TCHAR *name)
 				ininame = my_strdup (name);
 		} else {
 			ininame = xmalloc (TCHAR, _tcslen (root->inipath) + 1 + _tcslen (name) + 1);
-			_stprintf (ininame, L"%s/%s", root->inipath, name);
+			_stprintf (ininame, _T("%s/%s"), root->inipath, name);
 		}
 		fkey = xcalloc (UAEREG, 1);
 		fkey->inipath = ininame;
@@ -344,9 +383,9 @@ UAEREG *regcreatetree (UAEREG *root, const TCHAR *name)
 		HKEY rk = gr (root);
 		if (!rk) {
 			rk = HKEY_CURRENT_USER;
-			name = L"Software\\Arabuusimiehet\\WinUAE";
+			name = _T("Software\\Arabuusimiehet\\WinUAE");
 		} else if (!name) {
-			name = L"";
+			name = _T("");
 		}
 		err = RegCreateKeyEx (rk, name, 0, NULL, REG_OPTION_NON_VOLATILE,
 			KEY_READ | KEY_WRITE, NULL, &rkey, NULL);
@@ -370,7 +409,7 @@ void regclosetree (UAEREG *key)
 
 static uae_u8 crcok[20] = { 0xaf,0xb7,0x36,0x15,0x05,0xca,0xe6,0x9d,0x23,0x17,0x4d,0x50,0x2b,0x5c,0xc3,0x64,0x38,0xb8,0x4e,0xfc };
 
-int reginitializeinit (const TCHAR *ppath)
+int reginitializeinit (TCHAR **pppath)
 {
 	UAEREG *r = NULL;
 	TCHAR tmp1[1000];
@@ -378,14 +417,15 @@ int reginitializeinit (const TCHAR *ppath)
 	int s, v1, v2, v3;
 	TCHAR path[MAX_DPATH], fpath[MAX_PATH];
 	FILE *f;
+	TCHAR *ppath = *pppath;
 
 	if (!ppath) {
 		int ok = 0;
 		TCHAR *posn;
 		path[0] = 0;
 		GetFullPathName (_wpgmptr, sizeof path / sizeof (TCHAR), path, NULL);
-		if (_tcslen (path) > 4 && !_tcsicmp (path + _tcslen (path) - 4, L".exe")) {
-			_tcscpy (path + _tcslen (path) - 3, L"ini");
+		if (_tcslen (path) > 4 && !_tcsicmp (path + _tcslen (path) - 4, _T(".exe"))) {
+			_tcscpy (path + _tcslen (path) - 3, _T("ini"));
 			if (GetFileAttributes (path) != INVALID_FILE_ATTRIBUTES)
 				ok = 1;
 		}
@@ -394,7 +434,7 @@ int reginitializeinit (const TCHAR *ppath)
 			GetFullPathName (_wpgmptr, sizeof path / sizeof (TCHAR), path, NULL);
 			if((posn = _tcsrchr (path, '\\')))
 				posn[1] = 0;
-			_tcscat (path, L"winuae.ini");
+			_tcscat (path, _T("winuae.ini"));
 		}
 		if (GetFileAttributes (path) == INVALID_FILE_ATTRIBUTES)
 			return 0;
@@ -404,32 +444,32 @@ int reginitializeinit (const TCHAR *ppath)
 
 	fpath[0] = 0;
 	GetFullPathName (path, sizeof fpath / sizeof (TCHAR), fpath, NULL);
-	if (_tcslen (fpath) < 5 || _tcsicmp (fpath + _tcslen (fpath) - 4, L".ini"))
+	if (_tcslen (fpath) < 5 || _tcsicmp (fpath + _tcslen (fpath) - 4, _T(".ini")))
 		return 0;
 
 	inimode = 1;
 	inipath = my_strdup (fpath);
-	if (!regexists (NULL, L"Version"))
+	if (!regexists (NULL, _T("Version")))
 		goto fail;
-	r = regcreatetree (NULL, L"Warning");
+	r = regcreatetree (NULL, _T("Warning"));
 	if (!r)
 		goto fail;
 	memset (tmp1, 0, sizeof tmp1);
 	s = 200;
-	if (!regquerystr (r, L"info1", tmp1, &s))
+	if (!regquerystr (r, _T("info1"), tmp1, &s))
 		goto fail;
-	if (!regquerystr (r, L"info2", tmp1 + 200, &s))
+	if (!regquerystr (r, _T("info2"), tmp1 + 200, &s))
 		goto fail;
 	get_sha1 (tmp1, sizeof tmp1, crc);
 	if (memcmp (crc, crcok, sizeof crcok))
 		goto fail;
 	v1 = v2 = -1;
-	regsetint (r, L"check", 1);
-	regqueryint (r, L"check", &v1);
-	regsetint (r, L"check", 3);
-	regqueryint (r, L"check", &v2);
-	regdelete (r, L"check");
-	if (regqueryint (r, L"check", &v3))
+	regsetint (r, _T("check"), 1);
+	regqueryint (r, _T("check"), &v1);
+	regsetint (r, _T("check"), 3);
+	regqueryint (r, _T("check"), &v2);
+	regdelete (r, _T("check"));
+	if (regqueryint (r, _T("check"), &v3))
 		goto fail;
 	if (v1 != 1 || v2 != 3)
 		goto fail;
@@ -441,18 +481,20 @@ fail:
 		DeleteFile (path);
 	if (GetFileAttributes (path) != INVALID_FILE_ATTRIBUTES)
 		goto end;
-	f = _tfopen (path, L"wb");
+	f = _tfopen (path, _T("wb"));
 	if (f) {
 		uae_u8 bom[3] = { 0xef, 0xbb, 0xbf };
 		fwrite (bom, sizeof (bom), 1, f);
 		fclose (f);
 	}
-	r = regcreatetree (NULL, L"Warning");
+	r = regcreatetree (NULL, _T("Warning"));
 	if (!r)
 		goto end;
-	regsetstr (r, L"info1", L"This is unsupported file. Compatibility between versions is not guaranteed.");
-	regsetstr (r, L"info2", L"Incompatible ini-files may be re-created from scratch!");
+	regsetstr (r, _T("info1"), _T("This is unsupported file. Compatibility between versions is not guaranteed."));
+	regsetstr (r, _T("info2"), _T("Incompatible ini-files may be re-created from scratch!"));
 	regclosetree (r);
+	if (*pppath == NULL)
+		*pppath = my_strdup (path);
 	return 1;
 end:
 	inimode = 0;
@@ -463,7 +505,7 @@ end:
 void regstatus (void)
 {
 	if (inimode)
-		write_log (L"WARNING: Unsupported '%s' enabled\n", inipath);
+		write_log (_T("WARNING: Unsupported '%s' enabled\n"), inipath);
 }
 
 int getregmode (void)

@@ -11,6 +11,8 @@ mkdir bak\include
 copy c:\projects\winuae\src\include\* c:\projects\winuae_bak\bak\include\
 mkdir bak\jit
 copy c:\projects\winuae\src\jit\* c:\projects\winuae_bak\bak\jit\
+copy /s c:\projects\winuae\src\qemuvga\* c:\projects\winuae_bak\bak\qemuvga\
+copy /s c:\projects\winuae\src\slirp\* c:\projects\winuae_bak\bak\slirp\
 copy /s c:\projects\winuae\src\od-win32\* c:\projects\winuae_bak\bak\od-win32\
 
 copy d:\amiga\amiga\filesys.asm c:\projects\winuae_bak\bak
@@ -31,10 +33,15 @@ del compstbl.cpp
 del cpuemu_0.cpp
 del cpuemu_11.cpp
 del cpuemu_12.cpp
+del cpuemu_13.cpp
 del cpuemu_20.cpp
 del cpuemu_21.cpp
+del cpuemu_22.cpp
 del cpuemu_31.cpp
+del cpuemu_32.cpp
+del cpuemu_33.cpp
 del linetoscr.cpp
+del aros.rom.cpp
 
 cd jit
 del compemu.cpp
@@ -69,43 +76,59 @@ cd ..
 
 cd genlinetoscr_msvc
 rm -f genlinetoscr.exe
+rm -f *.cpp
+rm -f *.h
 rm -rf debug
 rm -rf release
 rm -rf fullrelease
+rm -rf test
 cd ..
 
 cd build68k_msvc
 rm -f build68k.exe
+rm -f *.cpp
+rm -f *.h
 rm -rf debug
 rm -rf release
 rm -rf fullrelease
+rm -rf test
 cd ..
 
 cd genblitter_msvc
 rm -f genblitter.exe 
+rm -f *.cpp
+rm -f *.h
 rm -rf debug
 rm -rf release
 rm -rf fullrelease
+rm -rf test
 cd ..
 
 cd gencomp_msvc
 rm -f gencomp.exe
+rm -f *.cpp
+rm -f *.h
 rm -rf debug
 rm -rf release
 rm -rf fullrelease
+rm -rf test
 cd ..
 
 cd gencpu_msvc
 rm -f gencpu.exe
+rm -f *.cpp
+rm -f *.h
 rm -rf debug
 rm -rf release
 rm -rf fullrelease
+rm -rf test
 cd ..
 
 cd winuae_msvc
 rm -rf debug
 rm -rf release
 rm -rf fullrelease
+rm -rf test
 cd ..
 
 cd winuae_msvc10
@@ -113,6 +136,15 @@ rm -rf debug
 rm -rf release
 rm -rf fullrelease
 rm -rf ipch
+rm -rf test
+rm -rf x64
+cd ..
+
+cd winuae_msvc11
+rm -rf debug
+rm -rf release
+rm -rf fullrelease
+rm -rf test
 rm -rf x64
 cd ..
 
@@ -152,7 +184,11 @@ rm -rf release
 rm -rf fullrelease
 cd ..
 
-rm -rf lib
+cd wix
+rm -rf bin
+rm -rf obj
+cd ..
+
 
 cd ..
 
@@ -161,7 +197,7 @@ zip -9 -r winuaesrc *
 copy winuaesrc.zip d:\amiga\winuaepackets\winuaesrc%1.zip
 move winuaesrc.zip d:\amiga
 cd c:\projects\winuae\src\od-win32
-zip -9 winuaedebug%1 winuae_msvc\release\winuae.pdb winuae_msvc\fullrelease\winuae.pdb winuae_msvc10\release\winuae.pdb  winuae_msvc10\fullrelease\winuae.pdb 
+zip -9 winuaedebug%1 winuae_msvc11\fullrelease\winuae.pdb winuae_msvc11\x64\fullrelease\winuae.pdb
 move winuaedebug%1.zip d:\amiga\winuaepackets\debug\
-copy winuae_msvc10\fullrelease\winuae.pdb d:\amiga\dump
+copy winuae_msvc11\fullrelease\winuae.pdb winuae_msvc11\x64\fullrelease\winuae.pdb d:\amiga\dump
 copy d:\amiga\winuae.exe d:\amiga\dump

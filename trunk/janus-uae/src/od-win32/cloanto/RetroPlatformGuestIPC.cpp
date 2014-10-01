@@ -1,15 +1,16 @@
 /*****************************************************************************
  Name    : RetroPlatformGuestIPC.c
  Project : RetroPlatform Player
- Client  : Cloanto Italia srl
  Support : http://www.retroplatform.com
- Legal   : Copyright 2007-2009 Cloanto Italia srl - All rights reserved. This
-         : file is made available under the terms of the GNU General Public
-         : License version 2 as published by the Free Software Foundation.
+ Legal   : Copyright 2007-2012 Cloanto Italia srl - All rights reserved. This
+         : file is multi-licensed under the terms of the Mozilla Public License
+         : version 2.0 as published by Mozilla Corporation and the GNU General
+         : Public License, version 2 or later, as published by the Free
+         : Software Foundation.
  Authors : os, mcb
  Created : 2007-08-24 15:28:48
- Updated : 2009-05-14 10:12:43
- Comment : RP Player interprocess communication functions (guest side)
+ Updated : 2012-11-29 13:47:00
+ Comment : RetroPlatform Player interprocess communication functions (guest side)
  Note    : Can be compiled both in Unicode and Multibyte projects
  *****************************************************************************/
 
@@ -84,7 +85,7 @@ HRESULT RPInitializeGuest(RPGUESTINFO *pInfo, HINSTANCE hInstance, LPCTSTR pszHo
 
 	// register with the host
 	//
-	if (!RPSendMessage(RPIPCGM_REGISTER, 0, 0, g_szRegistration, sizeof(g_szRegistration), pInfo, &lr))
+	if (!RPSendMessage(RP_IPC_TO_HOST_REGISTER, 0, 0, g_szRegistration, sizeof(g_szRegistration), pInfo, &lr))
 	{
 		RPUninitializeGuest(pInfo);
 		return HRESULT_FROM_WIN32(ERROR_HOST_UNREACHABLE);

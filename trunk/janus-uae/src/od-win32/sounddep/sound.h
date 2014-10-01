@@ -13,6 +13,7 @@ extern uae_u16 *paula_sndbufpt;
 extern int paula_sndbufsize;
 extern void finish_sound_buffer (void);
 extern void restart_sound_buffer (void);
+extern void pause_sound_buffer (void);
 extern int init_sound (void);
 extern void close_sound (void);
 extern int setup_sound (void);
@@ -33,6 +34,7 @@ struct sound_dp;
 struct sound_data
 {
 	int waiting_for_buffer;
+	int deactive;
 	int devicetype;
 	int obtainedfreq;
 	int paused;
@@ -41,6 +43,8 @@ struct sound_data
 	int freq;
 	int samplesize;
 	int sndbufsize;
+	int sndbufframes;
+	int softvolume;
 	struct sound_dp *data;
 };
 
@@ -157,3 +161,4 @@ extern int sounddrivermask;
 #define SOUNDDRIVER_WASAPI 2
 #define SOUNDDRIVER_OPENAL 4
 #define SOUNDDRIVER_PORTAUDIO 8
+#define SOUNDDRIVE_XAUDIO2 16
