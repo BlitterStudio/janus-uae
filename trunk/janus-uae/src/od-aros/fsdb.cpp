@@ -32,12 +32,14 @@
 
 #include "zfile.h"
 #include "options.h"
+#include "fsdb.h"
+#include "winnt.h"
 
 int my_existsfile (const TCHAR *name) {
 
 	struct FileInfoBlock fib;
 	BPTR lock;
-	int res;
+	int res=0;
 
 	DebOut("name=%s\n", name);
 
@@ -156,11 +158,22 @@ exit:
   return result;
 }
 
-int my_existsdir (const TCHAR *name) {
+/******************************************************************
+ * my_getvolumeinfo (also works for directories on AROS)
+ *
+ * 
+ * return FLAGS:
+ *  -1: error
+ *  MYVOLUMEINFO_READONLY
+ *
+ *  all other flags not supported, as they are not used anywhere
+ * 
+ ******************************************************************/
+int my_getvolumeinfo (const TCHAR *name) {
 
   struct FileInfoBlock *fib;
   BPTR file=NULL;
-  int ret=0;
+  int ret=-1;
 
   DebOut("name: %s\n", name);
 
@@ -186,11 +199,12 @@ int my_existsdir (const TCHAR *name) {
   if(fib->fib_DirEntryType >0) 
   {
     DebOut("DIRECTORY!\n");
-    ret=1;
+    ret=0;
   }
-  else 
-  {
-    DebOut("file..\n");
+
+  if(!(fib->fib_Protection && FIBB_WRITE)) {
+    DebOut("MYVOLUMEINFO_READONLY\n");
+    ret=MYVOLUMEINFO_READONLY;
   }
 
 EXIT:
@@ -205,3 +219,26 @@ EXIT:
 
   return ret;
 }
+
+/******************************************************************
+ * my_existsdir
+ *
+ * Return 1, if name is a valid directory. 0 otherwise.
+ ******************************************************************/
+int my_existsdir (const TCHAR *name) {
+  int t;
+
+  DebOut("name: %s\n", name);
+
+  t=my_getvolumeinfo(name);
+
+  if(t>=0) {
+    DebOut("return 1\n");
+    return 1;
+  }
+
+  DebOut("return 0\n");
+  return 0;
+}
+
+

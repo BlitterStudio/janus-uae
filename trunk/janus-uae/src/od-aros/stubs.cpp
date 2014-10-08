@@ -404,11 +404,6 @@ int hdf_write_target (struct hardfiledata *hfd, void *buffer, uae_u64 offset, in
   TODO();
 }
 
-int my_getvolumeinfo (const TCHAR *root)
-{
-  TODO();
-}
-
 void my_setfilehidden (const TCHAR *path, bool hidden)
 {
   TODO();
@@ -519,11 +514,6 @@ void archive_access_scan (struct zfile *zf, zfile_callback zc, void *user, unsig
 }
 
 struct zfile *archive_unpackzfile (struct zfile *zf)
-{
-  TODO();
-}
-
-void fetch_saveimagepath (TCHAR *out, int size, int dir)
 {
   TODO();
 }
