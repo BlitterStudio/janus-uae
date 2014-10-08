@@ -19,6 +19,7 @@
 
 #include <libraries/cybergraphics.h>
 #include <proto/cybergraphics.h>
+#include <proto/dos.h>
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -117,11 +118,24 @@ int uaelib_debug;
 
 int quickstart = 1, configurationcache = 1, relativepaths = 0; 
 
+static void createdir (const TCHAR *path) {
+  CreateDir(path);
+}
+
 void fetch_configurationpath (TCHAR *out, int size)
 {
 	strncpy(out, "configurations/", size);
 }
 
+void fetch_saveimagepath (TCHAR *out, int size, int dir)
+{
+  fetch_path (_T("SaveimagePath"), out, size);
+  if (dir) {
+    out[_tcslen (out) - 1] = (TCHAR) 0;
+    createdir (out);
+    fetch_path (_T("SaveimagePath"), out, size);
+  }
+}
 #if 0
 void fetch_screenshotpath (TCHAR *out, int size)
 {
