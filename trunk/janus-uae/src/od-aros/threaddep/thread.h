@@ -28,8 +28,6 @@
 #ifndef __THREAD_H__
 #define __THREAD_H__
 
-#warning ==== sem_handle is TODO !?  ====
-
 #define uae_sem_t ULONG
 #define CRITICAL_SECTION struct SignalSemaphore
 
