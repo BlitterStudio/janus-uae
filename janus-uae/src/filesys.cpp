@@ -861,6 +861,7 @@ static void initialize_mountinfo (void)
 	}
 
 	for (nr = 0; nr < currprefs.mountitems; nr++) {
+    DebOut("============ %d =============\n", nr);
 		struct uaedev_config_data *uci = &currprefs.mountconfig[nr];
 		if (uci->ci.controller == HD_CONTROLLER_UAE) {
 			if (uci->ci.type == UAEDEV_TAPE) {
