@@ -22,7 +22,7 @@ extern void cache_free (uae_u8*);
 #define S_READ 1
 #define S_WRITE 2
 
-void init_shm (void);
+bool init_shm (void);
 void free_shm (void);
 bool preinit_shm (void);
 extern bool canbang;

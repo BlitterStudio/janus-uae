@@ -768,6 +768,10 @@ void read_table68k (void)
 
 	free (table68k);
 	table68k = xmalloc (struct instr, 65536);
+  if(!table68k) {
+    write_log("read_table68k: Unable to allocate memory!\n");
+    exit(1);
+  }
 	for (i = 0; i < 65536; i++) {
 		table68k[i].mnemo = i_ILLG;
 		table68k[i].handler = -1;

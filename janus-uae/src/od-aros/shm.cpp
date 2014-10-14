@@ -34,6 +34,7 @@
 
 #ifdef JIT
 
+#if 0
 void init_shm (void) {
 
   canbang = 1;
@@ -41,6 +42,7 @@ void init_shm (void) {
   TODO();
 #endif
 }
+#endif
 
 
 

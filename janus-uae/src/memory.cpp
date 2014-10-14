@@ -8,6 +8,7 @@
 
 #define DEBUG_STUPID 0
 
+#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -1554,19 +1555,35 @@ static void dumplist (void)
 	write_log (_T("End Dump:\n"));
 }
 
+/*
+ * find_shmpiece()
+ *
+ * Locate the shmpiece node describing the block of memory mapped
+ * at the *host* address <base>.
+ * Returns a pointer to shmpiece describing that block if found.
+ * If nothing is mapped at <base> then, direct memory access will
+ * be disabled for the VM and 0 will be returned.
+ */
 static shmpiece *find_shmpiece (uae_u8 *base, bool safe)
 {
 	shmpiece *x = shm_start;
 
-	while (x && x->native_address != base)
+  DebOut("base: %lx, safe %d\n", base, safe);
+
+	while (x && x->native_address != base) {
+    //DebOut(" x: %lx\n", x);
 		x = x->next;
+  }
 	if (!x) {
+    DebOut("return: 0 !!\n");
 		if (safe || bogomem_aliasing)
 			return 0;
 		write_log (_T("NATMEM: Failure to find mapping at %08X, %p\n"), base - NATMEM_OFFSET, base);
+    dumplist();
 		nocanbang ();
 		return 0;
 	}
+  DebOut("return: %lx\n", x);
 	return x;
 }
 

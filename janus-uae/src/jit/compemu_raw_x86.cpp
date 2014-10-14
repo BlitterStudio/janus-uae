@@ -5,6 +5,7 @@ only target, and it's easier this way... */
 * Some basic information about the the target CPU                       *
 *************************************************************************/
 
+extern uae_u32 natmem_offset;
 #define EAX_INDEX 0
 #define ECX_INDEX 1
 #define EDX_INDEX 2
@@ -1679,7 +1680,9 @@ STATIC_INLINE void raw_inc_sp(int off)
 #ifdef _WIN32 // %%% BRIAN KING WAS HERE %%%
 #include <winbase.h>
 #else
+#ifndef __AROS__
 #include <asm/sigcontext.h>
+#endif
 #endif
 #include <signal.h>
 
@@ -1987,6 +1990,7 @@ int EvalException (LPEXCEPTION_POINTERS blah, int n_except)
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 #else
+#ifndef __AROS__
 static void vec(int x, struct sigcontext sc)
 {
 	uae_u8* i=(uae_u8*)sc.eip;
@@ -2226,6 +2230,7 @@ static void vec(int x, struct sigcontext sc)
 #endif
 	signal(SIGSEGV,SIG_DFL);  /* returning here will cause a "real" SEGV */
 }
+#endif /* AROS */
 #endif
 #endif
 

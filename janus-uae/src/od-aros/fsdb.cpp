@@ -202,7 +202,9 @@ int my_getvolumeinfo (const TCHAR *name) {
     ret=0;
   }
 
-  if(!(fib->fib_Protection && FIBB_WRITE)) {
+  DebOut("fib->fib_Protection: %lx\n", fib->fib_Protection);
+
+  if(!(fib->fib_Protection && FIBF_WRITE)) {
     DebOut("MYVOLUMEINFO_READONLY\n");
     ret=MYVOLUMEINFO_READONLY;
   }

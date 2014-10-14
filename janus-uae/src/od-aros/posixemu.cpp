@@ -113,7 +113,7 @@ int uae_start_thread (const TCHAR *name, void *(*f)(void *), void *arg, uae_thre
   if(tid) {
     *tid=newtask;
   }
-  DebOut("thread %lx (\"%s\") started\n", name, newtask);
+  DebOut("thread %lx (\"%s\") started\n", newtask, name);
 
   return newtask!=0;
 }

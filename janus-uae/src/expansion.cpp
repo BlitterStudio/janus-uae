@@ -965,6 +965,10 @@ static void expamem_init_z3fastmem2 (void)
 *  Fake Graphics Card (ZORRO III) - BDK
 */
 
+
+/* p96ram_start taken from FS-UAE .. */
+uaecptr p96ram_start;
+
 static void expamem_map_gfxcard (void)
 {
 	gfxmem_bank.start = (expamem_hi | (expamem_lo >> 4)) << 16;
