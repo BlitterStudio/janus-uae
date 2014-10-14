@@ -2148,10 +2148,6 @@ double vblank_calibrate (double a, bool b) {
   return 0.0;
 }
 
-void unprotect_maprom (void) {
-  TODO();
-}
-
 uae_u8 *save_scsi_dmac (int *len, uae_u8 *dstptr) {
   TODO();
   return NULL;

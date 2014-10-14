@@ -2,6 +2,8 @@
 #define writemem_special writemem
 #define readmem_special  readmem
 
+#define OLI_DEBUG
+
 #define USE_MATCHSTATE 0
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -5356,17 +5358,23 @@ void alloc_cache(void)
 {
 	if (compiled_code) {
 		flush_icache_hard(0, 3);
+    DebOut("Call cache_free(compiled_code)\n");
 		cache_free(compiled_code);
 	}
-	if (veccode == NULL)
+	if (veccode == NULL) {
+    DebOut("Call cache_alloc(256)\n");
 		veccode = cache_alloc (256);
-	if (popallspace == NULL)
+  }
+	if (popallspace == NULL) {
+    DebOut("Call cache_alloc(1024)\n");
 		popallspace = cache_alloc (1024);
+  }
 	compiled_code = NULL;
 	if (currprefs.cachesize == 0)
 		return;
 
 	while (!compiled_code && currprefs.cachesize) {
+    DebOut("Call cache_alloc(currprefs.cachesize*1024)\n");
 		compiled_code=cache_alloc(currprefs.cachesize*1024);
 		if (!compiled_code)
 			currprefs.cachesize/=2;
@@ -5679,7 +5687,9 @@ void build_comp(void)
 #ifdef NATMEM_OFFSET
 	write_log (_T("JIT: Setting signal handler\n"));
 #ifndef _WIN32
+#ifndef __AROS__
 	signal(SIGSEGV,vec);
+#endif
 #endif
 #endif
 	write_log (_T("JIT: Building Compiler function table\n"));

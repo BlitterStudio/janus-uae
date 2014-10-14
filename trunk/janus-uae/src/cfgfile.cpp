@@ -7,7 +7,7 @@
 * Copyright 1998 Brian King, Bernd Schmidt
 */
 
-#define OLI_DEBUG
+//#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -3188,6 +3188,7 @@ static int cfgfile_parse_newfilesys (struct uae_prefs *p, int nr, int type, TCHA
 	devname[0] = volname[0] = 0;
 	uci_set_defaults (&uci, false);
 
+  DebOut("%s\n", value);
 	config_newfilesystem = 1;
 	if (tmpp == 0)
 		goto invalid_fs;

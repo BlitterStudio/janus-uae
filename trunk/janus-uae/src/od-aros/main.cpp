@@ -23,6 +23,8 @@
  *
  ************************************************************************/
 
+#define OLI_DEBUG
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -31,6 +33,7 @@
 #include "aros.h"
 
 #include "gfx.h"
+#include "memory.h"
 
 TCHAR VersionStr[256];
 TCHAR BetaStr[64];
@@ -79,19 +82,28 @@ int main (int argc, TCHAR **argv) {
 
 	//getstartpaths ();
 
-  DebOut("main(%d, ..)\n");
+  DebOut("main(%d, ..)\n", argc);
 
 	makeverstr(VersionStr);
 	DebOut("%s", VersionStr);
 	logging_init();
 	log_scsi=1;
 
-  // TODO: Command line parsing here!
-  // some process_arg()/argv magic
+  if(preinit_shm() /* && WIN32_RegisterClasses () && WIN32_InitLibraries ()*/ ) {
+    write_log (_T("Enumerating display devices.. \n"));
+    enumeratedisplays (FALSE /* multi_display*/);
+  }
+  else {
+    write_log(_T("preinit_shm FAILED\n"));
+  }
 
-  enumeratedisplays (FALSE /* multi_display*/);
+
+
+
   // sortdisplays (); only for multi_display
 
+  // TODO: Command line parsing here!
+  // some process_arg()/argv magic
 #if 0
 	enumerate_sound_devices ();
 	for (i = 0; sound_devices[i].name; i++) {

@@ -32,6 +32,8 @@
 #define EXEC_IO_H
 #endif
 
+#define OLI_DEBUG
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -211,6 +213,7 @@ static struct uaedev_mount_info mountinfo;
 int nr_units (void)
 {
 	int i, cnt = 0;
+  DebOut("entered\n");
 	for (i = 0; i < MAX_FILESYSTEM_UNITS; i++) {
 		if (mountinfo.ui[i].open > 0)
 			cnt++;
@@ -221,6 +224,7 @@ int nr_units (void)
 int nr_directory_units (struct uae_prefs *p)
 {
 	int i, cnt = 0;
+  DebOut("entered\n");
 	if (p) {
 		for (i = 0; i < p->mountitems; i++) {
 			if (p->mountconfig[i].ci.controller == 0)
@@ -238,26 +242,36 @@ int nr_directory_units (struct uae_prefs *p)
 static int is_virtual (int unit_no)
 {
 	int t = is_hardfile (unit_no);
+  DebOut("entered\n");
 	return t == FILESYS_VIRTUAL || t == FILESYS_CD;
 }
 
 int is_hardfile (int unit_no)
 {
+  DebOut("unit_no: %d\n", unit_no);
 	if (mountinfo.ui[unit_no].volname || mountinfo.ui[unit_no].wasisempty || mountinfo.ui[unit_no].unknown_media) {
-		if (unit_no >= cd_unit_offset && unit_no < cd_unit_offset + cd_unit_number)
+    if (unit_no >= cd_unit_offset && unit_no < cd_unit_offset + cd_unit_number) {
+      DebOut("FILESYS_CD\n");
 			return FILESYS_CD;
+    }
+    DebOut("FILESYS_VIRTUAL\n");
 		return FILESYS_VIRTUAL;
 	}
 	if (mountinfo.ui[unit_no].hf.ci.sectors == 0) {
-		if (mountinfo.ui[unit_no].hf.flags & 1)
+		if (mountinfo.ui[unit_no].hf.flags & 1) {
+      DebOut("FILESYS_HARDDRIVE\n");
 			return FILESYS_HARDDRIVE;
+    }
+    DebOut("FILESYS_HARDFILE_RDB\n");
 		return FILESYS_HARDFILE_RDB;
 	}
+  DebOut("FILESYS_HARDFILE\n");
 	return FILESYS_HARDFILE;
 }
 
 static void close_filesys_unit (UnitInfo *uip)
 {
+  DebOut("entered\n");
 	if (!uip->open)
 		return;
 	if (uip->hf.handle_valid)
@@ -290,12 +304,14 @@ static void close_filesys_unit (UnitInfo *uip)
 
 static uaedev_config_data *getuci (struct uaedev_config_data *uci, int nr)
 {
+  DebOut("entered\n");
 	return &uci[nr];
 }
 
 
 static UnitInfo *getuip (struct uae_prefs *p, int index)
 {
+  DebOut("entered\n");
 	if (index < 0)
 		return NULL;
 	index = p->mountconfig[index].configoffset;
@@ -305,6 +321,7 @@ static UnitInfo *getuip (struct uae_prefs *p, int index)
 }
 static int getuindex (struct uae_prefs *p, int index)
 {
+  DebOut("entered\n");
 	if (index < 0)
 		return -1;
 	return p->mountconfig[index].unitnum;
@@ -316,6 +333,7 @@ int get_filesys_unitconfig (struct uae_prefs *p, int index, struct mountedinfo *
 	struct uaedev_config_data *uci = &p->mountconfig[index];
 	UnitInfo uitmp;
 
+  DebOut("entered\n");
 	memset (mi, 0, sizeof (struct mountedinfo));
 	memset (&uitmp, 0, sizeof uitmp);
 	_tcscpy (mi->rootdir, uci->ci.rootdir);
@@ -422,6 +440,7 @@ int get_filesys_unitconfig (struct uae_prefs *p, int index, struct mountedinfo *
 
 static void stripsemicolon (TCHAR *s)
 {
+  DebOut("entered\n");
 	if (!s)
 		return;
 	while (_tcslen(s) > 0 && s[_tcslen(s) - 1] == ':')
@@ -430,6 +449,7 @@ static void stripsemicolon (TCHAR *s)
 static void stripspace (TCHAR *s)
 {
 	int i;
+  DebOut("entered\n");
 	if (!s)
 		return;
 	for (i = 0; i < _tcslen (s); i++) {
@@ -439,6 +459,7 @@ static void stripspace (TCHAR *s)
 }
 static void striplength (TCHAR *s, int len)
 {
+  DebOut("entered\n");
 	if (!s)
 		return;
 	if (_tcslen (s) <= len)
@@ -448,6 +469,7 @@ static void striplength (TCHAR *s, int len)
 static void fixcharset (TCHAR *s)
 {
 	char tmp[MAX_DPATH];
+  DebOut("entered\n");
 	if (!s)
 		return;
 	ua_fs_copy (tmp, MAX_DPATH, s, '_');
@@ -456,6 +478,7 @@ static void fixcharset (TCHAR *s)
 
 TCHAR *validatevolumename (TCHAR *s)
 {
+  DebOut("entered\n");
 	stripsemicolon (s);
 	fixcharset (s);
 	striplength (s, 30);
@@ -463,6 +486,7 @@ TCHAR *validatevolumename (TCHAR *s)
 }
 TCHAR *validatedevicename (TCHAR *s)
 {
+  DebOut("entered\n");
 	stripsemicolon (s);
 	stripspace (s);
 	fixcharset (s);
@@ -475,6 +499,8 @@ TCHAR *filesys_createvolname (const TCHAR *volname, const TCHAR *rootdir, const 
 	TCHAR *nvol = NULL;
 	int i, archivehd;
 	TCHAR *p = NULL;
+
+  DebOut("volname %s, rootdir %s, def %s\n", volname, rootdir, def);
 
 	archivehd = -1;
 	if (my_existsfile (rootdir))
@@ -524,6 +550,7 @@ TCHAR *filesys_createvolname (const TCHAR *volname, const TCHAR *rootdir, const 
 
 static int set_filesys_volume (const TCHAR *rootdir, int *flags, bool *readonly, bool *emptydrive, struct zvolume **zvp)
 {
+  DebOut("entered\n");
 	*emptydrive = 0;
 	if (my_existsfile (rootdir)) {
 		struct zvolume *zv;
@@ -552,6 +579,7 @@ static int set_filesys_volume (const TCHAR *rootdir, int *flags, bool *readonly,
 
 void uci_set_defaults (struct uaedev_config_info *uci, bool rdb)
 {
+  DebOut("entered\n");
 	memset (uci, 0, sizeof (struct uaedev_config_info));
 	if (!rdb) {
 		uci->sectors = 32;
@@ -576,6 +604,8 @@ static int set_filesys_unit_1 (int nr, struct uaedev_config_info *ci)
 	bool emptydrive = false;
 	bool iscd;
 	struct uaedev_config_info c;
+
+  DebOut("entered\n");
 
 	memcpy (&c, ci, sizeof (struct uaedev_config_info));
 
@@ -611,6 +641,8 @@ static int set_filesys_unit_1 (int nr, struct uaedev_config_info *ci)
 			return -1;
 		}
 	}
+
+  DebOut("1..\n");
 
 	ui = &mountinfo.ui[nr];
 	memset (ui, 0, sizeof (UnitInfo));
@@ -674,6 +706,7 @@ static int set_filesys_unit_1 (int nr, struct uaedev_config_info *ci)
 		if (!ui->hf.ci.cyls)
 			ui->hf.ci.cyls = 1;
 	}
+  DebOut("2..\n");
 	ui->self = 0;
 	ui->reset_state = FS_STARTUP;
 	ui->wasisempty = emptydrive;
@@ -691,6 +724,7 @@ static int set_filesys_unit_1 (int nr, struct uaedev_config_info *ci)
 	ui->bootpri = c.bootpri;
 	ui->open = 1;
 
+  DebOut("new FS unit: %d\n", nr);
 	return nr;
 err:
 	if (ui->hf.handle_valid)
@@ -702,6 +736,7 @@ static int set_filesys_unit (int nr, struct uaedev_config_info *ci)
 {
 	int ret;
 
+  DebOut("entered\n");
 	ret = set_filesys_unit_1 (nr, ci);
 	return ret;
 }
@@ -709,6 +744,8 @@ static int set_filesys_unit (int nr, struct uaedev_config_info *ci)
 static int add_filesys_unit (struct uaedev_config_info *ci)
 {
 	int ret;
+
+  DebOut("ci: %lx\n", ci);
 
 	if (nr_units () >= MAX_FILESYSTEM_UNITS)
 		return -1;
@@ -727,6 +764,7 @@ int kill_filesys_unitconfig (struct uae_prefs *p, int nr)
 {
 	struct uaedev_config_data *uci;
 
+  DebOut("entered\n");
 	if (nr < 0)
 		return 0;
 	uci = getuci (p->mountconfig, nr);
@@ -746,6 +784,7 @@ int move_filesys_unitconfig (struct uae_prefs *p, int nr, int to)
 {
 	struct uaedev_config_data *uci1, *uci2, tmpuci;
 
+  DebOut("entered\n");
 	uci1 = getuci (p->mountconfig, nr);
 	uci2 = getuci (p->mountconfig, to);
 	if (nr == to)
@@ -762,6 +801,7 @@ void filesys_addexternals (void);
 static void allocuci (struct uae_prefs *p, int nr, int idx, int unitnum)
 {
 	struct uaedev_config_data *uci = &p->mountconfig[nr];
+  DebOut("entered\n");
 	if (idx >= 0) {
 		UnitInfo *ui;
 		uci->configoffset = idx;
@@ -775,12 +815,14 @@ static void allocuci (struct uae_prefs *p, int nr, int idx, int unitnum)
 }
 static void allocuci (struct uae_prefs *p, int nr, int idx)
 {
+  DebOut("entered\n");
 	allocuci (p, nr, idx, -1);
 }
 
 static void initialize_mountinfo (void)
 {
 	int nr;
+  DebOut("entered\n");
 	UnitInfo *uip = &mountinfo.ui[0];
 
 	cd_unit_offset = MAX_FILESYSTEM_UNITS;
@@ -884,6 +926,7 @@ int sprintf_filesys_unit (TCHAR *buffer, int num)
 {
 	UnitInfo *uip = mountinfo.ui;
 
+  DebOut("entered\n");
 	if (uip[num].volname != 0)
 		_stprintf (buffer, _T("(DH%d:) Filesystem, %s: %s %s"), num, uip[num].volname,
 		uip[num].rootdir, uip[num].readonly ? "ro" : "");
@@ -896,6 +939,7 @@ int sprintf_filesys_unit (TCHAR *buffer, int num)
 static void free_mountinfo (void)
 {
 	int i;
+  DebOut("entered\n");
 	for (i = 0; i < MAX_FILESYSTEM_UNITS; i++)
 		close_filesys_unit (mountinfo.ui + i);
 	gayle_free_units ();
@@ -904,6 +948,7 @@ static void free_mountinfo (void)
 struct hardfiledata *get_hardfile_data (int nr)
 {
 	UnitInfo *uip = mountinfo.ui;
+  DebOut("entered\n");
 	if (nr < 0 || nr >= MAX_FILESYSTEM_UNITS || uip[nr].open == 0 || is_virtual (nr))
 		return 0;
 	return &uip[nr].hf;
@@ -1157,6 +1202,7 @@ static uae_u32 a_uniq, key_uniq;
 
 static void set_quadp(uaecptr p, uae_s64 v)
 {
+  DebOut("entered\n");
 	if (!valid_address(p, 8))
 		return;
 	put_long(p, v >> 32);
@@ -1164,6 +1210,7 @@ static void set_quadp(uaecptr p, uae_s64 v)
 }
 static uae_u64 get_quadp(uaecptr p)
 {
+  DebOut("entered\n");
 	if (!valid_address(p, 8))
 		return 0;
 	return ((uae_u64)get_long(p) << 32) | get_long(p + 4);
@@ -1280,6 +1327,7 @@ void timeval_to_amiga (struct mytimeval *tv, int *days, int *mins, int *ticks)
 	/* mins since midnight */
 	/* ticks past minute @ 50Hz */
 
+  DebOut("entered\n");
 	uae_s64 t = tv->tv_sec * 1000 + tv->tv_usec / 1000;
 	t -= diff;
 	if (t < 0)
@@ -1295,6 +1343,7 @@ void amiga_to_timeval (struct mytimeval *tv, int days, int mins, int ticks)
 {
 	uae_s64 t;
 
+  DebOut("entered\n");
 	if (days < 0)
 		days = 0;
 	if (days > 9900 * 365)
@@ -1319,6 +1368,7 @@ static Unit*
 	find_unit (uaecptr port)
 {
 	Unit* u;
+  DebOut("entered\n");
 	for (u = units; u; u = u->next)
 		if (u->port == port)
 			break;
@@ -1329,6 +1379,7 @@ static Unit*
 static struct fs_dirhandle *fs_opendir (Unit *u, a_inode *aino)
 {
 	struct fs_dirhandle *fsd = xmalloc (struct fs_dirhandle, 1);
+  DebOut("entered\n");
 	fsd->fstype = (u->volflags & MYVOLUMEINFO_ARCHIVE) ? FS_ARCHIVE : ((u->volflags & MYVOLUMEINFO_CDFS) ? FS_CDFS : FS_DIRECTORY);
 	if (fsd->fstype == FS_ARCHIVE) {
 		fsd->zd = zfile_opendir_archive (aino->nname);
@@ -1348,6 +1399,7 @@ static struct fs_dirhandle *fs_opendir (Unit *u, a_inode *aino)
 }
 static void fs_closedir (struct fs_dirhandle *fsd)
 {
+  DebOut("entered\n");
 	if (!fsd)
 		return;
 	if (fsd->fstype  == FS_ARCHIVE)
@@ -1361,6 +1413,7 @@ static void fs_closedir (struct fs_dirhandle *fsd)
 static struct fs_filehandle *fs_openfile (Unit *u, a_inode *aino, int flags)
 {
 	struct fs_filehandle *fsf = xmalloc (struct fs_filehandle, 1);
+  DebOut("entered\n");
 	fsf->fstype = (u->volflags & MYVOLUMEINFO_ARCHIVE) ? FS_ARCHIVE : ((u->volflags & MYVOLUMEINFO_CDFS) ? FS_CDFS : FS_DIRECTORY);
 	if (fsf->fstype == FS_ARCHIVE) {
 		fsf->zf = zfile_open_archive (aino->nname, flags);
@@ -1380,6 +1433,7 @@ static struct fs_filehandle *fs_openfile (Unit *u, a_inode *aino, int flags)
 }
 static void fs_closefile (struct fs_filehandle *fsf)
 {
+  DebOut("entered\n");
 	if (!fsf)
 		return;
 	if (fsf->fstype == FS_ARCHIVE) {
@@ -1393,6 +1447,7 @@ static void fs_closefile (struct fs_filehandle *fsf)
 }
 static unsigned int fs_read (struct fs_filehandle *fsf, void *b, unsigned int size)
 {
+  DebOut("entered\n");
 	if (fsf->fstype == FS_ARCHIVE)
 		return zfile_read_archive (fsf->zf, b, size);
 	else if (fsf->fstype == FS_DIRECTORY)
@@ -1453,6 +1508,8 @@ static void set_volume_name (Unit *unit, struct mytimeval *tv)
 	int namelen;
 	int i;
 	char *s;
+
+  DebOut("entered\n");
 
 	s = ua_fs (unit->ui.volname, -1);
 	namelen = strlen (s);
@@ -1949,6 +2006,7 @@ bool filesys_do_disk_change (int cdunitnum, bool insert)
 /* flags and comments supported? */
 static int fsdb_cando (Unit *unit)
 {
+  DebOut("entered\n");
 	if (unit->volflags & (MYVOLUMEINFO_ARCHIVE | MYVOLUMEINFO_CDFS))
 		return 1;
 	if (currprefs.filesys_custom_uaefsdb  && (unit->volflags & MYVOLUMEINFO_STREAMS))
@@ -2010,6 +2068,7 @@ static int flush_cache (Unit *unit, int num)
 	int i = 0;
 	int cnt = 100;
 
+  DebOut("entered\n");
 	//write_log (_T("FILESYS: flushing cache unit %d (max %d items)\n"), unit->unit, num);
 	if (num == 0)
 		num = -1;
@@ -2682,6 +2741,7 @@ static void free_notify (Unit *unit, int hash, Notify *n)
 
 static void startup_update_unit (Unit *unit, UnitInfo *uinfo)
 {
+  DebOut("entered\n");
 	if (!unit)
 		return;
 	xfree (unit->ui.volname);
@@ -2694,6 +2754,8 @@ static Unit *startup_create_unit (UnitInfo *uinfo, int num)
 {
 	int i;
 	Unit *unit, *u;
+
+  DebOut("entered\n");
 
 	unit = xcalloc (Unit, 1);
 	/* keep list in insertion order */
@@ -2793,6 +2855,7 @@ static void *filesys_thread (void *unit_v);
 #endif
 static void filesys_start_thread (UnitInfo *ui, int nr)
 {
+  DebOut("entered\n");
 	ui->unit_pipe = 0;
 	ui->back_pipe = 0;
 	ui->reset_state = FS_STARTUP;
@@ -2806,7 +2869,7 @@ static void filesys_start_thread (UnitInfo *ui, int nr)
 		ui->back_pipe = xmalloc (smp_comm_pipe, 1);
 		init_comm_pipe (ui->unit_pipe, 100, 3);
 		init_comm_pipe (ui->back_pipe, 100, 1);
-		uae_start_thread (_T("filesys"), filesys_thread, (void *)ui, &ui->tid);
+		uae_start_thread (_T("UAE filesys"), filesys_thread, (void *)ui, &ui->tid);
 	}
 #endif
 	if (isrestore ()) {
@@ -2839,6 +2902,7 @@ static uae_u32 REGPARAM2 startup_handler (TrapContext *context)
 	uae_u32 cdays;
 	struct mytimeval ctime = { 0 };
 
+  DebOut("entered\n");
 	// 1.3:
 	// dp_Arg1 contains crap (Should be name of device)
 	// dp_Arg2 = works as documented
@@ -4027,6 +4091,7 @@ static int exalldo (uaecptr exalldata, uae_u32 exalldatasize, uae_u32 type, uaec
 	char *x = NULL, *comment = NULL;
 	int ret = 0;
 
+  DebOut("entered\n");
 	memset (&statbuf, 0, sizeof statbuf);
 	if (unit->volflags & MYVOLUMEINFO_ARCHIVE)
 		zfile_stat_archive (aino->nname, &statbuf);
@@ -6338,11 +6403,16 @@ static int filesys_iteration(UnitInfo *ui)
 	uaecptr msg;
 	uae_u32 morelocks;
 
+  DebOut("entered\n");
+
 	pck = read_comm_pipe_u32_blocking (ui->unit_pipe);
 	msg = read_comm_pipe_u32_blocking (ui->unit_pipe);
 	morelocks = (uae_u32)read_comm_pipe_int_blocking (ui->unit_pipe);
 
+  DebOut("msg received\n");
+
 	if (ui->reset_state == FS_GO_DOWN) {
+    DebOut("FS_GO_DOWN\n");
 		if (pck != 0)
 		   return 1;
 		/* Death message received. */
@@ -6353,8 +6423,10 @@ static int filesys_iteration(UnitInfo *ui)
 
 	put_long (get_long (morelocks), get_long (ui->self->locklist));
 	put_long (ui->self->locklist, morelocks);
+  DebOut("call handle_packet ..\n");
 	int ret = handle_packet (ui->self, pck, msg);
 	if (!ret) {
+    DebOut("DOS_FALSE / ERROR_ACTION_NOT_KNOWN\n");
 		PUT_PCK_RES1 (pck, DOS_FALSE);
 		PUT_PCK_RES2 (pck, ERROR_ACTION_NOT_KNOWN);
 	}
@@ -6367,9 +6439,11 @@ static int filesys_iteration(UnitInfo *ui)
 	/* The message is sent by our interrupt handler, so make sure an interrupt happens. */
 	do_uae_int_requested ();
 	/* Send back the locks. */
+  DebOut("send back the locks..\n");
 	if (get_long (ui->self->locklist) != 0)
 		write_comm_pipe_int (ui->back_pipe, (int)(get_long (ui->self->locklist)), 0);
 	put_long (ui->self->locklist, 0);
+  DebOut("return 1\n");
 	return 1;
 }
 
@@ -6377,6 +6451,8 @@ static int filesys_iteration(UnitInfo *ui)
 static void *filesys_thread (void *unit_v)
 {
 	UnitInfo *ui = (UnitInfo *)unit_v;
+
+  DebOut("entered\n");
 
 	uae_set_thread_priority (NULL, 1);
 	for (;;) {
@@ -6394,6 +6470,8 @@ static uae_u32 REGPARAM2 filesys_handler (TrapContext *context)
 	Unit *unit = find_unit (m68k_areg (regs, 5));
 	uaecptr packet_addr = m68k_dreg (regs, 3);
 	uaecptr message_addr = m68k_areg (regs, 4);
+
+  DebOut("entered\n");
 	if (! valid_address (packet_addr, 36) || ! valid_address (message_addr, 14)) {
 		write_log (_T("FILESYS: Bad address %x/%x passed for packet.\n"), packet_addr, message_addr);
 		goto error2;

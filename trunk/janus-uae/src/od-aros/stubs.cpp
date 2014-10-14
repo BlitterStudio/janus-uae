@@ -958,9 +958,6 @@ void fetch_inputfilepath (TCHAR *out, int size)
 	  TODO();
 }
 
-uae_u8 veccode[256];
-
-
 void alloc_colors256 (int (*)(int, int, int, unsigned int*)) {
   TODO();
 }
@@ -1103,10 +1100,6 @@ void vsync_busywait_start (void) {
   TODO();
 }
 
-void filesys_addexternals (void) {
-  TODO();
-}
-
 void fetch_path (const TCHAR *name, TCHAR *out, int size) {
   _tcscpy (out, name);
   TODO();
@@ -1115,10 +1108,6 @@ void fetch_path (const TCHAR *name, TCHAR *out, int size) {
 TCHAR console_getch (void) {
   TODO();
   return 'X';
-}
-
-void protect_roms (bool protect) {
-  TODO();
 }
 
 uae_u32 getlocaltime (void) {
@@ -1136,5 +1125,9 @@ bool console_isch (void) {
 }
 
 void ncr_io_bput (uaecptr addr, uae_u32 val) {
+  TODO();
+}
+
+void uae_end_thread (uae_thread_id *tid) {
   TODO();
 }

@@ -7,6 +7,7 @@
 * Copyright 1996 Ed Hanway
 */
 
+#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -310,6 +311,7 @@ void set_uae_int_flag (void)
 void rtarea_setup (void)
 {
 	uaecptr base = need_uae_boot_rom ();
+  DebOut("base: %lx\n", base);
 	if (base) {
 		write_log (_T("RTAREA located at %08X\n"), base);
 		rtarea_base = base;

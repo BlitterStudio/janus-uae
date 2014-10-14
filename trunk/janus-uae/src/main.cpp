@@ -6,6 +6,8 @@
 * Copyright 1995 Ed Hanway
 * Copyright 1995, 1996, 1997 Bernd Schmidt
 */
+
+#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include <assert.h>
@@ -977,10 +979,13 @@ void leave_program (void)
 
 void virtualdevice_init (void)
 {
+  DebOut("entered\n");
 #ifdef AUTOCONFIG
+  DebOut("call rtarea_setup..\n");
 	rtarea_setup ();
 #endif
 #ifdef FILESYS
+  DebOut("call rtarea_init..\n");
 	rtarea_init ();
 	uaeres_install ();
 	hardfile_install ();

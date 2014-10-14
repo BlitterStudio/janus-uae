@@ -162,6 +162,7 @@ bool preinit_shm (void)
 		}
 	}
 	size64 = total64;
+  /* size64 = largest */
 	if (os_64bit) {
 		if (size64 > MAXZ3MEM64)
 			size64 = MAXZ3MEM64;
