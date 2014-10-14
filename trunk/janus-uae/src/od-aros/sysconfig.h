@@ -23,6 +23,12 @@
 
 /* new */
 
+/* move somewhere else? */
+//#define uae_shmctl shmctl
+//#define uae_shmget shmget
+//#define uae_shmat  shmat
+//#define uae_shmdt  shmdt
+
 #define ARCADIA /* Arcadia arcade system */
 #define DEBUGGER
 #define ECS_DENISE /* ECS DENISE new features */
@@ -493,3 +499,4 @@
 /* Define to empty if the keyword `volatile' does not work. Warning: valid
    code using `volatile' can become incorrect without. Disable with care. */
 /* #undef volatile */
+

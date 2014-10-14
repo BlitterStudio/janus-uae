@@ -217,14 +217,15 @@ void cache_free (uae_u8 *cache)
 #else
     // FIXME: Must add (address, size) to a list in cache_alloc, so the memory
     // can be correctly released here...
-    printf("TODO: free memory with munmap\n");
+    TODO();
+    write_log("TODO: free memory with munmap\n");
     //munmap(cache, size);
 #endif
 }
 
 uae_u8 *cache_alloc (int size)
 {
-    printf("cache_alloc size = %d\n", size);
+    write_log("cache_alloc size = %d\n", size);
 #ifdef WINDOWS
     return virtualallocwithlock (NULL, size, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 #else
