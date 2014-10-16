@@ -25,12 +25,15 @@
 use strict;
 use Switch;
 require Tree::Simple;
+use Data::TreeDumper;
 
+#=====================================================================
+# global
+#=====================================================================
 my $debug=1;
 
-if(!defined $ARGV[1]) {
-  die "Usage: parse_gui windows.rc out.cpp"
-}
+my %root;
+my $rroot;
 
 my $res_file=$ARGV[0];
 my $cpp_file=$ARGV[1];
@@ -73,19 +76,88 @@ sub gen_node($$) {
       $node{'x'}=$attr[2];
       $node{'y'}=$attr[3];
       $node{'w'}=$attr[4];
-      $node{'x'}=$attr[5];
+      $node{'h'}=$attr[5];
     }
-    else {
-      $debug && print "  = default type\n";
+    case "GROUPBOX" {
+      $debug && print "  = GROUPBOX {\n";
+      $debug && print "      string: ".$attr[0]."\n";
+      $debug && print "      x:      ".$attr[2]."\n";
+      $debug && print "      y:      ".$attr[3]."\n";
+      $debug && print "      w:      ".$attr[4]."\n";
+      $debug && print "      h:      ".$attr[5]."\n";
+      $debug && print "    }\n";
       $node{'string'}=$attr[0];
       $node{'x'}=$attr[2];
       $node{'y'}=$attr[3];
       $node{'w'}=$attr[4];
-      $node{'x'}=$attr[5];
+      $node{'h'}=$attr[5];
+    }
+    case "CONTROL" {
+      $debug && print "  = $type {\n";
+      $debug && print "      string: ".$attr[0]."\n";
+      $debug && print "      x:      ".$attr[4]."\n";
+      $debug && print "      y:      ".$attr[5]."\n";
+      $debug && print "      w:      ".$attr[6]."\n";
+      $debug && print "      h:      ".$attr[7]."\n";
+      $debug && print "    }\n";
+      $node{'string'}=$attr[0];
+      $node{'x'}=$attr[4];
+      $node{'y'}=$attr[5];
+      $node{'w'}=$attr[6];
+      $node{'h'}=$attr[7];
+    }
+    case "PUSHBUTTON" {
+      $debug && print "  = $type {\n";
+      $debug && print "      string: ".$attr[0]."\n";
+      $debug && print "      x:      ".$attr[2]."\n";
+      $debug && print "      y:      ".$attr[3]."\n";
+      $debug && print "      w:      ".$attr[4]."\n";
+      $debug && print "      h:      ".$attr[5]."\n";
+      $debug && print "    }\n";
+      $node{'string'}=$attr[0];
+      $node{'x'}=$attr[2];
+      $node{'y'}=$attr[3];
+      $node{'w'}=$attr[4];
+      $node{'h'}=$attr[5];
+    }
+    case "COMBOBOX" {
+      $debug && print "  = $type {\n";
+      $debug && print "      string: ".$attr[0]."\n";
+      $debug && print "      x:      ".$attr[1]."\n";
+      $debug && print "      y:      ".$attr[2]."\n";
+      $debug && print "      w:      ".$attr[3]."\n";
+      $debug && print "      h:      ".$attr[4]."\n";
+      $debug && print "    }\n";
+      $node{'string'}=$attr[0];
+      $node{'x'}=$attr[1];
+      $node{'y'}=$attr[2];
+      $node{'w'}=$attr[3];
+      $node{'h'}=$attr[4];
+    }
+    case "EDITTEXT" {
+      $debug && print "  = $type {\n";
+      $debug && print "      string: ".$attr[0]."\n";
+      $debug && print "      x:      ".$attr[1]."\n";
+      $debug && print "      y:      ".$attr[2]."\n";
+      $debug && print "      w:      ".$attr[3]."\n";
+      $debug && print "      h:      ".$attr[4]."\n";
+      $debug && print "    }\n";
+      $node{'string'}=$attr[0];
+      $node{'x'}=$attr[1];
+      $node{'y'}=$attr[2];
+      $node{'w'}=$attr[3];
+      $node{'h'}=$attr[4];
+    }
+    else {
+      $debug && print "      => default type\n";
+      $node{'string'}=$attr[0];
+      $node{'x'}=$attr[2];
+      $node{'y'}=$attr[3];
+      $node{'w'}=$attr[4];
+      $node{'h'}=$attr[5];
 
     }
   }
-
   return \%node;
 }
 
@@ -94,34 +166,83 @@ sub is_inside($$$) {
   my $rtree=shift;
   my $ranode=shift;
   my $rbnode=shift;
+  my $d=$debug;
 
   # everything is inside the root node of course
   if($rbnode eq $$rtree->getChild(0)) {
+    $debug && print "THIS SHOULD NOT HAPPEN!\n";
     return 1;
   }
 
-  $debug && print "compare: ".${$ranode}{'x'}." and ".${$rbnode}{'x'}."\n";
+  #$debug=0;
+  $debug && print "compare: ".${$ranode}{'x'}." and ".${$rbnode}{'x'}.": ";
+  if(${$ranode}{'x'} >= ${$rbnode}{'x'}) {
+    $debug && print "ok";
+  }
+  $debug && print "\n";
+  $debug && print "compare: ".${$ranode}{'y'}." and ".${$rbnode}{'y'}.": ";
+  if(${$ranode}{'y'} >= ${$rbnode}{'y'}) {
+    $debug && print "ok";
+  }
+  $debug && print "\n";
+  $debug && print "compare: ".${$ranode}{'x'}."+".${$ranode}{'w'}.
+                  "=".(${$rbnode}{'x'}+${$rbnode}{'w'}).
+                  " and ".${$rbnode}{'x'}.
+                  "+".${$rbnode}{'w'}.
+                  "=".(${$rbnode}{'x'}+${$rbnode}{'w'}).
+                  ": ";
+  if((${$ranode}{'x'}+${$ranode}{'w'}) <= (${$rbnode}{'x'}+${$rbnode}{'w'})) {
+    $debug && print "ok";
+  }
+  $debug && print "\n";
+  $debug && print "compare: ".${$ranode}{'h'}." and ".${$rbnode}{'h'}.": ";
+  if(${$ranode}{'y'}+${$ranode}{'h'} <= ${$rbnode}{'y'}+${$rbnode}{'h'}) {
+    $debug && print "ok";
+  }
+  $debug && print "\n";
 
+  $debug=$d;
   if(${$ranode}{'x'} >= ${$rbnode}{'x'} and
      ${$ranode}{'y'} >= ${$rbnode}{'y'} and
-     ${$ranode}{'x'}+${$ranode}{'w'} <= ${$rbnode}{'x'}+${$ranode}{'w'} and
-     ${$ranode}{'y'}+${$ranode}{'h'} <= ${$rbnode}{'y'}+${$ranode}{'h'}) {
+     ((${$ranode}{'x'}+${$ranode}{'w'}) <= (${$rbnode}{'x'}+${$rbnode}{'w'})) and
+     ((${$ranode}{'y'}+${$ranode}{'h'}) <= (${$rbnode}{'y'}+${$rbnode}{'h'}))
+    ) {
+    $debug && print "        IS INSIDE!!\n";
     return 1;
   }
 
   return 0;
 }
 
+sub insert_node($$);
+
 sub insert_node($$) {
   my $rtree=shift;
   my $rnodedata=shift;
+  my $child;
 
   if($$rtree->getChildCount()==0) {
+    $debug && print "      first child inserted\n";
+    # we have no child so far, so we simply add it and are done
     $$rtree->addChild(Tree::Simple->new($rnodedata));
+    return;
   }
 
-  print is_inside($rtree, $$rtree->getChild(0)->getNodeValue(), $rnodedata);
+  foreach $child ($$rtree->getAllChildren()) {
+    # now we have to check, if our new node is inside the actual child.
+    # if it is, recursivly add the new node to the child 
+    print "        XXX\n";
+    #if(is_inside($rtree, $$rtree->getChild(0)->getNodeValue(), $rnodedata)) {
+    if(is_inside($rtree, $rnodedata, $child->getNodeValue())) {
+      print "        call insert_node again..\n";
+      insert_node(\$child, $rnodedata);
+      return;
+    }
+  };
 
+
+  # we are not inside one of the children, so we are a sibling:
+  $$rtree->addChild(Tree::Simple->new($rnodedata));
 }
 
 sub insert_line($$$) {
@@ -132,59 +253,99 @@ sub insert_line($$$) {
 
 
   if(defined $$rnodedata{'string'}) {
-    $debug && print "defined\n";
+    $debug && print "      defined string: ".$$rnodedata{'string'}."\n";
   }
 
   insert_node($rtree, $rnodedata);
 }
 
-my %root;
-my $rroot;
+#===================================================================0
+# getx(string 1,0,393,163)
+#===================================================================0
+sub getx($) {
+  my $string=shift;
+  return (split ',',$string)[0];
+}
+#===================================================================0
+# gety(string 1,0,393,163)
+#===================================================================0
+#===================================================================0
+# getw(string 1,0,393,163)
+#===================================================================0
+#===================================================================0
+# geth(string 1,0,393,163)
+#===================================================================0
+
+#===================================================================0
+# main
+#===================================================================0
+if(!defined $ARGV[1]) {
+  die "Usage: parse_gui windows.rc out.cpp"
+}
 
 while(<RESFILE>) {
   $line=$back.$_;
   $back="";
   chomp($line);
+  #$debug && print ("************************************************************************\n");
+  #$debug && print ("ACTUAL LINE: $line\n");
+  #$debug && print ("************************************************************************\n");
   if($line =~ /DIALOGEX/) {
-    $idd_active=1;
-    $idd_name=(split(' ', $line))[0];
+    # IDD_FLOPPY DIALOGEX 0, 0, 396, 261
+    my @t;
+    $line=~s/\,//g; # remove all ,
+    @t=split(' ', $line);
+    $idd_name=$t[0];
     $debug && print "=== $idd_name ===\n";
+    $idd_active=1;
+    # shift away "IDD_FLOPPY DIALOGEX"
+    shift(@t);
+    shift(@t);
+    $root{'x'}=$t[0];
+    $root{'y'}=$t[1];
+    $root{'w'}=$t[2];
+    $root{'h'}=$t[3];
     $root{'string'}=$idd_name;
-    $root{'x'}=0;
-    $root{'y'}=0;
-    $root{'w'}=10000;
-    $root{'h'}=10000;
+    $debug && print "    x ".$root{'x'}." y ".$root{'y'}." w ".$root{'w'}." h ".$root{'h'}."\n";
     $rroot=\%root;
     $tree = Tree::Simple->new($rroot, Tree::Simple->ROOT);
-    print "==> ".${$tree->getChild(0)->getNodeValue()}{'w'};
-    print "==> ".${$tree->getChild(0)->getNodeValue()}{'w'};
+    # now we have a tree with a root node
   }
   else {
-
     if($idd_active) {
+      #we are in a DIALOGEX object, but not in the list of childs
       if($line =~ /^END/) {
         $active=0;
         $idd_active=0;
+        $debug && print ("=== END OF $idd_name ==\n");
         # TODO: finish tree!
       }
       else {
         if(!$active and $line =~ /BEGIN/) {
+          # list of childs start after BEGIN
+          $debug && print "          .. active\n";
           $active=1;
         }
-        else {
+        elsif($active) {
+          # GROUPBOX        "Floppy Drives",IDC_SETTINGSTEXT3,1,0,393,163
+          # COMBOBOX        IDC_DF1TYPE,152,51,65,50,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+          # RTEXT           "Write-protected",IDC_STATIC,221,53,74,10,SS_CENTERIMAGE
+          # ...
           @part=split " ", $line;
           $key=shift @part;
+          $debug && print " == $key ==\n";
           $value=join " ",@part;
-          if(not $value =~ /"/) {
+          # care for multilines?
+          ##if(not $value =~ /"/) {
             # multiline 
-            $back=$key." ";
-          }
-          else {
+            ##$back=$key." ";
+          ##}
+          ##else {
             # now we have a valid line
-            $debug && print " == $key -- $value ==\n";
+            $debug && print "      $value\n";
             insert_line(\$tree, $key, $value);
             print HFILE "#define $key $value\n";
-          }
+          ##}
 
         }
 
@@ -194,10 +355,12 @@ while(<RESFILE>) {
 
 }
 
-$tree->traverse(sub {
-  my ($tree) = @_;
-    print (("\t" x $tree->getDepth()), $tree->getNodeValue(), "\n");
-});
+
+#$tree->traverse(sub {
+  #my ($tree) = @_;
+    #print (("\t" x $tree->getDepth()), $tree->getNodeValue(), "\n");
+#});
+print DumpTree($tree, 'title');
 
 close(RESFILE);
 close(HFILE);
