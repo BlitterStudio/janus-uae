@@ -13,6 +13,8 @@
 
 #include "gui.h"
 
+#define RESIZE 155 / 100
+
 struct Data {
   struct Hook LayoutHook;
   ULONG width, height;
@@ -88,12 +90,12 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
         i++;
       }
 #endif
-      lm->lm_MinMax.MinWidth  = data->width;
-      lm->lm_MinMax.MinHeight = data->height;
-      lm->lm_MinMax.DefWidth  = data->width;
-      lm->lm_MinMax.DefHeight = data->height;
-      lm->lm_MinMax.MaxWidth  = data->width;
-      lm->lm_MinMax.MaxHeight = data->height;
+      lm->lm_MinMax.MinWidth  = data->width * RESIZE;
+      lm->lm_MinMax.MinHeight = data->height * RESIZE;
+      lm->lm_MinMax.DefWidth  = data->width * RESIZE;
+      lm->lm_MinMax.DefHeight = data->height * RESIZE;
+      lm->lm_MinMax.MaxWidth  = data->width * RESIZE;
+      lm->lm_MinMax.MaxHeight = data->height * RESIZE;
 
       DebOut("  mincw=%d\n",lm->lm_MinMax.MinWidth);
       DebOut("  minch=%d\n",lm->lm_MinMax.MinHeight);
@@ -101,36 +103,42 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
       DebOut("  maxch=%d\n",lm->lm_MinMax.MaxHeight);
 
       DebOut("MUILM_MINMAX done\n");
-      return 0;
     }
+    return 0;
 
     case MUILM_LAYOUT: {
       struct Data *data = (struct Data *) hook->h_Data;
       ULONG i=0;
       struct Element *element=data->element;
 
-      DebOut("MUILM_LAYOUT\n");
+      DebOut("MUILM_LAYOUT %lx\n", obj);
 
       while(element[i].exists) {
-        DebOut("  i=%d\n", i);
-        DebOut("   x: %d\n", element[i].x);
-        DebOut("   y: %d\n", element[i].y);
-        DebOut("   w: %d\n", element[i].w);
-        DebOut("   h: %d\n", element[i].h);
-        DebOut("   obj: %lx\n", element[i].obj);
-        if (!MUI_Layout(element[i].obj,
-                        element[i].x,
-                        element[i].y,
-                        element[i].w,
-                        element[i].h, 0)
-           ) {
-          return FALSE;
+        if(element[i].obj != obj) {
+          DebOut("  i=%d\n", i);
+          DebOut("   x: %d\n", element[i].x);
+          DebOut("   y: %d\n", element[i].y);
+          DebOut("   w: %d\n", element[i].w);
+          DebOut("   h: %d\n", element[i].h);
+          DebOut("   obj: %lx\n", element[i].obj);
+          if (!MUI_Layout(element[i].obj,
+                          element[i].x * RESIZE,
+                          element[i].y * RESIZE,
+                          element[i].w * RESIZE,
+                          element[i].h * RESIZE, 0)
+             ) {
+            DebOut("MUI_Layout failed!\n");
+            return FALSE;
+          }
+        }
+        else {
+          DebOut("   RECURSION !?!?!: %lx\n", element[i].obj);
         }
         i++;
       }
       DebOut("MUILM_LAYOUT done\n");
-      return TRUE;
     }
+    return TRUE;
   }
 
   return MUILM_UNKNOWN;
@@ -142,6 +150,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
 
   struct TagItem *tstate, *tag;
   APTR src;
+  ULONG i;
 
   DebOut("mNew(fixed)\n");
 
@@ -171,20 +180,65 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
 
     //data->widget=widget;
 
-    data->width=300;
-    data->height=200;
-    data->element[0].x=50;
-    data->element[0].y=60;
-    data->element[0].w=100;
-    data->element[0].h=20;
-    data->element[0].obj=MUI_MakeObject(MUIO_Button, (ULONG)label);
+    data->width =396;
+    data->height=261;
+    data->element[0].x=1;
+    data->element[0].y=0;
+    data->element[0].w=393;
+    data->element[0].h=163;
+    data->element[0].obj=HGroup, MUIA_Frame, MUIV_Frame_Group,
+                                 MUIA_FrameTitle, "Floppy Drives",
+                                 MUIA_Background, MUII_GroupBack,
+                                 End;
     data->element[0].exists=1;
 
-    DoMethod((Object *) obj,OM_ADDMEMBER,(LONG) data->element[0].obj);
-  
+    data->element[1].x=7;
+    data->element[1].y=14;
+    data->element[1].w=34;
+    data->element[1].h=15;
+    data->element[1].obj=MUI_MakeObject(MUIO_Button, (ULONG) "DF0:");
+    data->element[1].exists=1;
+
+    data->element[2].x=1;
+    data->element[2].y=170;
+    data->element[2].w=393;
+    data->element[2].h=35;
+    data->element[2].obj=HGroup, MUIA_Frame, MUIV_Frame_Group,
+                                 MUIA_FrameTitle, "Floppy Drive Emulation Speed",
+                                 MUIA_Background, MUII_GroupBack,
+                                 End;
+    data->element[2].exists=1;
+
+    data->element[3].x=1;
+    data->element[3].y=211;
+    data->element[3].w=393;
+    data->element[3].h=49;
+    data->element[3].obj=HGroup, MUIA_Frame, MUIV_Frame_Group,
+                                 MUIA_FrameTitle, "New Floppy Disk Image",
+                                 MUIA_Background, MUII_GroupBack,
+                                 End;
+    data->element[3].exists=1;
+
+    data->element[4].x=130;
+    data->element[4].y=224;
+    data->element[4].w=97;
+    data->element[4].h=15;
+    data->element[4].obj=MUI_MakeObject(MUIO_Button, (ULONG) "Create Standard Disk");
+    data->element[4].exists=1;
+
+    //data->element[0].obj=MUI_MakeObject(MUIO_Button, (ULONG)label);
+
     SETUPHOOK(&data->LayoutHook, LayoutHook, data);
   
     SetAttrs(obj, MUIA_Group_LayoutHook, &data->LayoutHook, TAG_DONE);
+
+    i=0;
+    while(data->element[i].exists) {
+      DebOut("i: %d (add %lx to %lx\n", i, data->element[i].obj, obj);
+      DoMethod((Object *) obj, OM_ADDMEMBER,(LONG) data->element[i].obj);
+      i++;
+    }
+  
     mSet(data, obj, (struct opSet *) msg, 1);
   }
   return (ULONG)obj;
