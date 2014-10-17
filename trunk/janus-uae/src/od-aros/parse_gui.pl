@@ -162,19 +162,19 @@ sub gen_node($$) {
 }
 
 # return if a is inside b
-sub is_inside($$$) {
-  my $rtree=shift;
+sub is_inside($$) {
+  #my $rtree=shift;
   my $ranode=shift;
   my $rbnode=shift;
   my $d=$debug;
 
   # everything is inside the root node of course
-  if($rbnode eq $$rtree->getChild(0)) {
-    $debug && print "THIS SHOULD NOT HAPPEN!\n";
-    return 1;
-  }
+  #if($rbnode eq $$rtree->getChild(0)) {
+    #$debug && print "THIS SHOULD NOT HAPPEN!\n";
+    #return 1;
+  #}
 
-  #$debug=0;
+  $debug=0;
   $debug && print "compare: ".${$ranode}{'x'}." and ".${$rbnode}{'x'}.": ";
   if(${$ranode}{'x'} >= ${$rbnode}{'x'}) {
     $debug && print "ok";
@@ -220,9 +220,12 @@ sub insert_node($$) {
   my $rtree=shift;
   my $rnodedata=shift;
   my $child;
+  my $rdata;
+
+  $rdata=$$rtree->getNodeValue();
 
   if($$rtree->getChildCount()==0) {
-    $debug && print "      first child inserted\n";
+    $debug && print "      first child ".$$rnodedata{'string'}." inserted into ".$$rdata{'string'}."\n";
     # we have no child so far, so we simply add it and are done
     $$rtree->addChild(Tree::Simple->new($rnodedata));
     return;
@@ -231,10 +234,10 @@ sub insert_node($$) {
   foreach $child ($$rtree->getAllChildren()) {
     # now we have to check, if our new node is inside the actual child.
     # if it is, recursivly add the new node to the child 
-    print "        XXX\n";
     #if(is_inside($rtree, $$rtree->getChild(0)->getNodeValue(), $rnodedata)) {
-    if(is_inside($rtree, $rnodedata, $child->getNodeValue())) {
-      print "        call insert_node again..\n";
+    $debug && print "        check child..\n";
+    if(is_inside($rnodedata, $child->getNodeValue())) {
+      $debug && print "        call insert_node again..\n";
       insert_node(\$child, $rnodedata);
       return;
     }
@@ -242,6 +245,7 @@ sub insert_node($$) {
 
 
   # we are not inside one of the children, so we are a sibling:
+  $debug && print "        added ".$$rnodedata{'string'}." as another new child to ".$$rdata{'string'}."\n";
   $$rtree->addChild(Tree::Simple->new($rnodedata));
 }
 
@@ -290,7 +294,9 @@ while(<RESFILE>) {
   #$debug && print ("************************************************************************\n");
   #$debug && print ("ACTUAL LINE: $line\n");
   #$debug && print ("************************************************************************\n");
-  if($line =~ /DIALOGEX/) {
+  if($line =~ /^;/) {
+  }
+  elsif($line =~ /DIALOGEX/) {
     # IDD_FLOPPY DIALOGEX 0, 0, 396, 261
     my @t;
     $line=~s/\,//g; # remove all ,
