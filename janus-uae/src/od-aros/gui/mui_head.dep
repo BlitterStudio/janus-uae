@@ -91,4 +91,66 @@ mui_head.o mui_head.o : mui_head.cpp \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/dos/dosextens.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/dos/dos.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/dos/dosextaros.h \
-  gui.h
+  ../sysconfig.h ../../include/sysdeps.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/string.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/null.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/size_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/tools/crosstools/lib/gcc/i386-aros/4.2.4/include/stddef.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/sdgstd.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/tools/crosstools/lib/gcc/i386-aros/4.2.4/include/stdio.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/sys/arosc.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/sys/syscall.def \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/off_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/seek.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/stdlib.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/alloca.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/wchar_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/errno.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/assert.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/tools/crosstools/lib/gcc/i386-aros/4.2.4/include/limits.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/tools/crosstools/lib/gcc/i386-aros/4.2.4/include/syslimits.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/limits.h \
+  ../tchar.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/ctype.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/sys/types.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/int_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/blk_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/clockid_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/clock_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/dev_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/fs_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/gid_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/id_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/ino_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/key_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/mode_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/nlink_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/pid_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/ssize_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/socklen_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/suseconds_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/time_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/timer_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/uid_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/useconds_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/sys/cdefs.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/endian.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/values.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/strings.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/unistd.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/intptr_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/fcntl.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/sys/stat.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/timespec_s.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/utime.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/sys/time.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/time.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/itimerspec_s.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/dirent.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/debug.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/proto/arossupport.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/clib/arossupport_protos.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/arossupportbase.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/exec/execbase.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/exec/alerts.h \
+  ../target.h gui.h
