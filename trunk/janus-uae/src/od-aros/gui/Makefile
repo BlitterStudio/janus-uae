@@ -49,6 +49,7 @@ LINK_LIBS=-larossupport -lmui
 
 COMMON_OBJS= \
 	mui_head.o \
+	mui_data.o \
 	mui_class.o
 
 	#../picasso96.o \

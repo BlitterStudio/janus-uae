@@ -18,7 +18,7 @@
 struct Data {
   struct Hook LayoutHook;
   ULONG width, height;
-  struct Element element[100];
+  struct Element *src;
 };
 
 struct MUI_CustomClass *CL_Fixed;
@@ -32,7 +32,7 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
 
       struct Data *data = (struct Data *) hook->h_Data;
       ULONG i=0;
-      struct Element *element=data->element;
+      struct Element *element=data->src;
       ULONG mincw, minch, defcw, defch, maxcw, maxch;
 
       DebOut("MUILM_MINMAX\n");
@@ -109,7 +109,7 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
     case MUILM_LAYOUT: {
       struct Data *data = (struct Data *) hook->h_Data;
       ULONG i=0;
-      struct Element *element=data->element;
+      struct Element *element=data->src;
 
       DebOut("MUILM_LAYOUT %lx\n", obj);
 
@@ -149,8 +149,9 @@ const char label[]="Does it work!?";
 static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
 
   struct TagItem *tstate, *tag;
-  APTR src;
   ULONG i;
+  ULONG s;
+  struct Element *src;
 
   DebOut("mNew(fixed)\n");
 
@@ -166,20 +167,29 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
   while ((tag = (struct TagItem *) NextTagItem((const TagItem**) &tstate))) {
     switch (tag->ti_Tag) {
       case MA_src:
-        src = (APTR  *) tag->ti_Data;
+        s = tag->ti_Data;
         break;
     }
   }
 
-  //if(!src) {
-    //DebOut("mNew: MA_src not supplied!\n");
-    //return (ULONG) NULL;
-  //}
+  if(!s) {
+    DebOut("mNew: MA_src not supplied!\n");
+    return (ULONG) NULL;
+  }
+
+  src=(struct Element *) s;
+
+  DebOut("receive: %lx\n", s);
   {
     GETDATA;
 
+#if 0
+    data->src=src;
+#endif
+
     //data->widget=widget;
 
+#if 0
     data->width =396;
     data->height=261;
     data->element[0].x=1;
@@ -227,17 +237,46 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
     data->element[4].exists=1;
 
     //data->element[0].obj=MUI_MakeObject(MUIO_Button, (ULONG)label);
+#endif
+
+    DebOut("XXXXXXXXXXXXXXXXXXXXXX\n");
+    i=0;
+    while(src[i].windows_type) {
+      DebOut("========== i=%d =========\n", i);
+      DebOut("add %s\n", src[i].text);
+#if 0
+      switch(src[i]->windows_type) {
+        case GROUPBOX:
+          src[i]->obj=HGroup, MUIA_Frame, MUIV_Frame_Group,
+                              MUIA_FrameTitle, src[i]->text,
+                              MUIA_Background, MUII_GroupBack,
+                              End;
+          src[i]->exists=TRUE;
+        break;
+        case CONTROL:
+          src[i]->obj=MUI_MakeObject(MUIO_Button, (ULONG) src[i]->text);
+          src[i]->exists=TRUE;
+
+        break;
+        default:
+          DebOut("ERROR: unknown windows_type %d\n", src[i]->windows_type);
+      }
+#endif
+      i++;
+    }
 
     SETUPHOOK(&data->LayoutHook, LayoutHook, data);
   
     SetAttrs(obj, MUIA_Group_LayoutHook, &data->LayoutHook, TAG_DONE);
 
+#if 0
     i=0;
-    while(data->element[i].exists) {
-      DebOut("i: %d (add %lx to %lx\n", i, data->element[i].obj, obj);
-      DoMethod((Object *) obj, OM_ADDMEMBER,(LONG) data->element[i].obj);
+    while(src[i]->exists) {
+      DebOut("i: %d (add %lx to %lx\n", i, src[i]->obj, obj);
+      DoMethod((Object *) obj, OM_ADDMEMBER,(LONG) src[i]->obj);
       i++;
     }
+#endif
   
     mSet(data, obj, (struct opSet *) msg, 1);
   }

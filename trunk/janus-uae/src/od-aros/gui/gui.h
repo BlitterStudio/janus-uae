@@ -2,6 +2,12 @@
 #define __GUI_H__
 
 
+enum {
+  NJET,
+  GROUPBOX,
+  CONTROL,
+};
+
 typedef struct Element {
   BOOL exists;
   Object *obj;
@@ -9,10 +15,11 @@ typedef struct Element {
   ULONG x,y,w,h;
   const char *text;
   ULONG options;
-} ;
+} Element;
 
+#define MY_TAGBASE 0xfece0000
 enum {
-  MA_src
+  MA_src = MY_TAGBASE
 };
 
 #define GETDATA struct Data *data = (struct Data *)INST_DATA(cl, obj)
@@ -24,5 +31,7 @@ int init_class(void);
 void delete_class(void);
 
 extern struct MUI_CustomClass *CL_Fixed;
+
+extern struct Element IDD_FLOPPY[];
 
 #endif
