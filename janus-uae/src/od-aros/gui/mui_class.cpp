@@ -165,7 +165,15 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
         break;
 
         case PUSHBUTTON:
-          src[i].obj=MUI_MakeObject(MUIO_Button, (ULONG) src[i].text);
+          //src[i].obj=MUI_MakeObject(MUIO_Button, (ULONG) src[i].text);
+          src[i].obj=HGroup, MUIA_Background, MUII_ButtonBack,
+                              ButtonFrame,
+                              MUIA_InputMode , MUIV_InputMode_RelVerify,
+                              Child, TextObject,
+                                MUIA_Text_Contents, (ULONG) src[i].text,
+                              End,
+                            End;
+
           src[i].exists=TRUE;
         break;
 
