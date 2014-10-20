@@ -6,6 +6,10 @@ enum {
   NJET,
   GROUPBOX,
   CONTROL,
+  PUSHBUTTON,
+  COMBOBOX,
+  EDITTEXT,
+  RTEXT,
 };
 
 typedef struct Element {

@@ -14,12 +14,14 @@
 
 Object *app, *win, *root;
 
+#if 0
 Element IDD_FLOPPY[] = {
-  { 0, NULL, CONTROL,   7,  14,  34,  15, "DF0:", 0 },
   { 0, NULL, GROUPBOX,  1,   0, 393, 163, "bla", 0 },
+  { 0, NULL, CONTROL,   7,  14,  34,  15, "DF0:", 0 },
   { 0, NULL, GROUPBOX,  1, 170, 393,  35, "foo", 0 },
   { 0, NULL, 0,         0,   0,   0,   0,  NULL, 0 }
 };
+#endif
 
 
 Object* build_gui(void) {

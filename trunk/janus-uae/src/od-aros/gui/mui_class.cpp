@@ -21,6 +21,8 @@ struct Data {
   struct Element *src;
 };
 
+static const char *Cycle_Dummy[] = { "empty 1", "empty 2", NULL };
+
 struct MUI_CustomClass *CL_Fixed;
 
 static VOID mSet(struct Data *data, APTR obj, struct opSet *msg, ULONG is_new);
@@ -151,9 +153,38 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
         break;
 
         case CONTROL:
+          src[i].obj=HGroup, 
+                             MUIA_Background, MUII_GroupBack,
+                             Child, MUI_MakeObject(MUIO_Checkmark, (ULONG) src[i].text),
+                             Child, TextObject, 
+                                      MUIA_Text_Contents, (ULONG) src[i].text, 
+                                      MUIA_Background, MUII_GroupBack,
+                                    End,
+                      End;
+          src[i].exists=TRUE;
+        break;
+
+        case PUSHBUTTON:
           src[i].obj=MUI_MakeObject(MUIO_Button, (ULONG) src[i].text);
           src[i].exists=TRUE;
         break;
+
+        case RTEXT:
+          src[i].obj=TextObject,
+                        MUIA_Text_PreParse, "\33r",
+                        MUIA_Text_Contents, (ULONG) src[i].text,
+                        MUIA_Background, MUII_GroupBack,
+                      End;
+          src[i].exists=TRUE;
+        break;
+
+        case COMBOBOX:
+          src[i].obj=CycleObject,
+                       MUIA_Cycle_Entries, Cycle_Dummy,
+                     End;
+          src[i].exists=TRUE;
+        break;
+
 
         default:
           DebOut("ERROR: unknown windows_type %d\n", src[i].windows_type);
