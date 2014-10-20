@@ -153,14 +153,24 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
         break;
 
         case CONTROL:
-          src[i].obj=HGroup, 
+          if(strlen(src[i].text)>0) {
+            src[i].obj=HGroup, 
                              MUIA_Background, MUII_GroupBack,
                              Child, MUI_MakeObject(MUIO_Checkmark, (ULONG) src[i].text),
                              Child, TextObject, 
                                       MUIA_Text_Contents, (ULONG) src[i].text, 
+                                      //MUIA_Background, MUII_MARKBACKGROUND,
                                       MUIA_Background, MUII_GroupBack,
                                     End,
                       End;
+          }
+          else {
+            src[i].obj=HGroup, 
+                             MUIA_Background, MUII_GroupBack,
+                             Child, MUI_MakeObject(MUIO_Checkmark, (ULONG) src[i].text),
+                      End;
+
+          }
           src[i].exists=TRUE;
         break;
 
