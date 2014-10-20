@@ -135,7 +135,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
     GETDATA;
 
     data->width =396;
-    data->height=261;
+    data->height=303;
     data->src   =src;
 
     DebOut("XXXXXXXXXXXXXXXXXXXXXX\n");
@@ -197,6 +197,33 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
           src[i].exists=TRUE;
         break;
 
+        case LTEXT:
+          src[i].obj=TextObject,
+                        MUIA_Text_PreParse, "\33l",
+                        MUIA_Text_Contents, (ULONG) src[i].text,
+                      End;
+          src[i].exists=TRUE;
+        break;
+
+
+        case EDITTEXT:
+          if(src[i].flags & ES_READONLY) {
+            src[i].obj=TextObject,
+                        MUIA_Text_PreParse, "\33c",
+                        MUIA_Text_Contents, (ULONG) src[i].text,
+                        MUIA_Background, MUII_GroupBack,
+                      End;
+          }
+          else {
+            src[i].obj=StringObject,
+                          StringFrame,
+                          MUIA_String_Contents, (ULONG) src[i].text,
+                        End;
+          }
+          src[i].exists=TRUE;
+        break;
+
+
         case COMBOBOX:
           src[i].obj=CycleObject,
                        MUIA_Cycle_Entries, Cycle_Dummy,
@@ -212,7 +239,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
         DebOut("add HOTHELP: %s\n", src[i].help);
         SetAttrs(src[i].obj, MUIA_ShortHelp, (ULONG) src[i].help);
       }
-      if(!src[i].flags && WS_VISIBLE) {
+      if(!(src[i].flags & WS_VISIBLE)) {
         SetAttrs(src[i].obj, MUIA_ShowMe, (ULONG) 0);
       }
       DebOut("  src[%d].obj=%lx\n", i, src[i].obj);
