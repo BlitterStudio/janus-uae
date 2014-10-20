@@ -84,24 +84,31 @@ sub get_text($) {
   return $line;
 }
 
+# parse flags and set the most important ones
 sub parse_flags($) {
   my $t=shift;
   my @array;
-  my %flag;
   my $res=0x10000000;
+  my $a;
 
   if(!defined $t) {
     return $res;
   }
 
-  @array=split /\ \| \ /, $t;
-  %flag=map { $_ => 1 } @array;
-
-  if($flag{'NOT WS_VISIBLE'}) {
-    $debug && print "NOT WS_VISIBLE!\n";
-    $res&= ~0x10000000;
+  @array=split /\|/, $t;
+  foreach $a (@array) {
+    # trim both ends
+    $a =~ s/^\s+|\s+$//g;
+    #print ">$a<\n";
+    if($a eq 'NOT WS_VISIBLE') {
+      $debug && print "NOT WS_VISIBLE!\n";
+      $res&= ~0x10000000;
+    }
+    elsif($a eq 'ES_READONLY') {
+      $debug && print "ES_READONLY!\n";
+      $res|= 0x0800;
+    }
   }
-
   return $res;
 }
 
@@ -153,7 +160,6 @@ sub gen_line($$) {
       $debug && print "      y:      ".$attr[3]."\n";
       $debug && print "      w:      ".$attr[4]."\n";
       $debug && print "      h:      ".$attr[5]."\n";
-      $debug && print "      f:      ".$attr[6]."\n";
       $debug && print "    }\n";
       printf(HFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx },\n", $type, $attr[2], $attr[3], $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]));
     }
@@ -168,13 +174,9 @@ sub gen_line($$) {
       printf(HFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx },\n", $type, $attr[1], $attr[2], $attr[3], 15, "\"".$attr[0]."\"", "NULL", parse_flags($attr[5]));
     }
     case "EDITTEXT" {
-      $debug && print "  = $type {\n";
+      $debug && print "  = $type \n";
       $debug && print "      string: ".$attr[0]."\n";
-      $debug && print "      x:      ".$attr[1]."\n";
-      $debug && print "      y:      ".$attr[2]."\n";
-      $debug && print "      w:      ".$attr[3]."\n";
-      $debug && print "      h:      ".$attr[4]."\n";
-      $debug && print "    }\n";
+      printf(HFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx },\n", $type, $attr[1], $attr[2], $attr[3], $attr[4], "\"".$attr[0]."\"", "NULL", parse_flags($attr[5]));
     }
     else {
       $debug && print "      => default type\n";
