@@ -36,60 +36,9 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
       ULONG mincw, minch, defcw, defch, maxcw, maxch;
 
       DebOut("MUILM_MINMAX\n");
+      DebOut("data:        %lx\n", data);
+      DebOut("data->src:   %lx\n", data->src);
 
-#if 0
-
-      mincw = 0;
-      minch = 0;
-      defcw = 0; //data->horizspacing;
-      defch = 0; //data->vertspacing;
-      maxcw = 0;
-      maxch = 0;
-
-      while(element[i].exists) {
-        ULONG w, h;
-        
-        DebOut("  i=%d\n", i);
-        DebOut("   width: %d\n", element[i].x);
-        DebOut("   obj: %lx\n", element[i].obj);
-
-        w = _minwidth(element[i].obj);
-        h = _minheight(element[i].obj);
-
-        if(w + element[i].x > mincw) {
-          mincw=w + element[i].x;
-        }
-        if(h + element[i].y > minch) {
-          minch=h + element[i].y;
-        }
-
-        // calculate default cell width/height
-
-        w = _defwidth(element[i].obj);
-        h = _defheight(element[i].obj);
-
-        if(w + element[i].x > defcw) {
-          defcw=w + element[i].x;
-        }
-        if(h + element[i].y > defcw) {
-          defch=h + element[i].y;
-        }
-
-        // calculate max cell width/height
-
-        w = _maxwidth(element[i].obj);
-        h = _maxheight(element[i].obj);
-
-        if(w + element[i].x > maxcw) {
-          maxcw=w + element[i].x;
-        }
-        if(h + element[i].y > defcw) {
-          maxch=h + element[i].y;
-        }
-
-        i++;
-      }
-#endif
       lm->lm_MinMax.MinWidth  = data->width * RESIZE;
       lm->lm_MinMax.MinHeight = data->height * RESIZE;
       lm->lm_MinMax.DefWidth  = data->width * RESIZE;
@@ -112,6 +61,8 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
       struct Element *element=data->src;
 
       DebOut("MUILM_LAYOUT %lx\n", obj);
+      DebOut("data:        %lx\n", data);
+      DebOut("data->src:   %lx\n", data->src);
 
       while(element[i].exists) {
         if(element[i].obj != obj) {
@@ -143,8 +94,6 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
 
   return MUILM_UNKNOWN;
 }
-
-const char label[]="Does it work!?";
 
 static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
 
@@ -183,85 +132,33 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
   {
     GETDATA;
 
-#if 0
-    data->src=src;
-#endif
-
-    //data->widget=widget;
-
-#if 0
     data->width =396;
     data->height=261;
-    data->element[0].x=1;
-    data->element[0].y=0;
-    data->element[0].w=393;
-    data->element[0].h=163;
-    data->element[0].obj=HGroup, MUIA_Frame, MUIV_Frame_Group,
-                                 MUIA_FrameTitle, "Floppy Drives",
-                                 MUIA_Background, MUII_GroupBack,
-                                 End;
-    data->element[0].exists=1;
-
-    data->element[1].x=7;
-    data->element[1].y=14;
-    data->element[1].w=34;
-    data->element[1].h=15;
-    data->element[1].obj=MUI_MakeObject(MUIO_Button, (ULONG) "DF0:");
-    data->element[1].exists=1;
-
-    data->element[2].x=1;
-    data->element[2].y=170;
-    data->element[2].w=393;
-    data->element[2].h=35;
-    data->element[2].obj=HGroup, MUIA_Frame, MUIV_Frame_Group,
-                                 MUIA_FrameTitle, "Floppy Drive Emulation Speed",
-                                 MUIA_Background, MUII_GroupBack,
-                                 End;
-    data->element[2].exists=1;
-
-    data->element[3].x=1;
-    data->element[3].y=211;
-    data->element[3].w=393;
-    data->element[3].h=49;
-    data->element[3].obj=HGroup, MUIA_Frame, MUIV_Frame_Group,
-                                 MUIA_FrameTitle, "New Floppy Disk Image",
-                                 MUIA_Background, MUII_GroupBack,
-                                 End;
-    data->element[3].exists=1;
-
-    data->element[4].x=130;
-    data->element[4].y=224;
-    data->element[4].w=97;
-    data->element[4].h=15;
-    data->element[4].obj=MUI_MakeObject(MUIO_Button, (ULONG) "Create Standard Disk");
-    data->element[4].exists=1;
-
-    //data->element[0].obj=MUI_MakeObject(MUIO_Button, (ULONG)label);
-#endif
+    data->src   =src;
 
     DebOut("XXXXXXXXXXXXXXXXXXXXXX\n");
     i=0;
     while(src[i].windows_type) {
       DebOut("========== i=%d =========\n", i);
       DebOut("add %s\n", src[i].text);
-#if 0
-      switch(src[i]->windows_type) {
+      switch(src[i].windows_type) {
         case GROUPBOX:
-          src[i]->obj=HGroup, MUIA_Frame, MUIV_Frame_Group,
-                              MUIA_FrameTitle, src[i]->text,
+          src[i].obj=HGroup, MUIA_Frame, MUIV_Frame_Group,
+                              MUIA_FrameTitle, src[i].text,
                               MUIA_Background, MUII_GroupBack,
                               End;
-          src[i]->exists=TRUE;
+          src[i].exists=TRUE;
         break;
-        case CONTROL:
-          src[i]->obj=MUI_MakeObject(MUIO_Button, (ULONG) src[i]->text);
-          src[i]->exists=TRUE;
 
+        case CONTROL:
+          src[i].obj=MUI_MakeObject(MUIO_Button, (ULONG) src[i].text);
+          src[i].exists=TRUE;
         break;
+
         default:
-          DebOut("ERROR: unknown windows_type %d\n", src[i]->windows_type);
+          DebOut("ERROR: unknown windows_type %d\n", src[i].windows_type);
       }
-#endif
+      DebOut("  src[%d].obj=%lx\n", i, src[i].obj);
       i++;
     }
 
@@ -269,14 +166,12 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
   
     SetAttrs(obj, MUIA_Group_LayoutHook, &data->LayoutHook, TAG_DONE);
 
-#if 0
     i=0;
-    while(src[i]->exists) {
-      DebOut("i: %d (add %lx to %lx\n", i, src[i]->obj, obj);
-      DoMethod((Object *) obj, OM_ADDMEMBER,(LONG) src[i]->obj);
+    while(src[i].exists) {
+      DebOut("i: %d (add %lx to %lx\n", i, src[i].obj, obj);
+      DoMethod((Object *) obj, OM_ADDMEMBER,(LONG) src[i].obj);
       i++;
     }
-#endif
   
     mSet(data, obj, (struct opSet *) msg, 1);
   }
