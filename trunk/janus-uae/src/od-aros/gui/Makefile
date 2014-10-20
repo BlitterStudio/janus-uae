@@ -84,7 +84,9 @@ common: $(COMMON_OBJS)
 aros: $(AROS_OBJS)
 	@echo building aros objects ..
 	
-# ============== autogenerate some .c files ====================
+# ============== autogenerate some .cpp files ====================
+mui_data.cpp: test.rc
+	./parse_fixed.pl test.rc mui_data.cpp
 
 # ============== clean ====================
 clean: 
