@@ -60,6 +60,51 @@ print HFILE   "#include \"sysdeps.h\"\n\n";
 
 print HFILE   "#include \"gui.h\"\n\n";
 
+sub get_help($) {
+  my $line=shift;
+
+  if($line =~/\[\]/) {
+    return "\"".(split/\[\]/,$line)[1];
+  }
+  return "NULL";
+}
+
+# strings my contain hot helps (mouse over help), splitted with [] from the button texts..
+sub get_text($) {
+  my $line=shift;
+  my $t;
+
+  if($line =~/\[\]/) {
+    $debug && print "get_text:\n$line\n";
+    $t=(split /\[\]/,$line)[0];
+    $t=~s/\ $//g;
+    $t=$t."\"";
+    return $t;
+  }
+  return $line;
+}
+
+sub parse_flags($) {
+  my $t=shift;
+  my @array;
+  my %flag;
+  my $res=0x10000000;
+
+  if(!defined $t) {
+    return $res;
+  }
+
+  @array=split /\ \| \ /, $t;
+  %flag=map { $_ => 1 } @array;
+
+  if($flag{'NOT WS_VISIBLE'}) {
+    print "NOT WS_VISIBLE!\n";
+    $res&= ~0x10000000;
+  }
+
+  return $res;
+}
+
 sub gen_line($$) {
   my $type=shift;
   my $args=shift;
@@ -74,7 +119,7 @@ sub gen_line($$) {
       $debug && print "      w:      ".$attr[4]."\n";
       $debug && print "      h:      ".$attr[5]."\n";
       $debug && print "    }\n";
-      printf(HFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, 0 },\n", $type, $attr[2], $attr[3], $attr[4], $attr[5], $attr[0]);
+      printf(HFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx },\n", $type, $attr[2], $attr[3], $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]));
     }
     case "GROUPBOX" {
       $debug && print "  = GROUPBOX {\n";
@@ -84,7 +129,7 @@ sub gen_line($$) {
       $debug && print "      w:      ".$attr[4]."\n";
       $debug && print "      h:      ".$attr[5]."\n";
       $debug && print "    }\n";
-      printf(HFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, 0 },\n", $type, $attr[2], $attr[3], $attr[4], $attr[5], $attr[0]);
+      printf(HFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx },\n", $type, $attr[2], $attr[3], $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]));
       #$node{'string'}=$attr[0];
       #$node{'x'}=$attr[2];
       #$node{'y'}=$attr[3];
@@ -99,7 +144,7 @@ sub gen_line($$) {
       $debug && print "      w:      ".$attr[6]."\n";
       $debug && print "      h:      ".$attr[7]."\n";
       $debug && print "    }\n";
-      printf(HFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, 0 },\n", $type, $attr[4], $attr[5], $attr[6], $attr[7], $attr[0]);
+      printf(HFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx },\n", $type, $attr[4], $attr[5], $attr[6], $attr[7], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[3]));
     }
     case "PUSHBUTTON" {
       $debug && print "  = $type {\n";
@@ -108,8 +153,9 @@ sub gen_line($$) {
       $debug && print "      y:      ".$attr[3]."\n";
       $debug && print "      w:      ".$attr[4]."\n";
       $debug && print "      h:      ".$attr[5]."\n";
+      $debug && print "      f:      ".$attr[6]."\n";
       $debug && print "    }\n";
-      printf(HFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, 0 },\n", $type, $attr[2], $attr[3], $attr[4], $attr[5], $attr[0]);
+      printf(HFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx },\n", $type, $attr[2], $attr[3], $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]));
     }
     case "COMBOBOX" {
       $debug && print "  = $type {\n";
@@ -119,7 +165,7 @@ sub gen_line($$) {
       $debug && print "      w:      ".$attr[3]."\n";
       $debug && print "      h:      ".$attr[4]."\n"; # height is height of *opened* drop down box!!
       $debug && print "    }\n";
-      printf(HFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, 0 },\n", $type, $attr[1], $attr[2], $attr[3], 15, "\"".$attr[0]."\"");
+      printf(HFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx },\n", $type, $attr[1], $attr[2], $attr[3], 15, "\"".$attr[0]."\"", "NULL", parse_flags($attr[5]));
     }
     case "EDITTEXT" {
       $debug && print "  = $type {\n";

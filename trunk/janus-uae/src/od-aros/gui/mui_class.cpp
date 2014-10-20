@@ -170,6 +170,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                               ButtonFrame,
                               MUIA_InputMode , MUIV_InputMode_RelVerify,
                               Child, TextObject,
+                                MUIA_Text_PreParse, "\33c",
                                 MUIA_Text_Contents, (ULONG) src[i].text,
                               End,
                             End;
@@ -196,6 +197,13 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
 
         default:
           DebOut("ERROR: unknown windows_type %d\n", src[i].windows_type);
+      }
+      if(src[i].help) {
+        DebOut("add HOTHELP: %s\n", src[i].help);
+        SetAttrs(src[i].obj, MUIA_ShortHelp, (ULONG) src[i].help);
+      }
+      if(!src[i].flags && WS_VISIBLE) {
+        SetAttrs(src[i].obj, MUIA_ShowMe, (ULONG) 0);
       }
       DebOut("  src[%d].obj=%lx\n", i, src[i].obj);
       i++;
