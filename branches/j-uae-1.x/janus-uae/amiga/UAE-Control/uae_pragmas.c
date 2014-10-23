@@ -7,9 +7,10 @@ static int (*calltrap)(...) = (int (*)(...))0xF0FF60;
 #define CAST
 #else
 /* GCC */
-static int (*calltrap)(ULONG __asm("a0"),
-                  ULONG __asm("a1"),
-                  ULONG __asm("a2")) = (APTR) 0xF0FF60;
+/* Parameters fo 0xF0FF60 trap a passed on the stack. GCC seems to do this ok */
+static int (*calltrap)(ULONG a0,
+                       ULONG a1,
+                       ULONG a2) = (APTR) 0xF0FF60;
 #define CAST (ULONG)
 #endif
 
