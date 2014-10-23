@@ -24,6 +24,7 @@
 #define GAD_SLOWMEMSIZE           16
 #define GAD_FASTMEMSIZE           17
 #define GAD_LANGUAGE              18
+#define GAD_SELECT                19
 
 #define GAD_OK       1
 #define GAD_CANCEL   2

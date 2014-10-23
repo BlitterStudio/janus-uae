@@ -4,17 +4,20 @@
 * UAE-Control - Emulator control from inside emulation     *
 *  (c) 1996 Tauno Taipaleenmaki <tataipal@raita.oulu.fi>   *
 *  (c) 1998 Cloanto <info@cloanto.com>                     *
+*  (c) 2014 Oliver Brunner <aros@oliver-brunner.de>        *
 *                                                          *
-* Version 1.1                                              *
+* Version 1.2                                              *
 *                                                          *
-* Requires Amiga OS v. 36 or higher. Compiled with SAS/C   *
+* Requires Amiga OS v. 36 or higher.                       *
 *                                                          *
 * Users with KS 1.3 or below should use the command line   *
 * version "uaectrl"                                        *
-***********************************************************/
+************************************************************/
 
-#define VERSION_STRING "\0$VER: UAE-Control 1.1"
-#define VERSION_SHELL " UAE-Control v. 1.1\n © 1996 Tauno Taipaleenmaki, © 1998 Cloanto\n\n"
+#include <proto/asl.h>
+#include <libraries/asl.h>
+#define VERSION_STRING "\0$VER: UAE-Control 1.2"
+#define VERSION_SHELL " UAE-Control v. 1.2\n © 1996 Tauno Taipaleenmaki, © 1998 Cloanto, © 2014 Oliver Brunner\n\n"
 
 #include <intuition/intuition.h>
 #include <proto/exec.h>
@@ -468,6 +471,71 @@ void print_drive_status(void)
 	}
 }
 
+/*****************************************************
+ * do_select(win, buffer)
+ *
+ * get path with asl requester
+ *
+ * buffer must have at least 256 byte size
+ *****************************************************/
+BOOL do_select(struct Window *win, char *result) {
+  struct FileRequester *req;
+  BOOL ret=FALSE;
+
+  result[0]=(char) 0;
+
+  req=AllocAslRequestTags(ASL_FileRequest,
+        ASLFR_Window,         (ULONG) win,
+        ASLFR_TitleText,      (ULONG) "Select ADF",
+        ASLFR_InitialDrawer,  (ULONG) "MyWorkspace:",
+        ASLFR_InitialPattern, (ULONG) "#?.adf",
+        ASLFR_RejectIcons,    TRUE,
+        TAG_DONE);
+
+  if(!req) {
+    fprintf(stderr, "Unable to allocate ASL requester!\n");
+    goto DONE;
+  }
+
+  AslRequestTags(req, TAG_DONE);
+
+  if(strlen(req->fr_File)==0) {
+    /* no file selected */
+    goto DONE;
+  }
+
+  if(strlen(req->fr_Drawer)>0) {
+    /* merge drawer and filename */
+    if((req->fr_Drawer[strlen(req->fr_Drawer)-1] == '/') ||
+       (req->fr_Drawer[strlen(req->fr_Drawer)-1] == ':') ) {
+      snprintf(result, 255, "%s%s", req->fr_Drawer, req->fr_File);
+    }
+    else {
+      snprintf(result, 255, "%s/%s", req->fr_Drawer, req->fr_File);
+    }
+  }
+  else {
+    /* no drawer */
+    strncpy(result, req->fr_File, 255);
+  }
+         
+  ret=TRUE;
+DONE:
+  if(req) {
+    FreeAslRequest(req);
+  }
+
+  return ret;
+}
+
+/*****************************************
+ * get_string
+ *
+ * Get string containing the path of an
+ * ADF. This path is a *host* path, so it
+ * must be valid inside the host OS, not
+ * inside 68k AmigaOS.
+ *****************************************/
 BOOL get_string(UBYTE *buff, LONG max_len)
 {
 	struct Gadget *g, *sg;
@@ -481,6 +549,7 @@ BOOL get_string(UBYTE *buff, LONG max_len)
 	APTR  address;
 	UWORD offy;
 	BOOL quit, ok;
+  char t[256];
 
 	g = CreateContext(&gl);
 	if (!g)
@@ -505,9 +574,15 @@ BOOL get_string(UBYTE *buff, LONG max_len)
 	ng.ng_GadgetID = GAD_CANCEL;
 	g = CreateGadget(BUTTON_KIND, g, &ng, TAG_DONE);
 
+	ng.ng_LeftEdge = 246;
+	ng.ng_TopEdge = offy + 10;
+	ng.ng_GadgetText = (UBYTE *)"Select";
+	ng.ng_GadgetID = GAD_SELECT;
+	g = CreateGadget(BUTTON_KIND, g, &ng, TAG_DONE);
+
 	ng.ng_LeftEdge = 14;
 	ng.ng_TopEdge = offy + 10;
-	ng.ng_Width = 322;
+	ng.ng_Width = 232;
 	ng.ng_Height = 15;
 	ng.ng_GadgetText = NULL;
 	ng.ng_GadgetID = GAD_STRING;
@@ -559,6 +634,11 @@ BOOL get_string(UBYTE *buff, LONG max_len)
 					case IDCMP_GADGETUP:
 						switch( msgID )
 						{
+							case GAD_SELECT:
+                if(do_select(win, t)) {
+                  GT_SetGadgetAttrs(sg, win, NULL, GTST_String, (ULONG) t, TAG_DONE);
+                }
+                break;
 							case GAD_CANCEL:
 								quit = TRUE;
 								break;
