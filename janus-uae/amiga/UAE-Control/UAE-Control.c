@@ -346,18 +346,18 @@ int setup_window(void)
 
 	/* Sound & Joystick buttons */
 	ng.ng_LeftEdge = 133;
-	ng.ng_TopEdge = 97;
+	ng.ng_TopEdge = offy + 86;
 	ng.ng_GadgetID = GAD_SOUND;
 	ng.ng_GadgetText = (UBYTE *)"Sound:";
 	ng.ng_Flags = PLACETEXT_LEFT;
 	g = CreateGadget(CHECKBOX_KIND, g, &ng, GTCB_Checked, config.do_output_sound ? 1 : 0, TAG_DONE);
 
-	ng.ng_TopEdge = 114;
+	ng.ng_TopEdge = offy + 103;
 	ng.ng_GadgetID = GAD_JOYSTICK;
 	ng.ng_GadgetText = (UBYTE *)"Fake Joystick:";
 	g = CreateGadget(CHECKBOX_KIND, g, &ng, GTCB_Checked, config.do_fake_joystick ? 1 : 0, TAG_DONE);
 
-	ng.ng_TopEdge = 129;
+	ng.ng_TopEdge = offy + 118;
 	ng.ng_GadgetID = GAD_LANGUAGE;
 	ng.ng_GadgetText = (UBYTE *)"Language:";
 	g = CreateGadget(CYCLE_KIND, g, &ng,
@@ -365,14 +365,14 @@ int setup_window(void)
 					GTCY_Active, config.keyboard,
 					TAG_DONE);
 
-	ng.ng_TopEdge = 146;
+	ng.ng_TopEdge = offy + 135;
 	ng.ng_GadgetID = GAD_FRAMERATE;
 	ng.ng_GadgetText = (UBYTE *)"Framerate:";
 	g = CreateGadget(INTEGER_KIND, g, &ng, GTIN_Number, config.framerate, TAG_DONE);
 
-	newwindow.Title = "UAE-Control";
+	newwindow.Title = "UAE-Control 1.2";
 	newwindow.Width  = 419;
-	newwindow.Height = 171;
+	newwindow.Height = offy + 171;
 	newwindow.LeftEdge = 20;
 	newwindow.TopEdge = 20;
 	newwindow.FirstGadget = glist;
