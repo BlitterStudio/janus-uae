@@ -5,7 +5,12 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/muimaster.h>
+#include <proto/diskfont.h>
+#include <proto/graphics.h>
 #include <clib/alib_protos.h>
+
+#include <graphics/gfxbase.h>
+#include <mui/Rawimage_mcc.h>
 
 #define OLI_DEBUG
 #include "sysconfig.h"
@@ -13,12 +18,16 @@
 
 #include "gui.h"
 
-#define RESIZE 155 / 100
+//#define RESIZE 155 / 100
+#define RESIZE_X 150 /100
+#define RESIZE_Y 140 /100
+
 
 struct Data {
   struct Hook LayoutHook;
   ULONG width, height;
   struct Element *src;
+  struct TextFont *font;
 };
 
 static const char *Cycle_Dummy[] = { "empty 1", "empty 2", NULL };
@@ -26,6 +35,12 @@ static const char *Cycle_Dummy[] = { "empty 1", "empty 2", NULL };
 struct MUI_CustomClass *CL_Fixed;
 
 static VOID mSet(struct Data *data, APTR obj, struct opSet *msg, ULONG is_new);
+
+ULONG xget(Object *obj, ULONG attr) {
+  ULONG b = 0;
+  GetAttr(attr, obj, (IPTR *)&b);
+  return b;
+}
 
 AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFHA(APTR, obj, a2), AROS_UFHA(struct MUI_LayoutMsg *, lm, a1)) 
 
@@ -41,12 +56,12 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
       DebOut("data:        %lx\n", data);
       DebOut("data->src:   %lx\n", data->src);
 
-      lm->lm_MinMax.MinWidth  = data->width * RESIZE;
-      lm->lm_MinMax.MinHeight = data->height * RESIZE;
-      lm->lm_MinMax.DefWidth  = data->width * RESIZE;
-      lm->lm_MinMax.DefHeight = data->height * RESIZE;
-      lm->lm_MinMax.MaxWidth  = data->width * RESIZE;
-      lm->lm_MinMax.MaxHeight = data->height * RESIZE;
+      lm->lm_MinMax.MinWidth  = data->width * RESIZE_X;
+      lm->lm_MinMax.MinHeight = data->height * RESIZE_Y;
+      lm->lm_MinMax.DefWidth  = data->width * RESIZE_X;
+      lm->lm_MinMax.DefHeight = data->height * RESIZE_Y;
+      lm->lm_MinMax.MaxWidth  = data->width * RESIZE_X;
+      lm->lm_MinMax.MaxHeight = data->height * RESIZE_Y;
 
       DebOut("  mincw=%d\n",lm->lm_MinMax.MinWidth);
       DebOut("  minch=%d\n",lm->lm_MinMax.MinHeight);
@@ -75,10 +90,10 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
           DebOut("   h: %d\n", element[i].h);
           DebOut("   obj: %lx\n", element[i].obj);
           if (!MUI_Layout(element[i].obj,
-                          element[i].x * RESIZE,
-                          element[i].y * RESIZE,
-                          element[i].w * RESIZE,
-                          element[i].h * RESIZE, 0)
+                          element[i].x * RESIZE_X,
+                          element[i].y * RESIZE_Y,
+                          element[i].w * RESIZE_X,
+                          element[i].h * RESIZE_Y, 0)
              ) {
             DebOut("MUI_Layout failed!\n");
             return FALSE;
@@ -128,15 +143,45 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
     return (ULONG) NULL;
   }
 
+
+
   src=(struct Element *) s;
 
   DebOut("receive: %lx\n", s);
   {
     GETDATA;
+    //struct TextAttr ta;
+    struct TextFont *old;
+    Object *foo;
 
     data->width =396;
     data->height=303;
     data->src   =src;
+
+    DebOut("YYYYYYYYYYYYYYYYYY\n");
+
+    struct TextAttr ta = { "Vera Sans", 12, 0, 0 };
+    TextFont *Topaz8Font = OpenDiskFont(&ta);
+    DebOut("Topaz8Font: %lx\n", Topaz8Font);
+#if 0
+    foo=TextObject, MUIA_Text_Contents, (ULONG) "XYZ", End;
+    old=(struct TextFont *) xget(foo, MUIA_Font);
+    //GetAttr(MUIA_Font, (Object *)foo, (IPTR *)old);
+    DebOut("MUIA_Font: %s\n", old->tf_Message.mn_Node.ln_Name);
+    DebOut("MUIA_Font: %d\n", old->tf_YSize);
+    DebOut("YYYYYYYYYYYYYYYYYY\n");
+
+
+    GetAttr(MUIA_Font, (Object *)obj, (IPTR *) &old);
+    ta.ta_Name = GfxBase->DefaultFont->tf_Message.mn_Node.ln_Name;
+    ta.ta_YSize = GfxBase->DefaultFont->tf_YSize;
+    ta.ta_Style = GfxBase->DefaultFont->tf_Style;
+    ta.ta_Flags = GfxBase->DefaultFont->tf_Flags;
+    DebOut("OpenFont: %s\n", ta.ta_Name);
+    data->font=OpenDiskFont(&ta);
+    DebOut("data->font: %lx\n", data->font);
+#endif
+
 
     DebOut("XXXXXXXXXXXXXXXXXXXXXX\n");
     i=0;
@@ -158,6 +203,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                              MUIA_Background, MUII_GroupBack,
                              Child, MUI_MakeObject(MUIO_Checkmark, (ULONG) src[i].text),
                              Child, TextObject, 
+                                      MUIA_Font, Topaz8Font,
                                       MUIA_Text_Contents, (ULONG) src[i].text, 
                                       //MUIA_Background, MUII_MARKBACKGROUND,
                                       MUIA_Background, MUII_GroupBack,
@@ -167,6 +213,9 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
           else {
             src[i].obj=HGroup, 
                              MUIA_Background, MUII_GroupBack,
+                             MUIA_Font, Topaz8Font,
+
+                             Child, 
                              Child, MUI_MakeObject(MUIO_Checkmark, (ULONG) src[i].text),
                       End;
 
@@ -180,6 +229,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                               ButtonFrame,
                               MUIA_InputMode , MUIV_InputMode_RelVerify,
                               Child, TextObject,
+                                MUIA_Font, Topaz8Font,
                                 MUIA_Text_PreParse, "\33c",
                                 MUIA_Text_Contents, (ULONG) src[i].text,
                               End,
@@ -190,6 +240,8 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
 
         case RTEXT:
           src[i].obj=TextObject,
+                        //MUIA_Background, MUII_MARKBACKGROUND,
+                        MUIA_Font, Topaz8Font,
                         MUIA_Text_PreParse, "\33r",
                         MUIA_Text_Contents, (ULONG) src[i].text,
                         MUIA_Background, MUII_GroupBack,
@@ -199,6 +251,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
 
         case LTEXT:
           src[i].obj=TextObject,
+                        MUIA_Font, Topaz8Font,
                         MUIA_Text_PreParse, "\33l",
                         MUIA_Text_Contents, (ULONG) src[i].text,
                       End;
@@ -209,6 +262,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
         case EDITTEXT:
           if(src[i].flags & ES_READONLY) {
             src[i].obj=TextObject,
+                        MUIA_Font, Topaz8Font,
                         MUIA_Text_PreParse, "\33c",
                         MUIA_Text_Contents, (ULONG) src[i].text,
                         MUIA_Background, MUII_GroupBack,
@@ -217,6 +271,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
           else {
             src[i].obj=StringObject,
                           StringFrame,
+                          MUIA_Font, Topaz8Font,
                           MUIA_String_Contents, (ULONG) src[i].text,
                         End;
           }
@@ -226,6 +281,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
 
         case COMBOBOX:
           src[i].obj=CycleObject,
+                       MUIA_Font, Topaz8Font,
                        MUIA_Cycle_Entries, Cycle_Dummy,
                      End;
           src[i].exists=TRUE;

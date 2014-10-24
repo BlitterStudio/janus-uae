@@ -32,6 +32,11 @@ enum {
 #define SETUPHOOK(x, func, data) { struct Hook *h = (x); h->h_Entry = (HOOKFUNC)&func; h->h_Data = (APTR)data; }
 #define BEGINMTABLE AROS_UFH3(static ULONG,mDispatcher,AROS_UFHA(struct IClass*, cl, a0), AROS_UFHA(APTR, obj, a2), AROS_UFHA(Msg, msg, a1))
 #define ENDMTABLE return DoSuperMethodA(cl, (Object *) obj, msg); }
+#define HOOKPROTO(name, ret, obj, param) AROS_UFH2(ret, name, AROS_UFHA(APTR, param, A3), AROS_UFHA(Object *, obj, D0))
+
+#define MakeHook(hookname, funcname) struct Hook hookname = {{NULL, NULL}, \
+    (HOOKFUNC)funcname, NULL, NULL}
+
 
 int init_class(void);
 void delete_class(void);
