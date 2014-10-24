@@ -87,6 +87,24 @@ mui_class.o mui_class.o : mui_class.cpp \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/clib/muimaster_protos.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/graphics/regions.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/inline/muimaster.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/proto/diskfont.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/clib/diskfont_protos.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/dos/dos.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/inline/diskfont.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/proto/graphics.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/clib/graphics_protos.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/graphics/gels.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/graphics/sprite.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/graphics/scale.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/graphics/renderfunc.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/graphics/gfxbase.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/exec/execbase.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/oop/oop.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/hardware/blit.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/hidd/graphics.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/hidd/hidd.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/utility/utility.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/inline/graphics.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/clib/alib_protos.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/libraries/commodities.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/libraries/gadtools.h \
@@ -94,8 +112,8 @@ mui_class.o mui_class.o : mui_class.cpp \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/devices/keymap.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/rexx/storage.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/dos/dosextens.h \
-  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/dos/dos.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/dos/dosextaros.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/mui/Rawimage_mcc.h \
   ../sysconfig.h ../../include/sysdeps.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/string.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/null.h \
@@ -156,6 +174,5 @@ mui_class.o mui_class.o : mui_class.cpp \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/proto/arossupport.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/clib/arossupport_protos.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/arossupportbase.h \
-  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/exec/execbase.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/exec/alerts.h \
   ../target.h gui.h

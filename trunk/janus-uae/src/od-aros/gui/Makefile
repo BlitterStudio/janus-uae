@@ -50,7 +50,32 @@ LINK_LIBS=-larossupport -lmui
 COMMON_OBJS= \
 	mui_head.o \
 	mui_data.o \
-	mui_class.o
+	mui_class.o 
+
+IMAGES =\
+	images/35floppy.o \
+	images/amigainfo.o \
+	images/avioutput.o \
+	images/chip.o \
+	images/configfile.o \
+	images/cpu.o \
+	images/diskimage.o \
+	images/drive.o \
+	images/expansion.o \
+	images/file.o \
+	images/folder.o \
+	images/joystick.o \
+	images/misc.o \
+	images/move_dow.o \
+	images/move_up.o \
+	images/paths.o \
+	images/port.o \
+	images/quickstart.o \
+	images/root.o \
+	images/screen.o \
+	images/sound.o \
+	images/winuae.o
+
 
 	#../picasso96.o \
 	#../ersatz.o \
@@ -74,15 +99,24 @@ DEP_OBJS=$(COMMON_OBJS)
 
 all: uae
 
-uae: common 
-	$(CPP) $(CFLAGS) $(COMMON_OBJS) -o $(EXE) $(LINK_LIBS)
+uae: common images
+	$(CPP) $(CFLAGS) $(COMMON_OBJS) $(IMAGES) -o $(EXE) $(LINK_LIBS)
 
 
 common: $(COMMON_OBJS)
 	@echo building common ..
 
+images: $(IMAGES)
+	@echo building images ..
+
 aros: $(AROS_OBJS)
 	@echo building aros objects ..
+
+tools:
+	@echo builing tools ..
+	cd png2c;export CC=gcc;make
+
+#for i in $(IMAGES);do echo " $(i)  .."; icotool -i 1 -x $i;done
 	
 # ============== autogenerate some .cpp files ====================
 mui_data.cpp: test.rc
@@ -91,6 +125,7 @@ mui_data.cpp: test.rc
 # ============== clean ====================
 clean: 
 	rm -f $(COMMON_OBJS) $(EXE)
+	cd png2c;make clean
 
 
 # ============== dependencies ====================
