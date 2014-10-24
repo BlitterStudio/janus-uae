@@ -30,7 +30,7 @@ use Data::TreeDumper;
 #=====================================================================
 # global
 #=====================================================================
-my $debug=0;
+my $debug=1;
 
 my $res_file=$ARGV[0];
 my $cpp_file=$ARGV[1];
@@ -62,6 +62,8 @@ print HFILE   "#include \"gui.h\"\n\n";
 
 sub get_help($) {
   my $line=shift;
+
+  $debug && print "get_help(".$line.")\n";
 
   if($line =~/\[\]/) {
     return "\"".(split/\[\]/,$line)[1];
@@ -115,8 +117,26 @@ sub parse_flags($) {
 sub gen_line($$) {
   my $type=shift;
   my $args=shift;
+  my $t;
+  my $prev;
+  my @attr;
 
-  my @attr=split(',', $args);
+  my @p=split(',', $args);
+
+  # unescape lines with "... , ..." strings
+  foreach $t (@p) {
+    if(defined $prev) {
+      $t=$prev.",".$t;
+      undef $prev;
+    }
+    # line has only one "
+    if(1 == $t =~ tr/"//) {
+      $prev=$t;
+      next;
+    }
+    push @attr, $t;
+  }
+
   switch($type) {
     case "RTEXT" {
       $debug && print "  = RTEXT {\n";
