@@ -40,10 +40,9 @@ enum {
 
 int init_class(void);
 void delete_class(void);
+ULONG xget(Object *obj, ULONG attr);
 
 extern struct MUI_CustomClass *CL_Fixed;
-
-extern struct Element IDD_FLOPPY[];
 
 #define WS_BORDER 0x00800000
 #define WS_CAPTION 0x00C00000

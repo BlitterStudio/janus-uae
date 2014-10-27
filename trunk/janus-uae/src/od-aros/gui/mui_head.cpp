@@ -11,8 +11,9 @@
 #include "sysdeps.h"
 
 #include "gui.h"
+#include "mui_data.h"
 
-Object *app, *win, *root, *leftframe;
+static Object *app, *win, *root, *leftframe, *pages;
 
 #if 0
 Element IDD_FLOPPY[] = {
@@ -52,9 +53,11 @@ Element IDD_FLOPPY[] = {
 static const char *listelements[] = {
   IDS_ABOUT,
   IDS_PATHS,
+  IDS_QUICKSTART,
   IDS_LOADSAVE,
   IDS_CPU,
   IDS_CHIPSET,
+  IDS_CHIPSET2,
   IDS_KICKSTART,
   IDS_MEMORY,
   IDS_FLOPPY,
@@ -65,6 +68,7 @@ static const char *listelements[] = {
   IDS_GAMEPORTS,
   IDS_IOPORTS,
   IDS_INPUT,
+  IDS_AVIOUTPUT,
   IDS_FILTER,
   IDS_DISK,
   IDS_MISC1,
@@ -75,14 +79,15 @@ static const char *listelements[] = {
 HOOKPROTO(MUIHook_list, ULONG, obj, hookpointer)
 {
   AROS_USERFUNC_INIT
-#if 0
 
-  DebOut("MUIHook_list called\n");
+  ULONG nr;
 
-  DoMethod(obj,MUIM_List_GetEntry,MUIV_List_GetEntry_Active,(ULONG) &selstr);
+  nr=xget(obj, MUIA_List_Active);
 
-#endif
-  printf("FOO!\n");
+  printf("activate nr %d\n", nr);
+
+  DoMethod(pages, MUIM_Set, MUIA_Group_ActivePage, nr);
+
   return 0;
   AROS_USERFUNC_EXIT
 }
@@ -111,7 +116,7 @@ Object* build_gui(void) {
                       MUIA_Application_Title, (ULONG)"WinUAE",
                       MUIA_Application_Version, (ULONG)"$VER: WinUAE 0.2 (x.x.2014)",
                       MUIA_Application_Window, (ULONG)(win = MUI_NewObject(MUIC_Window,
-                        MUIA_Window_Title, (ULONG)"WinUAE GUI",
+                        MUIA_Window_Title, (ULONG)"WinUAE Properties",
                         MUIA_Window_RootObject, root=MUI_NewObject(MUIC_Group,
                           MUIA_Group_Horiz, TRUE,
                           MUIA_Group_Child,
@@ -124,7 +129,30 @@ Object* build_gui(void) {
                                           End,
                                         End,
                           MUIA_Group_Child, 
-                            NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_FLOPPY, TAG_DONE),
+                            pages=PageGroup,
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_ABOUT, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_PATHS, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_QUICKSTART, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_LOADSAVE, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CPU, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CHIPSET, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CHIPSET2, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_KICKSTART, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_MEMORY, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_FLOPPY, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CDDRIVE, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_EXPANSION, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_DISPLAY, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_SOUND, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_GAMEPORTS, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_IOPORTS, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_INPUT, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_AVIOUTPUT, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_FILTER, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_DISK, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_MISC1, TAG_DONE),
+                              Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_MISC2, TAG_DONE),
+                            End,
                       TAG_END),
                     TAG_END)),
         TAG_END);

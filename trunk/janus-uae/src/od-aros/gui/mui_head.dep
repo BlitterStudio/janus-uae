@@ -153,4 +153,4 @@ mui_head.o mui_head.o : mui_head.cpp \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/arossupportbase.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/exec/execbase.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/exec/alerts.h \
-  ../target.h gui.h
+  ../target.h gui.h mui_data.h
