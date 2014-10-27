@@ -143,7 +143,8 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
     return (ULONG) NULL;
   }
 
-
+  /* place vertically */
+  SetAttrs(obj, MUIA_Group_Horiz, FALSE, TAG_DONE);
 
   src=(struct Element *) s;
 
@@ -155,7 +156,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
     Object *foo;
 
     data->width =396;
-    data->height=303;
+    data->height=320;
     data->src   =src;
 
     DebOut("YYYYYYYYYYYYYYYYYY\n");
