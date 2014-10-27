@@ -214,8 +214,6 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
             src[i].obj=HGroup, 
                              MUIA_Background, MUII_GroupBack,
                              MUIA_Font, Topaz8Font,
-
-                             Child, 
                              Child, MUI_MakeObject(MUIO_Checkmark, (ULONG) src[i].text),
                       End;
 
