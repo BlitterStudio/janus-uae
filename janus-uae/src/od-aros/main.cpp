@@ -89,13 +89,17 @@ int main (int argc, TCHAR **argv) {
 	logging_init();
 	log_scsi=1;
 
+#ifdef NATMEM_OFFSET
   if(preinit_shm() /* && WIN32_RegisterClasses () && WIN32_InitLibraries ()*/ ) {
     write_log (_T("Enumerating display devices.. \n"));
+#endif
     enumeratedisplays (FALSE /* multi_display*/);
+#ifdef NATMEM_OFFSET
   }
   else {
     write_log(_T("preinit_shm FAILED\n"));
   }
+#endif
 
 
 

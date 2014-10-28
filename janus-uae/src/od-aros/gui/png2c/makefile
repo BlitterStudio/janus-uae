@@ -26,7 +26,7 @@ all: $(OBJS)
 	$(CC) $(OBJS) $(LDFLAGS) -o $(EXE) -lpng -lz
 
 clean:
-	-rm *.o $(EXE)
+	-rm -f *.o $(EXE)
 
 archive: clean
 	-rm -rf png2c

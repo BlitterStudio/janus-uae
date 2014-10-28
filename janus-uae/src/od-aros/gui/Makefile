@@ -1,7 +1,7 @@
 #
-# simple Makefile for uae MUI gui
+# simple Makefile for a Zune gui
 #
-# Copyright 2012 Oliver Brunner - aros<at>oliver-brunner.de
+# Copyright 2014 Oliver Brunner - aros<at>oliver-brunner.de
 #
 # This file is part of Janus-UAE.
 #
@@ -25,7 +25,7 @@
 ABI        = v0
 SVN        = /home/oli/svn
 
-EXE        = $(SVN)/$(ABI)/AROS/bin/linux-i386/AROS/gui
+LIB        = libgui.a
 
 CC         = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-gcc
 CPP        = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-g++
@@ -35,6 +35,7 @@ LD         = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-ld
 
 # suppress warning: deprecated conversion from string constant to ‘char*’
 FLAGS      = -Wno-write-strings -O2 #-Wall
+ARFLAGS    = rc
 DEBUGFLAGS = -g
 
 CDEFS   =
@@ -100,7 +101,7 @@ DEP_OBJS=$(COMMON_OBJS)
 all: uae
 
 uae: common images
-	$(CPP) $(CFLAGS) $(COMMON_OBJS) $(IMAGES) -o $(EXE) $(LINK_LIBS)
+	$(AR) $(ARFLAGS) $(LIB) $(COMMON_OBJS) $(IMAGES)  
 
 
 common: $(COMMON_OBJS)
@@ -124,7 +125,7 @@ mui_data.cpp: test.rc
 
 # ============== clean ====================
 clean: 
-	rm -f $(COMMON_OBJS) $(EXE)
+	rm -f $(COMMON_OBJS) $(LIB)
 	cd png2c;make clean
 
 

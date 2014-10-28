@@ -70,6 +70,11 @@ int debug_rtg_blitter = 3;
 #define P96TRACING_ENABLED 0
 #define P96SPRTRACING_ENABLED 0
 
+#ifndef NATMEM_OFFSET
+#warning CARE FOR natmem_offset variable here !!!!!!
+uae_u8 *natmem_offset=NULL;
+#endif
+
 static int hwsprite = 0;
 static int picasso96_BT = BT_uaegfx;
 static int picasso96_GCT = GCT_Unknown;
@@ -2112,6 +2117,8 @@ bool picasso_is_vram_dirty (uaecptr addr, int size)
 	int s = size;
 	int ms = gwwpagesize;
 
+  write_log("WARNING: natmem_offset was used here !?\n");
+  DebOut("WARNING: natmem_offset was used here !?\n");
 	for (;;) {
 		for (ULONG_PTR i = last; i < writewatchcount; i++) {
 			uae_u8 *ma = (uae_u8*)gwwbuf[i];

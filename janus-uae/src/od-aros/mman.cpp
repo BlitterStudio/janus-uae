@@ -179,12 +179,12 @@ static int my_getpagesize (void) {
 
 #endif
 
+uae_u32 max_z3fastmem;
 
 #if defined(NATMEM_OFFSET)
 
 #define VAMODE 1
 
-uae_u32 max_z3fastmem;
 
 /* JIT can access few bytes outside of memory block if it executes code at the very end of memory block */
 #define BARRIER 32
@@ -210,14 +210,17 @@ static void virtualfreewithlock (LPVOID addr, SIZE_T size, DWORD freetype)
     VirtualFree(addr, size, freetype);
 }
 
+#endif /*NATMEM */
+
 void cache_free (uae_u8 *cache)
 {
 #ifdef WINDOWS
     virtualfreewithlock (cache, 0, MEM_RELEASE);
+#elif defined(__AROS__)
+    free(cache);
 #else
     // FIXME: Must add (address, size) to a list in cache_alloc, so the memory
     // can be correctly released here...
-    TODO();
     write_log("TODO: free memory with munmap\n");
     //munmap(cache, size);
 #endif
@@ -244,6 +247,7 @@ uae_u8 *cache_alloc (int size)
 #endif
 }
 
+#if defined(NATMEM_OFFSET)
 #if 0
 static void setworkingset(void)
 {
