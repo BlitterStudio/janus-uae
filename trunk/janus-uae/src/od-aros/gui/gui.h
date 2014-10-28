@@ -21,6 +21,7 @@ typedef struct Element {
   const char *text;
   const char *help;
   ULONG flags;
+  ULONG flags2;
 } Element;
 
 #define MY_TAGBASE 0xfece0000
@@ -88,4 +89,31 @@ extern struct MUI_CustomClass *CL_Fixed;
 #define ES_WANTRETURN       0x1000L
 #define ES_NUMBER           0x2000L
 
+/* Button Types */
+#define BS_3STATE 5
+#define BS_AUTO3STATE 6
+#define BS_AUTOCHECKBOX 3
+#define BS_AUTORADIOBUTTON  9
+#define BS_BITMAP 128
+#define BS_BOTTOM 0x800
+#define BS_CENTER 0x300
+#define BS_CHECKBOX 2
+#define BS_DEFPUSHBUTTON  1
+#define BS_GROUPBOX 7
+#define BS_ICON 64
+#define BS_LEFT 256
+#define BS_LEFTTEXT 32
+#define BS_MULTILINE  0x2000
+#define BS_NOTIFY 0x4000
+#define BS_OWNERDRAW  0xb
+#define BS_PUSHBUTTON 0
+#define BS_PUSHLIKE 4096
+#define BS_RADIOBUTTON 4
+#define BS_RIGHT  512
+#define BS_RIGHTBUTTON  32
+#define BS_TEXT 0
+#define BS_TOP  0x400
+#define BS_USERBUTTON 8
+#define BS_VCENTER  0xc00
+#define BS_FLAT 0x8000
 #endif

@@ -193,32 +193,45 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
         case GROUPBOX:
           src[i].obj=HGroup, MUIA_Frame, MUIV_Frame_Group,
                               MUIA_FrameTitle, src[i].text,
-                              MUIA_Background, MUII_GroupBack,
                               End;
           src[i].exists=TRUE;
         break;
 
         case CONTROL:
-          if(strlen(src[i].text)>0) {
-            src[i].obj=HGroup, 
-                             MUIA_Background, MUII_GroupBack,
-                             Child, MUI_MakeObject(MUIO_Checkmark, (ULONG) src[i].text),
-                             Child, TextObject, 
-                                      MUIA_Font, Topaz8Font,
-                                      MUIA_Text_Contents, (ULONG) src[i].text, 
-                                      //MUIA_Background, MUII_MARKBACKGROUND,
-                                      MUIA_Background, MUII_GroupBack,
-                                    End,
-                      End;
-          }
-          else {
-            src[i].obj=HGroup, 
-                             MUIA_Background, MUII_GroupBack,
-                             MUIA_Font, Topaz8Font,
-                             Child, MUI_MakeObject(MUIO_Checkmark, (ULONG) src[i].text),
-                      End;
+            if(src[i].flags2==BS_AUTORADIOBUTTON) {
+              src[i].obj=HGroup,
+                    Child, ImageObject,
+                        NoFrame,
+                        MUIA_CycleChain       , 1,
+                        MUIA_InputMode        , MUIV_InputMode_Toggle,
+                        MUIA_Image_Spec       , MUII_RadioButton,
+                        MUIA_ShowSelState     , FALSE,
+                        MUIA_Selected         , FALSE,
+                      End,
+                    Child, TextObject,
+                        MUIA_Font, Topaz8Font,
+                        MUIA_Text_Contents, src[i].text,
+                      End,
 
-          }
+                  End;
+            }
+            else {
+              src[i].obj=HGroup,
+                Child, ImageObject,
+                  ImageButtonFrame,
+                  MUIA_InputMode   , MUIV_InputMode_Toggle,
+                  MUIA_Image_Spec  , MUII_CheckMark,
+                  MUIA_Background  , MUII_ButtonBack,
+                  MUIA_ShowSelState, FALSE,
+                  MUIA_CycleChain  , TRUE,
+                End,
+                Child, TextObject,
+                  MUIA_Font, Topaz8Font,
+                  MUIA_Text_Contents, src[i].text,
+                  End,
+              End;
+
+            }
           src[i].exists=TRUE;
         break;
 
@@ -243,7 +256,6 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                         MUIA_Font, Topaz8Font,
                         MUIA_Text_PreParse, "\33r",
                         MUIA_Text_Contents, (ULONG) src[i].text,
-                        MUIA_Background, MUII_GroupBack,
                       End;
           src[i].exists=TRUE;
         break;
@@ -264,7 +276,6 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                         MUIA_Font, Topaz8Font,
                         MUIA_Text_PreParse, "\33c",
                         MUIA_Text_Contents, (ULONG) src[i].text,
-                        MUIA_Background, MUII_GroupBack,
                       End;
           }
           else {

@@ -115,7 +115,7 @@ sub get_text($) {
 sub parse_flags($) {
   my $t=shift;
   my @array;
-  my $res=0x10000000;
+  my $res =0x10000000;
   my $a;
 
   if(!defined $t) {
@@ -138,6 +138,35 @@ sub parse_flags($) {
   }
   return $res;
 }
+
+
+sub parse_flags2($) {
+  my $t=shift;
+  my @array;
+  my $res =0;
+  my $a;
+
+  if(!defined $t) {
+    return $res;
+  }
+
+  @array=split /\|/, $t;
+  foreach $a (@array) {
+    # trim both ends
+    $a =~ s/^\s+|\s+$//g;
+    #print ">$a<\n";
+    if($a eq 'BS_AUTOCHECKBOX') {
+      $debug && print "BS_AUTOCHECKBOX!\n";
+      $res=3;
+    }
+    elsif($a eq 'BS_AUTORADIOBUTTON') {
+      $debug && print "BS_AUTORADIOBUTTON!\n";
+      $res=9;
+    }
+  }
+  return $res;
+}
+
 
 sub gen_line($$) {
   my $type=shift;
@@ -163,6 +192,7 @@ sub gen_line($$) {
   }
 
   switch($type) {
+
     case "RTEXT" {
       $debug && print "  = RTEXT {\n";
       $debug && print "      string: ".$attr[0]."\n";
@@ -171,8 +201,9 @@ sub gen_line($$) {
       $debug && print "      w:      ".$attr[4]."\n";
       $debug && print "      h:      ".$attr[5]."\n";
       $debug && print "    }\n";
-      printf(CPPFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx },\n", $type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]));
+      printf(CPPFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]), parse_flags2($attr[6]));
     }
+
     case "LTEXT" {
       $debug && print "  = RTEXT {\n";
       $debug && print "      string: ".$attr[0]."\n";
@@ -181,7 +212,7 @@ sub gen_line($$) {
       $debug && print "      w:      ".$attr[4]."\n";
       $debug && print "      h:      ".$attr[5]."\n";
       $debug && print "    }\n";
-      printf(CPPFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx },\n", $type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]));
+      printf(CPPFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]), parse_flags2($attr[6]));
     }
 
     case "GROUPBOX" {
@@ -192,7 +223,7 @@ sub gen_line($$) {
       $debug && print "      w:      ".$attr[4]."\n";
       $debug && print "      h:      ".$attr[5]."\n";
       $debug && print "    }\n";
-      printf(CPPFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx },\n", $type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]));
+      printf(CPPFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]), parse_flags2($attr[6]));
       #$node{'string'}=$attr[0];
       #$node{'x'}=$attr[2];
       #$node{'y'}=$attr[3];
@@ -207,7 +238,7 @@ sub gen_line($$) {
       $debug && print "      w:      ".$attr[6]."\n";
       $debug && print "      h:      ".$attr[7]."\n";
       $debug && print "    }\n";
-      printf(CPPFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx },\n", $type, $attr[4], $attr[5]+$plus_height, $attr[6], $attr[7], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[3]));
+      printf(CPPFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $type, $attr[4], $attr[5]+$plus_height, $attr[6], $attr[7], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[3]), parse_flags2($attr[3]));
     }
     case "PUSHBUTTON" {
       $debug && print "  = $type {\n";
@@ -217,7 +248,7 @@ sub gen_line($$) {
       $debug && print "      w:      ".$attr[4]."\n";
       $debug && print "      h:      ".$attr[5]."\n";
       $debug && print "    }\n";
-      printf(CPPFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx },\n", $type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]));
+      printf(CPPFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]), parse_flags2($attr[6]));
     }
     case "COMBOBOX" {
       $debug && print "  = $type {\n";
@@ -227,12 +258,12 @@ sub gen_line($$) {
       $debug && print "      w:      ".$attr[3]."\n";
       $debug && print "      h:      ".$attr[4]."\n"; # height is height of *opened* drop down box!!
       $debug && print "    }\n";
-      printf(CPPFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx },\n", $type, $attr[1], $attr[2]+$plus_height, $attr[3], 15, "\"".$attr[0]."\"", "NULL", parse_flags($attr[5]));
+      printf(CPPFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $type, $attr[1], $attr[2]+$plus_height, $attr[3], 15, "\"".$attr[0]."\"", "NULL", parse_flags($attr[5]), parse_flags2($attr[5]));
     }
     case "EDITTEXT" {
       $debug && print "  = $type \n";
       $debug && print "      string: ".$attr[0]."\n";
-      printf(CPPFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx },\n", $type, $attr[1], $attr[2]+$plus_height, $attr[3], $attr[4], "\"".$attr[0]."\"", "NULL", parse_flags($attr[5]));
+      printf(CPPFILE  "  { 0, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $type, $attr[1], $attr[2]+$plus_height, $attr[3], $attr[4], "\"".$attr[0]."\"", "NULL", parse_flags($attr[5]), parse_flags2($attr[5]));
     }
     else {
       $debug && print "      => default type\n";
