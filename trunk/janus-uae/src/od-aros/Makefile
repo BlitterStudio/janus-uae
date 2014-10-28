@@ -43,7 +43,7 @@ INCLUDES= -I. -I../include -I../md-i386-gcc -I.. -I/home/oli/svn/v0/AROS/bin/lin
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 CPPFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
-LINK_LIBS=-larossupport -lz -lSDL -lGL
+LINK_LIBS=-Lgui -lgui -larossupport -lz -lSDL -lGL -lmui
 
 # ============== common ====================
 
@@ -185,6 +185,8 @@ COMMON_OBJS= \
 #../zfile_archive.o 
 #gui.o \
 
+GUI_LIB = od-aros/gui/libgui.a
+
 # build dependencies magic
 DEP_OBJS=$(COMMON_OBJS)
 
@@ -201,15 +203,19 @@ DEP_OBJS=$(COMMON_OBJS)
 
 all: uae
 
-uae: common aros
+uae: gui common aros
 	$(CPP) $(CFLAGS) $(COMMON_OBJS) $(AROS_OBJS) -o $(EXE) $(LINK_LIBS)
-
 
 common: ../blitfunc.cpp ../blittable.cpp ../blit.h ../linetoscr.cpp $(COMMON_OBJS)
 	@echo building common ..
 
 aros: $(AROS_OBJS)
 	@echo building aros objects ..
+
+.PHONY: gui
+gui: 
+	@echo building gui library ..
+	@cd gui;make
 	
 # ============== autogenerate some .c files ====================
 
@@ -240,6 +246,7 @@ string_resource.h: ../od-win32/resources/winuae.rc
 # ============== clean ====================
 clean: 
 	rm -f $(COMMON_OBJS) $(EXE)
+	@cd gui;make clean
 
 
 # ============== dependencies ====================

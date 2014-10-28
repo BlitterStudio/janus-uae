@@ -382,4 +382,11 @@ int input_get_default_keyboard (int i)
   }
 }
 
+#ifndef NATMEM_OFFSET
+void protect_roms (bool protect) {
+}
 
+
+void unprotect_maprom (void) {
+}
+#endif

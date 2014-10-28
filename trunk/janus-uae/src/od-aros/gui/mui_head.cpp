@@ -182,23 +182,32 @@ static void main_loop(void) {
   SetAttrs(win, MUIA_Window_Open, FALSE, TAG_DONE);
 }
 
-int main(void) {
-  Object *test;
+int aros_init_gui(void) {
+
   init_class();
   app = build_gui();
 
-  //test=(Object *) NewObject(CL_Fixed->mcc_Class, NULL,MA_src,(ULONG) NULL,TAG_DONE);
-
-  //DoMethod(root,OM_ADDMEMBER,(LONG) test);
-
-  if (app)
-  {
-    //notifications();
-    main_loop();
-    MUI_DisposeObject(app);
+  if(!app) {
+    fprintf(stderr, "Unable to initialize GUI!\n");
+    exit(1);
   }
-
-  delete_class();
 
   return 0;
 }
+
+void aros_gui_exit(void) {
+
+  MUI_DisposeObject(app);
+  delete_class();
+}
+
+#ifdef __STANDALONE__
+int main(void) {
+
+  aros_init_gui();
+  main_loop();
+  aros_gui_exit();
+
+  return 0;
+}
+#endif

@@ -29,6 +29,7 @@
 //#define uae_shmat  shmat
 //#define uae_shmdt  shmdt
 
+#define NATMEM_OFFSET natmem_offset
 #define ARCADIA /* Arcadia arcade system */
 #define DEBUGGER
 #define ECS_DENISE /* ECS DENISE new features */
@@ -53,7 +54,7 @@
 #define CPUEMU_21
 #endif
 
-#define NATMEM_OFFSET natmem_offset
+//#define NATMEM_OFFSET natmem_offset
 #define AUTOCONFIG
 #define FILESYS
 #define PICASSO96_SUPPORTED
