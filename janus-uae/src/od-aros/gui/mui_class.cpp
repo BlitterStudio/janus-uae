@@ -17,11 +17,15 @@
 #include "sysdeps.h"
 
 #include "gui.h"
+#include "mui_data.h"
 
 //#define RESIZE 155 / 100
 #define RESIZE_X 150 /100
 #define RESIZE_Y 140 /100
 
+#define MAX_ENTRIES 255
+
+#define MA_Data 0xfece0000
 
 struct Data {
   struct Hook LayoutHook;
@@ -42,6 +46,100 @@ ULONG xget(Object *obj, ULONG attr) {
   return b;
 }
 
+/* return index in elem[] for item IDC_* */
+static LONG get_index(Element *elem, int item) {
+  int i=0;
+
+  while(elem[i].exists) {
+    if(elem[i].idc == item) {
+      return i;
+    }
+    i++;
+  }
+
+  DebOut("ERROR: item %d not found in element %lx!!\n", item, elem);
+  return -1;
+}
+
+/*****************************************************************************
+ * WinAPI
+ *****************************************************************************/
+BOOL SetDlgItemText(Element *elem, int item, TCHAR *lpString) {
+  Object *obj;
+  LONG i;
+  return 0;
+
+  DebOut("elem: %lx\n", elem);
+  DebOut("item: %d\n", item);
+  DebOut("string: %s\n", lpString);
+
+  i=get_index(elem, item);
+  if(i<0) return FALSE;
+
+  SetAttrs(elem[i].obj, MUIA_Text_Contents, lpString, TAG_DONE);
+
+  return TRUE;
+}
+
+BOOL CheckDlgButton(Element *elem, int button, UINT uCheck) {
+  LONG i;
+  return 0;
+
+  DebOut("elem: %lx\n", elem);
+  DebOut("button: %d\n", button);
+  DebOut("uCheck: %d\n", uCheck);
+
+  i=get_index(elem, button);
+  if(i<0) return FALSE;
+
+  SetAttrs(elem[i].obj, MUIA_Selected, uCheck, TAG_DONE);
+
+  return TRUE;
+
+}
+
+ULONG SendDlgItemMessage(Element *elem, int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam) {
+  Object *obj;
+  ULONG i;
+  ULONG l;
+  TCHAR **line;
+
+  DebOut("elem: %lx\n", elem);
+  DebOut("nIDDlgItem: %i\n", nIDDlgItem);
+
+  i=get_index(elem, nIDDlgItem);
+  if(i<0) return FALSE;
+  DebOut("index: %d\n", i);
+
+  line=(TCHAR **) elem[i].var;
+
+  switch(Msg) {
+    case CB_ADDSTRING:
+      /* add string to popup window */
+      DebOut("new string: %s\n", (TCHAR *) lParam);
+      l=0;
+      while(line[l]!=NULL) {
+        l++;
+      }
+      /* found next free string */
+#warning TODO: free strings again!
+      line[l]=strdup((TCHAR *) lParam);
+      line[l+1]=NULL;
+      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) line, TAG_DONE);
+      DebOut("obj: %lx\n", elem[i].obj);
+      break;
+    default:
+      DebOut("unkown Message-ID: %d\n", Msg);
+      return FALSE;
+  }
+
+  return TRUE;
+
+}
+
+/*****************************************************************************
+ * Class
+ *****************************************************************************/
 AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFHA(APTR, obj, a2), AROS_UFHA(struct MUI_LayoutMsg *, lm, a1)) 
 
   switch (lm->lm_Type) {
@@ -52,9 +150,9 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
       struct Element *element=data->src;
       ULONG mincw, minch, defcw, defch, maxcw, maxch;
 
-      DebOut("MUILM_MINMAX\n");
-      DebOut("data:        %lx\n", data);
-      DebOut("data->src:   %lx\n", data->src);
+      DebOut("MUILM_MINMAX obj %lx\n", obj);
+      //DebOut("data:        %lx\n", data);
+      //DebOut("data->src:   %lx\n", data->src);
 
       lm->lm_MinMax.MinWidth  = data->width * RESIZE_X;
       lm->lm_MinMax.MinHeight = data->height * RESIZE_Y;
@@ -77,18 +175,16 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
       ULONG i=0;
       struct Element *element=data->src;
 
-      DebOut("MUILM_LAYOUT %lx\n", obj);
-      DebOut("data:        %lx\n", data);
-      DebOut("data->src:   %lx\n", data->src);
+      DebOut("MUILM_LAYOUT obj %lx\n", obj);
+      //DebOut("data:        %lx\n", data);
+      //DebOut("data->src:   %lx\n", data->src);
 
       while(element[i].exists) {
+        DebOut("  child i=%d\n", i);
+        DebOut("   obj[%d]: %lx\n", i, element[i].obj);
+        DebOut("   idc: %d (dummy is %d)\n", element[i].idc, IDC_dummy);
+        DebOut("   x, y: %d, %d  w, h: %d, %d\n", element[i].x, element[i].y, element[i].w, element[i].h);
         if(element[i].obj != obj) {
-          DebOut("  i=%d\n", i);
-          DebOut("   x: %d\n", element[i].x);
-          DebOut("   y: %d\n", element[i].y);
-          DebOut("   w: %d\n", element[i].w);
-          DebOut("   h: %d\n", element[i].h);
-          DebOut("   obj: %lx\n", element[i].obj);
           if (!MUI_Layout(element[i].obj,
                           element[i].x * RESIZE_X,
                           element[i].y * RESIZE_Y,
@@ -118,6 +214,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
   ULONG i;
   ULONG s;
   struct Element *src;
+  Object *child;
 
   DebOut("mNew(fixed)\n");
 
@@ -191,16 +288,17 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
       DebOut("add %s\n", src[i].text);
       switch(src[i].windows_type) {
         case GROUPBOX:
-          src[i].obj=HGroup, MUIA_Frame, MUIV_Frame_Group,
+          child=HGroup, MUIA_Frame, MUIV_Frame_Group,
                               MUIA_FrameTitle, src[i].text,
                               End;
           src[i].exists=TRUE;
+          src[i].obj=child;
         break;
 
         case CONTROL:
             if(src[i].flags2==BS_AUTORADIOBUTTON) {
-              src[i].obj=HGroup,
-                    Child, ImageObject,
+              child=HGroup,
+                    Child, src[i].obj=ImageObject,
                         NoFrame,
                         MUIA_CycleChain       , 1,
                         MUIA_InputMode        , MUIV_InputMode_Toggle,
@@ -216,8 +314,8 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                   End;
             }
             else {
-              src[i].obj=HGroup,
-                Child, ImageObject,
+              child=HGroup,
+                Child, src[i].obj=ImageObject,
                   ImageButtonFrame,
                   MUIA_InputMode   , MUIV_InputMode_Toggle,
                   MUIA_Image_Spec  , MUII_CheckMark,
@@ -233,11 +331,12 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
 
             }
           src[i].exists=TRUE;
+          src[i].obj=child;
         break;
 
         case PUSHBUTTON:
           //src[i].obj=MUI_MakeObject(MUIO_Button, (ULONG) src[i].text);
-          src[i].obj=HGroup, MUIA_Background, MUII_ButtonBack,
+          child=HGroup, MUIA_Background, MUII_ButtonBack,
                               ButtonFrame,
                               MUIA_InputMode , MUIV_InputMode_RelVerify,
                               Child, TextObject,
@@ -248,52 +347,59 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                             End;
 
           src[i].exists=TRUE;
+          src[i].obj=child;
         break;
 
         case RTEXT:
-          src[i].obj=TextObject,
+          child=TextObject,
                         //MUIA_Background, MUII_MARKBACKGROUND,
                         MUIA_Font, Topaz8Font,
                         MUIA_Text_PreParse, "\33r",
                         MUIA_Text_Contents, (ULONG) src[i].text,
                       End;
           src[i].exists=TRUE;
+          src[i].obj=child;
         break;
 
         case LTEXT:
-          src[i].obj=TextObject,
+          child=TextObject,
                         MUIA_Font, Topaz8Font,
                         MUIA_Text_PreParse, "\33l",
                         MUIA_Text_Contents, (ULONG) src[i].text,
                       End;
           src[i].exists=TRUE;
+          src[i].obj=child;
         break;
 
 
         case EDITTEXT:
           if(src[i].flags & ES_READONLY) {
-            src[i].obj=TextObject,
+            child=TextObject,
                         MUIA_Font, Topaz8Font,
                         MUIA_Text_PreParse, "\33c",
                         MUIA_Text_Contents, (ULONG) src[i].text,
                       End;
+            src[i].obj=child;
           }
           else {
-            src[i].obj=StringObject,
+            child=StringObject,
                           StringFrame,
                           MUIA_Font, Topaz8Font,
                           MUIA_String_Contents, (ULONG) src[i].text,
                         End;
+            src[i].obj=child;
           }
           src[i].exists=TRUE;
         break;
 
 
         case COMBOBOX:
-          src[i].obj=CycleObject,
+          child=CycleObject,
                        MUIA_Font, Topaz8Font,
                        MUIA_Cycle_Entries, Cycle_Dummy,
                      End;
+          src[i].var=(APTR) malloc(256 * sizeof(TCHAR *)); // array for cycle texts
+          src[i].obj=child;
           src[i].exists=TRUE;
         break;
 
@@ -301,28 +407,35 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
         default:
           DebOut("ERROR: unknown windows_type %d\n", src[i].windows_type);
       }
-      if(src[i].help) {
-        DebOut("add HOTHELP: %s\n", src[i].help);
-        SetAttrs(src[i].obj, MUIA_ShortHelp, (ULONG) src[i].help);
-      }
-      if(!(src[i].flags & WS_VISIBLE)) {
-        SetAttrs(src[i].obj, MUIA_ShowMe, (ULONG) 0);
+      DebOut("RESULT: child:   %lx\n", child);
+      DebOut("RESULT: src.obj: %lx\n", src[i].obj);
+      if(child) {
+        if(src[i].help) {
+          DebOut("add HOTHELP: %s\n", src[i].help);
+          SetAttrs(child, MUIA_ShortHelp, (ULONG) src[i].help, TAG_DONE);
+        }
+        if(!(src[i].flags & WS_VISIBLE)) {
+          SetAttrs(child, MUIA_ShowMe, (ULONG) 0, TAG_DONE);
+        }
+        //DebOut("=> add %lx to %lx\n", child, obj);
+        //DoMethod((Object *) obj, OM_ADDMEMBER,(LONG) child);
+        child=NULL;
       }
       DebOut("  src[%d].obj=%lx\n", i, src[i].obj);
       i++;
+
     }
 
     SETUPHOOK(&data->LayoutHook, LayoutHook, data);
   
     SetAttrs(obj, MUIA_Group_LayoutHook, &data->LayoutHook, TAG_DONE);
-
     i=0;
     while(src[i].exists) {
       DebOut("i: %d (add %lx to %lx\n", i, src[i].obj, obj);
       DoMethod((Object *) obj, OM_ADDMEMBER,(LONG) src[i].obj);
       i++;
     }
-  
+
     mSet(data, obj, (struct opSet *) msg, 1);
   }
   return (ULONG)obj;
@@ -332,11 +445,14 @@ static ULONG mGet(struct Data *data, APTR obj, struct opGet *msg, struct IClass 
 {
   ULONG rc;
 
+  DebOut("mGet..\n");
+
   switch (msg->opg_AttrID)
   {
-    //case MA_Widget: 
-      //rc = (ULONG) data->widget; 
-      //break;
+    case MA_Data: 
+      DebOut("data: %lx\n", data);
+      rc = (ULONG) data; 
+      break;
 
     default: return DoSuperMethodA(cl, (Object *) obj, (Msg)msg);
   }

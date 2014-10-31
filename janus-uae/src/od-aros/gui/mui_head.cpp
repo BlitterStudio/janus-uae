@@ -99,6 +99,7 @@ Object* build_gui(void) {
 
   DebOut("src: %lx\n", IDD_FLOPPY);
 
+#if 0
   while(IDD_FLOPPY[i].windows_type) {
     DebOut("i: %d\n", i);
     DebOut("IDD_FLOPPY[%d].windows_type: %d\n", i, IDD_FLOPPY[i].windows_type);
@@ -108,6 +109,7 @@ Object* build_gui(void) {
   }
 
   DebOut("send: %lx\n", &IDD_FLOPPY);
+#endif
   app = MUI_NewObject(MUIC_Application,
                       MUIA_Application_Author, (ULONG) "Oliver Brunner",
                       MUIA_Application_Base, (ULONG)   "AROSUAE",
@@ -167,9 +169,11 @@ Object* build_gui(void) {
 
 }
 
-static void main_loop(void) {
+void aros_main_loop(void) {
 
   ULONG signals = 0;
+
+  DebOut("entered..\n");
 
   SetAttrs(win, MUIA_Window_Open, TRUE, TAG_DONE);
 
@@ -184,6 +188,12 @@ static void main_loop(void) {
 
 int aros_init_gui(void) {
 
+  DebOut("entered\n");
+
+  if(app) {
+    DebOut("aros_init_gui was already called before\n");
+    return 1;
+  }
   init_class();
   app = build_gui();
 
@@ -192,7 +202,7 @@ int aros_init_gui(void) {
     exit(1);
   }
 
-  return 0;
+  return 1;
 }
 
 void aros_gui_exit(void) {
@@ -205,7 +215,7 @@ void aros_gui_exit(void) {
 int main(void) {
 
   aros_init_gui();
-  main_loop();
+  aros_main_loop();
   aros_gui_exit();
 
   return 0;

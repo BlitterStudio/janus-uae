@@ -207,7 +207,7 @@ sub gen_line($$) {
       $debug && print "      h:      ".$attr[5]."\n";
       $debug && print "    }\n";
       push @idc, $attr[1];
-      printf(CPPFILE  "  { 0, %-20s, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n",$attr[1] ,$type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]), parse_flags2($attr[6]));
+      printf(CPPFILE  "  { 0, %-20s, NULL, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n",$attr[1] ,$type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]), parse_flags2($attr[6]));
     }
 
     case "LTEXT" {
@@ -219,7 +219,7 @@ sub gen_line($$) {
       $debug && print "      h:      ".$attr[5]."\n";
       $debug && print "    }\n";
       push @idc, $attr[1];
-      printf(CPPFILE  "  { 0, %-20s, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $attr[1], $type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]), parse_flags2($attr[6]));
+      printf(CPPFILE  "  { 0, %-20s, NULL, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $attr[1], $type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]), parse_flags2($attr[6]));
     }
 
     case "GROUPBOX" {
@@ -231,7 +231,7 @@ sub gen_line($$) {
       $debug && print "      h:      ".$attr[5]."\n";
       $debug && print "    }\n";
       push @idc, $attr[1];
-      printf(CPPFILE  "  { 0, %-20s, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $attr[1], $type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]), parse_flags2($attr[6]));
+      printf(CPPFILE  "  { 0, %-20s, NULL, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $attr[1], $type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]), parse_flags2($attr[6]));
       #$node{'string'}=$attr[0];
       #$node{'x'}=$attr[2];
       #$node{'y'}=$attr[3];
@@ -247,7 +247,7 @@ sub gen_line($$) {
       $debug && print "      h:      ".$attr[7]."\n";
       $debug && print "    }\n";
       push @idc, $attr[1];
-      printf(CPPFILE  "  { 0, %-20s, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $attr[1], $type, $attr[4], $attr[5]+$plus_height, $attr[6], $attr[7], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[3]), parse_flags2($attr[3]));
+      printf(CPPFILE  "  { 0, %-20s, NULL, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $attr[1], $type, $attr[4], $attr[5]+$plus_height, $attr[6], $attr[7], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[3]), parse_flags2($attr[3]));
     }
     case "PUSHBUTTON" {
       $debug && print "  = $type {\n";
@@ -258,7 +258,7 @@ sub gen_line($$) {
       $debug && print "      h:      ".$attr[5]."\n";
       $debug && print "    }\n";
       push @idc, $attr[1];
-      printf(CPPFILE  "  { 0, %-20s, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $attr[1], $type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]), parse_flags2($attr[6]));
+      printf(CPPFILE  "  { 0, %-20s, NULL, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $attr[1], $type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]), parse_flags2($attr[6]));
     }
     case "DEFPUSHBUTTON" {
       $debug && print "  = $type {\n";
@@ -269,7 +269,7 @@ sub gen_line($$) {
       $debug && print "      h:      ".$attr[5]."\n";
       $debug && print "    }\n";
       push @idc, $attr[1];
-      printf(CPPFILE  "  { 0, %-20s, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $attr[1], $type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]), parse_flags2($attr[6]));
+      printf(CPPFILE  "  { 0, %-20s, NULL, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $attr[1], $type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]), parse_flags2($attr[6]));
     }
 
     case "COMBOBOX" {
@@ -281,13 +281,13 @@ sub gen_line($$) {
       $debug && print "      h:      ".$attr[4]."\n"; # height is height of *opened* drop down box!!
       $debug && print "    }\n";
       push @idc, $attr[0];
-      printf(CPPFILE  "  { 0, %-20s, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $attr[0], $type, $attr[1], $attr[2]+$plus_height, $attr[3], 15, "\"".$attr[0]."\"", "NULL", parse_flags($attr[5]), parse_flags2($attr[5]));
+      printf(CPPFILE  "  { 0, %-20s, NULL, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $attr[0], $type, $attr[1], $attr[2]+$plus_height, $attr[3], 15, "\"".$attr[0]."\"", "NULL", parse_flags($attr[5]), parse_flags2($attr[5]));
     }
     case "EDITTEXT" {
       $debug && print "  = $type \n";
       $debug && print "      string: ".$attr[0]."\n";
       push @idc, $attr[0];
-      printf(CPPFILE  "  { 0, %-20s, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $attr[0], $type, $attr[1], $attr[2]+$plus_height, $attr[3], $attr[4], "\"".$attr[0]."\"", "NULL", parse_flags($attr[5]), parse_flags2($attr[5]));
+      printf(CPPFILE  "  { 0, %-20s, NULL, NULL, %-11s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $attr[0], $type, $attr[1], $attr[2]+$plus_height, $attr[3], $attr[4], "\"".$attr[0]."\"", "NULL", parse_flags($attr[5]), parse_flags2($attr[5]));
     }
     else {
       $debug && print "      => default type\n";
@@ -348,7 +348,7 @@ while(<RESFILE>) {
         $idd_active=0;
         $debug && print ("=== END OF $idd_name ==\n");
         # finish!
-        print CPPFILE "  { 0, 0, NULL, 0,            0,   0,   0,   0,  NULL, 0 }\n";
+        print CPPFILE "  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }\n";
         print CPPFILE "};\n\n";
       }
       else {
@@ -395,7 +395,7 @@ foreach $l (@h_elements) {
 print HFILE "\n";
 print HFILE "/* Gadget identifiers */\n";
 print HFILE "enum {\n";
-print HFILE "  dummy,\n";
+print HFILE "  IDC_dummy,\n";
 foreach $l (uniq(@idc)) {
   if($l =~ /^ID/) {
     print HFILE "  ".$l.",\n";
