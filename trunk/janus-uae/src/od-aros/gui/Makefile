@@ -120,7 +120,7 @@ tools:
 #for i in $(IMAGES);do echo " $(i)  .."; icotool -i 1 -x $i;done
 	
 # ============== autogenerate some .cpp files ====================
-mui_data.cpp: test.rc
+mui_data.cpp: test.rc parse_fixed.pl
 	./parse_fixed.pl test.rc mui_data.cpp
 
 # ============== clean ====================
