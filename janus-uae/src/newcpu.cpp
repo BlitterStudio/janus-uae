@@ -9,7 +9,8 @@
 #define MMUOP_DEBUG 2
 #define DEBUG_CD32CDTVIO 0
 #define EXCEPTION3_DEBUGGER 0
-#define CPUTRACE_DEBUG 0
+#define CPUTRACE_DEBUG 1
+#define OLI_DEBUG 1
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -203,7 +204,7 @@ static void validate_trace (void)
 	for (int i = 0; i < cputrace.memoryoffset; i++) {
 		struct cputracememory *ctm = &cputrace.ctm[i];
 		if (ctm->data == 0xdeadf00d) {
-			write_log (L"unfinished write operation %d %08x\n", i, ctm->addr);
+			write_log (_T("unfinished write operation %d %08x\n"), i, ctm->addr);
 		}
 	}
 }
@@ -245,7 +246,7 @@ static void add_trace (uaecptr addr, uae_u32 val, int accessmode, int size)
 {
 	if (cputrace.memoryoffset < 1) {
 #if CPUTRACE_DEBUG
-		write_log (L"add_trace memoryoffset=%d!\n", cputrace.memoryoffset);
+		write_log (_T("add_trace memoryoffset=%d!\n"), cputrace.memoryoffset);
 #endif
 		return;
 	}
@@ -623,7 +624,7 @@ static void cputracefunc_x_do_cycles_post (unsigned long cycles, uae_u32 v)
 {
 	if (cputrace.memoryoffset < 1) {
 #if CPUTRACE_DEBUG
-		write_log (L"cputracefunc_x_do_cycles_post memoryoffset=%d!\n", cputrace.memoryoffset);
+		write_log (_T("cputracefunc_x_do_cycles_post memoryoffset=%d!\n"), cputrace.memoryoffset);
 #endif
 		return;
 	}
@@ -673,6 +674,7 @@ static void do_cycles_ce020_post (unsigned long cycles, uae_u32 v)
 // indirect memory access functions
 static void set_x_funcs (void)
 {
+  DebOut("entered\n");
 	if (currprefs.mmu_model) {
 		if (currprefs.cpu_model == 68060) {
 			x_prefetch = get_iword_mmu060;
@@ -943,6 +945,7 @@ bool is_cpu_tracer (void)
 }
 bool set_cpu_tracer (bool state)
 {
+  DebOut("entered\n");
 	if (cpu_tracer < 0)
 		return false;
 	int old = cpu_tracer;
@@ -966,6 +969,7 @@ void set_cpu_caches (bool flush)
 {
 	int i;
 
+  DebOut("entered\n");
 	regs.prefetch020addr = 0xffffffff;
 	regs.cacheholdingaddr020 = 0xffffffff;
 
@@ -1056,6 +1060,7 @@ static void build_cpufunctbl (void)
 	const struct cputbl *tbl = 0;
 	int lvl;
 
+  DebOut("entered\n");
 	switch (currprefs.cpu_model)
 	{
 #ifdef CPUEMU_0
@@ -2359,6 +2364,7 @@ static void Exception_normal (int nr)
 	uae_u32 currpc, newpc;
 	int sv = regs.s;
 
+  DebOut("entered\n");
 	if (nr >= 24 && nr < 24 + 8 && currprefs.cpu_model <= 68010)
 		nr = x_get_byte (0x00fffff1 | (nr << 1));
 
@@ -2629,6 +2635,7 @@ static void m68k_reset (bool hardreset)
 {
 	uae_u32 v;
 
+  DebOut("entered\n");
 	regs.spcflags = 0;
 	regs.ipl = regs.ipl_pin = 0;
 #ifdef SAVESTATE
@@ -3079,6 +3086,7 @@ STATIC_INLINE bool time_for_interrupt (void)
 
 void doint (void)
 {
+  DebOut("entered\n");
 	if (currprefs.cpu_cycle_exact) {
 		regs.ipl_pin = intlev ();
 		unset_special (SPCFLAG_INT);
@@ -3458,6 +3466,7 @@ static void m68k_run_1_ce (void)
 	set_cpu_tracer (false);
 
 	for (;;) {
+  DebOut("for(;;)\n");
 		opcode = r->ir;
 
 #if DEBUG_CD32CDTVIO

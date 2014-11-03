@@ -5102,6 +5102,7 @@ static void readmem_real(int address, int dest, int offset, int size, int tmp)
 
 	if (size==4 && address!=dest)
 		f=dest;
+    DebOut("entered (canbang: %d)\n", canbang);
 
 #ifdef NATMEM_OFFSET
 	if (canbang) {  /* Woohoo! go directly at the memory! */
@@ -5133,6 +5134,7 @@ static void readmem_real(int address, int dest, int offset, int size, int tmp)
 STATIC_INLINE void readmem(int address, int dest, int offset, int size, int tmp)
 {
 	int f=tmp;
+  DebOut("entered\n");
 
 	mov_l_rr(f,address);
 	shrl_l_ri(f,16);   /* The index into the mem bank table */
@@ -5147,6 +5149,7 @@ STATIC_INLINE void readmem(int address, int dest, int offset, int size, int tmp)
 void readbyte(int address, int dest, int tmp)
 {
 	int distrust = currprefs.comptrustbyte;
+  DebOut("entered\n");
 #if 0
 	switch (currprefs.comptrustbyte) {
 	case 0: distrust=0; break;
@@ -5354,6 +5357,8 @@ uae_u32 get_jitted_size(void)
 	return 0;
 }
 
+extern uae_u8* veccode;
+
 void alloc_cache(void)
 {
 	if (compiled_code) {
@@ -5361,10 +5366,12 @@ void alloc_cache(void)
     DebOut("Call cache_free(compiled_code)\n");
 		cache_free(compiled_code);
 	}
+//#ifdef NATMEM_OFFSET
 	if (veccode == NULL) {
     DebOut("Call cache_alloc(256)\n");
 		veccode = cache_alloc (256);
   }
+//#endif
 	if (popallspace == NULL) {
     DebOut("Call cache_alloc(1024)\n");
 		popallspace = cache_alloc (1024);
@@ -5376,8 +5383,11 @@ void alloc_cache(void)
 	while (!compiled_code && currprefs.cachesize) {
     DebOut("Call cache_alloc(currprefs.cachesize*1024)\n");
 		compiled_code=cache_alloc(currprefs.cachesize*1024);
-		if (!compiled_code)
+		if (!compiled_code) {
+      write_log("WARNING: unable to allocate %d bytes of compiled_code memory!\n", compiled_code);
+      DebOut("WARNING: unable to allocate %d bytes of compiled_code memory!\n", compiled_code);
 			currprefs.cachesize/=2;
+    }
 	}
 	if (compiled_code) {
 		max_compile_start=compiled_code+currprefs.cachesize*1024-BYTES_PER_INST;
@@ -5687,7 +5697,9 @@ void build_comp(void)
 #ifdef NATMEM_OFFSET
 	write_log (_T("JIT: Setting signal handler\n"));
 #ifndef _WIN32
-#ifndef __AROS__
+#ifdef __AROS__
+  write_log("WARNING, should signal(SIGSEGV,vec) work on AROS!?\n");
+#else
 	signal(SIGSEGV,vec);
 #endif
 #endif

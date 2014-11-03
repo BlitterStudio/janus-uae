@@ -2300,6 +2300,8 @@ static void
 {
 	char *v = c->x86_vendor_id;
 
+  DebOut("entered v=%s\n",v);
+
 	if (!strcmp(v, "GenuineIntel"))
 		c->x86_vendor = X86_VENDOR_INTEL;
 	else if (!strcmp(v, "AuthenticAMD"))
@@ -2329,6 +2331,8 @@ static void cpuid(uae_u32 op, uae_u32 *eax, uae_u32 *ebx, uae_u32 *ecx, uae_u32 
 	uae_u8* cpuid_space = (uae_u8*)cache_alloc(CPUID_SPACE);
 	static uae_u32 s_op, s_eax, s_ebx, s_ecx, s_edx;
 	uae_u8* tmp=get_target();
+
+  DebOut("entered\n");
 
 	s_op = op;
 	set_target(cpuid_space);

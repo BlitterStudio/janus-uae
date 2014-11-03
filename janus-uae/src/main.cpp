@@ -842,7 +842,9 @@ void reset_all_systems (void)
 	filesys_prepare_reset ();
 	filesys_reset ();
 #endif
+#ifdef NATMEM_OFFSET
 	init_shm ();
+#endif
 	memory_reset ();
 #if defined (BSDSOCKET)
 	bsdlib_reset ();
@@ -961,7 +963,9 @@ void do_leave_program (void)
 #endif
 	savestate_free ();
 	memory_cleanup ();
+#ifdef NATMEM_OFFSET
 	free_shm ();
+#endif
 	cfgfile_addcfgparam (0);
 	machdep_free ();
 }
@@ -1067,6 +1071,8 @@ static int real_main2 (int argc, TCHAR **argv)
 	else if (restart_program == 3)
 		no_gui = 0;
 	restart_program = 0;
+#warning REMOVE no_gui=0;
+  no_gui=0;
 	if (! no_gui) {
 		int err = gui_init ();
 		currprefs = changed_prefs;
