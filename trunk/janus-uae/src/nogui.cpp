@@ -36,6 +36,7 @@ static void sigchldhandler(int foo)
 	TODO();
 }
 
+#if 0
 int gui_init (void)
 {
 	TODO();
@@ -47,6 +48,7 @@ int gui_update (void)
 	TODO();
     return 0;
 }
+#endif
 
 void gui_exit (void)
 {

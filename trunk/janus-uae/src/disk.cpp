@@ -742,7 +742,7 @@ static void drive_fill_bigbuf (drive * drv,int);
 
 int DISK_validate_filename (struct uae_prefs *p, const TCHAR *fname, int leave_open, bool *wrprot, uae_u32 *crc32, struct zfile **zf)
 {
-  DebOut("DISK_validate_filename(%lx, %s, leave_open %d, wrprot %d,..)\n", p, fname, leave_open, *wrprot);
+  DebOut("DISK_validate_filename(%lx, %s, leave_open %d, ..)\n", p, fname, leave_open);
 	if (zf)
 		*zf = NULL;
 	if (crc32)
