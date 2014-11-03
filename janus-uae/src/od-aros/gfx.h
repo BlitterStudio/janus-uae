@@ -1,6 +1,7 @@
 #include <intuition/intuition.h>
 
 #include "aros.h"
+#include "sys/mman.h"
 
 #define REFRESH_RATE_RAW 1
 #define REFRESH_RATE_LACE 2
@@ -14,6 +15,7 @@ int isvsync_rtg (void);
 int isvsync (void);
 
 extern struct Window *hAmigaWnd;
+extern HWND hHiddenWnd;
 
 extern void enumeratedisplays (int);
 

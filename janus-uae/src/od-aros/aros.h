@@ -1,3 +1,7 @@
+#ifndef __AROS_H__
+#define __AROS_H__
+#include "sys/mman.h"
+#include "gui/gui.h"
 
 #define GETBDY(x) ((x) / 1000000 + 2000)
 #define GETBDM(x) (((x) - ((x / 10000) * 10000)) / 100)
@@ -23,7 +27,9 @@ extern int screen_is_picasso, scalepicasso;
 extern int default_freq;
 extern TCHAR start_path_data[MAX_DPATH];
 extern TCHAR VersionStr[256];
+extern TCHAR BetaStr[64];
 extern void keyboard_settrans (void);
+extern bool winuaelog_temporary_enable;
 
 /* http://msdn.microsoft.com/en-us/library/htb3tdkc%28v=vs.80%29.aspx: 
  * _daylight, _dstbias, _timezone, and _tzname are used in some time and date routines 
@@ -48,3 +54,30 @@ void fetch_path (const TCHAR *name, TCHAR *out, int size);
 
 /* taken from FS-UAE */
 extern uaecptr p96ram_start;
+
+/* gui */
+extern void *hInst;
+extern void *hUIDLL;
+int LoadString(APTR hInstance, TCHAR *uID, TCHAR * lpBuffer, int nBufferMax);
+BOOL SetDlgItemText(struct Element *elem, int nIDDlgItem, TCHAR *lpString);
+ULONG SendDlgItemMessage(struct Element *hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam);
+BOOL CheckDlgButton(Element *elem, int button, UINT uCheck);
+
+void read_rom_list (void);
+extern int quickstart, configurationcache, relativepaths;
+
+/* gfx */
+void updatewinfsmode (struct uae_prefs *p);
+
+#define CALLBACK
+#define FAR
+#define INT_PTR int 
+
+typedef struct {
+  BYTE fVirt;
+  WORD key;
+  WORD cmd;
+} ACCEL;
+
+
+#endif /* __AROS_H__ */

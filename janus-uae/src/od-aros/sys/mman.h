@@ -12,9 +12,15 @@
 
 #define MAX_SHMID 256
 
-#define PVOID  void *
+//#define PVOID  void *
+typedef void *PVOID;
+typedef PVOID HANDLE;
+typedef void *HINSTANCE;
+typedef void *HMODULE;
+
 #define LPVOID void *
 #define SIZE_T size_t
+
 
 extern uae_u8 *natmem_offset;
 

@@ -1131,3 +1131,7 @@ void ncr_io_bput (uaecptr addr, uae_u32 val) {
 void uae_end_thread (uae_thread_id *tid) {
   TODO();
 }
+
+void read_rom_list (void) {
+  TODO();
+}

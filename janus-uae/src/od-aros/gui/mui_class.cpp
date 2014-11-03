@@ -50,6 +50,10 @@ ULONG xget(Object *obj, ULONG attr) {
 static LONG get_index(Element *elem, int item) {
   int i=0;
 
+  if(!elem) {
+    return -1;
+  }
+
   while(elem[i].exists) {
     if(elem[i].idc == item) {
       return i;
@@ -57,9 +61,26 @@ static LONG get_index(Element *elem, int item) {
     i++;
   }
 
-  DebOut("ERROR: item %d not found in element %lx!!\n", item, elem);
+  DebOut("item %d not found in element %lx!!\n", item, elem);
   return -1;
 }
+
+Element *get_elem(int nIDDlgItem) {
+  ULONG i=0;
+  int res;
+
+  while(IDD_ELEMENT[i]!=NULL) {
+    res=get_index(IDD_ELEMENT[i], nIDDlgItem);
+    if(res!=-1) {
+      DebOut("found %d in Element number %d\n", nIDDlgItem, i);
+      return IDD_ELEMENT[i];
+    }
+    i++;
+  }
+  
+  return NULL;
+}
+
 
 /*****************************************************************************
  * WinAPI
@@ -67,14 +88,21 @@ static LONG get_index(Element *elem, int item) {
 BOOL SetDlgItemText(Element *elem, int item, TCHAR *lpString) {
   Object *obj;
   LONG i;
-  return 0;
 
   DebOut("elem: %lx\n", elem);
   DebOut("item: %d\n", item);
   DebOut("string: %s\n", lpString);
 
   i=get_index(elem, item);
-  if(i<0) return FALSE;
+  if(i<0) {
+    elem=get_elem(item);
+    i=get_index(elem, item);
+  }
+
+  if(i<0) {
+    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n");
+    return FALSE;
+  }
 
   SetAttrs(elem[i].obj, MUIA_Text_Contents, lpString, TAG_DONE);
 
@@ -83,7 +111,6 @@ BOOL SetDlgItemText(Element *elem, int item, TCHAR *lpString) {
 
 BOOL CheckDlgButton(Element *elem, int button, UINT uCheck) {
   LONG i;
-  return 0;
 
   DebOut("elem: %lx\n", elem);
   DebOut("button: %d\n", button);
@@ -98,44 +125,94 @@ BOOL CheckDlgButton(Element *elem, int button, UINT uCheck) {
 
 }
 
-ULONG SendDlgItemMessage(Element *elem, int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam) {
+
+ULONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam) {
   Object *obj;
   ULONG i;
   ULONG l;
-  TCHAR **line;
+  //TCHAR *line;
 
   DebOut("elem: %lx\n", elem);
-  DebOut("nIDDlgItem: %i\n", nIDDlgItem);
+  DebOut("nIDDlgItem: %d\n", nIDDlgItem);
 
   i=get_index(elem, nIDDlgItem);
-  if(i<0) return FALSE;
-  DebOut("index: %d\n", i);
+  /* might be in a different element..*/
+  if(i<0) {
+    elem=get_elem(nIDDlgItem);
+    i=get_index(elem, nIDDlgItem);
+  }
 
-  line=(TCHAR **) elem[i].var;
+  /* still not found !? */
+  if(i<0) {
+    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n");
+    return FALSE;
+  }
+  DebOut("index: %d\n", i);
+  DebOut("elem[i].var: %lx\n", elem[i].var);
+
+  //line=(TCHAR **) elem[i].var;
 
   switch(Msg) {
     case CB_ADDSTRING:
       /* add string to popup window */
       DebOut("new string: %s\n", (TCHAR *) lParam);
       l=0;
-      while(line[l]!=NULL) {
+      while(elem[i].var[l] != NULL) {
+        DebOut("l: %d\n", l);
         l++;
       }
       /* found next free string */
+      DebOut("  next free line: %d\n", l);
 #warning TODO: free strings again!
-      line[l]=strdup((TCHAR *) lParam);
-      line[l+1]=NULL;
-      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) line, TAG_DONE);
-      DebOut("obj: %lx\n", elem[i].obj);
+      elem[i].var[l]=strdup((TCHAR *) lParam);
+      elem[i].var[l+1]=NULL;
+      DebOut("  obj: %lx\n", elem[i].obj);
+      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].var, TAG_DONE);
       break;
     default:
-      DebOut("unkown Message-ID: %d\n", Msg);
+      DebOut("unkown Windows Message-ID: %d\n", Msg);
       return FALSE;
   }
 
   return TRUE;
 
 }
+
+UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount) {
+  int i;
+  UINT ret;
+  char buffer[256]; // ATTENTION: this might crash badly..
+
+  i=get_index(elem, nIDDlgItem);
+  /* might be in a different element..*/
+  if(i<0) {
+    elem=get_elem(nIDDlgItem);
+    i=get_index(elem, nIDDlgItem);
+  }
+
+  /* still not found !? */
+  if(i<0) {
+    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n");
+    return 0;
+  }
+  DebOut("index: %d\n", i);
+
+  GetAttr(MUIA_String_Contents, elem[i].obj, (IPTR *) &buffer);
+
+  strncpy(lpString, buffer, nMaxCount);
+
+  return strlen(lpString);
+}
+
+HWND GetDlgItem(HWND hDlg, int nIDDlgItem) {
+  DebOut("WARNING: return NULL!\n");
+  TODO();
+  return NULL;
+}
+
+BOOL ShowWindow(HWND hWnd, int nCmdShow) {
+  TODO();
+}; 
 
 /*****************************************************************************
  * Class
@@ -214,7 +291,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
   ULONG i;
   ULONG s;
   struct Element *src;
-  Object *child;
+  Object *child; /* TODO: remove me */
 
   DebOut("mNew(fixed)\n");
 
@@ -398,7 +475,8 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                        MUIA_Font, Topaz8Font,
                        MUIA_Cycle_Entries, Cycle_Dummy,
                      End;
-          src[i].var=(APTR) malloc(256 * sizeof(TCHAR *)); // array for cycle texts
+          src[i].var=(char **) malloc(256 * sizeof(ULONG *)); // array for cycle texts
+          src[i].var[0]=NULL;
           src[i].obj=child;
           src[i].exists=TRUE;
         break;
@@ -427,6 +505,11 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
     }
 
     SETUPHOOK(&data->LayoutHook, LayoutHook, data);
+
+    /*
+     * ATTENTION: Add children *after* seting the LayoutHook,
+     *            otherwise we get recursions!
+     */
   
     SetAttrs(obj, MUIA_Group_LayoutHook, &data->LayoutHook, TAG_DONE);
     i=0;

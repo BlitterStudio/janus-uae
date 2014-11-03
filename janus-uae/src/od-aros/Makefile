@@ -177,6 +177,7 @@ COMMON_OBJS= \
 	posixemu.o \
 	sdlgfx.o \
 	sdlkeys_dik.o \
+	win32gui.o \
 	stubs.o
 
 	#../picasso96.o \

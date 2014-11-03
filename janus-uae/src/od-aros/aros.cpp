@@ -80,6 +80,7 @@
 #include "cloanto/RetroPlatformIPC.h"
 #endif
 #include "gfx.h"
+#include "sys/mman.h"
 
 
 //#include "options.h"
@@ -88,6 +89,10 @@
 #include "od-aros/tchar.h"
 
 extern struct Window *hAmigaWnd;
+/* not really used: */
+HWND hHiddenWnd;
+HMODULE hUIDLL = NULL;
+HMODULE hInst = NULL;
 
 /* visual C++ symbols ..*/
 
@@ -109,6 +114,8 @@ int max_uae_width;
 int max_uae_height;
 int log_vsync, debug_vsync_min_delay, debug_vsync_forced_delay;
 int extraframewait;
+
+bool winuaelog_temporary_enable;
 
 /* end */
 
@@ -390,3 +397,17 @@ void protect_roms (bool protect) {
 void unprotect_maprom (void) {
 }
 #endif
+
+
+/* Loads a string resource from the executable file associated 
+ * with a specified module, copies the string into a buffer, and 
+ * appends a terminating null character.
+ */
+int LoadString(APTR hInstance, TCHAR *uID, TCHAR * lpBuffer, int nBufferMax) {
+
+  DebOut("cp %s ..\n", uID);
+
+  strncpy(lpBuffer, uID, nBufferMax);
+
+  return strlen(lpBuffer)-1;
+}
