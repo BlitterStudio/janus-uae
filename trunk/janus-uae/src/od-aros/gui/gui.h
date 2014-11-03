@@ -4,7 +4,6 @@
 #include <exec/types.h>
 #include <libraries/mui.h>
 
-
 enum {
   NJET,
   GROUPBOX,
@@ -50,7 +49,7 @@ typedef struct Element {
   BOOL    exists;  // element exists
   ULONG   idc;     // windows rc identifyer (IDC_CPU0, IDC_Z3CHIPRAM, etc)
   Object *obj;     // Zune object pointer
-  APTR    var;     // variable data pointer, dependent on windows_type
+  char  **var;     // variable data pointer, dependent on windows_type
   ULONG   windows_type; // CONTROL / GROUPBOX etc rc types
   ULONG   x,y,w,h; // fixed position and height
   const char *text;// text of gadget
@@ -60,6 +59,13 @@ typedef struct Element {
 } Element;
 
 typedef Element *HWND;
+
+/* fix MUI conflict */
+#undef ShowWindow
+BOOL ShowWindow(HWND hWnd, int nCmdShow);
+
+HWND GetDlgItem(HWND hDlg, int nIDDlgItem);
+UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount);
 
 #define MY_TAGBASE 0xfece0000
 enum {
@@ -438,4 +444,20 @@ extern struct MUI_CustomClass *CL_Fixed;
 
 #define MAKELONG(x,y) x*0x10000+y
 
+#define SW_HIDE             0
+#define SW_SHOWNORMAL       1
+#define SW_SHOWMINIMIZED    2
+#define SW_SHOWMAXIMIZED    3
+#define SW_SHOWNOACTIVATE   4
+#define SW_SHOW             5
+#define SW_MINIMIZE         6
+#define SW_SHOWMINNOACTIVE  7
+#define SW_SHOWNA           8
+#define SW_RESTORE          9
+
+#define BST_CHECKED 1
+#define BST_INDETERMINATE 2
+#define BST_UNCHECKED 0
+#define BST_FOCUS 8
+#define BST_PUSHED  4
 #endif

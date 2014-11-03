@@ -493,3 +493,17 @@ bool target_graphics_buffer_update (void) {
 }
 
 
+void updatewinfsmode (struct uae_prefs *p)
+{
+	struct MultiDisplay *md;
+
+	fixup_prefs_dimensions (p);
+	if (isfullscreen_2 (p) != 0) {
+		p->gfx_size = p->gfx_size_fs;
+	} else {
+		p->gfx_size = p->gfx_size_win;
+	}
+	md = getdisplay (p);
+	set_config_changed ();
+}
+

@@ -34,6 +34,7 @@
 
 #include "gfx.h"
 #include "memory.h"
+#include "gui.h"
 
 TCHAR VersionStr[256];
 TCHAR BetaStr[64];

@@ -387,6 +387,8 @@ while(<RESFILE>) {
 }
 
 
+print HFILE "extern struct Element *IDD_ELEMENT[];\n";
+
 my $l;
 foreach $l (@h_elements) {
   print HFILE "extern struct Element ".$l."[];\n";
@@ -401,7 +403,17 @@ foreach $l (uniq(@idc)) {
     print HFILE "  ".$l.",\n";
   }
 }
-print HFILE "};\n";
+print HFILE "};\n\n";
+
+print CPPFILE "/* list of all pages */\n";
+print CPPFILE "Element *IDD_ELEMENT[] = {\n";
+foreach $l (@h_elements) {
+  print CPPFILE "  ".$l.",\n";
+}
+
+print CPPFILE "  NULL,\n";
+print CPPFILE "};\n";
+
 
 print HFILE   "\n#endif /* __".$if_def."__ */\n\n";
 

@@ -260,7 +260,7 @@ static int last_state = -1;
 int alt_pressed;
 unsigned int mouse_capture;
 
-TCHAR config_filename[256] = "";
+extern TCHAR config_filename[256];
 
 #if defined(X11_GL)
 PFNGLCREATEPROGRAMOBJECTARBPROC     glCreateProgramObjectARB = NULL;
