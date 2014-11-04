@@ -104,7 +104,12 @@ BOOL SetDlgItemText(Element *elem, int item, TCHAR *lpString) {
     return FALSE;
   }
 
-  SetAttrs(elem[i].obj, MUIA_Text_Contents, lpString, TAG_DONE);
+  if(elem[i].windows_type==EDITTEXT) {
+    SetAttrs(elem[i].obj, MUIA_String_Contents, lpString, TAG_DONE);
+  }
+  else {
+    SetAttrs(elem[i].obj, MUIA_Text_Contents,   lpString, TAG_DONE);
+  }
 
   return TRUE;
 }
@@ -125,7 +130,6 @@ BOOL CheckDlgButton(Element *elem, int button, UINT uCheck) {
 
 }
 
-
 ULONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam) {
   Object *obj;
   ULONG i;
@@ -144,7 +148,7 @@ ULONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM 
 
   /* still not found !? */
   if(i<0) {
-    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n");
+    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", nIDDlgItem);
     return FALSE;
   }
   DebOut("index: %d\n", i);
@@ -192,7 +196,7 @@ UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount) {
 
   /* still not found !? */
   if(i<0) {
-    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n");
+    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", nIDDlgItem);
     return 0;
   }
   DebOut("index: %d\n", i);
@@ -204,15 +208,83 @@ UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount) {
   return strlen(lpString);
 }
 
-HWND GetDlgItem(HWND hDlg, int nIDDlgItem) {
-  DebOut("WARNING: return NULL!\n");
-  TODO();
-  return NULL;
+/* Adds a check mark to (checks) a specified radio button in a group and removes 
+ * a check mark from (clears) all other radio buttons in the group. 
+ */
+BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDCheckButton) {
+  int i;
+  int e;
+  i=nIDFirstButton;
+  while(i<nIDLastButton) {
+    e=get_index(elem, i);
+    /* might be in a different element..*/
+    if(e<0) {
+      elem=get_elem(i);
+      e=get_index(elem, i);
+    }
+
+    /* still not found !? */
+    if(e<0) {
+      DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", i);
+    }
+    else {
+      DebOut("index: %d\n", e);
+      SetAttrs(elem[e].obj, MUIA_Selected, FALSE, TAG_DONE);
+    }
+    i++;
+  }
+
+  e=get_index(elem, nIDCheckButton);
+  /* might be in a different element..*/
+  if(e<0) {
+    elem=get_elem(i);
+    e=get_index(elem, i);
+  }
+
+  /* still not found !? */
+  if(e<0) {
+    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", i);
+  }
+  else {
+    DebOut("index: %d\n", e);
+    SetAttrs(elem[e].obj, MUIA_Selected, TRUE, TAG_DONE);
+  }
+
 }
 
+/*
+ * Retrieves a handle to a control in the specified dialog box.
+ */
+#if 0
+HWND GetDlgItem(HWND hDlg, int nIDDlgItem) {
+  int i;
+  UINT ret;
+  char buffer[256]; // ATTENTION: this might crash badly..
+
+  i=get_index(hDlg, nIDDlgItem);
+
+  if(i<0) {
+    DebOut("ERROR: nIDDlgItem %d not found in %lx!?\n", nIDDlgItem, hDlg);
+    return NULL;
+  }
+  DebOut("index: %d\n", i);
+
+  return hDlg[i];
+}
+
+/* Changes the text of the specified window's title bar (if it has one). 
+ * If the specified window is a control, the text of the control is changed.
+ */
+BOOL SetWindowText(HWND hDlg, TCHAR *lpString) {
+
+  DebOut("lpString: %s\n", lpString);
+  DebOut("hWnd: %lx\n", hWnd);
+}
+#endif
 BOOL ShowWindow(HWND hWnd, int nCmdShow) {
   TODO();
 }; 
+
 
 /*****************************************************************************
  * Class
@@ -373,6 +445,8 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
         break;
 
         case CONTROL:
+          if(src[i].windows_class==NULL || !strcmp(src[i].windows_class, "Button") || /* implement those: !!!  */ !strcmp(src[i].windows_class, "SysListView32") || !strcmp(src[i].windows_class, "msctls_trackbar32") || !strcmp(src[i].windows_class, "Static") || !strcmp(src[i].windows_class, "SysTreeView32")) {
+            DebOut("Button found\n");
             if(src[i].flags2==BS_AUTORADIOBUTTON) {
               child=HGroup,
                     Child, src[i].obj=ImageObject,
@@ -407,8 +481,24 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
               End;
 
             }
-          src[i].exists=TRUE;
-          src[i].obj=child;
+          }
+          else if(!strcmp(src[i].windows_class, "RICHEDIT")) {
+            DebOut("RICHEDIT found (text: %s\n", src[i].text);
+            child=TextObject,
+                    MUIA_Font, Topaz8Font,
+                     MUIA_Text_PreParse, "\33c",
+                    MUIA_Text_Contents, src[i].text,
+                  End;
+          }
+          else {
+            fprintf(stderr, "ERROR: Unknown windows class \"%s\" found!\n", src[i].windows_class);
+            DebOut("ERROR: Unknown windows class \"%s\" found!\n", src[i].windows_class);
+            DebOut("We *will* crash on this!!\n");
+          }
+          if(child) {
+            src[i].exists=TRUE;
+            src[i].obj=child;
+          }
         break;
 
         case PUSHBUTTON:

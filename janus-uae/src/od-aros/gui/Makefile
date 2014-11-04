@@ -120,8 +120,14 @@ tools:
 #for i in $(IMAGES);do echo " $(i)  .."; icotool -i 1 -x $i;done
 	
 # ============== autogenerate some .cpp files ====================
+# never know, which one needs to be generated first. But only one
+# is actually executed as the other condition is already fulfilled.
 mui_data.cpp: test.rc parse_fixed.pl
 	./parse_fixed.pl test.rc mui_data.cpp
+
+mui_data.h: test.rc parse_fixed.pl
+	./parse_fixed.pl test.rc mui_data.cpp
+
 
 # ============== clean ====================
 clean: 
