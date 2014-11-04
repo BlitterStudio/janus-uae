@@ -47,10 +47,11 @@ enum {
 
 typedef struct Element {
   BOOL    exists;  // element exists
-  ULONG   idc;     // windows rc identifyer (IDC_CPU0, IDC_Z3CHIPRAM, etc)
+  ULONG   idc;     // windows rc identifier (IDC_CPU0, IDC_Z3CHIPRAM, etc)
   Object *obj;     // Zune object pointer
   char  **var;     // variable data pointer, dependent on windows_type
   ULONG   windows_type; // CONTROL / GROUPBOX etc rc types
+  const char *windows_class; // "Button", "SysListView32", "RICHEDIT"
   ULONG   x,y,w,h; // fixed position and height
   const char *text;// text of gadget
   const char *help;// mouse over text
@@ -64,7 +65,7 @@ typedef Element *HWND;
 #undef ShowWindow
 BOOL ShowWindow(HWND hWnd, int nCmdShow);
 
-HWND GetDlgItem(HWND hDlg, int nIDDlgItem);
+//HWND GetDlgItem(HWND hDlg, int nIDDlgItem);
 UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount);
 
 #define MY_TAGBASE 0xfece0000

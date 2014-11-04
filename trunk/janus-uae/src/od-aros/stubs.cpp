@@ -1100,11 +1100,6 @@ void vsync_busywait_start (void) {
   TODO();
 }
 
-void fetch_path (const TCHAR *name, TCHAR *out, int size) {
-  _tcscpy (out, name);
-  TODO();
-}
-
 TCHAR console_getch (void) {
   TODO();
   return 'X';

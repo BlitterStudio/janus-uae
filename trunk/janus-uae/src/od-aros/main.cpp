@@ -40,6 +40,227 @@ TCHAR VersionStr[256];
 TCHAR BetaStr[64];
 
 
+static void getstartpaths (void)
+{
+#if 0
+	TCHAR *posn, *p;
+	TCHAR tmp[MAX_DPATH], tmp2[MAX_DPATH], prevpath[MAX_DPATH];
+	DWORD v;
+	UAEREG *key;
+	TCHAR xstart_path_uae[MAX_DPATH], xstart_path_old[MAX_DPATH];
+	TCHAR xstart_path_new1[MAX_DPATH], xstart_path_new2[MAX_DPATH];
+
+	path_type = PATH_TYPE_DEFAULT;
+	prevpath[0] = 0;
+	xstart_path_uae[0] = xstart_path_old[0] = xstart_path_new1[0] = xstart_path_new2[0] = 0;
+#if 0
+	key = regcreatetree (NULL, NULL);
+	if (key)  {
+		int size = sizeof (prevpath) / sizeof (TCHAR);
+		if (!regquerystr (key, _T("PathMode"), prevpath, &size))
+			prevpath[0] = 0;
+		regclosetree (key);
+	}
+#endif
+	if (!_tcscmp (prevpath, _T("WinUAE")))
+		path_type = PATH_TYPE_WINUAE;
+	if (!_tcscmp (prevpath, _T("WinUAE_2")))
+		path_type = PATH_TYPE_NEWWINUAE;
+	if (!_tcscmp (prevpath, _T("AF2005")) || !_tcscmp (prevpath, _T("AmigaForever")))
+		path_type = PATH_TYPE_NEWAF;
+	if (!_tcscmp (prevpath, _T("AMIGAFOREVERDATA")))
+		path_type = PATH_TYPE_AMIGAFOREVERDATA;
+
+#if 0
+	GetFullPathName (_wpgmptr, sizeof start_path_exe / sizeof (TCHAR), start_path_exe, NULL);
+	if((posn = _tcsrchr (start_path_exe, '\\')))
+		posn[1] = 0;
+#endif
+
+#if 0
+	if (path_type == PATH_TYPE_DEFAULT && inipath) {
+#endif
+		path_type = PATH_TYPE_WINUAE;
+		_tcscpy (xstart_path_uae, start_path_exe);
+		relativepaths = 1;
+#if 0
+	} else if (path_type == PATH_TYPE_DEFAULT && start_data == 0 && key) {
+		bool ispath = false;
+		_tcscpy (tmp2, start_path_exe);
+		_tcscat (tmp2, _T("configurations\\configuration.cache"));
+		v = GetFileAttributes (tmp2);
+		if (v != INVALID_FILE_ATTRIBUTES && !(v & FILE_ATTRIBUTE_DIRECTORY))
+			ispath = true;
+		_tcscpy (tmp2, start_path_exe);
+		_tcscat (tmp2, _T("roms"));
+		v = GetFileAttributes (tmp2);
+		if (v != INVALID_FILE_ATTRIBUTES && (v & FILE_ATTRIBUTE_DIRECTORY))
+			ispath = true;
+		if (!ispath) {
+			if (SUCCEEDED (SHGetFolderPath (NULL, CSIDL_PROGRAM_FILES, NULL, SHGFP_TYPE_CURRENT, tmp))) {
+				GetFullPathName (tmp, sizeof tmp / sizeof (TCHAR), tmp2, NULL);
+				// installed in Program Files?
+				if (_tcsnicmp (tmp, tmp2, _tcslen (tmp)) == 0) {
+					if (SUCCEEDED (SHGetFolderPath (NULL, CSIDL_COMMON_DOCUMENTS, NULL, SHGFP_TYPE_CURRENT, tmp))) {
+						fixtrailing (tmp);
+						_tcscpy (tmp2, tmp);
+						_tcscat (tmp2, _T("Amiga Files"));
+						CreateDirectory (tmp2, NULL);
+						_tcscat (tmp2, _T("\\WinUAE"));
+						CreateDirectory (tmp2, NULL);
+						v = GetFileAttributes (tmp2);
+						if (v != INVALID_FILE_ATTRIBUTES && (v & FILE_ATTRIBUTE_DIRECTORY)) {
+							_tcscat (tmp2, _T("\\"));
+							path_type = PATH_TYPE_NEWWINUAE;
+							_tcscpy (tmp, tmp2);
+							_tcscat (tmp, _T("Configurations"));
+							CreateDirectory (tmp, NULL);
+							_tcscpy (tmp, tmp2);
+							_tcscat (tmp, _T("Screenshots"));
+							CreateDirectory (tmp, NULL);
+							_tcscpy (tmp, tmp2);
+							_tcscat (tmp, _T("Savestates"));
+							CreateDirectory (tmp, NULL);
+							_tcscpy (tmp, tmp2);
+							_tcscat (tmp, _T("Screenshots"));
+							CreateDirectory (tmp, NULL);
+						}
+					}
+				}
+			}
+		}
+	}
+#endif
+
+	_tcscpy (tmp, start_path_exe);
+	_tcscat (tmp, _T("roms"));
+#if 0
+	if (isfilesindir (tmp)) {
+		_tcscpy (xstart_path_uae, start_path_exe);
+	}
+#endif
+	_tcscpy (tmp, start_path_exe);
+	_tcscat (tmp, _T("configurations"));
+#if 0
+	if (isfilesindir (tmp)) {
+		_tcscpy (xstart_path_uae, start_path_exe);
+	}
+#endif
+
+#if 0
+	p = _wgetenv (_T("AMIGAFOREVERDATA"));
+	if (p) {
+		_tcscpy (tmp, p);
+		fixtrailing (tmp);
+		_tcscpy (start_path_new2, p);
+		v = GetFileAttributes (tmp);
+		if (v != INVALID_FILE_ATTRIBUTES && (v & FILE_ATTRIBUTE_DIRECTORY)) {
+			_tcscpy (xstart_path_new2, start_path_new2);
+			_tcscpy (xstart_path_new2, _T("WinUAE\\"));
+			af_path_2005 |= 2;
+		}
+	}
+
+	if (SUCCEEDED (SHGetFolderPath (NULL, CSIDL_COMMON_DOCUMENTS, NULL, SHGFP_TYPE_CURRENT, tmp))) {
+		fixtrailing (tmp);
+		_tcscpy (tmp2, tmp);
+		_tcscat (tmp2, _T("Amiga Files\\"));
+		_tcscpy (tmp, tmp2);
+		_tcscat (tmp, _T("WinUAE"));
+		v = GetFileAttributes (tmp);
+		if (v != INVALID_FILE_ATTRIBUTES && (v & FILE_ATTRIBUTE_DIRECTORY)) {
+			TCHAR *p;
+			_tcscpy (xstart_path_new1, tmp2);
+			_tcscat (xstart_path_new1, _T("WinUAE\\"));
+			_tcscpy (xstart_path_uae, start_path_exe);
+			_tcscpy (start_path_new1, xstart_path_new1);
+			p = tmp2 + _tcslen (tmp2);
+			_tcscpy (p, _T("System"));
+			if (isfilesindir (tmp2)) {
+				af_path_2005 |= 1;
+			} else {
+				_tcscpy (p, _T("Shared"));
+				if (isfilesindir (tmp2)) {
+					af_path_2005 |= 1;
+				}
+			}
+		}
+	}
+#endif
+
+	if (start_data == 0) {
+		start_data = 1;
+		if (path_type == PATH_TYPE_WINUAE && xstart_path_uae[0]) {
+			_tcscpy (start_path_data, xstart_path_uae);
+		} else if (path_type == PATH_TYPE_NEWWINUAE && xstart_path_new1[0]) {
+			_tcscpy (start_path_data, xstart_path_new1);
+			create_afnewdir (0);
+		} else if (path_type == PATH_TYPE_NEWAF && (af_path_2005 & 1) && xstart_path_new1[0]) {
+			_tcscpy (start_path_data, xstart_path_new1);
+			create_afnewdir (0);
+		} else if (path_type == PATH_TYPE_AMIGAFOREVERDATA && (af_path_2005 & 2) && xstart_path_new2[0]) {
+			_tcscpy (start_path_data, xstart_path_new2);
+		} else if (path_type == PATH_TYPE_DEFAULT) {
+			_tcscpy (start_path_data, xstart_path_uae);
+			if (af_path_2005 & 1) {
+				path_type = PATH_TYPE_NEWAF;
+				create_afnewdir (1);
+				_tcscpy (start_path_data, xstart_path_new1);
+			}
+			if (af_path_2005 & 2) {
+				_tcscpy (tmp, xstart_path_new2);
+				_tcscat (tmp, _T("system\\rom"));
+#if 0
+				if (isfilesindir (tmp)) {
+					path_type = PATH_TYPE_AMIGAFOREVERDATA;
+				} else {
+#endif
+					_tcscpy (tmp, xstart_path_new2);
+					_tcscat (tmp, _T("shared\\rom"));
+#if 0
+					if (isfilesindir (tmp)) {
+						path_type = PATH_TYPE_AMIGAFOREVERDATA;
+					} else {
+#endif
+						path_type = PATH_TYPE_NEWWINUAE;
+#if 0
+					}
+				}
+#endif
+				_tcscpy (start_path_data, xstart_path_new2);
+			}
+		}
+	}
+
+	v = GetFileAttributes (start_path_data);
+	if (v == INVALID_FILE_ATTRIBUTES || !(v & FILE_ATTRIBUTE_DIRECTORY) || start_data == 0 || start_data == -2) {
+		_tcscpy (start_path_data, start_path_exe);
+	}
+	fixtrailing (start_path_data);
+	fullpath (start_path_data, sizeof start_path_data / sizeof (TCHAR));
+	SetCurrentDirectory (start_path_data);
+
+	// use path via command line?
+	if (!start_path_plugins[0]) {
+		// default path
+		_tcscpy (start_path_plugins, start_path_data);
+		_tcscat (start_path_plugins, WIN32_PLUGINDIR);
+	}
+	v = GetFileAttributes (start_path_plugins);
+	if (!start_path_plugins[0] || v == INVALID_FILE_ATTRIBUTES || !(v & FILE_ATTRIBUTE_DIRECTORY)) {
+		// not found, exe path?
+		_tcscpy (start_path_plugins, start_path_exe);
+		_tcscat (start_path_plugins, WIN32_PLUGINDIR);
+		v = GetFileAttributes (start_path_plugins);
+		if (v == INVALID_FILE_ATTRIBUTES || !(v & FILE_ATTRIBUTE_DIRECTORY))
+			_tcscpy (start_path_plugins, start_path_data); // not found, very default path
+	}
+	fixtrailing (start_path_plugins);
+	fullpath (start_path_plugins, sizeof start_path_plugins / sizeof (TCHAR));
+	setpathmode (path_type);
+#endif
+}
+
 /************************************************************************ 
  * makeverstr
  * 
@@ -81,10 +302,9 @@ int main (int argc, TCHAR **argv) {
 	//if (doquit)
 	//	return 0;
 
-	//getstartpaths ();
-
   DebOut("main(%d, ..)\n", argc);
 
+  getstartpaths ();
 	makeverstr(VersionStr);
 	DebOut("%s", VersionStr);
 	logging_init();

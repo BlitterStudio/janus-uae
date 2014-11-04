@@ -30,6 +30,15 @@ extern TCHAR VersionStr[256];
 extern TCHAR BetaStr[64];
 extern void keyboard_settrans (void);
 extern bool winuaelog_temporary_enable;
+extern int af_path_2005;
+extern TCHAR start_path_new1[MAX_DPATH], start_path_new2[MAX_DPATH];
+extern TCHAR bootlogpath[MAX_DPATH];
+
+enum pathtype { PATH_TYPE_DEFAULT, PATH_TYPE_WINUAE, PATH_TYPE_NEWWINUAE, PATH_TYPE_NEWAF, PATH_TYPE_AMIGAFOREVERDATA, PATH_TYPE_END };
+extern pathtype path_type;
+
+
+#define UAEREG TCHAR
 
 /* http://msdn.microsoft.com/en-us/library/htb3tdkc%28v=vs.80%29.aspx: 
  * _daylight, _dstbias, _timezone, and _tzname are used in some time and date routines 
@@ -62,6 +71,8 @@ int LoadString(APTR hInstance, TCHAR *uID, TCHAR * lpBuffer, int nBufferMax);
 BOOL SetDlgItemText(struct Element *elem, int nIDDlgItem, TCHAR *lpString);
 ULONG SendDlgItemMessage(struct Element *hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam);
 BOOL CheckDlgButton(Element *elem, int button, UINT uCheck);
+BOOL SetWindowText(HWND hWnd, TCHAR *lpString);
+BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDCheckButton);
 
 void read_rom_list (void);
 extern int quickstart, configurationcache, relativepaths;

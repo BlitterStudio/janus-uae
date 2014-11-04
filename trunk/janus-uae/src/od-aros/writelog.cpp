@@ -44,12 +44,6 @@ static void writeconsole (const TCHAR *buffer);
 
 BPTR debugfile=NULL;
 
-TCHAR start_path_data[MAX_DPATH];
-TCHAR start_path_exe[MAX_DPATH];
-TCHAR start_path_plugins[MAX_DPATH];
-TCHAR start_path_new1[MAX_DPATH]; /* AF2005 */
-TCHAR start_path_new2[MAX_DPATH]; /* AMIGAFOREVERDATA */
-
 int consoleopen = 0;
 int console_logging = 0;
 int always_flush_log = 0;

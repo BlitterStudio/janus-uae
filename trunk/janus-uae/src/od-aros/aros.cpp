@@ -1,4 +1,4 @@
-
+#define OLI_DEBUG
 #include <proto/dos.h>
 #include <intuition/intuition.h>
 
@@ -115,18 +115,35 @@ int max_uae_height;
 int log_vsync, debug_vsync_min_delay, debug_vsync_forced_delay;
 int extraframewait;
 
-bool winuaelog_temporary_enable;
-
 /* end */
 
 int pause_emulation;
 int sleep_resolution;
 int uaelib_debug;
 
-int quickstart = 1, configurationcache = 1, relativepaths = 0; 
+TCHAR start_path_data[MAX_DPATH];
+TCHAR start_path_exe[MAX_DPATH];
+TCHAR start_path_plugins[MAX_DPATH];
+TCHAR start_path_new1[MAX_DPATH]; /* AF2005 */
+TCHAR start_path_new2[MAX_DPATH]; /* AMIGAFOREVERDATA */
+TCHAR help_file[MAX_DPATH];
+TCHAR bootlogpath[MAX_DPATH];
+TCHAR logpath[MAX_DPATH];
+bool winuaelog_temporary_enable;
+int af_path_2005;
+
+int quickstart = 1, configurationcache = 1, relativepaths = 1; 
+
 
 static void createdir (const TCHAR *path) {
   CreateDir(path);
+}
+
+
+void stripslashes (TCHAR *p)
+{
+	while (_tcslen (p) > 0 && (p[_tcslen (p) - 1] == '\\' || p[_tcslen (p) - 1] == '/'))
+		p[_tcslen (p) - 1] = 0;
 }
 
 void fetch_configurationpath (TCHAR *out, int size)
@@ -166,6 +183,60 @@ void fetch_datapath (TCHAR *out, int size)
 }
 #endif
 
+
+void fetch_path (const TCHAR *name, TCHAR *out, int size) {
+	int size2 = size;
+
+	_tcscpy (out, start_path_data);
+	if (!name) {
+		fullpath (out, size);
+		return;
+	}
+	if (!_tcscmp (name, _T("FloppyPath")))
+		_tcscat (out, _T("PROGDIR:adf"));
+	if (!_tcscmp (name, _T("CDPath")))
+		_tcscat (out, _T("PROGDIR:cd"));
+	if (!_tcscmp (name, _T("TapePath")))
+		_tcscat (out, _T("PROGDIR:tape\\"));
+	if (!_tcscmp (name, _T("hdfPath")))
+		_tcscat (out, _T("PROGDIR:hdf"));
+	if (!_tcscmp (name, _T("KickstartPath")))
+		_tcscat (out, _T("PROGDIR:Roms/"));
+	if (!_tcscmp (name, _T("ConfigurationPath")))
+		_tcscat (out, _T("PROGDIR:Configurations\\"));
+	if (!_tcscmp (name, _T("LuaPath")))
+		_tcscat (out, _T("PROGDIR:lua"));
+	if (!_tcscmp (name, _T("StatefilePath")))
+		_tcscat (out, _T("PROGDIR:Savestates"));
+	if (!_tcscmp (name, _T("InputPath")))
+		_tcscat (out, _T("PROGDIR:Inputrecordings\\"));
+#if 0
+	if (start_data >= 0)
+		regquerystr (NULL, name, out, &size); 
+	if (GetFileAttributes (out) == INVALID_FILE_ATTRIBUTES)
+		_tcscpy (out, start_path_data);
+#endif
+#if 0
+	if (out[0] == '\\' && (_tcslen (out) >= 2 && out[1] != '\\')) { /* relative? */
+		_tcscpy (out, start_path_data);
+		if (start_data >= 0) {
+			size2 -= _tcslen (out);
+			regquerystr (NULL, name, out, &size2);
+		}
+	}
+#endif
+	stripslashes (out);
+#if 0
+	if (!_tcscmp (name, _T("KickstartPath"))) {
+		DWORD v = GetFileAttributes (out);
+		if (v == INVALID_FILE_ATTRIBUTES || !(v & FILE_ATTRIBUTE_DIRECTORY))
+			_tcscpy (out, start_path_data);
+	}
+#endif
+	fixtrailing (out);
+	fullpath (out, size);
+}
+
 /* resides in win32gui.cpp normally 
  *
  * copies the text of message number msg to out (?)
@@ -204,7 +275,7 @@ void fullpath (TCHAR *path, int size) {
 	TCHAR   tmp1[MAX_DPATH], tmp2[MAX_DPATH];
 	BOOL    result;
 
-	//DebOut("path %s, %d (relativepaths is %d)\n", path, size, relativepaths);
+	DebOut("path %s, %d (relativepaths is %d)\n", path, size, relativepaths);
 
 	if (path[0] == 0) {
 		return;
@@ -253,7 +324,7 @@ void fullpath (TCHAR *path, int size) {
 		strcpy(path, tmp1);
 	}
 
-	//DebOut("result: %s\n", path);
+	DebOut("result: %s\n", path);
 }
 
 /* taken from puae/misc.c */
