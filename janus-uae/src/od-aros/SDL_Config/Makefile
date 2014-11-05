@@ -10,7 +10,7 @@ LINKOBJ  = SDL_config.o $(RES)
 LIBS =   
 INCS = -I/home/oli/svn/v0/AROS/bin/linux-i386/gen/include/SDL
 CXXINCS =  -I/home/oli/svn/v0/AROS/bin/linux-i386/gen/include/SDL
-BIN  = libSDL_Config.a
+BIN  = SDL_Config.a
 CXXFLAGS = $(CXXINCS) -fexpensive-optimizations -O3
 CFLAGS = $(INCS)    
 RM = rm -f
@@ -18,7 +18,7 @@ RM = rm -f
 
 .PHONY: all all-before all-after clean clean-custom
 
-all: $(BIN)
+all: SDL_Config.a
 
 
 clean:

@@ -1797,12 +1797,12 @@ class DECLSPEC ConfigFile
    /* Function: Open   
     Essentialy the same thing as <CFG_File::CFG_OpenFile>.
    */
-   //bool Open( const char * filename, const CFG_Settings * settings = 0 );
+   bool Open( const char * filename, const CFG_Settings * settings = 0 );
 
    /* Function: Open   
     Essentialy the same thing as <CFG_File::CFG_OpenFile_RW>.
    */
-   //bool Open( SDL_RWops * source, const CFG_Settings * settings = 0 );
+   bool Open( SDL_RWops * source, const CFG_Settings * settings = 0 );
 
    /* Function: PerformValueSubstitution
 
@@ -1918,10 +1918,10 @@ class DECLSPEC ConfigFile
 
    */
 
-   //bool           Read ( CFG_String_Arg entry, CFG_Bool defaultVal );
-   //Sint32         Read ( CFG_String_Arg entry, Sint32 defaultVal );
-   //CFG_Float      Read ( CFG_String_Arg entry, CFG_Float defaultVal );
-   //CFG_String_Arg Read ( CFG_String_Arg entry, CFG_String_Arg defaultVal );
+   bool           Read ( CFG_String_Arg entry, CFG_Bool defaultVal );
+   Sint32         Read ( CFG_String_Arg entry, Sint32 defaultVal );
+   CFG_Float      Read ( CFG_String_Arg entry, CFG_Float defaultVal );
+   CFG_String_Arg Read ( CFG_String_Arg entry, CFG_String_Arg defaultVal );
 
 
    /* Functions: WriteBool, WriteInt, WriteFloat, WriteText
@@ -1941,10 +1941,10 @@ class DECLSPEC ConfigFile
 
    */
 
-   //int Write ( CFG_String_Arg entry, CFG_Bool value       );
-   //int Write ( CFG_String_Arg entry, Sint32 value         );
-   //int Write ( CFG_String_Arg entry, CFG_Float value      );
-   //int Write ( CFG_String_Arg entry, CFG_String_Arg value );
+   int Write ( CFG_String_Arg entry, CFG_Bool value       );
+   int Write ( CFG_String_Arg entry, Sint32 value         );
+   int Write ( CFG_String_Arg entry, CFG_Float value      );
+   int Write ( CFG_String_Arg entry, CFG_String_Arg value );
 
 
    /* Functions: RemoveBoolEntry, RemoveIntEntry, RemoveFloatEntry, RemoveTextEntry 
