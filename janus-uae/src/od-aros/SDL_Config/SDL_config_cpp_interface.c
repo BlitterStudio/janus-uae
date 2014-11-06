@@ -51,7 +51,7 @@ ConfigFile :: ~ConfigFile()
 
 /* -------------------------------------------------------*/
 
-bool ConfigFile :: Open( const char * filename, const CFG_Settings * settings )
+bool ConfigFile :: cfg_Open( const char * filename, const CFG_Settings * settings )
   {
   if (is_open)
     CFG_CloseFile(&config);
@@ -64,7 +64,7 @@ bool ConfigFile :: Open( const char * filename, const CFG_Settings * settings )
   return is_open;
   }
 
-bool ConfigFile :: Open( SDL_RWops * source, const CFG_Settings * settings )
+bool ConfigFile :: cfg_Open( SDL_RWops * source, const CFG_Settings * settings )
   {
   if (is_open)
     CFG_CloseFile(&config);
@@ -576,14 +576,14 @@ int ConfigFile :: AddMultiValueTo( CFG_String_Arg entry, CFG_Float value, int wh
 int ConfigFile :: AddMultiValueTo( CFG_String_Arg entry, CFG_String_Arg value, int where ) { return CFG_AddMultiValueToText(entry, value, where); }
 
 
-bool           ConfigFile :: Read ( CFG_String_Arg entry, CFG_Bool defaultVal ) { return ReadBool(entry, defaultVal); }
-Sint32         ConfigFile :: Read ( CFG_String_Arg entry, Sint32 defaultVal ) { return ReadInt(entry, defaultVal); }
-CFG_Float      ConfigFile :: Read ( CFG_String_Arg entry, CFG_Float defaultVal ) { return ReadFloat(entry, defaultVal); }
-CFG_String_Arg ConfigFile :: Read ( CFG_String_Arg entry, CFG_String_Arg defaultVal ) { return ReadText(entry, defaultVal); }
+bool           ConfigFile :: cfg_Read ( CFG_String_Arg entry, CFG_Bool defaultVal ) { return ReadBool(entry, defaultVal); }
+Sint32         ConfigFile :: cfg_Read ( CFG_String_Arg entry, Sint32 defaultVal ) { return ReadInt(entry, defaultVal); }
+CFG_Float      ConfigFile :: cfg_Read ( CFG_String_Arg entry, CFG_Float defaultVal ) { return ReadFloat(entry, defaultVal); }
+CFG_String_Arg ConfigFile :: cfg_Read ( CFG_String_Arg entry, CFG_String_Arg defaultVal ) { return ReadText(entry, defaultVal); }
 
 
-int ConfigFile :: Write ( CFG_String_Arg entry, CFG_Bool value       ) { return WriteBool(entry, value); }
-int ConfigFile :: Write ( CFG_String_Arg entry, Sint32 value         ) { return WriteInt(entry, value); }
-int ConfigFile :: Write ( CFG_String_Arg entry, CFG_Float value      ) { return WriteFloat(entry, value); }
-int ConfigFile :: Write ( CFG_String_Arg entry, CFG_String_Arg value ) { return WriteText(entry, value); }
+int ConfigFile :: cfg_Write ( CFG_String_Arg entry, CFG_Bool value       ) { return WriteBool(entry, value); }
+int ConfigFile :: cfg_Write ( CFG_String_Arg entry, Sint32 value         ) { return WriteInt(entry, value); }
+int ConfigFile :: cfg_Write ( CFG_String_Arg entry, CFG_Float value      ) { return WriteFloat(entry, value); }
+int ConfigFile :: cfg_Write ( CFG_String_Arg entry, CFG_String_Arg value ) { return WriteText(entry, value); }
 
