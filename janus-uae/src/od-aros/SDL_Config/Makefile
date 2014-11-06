@@ -6,27 +6,30 @@ CC   = i386-aros-gcc
 WINDRES = 
 RES  = 
 OBJ  = SDL_config.o $(RES)
+TESTOBJ = initest.o
+TESTEXE = /home/oli/svn/v0/AROS/bin/linux-i386/AROS/initest
 LINKOBJ  = SDL_config.o $(RES)
 LIBS =   
 INCS = -I/home/oli/svn/v0/AROS/bin/linux-i386/gen/include/SDL
 CXXINCS =  -I/home/oli/svn/v0/AROS/bin/linux-i386/gen/include/SDL
-BIN  = SDL_Config.a
-CXXFLAGS = $(CXXINCS) -fexpensive-optimizations -O3
-CFLAGS = $(INCS)    
+BIN  = libSDL_Config.a
+CPPFLAGS = $(INCS) -fexpensive-optimizations -O3
 RM = rm -f
 
 
 .PHONY: all all-before all-after clean clean-custom
 
-all: SDL_Config.a
+all: $(BIN)
 
+test: $(BIN) $(TESTOBJ)
+	$(CPP) $(CPPFLAGS) $(TESTOBJ) -L. -lSDL_Config -lSDL -o $(TESTEXE) 
 
 clean:
-	${RM} $(OBJ) $(BIN)
+	${RM} $(OBJ) $(BIN) $(TESTOBJ)
 
 $(BIN): $(LINKOBJ)
 	ar r $(BIN) $(LINKOBJ)
 	ranlib $(BIN)
 
-SDL_config.o: SDL_config.c
-	$(CPP) $(INCS) -c SDL_config.c -o SDL_config.o $(CXXFLAGS)
+%.o: %.c
+	$(CPP) $(CPPFLAGS) -o $@ -c $*.c
