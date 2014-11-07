@@ -252,6 +252,29 @@ BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDC
 
 }
 
+int MessageBox(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType) {
+
+  struct EasyStruct req;
+
+  DebOut("MessageBox(): %s \n", lpText);
+
+  if(!uType & MB_OK) {
+    DebOut("WARNING: unsupported type: %lx\n", uType);
+  }
+
+  req.es_StructSize=sizeof(struct EasyStruct);
+  req.es_TextFormat=lpText;
+  if(lpCaption) {
+    req.es_Title=lpCaption;
+  }
+  else {
+    req.es_Title="Error";
+  }
+  req.es_GadgetFormat="Ok";
+
+  EasyRequestArgs(NULL, &req, NULL, NULL );
+}
+
 /*
  * Retrieves a handle to a control in the specified dialog box.
  */
@@ -271,6 +294,7 @@ HWND GetDlgItem(HWND hDlg, int nIDDlgItem) {
 
   return hDlg[i];
 }
+
 
 /* Changes the text of the specified window's title bar (if it has one). 
  * If the specified window is a control, the text of the control is changed.
