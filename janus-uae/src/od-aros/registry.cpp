@@ -1,16 +1,37 @@
+/************************************************************************
+ * 
+ * INI file create/read/write operations for AROS hosts
+ *
+ * Copyright 2014 Oliver Brunner - aros<at>oliver-brunner.de
+ *
+ * This file is part of WinUAE4AROS
+ *
+ * WinUAE4AROS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * WinUAE4AROS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with WinUAE4AROS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * $Id$
+ *
+ ************************************************************************/
+
 #include <string.h>
 #include <proto/dos.h>
+
 #include "SDL_Config/SDL_config_lib.h"
 
 #define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
-#if 0
-#include <windows.h>
-#include <shlwapi.h>
-#include "win32.h"
-#endif
 #include "aros.h"
 #include "registry.h"
 #include "crc32.h"
@@ -21,226 +42,151 @@ static int inimode = 1;
 static TCHAR *inipath;
 #define PUPPA _T("eitätäoo")
 
-void my_init_config(UAEREG *reg) {
+static TCHAR *gs (UAEREG *root) {
 
-#if 0
-  if(reg->open) {
-    DebOut("Config already opened\n");
-    return;
-  }
-
-  if (CFG_OK != CFG_OpenFile("PROGDIR:winuae.ini", (CFG_File *) reg )) {
-    DebOut("ERROR: unable to open winuae.ini\n");
-  }
-  else {
-    reg->open=TRUE;
-    DebOut("Config now open\n");
-  }
-#endif
-}
-
-
-BOOL WritePrivateProfileString(TCHAR *lpAppName, const TCHAR *lpKeyName, TCHAR *lpString, TCHAR *lpFileName) {
-  CFG_File  config;
-  DebOut("lpAppName: %s\n", lpAppName);
-  DebOut("lpKeyName: %s\n", lpKeyName);
-  DebOut("lpString: %s\n", lpString);
-  DebOut("lpFileName: %s\n", lpFileName);
-
-#if 0
-  if (CFG_OK != CFG_OpenFile(lpFileName, &config )) {
-    DebOut("ERROR: unable to open %s\n", lpFileName);
-    return FALSE;
-  }
-#endif
-}
-
-DWORD GetPrivateProfileString(TCHAR *lpAppName, const TCHAR *lpKeyName, TCHAR *lpDefault, TCHAR *lpReturnedString, DWORD nSize,TCHAR *lpFileName) {
-  DebOut("lpAppName: %s\n", lpAppName);
-  DebOut("lpKeyName: %s\n", lpKeyName);
-  DebOut("lpDefault: %s\n", lpDefault);
-}
-
-
-DWORD GetPrivateProfileSection(TCHAR *lpAppName, TCHAR *lpReturnedString, DWORD nSize,TCHAR *lpFileName) {
-  DebOut("lpAppName: %s\n", lpAppName);
-  DebOut("lpFileName: %s\n", lpFileName);
-
-  return 0;
-}
-
-BOOL WritePrivateProfileSection(TCHAR *lpAppName, TCHAR *lpString, TCHAR *lpFileName) {
-  DebOut("lpAppName: %s\n", lpAppName);
-  DebOut("lpString: %s\n", lpString);
-  DebOut("lpFileName: %s\n", lpFileName);
-}
-
-DWORD GetPrivateProfileSectionNames(TCHAR *lpszReturnBuffer, DWORD nSize, TCHAR *lpFileName) {
-  DebOut("lpFileName: %s\n", lpFileName);
-}
-
-#if 0
-static HKEY gr (UAEREG *root)
-{
-	if (!root)
-		return hWinUAEKey;
-	return root->fkey;
-}
-#endif
-static TCHAR *gs (UAEREG *root)
-{
-	if (!root)
+	if (!root) {
 		return _T("WinUAE");
+  }
 	return root->inipath;
 }
-static TCHAR *gsn (UAEREG *root, const TCHAR *name)
-{
-	TCHAR *r, *s;
+
+
+int regsetstr (UAEREG *root, const TCHAR *name, const TCHAR *str) {
+
   DebOut("entered\n");
-	if (!root)
-		return my_strdup (name);
-	r = gs (root);
-	s = xmalloc (TCHAR, _tcslen (r) + 1 + _tcslen (name) + 1);
-	_stprintf (s, _T("%s/%s"), r, name);
-	return s;
+  DebOut("group: %s\n", gs(root));
+  DebOut("name: %s\n", name);
+
+  if(CFG_SelectGroup(gs(root), TRUE)==CFG_ERROR) {
+    DebOut("could not create group %s \n", gs(root));
+    return 0;
+  }
+
+  if(CFG_WriteText(name, str)==CFG_ERROR) {
+    DebOut("ERROR: wrong type for key %s\n", name);
+    return 0;
+  }
+
+
+  DebOut("now: %s = %s\n", name, str);
+  return 1;
 }
 
-int regsetstr (UAEREG *root, const TCHAR *name, const TCHAR *str)
-{
+int regsetint (UAEREG *root, const TCHAR *name, int val) {
+
   DebOut("entered\n");
-	if (inimode) {
-		DWORD ret;
-		ret = WritePrivateProfileString (gs (root), name, (TCHAR *)str, inipath);
-		return ret;
-	} else {
-    TODO();
-#if 0
-		HKEY rk = gr (root);
-		if (!rk)
-			return 0;
-		return RegSetValueEx (rk, name, 0, REG_SZ, (CONST BYTE *)str, (_tcslen (str) + 1) * sizeof (TCHAR)) == ERROR_SUCCESS;
-#endif
-	}
+  DebOut("group: %s\n", gs(root));
+  DebOut("name: %s\n", name);
+
+  if(CFG_SelectGroup(gs(root), TRUE)==CFG_ERROR) {
+    DebOut("could not create group %s \n", gs(root));
+    return 0;
+  }
+
+  if(CFG_WriteInt(name, val)==CFG_ERROR) {
+    DebOut("ERROR: wrong type for key %s\n", name);
+    return 0;
+  }
+
+  DebOut("now: %s = %d\n", name, val);
+  return 1;
 }
 
-int regsetint (UAEREG *root, const TCHAR *name, int val)
-{
-  DebOut("entered\n");
-	if (inimode) {
-		DWORD ret;
-		TCHAR tmp[100];
-		_stprintf (tmp, _T("%d"), val);
-		ret = WritePrivateProfileString (gs (root), name, tmp, inipath);
-		return ret;
-	} else {
-    TODO();
-#if 0
-		DWORD v = val;
-		HKEY rk = gr (root);
-		if (!rk)
-			return 0;
-		return RegSetValueEx(rk, name, 0, REG_DWORD, (CONST BYTE*)&v, sizeof (DWORD)) == ERROR_SUCCESS;
-#endif
-	}
+int regqueryint (UAEREG *root, const TCHAR *name, int *val) {
+  signed int res;
+
+  DebOut("group: %s\n", gs(root));
+
+  if(CFG_SelectGroup(gs(root), FALSE)==CFG_ERROR) {
+    DebOut("group %s not found\n", gs(root));
+    return 0;
+  }
+  DebOut("name: %s\n", name);
+
+  res=CFG_ReadInt(name, 6666);
+  if (res == 6666) {
+    DebOut("key %s not found\n", name);
+    *val=0;
+    return 0;
+  }
+
+  DebOut("found %s = %d\n", name, res);
+  *val=res;
+  return 1;
 }
 
-int regqueryint (UAEREG *root, const TCHAR *name, int *val)
-{
+/* warning: never tested */
+int regsetlonglong (UAEREG *root, const TCHAR *name, ULONGLONG val) {
+
+  TCHAR str[32];
+
   DebOut("entered\n");
-	if (inimode) {
-		int ret = 0;
-		TCHAR tmp[100];
-		GetPrivateProfileString (gs (root), name, PUPPA, tmp, sizeof (tmp) / sizeof (TCHAR), inipath);
-		if (_tcscmp (tmp, PUPPA)) {
-			*val = _tstol (tmp);
-			ret = 1;
-		}
-		return ret;
-	} else {
-    TODO();
-#if 0
-		DWORD dwType = REG_DWORD;
-		DWORD size = sizeof (int);
-		HKEY rk = gr (root);
-		if (!rk)
-			return 0;
-		return RegQueryValueEx (rk, name, 0, &dwType, (LPBYTE)val, &size) == ERROR_SUCCESS;
-#endif
-	}
+  DebOut("group: %s\n", gs(root));
+  DebOut("name: %s\n", name);
+
+  if(CFG_SelectGroup(gs(root), TRUE)==CFG_ERROR) {
+    DebOut("could not create group %s \n", gs(root));
+    return 0;
+  }
+
+  /* no 64bit support in SDL_config..*/
+	_stprintf (str, _T("%I64d"), val);
+
+  if(CFG_WriteText(name, str)==CFG_ERROR) {
+    DebOut("ERROR: wrong type for key %s\n", name);
+    return 0;
+  }
+
+  DebOut("now: %s = %s\n", name, str);
+  return 1;
 }
 
-int regsetlonglong (UAEREG *root, const TCHAR *name, ULONGLONG val)
-{
-  DebOut("entered\n");
-	if (inimode) {
-		DWORD ret;
-		TCHAR tmp[100];
-		_stprintf (tmp, _T("%I64d"), val);
-		ret = WritePrivateProfileString (gs (root), name, tmp, inipath);
-		return ret;
-	} else {
-    TODO();
-#if 0
-		ULONGLONG v = val;
-		HKEY rk = gr (root);
-		if (!rk)
-			return 0;
-		return RegSetValueEx(rk, name, 0, REG_QWORD, (CONST BYTE*)&v, sizeof (ULONGLONG)) == ERROR_SUCCESS;
-#endif
-	}
-}
+/* warning: never tested */
+int regquerylonglong (UAEREG *root, const TCHAR *name, ULONGLONG *val) {
 
-int regquerylonglong (UAEREG *root, const TCHAR *name, ULONGLONG *val)
-{
-  DebOut("entered\n");
-	if (inimode) {
-		int ret = 0;
-		TCHAR tmp[100];
-		GetPrivateProfileString (gs (root), name, PUPPA, tmp, sizeof (tmp) / sizeof (TCHAR), inipath);
-		if (_tcscmp (tmp, PUPPA)) {
-			*val = _tstoi64 (tmp);
-			ret = 1;
-		}
-		return ret;
-	} else {
-    TODO();
-#if 0
-		DWORD dwType = REG_QWORD;
-		DWORD size = sizeof (ULONGLONG);
-		HKEY rk = gr (root);
-		if (!rk)
-			return 0;
-		return RegQueryValueEx (rk, name, 0, &dwType, (LPBYTE)val, &size) == ERROR_SUCCESS;
-#endif
-	}
-}
+  const char *res;
 
+  DebOut("entered\n");
+  DebOut("group: %s\n", gs(root));
+  DebOut("name: %s\n", name);
+
+  if(CFG_SelectGroup(gs(root), TRUE)==CFG_ERROR) {
+    DebOut("could not create group %s \n", gs(root));
+    return 0;
+  }
+
+  res=CFG_ReadText(name, PUPPA);
+  if (!strcmp (res, PUPPA)) {
+    DebOut("key %s not found\n", name);
+    return 0;
+  }
+
+  /* no 64bit support in SDL_config..*/
+  *val = _tstoi64 (res);
+
+  DebOut("return: %s = %I64d\n", name, *val);
+  return 1;
+}
 
 int regquerystr (UAEREG *root, const TCHAR *name, TCHAR *str, int *size)
 {
+  const char *res;
   DebOut("entered\n");
-	if (inimode) {
-		int ret = 0;
-		TCHAR *tmp = xmalloc (TCHAR, (*size) + 1);
-		GetPrivateProfileString (gs (root), name, PUPPA, tmp, *size, inipath);
-		if (_tcscmp (tmp, PUPPA)) {
-			_tcscpy (str, tmp);
-			ret = 1;
-		}
-		xfree (tmp);
-		return ret;
-	} else {
-    TODO();
-#if 0
-		DWORD size2 = *size * sizeof (TCHAR);
-		HKEY rk = gr (root);
-		if (!rk)
-			return 0;
-		int v = RegQueryValueEx (rk, name, 0, NULL, (LPBYTE)str, &size2) == ERROR_SUCCESS;
-		*size = size2 / sizeof (TCHAR);
-		return v;
-#endif
-	}
+
+  if(CFG_SelectGroup(gs(root), FALSE)==CFG_ERROR) {
+    DebOut("group %s not found\n", gs(root));
+    return 0;
+  }
+
+  res=CFG_ReadText(name, PUPPA);
+  if (!strcmp (res, PUPPA)) {
+    DebOut("key %s not found\n", name);
+    return 0;
+  }
+
+  strncpy(str, res, *size);
+  DebOut("found %s = %s\n", name, str);
+  return strlen(str);
 }
 
 /* get the nth (idx) key/value in section gs(root)*/
@@ -286,115 +232,100 @@ int regenumstr (UAEREG *root, int idx, TCHAR *name, int *nsize, TCHAR *str, int 
   return 1;
 }
 
+/* never used anywhere..*/
 int regquerydatasize (UAEREG *root, const TCHAR *name, int *size)
 {
-	if (inimode) {
-		int ret = 0;
-		int csize = 65536;
-		TCHAR *tmp = xmalloc (TCHAR, csize);
-		if (regquerystr (root, name, tmp, &csize)) {
-			*size = _tcslen (tmp) / 2;
-			ret = 1;
-		}
-		xfree (tmp);
-		return ret;
-	} else {
-    TODO();
-#if 0
-		HKEY rk = gr (root);
-		if (!rk)
-			return 0;
-		DWORD size2 = *size;
-		int v = RegQueryValueEx(rk, name, 0, NULL, NULL, &size2) == ERROR_SUCCESS;
-		*size = size2;
-		return v;
-#endif
-	}
+  int ret = 0;
+  int csize = 65536;
+  TCHAR *tmp = xmalloc (TCHAR, csize);
+  TODO();
+  if (regquerystr (root, name, tmp, &csize)) {
+    *size = _tcslen (tmp) / 2;
+    ret = 1;
+  }
+  xfree (tmp);
+  return ret;
 }
 
-int regsetdata (UAEREG *root, const TCHAR *name, const void *str, int size)
-{
-	if (inimode) {
-		uae_u8 *in = (uae_u8*)str;
-		DWORD ret;
-		int i;
-		TCHAR *tmp = xmalloc (TCHAR, size * 2 + 1);
-		for (i = 0; i < size; i++)
-			_stprintf (tmp + i * 2, _T("%02X"), in[i]); 
-		ret = WritePrivateProfileString (gs (root), name, tmp, inipath);
-		xfree (tmp);
-		return ret;
-	} else {
-    TODO();
-#if 0
-		HKEY rk = gr (root);
-		if (!rk)
-			return 0;
-		return RegSetValueEx(rk, name, 0, REG_BINARY, (BYTE*)str, size) == ERROR_SUCCESS;
-#endif
-	}
+/* write binary data !? */
+/* warning: never tested */
+int regsetdata (UAEREG *root, const TCHAR *name, const void *str, int size) {
+
+  uae_u8 *in = (uae_u8*)str;
+  int i;
+  TCHAR *tmp = xmalloc (TCHAR, size * 2 + 1);
+  int ret=1;
+
+  if(CFG_SelectGroup(gs(root), FALSE)==CFG_ERROR) {
+    DebOut("group %s not found\n", gs(root));
+    return 0;
+  }
+  for (i = 0; i < size; i++) {
+    _stprintf (tmp + i * 2, _T("%02X"), in[i]); 
+  }
+  if(CFG_WriteText(name, tmp)==CFG_ERROR) {
+    DebOut("Error writing to key %s\n", name);
+    ret=0;
+  }
+
+  xfree (tmp);
+  return ret;
 }
+
+/* write binary data !? */
+/* warning: never tested */
 int regquerydata (UAEREG *root, const TCHAR *name, void *str, int *size)
 {
-	if (inimode) {
-		int csize = (*size) * 2 + 1;
-		int i, j;
-		int ret = 0;
-		TCHAR *tmp = xmalloc (TCHAR, csize);
-		uae_u8 *out = (uae_u8*)str;
+  int csize = (*size) * 2 + 1;
+  int i, j;
+  int ret = 0;
+  TCHAR *tmp = xmalloc (TCHAR, csize);
+  uae_u8 *out = (uae_u8*)str;
+  TCHAR c1, c2;
 
-		if (!regquerystr (root, name, tmp, &csize))
-			goto err;
-		j = 0;
-		for (i = 0; i < _tcslen (tmp); i += 2) {
-			TCHAR c1 = toupper(tmp[i + 0]);
-			TCHAR c2 = toupper(tmp[i + 1]);
-			if (c1 >= 'A')
-				c1 -= 'A' - 10;
-			else if (c1 >= '0')
-				c1 -= '0';
-			if (c1 > 15)
-				goto err;
-			if (c2 >= 'A')
-				c2 -= 'A' - 10;
-			else if (c2 >= '0')
-				c2 -= '0';
-			if (c2 > 15)
-				goto err;
-			out[j++] = c1 * 16 + c2;
-		}
-		ret = 1;
+  if (!regquerystr (root, name, tmp, &csize))
+    goto err;
+  j = 0;
+  for (i = 0; i < _tcslen (tmp); i += 2) {
+    c1 = toupper(tmp[i + 0]);
+    c2 = toupper(tmp[i + 1]);
+    if (c1 >= 'A')
+      c1 -= 'A' - 10;
+    else if (c1 >= '0')
+      c1 -= '0';
+    if (c1 > 15)
+      goto err;
+    if (c2 >= 'A')
+      c2 -= 'A' - 10;
+    else if (c2 >= '0')
+      c2 -= '0';
+    if (c2 > 15)
+      goto err;
+    out[j++] = c1 * 16 + c2;
+  }
+  ret = 1;
 err:
-		xfree (tmp);
-		return ret;
-	} else {
-    TODO();
-#if 0
-		HKEY rk = gr (root);
-		if (!rk)
-			return 0;
-		DWORD size2 = *size;
-		int v = RegQueryValueEx(rk, name, 0, NULL, (LPBYTE)str, &size2) == ERROR_SUCCESS;
-		*size = size2;
-		return v;
-#endif
-	}
+  xfree (tmp);
+  return ret;
 }
 
-int regdelete (UAEREG *root, const TCHAR *name)
-{
-	if (inimode) {
-		WritePrivateProfileString (gs (root), name, NULL, inipath);
-		return 1;
-	} else {
-    TODO();
-#if 0
-		HKEY rk = gr (root);
-		if (!rk)
-			return 0;
-		return RegDeleteValue (rk, name) == ERROR_SUCCESS;
-#endif
-	}
+/* warning: never tested */
+int regdelete (UAEREG *root, const TCHAR *name) {
+
+  DebOut("group: %s\n", gs(root));
+  DebOut("name: %s\n", name);
+
+  if(CFG_SelectGroup(gs(root), FALSE)==CFG_ERROR) {
+    DebOut("group %s not found, ok\n", gs(root));
+    return 1;
+  }
+
+  /* as we don't know the type, delete any type */
+  CFG_RemoveBoolEntry(name);
+  CFG_RemoveIntEntry(name);
+  CFG_RemoveFloatEntry(name);
+  CFG_RemoveTextEntry(name);
+  return 1;
 }
 
 int regexists (UAEREG *root, const TCHAR *name)
@@ -427,24 +358,27 @@ int regexists (UAEREG *root, const TCHAR *name)
   return ret;
 }
 
-void regdeletetree (UAEREG *root, const TCHAR *name)
-{
+/* delete complete group */
+/* warning: never tested */
+void regdeletetree (UAEREG *root, const TCHAR *name) {
+
+  int ret;
+
+  DebOut("name: %s\n", name);
   DebOut("entered\n");
-	if (inimode) {
-		TCHAR *s = gsn (root, name);
-		if (!s)
-			return;
-		WritePrivateProfileSection (s, _T(""), inipath);
-		xfree (s);
-	} else {
-    TODO();
-#if 0
-		HKEY rk = gr (root);
-		if (!rk)
-			return;
-		SHDeleteKey (rk, name);
-#endif
-	}
+  DebOut("WARNING: never tested!!\n");
+
+  if(root!=NULL) {
+    DebOut("ERROR: root!=NULL not done!!\n");
+    return;
+  }
+
+  if(CFG_RemoveGroup(name)==CFG_ERROR) {
+    DebOut("group %s did not exists before\n", name);
+    return;
+  }
+
+  DebOut("group %s deleted\n", name);
 }
 
 int regexiststree (UAEREG *root, const TCHAR *name)
@@ -492,6 +426,7 @@ UAEREG *regcreatetree (UAEREG *root, const TCHAR *name) {
 	return fkey;
 }
 
+/* free allocated memory */
 void regclosetree (UAEREG *key)
 {
   DebOut("entered (key: %lx)\n", key);
@@ -500,9 +435,9 @@ void regclosetree (UAEREG *key)
 #if 0
 	if (key->fkey)
 		RegCloseKey (key->fkey);
+#endif
 	xfree (key->inipath);
 	xfree (key);
-#endif
 }
 
 #ifdef SHA1_CHECK
@@ -582,7 +517,7 @@ FAIL2:
   CFG_SelectGroup("Warning", true);
   CFG_WriteText("info1", "This is unsupported file. Compatibility between versions is not guaranteed.");
   CFG_WriteText("info2", "Incompatible ini-files may be re-created from scratch!");
-  CFG_WriteText("info0", "This file is not for Windows. It is for AROS, really!");
+  CFG_WriteText("info0", "This file is *not* for Windows. It is for AROS, really!");
 
   CFG_SaveFile(INI_FILE, CFG_SORT_ORIGINAL, CFG_COMPRESS_OUTPUT);
   CFG_CloseFile(NULL);
