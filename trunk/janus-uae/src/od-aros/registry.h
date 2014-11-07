@@ -36,3 +36,4 @@ extern int regenumstr (UAEREG*, int idx, TCHAR *name, int *nsize, TCHAR *str, in
 extern UAEREG *regcreatetree (UAEREG*, const TCHAR *name);
 extern void regclosetree (UAEREG *key);
 
+extern void regflushfile (void);
