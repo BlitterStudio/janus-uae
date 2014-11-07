@@ -1,13 +1,11 @@
 #include <exec/types.h>
+
 #include "SDL_Config/SDL_config_lib.h"
+
 #define ULONGLONG long long
 
-/* WARNING: keep CFG_File  config at first place, so that simple casts are possible !! */
 typedef struct UAEREG {
-    CFG_File  config; /* not used */
-    BOOL      open; /* not used */
     TCHAR    *inipath;
-    BOOL      enumstarted; /* we are enumerating our entries */
 } UAEREG;
 
 #define INI_FILE "PROGDIR:winuae.ini"
