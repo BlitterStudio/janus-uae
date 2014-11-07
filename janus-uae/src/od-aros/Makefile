@@ -43,7 +43,7 @@ INCLUDES= -I. -I../include -I../md-i386-gcc -I.. -I/home/oli/svn/v0/AROS/bin/lin
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 CPPFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
-LINK_LIBS=-Lgui -lgui -larossupport -lz -lSDL -lGL -lmui
+LINK_LIBS=-Lgui -lgui -larossupport -lz -lSDL -lGL -lmui -LSDL_Config -lSDL_Config
 
 # ============== common ====================
 
@@ -177,6 +177,8 @@ COMMON_OBJS= \
 	posixemu.o \
 	sdlgfx.o \
 	sdlkeys_dik.o \
+	rp.o \
+	registry.o \
 	win32gui.o \
 	stubs.o
 
@@ -202,10 +204,13 @@ DEP_OBJS=$(COMMON_OBJS)
 	$(CPP) $(CPPFLAGS) -o $@ -c $*.cpp
 
 
-all: uae
+all: SDL_Config uae
 
 uae: gui common aros
-	$(CPP) $(CFLAGS) $(COMMON_OBJS) $(AROS_OBJS) -o $(EXE) $(LINK_LIBS)
+	$(CPP) $(CFLAGS) $(COMMON_OBJS) $(AROS_OBJS) -o $(EXE) $(LINK_LIBS) 
+
+SDL_Config:
+	@cd SDL_Config;make
 
 common: ../blitfunc.cpp ../blittable.cpp ../blit.h ../linetoscr.cpp $(COMMON_OBJS)
 	@echo building common ..

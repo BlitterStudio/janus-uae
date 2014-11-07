@@ -35,6 +35,7 @@
 #include "gfx.h"
 #include "memory.h"
 #include "gui.h"
+#include "registry.h"
 
 TCHAR VersionStr[256];
 TCHAR BetaStr[64];
@@ -285,6 +286,11 @@ void makeverstr (TCHAR *s) {
 
 extern int log_scsi;
 
+static TCHAR *inipath = NULL;
+
+static TCHAR *getdefaultini (void) {
+  return strdup("PROGDIR:winuae.ini");
+}
 /************************************************************************ 
  * main
  *
@@ -304,6 +310,8 @@ int main (int argc, TCHAR **argv) {
 
   DebOut("main(%d, ..)\n", argc);
 
+  inipath=getdefaultini();
+  reginitializeinit(&inipath);
   getstartpaths ();
 	makeverstr(VersionStr);
 	DebOut("%s", VersionStr);
@@ -375,6 +383,8 @@ int main (int argc, TCHAR **argv) {
 
 	DebOut("calling real_main..\n");
 	real_main (argc, argv);
+
+  regflushfile();
 
 	return 0;
 }

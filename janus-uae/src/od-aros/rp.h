@@ -1,5 +1,7 @@
 
+#if 0
 extern HRESULT rp_init (void);
+#endif
 extern void rp_free (void);
 extern int rp_close (void);
 extern void rp_fixup_options (struct uae_prefs*);
@@ -9,13 +11,17 @@ extern void rp_mouse_capture (int);
 extern void rp_mouse_magic (int);
 extern void rp_turbo_cpu (int);
 extern void rp_turbo_floppy (int);
+#if 0
 extern void rp_set_hwnd (HWND);
+#endif
 extern void rp_set_hwnd_delayed (void);
 extern void rp_set_enabledisable (int);
 extern int rp_checkesc (int, int, int);
 extern int rp_isactive (void);
 extern void rp_vsync (void);
+#if 0
 extern HWND rp_getparent (void);
+#endif
 extern void rp_rtg_switch (void);
 extern void rp_screenmode_changed (void);
 

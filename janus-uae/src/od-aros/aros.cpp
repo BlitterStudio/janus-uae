@@ -51,7 +51,7 @@
 //#include "bsdsocket.h"
 #include "aros.h"
 //#include "arosgfx.h"
-//#include "registry.h"
+#include "registry.h"
 //#include "win32gui.h"
 #include "autoconf.h"
 #include "gui.h"
@@ -134,6 +134,7 @@ int af_path_2005;
 
 int quickstart = 1, configurationcache = 1, relativepaths = 1; 
 
+static int forceroms;
 
 static void createdir (const TCHAR *path) {
   CreateDir(path);
@@ -250,10 +251,13 @@ int translate_message (int msg, TCHAR *out) {
 /* resides in win32.cpp normally
  *
  * loads amigaforever keyfiles ..?
+ *
+ * FS-UAE also has this as a pure stub
  */
 uae_u8 *target_load_keyfile (struct uae_prefs *p, const TCHAR *path, int *sizep, TCHAR *name) {
 	bug("target_load_keyfile(,%s,%d,%s)\n", path, *sizep, name);
 	TODO();
+  return NULL;
 }
 
 
@@ -481,4 +485,223 @@ int LoadString(APTR hInstance, TCHAR *uID, TCHAR * lpBuffer, int nBufferMax) {
   strncpy(lpBuffer, uID, nBufferMax);
 
   return strlen(lpBuffer)-1;
+}
+
+
+static int isfilesindir (const TCHAR *p)
+{
+#if 0
+	WIN32_FIND_DATA fd;
+	HANDLE h;
+	TCHAR path[MAX_DPATH];
+	int i = 0;
+	DWORD v;
+
+	v = GetFileAttributes (p);
+	if (v == INVALID_FILE_ATTRIBUTES || !(v & FILE_ATTRIBUTE_DIRECTORY))
+		return 0;
+	_tcscpy (path, p);
+	_tcscat (path, _T("\\*.*"));
+	h = FindFirstFile (path, &fd);
+	if (h != INVALID_HANDLE_VALUE) {
+		for (i = 0; i < 3; i++) {
+			if (!FindNextFile (h, &fd))
+				break;
+		}
+		FindClose (h);
+	}
+	if (i == 3)
+		return 1;
+#endif
+	return 0;
+}
+
+int GetFileAttributes(char *path) {
+  BPTR    lock;
+  BOOL    result;
+
+  DebOut("path: %s\n", path);
+
+  lock=Lock(path, SHARED_LOCK);
+  if(!lock) {
+    return INVALID_FILE_ATTRIBUTES;
+  }
+
+  UnLock(lock);
+  return 1;
+}
+
+int get_rom_path (TCHAR *out, pathtype mode)
+{
+	TCHAR tmp[MAX_DPATH];
+
+  DebOut("pathtype: %d\n", mode);
+  DebOut("start_path_data: %s\n", start_path_data);
+  DebOut("start_path_exe: %s\n", start_path_exe);
+
+	tmp[0] = 0;
+	switch (mode)
+	{
+	case PATH_TYPE_DEFAULT:
+		{
+			if (!_tcscmp (start_path_data, start_path_exe))
+				_tcscpy (tmp, _T(""));
+			else
+				_tcscpy (tmp, start_path_data);
+
+			if (GetFileAttributes (tmp) != INVALID_FILE_ATTRIBUTES) {
+				TCHAR tmp2[MAX_DPATH];
+				_tcscpy (tmp2, tmp);
+				_tcscat (tmp2, _T("rom"));
+				if (GetFileAttributes (tmp2) != INVALID_FILE_ATTRIBUTES) {
+					_tcscpy (tmp, tmp2);
+				} else {
+					_tcscpy (tmp2, tmp);
+					_tcscpy (tmp2, _T("roms"));
+					if (GetFileAttributes (tmp2) != INVALID_FILE_ATTRIBUTES) {
+						_tcscpy (tmp, tmp2);
+					} else {
+						if (!get_rom_path (tmp, PATH_TYPE_NEWAF)) {
+							if (!get_rom_path (tmp, PATH_TYPE_AMIGAFOREVERDATA)) {
+								_tcscpy (tmp, start_path_data);
+							}
+						}
+					}
+				}
+			}
+		}
+		break;
+	case PATH_TYPE_NEWAF:
+		{
+			TCHAR tmp2[MAX_DPATH];
+			_tcscpy (tmp2, start_path_new1);
+			_tcscat (tmp2, _T("..\\system\\rom"));
+			if (isfilesindir (tmp2)) {
+				_tcscpy (tmp, tmp2);
+				break;
+			}
+			_tcscpy (tmp2, start_path_new1);
+			_tcscat (tmp2, _T("..\\shared\\rom"));
+			if (isfilesindir (tmp2)) {
+				_tcscpy (tmp, tmp2);
+				break;
+			}
+		}
+		break;
+	case PATH_TYPE_AMIGAFOREVERDATA:
+		{
+			TCHAR tmp2[MAX_DPATH];
+			_tcscpy (tmp2, start_path_new2);
+			_tcscat (tmp2, _T("system\\rom"));
+			if (isfilesindir (tmp2)) {
+				_tcscpy (tmp, tmp2);
+				break;
+			}
+			_tcscpy (tmp2, start_path_new2);
+			_tcscat (tmp2, _T("shared\\rom"));
+			if (isfilesindir (tmp2)) {
+				_tcscpy (tmp, tmp2);
+				break;
+			}
+		}
+		break;
+	default:
+		return -1;
+	}
+	if (isfilesindir (tmp)) {
+		_tcscpy (out, tmp);
+		fixtrailing (out);
+	}
+	if (out[0]) {
+		fullpath (out, MAX_DPATH);
+	}
+  DebOut("result: %s\n", out);
+	return out[0] ? 1 : 0;
+}
+
+int regexiststree (UAEREG *root, const TCHAR *name);
+UAEREG *regcreatetree (UAEREG *root, const TCHAR *name);
+int regenumstr (UAEREG *root, int idx, TCHAR *name, int *nsize, TCHAR *str, int *size);
+void regclosetree (UAEREG *key);
+int getregmode (void);
+
+
+static void romlist_add2 (const TCHAR *path, struct romdata *rd)
+{
+  DebOut("path: %s\n", path);
+	if (getregmode ()) {
+		int ok = 0;
+		TCHAR tmp[MAX_DPATH];
+		if (path[0] == '/' || path[0] == '\\')
+			ok = 1;
+		if (_tcslen (path) > 1 && path[1] == ':')
+			ok = 1;
+		if (!ok) {
+			_tcscpy (tmp, start_path_exe);
+			_tcscat (tmp, path);
+			romlist_add (tmp, rd);
+			return;
+		}
+	}
+	romlist_add (path, rd);
+}
+
+extern int scan_roms (HWND, int);
+void read_rom_list (void)
+{
+	TCHAR tmp2[1000];
+	int idx, idx2;
+	UAEREG *fkey;
+	TCHAR tmp[1000];
+	int size, size2, exists;
+
+  DebOut("entered\n");
+
+	romlist_clear ();
+	exists = regexiststree (NULL, _T("DetectedROMs"));
+	fkey = regcreatetree (NULL, _T("DetectedROMs"));
+	if (fkey == NULL)
+		return;
+	if (!exists || forceroms) {
+		load_keyring (NULL, NULL);
+		scan_roms (NULL, forceroms ? 0 : 1);
+	}
+
+	forceroms = 0;
+	idx = 0;
+	for (;;) {
+		size = sizeof (tmp) / sizeof (TCHAR);
+		size2 = sizeof (tmp2) / sizeof (TCHAR);
+    DebOut(".........\n");
+		if (!regenumstr (fkey, idx, tmp, &size, tmp2, &size2))
+			break;
+		if (_tcslen (tmp) == 7 || _tcslen (tmp) == 13) {
+			int group = 0;
+			int subitem = 0;
+			idx2 = _tstol (tmp + 4);
+			if (_tcslen (tmp) == 13) {
+				group = _tstol (tmp + 8);
+				subitem = _tstol (tmp + 11);
+			}
+			if (idx2 >= 0 && _tcslen (tmp2) > 0) {
+				struct romdata *rd = getromdatabyidgroup (idx2, group, subitem);
+				if (rd) {
+					TCHAR *s = _tcschr (tmp2, '\"');
+					if (s && _tcslen (s) > 1) {
+						TCHAR *s2 = my_strdup (s + 1);
+						s = _tcschr (s2, '\"');
+						if (s)
+							*s = 0;
+						romlist_add2 (s2, rd);
+						xfree (s2);
+					} else {
+						romlist_add2 (tmp2, rd);
+					}
+				}
+			}
+		}
+		idx++;
+	}
+	romlist_add (NULL, NULL);
+	regclosetree (fkey);
 }

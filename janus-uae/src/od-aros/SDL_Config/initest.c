@@ -4,6 +4,7 @@
 CFG_File  config;
 CFG_File  config2;
 
+CFG_Bool remove_group_spaces=false;
 char filename[]="PROGDIR:test.ini";
 
 void print_r(int r) {

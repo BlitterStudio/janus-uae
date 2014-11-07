@@ -3,6 +3,7 @@
 
 CPP  = i386-aros-g++
 CC   = i386-aros-gcc
+AR   = i386-aros-ar
 WINDRES = 
 RES  = 
 OBJ  = SDL_config.o $(RES)
@@ -28,8 +29,8 @@ clean:
 	${RM} $(OBJ) $(BIN) $(TESTOBJ)
 
 $(BIN): $(LINKOBJ)
-	ar r $(BIN) $(LINKOBJ)
-	ranlib $(BIN)
+	$(AR) r $(BIN) $(LINKOBJ)
 
+#ranlib $(BIN)
 %.o: %.c
 	$(CPP) $(CPPFLAGS) -o $@ -c $*.c

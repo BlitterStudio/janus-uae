@@ -16,6 +16,8 @@
 #define WINUAEREV ""
 #define MAKEBD(x,y,z) ((((x) - 2000) * 10000 + (y)) * 100 + (z))
 
+#define INVALID_FILE_ATTRIBUTES 0
+
 #define MAX_DISPLAYS 10
 extern struct MultiDisplay Displays[MAX_DISPLAYS + 1];
 struct MultiDisplay *getdisplay (struct uae_prefs *p);
@@ -37,8 +39,6 @@ extern TCHAR bootlogpath[MAX_DPATH];
 enum pathtype { PATH_TYPE_DEFAULT, PATH_TYPE_WINUAE, PATH_TYPE_NEWWINUAE, PATH_TYPE_NEWAF, PATH_TYPE_AMIGAFOREVERDATA, PATH_TYPE_END };
 extern pathtype path_type;
 
-
-#define UAEREG TCHAR
 
 /* http://msdn.microsoft.com/en-us/library/htb3tdkc%28v=vs.80%29.aspx: 
  * _daylight, _dstbias, _timezone, and _tzname are used in some time and date routines 
@@ -64,6 +64,8 @@ void fetch_path (const TCHAR *name, TCHAR *out, int size);
 /* taken from FS-UAE */
 extern uaecptr p96ram_start;
 
+int GetFileAttributes(char *path);
+
 /* gui */
 extern void *hInst;
 extern void *hUIDLL;
@@ -73,6 +75,7 @@ ULONG SendDlgItemMessage(struct Element *hDlg, int nIDDlgItem, UINT Msg, WPARAM 
 BOOL CheckDlgButton(Element *elem, int button, UINT uCheck);
 BOOL SetWindowText(HWND hWnd, TCHAR *lpString);
 BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDCheckButton);
+int MessageBox(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType);
 
 void read_rom_list (void);
 extern int quickstart, configurationcache, relativepaths;
