@@ -519,13 +519,20 @@ FAIL2:
   CFG_WriteText("info2", "Incompatible ini-files may be re-created from scratch!");
   CFG_WriteText("info0", "This file is *not* for Windows. It is for AROS, really!");
 
-  CFG_SaveFile(INI_FILE, CFG_SORT_ORIGINAL, CFG_COMPRESS_OUTPUT);
-  CFG_CloseFile(NULL);
-
   DebOut("%s saved\n");
 
 	return 1;
 }
+
+void regflushfile (void) {
+
+  DebOut("entered\n");
+
+  CFG_SaveFile(INI_FILE, CFG_SORT_ORIGINAL, CFG_COMPRESS_OUTPUT);
+  CFG_CloseFile(NULL);
+}
+
+
 
 void regstatus (void)
 {
