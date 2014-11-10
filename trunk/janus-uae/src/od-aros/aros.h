@@ -71,7 +71,7 @@ extern void *hInst;
 extern void *hUIDLL;
 int LoadString(APTR hInstance, TCHAR *uID, TCHAR * lpBuffer, int nBufferMax);
 BOOL SetDlgItemText(struct Element *elem, int nIDDlgItem, TCHAR *lpString);
-ULONG SendDlgItemMessage(struct Element *hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam);
+LONG SendDlgItemMessage(struct Element *hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam);
 BOOL CheckDlgButton(Element *elem, int button, UINT uCheck);
 BOOL SetWindowText(HWND hWnd, TCHAR *lpString);
 BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDCheckButton);
