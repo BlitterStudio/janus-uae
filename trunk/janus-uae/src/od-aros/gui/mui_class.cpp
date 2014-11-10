@@ -134,7 +134,6 @@ ULONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM 
   Object *obj;
   ULONG i;
   ULONG l;
-  //TCHAR *line;
 
   DebOut("elem: %lx\n", elem);
   DebOut("nIDDlgItem: %d\n", nIDDlgItem);
@@ -154,9 +153,8 @@ ULONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM 
   DebOut("index: %d\n", i);
   DebOut("elem[i].var: %lx\n", elem[i].var);
 
-  //line=(TCHAR **) elem[i].var;
-
   switch(Msg) {
+
     case CB_ADDSTRING:
       /* add string to popup window */
       DebOut("new string: %s\n", (TCHAR *) lParam);
@@ -173,13 +171,26 @@ ULONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM 
       DebOut("  obj: %lx\n", elem[i].obj);
       SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].var, TAG_DONE);
       break;
+
+    case CB_RESETCONTENT:
+      /* delete all strings */
+      DebOut("reset strings\n");
+      l=0;
+      /* free old strings */
+      while(elem[i].var[l] != NULL) {
+        free(elem[i].var[l]);
+        elem[i].var[l]=NULL;
+        l++;
+      }
+      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].var, TAG_DONE);
+      break;
+
     default:
       DebOut("unkown Windows Message-ID: %d\n", Msg);
       return FALSE;
   }
 
   return TRUE;
-
 }
 
 UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount) {
