@@ -8356,6 +8356,8 @@ static void addromfiles (UAEREG *fkey, HWND hDlg, DWORD d, TCHAR *path, int type
 	TCHAR seltmp[MAX_DPATH];
 	struct romdata *rdx;
 
+  DebOut("entered\n");
+
 	rdx = scan_single_rom (path);
 	SendDlgItemMessage(hDlg, d, CB_RESETCONTENT, 0, 0);
 	SendDlgItemMessage(hDlg, d, CB_ADDSTRING, 0, (LPARAM)_T(""));
@@ -8365,22 +8367,31 @@ static void addromfiles (UAEREG *fkey, HWND hDlg, DWORD d, TCHAR *path, int type
 		int size = sizeof (tmp) / sizeof (TCHAR);
 		int size2 = sizeof (tmp2) / sizeof (TCHAR);
     DebOut("------------\n");
-		if (!regenumstr (fkey, idx, tmp, &size, tmp2, &size2))
+		if (!regenumstr (fkey, idx, tmp, &size, tmp2, &size2)) {
+      DebOut("break!\n");
 			break;
+    }
 		if (_tcslen (tmp) == 7 || _tcslen (tmp) == 13) {
 			int group = 0;
 			int subitem = 0;
 			int idx2 = _tstol (tmp + 4);
+      DebOut("7 || 13\n");
 			if (_tcslen (tmp) == 13) {
+        DebOut("13!\n");
 				group = _tstol (tmp + 8);
 				subitem = _tstol (tmp + 11);
 			}
 			if (idx2 >= 0) {
 				struct romdata *rd = getromdatabyidgroup (idx2, group, subitem);
+        DebOut("idx2 >= 0\n");
 				if (rd && (rd->type & type)) {
+          DebOut("..\n");
 					getromname (rd, tmp);
-					if (SendDlgItemMessage (hDlg, d, CB_FINDSTRING, (WPARAM)-1, (LPARAM)tmp) < 0)
+          DebOut("tmp: %s\n", tmp);
+					if (SendDlgItemMessage (hDlg, d, CB_FINDSTRING, (WPARAM)-1, (LPARAM)tmp) < 0) {
+            DebOut("<0!\n");
 						SendDlgItemMessage(hDlg, d, CB_ADDSTRING, 0, (LPARAM)tmp);
+          }
 					if (rd == rdx)
 						_tcscpy (seltmp, tmp);
 				}

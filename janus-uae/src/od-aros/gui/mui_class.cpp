@@ -130,7 +130,7 @@ BOOL CheckDlgButton(Element *elem, int button, UINT uCheck) {
 
 }
 
-ULONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam) {
+LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam) {
   Object *obj;
   ULONG i;
   ULONG l;
@@ -184,6 +184,19 @@ ULONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM 
       }
       SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].var, TAG_DONE);
       break;
+    case CB_FINDSTRING:
+      /* return string index */
+      DebOut("search for string >%s<\n", (TCHAR *) lParam);
+      l=0;
+      while(elem[i].var[l] != NULL) {
+        DebOut("  compare with >%s<\n", elem[i].var[l]);
+        if(!strcmp(elem[i].var[l], (TCHAR *) lParam)) {
+          return l;
+        }
+        l++;
+      }
+      DebOut("return -1\n");
+      return -1;
 
     default:
       DebOut("unkown Windows Message-ID: %d\n", Msg);
@@ -645,6 +658,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
     }
 
     mSet(data, obj, (struct opSet *) msg, 1);
+    SetAttrs(obj, MUIA_Frame, MUIV_Frame_Group, TAG_DONE);
   }
   return (ULONG)obj;
 }
