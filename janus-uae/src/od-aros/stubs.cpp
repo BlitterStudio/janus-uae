@@ -1127,3 +1127,7 @@ void uae_end_thread (uae_thread_id *tid) {
   TODO();
 }
 
+int enumerate_sound_devices (void) {
+  TODO();
+  return 0;
+}

@@ -332,7 +332,31 @@ BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDC
     DebOut("index: %d\n", e);
     SetAttrs(elem[e].obj, MUIA_Selected, TRUE, TAG_DONE);
   }
+}
 
+UINT IsDlgButtonChecked(HWND elem, int item) {
+  int i;
+  int res;
+
+  DebOut("elem: %lx\n", elem);
+  DebOut("item: %d\n", item);
+
+  i=get_index(elem, item);
+  if(i<0) {
+    elem=get_elem(item);
+    i=get_index(elem, item);
+  }
+
+  if(i<0) {
+    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n");
+    return FALSE;
+  }
+
+  res=xget(elem[i].obj, MUIA_Selected);
+
+  DebOut("res: %d\n", res);
+
+  return res;
 }
 
 int MessageBox(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType) {

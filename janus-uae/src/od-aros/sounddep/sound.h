@@ -6,6 +6,8 @@
 * Copyright 1997 Bernd Schmidt
 */
 
+#include "aros.h"
+
 #define SOUNDSTUFF 1
 
 extern uae_u16 paula_sndbuffer[];
@@ -78,6 +80,9 @@ STATIC_INLINE void check_sound_buffers (void)
 	int len;
 #endif
 
+  TODO();
+
+#if 0
 	if (currprefs.sound_stereo == SND_4CH_CLONEDSTEREO) {
 		((uae_u16*)paula_sndbufpt)[0] = ((uae_u16*)paula_sndbufpt)[-2];
 		((uae_u16*)paula_sndbufpt)[1] = ((uae_u16*)paula_sndbufpt)[-1];
@@ -119,6 +124,8 @@ STATIC_INLINE void check_sound_buffers (void)
 			paula_sndbufpt = paula_sndbuffer;
 		}
 	}
+#endif
+
 #endif
 }
 

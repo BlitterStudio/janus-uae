@@ -25,4 +25,9 @@
 #define FILE_ATTRIBUTE_VALID_FLAGS         0x00017fb7
 #define FILE_ATTRIBUTE_VALID_SET_FLAGS     0x000031a7 
 
+#define LOWORD(l) ((WORD)((DWORD)(l)))
+#define HIWORD(l) ((WORD)(((DWORD)(l)>>16)&0xFFFF))
+#define LOBYTE(w) ((BYTE)(w))
+#define HIBYTE(w) ((BYTE)(((WORD)(w)>>8)&0xFF))
+
 #endif /* __WINNT_H__ */

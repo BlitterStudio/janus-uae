@@ -1,5 +1,6 @@
 #include <intuition/intuition.h>
 
+#include "sysdeps.h"
 #include "aros.h"
 #include "sys/mman.h"
 
@@ -53,8 +54,10 @@ struct MultiDisplay {
   TCHAR *monitorname, *monitorid;
   TCHAR *fullname;
   struct PicassoResolution *DisplayModes;
-  //RECT rect;
+  RECT rect;
 };
+
+int WIN32GFX_AdjustScreenmode (struct MultiDisplay *md, int *pwidth, int *pheight, int *ppixbits);
 
 struct ScreenResolution {
 
