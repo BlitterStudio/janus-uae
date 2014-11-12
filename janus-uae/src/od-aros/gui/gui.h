@@ -405,6 +405,7 @@ extern struct MUI_CustomClass *CL_Fixed;
 #define TBM_GETBUDDY (WM_USER+33) 
 
 /* Combo box messages */
+#define CB_ERR                       -1
 #define CB_GETEDITSEL            0x0140
 #define CB_LIMITTEXT             0x0141
 #define CB_SETEDITSEL            0x0142

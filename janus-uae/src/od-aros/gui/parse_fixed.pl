@@ -101,6 +101,16 @@ sub get_help($) {
   return "NULL";
 }
 
+# respect minimal possible editable gadgets
+# saller sizes crash AROS ..
+sub min_height($) {
+  my $h=shift;
+  if($h<13) {
+    return 13;
+  }
+  return $h
+}
+
 # strings my contain hot helps (mouse over help), splitted with [] from the button texts..
 sub get_text($) {
   my $line=shift;
@@ -288,7 +298,7 @@ sub gen_line($$) {
       $debug && print "  = $type \n";
       $debug && print "      string: ".$attr[0]."\n";
       push @idc, $attr[0];
-      printf(CPPFILE  "  { 0, %-20s, NULL, NULL, %-11s, NULL, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $attr[0], $type, $attr[1], $attr[2]+$plus_height, $attr[3], $attr[4], "\"".$attr[0]."\"", "NULL", parse_flags($attr[5]), parse_flags2($attr[5]));
+      printf(CPPFILE  "  { 0, %-20s, NULL, NULL, %-11s, NULL, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d },\n", $attr[0], $type, $attr[1], $attr[2]+$plus_height, $attr[3], min_height($attr[4]), "\"".$attr[0]."\"", "NULL", parse_flags($attr[5]), parse_flags2($attr[5]));
     }
     else {
       $debug && print "      => default type\n";
