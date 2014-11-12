@@ -232,6 +232,65 @@ UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount) {
   return strlen(lpString);
 }
 
+/*
+ * Sets the text of a control in a dialog box to the string representation of a specified integer value.
+ */
+BOOL SetDlgItemInt(HWND elem, int item, UINT uValue, BOOL bSigned) {
+  Object *obj;
+  LONG i;
+  TCHAR tmp[64];
+
+  DebOut("elem: %lx\n", elem);
+  DebOut("item: %d\n", item);
+  DebOut("value: %d\n", uValue);
+  DebOut("bSigned: %d\n", bSigned);
+
+  i=get_index(elem, item);
+  if(i<0) {
+    elem=get_elem(item);
+    i=get_index(elem, item);
+  }
+
+  if(i<0) {
+    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n");
+    return FALSE;
+  }
+
+  if(bSigned) {
+    snprintf(tmp, 64, "-%d", uValue);
+  }
+  else {
+    snprintf(tmp, 64, "%d", uValue);
+  }
+
+  DebOut("set to: %s\n", tmp);
+
+  if(!elem[i].var) {
+    /* array for text (only one line, but respect data structure here */
+    elem[i].var=(char **) malloc(16 * sizeof(ULONG *)); 
+    elem[i].var[0]=NULL;
+  }
+
+  if(elem[i].var[0]) {
+    /* free old content */
+    free(elem[i].var[0]);
+  }
+
+  elem[i].var[0]=strdup(tmp);
+  elem[i].var[1]=NULL;
+
+  if(elem[i].windows_type==EDITTEXT) {
+    DebOut("elem[i].windows_type==EDITTEXT\n");
+    SetAttrs(elem[i].obj, MUIA_String_Contents, elem[i].var[0], TAG_DONE);
+  }
+  else {
+    DebOut("elem[i].windows_type!=EDITTEXT\n");
+    SetAttrs(elem[i].obj, MUIA_Text_Contents, elem[i].var[0], TAG_DONE);
+  }
+
+  return TRUE;
+}
+
 /* Adds a check mark to (checks) a specified radio button in a group and removes 
  * a check mark from (clears) all other radio buttons in the group. 
  */
