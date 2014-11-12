@@ -12372,6 +12372,7 @@ struct serparportinfo *comports[MAX_SERPAR_PORTS];
 struct midiportinfo *midiinportinfo[MAX_MIDI_PORTS];
 struct midiportinfo *midioutportinfo[MAX_MIDI_PORTS];
 static int ghostscript_available;
+#endif
 
 static int joyxprevious[4];
 static BOOL bNoMidiIn = FALSE;
@@ -12385,6 +12386,7 @@ static void enable_for_gameportsdlg (HWND hDlg)
 	ew (hDlg, IDC_PORT_TABLET, v);
 }
 
+#if 0
 static void enable_for_portsdlg (HWND hDlg)
 {
 	int v;
@@ -12428,6 +12430,7 @@ static void enable_for_portsdlg (HWND hDlg)
 	ew (hDlg, IDC_PSPRINTERDETECT, full_property_sheet && isprinter ? TRUE : FALSE);
 	ew (hDlg, IDC_PS_PARAMS, full_property_sheet && ghostscript_available && isprinter);
 }
+#endif
 
 static int joys[] = { IDC_PORT0_JOYS, IDC_PORT1_JOYS, IDC_PORT2_JOYS, IDC_PORT3_JOYS };
 static int joysm[] = { IDC_PORT0_JOYSMODE, IDC_PORT1_JOYSMODE, -1, -1 };
@@ -12503,6 +12506,7 @@ static void updatejoyport (HWND hDlg, int changedport)
 			SendDlgItemMessage (hDlg, joysaf[i], CB_SETCURSEL, workprefs.jports[i].autofire, 0);
 	}
 }
+#if 0
 
 static void values_from_gameportsdlg (HWND hDlg, int d, int changedport)
 {
@@ -12895,6 +12899,7 @@ static void processport (HWND hDlg, bool reset, int port)
 	inputdevice_updateconfig (NULL, &workprefs);
 	inputdevice_config_change ();
 }
+#endif
 
 /* Handle messages for the Joystick Settings page of our property-sheet */
 static INT_PTR CALLBACK GamePortsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -12968,6 +12973,7 @@ static INT_PTR CALLBACK GamePortsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 		updatejoyport (hDlg, -1);
 		recursive--;
 		break;
+#if 0
 	case WM_USER:
 		recursive++;
 		enable_for_gameportsdlg (hDlg);
@@ -13038,10 +13044,12 @@ static INT_PTR CALLBACK GamePortsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 		}
 		recursive--;
 		break;
+#endif
 	}
 	return FALSE;
 }
 
+#if 0
 /* Handle messages for the IO Settings page of our property-sheet */
 static INT_PTR CALLBACK IOPortsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -17138,7 +17146,9 @@ static int GetSettings (int all_options, HWND hwnd)
 #ifdef FILESYS
 		HARDDISK_ID = init_page (IDD_HARDDISK, IDI_HARDDISK, IDS_HARDDISK, HarddiskDlgProc, HarddiskAccel, _T("gui/hard-drives.htm"), 0);
 #endif
+#endif
 		GAMEPORTS_ID = init_page (IDD_GAMEPORTS, IDI_GAMEPORTS, IDS_GAMEPORTS, GamePortsDlgProc, NULL, _T("gui/gameports.htm"), 0);
+#if 0
 		IOPORTS_ID = init_page (IDD_IOPORTS, IDI_PORTS, IDS_IOPORTS, IOPortsDlgProc, NULL, _T("gui/ioports.htm"), 0);
 		INPUT_ID = init_page (IDD_INPUT, IDI_INPUT, IDS_INPUT, InputDlgProc, NULL, _T("gui/input.htm"), IDC_INPUTLIST);
 		MISC1_ID = init_page (IDD_MISC1, IDI_MISC1, IDS_MISC1, MiscDlgProc1, NULL, _T("gui/misc.htm"), 0);
