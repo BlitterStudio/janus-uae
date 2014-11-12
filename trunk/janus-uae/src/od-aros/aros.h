@@ -73,9 +73,11 @@ int LoadString(APTR hInstance, TCHAR *uID, TCHAR * lpBuffer, int nBufferMax);
 BOOL SetDlgItemText(struct Element *elem, int nIDDlgItem, TCHAR *lpString);
 LONG SendDlgItemMessage(struct Element *hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam);
 BOOL CheckDlgButton(Element *elem, int button, UINT uCheck);
+BOOL SetDlgItemInt(HWND hDlg, int nIDDlgItem, UINT uValue, BOOL bSigned);
 BOOL SetWindowText(HWND hWnd, TCHAR *lpString);
 BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDCheckButton);
 int MessageBox(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType);
+UINT IsDlgButtonChecked(HWND elem, int item);
 
 void read_rom_list (void);
 extern int quickstart, configurationcache, relativepaths;
@@ -92,6 +94,37 @@ typedef struct {
   WORD key;
   WORD cmd;
 } ACCEL;
+
+typedef ULONG LRESULT;
+
+#define MAX_SOUND_DEVICES 100
+#define SOUND_DEVICE_DS 1
+#define SOUND_DEVICE_AL 2
+#define SOUND_DEVICE_PA 3
+#define SOUND_DEVICE_WASAPI 4
+#define SOUND_DEVICE_WASAPI_EXCLUSIVE 5
+#define SOUND_DEVICE_XAUDIO2 6
+
+struct sound_device
+{
+    //GUID guid;
+    TCHAR *name;
+    TCHAR *alname;
+    TCHAR *cfgname;
+    int panum;
+    int type;
+};
+extern struct sound_device *sound_devices[MAX_SOUND_DEVICES];
+extern struct sound_device *record_devices[MAX_SOUND_DEVICES];
+
+/* better autogenerate those from resource? */
+#define IDC_FREQUENCY                   1237
+#define IDC_SOUNDADJUST                 1575
+#define IDC_SOUNDADJUSTNUM              1578
+#define IDC_SOUNDBUFFERTEXT             1576
+#define IDC_AUDIOSYNC                   1590
+#define IDC_AUDIOSYNC                   1590
+#define IDC_SOUNDCALIBRATE              1641
 
 
 #endif /* __AROS_H__ */

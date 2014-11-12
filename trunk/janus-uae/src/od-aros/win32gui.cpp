@@ -16,6 +16,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <proto/dos.h>
 #if 0
 #include <windows.h>
 #include <winspool.h>
@@ -71,6 +73,7 @@
 #include "picasso96_win.h"
 #else
 #include "picasso96_aros.h"
+#include "winnt.h"
 #endif
 #if 0
 #include "win32gui.h"
@@ -252,7 +255,9 @@ static void addaspectratios (HWND hDlg, int id)
 	}
 }
 
+#ifndef __AROS__
 #define Error(x) MessageBox (NULL, (x), _T("WinUAE Error"), MB_OK)
+#endif
 
 TCHAR *WIN32GUI_LoadUIString (TCHAR *id)
 {
@@ -324,12 +329,12 @@ struct GUIPAGE {
 	int focusid;
 };
 static struct GUIPAGE ppage[MAX_C_PAGES];
-#if 0
 
 static bool ischecked (HWND hDlg, DWORD id)
 {
 	return IsDlgButtonChecked (hDlg, id) == BST_CHECKED;
 }
+#if 0
 static void setchecked (HWND hDlg, DWORD id, bool checked)
 {
 	CheckDlgButton (hDlg, id, checked ? BST_CHECKED : BST_UNCHECKED);
@@ -6184,7 +6189,6 @@ static INT_PTR CALLBACK AboutDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 	return FALSE;
 }
 
-#if 0
 static void enable_for_displaydlg (HWND hDlg)
 {
 	int rtg = ((!workprefs.address_space_24 || !gfxboard_is_z3 (workprefs.rtgmem_type)) && workprefs.rtgmem_size) || workprefs.rtgmem_type >= GFXBOARD_HARDWARE;
@@ -6218,7 +6222,6 @@ static void enable_for_displaydlg (HWND hDlg)
 	ew (hDlg, IDC_LM_IDOUBLED2, !workprefs.gfx_autoresolution && isdouble);
 	ew (hDlg, IDC_LM_IDOUBLED3, !workprefs.gfx_autoresolution && isdouble);
 }
-#endif
 
 static void enable_for_chipsetdlg (HWND hDlg)
 {
@@ -6241,7 +6244,6 @@ static void enable_for_chipsetdlg (HWND hDlg)
 	ew (hDlg, IDC_CS_EXT, workprefs.cs_compatible ? TRUE : FALSE);
 }
 
-#if 0
 static const int fakerefreshrates[] = { 50, 60, 100, 120, 0 };
 struct storedrefreshrate
 {
@@ -6326,12 +6328,10 @@ static void init_frequency_combo (HWND hDlg, int dmode)
 		workprefs.gfx_apmode[0].gfx_refreshrate = 0;
 	}
 }
-#endif
 
 #define MAX_FRAMERATE_LENGTH 40
 #define MAX_NTH_LENGTH 20
 
-#if 0
 static int display_mode_index (uae_u32 x, uae_u32 y, uae_u32 d)
 {
 	int i, j;
@@ -6391,6 +6391,7 @@ static void set_da (HWND hDlg)
 	SetDlgItemText (hDlg, IDC_DA_TEXT, buf);
 }
 
+#if 0
 static void update_da (HWND hDlg)
 {
 	currprefs.gfx_gamma = workprefs.gfx_gamma;
@@ -6416,6 +6417,7 @@ static void handle_da (HWND hDlg)
 	*p = v;
 	update_da (hDlg);
 }
+#endif
 
 void init_da (HWND hDlg)
 {
@@ -6515,6 +6517,7 @@ static void init_display_mode (HWND hDlg)
 }
 
 #if 0
+#if 0
 static int display_toselect (int fs, int vsync, int p96)
 {
 	if (p96)
@@ -6579,6 +6582,15 @@ static void display_fromselect (int val, int *fs, int *vsync, int p96)
 }
 #endif
 
+#endif
+
+static double my_abs(double val) {
+  if(val < 0)
+    return val*-1;
+
+  return val;
+}
+
 static void values_to_displaydlg (HWND hDlg)
 {
 	TCHAR buffer[MAX_DPATH];
@@ -6602,7 +6614,7 @@ static void values_to_displaydlg (HWND hDlg)
 				_stprintf (buffer, _T(":%d"), i);
 			SendDlgItemMessage(hDlg, IDC_RATE2BOX, CB_ADDSTRING, 0, (LPARAM)buffer);
 			d = workprefs.chipset_refreshrate;
-			if (abs (d) < 1)
+			if (my_abs (d) < 1)
 				d = currprefs.ntscmode ? 60.0 : 50.0;
 			if (selectcr && selectcr->index == cr->index)
 				workprefs.cr_selected = i;
@@ -6742,9 +6754,14 @@ static void init_resolution_combo (HWND hDlg)
 	TCHAR tmp[MAX_DPATH];
 	struct MultiDisplay *md = getdisplay (&workprefs);
 
+  DebOut("entered (md=%lx)\n", md);
+  DebOut("md->DisplayModes[0].depth: %d\n", md->DisplayModes[0].depth);
+
 	idx = -1;
 	SendDlgItemMessage(hDlg, IDC_RESOLUTION, CB_RESETCONTENT, 0, 0);
 	for (i = 0; md->DisplayModes[i].depth >= 0; i++) {
+    DebOut("i: %d\n", i);
+    DebOut("md->DisplayModes[i].depth: %d\n", md->DisplayModes[i].depth);
 		if (md->DisplayModes[i].depth > 1 && md->DisplayModes[i].residx != idx) {
 			_stprintf (tmp, _T("%dx%d%s"), md->DisplayModes[i].res.width, md->DisplayModes[i].res.height, md->DisplayModes[i].lace ? _T("i") : _T(""));
 			if (md->DisplayModes[i].rawmode)
@@ -6756,7 +6773,6 @@ static void init_resolution_combo (HWND hDlg)
 	WIN32GUI_LoadUIString (IDS_DISPLAYMODE_NATIVE, tmp, sizeof tmp / sizeof (TCHAR));
 	SendDlgItemMessage(hDlg, IDC_RESOLUTION, CB_ADDSTRING, 0, (LPARAM)tmp);
 }
-#endif
 
 static void init_displays_combo (HWND hDlg, bool rtg)
 {
@@ -7074,6 +7090,7 @@ static void values_from_displaydlg (HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 
 	updatewinfsmode (&workprefs);
 }
+#endif
 
 static int hw3d_changed;
 
@@ -7103,6 +7120,7 @@ static INT_PTR CALLBACK DisplayDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPAR
 		recursive--;
 		break;
 
+#if 0
 	case WM_HSCROLL:
 	case WM_COMMAND:
 		if (recursive > 0)
@@ -7125,7 +7143,7 @@ static INT_PTR CALLBACK DisplayDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPAR
 		}
 		recursive--;
 		break;
-
+#endif
 	}
 	if (hw3d_changed && recursive == 0) {
 		recursive++;
@@ -7136,7 +7154,6 @@ static INT_PTR CALLBACK DisplayDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPAR
 	}
 	return FALSE;
 }
-#endif
 
 static void values_to_chipsetdlg (HWND hDlg)
 {
@@ -9487,7 +9504,6 @@ static INT_PTR CALLBACK CPUDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 	return FALSE;
 }
 
-#if 0
 static void enable_for_sounddlg (HWND hDlg)
 {
 	int numdevs;
@@ -9525,7 +9541,6 @@ static void enable_for_sounddlg (HWND hDlg)
 
 	ew (hDlg, IDC_SOUNDCALIBRATE, workprefs.produce_sound && full_property_sheet);
 }
-#endif
 
 static int exact_log2 (int v)
 {
@@ -9535,22 +9550,73 @@ static int exact_log2 (int v)
 	return l;
 }
 
-#if 0
 static TCHAR *drivesounds;
 
 static void sound_loaddrivesamples (void)
 {
-	WIN32_FIND_DATA fd;
-	HANDLE h;
+	BPTR lock;
 	TCHAR *p;
 	int len = 0;
 	TCHAR dirname[1024];
+  struct FileInfoBlock *fib;
 
 	free (drivesounds);
 	p = drivesounds = 0;
 
+#if 0
 	get_plugin_path (dirname, sizeof dirname / sizeof (TCHAR), _T("floppysounds"));
 	_tcscat (dirname, _T("*.wav"));
+#endif
+  strcpy(dirname, "PROGDIR:floppysounds");
+
+  if(!my_existsdir(dirname)) {
+    DebOut("directory %s does not exist\n", dirname);
+    return;
+  }
+
+  lock=Lock((STRPTR) dirname, ACCESS_READ);
+  if(!lock) {
+    DebOut("unable to lock %s\n", dirname);
+    return;
+  }
+
+  fib=(struct FileInfoBlock *) AllocDosObject(DOS_FIB, NULL);
+  if(!fib) {
+    goto EXIT;
+  }
+
+  if(!Examine(lock, fib)) {
+    DebOut("Examine failed\n");
+    goto EXIT;
+  }
+
+  while(ExNext(lock, fib) != DOSFALSE) {
+    DebOut("ExNext..\n");
+    if(fib->fib_DirEntryType < 0) {
+      /* not a directory */
+			TCHAR *name = (TCHAR *) fib->fib_FileName;
+			if (_tcslen (name) > _tcslen (DS_NAME_CLICK) + 4 && !_tcsncmp (name, DS_NAME_CLICK, _tcslen (DS_NAME_CLICK))) {
+				if (p - drivesounds < 1000) {
+					TCHAR *oldp = p;
+					len += 2000;
+					drivesounds = p = xrealloc (TCHAR, drivesounds, len);
+					if (oldp) {
+						do {
+							p = p + _tcslen (p) + 1;
+						} while (p[0]);
+					}
+				}
+				_tcscpy (p, name + _tcslen (DS_NAME_CLICK));
+				p[_tcslen (name + _tcslen (DS_NAME_CLICK)) - 4] = 0;
+				p += _tcslen (p);
+				*p++ = 0;
+				*p = 0;
+			}
+
+    }
+  }
+
+#if 0
 	h = FindFirstFile (dirname, &fd);
 	if (h == INVALID_HANDLE_VALUE)
 		return;
@@ -9579,6 +9645,11 @@ static void sound_loaddrivesamples (void)
 			break;
 	}
 	FindClose (h);
+#endif
+
+EXIT:
+  if(lock) UnLock(lock);
+  if(fib) FreeDosObject(DOS_FIB, fib);
 }
 
 extern int soundpercent;
@@ -9749,6 +9820,7 @@ static void values_to_sounddlg (HWND hDlg)
 	SendDlgItemMessage (hDlg, IDC_SOUNDDRIVESELECT, CB_ADDSTRING, 0, (LPARAM)txt);
 	WIN32GUI_LoadUIString (IDS_DRIVESOUND_DEFAULT_A500, txt, sizeof (txt) / sizeof (TCHAR));
 	SendDlgItemMessage (hDlg, IDC_SOUNDDRIVESELECT, CB_ADDSTRING, 0, (LPARAM)txt);
+#if 0
 	driveclick_fdrawcmd_detect ();
 	if (driveclick_pcdrivemask) {
 		for (i = 0; i < 2; i++) {
@@ -9757,6 +9829,7 @@ static void values_to_sounddlg (HWND hDlg)
 			SendDlgItemMessage (hDlg, IDC_SOUNDDRIVESELECT, CB_ADDSTRING, 0, (LPARAM)txt2);
 		}
 	}
+#endif
 	SendDlgItemMessage (hDlg, IDC_SOUNDDRIVESELECT, CB_SETCURSEL, 0, 0);
 	p = drivesounds;
 	if (p) {
@@ -9919,12 +9992,15 @@ static INT_PTR CALLBACK SoundDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 			SendDlgItemMessage (hDlg, IDC_SOUNDCARDLIST, CB_RESETCONTENT, 0, 0L);
 			numdevs = enumerate_sound_devices ();
 			for (card = 0; card < numdevs; card++) {
+        TODO();
+#if 0
 				TCHAR tmp[MAX_DPATH];
 				int type = sound_devices[card]->type;
 				_stprintf (tmp, _T("%s: %s"),
 					type == SOUND_DEVICE_XAUDIO2 ? _T("XAudio2") : (type == SOUND_DEVICE_DS ? _T("DSOUND") : (type == SOUND_DEVICE_AL ? _T("OpenAL") : (type == SOUND_DEVICE_PA ? _T("PortAudio") : (type == SOUND_DEVICE_WASAPI ? _T("WASAPI") : _T("WASAPI EX"))))),
 					sound_devices[card]->name);
 				SendDlgItemMessage (hDlg, IDC_SOUNDCARDLIST, CB_ADDSTRING, 0, (LPARAM)tmp);
+#endif
 			}
 			if (numdevs == 0)
 				workprefs.produce_sound = 0; /* No sound card in system, enable_for_sounddlg will accomodate this */
@@ -9953,6 +10029,7 @@ static INT_PTR CALLBACK SoundDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 		recursive--;
 		break;
 
+#if 0
 	case WM_HSCROLL:
 		if ((HWND)lParam == GetDlgItem (hDlg, IDC_SOUNDBUFFERRAM)) {
 			int v = SendMessage (GetDlgItem (hDlg, IDC_SOUNDBUFFERRAM), TBM_GETPOS, 0, 0);
@@ -9964,9 +10041,11 @@ static INT_PTR CALLBACK SoundDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 		workprefs.dfxclickvolume = 100 - SendMessage (GetDlgItem (hDlg, IDC_SOUNDDRIVEVOLUME), TBM_GETPOS, 0, 0);
 		update_soundgui (hDlg);
 		break;
+#endif
 	}
 	return FALSE;
 }
+#if 0
 
 #ifdef FILESYS
 
@@ -17044,17 +17123,15 @@ static int GetSettings (int all_options, HWND hwnd)
 		EXPANSION_ID = init_page (IDD_EXPANSION, IDI_EXPANSION, IDS_EXPANSION, ExpansionDlgProc, NULL, _T("gui/expansion.htm"), 0);
 		KICKSTART_ID = init_page (IDD_KICKSTART, IDI_MEMORY, IDS_KICKSTART, KickstartDlgProc, NULL, _T("gui/rom.htm"), 0);
 		CPU_ID = init_page (IDD_CPU, IDI_CPU, IDS_CPU, CPUDlgProc, NULL, _T("gui/cpu.htm"), 0);
-#if 0
 		DISPLAY_ID = init_page (IDD_DISPLAY, IDI_DISPLAY, IDS_DISPLAY, DisplayDlgProc, NULL, _T("gui/display.htm"), 0);
+#if 0
 #if defined (GFXFILTER)
 		HW3D_ID = init_page (IDD_FILTER, IDI_DISPLAY, IDS_FILTER, hw3dDlgProc, NULL, _T("gui/filter.htm"), 0);
 #endif
 #endif
 		CHIPSET_ID = init_page (IDD_CHIPSET, IDI_CPU, IDS_CHIPSET, ChipsetDlgProc, NULL, _T("gui/chipset.htm"), 0);
 		CHIPSET2_ID = init_page (IDD_CHIPSET2, IDI_CPU, IDS_CHIPSET2, ChipsetDlgProc2, NULL, _T("gui/chipset.htm"), 0);
-#if 0
 		SOUND_ID = init_page (IDD_SOUND, IDI_SOUND, IDS_SOUND, SoundDlgProc, NULL, _T("gui/sound.htm"), 0);
-#endif
 		FLOPPY_ID = init_page (IDD_FLOPPY, IDI_FLOPPY, IDS_FLOPPY, FloppyDlgProc, NULL, _T("gui/floppies.htm"), 0);
 #if 0
 		DISK_ID = init_page (IDD_DISK, IDI_FLOPPY, IDS_DISK, SwapperDlgProc, SwapperAccel, _T("gui/disk.htm"), IDC_DISKLIST);

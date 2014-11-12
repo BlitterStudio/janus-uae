@@ -347,6 +347,10 @@ static struct MultiDisplay *getdisplay2 (struct uae_prefs *p, int index)
 	Displays[0].adaptername     = (TCHAR *) "Display";
 	Displays[0].monitorname     = (TCHAR *) "Display";
   //Displays[0].disabled = 0;
+  if(Displays[0].DisplayModes == NULL) {
+    DebOut("alloc DisplayModes array. Should this be done here !? really !?\n");
+    Displays[0].DisplayModes = xmalloc (struct PicassoResolution, MAX_PICASSO_MODES);
+  }
 
 	return &Displays[0];
 }
@@ -705,3 +709,6 @@ void read_rom_list (void)
 	romlist_add (NULL, NULL);
 	regclosetree (fkey);
 }
+
+/* driveclick_win32.cpp! */
+int driveclick_pcdrivemask;

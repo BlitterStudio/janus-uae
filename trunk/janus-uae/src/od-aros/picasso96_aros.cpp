@@ -32,6 +32,7 @@
 
 #define MULTIDISPLAY 0
 #define WINCURSOR 1
+#define OLI_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -2194,6 +2195,8 @@ static void picasso96_alloc2 (TrapContext *ctx)
 	int i, j, size, cnt;
 	int misscnt, depths;
 
+  DebOut("entered\n");
+
 	xfree (newmodes);
 	newmodes = NULL;
 	picasso96_amem = picasso96_amemend = 0;
@@ -2325,6 +2328,7 @@ static void picasso96_alloc2 (TrapContext *ctx)
 
 void picasso96_alloc (TrapContext *ctx)
 {
+  DebOut("entered\n");
 	if (uaegfx_old || currprefs.rtgmem_type >= GFXBOARD_HARDWARE)
 		return;
 	uaegfx_resname = ds (_T("uaegfx.card"));
