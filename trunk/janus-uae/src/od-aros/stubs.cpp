@@ -168,6 +168,7 @@ int setup_sound (void)
 void target_quit (void)
 {
   TODO();
+  DebOut("should call shellexecute (currprefs.win32_commandpathend: %s)\n", currprefs.win32_commandpathend);
 }
 
 int uaenet_open (void *vsd, struct netdriverdata *tc, void *user, uaenet_gotfunc *gotfunc, uaenet_getfunc *getfunc, int promiscuous)
@@ -444,11 +445,6 @@ void toggle_mousegrab (void)
 {
   TODO();
 }
-
-int uae_start_thread (const TCHAR *name, void *(*f)(void *), void *arg, uae_thread_id *tid)
-{
-  TODO();
-}
 #endif
 
 struct netdriverdata *uaenet_enumerate (struct netdriverdata **out, const TCHAR *name)
@@ -659,13 +655,6 @@ struct zvolume *archive_directory_zip (struct zfile *z)
 
 #if 0
 void gfx_set_picasso_state (int on)
-{
-  TODO();
-}
-#endif
-
-#if 0
-int uae_start_thread_fast (void *(*f)(void *), void *arg, uae_thread_id *tid)
 {
   TODO();
 }

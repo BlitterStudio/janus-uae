@@ -33,3 +33,4 @@ extern void ethernet_trigger (void*);
 
 extern bool slirp_start (void);
 extern void slirp_end (void);
+

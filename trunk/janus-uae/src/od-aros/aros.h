@@ -59,6 +59,10 @@ void sleep_millis (int ms);
 void sleep_millis_main (int ms);
 void sleep_millis_busy (int ms);
 void gui_restart (void);
+
+int aros_show_gui (void);
+void aros_hide_gui (void);
+
 void fetch_path (const TCHAR *name, TCHAR *out, int size);
 
 /* taken from FS-UAE */

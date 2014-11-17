@@ -816,7 +816,10 @@ ENDMTABLE
 
 int init_class(void) {
 
-  CL_Fixed = MUI_CreateCustomClass(NULL, MUIC_Group, NULL, sizeof(struct Data), (APTR)&mDispatcher);
+  if(!CL_Fixed) {
+    CL_Fixed = MUI_CreateCustomClass(NULL, MUIC_Group, NULL, sizeof(struct Data), (APTR)&mDispatcher);
+  }
+
   return CL_Fixed ? 1 : 0;
 }
 
