@@ -6,6 +6,7 @@
 * (c) 2006 - 2013 Toni Wilen
 */
 
+#define OLI_DEBUG
 #define GAYLE_LOG 0
 #define IDE_LOG 0
 #define MBRES_LOG 0
@@ -2683,7 +2684,10 @@ void gayle_free_units (void)
 {
 	int i;
 
+  DebOut("entered\n");
+
 	for (i = 0; i < TOTAL_IDE * 2; i++) {
+    DebOut("i: %d\n", i);
 		struct ide_hdf *ide = idedrive[i];
 		if (ide) {
 			if (ide->scsi) {
@@ -2695,7 +2699,9 @@ void gayle_free_units (void)
 			ide->cd_unit_num = -1;
 		}
 	}
+  DebOut("e..\n");
 	freepcmcia (1);
+  DebOut("done!\n");
 }
 
 #if 0
@@ -2760,8 +2766,11 @@ int gayle_modify_pcmcia_ide_unit (const TCHAR *path, int readonly, int insert)
 
 static void *ide_thread (void *uae_null)
 {
+  DebOut("ide_thread entered\n");
 	for (;;) {
+    DebOut("waiting for request..\n");
 		uae_u32 unit = read_comm_pipe_u32_blocking (&requests);
+    DebOut("got request for unit %d\n", unit);
 		struct ide_hdf *ide;
 		if (gayle_thread_running == 0 || unit == 0xfffffff)
 			break;
@@ -2772,6 +2781,7 @@ static void *ide_thread (void *uae_null)
 			do_process_rw_command (ide);
 	}
 	gayle_thread_running = -1;
+  DebOut("ide_thread dead now\n");
 	return 0;
 }
 
@@ -2815,11 +2825,16 @@ static void initide (void)
 
 void gayle_free (void)
 {
+  DebOut("entered\n");
 	if (gayle_thread_running > 0) {
 		gayle_thread_running = 0;
+    DebOut("call write_comm_pipe_u32..\n");
 		write_comm_pipe_u32 (&requests, 0xffffffff, 1);
-		while(gayle_thread_running == 0)
+    DebOut("call write_comm_pipe_u32 done\n");
+		while(gayle_thread_running == 0) {
+      DebOut("sleep..\n");
 			sleep_millis (10);
+    }
 		gayle_thread_running = 0;
 	}
 }

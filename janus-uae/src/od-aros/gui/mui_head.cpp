@@ -421,9 +421,11 @@ void aros_gui_exit(void) {
 
   DebOut("entered\n");
 
-  MUI_DisposeObject(app);
-  app=NULL;
-  delete_class();
+  if(app) {
+    MUI_DisposeObject(app);
+    app=NULL;
+    delete_class();
+  }
 }
 
 #ifdef __STANDALONE__

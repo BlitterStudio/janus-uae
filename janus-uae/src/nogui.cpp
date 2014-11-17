@@ -50,11 +50,6 @@ int gui_update (void)
 }
 #endif
 
-void gui_exit (void)
-{
-	TODO();
-}
-
 void gui_fps (int x)
 {
 	TODO();
