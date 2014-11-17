@@ -945,6 +945,7 @@ void do_start_program (void)
 
 void do_leave_program (void)
 {
+  DebOut("do_leave_program..\n");
 	sampler_free ();
 	graphics_leave ();
 	inputdevice_close ();
@@ -969,30 +970,40 @@ void do_leave_program (void)
 #endif
 	if (! no_gui)
 		gui_exit ();
+  DebOut("1..\n");
 #ifdef USE_SDL
 	SDL_Quit ();
 #endif
+  DebOut("1a..\n");
 #ifdef AUTOCONFIG
 	expansion_cleanup ();
 #endif
+  DebOut("1b..\n");
 #ifdef FILESYS
 	filesys_cleanup ();
 #endif
+  DebOut("1c..\n");
 #ifdef BSDSOCKET
 	bsdlib_reset ();
 #endif
+  DebOut("2..vvvvvvv\n");
 	gayle_free ();
+  DebOut("2a..^^^^^^\n");
 	device_func_reset ();
+  DebOut("2b..\n");
 #ifdef WITH_LUA
 	uae_lua_free ();
 #endif
+  DebOut("2c..\n");
 	savestate_free ();
+  DebOut("3..\n");
 	memory_cleanup ();
 #ifdef NATMEM_OFFSET
 	free_shm ();
 #endif
 	cfgfile_addcfgparam (0);
 	machdep_free ();
+  DebOut("done!\n");
 }
 
 void start_program (void)

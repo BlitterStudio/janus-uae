@@ -17320,9 +17320,9 @@ int gui_update (void)
 	return 1;
 }
 
+void gui_exit (void) {
+  aros_gui_exit();
 #if 0
-void gui_exit (void)
-{
 	int i;
 
 	for (i = 0; i < C_PAGES; i++) {
@@ -17334,8 +17334,10 @@ void gui_exit (void)
 #ifdef PARALLEL_PORT
 	closeprinter (); // Bernd Roesch
 #endif
+#endif
 }
 
+#if 0
 extern HWND hStatusWnd;
 
 void check_prefs_changed_gui (void)
