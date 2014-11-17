@@ -153,4 +153,13 @@ mui_head.o mui_head.o : mui_head.cpp \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/arossupportbase.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/exec/execbase.h \
   /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/exec/alerts.h \
-  ../target.h gui.h mui_data.h
+  ../target.h ../../include/uae.h ../threaddep/thread.h \
+  ../../include/commpipe.h ../aros.h ../sys/mman.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/signal.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/sigset_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/sigevent_s.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/sigaction_s.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/siginfo_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/stack_t.h \
+  /home/oli/svn/v0/AROS/bin/linux-i386/AROS/Development/include/aros/types/ucontext_t.h \
+  ../gui/gui.h gui.h mui_data.h

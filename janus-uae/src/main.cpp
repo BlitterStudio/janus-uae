@@ -602,6 +602,8 @@ static int default_config;
 
 void uae_reset (int hardreset, int keyboardreset)
 {
+  DebOut("entered\n");
+  DebOut("quit_program: %d\n", quit_program);
 	if (debug_dma) {
 		record_dma_reset ();
 		record_dma_reset ();
@@ -616,20 +618,39 @@ void uae_reset (int hardreset, int keyboardreset)
 			quit_program = -UAE_RESET_HARD;
 	}
 
+  DebOut("quit_program: %d\n", quit_program);
+
 }
 
+void aros_gui_exit(void);
 void uae_quit (void)
 {
+  DebOut("entered\n");
+  DebOut("quit_program: %d\n", quit_program);
 	deactivate_debugger ();
 	if (quit_program != -UAE_QUIT)
 		quit_program = -UAE_QUIT;
+  DebOut("quit_program: %d\n", quit_program);
 	target_quit ();
+  aros_gui_exit();
 }
 
 /* 0 = normal, 1 = nogui, -1 = disable nogui */
 void uae_restart (int opengui, const TCHAR *cfgfile)
 {
-	uae_quit ();
+  DebOut("call uae_quit\n");
+  DebOut("quit_program: %d\n", quit_program);
+	//uae_quit ();
+  deactivate_debugger ();
+  DebOut("quit_program: %d\n", quit_program);
+  /* warning: WinUAE did not have quit_program=0 here! */
+  //quit_program=0;
+  DebOut("quit_program: %d\n", quit_program);
+  DebOut("opengui: %d\n", opengui);
+  printf("QQQQQQQQQQQQQQQQQQQ\n");
+  printf("uae_restart(%d, %s)\n", opengui, cfgfile);
+  kprintf("QQQQQQQQQQQQQQQQQQQ\n");
+  kprintf("uae_restart(%d, %s)\n", opengui, cfgfile);
 	restart_program = opengui > 0 ? 1 : (opengui == 0 ? 2 : 3);
 	restart_config[0] = 0;
 	default_config = 0;
@@ -886,7 +907,9 @@ extern int DummyException (LPEXCEPTION_POINTERS blah, int n_except)
 
 void do_start_program (void)
 {
-	if (quit_program == -UAE_QUIT)
+  DebOut("entered (quit_program: %d)\n", quit_program);
+
+	if (quit_program == -UAE_QUIT) /* UAE_QUIT is 1 */
 		return;
 	if (!canbang && candirect < 0)
 		candirect = 0;
@@ -894,8 +917,10 @@ void do_start_program (void)
 		candirect = 1;
 	/* Do a reset on startup. Whether this is elegant is debatable. */
 	inputdevice_updateconfig (&changed_prefs, &currprefs);
+  DebOut("quit_program: %d\n", quit_program);
 	if (quit_program >= 0)
 		quit_program = UAE_RESET;
+  DebOut("quit_program: %d\n", quit_program);
 #ifdef WITH_LUA
 	uae_lua_loadall ();
 #endif
@@ -972,6 +997,7 @@ void do_leave_program (void)
 
 void start_program (void)
 {
+  DebOut("entered\n");
 	do_start_program ();
 }
 
@@ -1026,6 +1052,8 @@ void virtualdevice_init (void)
 static int real_main2 (int argc, TCHAR **argv)
 {
 
+  DebOut("entered\n");
+
 #ifdef USE_SDL
 	SDL_Init (SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_NOPARACHUTE);
 #endif
@@ -1065,14 +1093,17 @@ static int real_main2 (int argc, TCHAR **argv)
 	inputdevice_init ();
 
 	changed_prefs = currprefs;
+  DebOut("no_gui: %d\n", no_gui);
 	no_gui = ! currprefs.start_gui;
 	if (restart_program == 2)
 		no_gui = 1;
 	else if (restart_program == 3)
 		no_gui = 0;
+  DebOut("no_gui: %d\n", no_gui);
 	restart_program = 0;
 #warning REMOVE no_gui=0;
-  no_gui=0;
+  //no_gui=0;
+  DebOut("no_gui: %d\n", no_gui);
 	if (! no_gui) {
 		int err = gui_init ();
 		currprefs = changed_prefs;
@@ -1084,6 +1115,8 @@ static int real_main2 (int argc, TCHAR **argv)
 			return 1;
 		}
 	}
+
+  DebOut("gui_init survived\n");
 
 	memset (&gui_data, 0, sizeof gui_data);
 	gui_data.cd = -1;
@@ -1139,7 +1172,9 @@ static int real_main2 (int argc, TCHAR **argv)
 
 	gui_update ();
 
+  DebOut("calling graphics_init\n");
 	if (graphics_init (true)) {
+    DebOut("graphics_init survived\n");
 		setup_brkhandler ();
 		if (currprefs.start_debugger && debuggable ())
 			activate_debugger ();
@@ -1150,8 +1185,11 @@ static int real_main2 (int argc, TCHAR **argv)
 			}
 			currprefs.produce_sound = 0;
 		}
+    DebOut("calling start_program\n");
 		start_program ();
+    DebOut("start_program returned\n");
 	}
+  DebOut("return 0\n");
 	return 0;
 }
 
@@ -1163,6 +1201,8 @@ void real_main (int argc, TCHAR **argv)
 	_tcscat (restart_config, OPTIONSFILENAME);
 	default_config = 1;
 
+  DebOut("restart_program: %d\n", restart_program);
+
 	while (restart_program) {
 		int ret;
 		changed_prefs = currprefs;
@@ -1170,7 +1210,9 @@ void real_main (int argc, TCHAR **argv)
 		if (ret == 0 && quit_to_gui)
 			restart_program = 1;
 		leave_program ();
+    DebOut("quit_program: %d\n", quit_program);
 		quit_program = 0;
+    DebOut("quit_program: %d\n", quit_program);
 	}
 	zfile_exit ();
 }

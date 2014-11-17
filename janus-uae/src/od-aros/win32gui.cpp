@@ -17098,7 +17098,10 @@ static void setdefaultguisize (void)
 }
 #endif
 
-
+/*
+ * 0:  success
+ * -1: error
+ */
 static int GetSettings (int all_options, HWND hwnd)
 {
 	static int init_called = 0;
@@ -17170,45 +17173,13 @@ static int GetSettings (int all_options, HWND hwnd)
 		else
 			currentpage = LOADSAVE_ID;
 	}
+
+  psresult=aros_show_gui();
 #if 0
 
 	int fmultx = 0, fmulty = 0;
 	for (;;) {
 		int v = 0;
-		int regexists;
-		setdefaultguisize ();
-		regexists = regqueryint (NULL, _T("GUIResize"), &v);
-		gui_resize_allowed = true;
-		gui_resize_enabled = v != 0;
-		if (full_property_sheet || isfullscreen () == 0) {
-			regqueryint (NULL, _T("GUISizeX"), &gui_width);
-			regqueryint (NULL, _T("GUISizeY"), &gui_height);
-			scaleresource_init (_T(""));
-		} else if (isfullscreen () < 0) {
-			regqueryint (NULL, _T("GUISizeFWX"), &gui_width);
-			regqueryint (NULL, _T("GUISizeFWY"), &gui_height);
-			scaleresource_init (_T("FW"));
-		} else if (isfullscreen () > 0) {
-			regqueryint (NULL, _T("GUISizeFSX"), &gui_width);
-			regqueryint (NULL, _T("GUISizeFSY"), &gui_height);
-			scaleresource_init (_T("FS"));
-		}
-		if (!regexists) {
-			scaleresource_setdefaults ();
-			fmultx = 0;
-			write_log (_T("GUI default size\n"));
-			regsetint (NULL, _T("GUIResize"), 0);
-		} else {
-			if (gui_width < MIN_GUI_INTERNAL_WIDTH || gui_width > 4096 || gui_height < MIN_GUI_INTERNAL_HEIGHT || gui_height > 4096) {
-				scaleresource_setdefaults ();
-				setdefaultguisize ();
-				fmultx = 0;
-				write_log (_T("GUI size reset\n"));
-			}
-		}
-
-		if (all_options || !configstore)
-			CreateConfigStore (NULL, FALSE);
 
 		dialogreturn = -1;
 		hAccelTable = NULL;
@@ -17217,44 +17188,13 @@ static int GetSettings (int all_options, HWND hwnd)
 		if (first)
 			write_log (_T("Entering GUI idle loop\n"));
 
-		if (fmultx > 0)
-			scaleresource_setmult (hwnd, -fmultx, -fmulty);
-		else
-			scaleresource_setmult (hwnd, gui_width, gui_height);
-		fmultx = 0;
-		write_log (_T("Requested GUI size = %dx%d (%dx%d)\n"), gui_width, gui_height, workprefs.gfx_size.width, workprefs.gfx_size.height);
-		if (dodialogmousemove () && isfullscreen() > 0) {
-			if (gui_width >= workprefs.gfx_size.width || gui_height >= workprefs.gfx_size.height) {
-				write_log (_T("GUI larger than screen, resize disabled\n"));
-				gui_resize_allowed = false;
-			}
-		}
-
-		tres = scaleresource (panelresource, hwnd, gui_resize_enabled, workprefs.win32_alwaysontop ? WS_EX_TOPMOST : 0);
 		dhwnd = CreateDialogIndirect (tres->inst, tres->resource, isfullscreen () > 0 ? hwnd : NULL, DialogProc);
-		dialog_rect.top = dialog_rect.left = 0;
-		dialog_rect.right = tres->width;
-		dialog_rect.bottom = tres->height;
-		freescaleresource (tres);
 		psresult = 0;
 		if (dhwnd != NULL) {
 			MSG msg;
 			DWORD v;
 			int w, h;
 
-			getguisize (dhwnd, &w, &h);
-			write_log (_T("Got GUI size = %dx%d\n"), w, h);
-			if (w < 100 || h < 100 || w > 4096 || h > 4096) {
-				write_log (_T("GUI size (%dx%d) out of range!\n"), w, h);
-				scaleresource_setdefaults ();
-				setdefaultguisize ();
-				SendMessage (dhwnd, WM_COMMAND, IDCANCEL, 0);
-				fmultx = fmulty = 0;
-				gui_size_changed = 10;
-				break;
-			}
-
-			setguititle (dhwnd);
 			ShowWindow (dhwnd, SW_SHOW);
 			MapDialogRect (dhwnd, &dialog_rect);
 
@@ -17324,20 +17264,6 @@ static int GetSettings (int all_options, HWND hwnd)
 			scaleresource_setdefaults ();
 			gui_size_changed = 10;
 		}
-		if (!gui_size_changed)
-			break;
-		if (full_property_sheet || isfullscreen () == 0) {
-			regsetint (NULL, _T("GUISizeX"), gui_width);
-			regsetint (NULL, _T("GUISizeY"), gui_height);
-		} else if (isfullscreen () < 0) {
-			regsetint (NULL, _T("GUISizeFWX"), gui_width);
-			regsetint (NULL, _T("GUISizeFWY"), gui_height);
-		} else if (isfullscreen () > 0) {
-			regsetint (NULL, _T("GUISizeFSX"), gui_width);
-			regsetint (NULL, _T("GUISizeFSY"), gui_height);
-		}
-		regsetint (NULL, _T("GUIResize"), gui_resize_enabled ? 1 : 0);
-		gui_size_changed = 0;
 		quit_program = 0;
 	}
 
@@ -17349,14 +17275,20 @@ static int GetSettings (int all_options, HWND hwnd)
 
 	qs_request_reset = 0;
 	full_property_sheet = 0;
+#endif
 	gui_active--;
 	return psresult;
-#endif
 }
 
 int aros_init_gui(void);
 void aros_main_loop(void);
 
+/*
+ * return:
+ *  -1: unable to initialize gui
+ *  -2: error? (no difference to -1)
+ *  else: ok?
+ */
 int gui_init (void)
 {
 	int ret;
@@ -17370,7 +17302,6 @@ int gui_init (void)
   DebOut("inputdevice_updateconfig SKIPPED!\n");
 	for (;;) {
 		ret = GetSettings (1, currprefs.win32_notaskbarbutton ? hHiddenWnd : NULL);
-    aros_main_loop();
 		if (!restart_requested)
 			break;
 		restart_requested = 0;
@@ -17380,6 +17311,7 @@ int gui_init (void)
 		AVIOutput_Begin ();
 #endif
 	}
+  DebOut("left (ret: %d\n", ret);
 	return ret;
 }
 

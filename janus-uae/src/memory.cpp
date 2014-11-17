@@ -2068,6 +2068,8 @@ void memory_reset (void)
 	int bnk, bnk_end;
 	bool gayleorfatgary;
 
+  DebOut("entered\n");
+
 	need_hardreset = false;
 	rom_write_enabled = true;
 	/* Use changed_prefs, as m68k_reset is called later.  */
@@ -2356,6 +2358,7 @@ void memory_reset (void)
 
 void memory_init (void)
 {
+  DebOut("entered\n");
 	init_mem_banks ();
 	virtualdevice_init ();
 

@@ -10,7 +10,7 @@
 #define DEBUG_CD32CDTVIO 0
 #define EXCEPTION3_DEBUGGER 0
 #define CPUTRACE_DEBUG 1
-#define OLI_DEBUG 1
+//#define OLI_DEBUG 1
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -4192,6 +4192,8 @@ void m68k_go (int may_quit)
 	int hardboot = 1;
 	int startup = 1;
 
+  DebOut("entered\n");
+
 	if (in_m68k_go || !may_quit) {
 		write_log (_T("Bug! m68k_go is not reentrant.\n"));
 		abort ();
@@ -4217,6 +4219,8 @@ void m68k_go (int may_quit)
 		}
 		if (input_play || input_record)
 			inprec_startup ();
+
+    DebOut("quit_program: %d\n", quit_program);
 
 		if (quit_program > 0) {
 			int hardreset = (quit_program == UAE_RESET_HARD ? 1 : 0) | hardboot;

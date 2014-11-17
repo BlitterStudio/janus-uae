@@ -6824,6 +6824,8 @@ extern void picasso96_alloc (TrapContext*);
 static uae_u32 REGPARAM2 filesys_init_storeinfo (TrapContext *context)
 {
 	int ret = -1;
+
+  DebOut("entered\n");
 	switch (m68k_dreg (regs, 1))
 	{
 	case 1:
@@ -7777,6 +7779,7 @@ void filesys_install (void)
 {
 	uaecptr loop;
 
+  DebOut("Installing filesystem..\n");
 	TRACEI ((_T("Installing filesystem\n")));
 
 	uae_sem_init (&singlethread_int_sem, 0, 1);

@@ -17,7 +17,7 @@
  * OpenGL support by Jochen Becher, Richard Drummond
  */
 
-#define OLI_DEBUG
+//#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include "keymap.h"
