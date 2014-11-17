@@ -38,6 +38,7 @@
 
 typedef struct {
   struct SignalSemaphore sigSem;
+  struct Task *owner;
   bool init_done;
 } aros_sem;
 
@@ -50,7 +51,7 @@ void uae_sem_init (uae_sem_t *sem, int manual_reset, int initial_state) {
   struct SignalSemaphore *s;
   ULONG nr=1; /* leave first slot empty */
 
-	DebOut("uae_sem_init(%lx)\n", sem);
+	DebOut("uae_sem_init(%lx, manual_reset %d, initial_state %d)\n", sem, manual_reset, initial_state);
 
   /* test for NULL pointer */
 	if(!sem) {
@@ -67,6 +68,11 @@ void uae_sem_init (uae_sem_t *sem, int manual_reset, int initial_state) {
     exit(1);
   }
 
+  if(manual_reset) {
+    write_log("FATAL: manual_reset not done!\n");
+    exit(1);
+  }
+
   /* now we have found a slot */
 
   DebOut("Init aros_sem nr %d\n", nr);
@@ -76,7 +82,9 @@ void uae_sem_init (uae_sem_t *sem, int manual_reset, int initial_state) {
   sem_table[nr].init_done=TRUE;
 
 	if(initial_state) {
+    DebOut("initial_state!: ObtainSemaphore(%lx)\n", &sem_table[nr].sigSem);
 		ObtainSemaphore(&sem_table[nr].sigSem);
+    sem_table[nr].owner=FindTask(NULL);
 	}
 
   /* return new semaphore handle */
@@ -96,6 +104,13 @@ void uae_sem_init (uae_sem_t *sem, int manual_reset, int initial_state) {
 #endif
 }
 
+/*
+ * In Windows this all is based on Event-Objects. They can either be signaled or not.
+ * There is no nesting!
+ * So for AROS this means, we won't nest either.
+ * If we nest, it is save to release the semaphore again, as we hold it anyways.
+ *
+ */
 void uae_sem_wait (uae_sem_t *sem) {
   ULONG nr=*sem;
 
@@ -109,6 +124,19 @@ void uae_sem_wait (uae_sem_t *sem) {
 	DebOut("ObtainSemaphore(%lx)\n", &sem_table[nr].sigSem);
 
 	ObtainSemaphore(&sem_table[nr].sigSem);
+  DebOut("got Semaphore %lx\n", &sem_table[nr].sigSem);
+
+  /* no nesting: */
+  if(sem_table[nr].owner==FindTask(NULL)) {
+    DebOut("we already owned that one, no need to catch another..\n");
+    ReleaseSemaphore(&sem_table[nr].sigSem);
+    DebOut("released Semaphore %lx again\n", &sem_table[nr].sigSem);
+    return;
+  }
+
+  /* set new owner (safe as we now own the semaphore */
+  sem_table[nr].owner=FindTask(NULL);
+
 #if 0
 	WaitForSingleObject (*event, INFINITE);
 #endif
@@ -128,8 +156,12 @@ void uae_sem_post (uae_sem_t *sem) {
 #endif
 
 	/* is it legal, to release a sempahore more than once !? */
-	DebOut("ReleaseSemaphore(nr %d)\n", nr);
+  DebOut("uae_sem_post for nr %d\n", nr);
+  /* reset owner */
+	DebOut("ReleaseSemaphore(%lx)\n", &sem_table[nr].sigSem);
+  sem_table[nr].owner=NULL;
 	ReleaseSemaphore(&sem_table[nr].sigSem);
+  DebOut("released Semaphore %lx\n", &sem_table[nr].sigSem);
 }
 
 int uae_sem_trywait (uae_sem_t *sem) {
