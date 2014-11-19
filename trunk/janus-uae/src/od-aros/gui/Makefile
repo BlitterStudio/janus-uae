@@ -22,7 +22,8 @@
 # to build for 
 # AROS ABI v0: ABI=v0
 # AROS ABI v1: ABI=v1
-ABI        = v0
+#ABI        = v0
+
 SVN        = /home/oli/svn
 
 LIB        = libgui.a

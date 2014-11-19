@@ -12,6 +12,9 @@
 
 #include <math.h>
 #include <float.h>
+#ifdef __AROS__
+#define __SSE__
+#endif
 #include <fenv.h>
 
 #include "sysconfig.h"

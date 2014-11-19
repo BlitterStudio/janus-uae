@@ -111,7 +111,7 @@ sub min_height($) {
   return $h
 }
 
-# strings my contain hot helps (mouse over help), splitted with [] from the button texts..
+# strings may contain hot helps (mouse over help), splitted with [] from the button texts..
 sub get_text($) {
   my $line=shift;
   my $t;
@@ -123,6 +123,9 @@ sub get_text($) {
     $t=$t."\"";
     return $t;
   }
+  #if($line eq "\"\"") {
+    #$line="\" \"";
+  #}
   return $line;
 }
 

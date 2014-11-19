@@ -22,7 +22,11 @@
 # to build for 
 # AROS ABI v0: ABI=v0
 # AROS ABI v1: ABI=v1
-ABI        = v0
+#ABI        = v0
+#
+# ABI is usually set in parent Makefile
+# => so do not use this Makefile directly!
+
 SVN        = /home/oli/svn
 
 EXE        = $(SVN)/$(ABI)/AROS/bin/linux-i386/AROS/wuae
@@ -43,7 +47,7 @@ INCLUDES= -I. -I../include -I../md-i386-gcc -I.. -I/home/oli/svn/v0/AROS/bin/lin
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 CPPFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
-LINK_LIBS=-Lgui -lgui -larossupport -lz -lSDL -lGL -lmui -LSDL_Config -lSDL_Config
+LINK_LIBS=-Lgui -lgui -larossupport -lz -lSDL -lGL -lmui -LSDL_Config -LSDL_Config -lSDL_Config
 
 # ============== common ====================
 
@@ -204,24 +208,25 @@ DEP_OBJS=$(COMMON_OBJS)
 	$(CPP) $(CPPFLAGS) -o $@ -c $*.cpp
 
 
-all: SDL_Config uae
+all: uae
 
-uae: gui common aros
+uae: sdl_config gui common aros
 	$(CPP) $(CFLAGS) $(COMMON_OBJS) $(AROS_OBJS) -o $(EXE) $(LINK_LIBS) 
 
-SDL_Config:
-	@cd SDL_Config;make
+sdl_config:
+	@echo building SDL_Config library ..
+	@cd SDL_Config;make ABI="$(ABI)"
 
 common: ../blitfunc.cpp ../blittable.cpp ../blit.h ../linetoscr.cpp $(COMMON_OBJS)
 	@echo building common ..
 
 aros: $(AROS_OBJS)
-	@echo building aros objects ..
+	@echo building aros objects for ABI $(ABI) ..
 
 .PHONY: gui
 gui: 
 	@echo building gui library ..
-	@cd gui;make
+	@cd gui;make ABI="$(ABI)"
 	
 # ============== autogenerate some .c files ====================
 
@@ -252,7 +257,8 @@ string_resource.h: ../od-win32/resources/winuae.rc
 # ============== clean ====================
 clean: 
 	rm -f $(COMMON_OBJS) $(EXE)
-	@cd gui;make clean
+	@cd gui;make clean ABI=$(ABI)
+	@cd SDL_Config;make clean ABI=$(ABI)
 
 
 # ============== dependencies ====================

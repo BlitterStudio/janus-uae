@@ -22,11 +22,11 @@
 #ifndef _SDL_CONFIG_LIB_H
 #define _SDL_CONFIG_LIB_H
 
-#include "SDL_rwops.h"
-#include "SDL_error.h"
-#include "SDL_version.h"
+#include <SDL/SDL_rwops.h>
+#include <SDL/SDL_error.h>
+#include <SDL/SDL_version.h>
 
-#include "begin_code.h"
+#include <SDL/begin_code.h>
 
 
 #include "SDL_config_cfg.h"
@@ -2192,6 +2192,6 @@ Still, undefs prevent you from accidentaly using those defines in your own code
 #endif
 
 
-#include "close_code.h"
+#include <SDL/close_code.h>
 
 #endif /* file inclusion guard */

@@ -36,7 +36,14 @@ using namespace std;
 #endif
 
 #ifdef HAVE_VALUES_H
+#ifndef __AROS__
+/* argl, ABI v1 does not have values.h anymore.. */
 #include <values.h>
+#endif
+#endif
+
+#ifdef __AROS__
+#include <stdint.h>
 #endif
 
 #ifdef HAVE_STRINGS_H

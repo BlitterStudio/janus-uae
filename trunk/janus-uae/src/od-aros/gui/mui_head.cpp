@@ -4,7 +4,9 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
+#include <proto/utility.h>
 #include <clib/alib_protos.h>
+#include <utility/hooks.h>
 
 #define OLI_DEBUG
 #include "sysconfig.h"
@@ -85,25 +87,27 @@ static const char *listelements[] = {
   NULL
 };
 
-HOOKPROTO(MUIHook_list, ULONG, obj, hookpointer)
-{
+struct Hook MyMuiHook_list;
+
+AROS_UFH2(void, MUIHook_list, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
+
   AROS_USERFUNC_INIT
 
   ULONG nr;
 
-  nr=xget(obj, MUIA_List_Active);
+  nr=xget((Object *) obj, MUIA_List_Active);
 
   DebOut("activate nr %d\n", nr);
 
   DoMethod(pages, MUIM_Set, MUIA_Group_ActivePage, nr);
 
-  return 0;
   AROS_USERFUNC_EXIT
 }
-MakeHook(MyMuiHook_list, MUIHook_list);
 
-HOOKPROTO(MUIHook_start, ULONG, obj, hookpointer)
-{
+struct Hook MyMuiHook_start;
+
+AROS_UFH2(void, MUIHook_start, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
+
   AROS_USERFUNC_INIT
 
   DebOut("START!\n");
@@ -113,26 +117,25 @@ HOOKPROTO(MUIHook_start, ULONG, obj, hookpointer)
   quit_program=0;
   uae_restart (-1, NULL);
 
-  return 0;
   AROS_USERFUNC_EXIT
 }
-MakeHook(MyMuiHook_start, MUIHook_start);
 
-HOOKPROTO(MUIHook_reset, ULONG, obj, hookpointer)
-{
+struct Hook MyMuiHook_reset;
+
+AROS_UFH2(void, MUIHook_reset, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
   AROS_USERFUNC_INIT
 
   DebOut("RESET!\n");
 
   uae_reset (1, 1);
 
-  return 0;
   AROS_USERFUNC_EXIT
 }
-MakeHook(MyMuiHook_reset, MUIHook_reset);
 
-HOOKPROTO(MUIHook_quit, ULONG, obj, hookpointer)
-{
+struct Hook MyMuiHook_quit;
+
+AROS_UFH2(void, MUIHook_quit, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
+
   AROS_USERFUNC_INIT
 
   DebOut("QUIT!\n");
@@ -141,13 +144,12 @@ HOOKPROTO(MUIHook_quit, ULONG, obj, hookpointer)
   uae_quit ();
   DebOut("send SIGBREAKF_CTRL_C to ourselves.. is this a good idea?\n");
   Signal(FindTask(NULL), SIGBREAKF_CTRL_C);
-
-  return 0;
+ 
   AROS_USERFUNC_EXIT
 }
-MakeHook(MyMuiHook_quit, MUIHook_quit);
 
-
+//INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+void foli(void);
 
 Object* build_gui(void) {
   int i=0;
@@ -219,7 +221,10 @@ Object* build_gui(void) {
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CHIPSET2, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_KICKSTART, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_MEMORY, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_FLOPPY, TAG_DONE),
+                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_FLOPPY, 
+                                                                              MA_dlgproc, (ULONG) &foli,
+                                                                              //MA_dlgproc, (ULONG) &FloppyDlgProc,
+                                                                              TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CDDRIVE, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_EXPANSION, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_DISPLAY, TAG_DONE),
@@ -259,13 +264,24 @@ Object* build_gui(void) {
 
   /* List click events */
   kprintf("leftframe: %lx\n", leftframe);
+
+  MyMuiHook_list.h_Entry=(APTR) MUIHook_list;
+  MyMuiHook_list.h_Data =NULL;
   DoMethod(leftframe, MUIM_Notify,
                         MUIA_List_Active, MUIV_EveryTime, 
                         (ULONG) leftframe, 2, MUIM_CallHook,(ULONG) &MyMuiHook_list);
 
   /* button events */
+  MyMuiHook_start.h_Entry=(APTR) MUIHook_start;
+  MyMuiHook_start.h_Data =NULL;
   DoMethod(start, MUIM_Notify, MUIA_Pressed, FALSE, start, 3, MUIM_CallHook, (ULONG) &MyMuiHook_start, TRUE);
+
+  MyMuiHook_reset.h_Entry=(APTR) MUIHook_reset;
+  MyMuiHook_reset.h_Data =NULL;
   DoMethod(reset, MUIM_Notify, MUIA_Pressed, FALSE, reset, 3, MUIM_CallHook, (ULONG) &MyMuiHook_reset, TRUE);
+
+  MyMuiHook_quit.h_Entry=(APTR) MUIHook_quit;
+  MyMuiHook_quit.h_Data =NULL;
   DoMethod(quit,  MUIM_Notify, MUIA_Pressed, FALSE, quit , 3, MUIM_CallHook, (ULONG) &MyMuiHook_quit , TRUE);
 
 
