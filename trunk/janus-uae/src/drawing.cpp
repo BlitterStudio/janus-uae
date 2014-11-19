@@ -3125,7 +3125,7 @@ static void finish_drawing_frame (void)
 	draw_frame2 (vb, vb);
 
 	if (currprefs.leds_on_screen) {
-		int slx, sly;
+		int slx=0, sly=0;
 		statusline_getpos (&slx, &sly, vb->outwidth, vb->outheight);
 		for (i = 0; i < TD_TOTAL_HEIGHT; i++) {
 			int line = sly + i;
