@@ -17,6 +17,7 @@
 #include "sysdeps.h"
 
 #include "gui.h"
+#include "winnt.h"
 #include "mui_data.h"
 
 //#define RESIZE 155 / 100
@@ -29,9 +30,11 @@
 
 struct Data {
   struct Hook LayoutHook;
+  struct Hook MyMUIHook_control;
   ULONG width, height;
   struct Element *src;
   struct TextFont *font;
+  int *(*func) (Element *hDlg, UINT msg, ULONG wParam, ULONG lParam);
 };
 
 static const char *Cycle_Dummy[] = { "empty 1", "empty 2", NULL };
@@ -81,6 +84,26 @@ Element *get_elem(int nIDDlgItem) {
   return NULL;
 }
 
+/*************************************
+ * get index of Zune object
+ *************************************/
+static int get_elem_from_obj(struct Data *data, Object *obj) {
+
+  int i=0;
+
+  DebOut("obj: %lx\n", obj);
+  DebOut("data: %lx\n", data);
+
+  while(data->src[i].exists) {
+    if(data->src[i].obj == obj) {
+      DebOut("found! i: %d\n", i);
+      return i;
+    }
+    i++;
+  }
+  DebOut("ERROR: not found!\n");
+  return -1;
+}
 
 /*****************************************************************************
  * WinAPI
@@ -417,34 +440,38 @@ BOOL ShowWindow(HWND hWnd, int nCmdShow) {
 }; 
 
 
-//HOOKPROTO(MUIHook_control, ULONG, obj, hookpointer)
-APTR MUIHook_control(struct Hook *hook, Object *obj, struct Hook *hookpointer) {
-  //AROS_USERFUNC_INIT
+AROS_UFH2(void, MUIHook_control, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
+
+  AROS_USERFUNC_INIT
+  int i;
+  ULONG wParam;
+
+  struct Data *data = (struct Data *) hook->h_Data;
 
 
   DebOut("entered\n");
-#if 0
-  ULONG nr;
+  DebOut("hook.h_Data: %lx\n", hook->h_Data);
+  DebOut("obj: %lx\n", obj);
 
-  nr=xget(obj, MUIA_List_Active);
+  i=get_elem_from_obj(data, (Object *) obj);
 
-  DebOut("activate nr %d\n", nr);
+  DebOut("i: %d\n", i);
 
-  DoMethod(pages, MUIM_Set, MUIA_Group_ActivePage, nr);
-#endif
+  if(data->func) {
+    DebOut("call function: %lx\n", data->func);
+    DebOut("IDC: %d\n", data->src[i].idc);
+    DebOut("WM_COMMAND: %d\n", WM_COMMAND);
+    //wParam=CBN_SELCHANGE*0x1000+data->src[i].idc;
+    wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
+    DebOut("wParam: %lx\n", wParam);
+    data->func(data->src, WM_COMMAND, wParam, NULL);
+  }
+  else {
+    DebOut("function is zero: %lx\n", data->func);
+  }
 
-  return 0;
-  //AROS_USERFUNC_EXIT
+  AROS_USERFUNC_EXIT
 }
-//MakeHook(MyMuiHook_control, MUIHook_control);
-static struct Hook MyMuiHook_control = {
-  {NULL, NULL},
-  //(HOOKFUNC) HookEntry,
-  NULL,
-  (APTR) MUIHook_control,
-  NULL
-};
-
 
 /*****************************************************************************
  * Class
@@ -520,11 +547,12 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
 static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
 
   struct TagItem *tstate, *tag;
-  ULONG i;
-  ULONG s;
-  struct Element *src;
-  Object *child; /* TODO: remove me */
+  ULONG i=0;
+  ULONG s=0;
+  struct Element *src=NULL;
+  Object *child      =NULL; /* TODO: remove me */
   int *(*func) (Element *hDlg, UINT msg, ULONG wParam, ULONG lParam);
+  func=NULL;
 
   DebOut("mNew(fixed)\n");
 
@@ -570,6 +598,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
     data->width =396;
     data->height=320;
     data->src   =src;
+    data->func  =func;
 
     DebOut("YYYYYYYYYYYYYYYYYY\n");
 
@@ -660,13 +689,6 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                   End,
                 End;
               }
-              /* Add hook */
-              /* TODO !!! */
-#if 0
-              Move this to the "..." gadget!! and call func then..
-              DoMethod(src[i].obj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, (ULONG) src[i].obj, 2, MUIM_CallHook,(ULONG) &MyMuiHook_control, func); 
-
-#endif
             }
           }
           else if(!strcmp(src[i].windows_class, "RICHEDIT")) {
@@ -702,6 +724,12 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
 
           src[i].exists=TRUE;
           src[i].obj=child;
+          /* Add hook */
+          /* TODO !!! */
+          //Move this to the "..." gadget!! and call func then..
+          data->MyMUIHook_control.h_Entry=(APTR) MUIHook_control;
+          data->MyMUIHook_control.h_Data =(APTR) data;
+          DoMethod(src[i].obj, MUIM_Notify, MUIA_Pressed, FALSE, (ULONG) src[i].obj, 2, MUIM_CallHook,(ULONG) &data->MyMUIHook_control, func); 
         break;
 
         case RTEXT:

@@ -47,7 +47,7 @@ INCLUDES= -I. -I../include -I../md-i386-gcc -I.. -I/home/oli/svn/v0/AROS/bin/lin
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 CPPFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
-LINK_LIBS=-Lgui -lgui -larossupport -lz -lSDL -lGL -lmui -LSDL_Config -LSDL_Config -lSDL_Config
+LINK_LIBS=-Lgui -lgui -larossupport -lz -lGL -lmui -lSDL -LSDL_Config -lSDL_Config
 
 # ============== common ====================
 

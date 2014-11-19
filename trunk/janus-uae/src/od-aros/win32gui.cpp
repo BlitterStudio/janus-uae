@@ -5916,7 +5916,7 @@ static void testimage (HWND hDlg, int num)
 #endif
 }
 
-static INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+//static INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 static int diskselectmenu (HWND hDlg, WPARAM wParam);
 
 static void addallfloppies (HWND hDlg);
@@ -11486,6 +11486,8 @@ static void addfloppyhistory (HWND hDlg)
 {
 	int f_text, max, n;
 
+  DebOut("currentpage: %d\n", currentpage);
+
 	if (currentpage == QUICKSTART_ID)
 		max = 2;
 	else if (currentpage == FLOPPY_ID)
@@ -11723,13 +11725,16 @@ static void getfloppyname (HWND hDlg, int n, int cd, int f_text)
 		}
 	}
 }
+#endif
 static void getfloppyname (HWND hDlg, int n)
 {
+  TODO();
+#if 0
 	int cd = iscd (n);
 	int f_text = currentpage == QUICKSTART_ID ? floppybuttonsq[n][0] : floppybuttons[n][0];
 	getfloppyname (hDlg, n, cd, f_text);
-}
 #endif
+}
 
 static void addallfloppies (HWND hDlg)
 {
@@ -11768,6 +11773,8 @@ static void deletesaveimage (HWND hDlg, int num)
 static void diskselect (HWND hDlg, WPARAM wParam, struct uae_prefs *p, int drv, TCHAR *defaultpath)
 {
 	int cd = iscd (drv);
+
+  DebOut("entered\n");
 	MultiDiskSelection (hDlg, wParam, cd ? 17 : 0, &workprefs, defaultpath);
 	if (!cd) {
 		disk_insert (0, p->floppyslots[0].df);
@@ -11781,6 +11788,7 @@ static void diskselect (HWND hDlg, WPARAM wParam, struct uae_prefs *p, int drv, 
 
 static int diskselectmenu (HWND hDlg, WPARAM wParam)
 {
+  TODO();
 #if 0
 	int id = GetDlgCtrlID ((HWND)wParam);
 	int num = -1;
@@ -11816,16 +11824,16 @@ static int diskselectmenu (HWND hDlg, WPARAM wParam)
 	return 0;
 }
 
-void foli(void) {
-  DebOut("hey!\n");
-}
 INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static int recursive = 0;
 	int i;
 	static TCHAR diskname[40] = { _T("") };
 
-  DebOut("entered\n");
+  DebOut("entered (msg: %d)\n", msg);
+  DebOut("hDlg: %lx\n", hDlg);
+  DebOut("wParam: %lx\n", wParam);
+  DebOut("lParam: %lx\n", lParam);
 
 	switch (msg)
 	{
@@ -11874,8 +11882,10 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 			workprefs.floppy_speed ? exact_log2 ((workprefs.floppy_speed) / 100) + 1 : 0);
 		out_floppyspeed (hDlg);
 		recursive--;
+#endif
 		break;
 
+#if 0
 	case WM_CONTEXTMENU:
 		recursive++;
 		diskselectmenu (hDlg, wParam);
@@ -11883,7 +11893,11 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 		recursive--;
 		break;
 
+#endif
 	case WM_COMMAND:
+    DebOut("WM_COMMAND (IDC_DF0: %d)\n", IDC_DF0);
+    DebOut("LOWORD (wParam): %d\n", LOWORD (wParam));
+    DebOut("HIWORD (wParam): %d\n", HIWORD (wParam));
 		if (recursive > 0)
 			break;
 		recursive++;
@@ -11892,10 +11906,12 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 			{
 			case IDC_DF0TEXT:
 			case IDC_DF0TEXTQ:
+        DebOut("IDC_DF0TEXT received!\n");
 				getfloppyname (hDlg, 0);
 				addfloppytype (hDlg, 0);
 				addfloppyhistory (hDlg);
 				break;
+#if 0
 			case IDC_DF1TEXT:
 			case IDC_DF1TEXTQ:
 				getfloppyname (hDlg, 1);
@@ -11935,10 +11951,12 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 					setchecked (hDlg, IDC_FLOPPY_BOOTABLE, false);
 				}
 				break;
+#endif
 			}
 		}
 		switch (LOWORD (wParam))
 		{
+#if 0
 		case IDC_DF0ENABLE:
 		case IDC_DF0QENABLE:
 			getfloppytypeq (hDlg, 0);
@@ -11967,10 +11985,13 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 		case IDC_DF3WP:
 			floppysetwriteprotect (hDlg, 3, ischecked (hDlg, IDC_DF3WP));
 			break;
+#endif
 		case IDC_DF0:
 		case IDC_DF0QQ:
+      DebOut("IDC_DF0 received!\n");
 			diskselect (hDlg, wParam, &workprefs, 0, NULL);
 			break;
+#if 0
 		case IDC_DF1:
 		case IDC_DF1QQ:
 			diskselect (hDlg, wParam, &workprefs, 1, NULL);
@@ -12039,11 +12060,15 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 			DiskSelection (hDlg, wParam, 1, &workprefs, 0);
 			addfloppyhistory (hDlg);
 			break;
+#endif
 		}
+#if 0
 		GetDlgItemText (hDlg, IDC_CREATE_NAME, diskname, 30);
+#endif
 		recursive--;
 		break;
 
+#if 0
 	case WM_HSCROLL:
 		workprefs.floppy_speed = (int)SendMessage (GetDlgItem (hDlg, IDC_FLOPPYSPD), TBM_GETPOS, 0, 0);
 		if (workprefs.floppy_speed > 0) {
