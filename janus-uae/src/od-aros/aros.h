@@ -1,5 +1,8 @@
 #ifndef __AROS_H__
 #define __AROS_H__
+
+#include <stdint.h>
+
 #include "sys/mman.h"
 #include "gui/gui.h"
 
@@ -19,6 +22,7 @@
 #define INVALID_FILE_ATTRIBUTES 0
 
 #define MAX_DISPLAYS 10
+
 extern struct MultiDisplay Displays[MAX_DISPLAYS + 1];
 struct MultiDisplay *getdisplay (struct uae_prefs *p);
 

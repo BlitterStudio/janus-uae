@@ -35,8 +35,12 @@
 #include <proto/exec.h>
 #include <proto/lowlevel.h>
 
-//struct Library *LowLevelBase=NULL;
+#ifdef __AROS__
+struct Library *LowLevelBase=NULL;
+#endif
+#ifdef ____amigaos4__
 struct LowLevelIFace *ILowLevel;
+#endif
 
 static unsigned int nr_joysticks;
 

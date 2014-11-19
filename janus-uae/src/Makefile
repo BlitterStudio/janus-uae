@@ -23,13 +23,19 @@
 #      => run make again and it will be there. Sorry for that.
 #---------------------------------------------------------------------
 
-# you have to adjust this of course..
-TARGET     = /home/oli/svn/aros/AROS/bin/linux-i386/AROS/wuae
+# to build for 
+# AROS ABI v0: ABI=v0
+# AROS ABI v1: ABI=v1
+ABI        = v1
+SVN        = /home/oli/svn
 
-CC         = i386-aros-gcc
+# you have to adjust this of course..
+TARGET     = $(SVN)/$(ABI)/AROS/bin/linux-i386/AROS/wuae
+
+CC         = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-gcc
 #RANLIB = 
-AR         = i386-aros-ar
-LD         = i386-aros-ld
+AR         = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-ar
+LD         = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-ld
 
 HOST_CC    = gcc
 
@@ -108,8 +114,8 @@ toolsclean:
 # Built with target compiler!
 
 uae:
-	cd od-aros;make
+	cd od-aros;make ABI="$(ABI)"
 
 uaeclean:
-	cd od-aros;make clean
+	cd od-aros;make clean ABI="$(ABI)"
 

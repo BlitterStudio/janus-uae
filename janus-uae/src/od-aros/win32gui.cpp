@@ -2315,6 +2315,7 @@ static void setdpath (const TCHAR *name, const TCHAR *path)
 	fullpath (tmp, sizeof tmp / sizeof (TCHAR));
 	regsetstr (NULL, name, tmp);
 }
+#endif
 
 // Common routine for popping up a file-requester
 // flag - 0 for floppy loading, 1 for floppy creation, 2 for loading hdf, 3 for saving hdf
@@ -2333,6 +2334,7 @@ static void setdpath (const TCHAR *name, const TCHAR *path)
 // flag = 18 for Tape image
 int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs, TCHAR *path_out, int *multi)
 {
+#if 0
 	static int previousfilter[20];
 	TCHAR filtername[MAX_DPATH] = _T("");
 	OPENFILENAME openFileName;
@@ -2769,7 +2771,10 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 			wParam = next;
 	}
 	return result;
+#endif
+  return NULL;
 }
+
 int DiskSelection (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs, TCHAR *path_out)
 {
 	return DiskSelection_2 (hDlg, wParam, flag, prefs, path_out, NULL);
@@ -2779,6 +2784,8 @@ int MultiDiskSelection (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *pr
 	int multi = 0;
 	return DiskSelection_2 (hDlg, wParam, flag, prefs, path_out, &multi);
 }
+
+#if 0
 static int loopmulti (TCHAR *s, TCHAR *out)
 {
 	static int index;
@@ -5976,8 +5983,10 @@ static INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, L
 		setfloppytexts (hDlg, true);
 		recursive--;
 		break;
+#endif
 
 	case WM_COMMAND:
+#if 0
 		if (recursive > 0)
 			break;
 		recursive++;
@@ -6024,7 +6033,9 @@ static INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, L
 							qs_request_reset = 2;
 					}
 				}
+#endif
 				break;
+#if 0
 			case IDC_QUICKSTART_CONFIGURATION:
 				val = SendDlgItemMessage (hDlg, IDC_QUICKSTART_CONFIGURATION, CB_GETCURSEL, 0, 0L);
 				if (val != CB_ERR && val != quickstart_conf) {
@@ -11752,6 +11763,7 @@ static void deletesaveimage (HWND hDlg, int num)
 		addfloppytype (hDlg, num);
 	}
 }
+#endif
 
 static void diskselect (HWND hDlg, WPARAM wParam, struct uae_prefs *p, int drv, TCHAR *defaultpath)
 {
@@ -11769,6 +11781,7 @@ static void diskselect (HWND hDlg, WPARAM wParam, struct uae_prefs *p, int drv, 
 
 static int diskselectmenu (HWND hDlg, WPARAM wParam)
 {
+#if 0
 	int id = GetDlgCtrlID ((HWND)wParam);
 	int num = -1;
 	switch (id)
@@ -11799,11 +11812,14 @@ static int diskselectmenu (HWND hDlg, WPARAM wParam)
 		}
 		return 1;
 	}
+#endif
 	return 0;
 }
-#endif
 
-static INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+void foli(void) {
+  DebOut("hey!\n");
+}
+INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static int recursive = 0;
 	int i;

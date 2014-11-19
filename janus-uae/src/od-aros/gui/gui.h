@@ -1,6 +1,7 @@
 #ifndef __GUI_H__
 #define __GUI_H__
 
+#include <stdint.h>
 #include <exec/types.h>
 #include <libraries/mui.h>
 
@@ -70,17 +71,32 @@ UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount);
 
 #define MY_TAGBASE 0xfece0000
 enum {
-  MA_src = MY_TAGBASE
+  MA_src = MY_TAGBASE,
+  MA_dlgproc,
 };
 
 #define GETDATA struct Data *data = (struct Data *)INST_DATA(cl, obj)
 #define SETUPHOOK(x, func, data) { struct Hook *h = (x); h->h_Entry = (HOOKFUNC)&func; h->h_Data = (APTR)data; }
 #define BEGINMTABLE AROS_UFH3(static ULONG,mDispatcher,AROS_UFHA(struct IClass*, cl, a0), AROS_UFHA(APTR, obj, a2), AROS_UFHA(Msg, msg, a1))
 #define ENDMTABLE return DoSuperMethodA(cl, (Object *) obj, msg); }
-#define HOOKPROTO(name, ret, obj, param) AROS_UFH2(ret, name, AROS_UFHA(APTR, param, A3), AROS_UFHA(Object *, obj, D0))
 
+#if 0
+/* was: */
+#define HOOKPROTO(name, ret, obj, param) AROS_UFH2(ret, name, AROS_UFHA(APTR, param, A3), AROS_UFHA(Object *, obj, D0))
 #define MakeHook(hookname, funcname) struct Hook hookname = {{NULL, NULL}, \
     (HOOKFUNC)funcname, NULL, NULL}
+#endif
+
+#if 0
+#define HOOKPROTO(name, ret, obj, param) static SAVEDS ret                 \
+        name(struct Hook *hook, obj, param)
+
+#define MakeStaticHook(hookname, funcname) static struct Hook hookname =   \
+            {{NULL, NULL}, (HOOKFUNC)HookEntry, (HOOKFUNC)funcname, NULL}
+#define MakeHook(hookname, funcname) struct Hook hookname = {{NULL, NULL}, \
+        (HOOKFUNC)HookEntry, (HOOKFUNC)funcname, NULL}
+#endif
+
 
 
 int init_class(void);

@@ -417,6 +417,35 @@ BOOL ShowWindow(HWND hWnd, int nCmdShow) {
 }; 
 
 
+//HOOKPROTO(MUIHook_control, ULONG, obj, hookpointer)
+APTR MUIHook_control(struct Hook *hook, Object *obj, struct Hook *hookpointer) {
+  //AROS_USERFUNC_INIT
+
+
+  DebOut("entered\n");
+#if 0
+  ULONG nr;
+
+  nr=xget(obj, MUIA_List_Active);
+
+  DebOut("activate nr %d\n", nr);
+
+  DoMethod(pages, MUIM_Set, MUIA_Group_ActivePage, nr);
+#endif
+
+  return 0;
+  //AROS_USERFUNC_EXIT
+}
+//MakeHook(MyMuiHook_control, MUIHook_control);
+static struct Hook MyMuiHook_control = {
+  {NULL, NULL},
+  //(HOOKFUNC) HookEntry,
+  NULL,
+  (APTR) MUIHook_control,
+  NULL
+};
+
+
 /*****************************************************************************
  * Class
  *****************************************************************************/
@@ -495,6 +524,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
   ULONG s;
   struct Element *src;
   Object *child; /* TODO: remove me */
+  int *(*func) (Element *hDlg, UINT msg, ULONG wParam, ULONG lParam);
 
   DebOut("mNew(fixed)\n");
 
@@ -507,10 +537,15 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
 
   tstate=((struct opSet *)msg)->ops_AttrList;
 
-  while ((tag = (struct TagItem *) NextTagItem((const TagItem**) &tstate))) {
+  while ((tag = (struct TagItem *) NextTagItem((TagItem**) &tstate))) {
+    DebOut("tag->ti_Tag: %lx\n", tag->ti_Tag);
     switch (tag->ti_Tag) {
       case MA_src:
         s = tag->ti_Data;
+        break;
+      case MA_dlgproc:
+        DebOut("MA_dlgproc: %lx\n", tag->ti_Data);
+        func=(int* (*)(Element*, uint32_t, ULONG, ULONG)) tag->ti_Data;
         break;
     }
   }
@@ -596,21 +631,42 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                   End;
             }
             else {
-              child=HGroup,
-                Child, src[i].obj=ImageObject,
-                  ImageButtonFrame,
-                  MUIA_InputMode   , MUIV_InputMode_Toggle,
-                  MUIA_Image_Spec  , MUII_CheckMark,
-                  MUIA_Background  , MUII_ButtonBack,
-                  MUIA_ShowSelState, FALSE,
-                  MUIA_CycleChain  , TRUE,
-                End,
-                Child, TextObject,
-                  MUIA_Font, Topaz8Font,
-                  MUIA_Text_Contents, src[i].text,
+              if(src[i].text && (src[i].text[0]!=(char) 0)) {
+                child=HGroup,
+                  Child, src[i].obj=ImageObject,
+                    ImageButtonFrame,
+                    MUIA_InputMode   , MUIV_InputMode_Toggle,
+                    MUIA_Image_Spec  , MUII_CheckMark,
+                    MUIA_Background  , MUII_ButtonBack,
+                    MUIA_ShowSelState, FALSE,
+                    MUIA_CycleChain  , TRUE,
                   End,
-              End;
+                  Child, TextObject,
+                    MUIA_Font, Topaz8Font,
+                    MUIA_Text_Contents, src[i].text,
+                    End,
+                End;
+              }
+              else {
+                /* buton without text must be without text, otherwise zune draws "over the border" */
+                child=HGroup,
+                  Child, src[i].obj=ImageObject,
+                    ImageButtonFrame,
+                    MUIA_InputMode   , MUIV_InputMode_Toggle,
+                    MUIA_Image_Spec  , MUII_CheckMark,
+                    MUIA_Background  , MUII_ButtonBack,
+                    MUIA_ShowSelState, FALSE,
+                    MUIA_CycleChain  , TRUE,
+                  End,
+                End;
+              }
+              /* Add hook */
+              /* TODO !!! */
+#if 0
+              Move this to the "..." gadget!! and call func then..
+              DoMethod(src[i].obj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, (ULONG) src[i].obj, 2, MUIM_CallHook,(ULONG) &MyMuiHook_control, func); 
 
+#endif
             }
           }
           else if(!strcmp(src[i].windows_class, "RICHEDIT")) {
@@ -725,7 +781,9 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
 
     }
 
-    SETUPHOOK(&data->LayoutHook, LayoutHook, data);
+    //SETUPHOOK(&data->LayoutHook, LayoutHook, data);
+    data->LayoutHook.h_Entry=(APTR) LayoutHook;
+    data->LayoutHook.h_Data=data;
 
     /*
      * ATTENTION: Add children *after* seting the LayoutHook,
@@ -773,7 +831,7 @@ static VOID mSet(struct Data *data, APTR obj, struct opSet *msg, ULONG is_new)
 
   tstate = msg->ops_AttrList;
 
-  while ((tag = NextTagItem((const TagItem**)&tstate))) {
+  while ((tag = NextTagItem((TagItem**)&tstate))) {
 
     switch (tag->ti_Tag) {
 //      case MA_Fixed_Move:
