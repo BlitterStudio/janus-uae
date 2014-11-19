@@ -460,8 +460,6 @@ extern struct MUI_CustomClass *CL_Fixed;
 #define CB_GETCOMBOBOXINFO       0x0164
 #define CB_MSGMAX                0x0165
 
-#define MAKELONG(x,y) x*0x10000+y
-
 #define SW_HIDE             0
 #define SW_SHOWNORMAL       1
 #define SW_SHOWMINIMIZED    2
@@ -488,4 +486,17 @@ extern struct MUI_CustomClass *CL_Fixed;
 #define MB_YESNO 0x00000004L
 #define MB_ICONERROR 0x00000010L
 #define MB_YESNOCANCEL 0x00000003L
+
+/* Combo box notification codes */
+#define CBN_ERRSPACE        (-1)
+#define CBN_SELCHANGE       1
+#define CBN_DBLCLK          2
+#define CBN_SETFOCUS        3
+#define CBN_KILLFOCUS       4
+#define CBN_EDITCHANGE      5
+#define CBN_EDITUPDATE      6
+#define CBN_DROPDOWN        7
+#define CBN_CLOSEUP         8
+#define CBN_SELENDOK        9
+#define CBN_SELENDCANCEL    10
 #endif
