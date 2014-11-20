@@ -2132,6 +2132,7 @@ static const GUID diskselectionguids[] = {
 	{ 0x05aa5db2, 0x470b, 0x4725, { 0x96, 0x03, 0xee, 0x61, 0x30, 0xfc, 0x54, 0x99 } },
 	{ 0x68366188, 0xa6d4, 0x4278, { 0xb7, 0x55, 0x6a, 0xb8, 0x17, 0xa6, 0x71, 0xd9 } }
 };
+#endif
 
 static void getfilter (int num, const TCHAR *name, int *filter, TCHAR *fname)
 {
@@ -2146,6 +2147,7 @@ static void setfilter (int num, int *filter, const TCHAR *fname)
 	regsetint (NULL, fname, filter[num]);
 }
 
+#if 0
 static UINT_PTR CALLBACK ofnhook (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	HWND hWnd;
@@ -2295,19 +2297,24 @@ static void selectcd (struct uae_prefs *prefs, HWND hDlg, int num, int id, const
 	fullpath (prefs->cdslots[0].name, sizeof prefs->cdslots[0].name / sizeof (TCHAR));
 	DISK_history_add (prefs->cdslots[0].name, -1, HISTORY_CD, 0);
 }
+#endif
 
 static void selectdisk (struct uae_prefs *prefs, HWND hDlg, int num, int id, const TCHAR *full_path)
 {
+#if 0
 	if (iscd (num)) {
 		selectcd (prefs, hDlg, num, id, full_path);
 		return;
 	}
-	SetDlgItemText (hDlg, id, full_path);
+#endif
+  DebOut("full_path: %s\n", full_path);
+	SetDlgItemText (hDlg, id, (TCHAR *) full_path);
 	_tcscpy(prefs->floppyslots[num].df, full_path);
 	fullpath (prefs->floppyslots[num].df, sizeof prefs->floppyslots[num].df / sizeof (TCHAR));
 	DISK_history_add (prefs->floppyslots[num].df, -1, HISTORY_FLOPPY, 0);
 }
 
+#if 0
 static void setdpath (const TCHAR *name, const TCHAR *path)
 {
 	TCHAR tmp[MAX_DPATH];
@@ -2332,12 +2339,15 @@ static void setdpath (const TCHAR *name, const TCHAR *path)
 // flag = 16 for recording input
 // flag = 17 for CD image
 // flag = 18 for Tape image
+
+BOOL mui_get_filename(TCHAR *lpstrTitle, TCHAR *lpstrInitialDir, TCHAR *lpstrFile, TCHAR *lpstrFilter, TCHAR *lpstrFileTitle, ULONG flags);
 int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs, TCHAR *path_out, int *multi)
 {
-#if 0
 	static int previousfilter[20];
 	TCHAR filtername[MAX_DPATH] = _T("");
+#if 0
 	OPENFILENAME openFileName;
+#endif
 	TCHAR full_path[MAX_DPATH] = _T("");
 	TCHAR full_path2[MAX_DPATH];
 	TCHAR file_name[MAX_DPATH] = _T("");
@@ -2347,13 +2357,16 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 	TCHAR *p, *nextp;
 	int all = 1;
 	int next;
+#if 0
 	int nosavepath = 0;
-	const GUID *guid = NULL;
+#endif
+//	const GUID *guid = NULL;
 
 	TCHAR szTitle[MAX_DPATH] = { 0 };
 	TCHAR szFormat[MAX_DPATH];
 	TCHAR szFilter[MAX_DPATH] = { 0 };
 
+#if 0
 	memset (&openFileName, 0, sizeof (OPENFILENAME));
 
 	if (path_out && path_out[0]) {
@@ -2361,14 +2374,15 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 		nosavepath = 1;
 	} else {
 		_tcsncpy (init_path, start_path_data, MAX_DPATH);
-		switch (flag)
-		{
+#endif
+		switch (flag) {
 		case 0:
 		case 1:
 			getfilter (flag, _T("FloppyPath"), previousfilter, filtername);
 			fetch_path (_T("FloppyPath"), init_path, sizeof (init_path) / sizeof (TCHAR));
-			guid = &diskselectionguids[0];
+			//guid = &diskselectionguids[0];
 			break;
+#if 0
 		case 2:
 		case 3:
 			getfilter (flag, _T("hdfPath"), previousfilter, filtername);
@@ -2432,8 +2446,11 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 			fetch_path (_T("TapePath"), init_path, sizeof (init_path) / sizeof (TCHAR));
 			guid = &diskselectionguids[7];
 			break;
+#endif
 		}
+#if 0
 	}
+#endif
 
 	szFilter[0] = 0;
 	szFilter[1] = 0;
@@ -2484,7 +2501,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 		break;
 	case 15:
 	case 16:
-		WIN32GUI_LoadUIString (flag == 15 ? IDS_RESTOREINP : IDS_SAVEINP, szTitle, MAX_DPATH);
+		WIN32GUI_LoadUIString (flag == 15 ? (TCHAR*) IDS_RESTOREINP : (TCHAR*) IDS_SAVEINP, szTitle, MAX_DPATH);
 		WIN32GUI_LoadUIString (IDS_INP, szFormat, MAX_DPATH);
 		_stprintf (szFilter, _T("%s "), szFormat);
 		memcpy (szFilter + _tcslen (szFilter), INP_FORMAT_STRING, sizeof (INP_FORMAT_STRING) + sizeof (TCHAR));
@@ -2492,7 +2509,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 		break;
 	case 9:
 	case 10:
-		WIN32GUI_LoadUIString (flag == 10 ? IDS_RESTOREUSS : IDS_SAVEUSS, szTitle, MAX_DPATH);
+		WIN32GUI_LoadUIString (flag == 10 ? (TCHAR*) IDS_RESTOREUSS : (TCHAR*) IDS_SAVEUSS, szTitle, MAX_DPATH);
 		WIN32GUI_LoadUIString (IDS_USS, szFormat, MAX_DPATH);
 		_stprintf (szFilter, _T("%s "), szFormat);
 		if (flag == 10) {
@@ -2563,6 +2580,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 		WIN32GUI_LoadUIString (IDS_SELECTTAPE, szTitle, MAX_DPATH);
 		break;
 	}
+#if 0
 	if (all) {
 		p = szFilter;
 		while (p[0] != 0 || p[1] !=0) p++;
@@ -2590,7 +2608,16 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 	else
 		openFileName.lpstrInitialDir = init_path;
 	openFileName.lpstrTitle = szTitle;
+#endif
+  if(initialdir) {
+    result=mui_get_filename(szTitle, initialdir, full_path, szFilter, file_name, 0);
+  }
+  else {
+    result=mui_get_filename(szTitle, init_path, full_path, szFilter, file_name, 0);
+  }
 
+
+#if 0
 	if (multi)
 		openFileName.Flags |= OFN_ALLOWMULTISELECT;
 	if (flag == 1 || flag == 3 || flag == 5 || flag == 9 || flag == 16) {
@@ -2607,7 +2634,9 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 
 	memcpy (full_path2, full_path, sizeof full_path);
 	memcpy (stored_path, full_path, sizeof stored_path);
+#endif
 	next = 0;
+#if 0
 	nextp = full_path2 + openFileName.nFileOffset;
 	if (path_out) {
 		if (multi) {
@@ -2630,6 +2659,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 			_stprintf (full_path, _T("%s\\%s"), full_path2, nextp);
 			nextp += _tcslen (nextp) + 1;
 		}
+#endif
 		switch (wParam)
 		{
 		case IDC_PATH_NAME:
@@ -2642,9 +2672,11 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 			}
 			SetDlgItemText (hDlg, wParam, full_path);
 			break;
+#if 0
 		case IDC_CD_SELECT:
 			selectcd (prefs, hDlg, 0, IDC_CD_TEXT, full_path);
 			break;
+#endif
 		case IDC_DF0:
 		case IDC_DF0QQ:
 			selectdisk (prefs, hDlg, 0, IDC_DF0TEXT, full_path);
@@ -2663,10 +2695,12 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 			selectdisk (prefs, hDlg, 3, IDC_DF3TEXT, full_path);
 			break;
 		case IDC_DOSAVESTATE:
-			savestate_initsave (full_path, openFileName.nFilterIndex, FALSE, true);
+    TODO();
+			//savestate_initsave (full_path, openFileName.nFilterIndex, FALSE, true);
 			break;
 		case IDC_DOLOADSTATE:
-			savestate_initsave (full_path, openFileName.nFilterIndex, FALSE, false);
+    TODO();
+			//savestate_initsave (full_path, openFileName.nFilterIndex, FALSE, false);
 			break;
 		case IDC_CREATE:
 			{
@@ -2738,6 +2772,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 			_tcscpy (workprefs.inprecfile, full_path);
 			break;
 		}
+#if 0
 		if (!nosavepath || 1) {
 			if (flag == 0 || flag == 1) {
 				amiga_path = _tcsstr (openFileName.lpstrFile, openFileName.lpstrFileTitle);
@@ -2765,14 +2800,15 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 				}
 			}
 		}
+#endif
 		if (!multi)
 			next = -1;
 		if (next >= 0)
 			wParam = next;
+#if 0
 	}
-	return result;
 #endif
-  return NULL;
+	return result;
 }
 
 int DiskSelection (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs, TCHAR *path_out)

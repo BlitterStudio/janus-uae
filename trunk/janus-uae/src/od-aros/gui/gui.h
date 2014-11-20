@@ -46,6 +46,8 @@ enum {
   IDI_EXPANSION, // "expansion.ico"
 };
 
+extern Object *app;
+
 typedef struct Element {
   BOOL    exists;  // element exists
   ULONG   idc;     // windows rc identifier (IDC_CPU0, IDC_Z3CHIPRAM, etc)

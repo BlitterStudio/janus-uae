@@ -18,7 +18,8 @@
 #include "gui.h"
 #include "mui_data.h"
 
-static Object *app, *win, *root, *leftframe, *pages;
+Object *app; 
+static Object *win, *root, *leftframe, *pages;
 static Object *start, *cancel, *help, *errorlog, *reset, *quit;
 
 /* GUI thread */

@@ -461,7 +461,6 @@ AROS_UFH2(void, MUIHook_control, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(A
     DebOut("call function: %lx\n", data->func);
     DebOut("IDC: %d\n", data->src[i].idc);
     DebOut("WM_COMMAND: %d\n", WM_COMMAND);
-    //wParam=CBN_SELCHANGE*0x1000+data->src[i].idc;
     wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
     DebOut("wParam: %lx\n", wParam);
     data->func(data->src, WM_COMMAND, wParam, NULL);
