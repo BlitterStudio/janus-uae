@@ -45,6 +45,7 @@ BOOL mui_get_filename(TCHAR *lpstrTitle, TCHAR *lpstrInitialDir, TCHAR *lpstrFil
                 ASLFR_InitialDrawer  , lpstrInitialDir,
                 ASLFR_InitialFile, lpstrFile,
                 ASLFR_InitialPattern , lpstrFilter,
+                ASLFR_DoPatterns,TRUE,
 /*                ASLFR_DoSaveMode     , save,
                   ASLFR_DoPatterns     , TRUE,*/
                 ASLFR_RejectIcons    , TRUE,
