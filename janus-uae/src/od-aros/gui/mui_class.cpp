@@ -68,6 +68,7 @@ static LONG get_index(Element *elem, int item) {
   return -1;
 }
 
+/* return elem of item IDC_* */
 Element *get_elem(int nIDDlgItem) {
   ULONG i=0;
   int res;
@@ -137,6 +138,9 @@ BOOL SetDlgItemText(Element *elem, int item, TCHAR *lpString) {
   return TRUE;
 }
 
+/*
+ * select/deselect checkbox
+ */
 BOOL CheckDlgButton(Element *elem, int button, UINT uCheck) {
   LONG i;
 
@@ -145,9 +149,17 @@ BOOL CheckDlgButton(Element *elem, int button, UINT uCheck) {
   DebOut("uCheck: %d\n", uCheck);
 
   i=get_index(elem, button);
-  if(i<0) return FALSE;
+
+  if(i<0) {
+    elem=get_elem(button);
+    i=get_index(elem, button);
+  }
+
+  DebOut("elem[i].obj: %lx\n", elem[i].obj);
+
 
   SetAttrs(elem[i].obj, MUIA_Selected, uCheck, TAG_DONE);
+  //SetAttrs(elem[i].obj, MUIA_Pressed, uCheck, TAG_DONE);
 
   return TRUE;
 
@@ -155,7 +167,7 @@ BOOL CheckDlgButton(Element *elem, int button, UINT uCheck) {
 
 LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam) {
   Object *obj;
-  ULONG i;
+  LONG i;
   ULONG l;
 
   DebOut("elem: %lx\n", elem);
@@ -174,7 +186,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
     return FALSE;
   }
   DebOut("index: %d\n", i);
-  DebOut("elem[i].var: %lx\n", elem[i].var);
+  DebOut("elem[%d].var: %lx\n", i, elem[i].var);
 
   switch(Msg) {
 
@@ -220,6 +232,55 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       }
       DebOut("return -1\n");
       return -1;
+
+    case WM_SETTEXT:
+      DebOut("TODO: WM_SETTEXT received!!\n");
+      /* check, if the string is already available */
+      DebOut("search for string >%s<\n", (TCHAR *) lParam);
+      l=0;
+      while(elem[i].var[l] != NULL) {
+        DebOut("  compare with >%s<\n", elem[i].var[l]);
+        DebOut("  l: %d\n", l);
+        if(!strcmp(elem[i].var[l], (TCHAR *) lParam)) {
+          DebOut("we already have that string!\n");
+          DebOut("TODO: activate string in combo box!\n");
+          return 0;
+        }
+        l++;
+      }
+      /* new string, add it to top */
+      l=0;
+      TCHAR *buf;
+
+      buf=elem[i].var[l+1];
+      l++;
+      while(buf != NULL) {
+        elem[i].var[l+1]=elem[i].var[l];
+        l++;
+        buf=elem[i].var[l+1];
+      }
+      elem[i].var[l]=strdup((TCHAR *) lParam);
+      elem[i].var[l+1]=NULL;
+      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].var, TAG_DONE);
+      return TRUE;
+      
+      /* An application sends a CB_SETCURSEL message to select a string in the 
+       * list of a combo box. If necessary, the list scrolls the string into view. 
+       * The text in the edit control of the combo box changes to reflect the new 
+       * selection, and any previous selection in the list is removed. 
+       *
+       * wParam: Specifies the zero-based index of the string to select. 
+       * If this parameter is 1, any current selection in the list is removed and 
+       * the edit control is cleared.
+       *
+       * If the message is successful, the return value is the index of the item 
+       * selected. If wParam is greater than the number of items in the list or 
+       * if wParam is 1, the return value is CB_ERR and the selection is cleared. 
+       */
+    case CB_SETCURSEL:
+      DebOut("TODO: unkown Windows Message-ID CB_SETCURSEL: %d\n", Msg);
+      DebOut("wParam: %d\n", wParam);
+      return FALSE;
 
     default:
       DebOut("unkown Windows Message-ID: %d\n", Msg);
@@ -405,6 +466,32 @@ int MessageBox(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType) {
   EasyRequestArgs(NULL, &req, NULL, NULL );
 }
 
+
+/* WARNING: not same API call as in Windows */
+BOOL EnableWindow(HWND hWnd, DWORD id, BOOL bEnable) {
+  int i;
+  int res;
+
+  DebOut("elem: %lx, id %d\n", hWnd, id);
+
+  i=get_index(hWnd, id);
+  if(i<0) {
+    hWnd=get_elem(id);
+    i=get_index(hWnd, id);
+  }
+
+  if(i<0) {
+    DebOut("ERROR: could not find elem %lx id %d\n", hWnd, id);
+    return FALSE;
+  }
+
+  DebOut("hWnd[%d].obj: %lx\n", i, hWnd[i].obj);
+  DebOut("SetAttrs(hWnd[%d].obj, MUIA_Disabled, %d, TAG_DONE);\n", i, !bEnable);
+
+  SetAttrs(hWnd[i].obj, MUIA_Disabled, !bEnable, TAG_DONE);
+
+  return TRUE;
+}
 /*
  * Retrieves a handle to a control in the specified dialog box.
  */
@@ -771,6 +858,8 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
             src[i].obj=child;
           }
           src[i].exists=TRUE;
+          src[i].var=(char **) malloc(256 * sizeof(ULONG *)); // array for cycle texts
+          src[i].var[0]=NULL;
         break;
 
 
@@ -835,7 +924,7 @@ static ULONG mGet(struct Data *data, APTR obj, struct opGet *msg, struct IClass 
 {
   ULONG rc;
 
-  DebOut("mGet..\n");
+  //DebOut("mGet..\n");
 
   switch (msg->opg_AttrID)
   {
@@ -886,7 +975,7 @@ static VOID mRemMember(struct Data *data, struct opMember *msg) {
 BEGINMTABLE
 GETDATA;
 
-DebOut("(%lx)->msg->MethodID: %lx\n",obj,msg->MethodID);
+//DebOut("(%lx)->msg->MethodID: %lx\n",obj,msg->MethodID);
 
 
   switch (msg->MethodID)

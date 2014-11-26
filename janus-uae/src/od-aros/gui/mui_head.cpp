@@ -42,7 +42,9 @@ Element IDD_FLOPPY[] = {
 #define IDS_HARDDISK            "CD & Hard drives"
 #define IDS_FLOPPY              "Floppy drives"
 #define IDS_ABOUT               "About"
-#define IDS_LOADSAVE            "Configurations"
+#define IDS_LOADSAVE            "\33bConfigurations"
+#define IDS_LOADSAVE1           "\33bHardware"
+#define IDS_LOADSAVE2           "\33bHost"
 #define IDS_AVIOUTPUT           "Output"
 #define IDS_IOPORTS             "IO ports"
 #define IDS_MISC1               "Miscellaneous"
@@ -63,10 +65,11 @@ Element IDD_FLOPPY[] = {
 
 
 static const char *listelements[] = {
+  IDS_LOADSAVE,
   IDS_ABOUT,
   IDS_PATHS,
   IDS_QUICKSTART,
-  IDS_LOADSAVE,
+  IDS_LOADSAVE1,
   IDS_CPU,
   IDS_CHIPSET,
   IDS_CHIPSET2,
@@ -75,6 +78,7 @@ static const char *listelements[] = {
   IDS_FLOPPY,
   IDS_HARDDISK,
   IDS_EXPANSION,
+  IDS_LOADSAVE2,
   IDS_DISPLAY,
   IDS_SOUND,
   IDS_GAMEPORTS,
@@ -88,6 +92,8 @@ static const char *listelements[] = {
   NULL
 };
 
+extern int currentpage;
+
 struct Hook MyMuiHook_list;
 
 AROS_UFH2(void, MUIHook_list, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
@@ -98,8 +104,24 @@ AROS_UFH2(void, MUIHook_list, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR
 
   nr=xget((Object *) obj, MUIA_List_Active);
 
-  DebOut("activate nr %d\n", nr);
+  /* we have to skip those configuration load/save pages here */
+  if(nr==0 || nr==4 || nr==13) {
+    DebOut("TODO: tree collapse? Try to load config here..?\n");
+    currentpage=0;
+    nr=0;
+  }
+  else if(nr<4) {
+    currentpage=nr-1; /* skip "Settings" tab */
+  }
+  else if(nr<13) {
+    currentpage=nr-2; /* skip "Settings" and "Hardware" tabs */
+  }
+  else {
+    currentpage=nr-3; /* skip "Settings", "Hardware" and "Host" tabs */
+  }
 
+OK:
+  DebOut("currentpage is now: %d\n", currentpage);
   DoMethod(pages, MUIM_Set, MUIA_Group_ActivePage, nr);
 
   AROS_USERFUNC_EXIT
@@ -212,6 +234,7 @@ Object* build_gui(void) {
                               MUIA_Group_Horiz, FALSE,
                               MUIA_Group_Child,
                                 pages=PageGroup,
+                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_LOADSAVE, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_ABOUT, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_PATHS, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_QUICKSTART, TAG_DONE),
@@ -227,6 +250,7 @@ Object* build_gui(void) {
                                                                               TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CDDRIVE, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_EXPANSION, TAG_DONE),
+                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_LOADSAVE, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_DISPLAY, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_SOUND, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_GAMEPORTS, TAG_DONE),
