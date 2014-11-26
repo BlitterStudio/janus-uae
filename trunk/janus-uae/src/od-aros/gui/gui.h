@@ -68,7 +68,6 @@ typedef Element *HWND;
 #undef ShowWindow
 BOOL ShowWindow(HWND hWnd, int nCmdShow);
 
-//HWND GetDlgItem(HWND hDlg, int nIDDlgItem);
 UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount);
 
 #define MY_TAGBASE 0xfece0000

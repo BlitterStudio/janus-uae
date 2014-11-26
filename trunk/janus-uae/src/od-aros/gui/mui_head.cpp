@@ -172,6 +172,7 @@ AROS_UFH2(void, MUIHook_quit, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR
 }
 
 int *FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
 Object* build_gui(void) {
   int i=0;
@@ -242,10 +243,11 @@ Object* build_gui(void) {
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CPU, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CHIPSET, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CHIPSET2, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_KICKSTART, TAG_DONE),
+                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_KICKSTART, 
+                                                                              MA_dlgproc, (ULONG) &KickstartDlgProc,
+                                                                              TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_MEMORY, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_FLOPPY, 
-                                                                              //MA_dlgproc, (ULONG) &foli,
                                                                               MA_dlgproc, (ULONG) &FloppyDlgProc,
                                                                               TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CDDRIVE, TAG_DONE),
