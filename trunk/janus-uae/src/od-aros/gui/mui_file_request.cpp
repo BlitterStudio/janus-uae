@@ -59,11 +59,12 @@ BOOL mui_get_filename(TCHAR *lpstrTitle, TCHAR *lpstrInitialDir, TCHAR *lpstrFil
 
   ret=MUI_AslRequestTags(req,TAG_DONE);
 
-  strncpy(lpstrFileTitle, req->fr_Drawer, MAX_DPATH);
+  strncpy(lpstrFile, req->fr_Drawer, MAX_DPATH);
+  AddPart(lpstrFile, req->fr_File, MAX_DPATH);
+  DebOut("lpstrFile: %s\n", lpstrFile);
 
-  AddPart(lpstrFileTitle, req->fr_File, MAX_DPATH);
-
-  DebOut("lpstrFileTitle: %s\n", lpstrFileTitle);
+  strncpy(lpstrFileTitle, req->fr_File, MAX_DPATH);
+  DebOut("lpstrFileTitle: %s\n", lpstrFile);
 
   MUI_FreeAslRequest(req);
 

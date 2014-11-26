@@ -211,7 +211,7 @@ static int restart_requested;
 int full_property_sheet = 1;
 static struct uae_prefs *pguiprefs;
 struct uae_prefs workprefs;
-static int currentpage = -1;
+int currentpage = -1;
 static int qs_request_reset;
 static int qs_override;
 int gui_active;
@@ -359,7 +359,6 @@ static void setfocus (HWND hDlg, int id)
 #endif
 static void ew (HWND hDlg, DWORD id, int enable)
 {
-  TODO();
 #if 0
 	HWND w = GetDlgItem (hDlg, id);
 	if (!w)
@@ -368,7 +367,10 @@ static void ew (HWND hDlg, DWORD id, int enable)
 		SendMessage (hDlg, WM_NEXTDLGCTL, 0, FALSE);
 	EnableWindow (w, !!enable);
 #endif
+  DebOut("hDlg: %lx, id %d, enable %d\n", hDlg, id, enable);
+	EnableWindow (hDlg, id, !!enable);
 }
+
 static void hide (HWND hDlg, DWORD id, int hide)
 {
 	HWND w;
@@ -2036,6 +2038,8 @@ void gui_display (int shortcut)
 	static int here;
 	int w, h;
 
+  DebOut("entered\n");
+
 	if (here)
 		return;
 	here++;
@@ -2324,7 +2328,9 @@ static void selectdisk (struct uae_prefs *prefs, HWND hDlg, int num, int id, con
 	SetDlgItemText (hDlg, id, (TCHAR *) full_path);
 	_tcscpy(prefs->floppyslots[num].df, full_path);
 	fullpath (prefs->floppyslots[num].df, sizeof prefs->floppyslots[num].df / sizeof (TCHAR));
+  DebOut("1..\n");
 	DISK_history_add (prefs->floppyslots[num].df, -1, HISTORY_FLOPPY, 0);
+  DebOut("left\n");
 }
 
 #if 0
@@ -2631,6 +2637,8 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
     result=mui_get_filename(szTitle, init_path, full_path, szFilter, file_name, 0);
   }
 
+  DebOut("full_path: %s\n", full_path);
+
 
 #if 0
 	if (multi)
@@ -2647,9 +2655,9 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 		setfilter (flag, previousfilter, filtername);
 	}
 
+#endif
 	memcpy (full_path2, full_path, sizeof full_path);
 	memcpy (stored_path, full_path, sizeof stored_path);
-#endif
 	next = 0;
 #if 0
 	nextp = full_path2 + openFileName.nFileOffset;
@@ -2675,10 +2683,13 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 			nextp += _tcslen (nextp) + 1;
 		}
 #endif
+
+    DebOut("switch (wParam: %d)\n", wParam);
 		switch (wParam)
 		{
 		case IDC_PATH_NAME:
 		case IDC_PATH_FILESYS:
+      DebOut("IDC_PATH_NAME\n");
 			if (flag == 8) {
 				if(_tcsstr (full_path, _T("Configurations\\"))) {
 					_tcscpy (full_path, init_path);
@@ -2694,6 +2705,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 #endif
 		case IDC_DF0:
 		case IDC_DF0QQ:
+      DebOut("IDC_DF0\n");
 			selectdisk (prefs, hDlg, 0, IDC_DF0TEXT, full_path);
 			next = IDC_DF1;
 			break;
@@ -2738,6 +2750,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 			}
 			break;
 		case IDC_LOAD:
+      DebOut("IDC_LOAD\n");
 			if (target_cfgfile_load (&workprefs, full_path, 0, 0) == 0) {
 				TCHAR szMessage[MAX_DPATH];
 				WIN32GUI_LoadUIString (IDS_COULDNOTLOADCONFIG, szMessage, MAX_DPATH);
@@ -2823,6 +2836,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 #if 0
 	}
 #endif
+  DebOut("done\n");
 	return result;
 }
 
@@ -10205,6 +10219,8 @@ static void default_rdb_hfdlg (struct hfdlg_vals *f, const TCHAR *filename)
 static void volumeselectfile (HWND hDlg)
 {
 	TCHAR directory_path[MAX_DPATH];
+
+  DebOut("Entered\n");
 	_tcscpy (directory_path, current_fsvdlg.ci.rootdir);
 	if (directory_path[0] == 0) {
 		int out = sizeof directory_path / sizeof (TCHAR);
@@ -11479,6 +11495,8 @@ static void addfloppyhistory_2 (HWND hDlg, int n, int f_text, int type)
 	UAEREG *fkey;
 	int nn, curidx;
 
+  DebOut("entered: %d, %d, %d\n", n, f_text, type);
+
 	if (f_text < 0)
 		return;
 	SendDlgItemMessage (hDlg, f_text, CB_RESETCONTENT, 0, 0);
@@ -11537,8 +11555,10 @@ static void addfloppyhistory (HWND hDlg)
 {
 	int f_text, max, n;
 
+  DebOut("QUICKSTART_ID: %d, FLOPPY_ID %d, DISK_ID %d\n", QUICKSTART_ID, FLOPPY_ID, DISK_ID);
   DebOut("currentpage: %d\n", currentpage);
 
+//Das hier geht schief! QUICKSTART_ID wird von init_page gesetzt.. current page from hook..
 	if (currentpage == QUICKSTART_ID)
 		max = 2;
 	else if (currentpage == FLOPPY_ID)
@@ -11547,13 +11567,19 @@ static void addfloppyhistory (HWND hDlg)
 		max = 1;
 	else
 		return;
+
+  DebOut("max: %d\n", n);
 	for (n = 0; n < max; n++) {
+    DebOut("n: %d\n", n);
 		if (currentpage == QUICKSTART_ID)
 			f_text = floppybuttonsq[n][0];
-		else if (currentpage == FLOPPY_ID)
+		else if (currentpage == FLOPPY_ID) {
 			f_text = floppybuttons[n][0];
+    }
 		else
 			f_text = IDC_DISKTEXT;
+
+    DebOut("f_text: %d\n", f_text);
 		if (f_text >= 0)
 			addfloppyhistory_2 (hDlg, n, f_text, iscd (n) ? HISTORY_CD : HISTORY_FLOPPY);
 	}
@@ -11608,8 +11634,12 @@ static void addfloppytype (HWND hDlg, int n)
 	int f_enable = floppybuttons[n][7];
 	int f_info = floppybuttons[n][8];
 
+  DebOut("addfloppytype hDlg %lx, n %d\n", hDlg, n);
+
 	text = workprefs.floppyslots[n].df;
+  DebOut("text: %s\n", text);
 	if (currentpage == QUICKSTART_ID) {
+    DebOut("QUICKSTART_ID\n");
 		TCHAR tmp[MAX_DPATH];
 		f_text = floppybuttonsq[n][0];
 		f_drive = floppybuttonsq[n][1];
@@ -11645,6 +11675,8 @@ static void addfloppytype (HWND hDlg, int n)
 	}
 	if (!showcd && f_enable > 0 && n == 1 && currentpage == QUICKSTART_ID) {
 		static TCHAR drivedf1[MAX_DPATH];
+
+    DebOut("QUICKSTART_ID 2\n");
 		if (drivedf1[0] == 0)
 			GetDlgItemText(hDlg, f_enable, drivedf1, sizeof drivedf1 / sizeof (TCHAR));
 		ew (hDlg, f_enable, TRUE);
@@ -11663,6 +11695,10 @@ static void addfloppytype (HWND hDlg, int n)
 	if (f_si >= 0)
 		ShowWindow (GetDlgItem(hDlg, f_si), !showcd && zfile_exists (DISK_get_saveimagepath (text)) ? SW_SHOW : SW_HIDE);
 #endif
+
+  DebOut("here we are..\n");
+
+  DebOut("f_text: %d, f_eject: %d, f_enable %d\n", f_text, f_eject, f_enable);
 
 	if (f_text >= 0)
 		ew (hDlg, f_text, state);
@@ -12040,7 +12076,7 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 		case IDC_DF0:
 		case IDC_DF0QQ:
       DebOut("IDC_DF0 received!\n");
-			diskselect (hDlg, wParam, &workprefs, 0, NULL);
+			diskselect (hDlg, LOWORD(wParam), &workprefs, 0, NULL);
 			break;
 #if 0
 		case IDC_DF1:
@@ -12053,6 +12089,7 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 		case IDC_DF3:
 			diskselect (hDlg, wParam, &workprefs, 3, NULL);
 			break;
+    WORD
 		case IDC_INFO0:
 		case IDC_INFO0Q:
 			infofloppy (hDlg, 0);

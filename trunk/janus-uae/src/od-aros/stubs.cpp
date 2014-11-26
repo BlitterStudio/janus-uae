@@ -494,9 +494,10 @@ struct zfile *archive_access_lzx (struct znode *zn)
   TODO();
 }
 
+/* adds name to "recently used" windows menu .. */
 void target_addtorecent (const TCHAR *name, int t)
 {
-  TODO();
+  //TODO();
 }
 
 void amiga_clipboard_die (void)
