@@ -88,6 +88,7 @@ BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDC
 int MessageBox(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType);
 UINT IsDlgButtonChecked(HWND elem, int item);
 BOOL EnableWindow(HWND hWnd, DWORD id, BOOL bEnable);
+UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount);
 
 void read_rom_list (void);
 extern int quickstart, configurationcache, relativepaths;

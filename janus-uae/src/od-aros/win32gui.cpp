@@ -191,7 +191,7 @@ void pre_gui_message (const TCHAR *format,...);
 #define ARCHIVE_STRING _T("(#?.zip|#?.7z;*.rar;*.lha;*.lzh;*.lzx")
 
 #define DISK_FORMAT_STRING _T("(#?.adf|#?.adz|#?.gz|#?.dms|#?.ipf|#?.scp|#?.fdi|#?.exe)\0#?.adf|#?.adz|#?.gz|#?.dms|#?.ipf|#?.scp|#?.fdi|#?.exe|#?.ima|#?.wrp|#?.dsq|#?.st|#?.raw;") ARCHIVE_STRING _T("\0")
-#define ROM_FORMAT_STRING _T("(*.rom;*.roz;*.a500;*.a600;*.a1200;*.a4000)\0*.rom;*.roz;*.a500;*.a600;*.a1200;*.a4000;") ARCHIVE_STRING _T("\0")
+#define ROM_FORMAT_STRING _T("(#?.rom|#?.roz|#?.a500|#?.a600|#?.a1200|#?.a4000)\0#?.rom|#?.roz|#?.a500|#?.a600|#?.a1200|#?.a4000;") ARCHIVE_STRING _T("\0")
 #define USS_FORMAT_STRING_RESTORE _T("(*.uss)\0*.uss;*.gz;") ARCHIVE_STRING _T("\0")
 #define USS_FORMAT_STRING_SAVE _T("(*.uss)\0*.uss\0")
 #define HDF_FORMAT_STRING _T("(*.hdf;*.vhd;*.rdf;*.hdz;*.rdz;*.chd)\0*.hdf;*.vhd;*.rdf;*.hdz;*.rdz;*.chd\0")
@@ -1431,6 +1431,8 @@ static struct romdata *scan_single_rom (const TCHAR *path)
 	TCHAR tmp[MAX_DPATH];
 	struct romdata *rd;
 
+  DebOut("path: %s\n", path);
+
 	_tcscpy (tmp, path);
 	rd = scan_arcadia_rom (tmp, 0);
 	if (rd)
@@ -2508,8 +2510,10 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 		break;
 	case 6:
 		WIN32GUI_LoadUIString (IDS_SELECTROM, szTitle, MAX_DPATH);
+#if 0
 		WIN32GUI_LoadUIString (IDS_ROM, szFormat, MAX_DPATH);
 		_stprintf (szFilter, _T("%s "), szFormat);
+#endif
 		memcpy (szFilter + _tcslen (szFilter), ROM_FORMAT_STRING, sizeof (ROM_FORMAT_STRING) + sizeof (TCHAR));
 		defext = _T("rom");
 		break;
@@ -8449,7 +8453,7 @@ static void addromfiles (UAEREG *fkey, HWND hDlg, DWORD d, TCHAR *path, int type
 	TCHAR seltmp[MAX_DPATH];
 	struct romdata *rdx;
 
-  DebOut("entered\n");
+  DebOut("entered (path: %s)\n", path);
 
 	rdx = scan_single_rom (path);
 	SendDlgItemMessage(hDlg, d, CB_RESETCONTENT, 0, 0);
@@ -8498,7 +8502,6 @@ static void addromfiles (UAEREG *fkey, HWND hDlg, DWORD d, TCHAR *path, int type
 		SetDlgItemText(hDlg, d, path);
 }
 
-#if 0
 static void getromfile (HWND hDlg, DWORD d, TCHAR *path, int size)
 {
 	LRESULT val = SendDlgItemMessage (hDlg, d, CB_GETCURSEL, 0, 0L);
@@ -8528,7 +8531,6 @@ static void values_from_kickstartdlg (HWND hDlg)
 	getromfile (hDlg, IDC_A2091ROMFILE, workprefs.a2091romfile, sizeof (workprefs.a2091romfile) / sizeof (TCHAR));
 	getromfile (hDlg, IDC_A4091ROMFILE, workprefs.a4091romfile, sizeof (workprefs.a4091romfile) / sizeof (TCHAR));
 }
-#endif
 
 static void values_to_kickstartdlg (HWND hDlg)
 {
@@ -8580,7 +8582,6 @@ static void init_kickstart (HWND hDlg)
 		scan_roms (NULL, rp_isactive () ? 0 : 1);
 }
 
-#if 0
 static void kickstartfilebuttons (HWND hDlg, WPARAM wParam, TCHAR *path)
 {
 	switch (LOWORD(wParam))
@@ -8615,9 +8616,8 @@ static void kickstartfilebuttons (HWND hDlg, WPARAM wParam, TCHAR *path)
 		break;
 	}
 }
-#endif
 
-static INT_PTR CALLBACK KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static int recursive;
 	TCHAR tmp[MAX_DPATH];
@@ -8653,6 +8653,7 @@ static INT_PTR CALLBACK KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 			}
 			break;
 		}
+#endif
 
 	case WM_COMMAND:
 		if (recursive > 0)
@@ -8673,6 +8674,7 @@ static INT_PTR CALLBACK KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 		kickstartfilebuttons (hDlg, wParam, NULL);
 		switch (LOWORD (wParam))
 		{
+#if 0
 		case IDC_FLASHFILE:
 			GetWindowText (GetDlgItem (hDlg, IDC_FLASHFILE), tmp, sizeof (tmp) / sizeof (TCHAR));
 			_tcscpy (workprefs.flashfile, tmp);
@@ -8681,6 +8683,7 @@ static INT_PTR CALLBACK KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 			GetWindowText (GetDlgItem (hDlg, IDC_RTCFILE), tmp, sizeof (tmp) / sizeof (TCHAR));
 			_tcscpy (workprefs.rtcfile, tmp);
 			break;
+#endif
 
 		case IDC_KICKSHIFTER:
 			workprefs.kickshifter = ischecked (hDlg, IDC_KICKSHIFTER);
@@ -8692,7 +8695,6 @@ static INT_PTR CALLBACK KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 		}
 		recursive--;
 		break;
-#endif
 	}
 	return FALSE;
 }
@@ -11507,7 +11509,9 @@ static void addfloppyhistory_2 (HWND hDlg, int n, int f_text, int type)
 		nn = workprefs.floppyslots[n].dfxtype + 1;
 		text = workprefs.floppyslots[n].df;
 	}
+#if 0
 	SendDlgItemMessage (hDlg, f_text, WM_SETTEXT, 0, (LPARAM)text);
+#endif
 	fkey = read_disk_history (type);
 	if (fkey == NULL)
 		return;

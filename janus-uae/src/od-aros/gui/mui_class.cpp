@@ -169,9 +169,11 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
   Object *obj;
   LONG i;
   ULONG l;
+  ULONG activate;
+  TCHAR *buf;
 
-  DebOut("elem: %lx\n", elem);
-  DebOut("nIDDlgItem: %d\n", nIDDlgItem);
+  DebOut("== entered ==\n");
+  DebOut("elem: %lx, nIDDlgItem: %d\n", elem, nIDDlgItem);
 
   i=get_index(elem, nIDDlgItem);
   /* might be in a different element..*/
@@ -186,30 +188,40 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
     return FALSE;
   }
   DebOut("index: %d\n", i);
-  DebOut("elem[%d].var: %lx\n", i, elem[i].var);
+  //DebOut("elem[%d].var: %lx\n", i, elem[i].var);
 
   switch(Msg) {
 
     case CB_ADDSTRING:
       /* add string to popup window */
+      DebOut("CB_ADDSTRING\n");
       DebOut("new string: %s\n", (TCHAR *) lParam);
       l=0;
+      DebOut("old list:\n");
       while(elem[i].var[l] != NULL) {
-        DebOut("l: %d\n", l);
+        DebOut("  elem[i].var[%d]: %s\n", l, elem[i].var[l]);
         l++;
       }
       /* found next free string */
       DebOut("  next free line: %d\n", l);
+      activate=l;
 #warning TODO: free strings again!
       elem[i].var[l]=strdup((TCHAR *) lParam);
       elem[i].var[l+1]=NULL;
       DebOut("  obj: %lx\n", elem[i].obj);
       SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].var, TAG_DONE);
+      DebOut("new list:\n");
+      l=0;
+      while(elem[i].var[l] != NULL) {
+        DebOut("  elem[i].var[%d]: %s\n", l, elem[i].var[l]);
+        l++;
+      }
+      SetAttrs(elem[i].obj, MUIA_Cycle_Active, activate, TAG_DONE);
       break;
 
     case CB_RESETCONTENT:
       /* delete all strings */
-      DebOut("reset strings\n");
+      DebOut("CB_RESETCONTENT\n");
       l=0;
       /* free old strings */
       while(elem[i].var[l] != NULL) {
@@ -221,6 +233,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       break;
     case CB_FINDSTRING:
       /* return string index */
+      DebOut("CB_FINDSTRING\n");
       DebOut("search for string >%s<\n", (TCHAR *) lParam);
       l=0;
       while(elem[i].var[l] != NULL) {
@@ -234,34 +247,58 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       return -1;
 
     case WM_SETTEXT:
-      DebOut("TODO: WM_SETTEXT received!!\n");
+      DebOut("WM_SETTEXT\n");
+      if(lParam== NULL || strlen((TCHAR *)lParam)==0) {
+        DebOut("lParam is empty\n");
+        SetAttrs(elem[i].obj, MUIA_Cycle_Active, 1, TAG_DONE);
+        return 0;
+      }
       /* check, if the string is already available */
       DebOut("search for string >%s<\n", (TCHAR *) lParam);
+
       l=0;
       while(elem[i].var[l] != NULL) {
         DebOut("  compare with >%s<\n", elem[i].var[l]);
         DebOut("  l: %d\n", l);
         if(!strcmp(elem[i].var[l], (TCHAR *) lParam)) {
           DebOut("we already have that string!\n");
-          DebOut("TODO: activate string in combo box!\n");
+          DebOut("activate string %d in combo box!\n", l);
+          SetAttrs(elem[i].obj, MUIA_Cycle_Active, l, TAG_DONE);
           return 0;
         }
         l++;
       }
       /* new string, add it to top */
-      l=0;
-      TCHAR *buf;
 
+      DebOut("new string, add it to top\n");
+
+      l=0;
+      DebOut("old list:\n");
+      while(elem[i].var[l] != NULL) {
+        DebOut("  elem[i].var[%d]: %s\n", l, elem[i].var[l]);
+        l++;
+      }
+
+      l=0;
       buf=elem[i].var[l+1];
-      l++;
       while(buf != NULL) {
         elem[i].var[l+1]=elem[i].var[l];
         l++;
         buf=elem[i].var[l+1];
       }
-      elem[i].var[l]=strdup((TCHAR *) lParam);
+      /* store new string */
+      elem[i].var[0]=strdup((TCHAR *) lParam);
+      /* terminate list */
       elem[i].var[l+1]=NULL;
       SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].var, TAG_DONE);
+      SetAttrs(elem[i].obj, MUIA_Cycle_Active, 1, TAG_DONE);
+
+      DebOut("new list:\n");
+      l=0;
+      while(elem[i].var[l]!=NULL) {
+        DebOut("  elem[i].var[%d]: %s\n", l, elem[i].var[l]);
+        l++;
+      }
       return TRUE;
       
       /* An application sends a CB_SETCURSEL message to select a string in the 
@@ -283,7 +320,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       return FALSE;
 
     default:
-      DebOut("unkown Windows Message-ID: %d\n", Msg);
+      DebOut("WARNING: unkown Windows Message-ID: %d\n", Msg);
       return FALSE;
   }
 
