@@ -174,4 +174,13 @@ mui_class.o mui_class.o : mui_class.cpp \
  /home/oli/svn/v1/AROS/bin/linux-i386/AROS/Development/include/clib/arossupport_protos.h \
  /home/oli/svn/v1/AROS/bin/linux-i386/AROS/Development/include/aros/arossupportbase.h \
  /home/oli/svn/v1/AROS/bin/linux-i386/AROS/Development/include/exec/alerts.h \
- ../target.h gui.h ../winnt.h mui_data.h
+ ../target.h ../aros.h ../sys/mman.h \
+ /home/oli/svn/v1/AROS/bin/linux-i386/AROS/Development/include/aros/posixc/signal.h \
+ /home/oli/svn/v1/AROS/bin/linux-i386/AROS/Development/include/aros/stdc/signal.h \
+ /home/oli/svn/v1/AROS/bin/linux-i386/AROS/Development/include/aros/types/__sighandler_t.h \
+ /home/oli/svn/v1/AROS/bin/linux-i386/AROS/Development/include/aros/types/sigevent_s.h \
+ /home/oli/svn/v1/AROS/bin/linux-i386/AROS/Development/include/aros/types/sigaction_s.h \
+ /home/oli/svn/v1/AROS/bin/linux-i386/AROS/Development/include/aros/types/siginfo_t.h \
+ /home/oli/svn/v1/AROS/bin/linux-i386/AROS/Development/include/aros/types/ucontext_t.h \
+ /home/oli/svn/v1/AROS/bin/linux-i386/AROS/Development/include/aros/types/stack_t.h \
+ ../gui/gui.h gui.h ../winnt.h mui_data.h

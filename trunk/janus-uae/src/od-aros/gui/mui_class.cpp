@@ -16,6 +16,7 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
+#include "aros.h"
 #include "gui.h"
 #include "winnt.h"
 #include "mui_data.h"
@@ -37,7 +38,7 @@ struct Data {
   int *(*func) (Element *hDlg, UINT msg, ULONG wParam, ULONG lParam);
 };
 
-static const char *Cycle_Dummy[] = { "empty 1", "empty 2", NULL };
+static const char *Cycle_Dummy[] = { "undef", NULL };
 
 struct MUI_CustomClass *CL_Fixed;
 
@@ -64,7 +65,7 @@ static LONG get_index(Element *elem, int item) {
     i++;
   }
 
-  DebOut("item %d not found in element %lx!!\n", item, elem);
+  DebOut("item %d (0x%lx) not found in element %lx!!\n", item, item, elem);
   return -1;
 }
 
@@ -128,8 +129,14 @@ BOOL SetDlgItemText(Element *elem, int item, TCHAR *lpString) {
     return FALSE;
   }
 
+  DebOut("elem[i].obj: %lx\n", elem[i].obj);
+
   if(elem[i].windows_type==EDITTEXT) {
     SetAttrs(elem[i].obj, MUIA_String_Contents, lpString, TAG_DONE);
+  }
+  else if (elem[i].windows_type==COMBOBOX) {
+    DebOut("COMBOBOX: call SendDlgItemMessage instead:\n");
+    return SendDlgItemMessage(elem, item, CB_ADDSTRING, 0, (LPARAM) lpString);
   }
   else {
     SetAttrs(elem[i].obj, MUIA_Text_Contents,   lpString, TAG_DONE);
@@ -195,7 +202,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
     case CB_ADDSTRING:
       /* add string to popup window */
       DebOut("CB_ADDSTRING\n");
-      DebOut("new string: %s\n", (TCHAR *) lParam);
+      DebOut("new string: >%s<\n", (TCHAR *) lParam);
       l=0;
       DebOut("old list:\n");
       while(elem[i].var[l] != NULL) {
@@ -208,7 +215,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
 #warning TODO: free strings again!
       elem[i].var[l]=strdup((TCHAR *) lParam);
       elem[i].var[l+1]=NULL;
-      DebOut("  obj: %lx\n", elem[i].obj);
+      DebOut("elem[i].obj: %lx\n", elem[i].obj);
       SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].var, TAG_DONE);
       DebOut("new list:\n");
       l=0;
@@ -217,6 +224,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
         l++;
       }
       SetAttrs(elem[i].obj, MUIA_Cycle_Active, activate, TAG_DONE);
+      Signal(FindTask(NULL), SIGBREAKF_CTRL_F);
       break;
 
     case CB_RESETCONTENT:
@@ -229,7 +237,10 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
         elem[i].var[l]=NULL;
         l++;
       }
-      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].var, TAG_DONE);
+      elem[i].var[0]=strdup("<empty>");
+      elem[i].var[1]=NULL;
+      DebOut("elem[i].obj: %lx\n", elem[i].obj);
+      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].var, MUIA_NoNotify, TRUE, TAG_DONE);
       break;
     case CB_FINDSTRING:
       /* return string index */
@@ -250,6 +261,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       DebOut("WM_SETTEXT\n");
       if(lParam== NULL || strlen((TCHAR *)lParam)==0) {
         DebOut("lParam is empty\n");
+        DebOut("elem[i].obj: %lx\n", elem[i].obj);
         SetAttrs(elem[i].obj, MUIA_Cycle_Active, 1, TAG_DONE);
         return 0;
       }
@@ -263,6 +275,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
         if(!strcmp(elem[i].var[l], (TCHAR *) lParam)) {
           DebOut("we already have that string!\n");
           DebOut("activate string %d in combo box!\n", l);
+          DebOut("elem[i].obj: %lx\n", elem[i].obj);
           SetAttrs(elem[i].obj, MUIA_Cycle_Active, l, TAG_DONE);
           return 0;
         }
@@ -290,6 +303,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       elem[i].var[0]=strdup((TCHAR *) lParam);
       /* terminate list */
       elem[i].var[l+1]=NULL;
+      DebOut("elem[i].obj: %lx\n", elem[i].obj);
       SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].var, TAG_DONE);
       SetAttrs(elem[i].obj, MUIA_Cycle_Active, 1, TAG_DONE);
 
@@ -345,6 +359,7 @@ UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount) {
     return 0;
   }
   DebOut("index: %d\n", i);
+  DebOut("elem[i].obj: %lx\n", elem[i].obj);
 
   GetAttr(MUIA_String_Contents, elem[i].obj, (IPTR *) &buffer);
 
@@ -400,6 +415,7 @@ BOOL SetDlgItemInt(HWND elem, int item, UINT uValue, BOOL bSigned) {
   elem[i].var[0]=strdup(tmp);
   elem[i].var[1]=NULL;
 
+  DebOut("elem[i].obj: %lx\n", elem[i].obj);
   if(elem[i].windows_type==EDITTEXT) {
     DebOut("elem[i].windows_type==EDITTEXT\n");
     SetAttrs(elem[i].obj, MUIA_String_Contents, elem[i].var[0], TAG_DONE);
@@ -451,6 +467,7 @@ BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDC
   }
   else {
     DebOut("index: %d\n", e);
+    DebOut("elem[i].obj: %lx\n", elem[i].obj);
     SetAttrs(elem[e].obj, MUIA_Selected, TRUE, TAG_DONE);
   }
 }
@@ -473,6 +490,7 @@ UINT IsDlgButtonChecked(HWND elem, int item) {
     return FALSE;
   }
 
+  DebOut("elem[i].obj: %lx\n", elem[i].obj);
   res=xget(elem[i].obj, MUIA_Selected);
 
   DebOut("res: %d\n", res);
@@ -525,6 +543,7 @@ BOOL EnableWindow(HWND hWnd, DWORD id, BOOL bEnable) {
   DebOut("hWnd[%d].obj: %lx\n", i, hWnd[i].obj);
   DebOut("SetAttrs(hWnd[%d].obj, MUIA_Disabled, %d, TAG_DONE);\n", i, !bEnable);
 
+  DebOut("hWnd[i].obj: %lx\n", hWnd[i].obj);
   SetAttrs(hWnd[i].obj, MUIA_Disabled, !bEnable, TAG_DONE);
 
   return TRUE;
@@ -609,7 +628,7 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
       struct Element *element=data->src;
       ULONG mincw, minch, defcw, defch, maxcw, maxch;
 
-      DebOut("MUILM_MINMAX obj %lx\n", obj);
+      //DebOut("MUILM_MINMAX obj %lx\n", obj);
       //DebOut("data:        %lx\n", data);
       //DebOut("data->src:   %lx\n", data->src);
 
@@ -620,12 +639,12 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
       lm->lm_MinMax.MaxWidth  = data->width * RESIZE_X;
       lm->lm_MinMax.MaxHeight = data->height * RESIZE_Y;
 
-      DebOut("  mincw=%d\n",lm->lm_MinMax.MinWidth);
-      DebOut("  minch=%d\n",lm->lm_MinMax.MinHeight);
-      DebOut("  maxcw=%d\n",lm->lm_MinMax.MaxWidth);
-      DebOut("  maxch=%d\n",lm->lm_MinMax.MaxHeight);
+      //DebOut("  mincw=%d\n",lm->lm_MinMax.MinWidth);
+      //DebOut("  minch=%d\n",lm->lm_MinMax.MinHeight);
+      //DebOut("  maxcw=%d\n",lm->lm_MinMax.MaxWidth);
+      //DebOut("  maxch=%d\n",lm->lm_MinMax.MaxHeight);
 
-      DebOut("MUILM_MINMAX done\n");
+      //DebOut("MUILM_MINMAX done\n");
     }
     return 0;
 
@@ -634,15 +653,15 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
       ULONG i=0;
       struct Element *element=data->src;
 
-      DebOut("MUILM_LAYOUT obj %lx\n", obj);
+      //DebOut("MUILM_LAYOUT obj %lx\n", obj);
       //DebOut("data:        %lx\n", data);
       //DebOut("data->src:   %lx\n", data->src);
 
       while(element[i].exists) {
-        DebOut("  child i=%d\n", i);
-        DebOut("   obj[%d]: %lx\n", i, element[i].obj);
-        DebOut("   idc: %d (dummy is %d)\n", element[i].idc, IDC_dummy);
-        DebOut("   x, y: %d, %d  w, h: %d, %d\n", element[i].x, element[i].y, element[i].w, element[i].h);
+        //DebOut("  child i=%d\n", i);
+        //DebOut("   obj[%d]: %lx\n", i, element[i].obj);
+        //DebOut("   idc: %d (dummy is %d)\n", element[i].idc, IDC_dummy);
+        //DebOut("   x, y: %d, %d  w, h: %d, %d\n", element[i].x, element[i].y, element[i].w, element[i].h);
         if(element[i].obj != obj) {
           if (!MUI_Layout(element[i].obj,
                           element[i].x * RESIZE_X,
@@ -659,7 +678,7 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
         }
         i++;
       }
-      DebOut("MUILM_LAYOUT done\n");
+      //DebOut("MUILM_LAYOUT done\n");
     }
     return TRUE;
   }
@@ -906,7 +925,8 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                        MUIA_Cycle_Entries, Cycle_Dummy,
                      End;
           src[i].var=(char **) malloc(256 * sizeof(ULONG *)); // array for cycle texts
-          src[i].var[0]=NULL;
+          src[i].var[0]=strdup("not initialized");
+          src[i].var[1]=NULL;
           src[i].obj=child;
           src[i].exists=TRUE;
         break;
@@ -925,8 +945,6 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
         if(!(src[i].flags & WS_VISIBLE)) {
           SetAttrs(child, MUIA_ShowMe, (ULONG) 0, TAG_DONE);
         }
-        //DebOut("=> add %lx to %lx\n", child, obj);
-        //DoMethod((Object *) obj, OM_ADDMEMBER,(LONG) child);
         child=NULL;
       }
       DebOut("  src[%d].obj=%lx\n", i, src[i].obj);
