@@ -11731,7 +11731,6 @@ static void addfloppytype (HWND hDlg, int n)
 	}
 }
 
-#if 0
 static void getfloppytype (HWND hDlg, int n)
 {
 	int f_type = floppybuttons[n][3];
@@ -11765,6 +11764,7 @@ static void getfloppytypeq (HWND hDlg, int n)
 	}
 }
 
+#if 0
 static int getfloppybox (HWND hDlg, int f_text, TCHAR *out, int maxlen, int type)
 {
 	LRESULT val;
@@ -11986,7 +11986,7 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 
 #endif
 	case WM_COMMAND:
-    DebOut("WM_COMMAND (IDC_DF0: %d)\n", IDC_DF0);
+    DebOut("WM_COMMAND (IDC_DF0: %d, IDC_DF1: %d)\n", IDC_DF0, IDC_DF1);
     DebOut("LOWORD (wParam): %d\n", LOWORD (wParam));
     DebOut("HIWORD (wParam): %d\n", HIWORD (wParam));
 		if (recursive > 0)
@@ -12002,9 +12002,9 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 				addfloppytype (hDlg, 0);
 				addfloppyhistory (hDlg);
 				break;
-#if 0
 			case IDC_DF1TEXT:
 			case IDC_DF1TEXTQ:
+        DebOut("IDC_DF1TEXT received!\n");
 				getfloppyname (hDlg, 1);
 				addfloppytype (hDlg, 1);
 				addfloppyhistory (hDlg);
@@ -12031,6 +12031,7 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 			case IDC_DF3TYPE:
 				getfloppytype (hDlg, 3);
 				break;
+#if 0
 			case IDC_FLOPPYTYPE:
 				int val = SendDlgItemMessage (hDlg, IDC_FLOPPYTYPE, CB_GETCURSEL, 0, 0L);
 				bool afloppy = val >= 0 && val <= 1;
@@ -12047,7 +12048,6 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 		}
 		switch (LOWORD (wParam))
 		{
-#if 0
 		case IDC_DF0ENABLE:
 		case IDC_DF0QENABLE:
 			getfloppytypeq (hDlg, 0);
@@ -12062,6 +12062,7 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 		case IDC_DF3ENABLE:
 			getfloppytypeq (hDlg, 3);
 			break;
+#if 0
 		case IDC_DF0WP:
 		case IDC_DF0WPQ:
 			floppysetwriteprotect (hDlg, 0, currentpage == QUICKSTART_ID ? ischecked (hDlg, IDC_DF0WPQ) : ischecked (hDlg, IDC_DF0WP));
@@ -12082,7 +12083,6 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
       DebOut("IDC_DF0 received!\n");
 			diskselect (hDlg, LOWORD(wParam), &workprefs, 0, NULL);
 			break;
-#if 0
 		case IDC_DF1:
 		case IDC_DF1QQ:
 			diskselect (hDlg, wParam, &workprefs, 1, NULL);
@@ -12093,6 +12093,7 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 		case IDC_DF3:
 			diskselect (hDlg, wParam, &workprefs, 3, NULL);
 			break;
+#if 0
     WORD
 		case IDC_INFO0:
 		case IDC_INFO0Q:
@@ -17260,23 +17261,33 @@ static int GetSettings (int all_options, HWND hwnd)
 	if (!init_called) {
 		first = 1;
 		panelresource = getresource (IDD_PANEL);
+    /*
+     * reordered them to mach the tree on the left side. Otherwise ID <-> nr page mapping would be
+     * necessary. take care of that, when merging new stuff from upstream!
+     */
 		LOADSAVE_ID = init_page (IDD_LOADSAVE, IDI_FILE, IDS_LOADSAVE, LoadSaveDlgProc, NULL, _T("gui/configurations.htm"), IDC_CONFIGTREE);
+		ABOUT_ID = init_page (IDD_ABOUT, IDI_ABOUT, IDS_ABOUT, AboutDlgProc, NULL, NULL, 0);
+		PATHS_ID = init_page (IDD_PATHS, IDI_PATHS, IDS_PATHS, PathsDlgProc, NULL, _T("gui/paths.htm"), 0);
+		QUICKSTART_ID = init_page (IDD_QUICKSTART, IDI_QUICKSTART, IDS_QUICKSTART, QuickstartDlgProc, NULL, _T("gui/quickstart.htm"), 0);
+		CPU_ID = init_page (IDD_CPU, IDI_CPU, IDS_CPU, CPUDlgProc, NULL, _T("gui/cpu.htm"), 0);
+		CHIPSET_ID = init_page (IDD_CHIPSET, IDI_CPU, IDS_CHIPSET, ChipsetDlgProc, NULL, _T("gui/chipset.htm"), 0);
+		CHIPSET2_ID = init_page (IDD_CHIPSET2, IDI_CPU, IDS_CHIPSET2, ChipsetDlgProc2, NULL, _T("gui/chipset.htm"), 0);
+		KICKSTART_ID = init_page (IDD_KICKSTART, IDI_MEMORY, IDS_KICKSTART, KickstartDlgProc, NULL, _T("gui/rom.htm"), 0);
 #if 0
 		MEMORY_ID = init_page (IDD_MEMORY, IDI_MEMORY, IDS_MEMORY, MemoryDlgProc, NULL, _T("gui/ram.htm"), 0);
 #endif
+		FLOPPY_ID = init_page (IDD_FLOPPY, IDI_FLOPPY, IDS_FLOPPY, FloppyDlgProc, NULL, _T("gui/floppies.htm"), 0);
+
+
+
 		EXPANSION_ID = init_page (IDD_EXPANSION, IDI_EXPANSION, IDS_EXPANSION, ExpansionDlgProc, NULL, _T("gui/expansion.htm"), 0);
-		KICKSTART_ID = init_page (IDD_KICKSTART, IDI_MEMORY, IDS_KICKSTART, KickstartDlgProc, NULL, _T("gui/rom.htm"), 0);
-		CPU_ID = init_page (IDD_CPU, IDI_CPU, IDS_CPU, CPUDlgProc, NULL, _T("gui/cpu.htm"), 0);
 		DISPLAY_ID = init_page (IDD_DISPLAY, IDI_DISPLAY, IDS_DISPLAY, DisplayDlgProc, NULL, _T("gui/display.htm"), 0);
 #if 0
 #if defined (GFXFILTER)
 		HW3D_ID = init_page (IDD_FILTER, IDI_DISPLAY, IDS_FILTER, hw3dDlgProc, NULL, _T("gui/filter.htm"), 0);
 #endif
 #endif
-		CHIPSET_ID = init_page (IDD_CHIPSET, IDI_CPU, IDS_CHIPSET, ChipsetDlgProc, NULL, _T("gui/chipset.htm"), 0);
-		CHIPSET2_ID = init_page (IDD_CHIPSET2, IDI_CPU, IDS_CHIPSET2, ChipsetDlgProc2, NULL, _T("gui/chipset.htm"), 0);
 		SOUND_ID = init_page (IDD_SOUND, IDI_SOUND, IDS_SOUND, SoundDlgProc, NULL, _T("gui/sound.htm"), 0);
-		FLOPPY_ID = init_page (IDD_FLOPPY, IDI_FLOPPY, IDS_FLOPPY, FloppyDlgProc, NULL, _T("gui/floppies.htm"), 0);
 #if 0
 		DISK_ID = init_page (IDD_DISK, IDI_FLOPPY, IDS_DISK, SwapperDlgProc, SwapperAccel, _T("gui/disk.htm"), IDC_DISKLIST);
 #ifdef FILESYS
@@ -17293,9 +17304,6 @@ static int GetSettings (int all_options, HWND hwnd)
 		AVIOUTPUT_ID = init_page (IDD_AVIOUTPUT, IDI_AVIOUTPUT, IDS_AVIOUTPUT, AVIOutputDlgProc, NULL, _T("gui/output.htm"), 0);
 #endif
 #endif
-		PATHS_ID = init_page (IDD_PATHS, IDI_PATHS, IDS_PATHS, PathsDlgProc, NULL, _T("gui/paths.htm"), 0);
-		QUICKSTART_ID = init_page (IDD_QUICKSTART, IDI_QUICKSTART, IDS_QUICKSTART, QuickstartDlgProc, NULL, _T("gui/quickstart.htm"), 0);
-		ABOUT_ID = init_page (IDD_ABOUT, IDI_ABOUT, IDS_ABOUT, AboutDlgProc, NULL, NULL, 0);
 #if 0
 		FRONTEND_ID = init_page (IDD_FRONTEND, IDI_QUICKSTART, IDS_FRONTEND, AboutDlgProc, NULL, NULL, 0);
 		C_PAGES = FRONTEND_ID + 1;
@@ -17306,6 +17314,8 @@ static int GetSettings (int all_options, HWND hwnd)
 		else
 			currentpage = LOADSAVE_ID;
 	}
+
+  DebOut("currentpage: %d, QUICKSTART_ID: %d, LOADSAVE_ID: %d\n", currentpage, QUICKSTART_ID, LOADSAVE_ID);
 
   psresult=aros_show_gui();
 #if 0

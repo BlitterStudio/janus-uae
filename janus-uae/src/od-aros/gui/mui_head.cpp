@@ -444,6 +444,9 @@ int aros_show_gui(void) {
     return -1;
   }
 
+  /* activate current page */
+  DebOut("currentpage: %d\n", currentpage);
+  SetAttrs(leftframe, MUIA_List_Active, currentpage, TAG_DONE);
 
   SetAttrs(win, MUIA_Window_Open, TRUE, TAG_DONE);
 

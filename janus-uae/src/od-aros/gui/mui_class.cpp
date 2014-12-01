@@ -32,6 +32,7 @@
 struct Data {
   struct Hook LayoutHook;
   struct Hook MyMUIHook_control;
+  struct Hook MyMUIHook_select;
   ULONG width, height;
   struct Element *src;
   struct TextFont *font;
@@ -96,6 +97,13 @@ static int get_elem_from_obj(struct Data *data, Object *obj) {
   DebOut("obj: %lx\n", obj);
   DebOut("data: %lx\n", data);
 
+  /* first try userdata */
+  i=xget(obj, MUIA_UserData);
+  if(i>0) {
+    DebOut("MUIA_UserData: %d\n", i);
+    return i;
+  }
+
   while(data->src[i].exists) {
     if(data->src[i].obj == obj) {
       DebOut("found! i: %d\n", i);
@@ -103,6 +111,7 @@ static int get_elem_from_obj(struct Data *data, Object *obj) {
     }
     i++;
   }
+
   DebOut("ERROR: not found!\n");
   return -1;
 }
@@ -224,7 +233,6 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
         l++;
       }
       SetAttrs(elem[i].obj, MUIA_Cycle_Active, activate, TAG_DONE);
-      Signal(FindTask(NULL), SIGBREAKF_CTRL_F);
       break;
 
     case CB_RESETCONTENT:
@@ -237,8 +245,9 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
         elem[i].var[l]=NULL;
         l++;
       }
-      elem[i].var[0]=strdup("<empty>");
-      elem[i].var[1]=NULL;
+      //elem[i].var[0]=strdup("<empty>");
+      //elem[i].var[1]=NULL;
+      elem[i].var[0]=NULL;
       DebOut("elem[i].obj: %lx\n", elem[i].obj);
       SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].var, MUIA_NoNotify, TRUE, TAG_DONE);
       break;
@@ -329,9 +338,14 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
        * if wParam is 1, the return value is CB_ERR and the selection is cleared. 
        */
     case CB_SETCURSEL:
-      DebOut("TODO: unkown Windows Message-ID CB_SETCURSEL: %d\n", Msg);
+      DebOut("CB_SETCURSEL\n");
       DebOut("wParam: %d\n", wParam);
-      return FALSE;
+      if(wParam<0) {
+        DebOut("ERROR: CB_SETCURSEL -1 still TODO!!\n");
+        return FALSE;
+      }
+      SetAttrs(elem[i].obj, MUIA_Cycle_Active, wParam, TAG_DONE);
+      return TRUE;
 
     default:
       DebOut("WARNING: unkown Windows Message-ID: %d\n", Msg);
@@ -491,11 +505,9 @@ UINT IsDlgButtonChecked(HWND elem, int item) {
   }
 
   DebOut("elem[i].obj: %lx\n", elem[i].obj);
-  res=xget(elem[i].obj, MUIA_Selected);
+  DebOut("elem[i].value: %lx\n", elem[i].value);
 
-  DebOut("res: %d\n", res);
-
-  return res;
+  return elem[i].value;
 }
 
 int MessageBox(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType) {
@@ -582,6 +594,42 @@ BOOL ShowWindow(HWND hWnd, int nCmdShow) {
   TODO();
 }; 
 
+AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
+
+  AROS_USERFUNC_INIT
+
+  int i;
+  ULONG wParam;
+
+  struct Data *data = (struct Data *) hook->h_Data;
+
+
+  DebOut("entered\n");
+  DebOut("hook.h_Data: %lx\n", hook->h_Data);
+  DebOut("obj: %lx\n", obj);
+
+  i=get_elem_from_obj(data, (Object *) obj);
+
+  DebOut("i: %d\n", i);
+
+  data->src[i].value=xget((Object *) obj, MUIA_Selected);
+
+  DebOut("We are in state Selected: %d\n", (ULONG) xget((Object *) obj, MUIA_Selected));
+
+  if(data->func) {
+    DebOut("call function: %lx\n", data->func);
+    DebOut("IDC: %d\n", data->src[i].idc);
+    DebOut("WM_COMMAND: %d\n", WM_COMMAND);
+    wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
+    DebOut("wParam: %lx\n", wParam);
+    data->func(data->src, WM_COMMAND, wParam, NULL);
+  }
+  else {
+    DebOut("function is zero: %lx\n", data->func);
+  }
+
+  AROS_USERFUNC_EXIT
+}
 
 AROS_UFH2(void, MUIHook_control, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
 
@@ -786,6 +834,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
             DebOut("Button found\n");
             if(src[i].flags2==BS_AUTORADIOBUTTON) {
               child=HGroup,
+                    MUIA_UserData         , i,
                     Child, src[i].obj=ImageObject,
                         NoFrame,
                         MUIA_CycleChain       , 1,
@@ -793,17 +842,21 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                         MUIA_Image_Spec       , MUII_RadioButton,
                         MUIA_ShowSelState     , FALSE,
                         MUIA_Selected         , FALSE,
+                        MUIA_UserData         , i,
                       End,
                     Child, TextObject,
                         MUIA_Font, Topaz8Font,
                         MUIA_Text_Contents, src[i].text,
+                        MUIA_UserData         , i,
                       End,
 
                   End;
+
             }
             else {
               if(src[i].text && (src[i].text[0]!=(char) 0)) {
                 child=HGroup,
+                  MUIA_UserData         , i,
                   Child, src[i].obj=ImageObject,
                     ImageButtonFrame,
                     MUIA_InputMode   , MUIV_InputMode_Toggle,
@@ -811,16 +864,19 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                     MUIA_Background  , MUII_ButtonBack,
                     MUIA_ShowSelState, FALSE,
                     MUIA_CycleChain  , TRUE,
+                    MUIA_UserData         , i,
                   End,
                   Child, TextObject,
                     MUIA_Font, Topaz8Font,
                     MUIA_Text_Contents, src[i].text,
+                    MUIA_UserData         , i,
                     End,
                 End;
               }
               else {
                 /* buton without text must be without text, otherwise zune draws "over the border" */
                 child=HGroup,
+                  MUIA_UserData         , i,
                   Child, src[i].obj=ImageObject,
                     ImageButtonFrame,
                     MUIA_InputMode   , MUIV_InputMode_Toggle,
@@ -828,9 +884,15 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                     MUIA_Background  , MUII_ButtonBack,
                     MUIA_ShowSelState, FALSE,
                     MUIA_CycleChain  , TRUE,
+                    MUIA_UserData         , i,
                   End,
                 End;
               }
+              data->MyMUIHook_select.h_Entry=(APTR) MUIHook_select;
+              data->MyMUIHook_select.h_Data =(APTR) data;
+              DebOut("DoMethod(%lx, MUIM_Notify, MUIA_Selected, MUIV_EveryTime..)\n", src[i].obj);
+              DoMethod(src[i].obj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, (ULONG) src[i].obj, 2, MUIM_CallHook,(ULONG) &data->MyMUIHook_select, func); 
+
             }
           }
           else if(!strcmp(src[i].windows_class, "RICHEDIT")) {
@@ -839,6 +901,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                     MUIA_Font, Topaz8Font,
                      MUIA_Text_PreParse, "\33c",
                     MUIA_Text_Contents, src[i].text,
+                    MUIA_UserData         , i,
                   End;
           }
           else {
