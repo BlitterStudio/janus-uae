@@ -60,6 +60,7 @@ typedef struct Element {
   const char *help;// mouse over text
   ULONG   flags;   // windows flags as bitfields (BS_AUTORADIOBUTTON)
   ULONG   flags2;  // more windows flags, which collide with flags above
+  ULONG   value;   // check/non checked etc.
 } Element;
 
 typedef Element *HWND;
