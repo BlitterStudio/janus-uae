@@ -2230,6 +2230,7 @@ static void eject_cd (void)
 		}
 	}
 }
+#endif
 
 static void infofloppy (HWND hDlg, int n)
 {
@@ -2240,7 +2241,7 @@ static void infofloppy (HWND hDlg, int n)
 	DISK_examine_image (&workprefs, n, &di);
 
 	_stprintf (tmp2,
-		_T("'%s'\r\nDisk readable: %s\r\nCRC32: %08X\r\nBoot block checksum valid: %s\r\nBoot block type: %s\r\n"),
+		_T("'%s'\nDisk readable: %s\nCRC32: %08X\nBoot block checksum valid: %s\nBoot block type: %s\n"),
 		workprefs.floppyslots[n].df,
 		di.unreadable ? _T("No") : _T("Yes"),
 		di.crc32,
@@ -2250,10 +2251,10 @@ static void infofloppy (HWND hDlg, int n)
 	_tcscpy (text, tmp2);
 	if (di.diskname[0]) {
 		_stprintf (tmp2,
-			_T("Label: '%s'\r\n"), di.diskname);
+			_T("Label: '%s'\n"), di.diskname);
 		_tcscat (text, tmp2);
 	}
-	_tcscat (text, _T("\r\n"));
+	_tcscat (text, _T("\n"));
 
 	int w = 32;
 	for (int i = 0; i < 1024; i += w) {
@@ -2268,9 +2269,12 @@ static void infofloppy (HWND hDlg, int n)
 		tmp2[w * 2] = ' ';
 		tmp2[w * 2 + 1 + w] = 0;
 		_tcscat (text, tmp2);
-		_tcscat (text, _T("\r\n"));
+		_tcscat (text, _T("\n"));
 	}
 
+  /* TODO: we would need a fixed font here, but unluckily EasyRequest can't do that.. */
+  MessageBox(NULL, text, "Disk image information", MB_OK);
+#if 0
 	stringboxdialogactive = 1;
 	HWND hwnd = CustomCreateDialog (IDD_DISKINFO, hDlg, StringBoxDialogProc);
 	if (hwnd == NULL)
@@ -2296,17 +2300,23 @@ static void infofloppy (HWND hDlg, int n)
 			break;
 	}
 	DeleteObject (font);
+#endif
 }
 
 static void ejectfloppy (int n)
 {
+#if 0
 	if (iscd (n)) {
 		eject_cd ();
 	} else {
+#endif
 		workprefs.floppyslots[n].df[0] = 0;
+#if 0
 	}
+#endif
 }
 
+#if 0
 static void selectcd (struct uae_prefs *prefs, HWND hDlg, int num, int id, const TCHAR *full_path)
 {
 	SetDlgItemText (hDlg, id, full_path);
@@ -12093,8 +12103,6 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 		case IDC_DF3:
 			diskselect (hDlg, wParam, &workprefs, 3, NULL);
 			break;
-#if 0
-    WORD
 		case IDC_INFO0:
 		case IDC_INFO0Q:
 			infofloppy (hDlg, 0);
@@ -12133,6 +12141,7 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 			ejectfloppy (3);
 			addfloppytype (hDlg, 3);
 			break;
+#if 0
 		case IDC_SAVEIMAGE0:
 			deletesaveimage (hDlg, 0);
 			break;
