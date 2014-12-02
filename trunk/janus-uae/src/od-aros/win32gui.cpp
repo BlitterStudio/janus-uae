@@ -2272,8 +2272,8 @@ static void infofloppy (HWND hDlg, int n)
 		_tcscat (text, _T("\n"));
 	}
 
-  /* TODO: we would need a fixed font here, but unluckily EasyRequest can't do that.. */
-  MessageBox(NULL, text, "Disk image information", MB_OK);
+  /* we need a fixed font here, this is a hack! */
+  MessageBox_fixed(NULL, text, "Disk image information", MB_OK);
 #if 0
 	stringboxdialogactive = 1;
 	HWND hwnd = CustomCreateDialog (IDD_DISKINFO, hDlg, StringBoxDialogProc);
