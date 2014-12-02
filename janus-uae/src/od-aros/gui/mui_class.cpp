@@ -585,6 +585,9 @@ int MessageBox_fixed(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType/*, U
     ReqToolsBase=NULL;
   }
 
+  if(font) {
+    CloseFont(font);
+  }
   return TRUE;
 }
 
