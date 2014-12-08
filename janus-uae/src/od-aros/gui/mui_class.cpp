@@ -34,13 +34,14 @@ struct Data {
   struct Hook LayoutHook;
   struct Hook MyMUIHook_control;
   struct Hook MyMUIHook_select;
+  struct Hook MyMUIHook_combo;
   ULONG width, height;
   struct Element *src;
   struct TextFont *font;
   int *(*func) (Element *hDlg, UINT msg, ULONG wParam, ULONG lParam);
 };
 
-static const char *Cycle_Dummy[] = { "undef", NULL };
+static const char *Cycle_Dummy[] = { NULL };
 
 struct ReqToolsBase *ReqToolsBase=NULL;
 struct MUI_CustomClass *CL_Fixed;
@@ -89,6 +90,14 @@ Element *get_elem(int nIDDlgItem) {
   }
   
   return NULL;
+}
+
+static BOOL flag_editable(ULONG flags) {
+
+  if((flags & CBS_DROPDOWNLIST)==CBS_DROPDOWNLIST) {
+    return FALSE;
+  }
+  return TRUE;
 }
 
 /*************************************
@@ -229,7 +238,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       elem[i].var[l]=strdup((TCHAR *) lParam);
       elem[i].var[l+1]=NULL;
       DebOut("elem[i].obj: %lx\n", elem[i].obj);
-      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].var, TAG_DONE);
+      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].mem, TAG_DONE);
       DebOut("new list:\n");
       l=0;
       while(elem[i].var[l] != NULL) {
@@ -253,7 +262,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       //elem[i].var[1]=NULL;
       elem[i].var[0]=NULL;
       DebOut("elem[i].obj: %lx\n", elem[i].obj);
-      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].var, MUIA_NoNotify, TRUE, TAG_DONE);
+      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].mem, MUIA_NoNotify, TRUE, TAG_DONE);
       break;
     case CB_FINDSTRING:
       /* return string index */
@@ -270,6 +279,26 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       DebOut("return -1\n");
       return -1;
 
+    case CB_GETCURSEL:
+      DebOut("CB_GETCURSEL\n");
+      return elem[i].value;
+      break;
+    case WM_GETTEXT:
+      DebOut("[%lx] WM_GETTEXT\n", elem[i].obj);
+      {
+        TCHAR *string=(TCHAR *) lParam;
+        DebOut("[%lx] elem[i].value: %d\n", elem[i].obj, elem[i].value);
+        DebOut("[%lx] wParam: %d\n", elem[i].obj, wParam);
+        /* warning: care for non-comboboxes, too! */
+        if(elem[i].value<0) {
+          string[0]=(char) 0;
+        }
+        else {
+          DebOut("return: %s\n", elem[i].var[elem[i].value]);
+          strncpy(string, elem[i].var[elem[i].value], wParam);
+        }
+      }
+      break;
     case WM_SETTEXT:
       DebOut("WM_SETTEXT\n");
       if(lParam== NULL || strlen((TCHAR *)lParam)==0) {
@@ -317,8 +346,13 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       /* terminate list */
       elem[i].var[l+1]=NULL;
       DebOut("elem[i].obj: %lx\n", elem[i].obj);
-      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].var, TAG_DONE);
-      SetAttrs(elem[i].obj, MUIA_Cycle_Active, 1, TAG_DONE);
+      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].mem, TAG_DONE);
+      if(flag_editable(elem[i].flags)) {
+        SetAttrs(elem[i].obj, MUIA_Cycle_Active, 1, TAG_DONE);
+      }
+      else {
+        SetAttrs(elem[i].obj, MUIA_Cycle_Active, 0, TAG_DONE);
+      }
 
       DebOut("new list:\n");
       l=0;
@@ -342,13 +376,14 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
        * if wParam is 1, the return value is CB_ERR and the selection is cleared. 
        */
     case CB_SETCURSEL:
+      LONG foo;
       DebOut("CB_SETCURSEL\n");
       DebOut("wParam: %d\n", wParam);
-      if(wParam<0) {
-        DebOut("ERROR: CB_SETCURSEL -1 still TODO!!\n");
-        return FALSE;
+      foo=wParam;
+      if(flag_editable(elem[i].flags)) {
+        foo++;
       }
-      SetAttrs(elem[i].obj, MUIA_Cycle_Active, wParam, TAG_DONE);
+      SetAttrs(elem[i].obj, MUIA_Cycle_Active, foo, TAG_DONE);
       return TRUE;
 
     default:
@@ -675,6 +710,47 @@ BOOL ShowWindow(HWND hWnd, int nCmdShow) {
   TODO();
 }; 
 
+AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
+
+  AROS_USERFUNC_INIT
+
+  int i;
+  ULONG wParam;
+
+  struct Data *data = (struct Data *) hook->h_Data;
+
+
+  DebOut("[%lx] entered\n", obj);
+  DebOut("[%lx] hook.h_Data: %lx\n", obj, hook->h_Data);
+  DebOut("[%lx] obj: %lx\n", obj);
+
+  i=get_elem_from_obj(data, (Object *) obj);
+
+  DebOut("[%lx] i: %d\n", obj, i);
+
+  data->src[i].value=xget((Object *) obj, MUIA_Cycle_Active);
+  DebOut("[%lx] MUIA_Cycle_Active: %d\n", obj, data->src[i].value);
+  if(flag_editable(data->src[i].flags)) {
+    data->src[i].value--;
+  }
+
+  DebOut("[%lx] We are in state: %d\n", obj, data->src[i].value);
+
+  if(data->func) {
+    DebOut("[%lx] call function: %lx\n", obj, data->func);
+    DebOut("[%lx] IDC: %d\n", obj, data->src[i].idc);
+    wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
+    DebOut("[%lx] wParam: %lx\n", obj, wParam);
+    data->func(data->src, WM_COMMAND, wParam, NULL);
+  }
+  else {
+    DebOut("[%lx] function is zero: %lx\n", obj, data->func);
+  }
+
+  AROS_USERFUNC_EXIT
+}
+
+
 AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
 
   AROS_USERFUNC_INIT
@@ -734,6 +810,9 @@ AROS_UFH2(void, MUIHook_control, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(A
     DebOut("IDC: %d\n", data->src[i].idc);
     DebOut("WM_COMMAND: %d\n", WM_COMMAND);
     wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
+    DebOut("wParam: %lx\n", wParam);
+    data->func(data->src, WM_COMMAND, wParam, NULL);
+    wParam=MAKELPARAM(data->src[i].idc, BN_CLICKED);
     DebOut("wParam: %lx\n", wParam);
     data->func(data->src, WM_COMMAND, wParam, NULL);
   }
@@ -1064,15 +1143,28 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
 
 
         case COMBOBOX:
+          src[i].mem=(char **) malloc(256 * sizeof(ULONG *)); // array for cycle texts
+          DebOut("flags: %lx\n", src[i].flags);
+          if(!flag_editable(src[i].flags)) {
+            DebOut("flags: CBS_DROPDOWNLIST\n");
+            src[i].var=src[i].mem;
+          }
+          else {
+            /* must contain "<<empty>>" statement */
+            DebOut("flags: CBS_DROPDOWN\n");
+            src[i].mem[0]=strdup("<<empty>>");
+            src[i].var=src[i].mem+1;
+          }
+          src[i].var[0]=NULL;
+          src[i].exists=TRUE;
           child=CycleObject,
                        MUIA_Font, Topaz8Font,
-                       MUIA_Cycle_Entries, Cycle_Dummy,
+                       MUIA_Cycle_Entries, src[i].mem,
                      End;
-          src[i].var=(char **) malloc(256 * sizeof(ULONG *)); // array for cycle texts
-          src[i].var[0]=strdup("not initialized");
-          src[i].var[1]=NULL;
           src[i].obj=child;
-          src[i].exists=TRUE;
+          data->MyMUIHook_combo.h_Entry=(APTR) MUIHook_combo;
+          data->MyMUIHook_combo.h_Data =(APTR) data;
+          DoMethod(src[i].obj, MUIM_Notify, MUIA_Cycle_Active , MUIV_EveryTime, (ULONG) src[i].obj, 2, MUIM_CallHook,(ULONG) &data->MyMUIHook_combo, func); 
         break;
 
 

@@ -140,6 +140,58 @@ static void createdir (const TCHAR *path) {
   CreateDir(path);
 }
 
+bool is_dir(const TCHAR *name) {
+
+  struct FileInfoBlock *fib;
+  BPTR file=NULL;
+  bool ret=FALSE;
+
+  DebOut("name: %s\n", name);
+
+  fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, TAG_END);
+  if(!fib) 
+  {
+    DebOut("no FileInfoBlock!\n");
+    goto NODIR;
+  }
+
+  file=Lock(name, SHARED_LOCK);
+  if(!file) 
+  {
+    DebOut("no lock..\n");
+    goto NODIR;
+  }
+
+  if (!Examine(file, fib)) 
+  {
+    DebOut("Examine failed\n");
+    goto NODIR;
+  }
+
+  if(fib->fib_DirEntryType <0) 
+  {
+    DebOut("FILE!\n");
+    goto NODIR;
+  }
+  else 
+  {
+    DebOut("directory..\n");
+    ret=TRUE;
+  }
+
+NODIR:
+  if(fib) 
+  {
+    FreeDosObject(DOS_FIB, fib);
+  }
+  if(file) 
+  {
+    UnLock(file);
+  }
+
+  return ret;
+}
+
 
 void stripslashes (TCHAR *p)
 {
@@ -548,6 +600,7 @@ int get_rom_path (TCHAR *out, pathtype mode)
 	{
 	case PATH_TYPE_DEFAULT:
 		{
+      DebOut("PATH_TYPE_DEFAULT\n");
 			if (!_tcscmp (start_path_data, start_path_exe))
 				_tcscpy (tmp, _T(""));
 			else
@@ -577,6 +630,7 @@ int get_rom_path (TCHAR *out, pathtype mode)
 		break;
 	case PATH_TYPE_NEWAF:
 		{
+      DebOut("PATH_TYPE_NEWAF\n");
 			TCHAR tmp2[MAX_DPATH];
 			_tcscpy (tmp2, start_path_new1);
 			_tcscat (tmp2, _T("..\\system\\rom"));
@@ -594,6 +648,7 @@ int get_rom_path (TCHAR *out, pathtype mode)
 		break;
 	case PATH_TYPE_AMIGAFOREVERDATA:
 		{
+      DebOut("PATH_TYPE_AMIGAFOREVERDATA\n");
 			TCHAR tmp2[MAX_DPATH];
 			_tcscpy (tmp2, start_path_new2);
 			_tcscat (tmp2, _T("system\\rom"));
@@ -610,6 +665,7 @@ int get_rom_path (TCHAR *out, pathtype mode)
 		}
 		break;
 	default:
+    DebOut("default: return -1\n");
 		return -1;
 	}
 	if (isfilesindir (tmp)) {
@@ -712,3 +768,111 @@ void read_rom_list (void)
 
 /* driveclick_win32.cpp! */
 int driveclick_pcdrivemask;
+
+void set_path (const TCHAR *name, TCHAR *path, pathtype mode)
+{
+  TCHAR tmp[MAX_DPATH];
+
+  DebOut("name %s, path %s, pathtype %d\n", name, path, mode);
+
+  if (!path) {
+    if (!_tcscmp (start_path_data, start_path_exe))
+      _tcscpy (tmp, _T(".\\"));
+    else
+      _tcscpy (tmp, start_path_data);
+    if (!_tcscmp (name, _T("KickstartPath")))
+      _tcscat (tmp, _T("Roms"));
+    if (!_tcscmp (name, _T("ConfigurationPath")))
+      _tcscat (tmp, _T("Configurations"));
+    if (!_tcscmp (name, _T("LuaPath")))
+      _tcscat (tmp, _T("lua"));
+    if (!_tcscmp (name, _T("ScreenshotPath")))
+      _tcscat (tmp, _T("Screenshots"));
+    if (!_tcscmp (name, _T("StatefilePath")))
+      _tcscat (tmp, _T("Savestates"));
+    if (!_tcscmp (name, _T("SaveimagePath")))
+      _tcscat (tmp, _T("SaveImages"));
+    if (!_tcscmp (name, _T("InputPath")))
+      _tcscat (tmp, _T("Inputrecordings"));
+  } else {
+    _tcscpy (tmp, path);
+  }
+  stripslashes (tmp);
+  DebOut("tmp: %s\n");
+  if (!_tcscmp (name, _T("KickstartPath"))) {
+#if 0
+    DWORD v = GetFileAttributes (tmp);
+    if (v == INVALID_FILE_ATTRIBUTES || !(v & FILE_ATTRIBUTE_DIRECTORY))
+#endif
+    if(!is_dir(tmp)) 
+      get_rom_path (tmp, PATH_TYPE_DEFAULT);
+    if (mode == PATH_TYPE_NEWAF) {
+      get_rom_path (tmp, PATH_TYPE_NEWAF);
+    } else if (mode == PATH_TYPE_AMIGAFOREVERDATA) {
+      get_rom_path (tmp, PATH_TYPE_AMIGAFOREVERDATA);
+    }
+  }
+  fixtrailing (tmp);
+  fullpath (tmp, sizeof tmp / sizeof (TCHAR));
+  DebOut("tmp: %s\n", tmp);
+  regsetstr (NULL, name, tmp);
+}
+
+void set_path (const TCHAR *name, TCHAR *path) {
+
+  DebOut("name %s, path %s\n", name, path);
+  set_path (name, path, PATH_TYPE_DEFAULT);
+}
+
+static void initpath (const TCHAR *name, TCHAR *path) {
+
+  if (regexists (NULL, name))
+    return;
+  set_path (name, NULL);
+}
+
+
+void create_afnewdir (int remove) {
+#if 0
+	TCHAR tmp[MAX_DPATH], tmp2[MAX_DPATH];
+#endif
+
+  DebOut("remove: %d\n", remove);
+
+#if 0
+	if (SUCCEEDED (SHGetFolderPath (NULL, CSIDL_COMMON_DOCUMENTS, NULL, 0, tmp))) {
+		fixtrailing (tmp);
+		_tcscpy (tmp2, tmp);
+		_tcscat (tmp2, _T("Amiga Files"));
+		_tcscpy (tmp, tmp2);
+		_tcscat (tmp, _T("\\WinUAE"));
+		if (remove) {
+			if (GetFileAttributes (tmp) != INVALID_FILE_ATTRIBUTES) {
+				RemoveDirectory (tmp);
+				RemoveDirectory (tmp2);
+			}
+		} else {
+			CreateDirectory (tmp2, NULL);
+			CreateDirectory (tmp, NULL);
+		}
+	}
+#endif
+
+
+}
+
+
+void setpathmode (pathtype pt)
+{
+	TCHAR pathmode[32] = { 0 };
+	if (pt == PATH_TYPE_WINUAE)
+		_tcscpy (pathmode, _T("WinUAE"));
+	if (pt == PATH_TYPE_NEWWINUAE)
+		_tcscpy (pathmode, _T("WinUAE_2"));
+	if (pt == PATH_TYPE_NEWAF)
+		_tcscpy (pathmode, _T("AmigaForever"));
+	if (pt == PATH_TYPE_AMIGAFOREVERDATA)
+		_tcscpy (pathmode, _T("AMIGAFOREVERDATA"));
+	regsetstr (NULL, _T("PathMode"), pathmode);
+}
+

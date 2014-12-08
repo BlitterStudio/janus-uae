@@ -47,11 +47,13 @@ enum {
 };
 
 extern Object *app;
+BOOL mui_get_dir(TCHAR *lpstrTitle, TCHAR *path);
 
 typedef struct Element {
   BOOL    exists;  // element exists
   ULONG   idc;     // windows rc identifier (IDC_CPU0, IDC_Z3CHIPRAM, etc)
   Object *obj;     // Zune object pointer
+  char  **mem;     // Allocated memory for var. Can contain one string [0]="<<empty>>" and continues in var
   char  **var;     // variable data pointer, dependent on windows_type
   ULONG   windows_type; // CONTROL / GROUPBOX etc rc types
   const char *windows_class; // "Button", "SysListView32", "RICHEDIT"
@@ -60,7 +62,7 @@ typedef struct Element {
   const char *help;// mouse over text
   ULONG   flags;   // windows flags as bitfields (BS_AUTORADIOBUTTON)
   ULONG   flags2;  // more windows flags, which collide with flags above
-  ULONG   value;   // check/non checked etc.
+  LONG    value;   // check/non checked etc.
 } Element;
 
 typedef Element *HWND;
@@ -501,4 +503,24 @@ extern struct MUI_CustomClass *CL_Fixed;
 #define CBN_CLOSEUP         8
 #define CBN_SELENDOK        9
 #define CBN_SELENDCANCEL    10
+
+/* button notification codes */
+#define BN_CLICKED 0
+#define BN_DBLCLK 5
+#define BN_DISABLE 4
+#define BN_DOUBLECLICKED 5
+#define BN_HILITE 2
+#define BN_KILLFOCUS 7
+#define BN_PAINT 1
+#define BN_PUSHED 2
+#define BN_SETFOCUS 6
+#define BN_UNHILITE 3
+#define BN_UNPUSHED 3
+
+/* combobox styles
+ *  CBS_DROPDOWN: editable (must contain "empty")
+ *  CBS_DROPDOWNLIST: fixed
+ */
+#define CBS_DROPDOWN          0x0002L
+#define CBS_DROPDOWNLIST      0x0003L
 #endif

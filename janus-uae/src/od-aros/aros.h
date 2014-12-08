@@ -58,6 +58,7 @@ extern char *_tzname[2];
 /* ? */
 void _tzset(void);
 
+extern TCHAR start_path_exe[ ];
 
 void sleep_millis (int ms);
 void sleep_millis_main (int ms);
@@ -92,10 +93,18 @@ BOOL EnableWindow(HWND hWnd, DWORD id, BOOL bEnable);
 UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount);
 
 void read_rom_list (void);
+void set_path (const TCHAR *name, TCHAR *path, pathtype mode);
+void set_path (const TCHAR *name, TCHAR *path);
+void setpathmode (pathtype pt);
+void gui_message_id (TCHAR *id);
+
 extern int quickstart, configurationcache, relativepaths;
+
 
 /* gfx */
 void updatewinfsmode (struct uae_prefs *p);
+
+void create_afnewdir (int remove);
 
 #define CALLBACK
 #define FAR
