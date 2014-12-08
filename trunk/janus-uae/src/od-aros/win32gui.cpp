@@ -1968,7 +1968,7 @@ int scan_roms (HWND hDlg, int show)
 	for (i = 0; i < MAX_ROM_PATHS; i++)
 		xfree (paths[i]);
 
-	fkey2 = regcreatetree (NULL, _T("DetectedROMS"));
+	fkey2 = regcreatetree (NULL, _T("DetectedROMs"));
 	if (fkey2) {
 		id = 1;
 		for (;;) {
