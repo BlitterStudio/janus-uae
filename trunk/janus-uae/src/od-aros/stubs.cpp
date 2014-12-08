@@ -385,11 +385,6 @@ USHORT DMS_Process_File(struct zfile *fi, struct zfile *fo, USHORT cmd, USHORT o
   TODO();
 }
 
-struct zfile *archive_getzfile (struct znode *zn, unsigned int id, int flags)
-{
-  TODO();
-}
-
 void fetch_ripperpath (TCHAR *out, int size)
 {
   TODO();
@@ -505,16 +500,6 @@ void amiga_clipboard_die (void)
   TODO();
 }
 
-void archive_access_scan (struct zfile *zf, zfile_callback zc, void *user, unsigned int id)
-{
-  TODO();
-}
-
-struct zfile *archive_unpackzfile (struct zfile *zf)
-{
-  TODO();
-}
-
 void fetch_statefilepath (TCHAR *out, int size)
 {
   TODO();
@@ -572,11 +557,6 @@ void amiga_clipboard_init (void)
   TODO();
 }
 
-void archive_access_close (void *handle, unsigned int id)
-{
-  TODO();
-}
-
 struct zvolume *archive_directory_7z (struct zfile *z)
 {
   TODO();
@@ -609,50 +589,7 @@ int uaeser_getdatalenght (void)
   TODO();
 }
 
-struct zfile *archive_access_select (struct znode *parent, struct zfile *zf, unsigned int id, int dodefault, int *retcode, int index)
-{
-  TODO();
-}
 
-struct zvolume *archive_directory_adf (struct znode *parent, struct zfile *z)
-{
-  TODO();
-}
-
-struct zvolume *archive_directory_fat (struct zfile *z)
-{
-  TODO();
-}
-
-struct zvolume *archive_directory_lha (struct zfile *zf)
-{
-  TODO();
-}
-
-struct zvolume *archive_directory_lzx (struct zfile *in_file)
-{
-  TODO();
-}
-
-struct zvolume *archive_directory_rar (struct zfile *z)
-{
-  TODO();
-}
-
-struct zvolume *archive_directory_rdb (struct zfile *z)
-{
-  TODO();
-}
-
-struct zvolume *archive_directory_tar (struct zfile *z)
-{
-  TODO();
-}
-
-struct zvolume *archive_directory_zip (struct zfile *z)
-{
-  TODO();
-}
 
 #if 0
 void gfx_set_picasso_state (int on)
@@ -667,11 +604,6 @@ void uaenet_enumerate_free (struct netdriverdata *tcp)
 }
 
 int target_get_volume_name (struct uaedev_mount_info *mtinf, const TCHAR *volumepath, TCHAR *volumename, int size, bool inserted, bool fullcheck)
-{
-  TODO();
-}
-
-struct zvolume *archive_directory_plain (struct zfile *z)
 {
   TODO();
 }
@@ -762,11 +694,6 @@ int input_get_default_joystick_analog (struct uae_input_device *uid, int i, int 
 }
 
 void f_out (void *f, const TCHAR *format, ...)
-{
-  TODO();
-}
-
-int isfat (uae_u8 *p)
 {
   TODO();
 }

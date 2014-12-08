@@ -15,7 +15,6 @@
 #endif
 
 #ifdef __AROS__
-#include <sys/time.h>
 #include "aros.h"
 #endif
 
@@ -47,7 +46,6 @@ static time_t fromdostime (uae_u32 dd)
 	tm.tm_mon  = ((dd >> 21) & 0x0f) - 1;
 	tm.tm_mday = (dd >> 16) & 0x1f;
 	t = mktime (&tm);
-	_tzset ();
 	t -= _timezone;
 	return t;
 }
@@ -58,21 +56,31 @@ static struct zvolume *getzvolume (struct znode *parent, struct zfile *zf, unsig
 
 	switch (id)
 	{
+#ifdef A_ZIP
 	case ArchiveFormatZIP:
 		zv = archive_directory_zip (zf);
 		break;
+#endif
+#ifdef A_7Z
 	case ArchiveFormat7Zip:
 		zv = archive_directory_7z (zf);
 		break;
+#endif
+#ifdef A_RAR
 	case ArchiveFormatRAR:
 		zv = archive_directory_rar (zf);
 		break;
+#endif
+#ifdef A_LHA
 	case ArchiveFormatLHA:
 		zv = archive_directory_lha (zf);
 		break;
+#endif
+#ifdef A_LZX
 	case ArchiveFormatLZX:
 		zv = archive_directory_lzx (zf);
 		break;
+#endif
 	case ArchiveFormatPLAIN:
 		zv = archive_directory_plain (zf);
 		break;
@@ -89,8 +97,10 @@ static struct zvolume *getzvolume (struct znode *parent, struct zfile *zf, unsig
 		zv = archive_directory_fat (zf);
 		break;
 	}
+#ifdef ARCHIVEACCESS
 	if (!zv)
 		zv = archive_directory_arcacc (zf, id);
+#endif
 	return zv;
 }
 
@@ -167,6 +177,10 @@ struct zfile *archive_access_select (struct znode *parent, struct zfile *zf, uns
 				int ft = 0;
 				if (mask & ZFD_CD) {
 					if (ext && !_tcsicmp (ext, _T(".iso"))) {
+						whf = 2;
+						ft = ZFILE_CDIMAGE;
+					}
+					if (ext && !_tcsicmp (ext, _T(".chd"))) {
 						whf = 2;
 						ft = ZFILE_CDIMAGE;
 					}
@@ -266,7 +280,9 @@ struct zvolume *archive_directory_tar (struct zfile *z)
 	struct zvolume *zv;
 	struct znode *zn;
 
+#ifndef __AROS__
 	_tzset ();
+#endif
 	zv = zvolume_alloc (z, ArchiveFormatTAR, NULL, NULL);
 	for (;;) {
 		uae_u8 block[512];
@@ -301,10 +317,10 @@ struct zvolume *archive_directory_tar (struct zfile *z)
 			memset (&zai, 0, sizeof zai);
 			zai.name = au (name);
 			zai.size = size;
-			zai.t = _strtoui64 ((char*)block + 136, NULL, 8);
-			zai.t += _timezone;
+			zai.tv.tv_sec = _strtoui64 ((char*)block + 136, NULL, 8);
+			zai.tv.tv_sec += _timezone;
 			if (_daylight)
-				zai.t -= 1 * 60 * 60;
+				zai.tv.tv_sec -= 1 * 60 * 60;
 			if (zai.name[_tcslen (zai.name) - 1] == '/') {
 				zn = zvolume_adddir_abs (zv, &zai);
 			} else {
@@ -333,6 +349,7 @@ struct zfile *archive_access_tar (struct znode *zn)
 }
 
 /* ZIP */
+#ifdef A_ZIP
 
 static void archive_close_zip (void *handle)
 {
@@ -362,12 +379,16 @@ struct zvolume *archive_directory_zip (struct zfile *z)
 		err = unzGetCurrentFileInfo (uz, &file_info, filename_inzip2, sizeof (filename_inzip2), NULL, 0, NULL, 0);
 		if (err != UNZ_OK)
 			return 0;
-		filename_inzip = au (filename_inzip2);
+		if (file_info.flag & (1 << 11)) { // UTF-8 encoded
+			filename_inzip = utf8u (filename_inzip2);
+		} else {
+			filename_inzip = au (filename_inzip2);
+		}
 		dd = file_info.dosDate;
 		t = fromdostime (dd);
 		memset (&zai, 0, sizeof zai);
 		zai.name = filename_inzip;
-		zai.t = t;
+		zai.tv.tv_sec = t;
 		zai.flags = -1;
 		c = filename_inzip[_tcslen (filename_inzip) - 1];
 		if (c != '/' && c != '\\') {
@@ -462,7 +483,7 @@ error:
 	return NULL;
 }
 
-struct zfile *archive_access_zip (struct znode *zn, int flags)
+static struct zfile *archive_access_zip (struct znode *zn, int flags)
 {
 	return archive_do_zip (zn, NULL, flags);
 }
@@ -470,7 +491,9 @@ static struct zfile *archive_unpack_zip (struct zfile *zf)
 {
 	return archive_do_zip (NULL, zf, 0);
 }
+#endif
 
+#ifdef A_7Z
 /* 7Z */
 
 #include "7z/7z.h"
@@ -527,7 +550,9 @@ static void init_7z (void)
 	allocTempImp.Alloc = SzAlloc;
 	allocTempImp.Free = SzFree;
 	CrcGenerateTable ();
+#ifndef __AROS__
 	_tzset ();
+#endif
 }
 
 struct SevenZContext
@@ -585,14 +610,13 @@ struct zvolume *archive_directory_7z (struct zfile *z)
 		zai.name = name;
 		zai.flags = f->AttribDefined ? f->Attrib : -1;
 		zai.size = f->Size;
-		zai.t = 0;
 		if (f->MTimeDefined) {
 			uae_u64 t = (((uae_u64)f->MTime.High) << 32) | f->MTime.Low;
 			if (t >= EPOCH_DIFF) {
-				zai.t = (t - EPOCH_DIFF) / RATE_DIFF;
-				zai.t -= _timezone;
+				zai.tv.tv_sec = (t - EPOCH_DIFF) / RATE_DIFF;
+				zai.tv.tv_sec -= _timezone;
 				if (_daylight)
-					zai.t += 1 * 60 * 60;
+					zai.tv.tv_sec += 1 * 60 * 60;
 			}
 		}
 		if (!f->IsDir) {
@@ -604,7 +628,7 @@ struct zvolume *archive_directory_7z (struct zfile *z)
 	return zv;
 }
 
-struct zfile *archive_access_7z (struct znode *zn)
+static struct zfile *archive_access_7z (struct znode *zn)
 {
 	SRes res;
 	struct zvolume *zv = zn->volume;
@@ -613,29 +637,30 @@ struct zfile *archive_access_7z (struct znode *zn)
 	size_t outSizeProcessed;
 	struct SevenZContext *ctx;
 
+	z = zfile_fopen_empty (NULL, zn->fullname, zn->size);
+	if (!z)
+		return NULL;
 	ctx = (struct SevenZContext*)zv->handle;
 	res = SzArEx_Extract (&ctx->db, &ctx->lookStream.s, zn->offset,
 		&ctx->blockIndex, &ctx->outBuffer, &ctx->outBufferSize,
 		&offset, &outSizeProcessed,
 		&allocImp, &allocTempImp);
 	if (res == SZ_OK) {
-		z = zfile_fopen_empty (NULL, zn->fullname, zn->size);
 		zfile_fwrite (ctx->outBuffer + offset, zn->size, 1, z);
 	} else {
 		write_log (_T("7Z: SzExtract %s returned %d\n"), zn->fullname, res);
+		zfile_fclose (z);
+		z = NULL;
 	}
 	return z;
 }
+#endif
 
 /* RAR */
-
-
+#ifdef A_RAR
 
 /* copy and paste job? you are only imagining it! */
 static struct zfile *rarunpackzf; /* stupid unrar.dll */
-#ifdef __AROS__
-#define _UNIX
-#endif
 #include <unrar.h>
 typedef HANDLE (_stdcall* RAROPENARCHIVEEX)(struct RAROpenArchiveDataEx*);
 static RAROPENARCHIVEEX pRAROpenArchiveEx;
@@ -742,7 +767,7 @@ struct zvolume *archive_directory_rar (struct zfile *z)
 		zai.name = rc->HeaderData.FileNameW;
 		zai.size = rc->HeaderData.UnpSize;
 		zai.flags = -1;
-		zai.t = fromdostime (rc->HeaderData.FileTime);
+		zai.tv.tv_sec = fromdostime (rc->HeaderData.FileTime);
 		zn = zvolume_addfile_abs (zv, &zai);
 		zn->offset = cnt++;
 		pRARProcessFile (rc->hArcData, RAR_SKIP, NULL, NULL);
@@ -754,7 +779,7 @@ struct zvolume *archive_directory_rar (struct zfile *z)
 	return zv;
 }
 
-struct zfile *archive_access_rar (struct znode *zn)
+static struct zfile *archive_access_rar (struct znode *zn)
 {
 	struct RARContext *rc = (struct RARContext*)zn->volume->handle;
 	int i;
@@ -787,6 +812,8 @@ end:
 	pRARCloseArchive(rc->hArcData);
 	return zf;
 }
+#endif
+
 
 /* ArchiveAccess */
 
@@ -992,6 +1019,8 @@ static struct znode *addfile (struct zvolume *zv, struct zfile *zf, const TCHAR 
 	struct zfile *z;
 
 	z = zfile_fopen_empty (zf, path, size);
+	if (!z)
+		return NULL;
 	zfile_fwrite (data, size, 1, z);
 	memset (&zai, 0, sizeof zai);
 	zai.name = my_strdup (path);
@@ -1023,7 +1052,6 @@ struct zvolume *archive_directory_plain (struct zfile *z)
 	zai.flags = -1;
 	zfile_fseek(z, 0, SEEK_END);
 	zai.size = zfile_ftell (z);
-	zai.t = 
 	zfile_fseek(z, 0, SEEK_SET);
 	zfile_fread(id, sizeof id, 1, z);
 	zfile_fseek(z, 0, SEEK_SET);
@@ -1065,7 +1093,7 @@ struct zvolume *archive_directory_plain (struct zfile *z)
 	}
 	return zv;
 }
-struct zfile *archive_access_plain (struct znode *zn)
+static struct zfile *archive_access_plain (struct znode *zn)
 {
 	struct zfile *z;
 
@@ -1217,7 +1245,7 @@ static void recurseadf (struct znode *zn, int root, TCHAR *name)
 				size = 0;
 			zai.size = size;
 			zai.flags = gl (adf, bs - 48 * 4);
-			zai.t = put_time (gl (adf, bs - 23 * 4), gl (adf, bs - 22 * 4),gl (adf, bs - 21 * 4));
+			amiga_to_timeval (&zai.tv, gl (adf, bs - 23 * 4), gl (adf, bs - 22 * 4),gl (adf, bs - 21 * 4));
 			if (secondary == -3) {
 				struct znode *znnew = zvolume_addfile_abs (zv, &zai);
 				znnew->offset = block;
@@ -1285,9 +1313,9 @@ static void recursesfs (struct znode *zn, int root, TCHAR *name, int sfs2)
 			_tcscat (name2, fname);
 			zai.name = name2;
 			if (sfs2)
-				zai.t = glx (p + 22) - diff2;
+				zai.tv.tv_sec = glx (p + 22) - diff2;
 			else
-				zai.t = glx (p + 20) - diff;
+				zai.tv.tv_sec = glx (p + 20) - diff;
 			if (p[sfs2 ? 26 : 24] & 0x80) { // dir
 				struct znode *znnew = zvolume_adddir_abs (zv, &zai);
 				int newblock = glx (p + 16);
@@ -1516,7 +1544,7 @@ static int sfsfindblock (struct adfhandle *adf, int btree, int theblock, struct 
 }
 
 
-struct zfile *archive_access_adf (struct znode *zn)
+static struct zfile *archive_access_adf (struct znode *zn)
 {
 	struct zfile *z = NULL;
 	int root, ffs;
@@ -1633,7 +1661,7 @@ static TCHAR *tochar (uae_u8 *s, int len)
 	for (i = 0; i < len; i++) {
 		uae_char c = *s++;
 		if (c >= 0 && c <= 9) {
-			tmp[j++] = '\\';
+			tmp[j++] = FSDB_DIR_SEPARATOR;
 			tmp[j++] = '0' + c;
 		} else if (c < ' ' || c > 'z') {
 			tmp[j++] = '.';
@@ -1712,7 +1740,7 @@ struct zvolume *archive_directory_rdb (struct zfile *z)
 		zai.flags = -1;
 		zn = zvolume_addfile_abs (zv, &zai);
 		zn->offset = partblock;
-		zn->offset2 = blocksize; // örp?
+		zn->offset2 = blocksize; // abuse of offset2..
 	}
 
 	zfile_fseek (z, 0, SEEK_SET);
@@ -1729,7 +1757,7 @@ struct zvolume *archive_directory_rdb (struct zfile *z)
 	return zv;
 }
 
-struct zfile *archive_access_rdb (struct znode *zn)
+static struct zfile *archive_access_rdb (struct znode *zn)
 {
 	struct zfile *z = zn->volume->archive;
 	struct zfile *zf;
@@ -1836,8 +1864,21 @@ static time_t fat_time_fat2unix (uae_u16 time, uae_u16 date, int fat12)
 		day = (date >> 11);
 	} else {
 		year  = date >> 9;  
-		month = max(1, (date >> 5) & 0xf);
-		day   = max(1, date & 0x1f) - 1;
+		//month = max(1, (date >> 5) & 0xf);
+    if(1 > (date >> 5) & 0xf) {
+      month=1;
+    }
+    else {
+      month=(date >> 5) & 0xf;
+    }
+		//day   = max(1, date & 0x1f) - 1;
+    if(1 > date & 0x1f) {
+      day=1;
+    }
+    else {
+      day=date & 0x1f;
+    }
+    day--;
 	}
 
 	leap_day = (year + 3) / 4;
@@ -1942,7 +1983,7 @@ static void fatdirectory (struct zfile *z, struct zvolume *zv, TCHAR *name, int 
 		_tcscat (name2, fname);
 
 		zai.name = name2;
-		zai.t = fat_time_fat2unix (buf[0x16] | (buf[0x17] << 8), buf[0x18] | (buf[0x19] << 8), 1);
+		zai.tv.tv_sec = fat_time_fat2unix (buf[0x16] | (buf[0x17] << 8), buf[0x18] | (buf[0x19] << 8), 1);
 		if (attr & (16 | 8)) {
 			int nextblock, cluster;
 			nextblock = dataregion + (startcluster - 2) * sectorspercluster;
@@ -1994,7 +2035,7 @@ struct zvolume *archive_directory_fat (struct zfile *z)
 	return zv;
 }
 
-struct zfile *archive_access_fat (struct znode *zn)
+static struct zfile *archive_access_fat (struct znode *zn)
 {
 	uae_u8 buf[512] = { 0 };
 	int fatbits = 12;
@@ -2043,17 +2084,25 @@ void archive_access_close (void *handle, unsigned int id)
 {
 	switch (id)
 	{
+#ifdef A_ZIP
 	case ArchiveFormatZIP:
 		archive_close_zip (handle);
 		break;
+#endif
+#ifdef A_7Z
 	case ArchiveFormat7Zip:
 		archive_close_7z (handle);
 		break;
+#endif
+#ifdef A_RAR
 	case ArchiveFormatRAR:
 		archive_close_rar (handle);
 		break;
+#endif
+#ifdef A_LHA
 	case ArchiveFormatLHA:
 		break;
+#endif
 	case ArchiveFormatADF:
 		archive_close_adf (handle);
 		break;
@@ -2063,7 +2112,7 @@ void archive_access_close (void *handle, unsigned int id)
 	}
 }
 
-struct zfile *archive_access_dir (struct znode *zn)
+static struct zfile *archive_access_dir (struct znode *zn)
 {
 	return zfile_fopen (zn->fullname, _T("rb"), 0);
 }
@@ -2078,9 +2127,11 @@ struct zfile *archive_unpackzfile (struct zfile *zf)
 	zf->datasize = zf->size;
 	switch (zf->archiveid)
 	{
+#ifdef A_ZIP
 	case ArchiveFormatZIP:
 		zout = archive_unpack_zip (zf);
 		break;
+#endif
 	}
 	zfile_fclose (zf->archiveparent);
 	zf->archiveparent = NULL;
@@ -2094,21 +2145,31 @@ struct zfile *archive_getzfile (struct znode *zn, unsigned int id, int flags)
 
 	switch (id)
 	{
+#ifdef A_ZIP
 	case ArchiveFormatZIP:
 		zf = archive_access_zip (zn, flags);
 		break;
+#endif
+#ifdef A_7Z
 	case ArchiveFormat7Zip:
 		zf = archive_access_7z (zn);
 		break;
+#endif
+#ifdef A_RAR
 	case ArchiveFormatRAR:
 		zf = archive_access_rar (zn);
 		break;
+#endif
+#ifdef A_LHA
 	case ArchiveFormatLHA:
 		zf = archive_access_lha (zn);
 		break;
+#endif
+#ifdef A_LZX
 	case ArchiveFormatLZX:
 		zf = archive_access_lzx (zn);
 		break;
+#endif
 	case ArchiveFormatPLAIN:
 		zf = archive_access_plain (zn);
 		break;
@@ -2128,7 +2189,9 @@ struct zfile *archive_getzfile (struct znode *zn, unsigned int id, int flags)
 		zf = archive_access_tar (zn);
 		break;
 	}
-	if (zf)
+	if (zf) {
 		zf->archiveid = id;
+		zfile_fseek (zf, 0, SEEK_SET);
+	}
 	return zf;
 }
