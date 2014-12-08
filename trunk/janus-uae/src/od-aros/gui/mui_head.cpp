@@ -173,6 +173,8 @@ AROS_UFH2(void, MUIHook_quit, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR
 
 int *FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *AboutDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
 Object* build_gui(void) {
   int i=0;
@@ -236,8 +238,12 @@ Object* build_gui(void) {
                               MUIA_Group_Child,
                                 pages=PageGroup,
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_LOADSAVE, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_ABOUT, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_PATHS, TAG_DONE),
+                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_ABOUT, 
+                                                                              MA_dlgproc, (ULONG) &AboutDlgProc,
+                                                                              TAG_DONE),
+                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_PATHS, 
+                                                                              MA_dlgproc, (ULONG) &PathsDlgProc,
+                                                                              TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_QUICKSTART, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_LOADSAVE, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CPU, TAG_DONE),
