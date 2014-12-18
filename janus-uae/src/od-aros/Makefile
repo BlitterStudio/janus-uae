@@ -158,6 +158,7 @@ COMMON_OBJS= \
 	../nogui.o \
 	../isofs.o \
 	../zfile.o \
+	../zfile_archive.o \
 	main.o \
 	avioutput.o \
 	unicode.o \
@@ -189,7 +190,6 @@ COMMON_OBJS= \
 	#../picasso96.o \
 	#../ersatz.o \
 	#keyboard.o \
-#../zfile_archive.o 
 #gui.o \
 
 GUI_LIB = od-aros/gui/libgui.a
