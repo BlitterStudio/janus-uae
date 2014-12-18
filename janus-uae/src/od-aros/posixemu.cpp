@@ -87,11 +87,11 @@ int uae_start_thread (const TCHAR *name, void *(*f)(void *), void *arg, uae_thre
   if (replyport) {
     newtask = CreateNewProcTags (//NP_Output,		   Output (),
              //NP_Input,		   Input (),
-             NP_Name,	   (ULONG) name,
+             NP_Name,	   (IPTR) name,
              //NP_CloseOutput,	   FALSE,
              //NP_CloseInput,	   FALSE,
              NP_StackSize,	   16384*4,
-             NP_Entry,	   (ULONG) do_thread,
+             NP_Entry,	   (IPTR) do_thread,
              TAG_DONE);
 
     DebOut("New task: %lx\n", newtask);
