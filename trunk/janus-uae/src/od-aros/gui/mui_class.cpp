@@ -32,7 +32,7 @@
 
 struct Data {
   struct Hook LayoutHook;
-  struct Hook MyMUIHook_control;
+  struct Hook MyMUIHook_pushbutton;
   struct Hook MyMUIHook_select;
   struct Hook MyMUIHook_combo;
   ULONG width, height;
@@ -223,26 +223,25 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
 
     case CB_ADDSTRING:
       /* add string to popup window */
-      DebOut("CB_ADDSTRING\n");
-      DebOut("new string: >%s<\n", (TCHAR *) lParam);
+      DebOut("CB_ADDSTRING (%s)\n", (TCHAR *) lParam);
       l=0;
-      DebOut("old list:\n");
+      //DebOut("old list:\n");
       while(elem[i].var[l] != NULL) {
-        DebOut("  elem[i].var[%d]: %s\n", l, elem[i].var[l]);
+        //DebOut("  elem[i].var[%d]: %s\n", l, elem[i].var[l]);
         l++;
       }
       /* found next free string */
-      DebOut("  next free line: %d\n", l);
+      //DebOut("  next free line: %d\n", l);
       activate=l;
 #warning TODO: free strings again!
       elem[i].var[l]=strdup((TCHAR *) lParam);
       elem[i].var[l+1]=NULL;
-      DebOut("elem[i].obj: %lx\n", elem[i].obj);
+      //DebOut("elem[i].obj: %lx\n", elem[i].obj);
       SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].mem, TAG_DONE);
-      DebOut("new list:\n");
+      //DebOut("new list:\n");
       l=0;
       while(elem[i].var[l] != NULL) {
-        DebOut("  elem[i].var[%d]: %s\n", l, elem[i].var[l]);
+        //DebOut("  elem[i].var[%d]: %s\n", l, elem[i].var[l]);
         l++;
       }
       SetAttrs(elem[i].obj, MUIA_Cycle_Active, activate, TAG_DONE);
@@ -284,18 +283,26 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       return elem[i].value;
       break;
     case WM_GETTEXT:
-      DebOut("[%lx] WM_GETTEXT\n", elem[i].obj);
+    case CB_GETLBTEXT:
+      DebOut("[%lx] WM_GETTEXT / CB_GETLBTEXT\n", elem[i].obj);
       {
         TCHAR *string=(TCHAR *) lParam;
         DebOut("[%lx] elem[i].value: %d\n", elem[i].obj, elem[i].value);
         DebOut("[%lx] wParam: %d\n", elem[i].obj, wParam);
         /* warning: care for non-comboboxes, too! */
-        if(elem[i].value<0) {
+        if(elem[i].value<0 || elem[i].var[elem[i].value]==NULL) {
           string[0]=(char) 0;
         }
         else {
           DebOut("return: %s\n", elem[i].var[elem[i].value]);
-          strncpy(string, elem[i].var[elem[i].value], wParam);
+          if(Msg == CB_GETLBTEXT) {
+            DebOut("CB_GETLBTEXT\n");
+            /* CB_GETLBTEXT has no range check! */
+            strcpy(string, elem[i].var[elem[i].value]);
+          }
+          else {
+            strncpy(string, elem[i].var[elem[i].value], wParam);
+          }
         }
       }
       break;
@@ -385,7 +392,6 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       }
       SetAttrs(elem[i].obj, MUIA_Cycle_Active, foo, TAG_DONE);
       return TRUE;
-
     default:
       DebOut("WARNING: unkown Windows Message-ID: %d\n", Msg);
       return FALSE;
@@ -720,16 +726,16 @@ AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
   struct Data *data = (struct Data *) hook->h_Data;
 
 
-  DebOut("[%lx] entered\n", obj);
-  DebOut("[%lx] hook.h_Data: %lx\n", obj, hook->h_Data);
-  DebOut("[%lx] obj: %lx\n", obj);
+  //DebOut("[%lx] entered\n", obj);
+  //DebOut("[%lx] hook.h_Data: %lx\n", obj, hook->h_Data);
+  //DebOut("[%lx] obj: %lx\n", obj);
 
   i=get_elem_from_obj(data, (Object *) obj);
 
   DebOut("[%lx] i: %d\n", obj, i);
 
   data->src[i].value=xget((Object *) obj, MUIA_Cycle_Active);
-  DebOut("[%lx] MUIA_Cycle_Active: %d\n", obj, data->src[i].value);
+  DebOut("[%lx] MUIA_Cycle_Active: %d (mui obj: %lx)\n", obj, data->src[i].value, obj);
   if(flag_editable(data->src[i].flags)) {
     data->src[i].value--;
   }
@@ -737,10 +743,8 @@ AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
   DebOut("[%lx] We are in state: %d\n", obj, data->src[i].value);
 
   if(data->func) {
-    DebOut("[%lx] call function: %lx\n", obj, data->func);
-    DebOut("[%lx] IDC: %d\n", obj, data->src[i].idc);
     wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
-    DebOut("[%lx] wParam: %lx\n", obj, wParam);
+    DebOut("[%lx] call function: %lx(wParam %lx) IDC: %d\n", obj, data->func, wParam, data->src[i].idc);
     data->func(data->src, WM_COMMAND, wParam, NULL);
   }
   else {
@@ -788,7 +792,7 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
   AROS_USERFUNC_EXIT
 }
 
-AROS_UFH2(void, MUIHook_control, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
+AROS_UFH2(void, MUIHook_pushbutton, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
 
   AROS_USERFUNC_INIT
   int i;
@@ -797,9 +801,8 @@ AROS_UFH2(void, MUIHook_control, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(A
   struct Data *data = (struct Data *) hook->h_Data;
 
 
-  DebOut("entered\n");
+  DebOut("[%lx] entered\n", obj);
   DebOut("hook.h_Data: %lx\n", hook->h_Data);
-  DebOut("obj: %lx\n", obj);
 
   i=get_elem_from_obj(data, (Object *) obj);
 
@@ -812,9 +815,12 @@ AROS_UFH2(void, MUIHook_control, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(A
     wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
     DebOut("wParam: %lx\n", wParam);
     data->func(data->src, WM_COMMAND, wParam, NULL);
+    /* double call is not a good idea! */
+    DebOut("WARNING: should we send BN_CLICKED here, too?\n");
+#if 0
     wParam=MAKELPARAM(data->src[i].idc, BN_CLICKED);
-    DebOut("wParam: %lx\n", wParam);
     data->func(data->src, WM_COMMAND, wParam, NULL);
+#endif
   }
   else {
     DebOut("function is zero: %lx\n", data->func);
@@ -1034,7 +1040,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                 End;
               }
               else {
-                /* buton without text must be without text, otherwise zune draws "over the border" */
+                /* button without text must be without text, otherwise zune draws "over the border" */
                 child=HGroup,
                   MUIA_UserData         , i,
                   Child, src[i].obj=ImageObject,
@@ -1052,7 +1058,6 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
               data->MyMUIHook_select.h_Data =(APTR) data;
               DebOut("DoMethod(%lx, MUIM_Notify, MUIA_Selected, MUIV_EveryTime..)\n", src[i].obj);
               DoMethod(src[i].obj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, (ULONG) src[i].obj, 2, MUIM_CallHook,(ULONG) &data->MyMUIHook_select, func); 
-
             }
           }
           else if(!strcmp(src[i].windows_class, "RICHEDIT")) {
@@ -1076,7 +1081,6 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
         break;
 
         case PUSHBUTTON:
-          //src[i].obj=MUI_MakeObject(MUIO_Button, (ULONG) src[i].text);
           child=HGroup, MUIA_Background, MUII_ButtonBack,
                               ButtonFrame,
                               MUIA_InputMode , MUIV_InputMode_RelVerify,
@@ -1090,11 +1094,9 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
           src[i].exists=TRUE;
           src[i].obj=child;
           /* Add hook */
-          /* TODO !!! */
-          //Move this to the "..." gadget!! and call func then..
-          data->MyMUIHook_control.h_Entry=(APTR) MUIHook_control;
-          data->MyMUIHook_control.h_Data =(APTR) data;
-          DoMethod(src[i].obj, MUIM_Notify, MUIA_Pressed, FALSE, (ULONG) src[i].obj, 2, MUIM_CallHook,(ULONG) &data->MyMUIHook_control, func); 
+          data->MyMUIHook_pushbutton.h_Entry=(APTR) MUIHook_pushbutton;
+          data->MyMUIHook_pushbutton.h_Data =(APTR) data;
+          DoMethod(src[i].obj, MUIM_Notify, MUIA_Pressed, FALSE, (ULONG) src[i].obj, 2, MUIM_CallHook,(ULONG) &data->MyMUIHook_pushbutton, func); 
         break;
 
         case RTEXT:

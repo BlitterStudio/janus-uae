@@ -17,7 +17,7 @@
  * OpenGL support by Jochen Becher, Richard Drummond
  */
 
-//#define OLI_DEBUG
+#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include "keymap.h"
@@ -866,7 +866,12 @@ static void sdl_unlock_nolock (struct vidbuf_description *gfxinfo, struct vidbuf
 STATIC_INLINE void sdl_flush_block_nolock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb, int first_line, int last_line) {
 
   DebOut("entered (vidbuf_description %lx, firstline %d, last_line %d)\n", gfxinfo, first_line, last_line);
-  SDL_UpdateRect (display, 0, first_line, current_width, last_line - first_line + 1);
+  if(first_line >= last_line) {
+    DebOut("WARNING: %d >= %d\n", first_line, last_line);
+  }
+  else {
+    SDL_UpdateRect (display, 0, first_line, current_width, last_line - first_line + 1);
+  }
 }
 
 /**
@@ -2053,6 +2058,8 @@ void toggle_fullscreen (int mode)
 
 void toggle_mousegrab (void)
 {
+  DebOut("toggle_mousegrab: fullscreen: %d\n", fullscreen);
+
     if (!fullscreen) {
         if (SDL_WM_GrabInput (SDL_GRAB_QUERY) == SDL_GRAB_OFF) {
             if (SDL_WM_GrabInput (SDL_GRAB_ON) == SDL_GRAB_ON) {

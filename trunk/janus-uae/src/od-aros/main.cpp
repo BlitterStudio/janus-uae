@@ -298,6 +298,8 @@ static TCHAR *getdefaultini (void) {
  *
  * This is the equivalent to WinMain2 in win32.cpp (hopefully)
  ************************************************************************/
+void WIN32_HandleRegistryStuff (void);
+
 int main (int argc, TCHAR **argv) {
   /* win32:
   DEVMODE devmode;
@@ -329,6 +331,7 @@ int main (int argc, TCHAR **argv) {
     write_log(_T("preinit_shm FAILED\n"));
   }
 #endif
+  WIN32_HandleRegistryStuff ();
 
 
 
