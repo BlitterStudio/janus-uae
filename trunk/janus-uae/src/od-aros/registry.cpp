@@ -57,6 +57,8 @@ int regsetstr (UAEREG *root, const TCHAR *name, const TCHAR *str) {
   DebOut("group: %s\n", gs(root));
   DebOut("name: %s\n", name);
 
+  //reginitializeinit(NULL);
+
   if(CFG_SelectGroup(gs(root), TRUE)==CFG_ERROR) {
     DebOut("could not create group %s \n", gs(root));
     return 0;
@@ -67,6 +69,7 @@ int regsetstr (UAEREG *root, const TCHAR *name, const TCHAR *str) {
     return 0;
   }
 
+  //regflushfile();
 
   DebOut("now: %s = %s\n", name, str);
   return 1;
@@ -78,17 +81,22 @@ int regsetint (UAEREG *root, const TCHAR *name, int val) {
   DebOut("group: %s\n", gs(root));
   DebOut("name: %s\n", name);
 
+  //reginitializeinit(NULL);
+
   if(CFG_SelectGroup(gs(root), TRUE)==CFG_ERROR) {
     DebOut("could not create group %s \n", gs(root));
+    //regflushfile();
     return 0;
   }
 
   if(CFG_WriteInt(name, val)==CFG_ERROR) {
     DebOut("ERROR: wrong type for key %s\n", name);
+    //regflushfile();
     return 0;
   }
 
   DebOut("now: %s = %d\n", name, val);
+  //regflushfile();
   return 1;
 }
 
@@ -97,8 +105,11 @@ int regqueryint (UAEREG *root, const TCHAR *name, int *val) {
 
   DebOut("group: %s\n", gs(root));
 
+  //reginitializeinit(NULL);
+
   if(CFG_SelectGroup(gs(root), FALSE)==CFG_ERROR) {
     DebOut("group %s not found\n", gs(root));
+    //regflushfile();
     return 0;
   }
   DebOut("name: %s\n", name);
@@ -107,11 +118,13 @@ int regqueryint (UAEREG *root, const TCHAR *name, int *val) {
   if (res == 6666) {
     DebOut("key %s not found\n", name);
     *val=0;
+    //regflushfile();
     return 0;
   }
 
   DebOut("found %s = %d\n", name, res);
   *val=res;
+  //regflushfile();
   return 1;
 }
 
@@ -124,8 +137,11 @@ int regsetlonglong (UAEREG *root, const TCHAR *name, ULONGLONG val) {
   DebOut("group: %s\n", gs(root));
   DebOut("name: %s\n", name);
 
+  //reginitializeinit(NULL);
+
   if(CFG_SelectGroup(gs(root), TRUE)==CFG_ERROR) {
     DebOut("could not create group %s \n", gs(root));
+    //regflushfile();
     return 0;
   }
 
@@ -134,10 +150,12 @@ int regsetlonglong (UAEREG *root, const TCHAR *name, ULONGLONG val) {
 
   if(CFG_WriteText(name, str)==CFG_ERROR) {
     DebOut("ERROR: wrong type for key %s\n", name);
+    //regflushfile();
     return 0;
   }
 
   DebOut("now: %s = %s\n", name, str);
+  //regflushfile();
   return 1;
 }
 
@@ -150,6 +168,8 @@ int regquerylonglong (UAEREG *root, const TCHAR *name, ULONGLONG *val) {
   DebOut("group: %s\n", gs(root));
   DebOut("name: %s\n", name);
 
+  //reginitializeinit(NULL);
+
   if(CFG_SelectGroup(gs(root), TRUE)==CFG_ERROR) {
     DebOut("could not create group %s \n", gs(root));
     return 0;
@@ -158,6 +178,7 @@ int regquerylonglong (UAEREG *root, const TCHAR *name, ULONGLONG *val) {
   res=CFG_ReadText(name, PUPPA);
   if (!strcmp (res, PUPPA)) {
     DebOut("key %s not found\n", name);
+    //regflushfile();
     return 0;
   }
 
@@ -165,6 +186,7 @@ int regquerylonglong (UAEREG *root, const TCHAR *name, ULONGLONG *val) {
   *val = _tstoi64 (res);
 
   DebOut("return: %s = %I64d\n", name, *val);
+  //regflushfile();
   return 1;
 }
 
@@ -173,19 +195,24 @@ int regquerystr (UAEREG *root, const TCHAR *name, TCHAR *str, int *size)
   const char *res;
   DebOut("entered\n");
 
+  //reginitializeinit(NULL);
+
   if(CFG_SelectGroup(gs(root), FALSE)==CFG_ERROR) {
     DebOut("group %s not found\n", gs(root));
+    //regflushfile();
     return 0;
   }
 
   res=CFG_ReadText(name, PUPPA);
   if (!strcmp (res, PUPPA)) {
     DebOut("key %s not found\n", name);
+    //regflushfile();
     return 0;
   }
 
   strncpy(str, res, *size);
   DebOut("found %s = %s\n", name, str);
+  //regflushfile();
   return strlen(str);
 }
 
@@ -195,6 +222,8 @@ int regenumstr (UAEREG *root, int idx, TCHAR *name, int *nsize, TCHAR *str, int 
   const char *res;
   int ret;
   int max;
+
+  //reginitializeinit(NULL);
 
 	name[0] = 0;
 	str[0]  = 0;
@@ -210,6 +239,7 @@ int regenumstr (UAEREG *root, int idx, TCHAR *name, int *nsize, TCHAR *str, int 
 
   if(idx == max) {
     DebOut("no more entries\n");
+    //regflushfile();
     return 0;
   }
 
@@ -229,6 +259,8 @@ int regenumstr (UAEREG *root, int idx, TCHAR *name, int *nsize, TCHAR *str, int 
   DebOut("value: %s\n", res);
   strncpy(str, res, *size);
 
+  //regflushfile();
+
   return 1;
 }
 
@@ -237,6 +269,7 @@ int regquerydatasize (UAEREG *root, const TCHAR *name, int *size)
 {
   int ret = 0;
   int csize = 65536;
+  //reginitializeinit(NULL);
   TCHAR *tmp = xmalloc (TCHAR, csize);
   TODO();
   if (regquerystr (root, name, tmp, &csize)) {
@@ -244,6 +277,7 @@ int regquerydatasize (UAEREG *root, const TCHAR *name, int *size)
     ret = 1;
   }
   xfree (tmp);
+  //regflushfile();
   return ret;
 }
 
@@ -256,8 +290,11 @@ int regsetdata (UAEREG *root, const TCHAR *name, const void *str, int size) {
   TCHAR *tmp = xmalloc (TCHAR, size * 2 + 1);
   int ret=1;
 
+  //reginitializeinit(NULL);
+
   if(CFG_SelectGroup(gs(root), FALSE)==CFG_ERROR) {
     DebOut("group %s not found\n", gs(root));
+    //regflushfile();
     return 0;
   }
   for (i = 0; i < size; i++) {
@@ -269,6 +306,7 @@ int regsetdata (UAEREG *root, const TCHAR *name, const void *str, int size) {
   }
 
   xfree (tmp);
+  //regflushfile();
   return ret;
 }
 
@@ -282,6 +320,8 @@ int regquerydata (UAEREG *root, const TCHAR *name, void *str, int *size)
   TCHAR *tmp = xmalloc (TCHAR, csize);
   uae_u8 *out = (uae_u8*)str;
   TCHAR c1, c2;
+
+  //reginitializeinit(NULL);
 
   if (!regquerystr (root, name, tmp, &csize))
     goto err;
@@ -305,6 +345,7 @@ int regquerydata (UAEREG *root, const TCHAR *name, void *str, int *size)
   }
   ret = 1;
 err:
+  //regflushfile();
   xfree (tmp);
   return ret;
 }
@@ -315,8 +356,11 @@ int regdelete (UAEREG *root, const TCHAR *name) {
   DebOut("group: %s\n", gs(root));
   DebOut("name: %s\n", name);
 
+  //reginitializeinit(NULL);
+
   if(CFG_SelectGroup(gs(root), FALSE)==CFG_ERROR) {
     DebOut("group %s not found, ok\n", gs(root));
+    //regflushfile();
     return 1;
   }
 
@@ -325,6 +369,7 @@ int regdelete (UAEREG *root, const TCHAR *name) {
   CFG_RemoveIntEntry(name);
   CFG_RemoveFloatEntry(name);
   CFG_RemoveTextEntry(name);
+  //regflushfile();
   return 1;
 }
 
@@ -338,12 +383,14 @@ int regexists (UAEREG *root, const TCHAR *name)
   DebOut("inipath: %s\n", inipath);
   DebOut("name: %s\n", name);
 
+#if 0
   if (CFG_OK != CFG_OpenFile("PROGDIR:winuae.ini", &config)) {
     DebOut("winuae.ini does not exist\n");
     return 0;
   }
 
   DebOut("opened PROGDIR:winuae\n");
+#endif
 
   tmp=CFG_ReadText(name, PUPPA);
   if (!_tcscmp (tmp, PUPPA)) {
@@ -352,8 +399,10 @@ int regexists (UAEREG *root, const TCHAR *name)
   }
 
   DebOut("File was already there (%s = %s)\n", name, tmp);
+#if 0
 
   CFG_CloseFile(&config);
+#endif
 
   return ret;
 }
@@ -373,17 +422,23 @@ void regdeletetree (UAEREG *root, const TCHAR *name) {
     return;
   }
 
+  //reginitializeinit(NULL);
+
   if(CFG_RemoveGroup(name)==CFG_ERROR) {
     DebOut("group %s did not exists before\n", name);
+    //regflushfile();
     return;
   }
 
+  //regflushfile();
   DebOut("group %s deleted\n", name);
 }
 
 int regexiststree (UAEREG *root, const TCHAR *name)
 {
   int res;
+
+  //reginitializeinit(NULL);
 
   DebOut("entered\n");
   DebOut("root: %s\n", root);
@@ -392,6 +447,8 @@ int regexiststree (UAEREG *root, const TCHAR *name)
   res=(int) CFG_GroupExists(name);
 
   DebOut("result: %d\n", res);
+
+  //regflushfile();
 
   return res;
 }
@@ -418,7 +475,9 @@ UAEREG *regcreatetree (UAEREG *root, const TCHAR *name) {
   fkey = xcalloc (UAEREG, 1);
   fkey->inipath = ininame;
 
+  //reginitializeinit(NULL);
   CFG_SelectGroup(name, true);
+  //regflushfile();
 
   DebOut("created key: %lx\n", fkey);
   DebOut("selected group: %s\n", name);
@@ -514,6 +573,7 @@ FAIL2:
   }
   DebOut("%s initialized\n", INI_FILE);
 
+  CFG_SelectGroup("WinUAE", true);
   CFG_SelectGroup("Warning", true);
   CFG_WriteText("info1", "This is unsupported file. Compatibility between versions is not guaranteed.");
   CFG_WriteText("info2", "Incompatible ini-files may be re-created from scratch!");
