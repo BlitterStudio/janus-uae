@@ -478,7 +478,7 @@ int WIN32GFX_IsPicassoScreen (void)
 static void sleep_millis2 (int ms, bool main) {
 
   if(main) {
-    DebOut("warning: main is %s (not cared for)\n");
+    DebOut("warning: main is %d (not cared for)\n", main);
   }
 
   Delay(ms);
@@ -874,5 +874,142 @@ void setpathmode (pathtype pt)
 	if (pt == PATH_TYPE_AMIGAFOREVERDATA)
 		_tcscpy (pathmode, _T("AMIGAFOREVERDATA"));
 	regsetstr (NULL, _T("PathMode"), pathmode);
+}
+
+static int parseversion (TCHAR **vs)
+{
+	TCHAR tmp[10];
+	int i;
+
+	i = 0;
+	while (**vs >= '0' && **vs <= '9') {
+		if (i >= sizeof (tmp) / sizeof (TCHAR))
+			return 0;
+		tmp[i++] = **vs;
+		(*vs)++;
+	}
+	if (**vs == '.')
+		(*vs)++;
+	tmp[i] = 0;
+	return _tstol (tmp);
+}
+
+static int checkversion (TCHAR *vs)
+{
+	int ver;
+	if (_tcslen (vs) < 10)
+		return 0;
+	if (_tcsncmp (vs, _T("WinUAE "), 7))
+		return 0;
+	vs += 7;
+	ver = parseversion (&vs) << 16;
+	ver |= parseversion (&vs) << 8;
+	ver |= parseversion (&vs);
+	if (ver >= ((UAEMAJOR << 16) | (UAEMINOR << 8) | UAESUBREV))
+		return 0;
+	return 1;
+}
+
+UAEREG *read_disk_history (int type);
+
+void WIN32_HandleRegistryStuff (void) {
+	RGBFTYPE colortype = RGBFB_NONE;
+	//DWORD dwType = REG_DWORD;
+	DWORD dwDisplayInfoSize = sizeof (colortype);
+	int size;
+	TCHAR path[MAX_DPATH] = _T("");
+	TCHAR version[100];
+
+	initpath (_T("FloppyPath"), start_path_data);
+	initpath (_T("KickstartPath"), start_path_data);
+	initpath (_T("hdfPath"), start_path_data);
+	initpath (_T("ConfigurationPath"), start_path_data);
+	initpath (_T("LuaPath"), start_path_data);
+	initpath (_T("ScreenshotPath"), start_path_data);
+	initpath (_T("StatefilePath"), start_path_data);
+	initpath (_T("SaveimagePath"), start_path_data);
+	initpath (_T("VideoPath"), start_path_data);
+	initpath (_T("InputPath"), start_path_data);
+#if 0
+	if (!regexists (NULL, _T("MainPosX")) || !regexists (NULL, _T("GUIPosX"))) {
+		int x = GetSystemMetrics (SM_CXSCREEN);
+		int y = GetSystemMetrics (SM_CYSCREEN);
+		x = (x - 800) / 2;
+		y = (y - 600) / 2;
+		if (x < 10)
+			x = 10;
+		if (y < 10)
+			y = 10;
+		/* Create and initialize all our sub-keys to the default values */
+		regsetint (NULL, _T("MainPosX"), x);
+		regsetint (NULL, _T("MainPosY"), y);
+		regsetint (NULL, _T("GUIPosX"), x);
+		regsetint (NULL, _T("GUIPosY"), y);
+	}
+#endif
+	size = sizeof (version) / sizeof (TCHAR);
+	if (regquerystr (NULL, _T("Version"), version, &size)) {
+		if (checkversion (version))
+			regsetstr (NULL, _T("Version"), VersionStr);
+	} else {
+		regsetstr (NULL, _T("Version"), VersionStr);
+	}
+	size = sizeof (version) / sizeof (TCHAR);
+	if (regquerystr (NULL, _T("ROMCheckVersion"), version, &size)) {
+		if (checkversion (version)) {
+			if (regsetstr (NULL, _T("ROMCheckVersion"), VersionStr))
+				forceroms = 1;
+		}
+	} else {
+		if (regsetstr (NULL, _T("ROMCheckVersion"), VersionStr))
+			forceroms = 1;
+	}
+
+#if 0
+	regqueryint (NULL, _T("DirectDraw_Secondary"), &ddforceram);
+	if (regexists (NULL, _T("SoundDriverMask"))) {
+		regqueryint (NULL, _T("SoundDriverMask"), &sounddrivermask);
+	} else {
+		sounddrivermask = 3;
+		regsetint (NULL, _T("SoundDriverMask"), sounddrivermask);
+	}
+#endif
+	if (regexists (NULL, _T("ConfigurationCache")))
+		regqueryint (NULL, _T("ConfigurationCache"), &configurationcache);
+	else
+		regsetint (NULL, _T("ConfigurationCache"), configurationcache);
+	if (regexists (NULL, _T("RelativePaths")))
+		regqueryint (NULL, _T("RelativePaths"), &relativepaths);
+	else
+		regsetint (NULL, _T("RelativePaths"), relativepaths);
+	regqueryint (NULL, _T("QuickStartMode"), &quickstart);
+#if 0
+	reopen_console ();
+#endif
+	fetch_path (_T("ConfigurationPath"), path, sizeof (path) / sizeof (TCHAR));
+	path[_tcslen (path) - 1] = 0;
+	if (GetFileAttributes (path) == 0xffffffff) {
+		TCHAR path2[MAX_DPATH];
+		_tcscpy (path2, path);
+		createdir (path);
+		_tcscat (path, _T("\\Host"));
+		createdir (path);
+		_tcscpy (path, path2);
+		_tcscat (path, _T("\\Hardware"));
+		createdir (path);
+	}
+	fetch_path (_T("StatefilePath"), path, sizeof (path) / sizeof (TCHAR));
+	createdir (path);
+	_tcscat (path, _T("default.uss"));
+	_tcscpy (savestate_fname, path);
+	fetch_path (_T("InputPath"), path, sizeof (path) / sizeof (TCHAR));
+	createdir (path);
+	regclosetree (read_disk_history (HISTORY_FLOPPY));
+	regclosetree (read_disk_history (HISTORY_CD));
+#if 0
+	associate_init_extensions ();
+#endif
+	read_rom_list ();
+	load_keyring (NULL, NULL);
 }
 

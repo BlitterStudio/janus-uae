@@ -50,8 +50,8 @@
 #define PASCAL
 #define LONG long
 #define HANDLE void *
-#define LPARAM long
 #ifndef __AROS__
+#define LPARAM long
 #define UINT unsigned int
 #endif
 #endif

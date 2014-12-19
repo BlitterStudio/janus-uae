@@ -2495,6 +2495,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 	TCHAR szFormat[MAX_DPATH];
 	TCHAR szFilter[MAX_DPATH] = { 0 };
 
+  DebOut("entered\n");
 #if 0
 	memset (&openFileName, 0, sizeof (OPENFILENAME));
 
@@ -7264,6 +7265,7 @@ static void values_from_displaydlg (HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 
 	if (msg == WM_COMMAND && HIWORD (wParam) == CBN_SELCHANGE)
 	{
+        DebOut("CBN_SELCHANGE\n");
 		if (LOWORD (wParam) == IDC_DISPLAYSELECT) {
 			get_displays_combo (hDlg, false);
 			init_resolution_combo (hDlg);
@@ -8807,6 +8809,7 @@ INT_PTR CALLBACK KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lP
 			break;
 		recursive++;
 		if (HIWORD (wParam) == CBN_SELCHANGE || HIWORD (wParam) == CBN_KILLFOCUS)  {
+        DebOut("CBN_SELCHANGE\n");
 			switch (LOWORD (wParam))
 			{
 			case IDC_ROMFILE:
@@ -10467,6 +10470,7 @@ static INT_PTR CALLBACK VolumeSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, 
 			break;
 		recursive++;
 		if (HIWORD (wParam) == BN_CLICKED) {
+      DebOut("BN_CLICKED\n");
 			switch (LOWORD (wParam))
 			{
 			case IDC_FS_SELECT_EJECT:
@@ -11090,6 +11094,7 @@ static INT_PTR CALLBACK HarddriveSettingsProc (HWND hDlg, UINT msg, WPARAM wPara
 			break;
 		recursive++;
 		if (HIWORD (wParam) == BN_CLICKED) {
+      DebOut("BN_CLICKED\n");
 			switch (LOWORD (wParam)) {
 			case IDOK:
 				EndDialog (hDlg, 1);
@@ -11499,6 +11504,7 @@ static INT_PTR CALLBACK HarddiskDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPA
 
 	case WM_COMMAND:
 		if (HIWORD (wParam) == CBN_SELCHANGE || HIWORD (wParam) == CBN_KILLFOCUS)  {
+        DebOut("CBN_SELCHANGE\n");
 			switch (LOWORD (wParam))
 			{
 			case IDC_CD_TEXT:
@@ -11918,12 +11924,18 @@ static int getfloppybox (HWND hDlg, int f_text, TCHAR *out, int maxlen, int type
 	TCHAR *tmp;
 	int i;
 
+  DebOut("hDlg: %lx, f_text: %d\n", hDlg, f_text);
+
 	out[0] = 0;
 	val = SendDlgItemMessage (hDlg, f_text, CB_GETCURSEL, 0, 0L);
-	if (val != CB_ERR)
+	if (val != CB_ERR) {
+    DebOut("use CB_GETLBTEXT\n");
 		val = SendDlgItemMessage (hDlg, f_text, CB_GETLBTEXT, (WPARAM)val, (LPARAM)out);
+  }
 	else
 		SendDlgItemMessage (hDlg, f_text, WM_GETTEXT, (WPARAM)maxlen, (LPARAM)out);
+
+  DebOut("out: %s\n", out);
 
 	tmp = xmalloc (TCHAR, maxlen + 1);
 	_tcscpy (tmp, out);
@@ -11936,6 +11948,7 @@ static int getfloppybox (HWND hDlg, int f_text, TCHAR *out, int maxlen, int type
 		_tcscat (out, tmp);
 	}
 	xfree (tmp);
+  DebOut("out: %s\n", out);
 	i = 0;
 	while ((p = DISK_history_get (i, type))) {
 		if (!_tcscmp (p, out)) {
@@ -11947,9 +11960,16 @@ static int getfloppybox (HWND hDlg, int f_text, TCHAR *out, int maxlen, int type
 	return out[0] ? 1 : 0;
 }
 
+/*
+ * n: floppy nr
+ * cd: is cd
+ * f_text: id!?
+ */
 static void getfloppyname (HWND hDlg, int n, int cd, int f_text)
 {
 	TCHAR tmp[MAX_DPATH];
+
+  DebOut("n %d, cd %d, text %d\n", n, cd, f_text);
 
 	if (getfloppybox (hDlg, f_text, tmp, sizeof (tmp) / sizeof (TCHAR), cd ? HISTORY_CD : HISTORY_FLOPPY)) {
 		if (!cd) {
@@ -11966,10 +11986,16 @@ static void getfloppyname (HWND hDlg, int n, int cd, int f_text)
 }
 static void getfloppyname (HWND hDlg, int n)
 {
-  TODO();
 	int cd = iscd (n);
+
+  DebOut("n: %d currentpage: %d (QUICKSTART_ID: %d) floppybuttonsq[n][0]: %d, floppybuttons[n][0] %d\n", n, currentpage, QUICKSTART_ID, floppybuttonsq[n][0], floppybuttons[n][0]);
+
 	int f_text = currentpage == QUICKSTART_ID ? floppybuttonsq[n][0] : floppybuttons[n][0];
-	getfloppyname (hDlg, n, cd, f_text);
+
+  /* winuae did not have this safety! */
+  if(f_text>0) {
+    getfloppyname (hDlg, n, cd, f_text);
+  }
 }
 
 static void addallfloppies (HWND hDlg)
@@ -12066,10 +12092,7 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 	int i;
 	static TCHAR diskname[40] = { _T("") };
 
-  DebOut("entered (msg: %d)\n", msg);
-  DebOut("hDlg: %lx\n", hDlg);
-  DebOut("wParam: %lx\n", wParam);
-  DebOut("lParam: %lx\n", lParam);
+  DebOut("hDlg: %lx, msg: %d, wParam: %lx, lParam: %lx\n", hDlg, msg, wParam, lParam);
 
 	switch (msg)
 	{
@@ -12131,13 +12154,12 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 
 #endif
 	case WM_COMMAND:
-    DebOut("WM_COMMAND (IDC_DF0: %d, IDC_DF1: %d)\n", IDC_DF0, IDC_DF1);
-    DebOut("LOWORD (wParam): %d\n", LOWORD (wParam));
-    DebOut("HIWORD (wParam): %d\n", HIWORD (wParam));
+    DebOut("WM_COMMAND\n");
 		if (recursive > 0)
 			break;
 		recursive++;
 		if (HIWORD (wParam) == CBN_SELCHANGE || HIWORD (wParam) == CBN_KILLFOCUS)  {
+      DebOut("CBN_SELCHANGE\n");
 			switch (LOWORD (wParam))
 			{
 			case IDC_DF0TEXT:
@@ -12191,6 +12213,7 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 #endif
 			}
 		}
+    DebOut("LOWORD (wParam): %d\n", LOWORD (wParam));
 		switch (LOWORD (wParam))
 		{
 		case IDC_DF0ENABLE:
@@ -14815,6 +14838,7 @@ static INT_PTR CALLBACK InputDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 				break;
 			}
 			if (HIWORD (wParam) == CBN_SELCHANGE || HIWORD (wParam) == CBN_KILLFOCUS)  {
+        DebOut("CBN_SELCHANGE\n");
 				switch (LOWORD (wParam))
 				{
 				case IDC_INPUTAMIGA:
@@ -15687,6 +15711,7 @@ static INT_PTR CALLBACK hw3dDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
 			break;
 		default:
 			if (HIWORD (wParam) == CBN_SELCHANGE || HIWORD (wParam) == CBN_KILLFOCUS)  {
+        DebOut("CBN_SELCHANGE\n");
 				switch (LOWORD (wParam))
 				{
 				case IDC_FILTER_NATIVERTG:
@@ -16140,6 +16165,7 @@ static INT_PTR CALLBACK AVIOutputDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 			}
 		}
 		if (HIWORD (wParam) == CBN_SELENDOK || HIWORD (wParam) == CBN_KILLFOCUS || HIWORD (wParam) == CBN_EDITCHANGE)  {
+        DebOut("CBN_SELCHANGE\n");
 			switch (LOWORD (wParam))
 			{
 				case IDC_STATEREC_RATE:
