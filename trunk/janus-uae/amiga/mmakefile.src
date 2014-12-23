@@ -1,0 +1,31 @@
+#   $Id$
+
+# m68k daemons to communicate with the host
+
+include $(TOP)/config/make.cfg
+
+##MM- local-juae : local-juae-m68k
+#MM- local-juae-m68k : local-juae-m68k-janusd local-juae-m68k-launchd local-juae-m68k-clipd
+#MM- local-juae-m68k-janusd : local-juae-m68k-janusd-bin
+#MM- local-juae-m68k-launchd : local-juae-m68k-launchd-bin
+#MM- local-juae-m68k-clipd : local-juae-m68k-clipd-bin
+
+JANUSM68KDIR := $(AROS_CONTRIB)/Emu/J-UAE/m68k
+JANUSM68KELFDIR := $(GENDIR)/$(CURDIR)/m68k
+
+JANUSDSRCS := janus-daemon sync-mouse patch sync-windows sync-screens public-screen lock-window messages debug
+
+##%build_prog mmake=local-juae-m68k-janusd-bin \
+##    progname=janusd targetdir=$(JANUSM68KELFDIR) files="$(JANUSDSRCS)" \
+##    detach=yes
+
+##%build_prog mmake=local-juae-m68k-launchd-bin \
+##    progname=launchd targetdir=$(JANUSM68KELFDIR) files="launch-daemon debug" \
+##    detach=yes
+
+##%build_prog mmake=local-juae-m68k-clipd-bin \
+##    progname=clipd targetdir=$(JANUSM68KELFDIR) files="clip-daemon debug" \
+##    detach=yes
+
+## 	@$(ECHO) "Converting $(subst $(TARGETDIR)/,,$(AROSDIR)) -> $(subst $(TARGETDIR)/,,$(AROSDIR).HUNK)"
+##	@$(ELF2HUNK) "$(JANUSM68KELFDIR)" "$(JANUSM68KDIR)"
