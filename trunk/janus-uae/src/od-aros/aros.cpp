@@ -357,7 +357,7 @@ void fullpath (TCHAR *path, int size) {
 
 		if (strnicmp (tmp1, tmp2, strlen (tmp1)) == 0) { // tmp2 is inside tmp1
 			//DebOut("tmp2 (%s) is inside tmp1 (%s)\n", tmp2, tmp1);
-			strcpy(path, tmp2 + strlen (tmp1));
+			strcpy(path, tmp2 + strlen (tmp1) + 1);
 		}
 		else {
 			//DebOut("tmp2 (%s) is not inside tmp1 (%s)\n", tmp2, tmp1);
