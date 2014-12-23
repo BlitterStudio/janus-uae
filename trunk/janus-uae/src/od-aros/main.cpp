@@ -311,6 +311,7 @@ int main (int argc, TCHAR **argv) {
 	//	return 0;
 
   DebOut("main(%d, ..)\n", argc);
+  //SetTaskPri(FindTask(NULL), -2);
 
   inipath=getdefaultini();
   reginitializeinit(&inipath);

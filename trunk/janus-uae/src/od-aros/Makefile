@@ -41,14 +41,19 @@ LD         = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-ld
 FLAGS      = -Wno-write-strings -O2 #-Wall
 DEBUGFLAGS = -g
 
-CDEFS   =
-INCLUDES= -I. -I../include -I../md-i386-gcc -I.. -I/home/oli/svn/v0/AROS/bin/linux-i386/gen/include/SDL
+CDEFS   = -DUAE_ABI_$(ABI)
+INCLUDES= -I. -I../include -I../md-i386-gcc -I.. -I/home/oli/svn/$(ABI)/AROS/bin/linux-i386/gen/include/SDL -I/home/oli/svn/$(ABI)/AROS/bin/linux-i386/AROS/Development/include/SDL
 
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 CPPFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
-LINK_LIBS=-Lgui -lgui -larossupport -lz -lGL -lmui -lSDL -LSDL_Config -lSDL_Config
+V0_LIBS  =
 
+ifeq ($(ABI), v0)
+V0_LIBS=-lGL
+endif
+
+LINK_LIBS=-Lgui -lgui -larossupport -lz -lGL -lmui -lSDL -LSDL_Config -lSDL_Config $(V0_LIBS)
 # ============== common ====================
 
 AROS_OBJS= 

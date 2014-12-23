@@ -2260,6 +2260,8 @@ int DISK_history_add (const TCHAR *name, int idx, int type, int donotcheck)
 {
 	int i;
 
+  DebOut("entered (name: %s, idx %d, donotcheck %d)\n", name, idx, donotcheck);
+
 	if (idx >= MAX_PREVIOUS_FLOPPIES)
 		return 0;
 	if (name == NULL) {

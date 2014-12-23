@@ -39,7 +39,7 @@ FLAGS      = -Wno-write-strings -O2 #-Wall
 ARFLAGS    = rc
 DEBUGFLAGS = -g
 
-CDEFS   =
+CDEFS   = -DUAE_ABI_$(ABI)
 INCLUDES= -I. -I.. -I../../include -I../../md-i386-gcc  -I/home/oli/svn/v0/AROS/bin/linux-i386/gen/include/SDL
 
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)

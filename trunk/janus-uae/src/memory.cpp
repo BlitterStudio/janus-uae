@@ -1916,6 +1916,10 @@ static void allocate_memory (void)
 	bogo_filepos = 0;
 	a3000lmem_filepos = 0;
 	a3000hmem_filepos = 0;
+
+  write_log("chipmem_bank.start:    %lx\n", chipmem_bank.start);
+  write_log("chipmem_bank.baseaddr: %lx\n", chipmem_bank.baseaddr);
+  write_log("chipmem_bank.mask:     %lx\n", chipmem_bank.mask);
 }
 
 static void fill_ce_banks (void)

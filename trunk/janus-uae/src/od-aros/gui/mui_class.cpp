@@ -308,7 +308,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       break;
     case WM_SETTEXT:
       DebOut("WM_SETTEXT\n");
-      if(lParam== NULL || strlen((TCHAR *)lParam)==0) {
+      if(lParam==0 || strlen((TCHAR *)lParam)==0) {
         DebOut("lParam is empty\n");
         DebOut("elem[i].obj: %lx\n", elem[i].obj);
         SetAttrs(elem[i].obj, MUIA_Cycle_Active, 1, TAG_DONE);
@@ -900,6 +900,11 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
   return MUILM_UNKNOWN;
 }
 
+#ifdef UAE_ABI_v0
+#define ABI_CONST const
+#else
+#define ABI_CONST 
+#endif
 static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
 
   struct TagItem *tstate, *tag;
@@ -921,7 +926,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
 
   tstate=((struct opSet *)msg)->ops_AttrList;
 
-  while ((tag = (struct TagItem *) NextTagItem((TagItem**) &tstate))) {
+  while ((tag = (struct TagItem *) NextTagItem((ABI_CONST TagItem**) &tstate))) {
     DebOut("tag->ti_Tag: %lx\n", tag->ti_Tag);
     switch (tag->ti_Tag) {
       case MA_src:
@@ -1054,8 +1059,13 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                   End,
                 End;
               }
+#ifdef UAE_ABI_v1
               data->MyMUIHook_select.h_Entry=(APTR) MUIHook_select;
+#else
+              data->MyMUIHook_select.h_Entry=(HOOKFUNC) MUIHook_select;
+#endif
               data->MyMUIHook_select.h_Data =(APTR) data;
+
               DebOut("DoMethod(%lx, MUIM_Notify, MUIA_Selected, MUIV_EveryTime..)\n", src[i].obj);
               DoMethod(src[i].obj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, (ULONG) src[i].obj, 2, MUIM_CallHook,(ULONG) &data->MyMUIHook_select, func); 
             }
@@ -1094,7 +1104,11 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
           src[i].exists=TRUE;
           src[i].obj=child;
           /* Add hook */
+#ifdef UAE_ABI_v1
           data->MyMUIHook_pushbutton.h_Entry=(APTR) MUIHook_pushbutton;
+#else
+          data->MyMUIHook_pushbutton.h_Entry=(HOOKFUNC) MUIHook_pushbutton;
+#endif
           data->MyMUIHook_pushbutton.h_Data =(APTR) data;
           DoMethod(src[i].obj, MUIM_Notify, MUIA_Pressed, FALSE, (ULONG) src[i].obj, 2, MUIM_CallHook,(ULONG) &data->MyMUIHook_pushbutton, func); 
         break;
@@ -1164,7 +1178,11 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                        MUIA_Cycle_Entries, src[i].mem,
                      End;
           src[i].obj=child;
+#ifdef UAE_ABI_v1
           data->MyMUIHook_combo.h_Entry=(APTR) MUIHook_combo;
+#else
+          data->MyMUIHook_combo.h_Entry=(HOOKFUNC) MUIHook_combo;
+#endif
           data->MyMUIHook_combo.h_Data =(APTR) data;
           DoMethod(src[i].obj, MUIM_Notify, MUIA_Cycle_Active , MUIV_EveryTime, (ULONG) src[i].obj, 2, MUIM_CallHook,(ULONG) &data->MyMUIHook_combo, func); 
         break;
@@ -1191,7 +1209,11 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
     }
 
     //SETUPHOOK(&data->LayoutHook, LayoutHook, data);
+#ifdef UAE_ABI_v1
     data->LayoutHook.h_Entry=(APTR) LayoutHook;
+#else
+    data->LayoutHook.h_Entry=(HOOKFUNC) LayoutHook;
+#endif
     data->LayoutHook.h_Data=data;
 
     /*
@@ -1240,7 +1262,7 @@ static VOID mSet(struct Data *data, APTR obj, struct opSet *msg, ULONG is_new)
 
   tstate = msg->ops_AttrList;
 
-  while ((tag = NextTagItem((TagItem**)&tstate))) {
+  while ((tag = NextTagItem((ABI_CONST TagItem**)&tstate))) {
 
     switch (tag->ti_Tag) {
 //      case MA_Fixed_Move:
