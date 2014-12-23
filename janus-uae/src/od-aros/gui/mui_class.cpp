@@ -1061,10 +1061,10 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                   End,
                 End;
               }
-#ifdef UAE_ABI_v1
-              data->MyMUIHook_select.h_Entry=(APTR) MUIHook_select;
-#else
+#ifdef UAE_ABI_v0
               data->MyMUIHook_select.h_Entry=(HOOKFUNC) MUIHook_select;
+#else
+              data->MyMUIHook_select.h_Entry=(APTR) MUIHook_select;
 #endif
               data->MyMUIHook_select.h_Data =(APTR) data;
 
@@ -1106,10 +1106,10 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
           src[i].exists=TRUE;
           src[i].obj=child;
           /* Add hook */
-#ifdef UAE_ABI_v1
-          data->MyMUIHook_pushbutton.h_Entry=(APTR) MUIHook_pushbutton;
-#else
+#ifdef UAE_ABI_v0
           data->MyMUIHook_pushbutton.h_Entry=(HOOKFUNC) MUIHook_pushbutton;
+#else
+          data->MyMUIHook_pushbutton.h_Entry=(APTR) MUIHook_pushbutton;
 #endif
           data->MyMUIHook_pushbutton.h_Data =(APTR) data;
           DoMethod(src[i].obj, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_pushbutton, func); 
@@ -1180,10 +1180,10 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                        MUIA_Cycle_Entries, src[i].mem,
                      End;
           src[i].obj=child;
-#ifdef UAE_ABI_v1
-          data->MyMUIHook_combo.h_Entry=(APTR) MUIHook_combo;
-#else
+#ifdef UAE_ABI_v0
           data->MyMUIHook_combo.h_Entry=(HOOKFUNC) MUIHook_combo;
+#else
+          data->MyMUIHook_combo.h_Entry=(APTR) MUIHook_combo;
 #endif
           data->MyMUIHook_combo.h_Data =(APTR) data;
           DoMethod(src[i].obj, MUIM_Notify, MUIA_Cycle_Active , MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_combo, func); 
@@ -1211,10 +1211,10 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
     }
 
     //SETUPHOOK(&data->LayoutHook, LayoutHook, data);
-#ifdef UAE_ABI_v1
-    data->LayoutHook.h_Entry=(APTR) LayoutHook;
-#else
+#ifdef UAE_ABI_v0
     data->LayoutHook.h_Entry=(HOOKFUNC) LayoutHook;
+#else
+    data->LayoutHook.h_Entry=(APTR) LayoutHook;
 #endif
     data->LayoutHook.h_Data=data;
 

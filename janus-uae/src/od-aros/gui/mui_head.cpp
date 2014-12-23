@@ -297,10 +297,10 @@ Object* build_gui(void) {
   /* List click events */
   kprintf("leftframe: %lx\n", leftframe);
 
-#ifdef UAE_ABI_v1
-  MyMuiHook_list.h_Entry=(APTR) MUIHook_list;
-#else
+#ifdef UAE_ABI_v0
   MyMuiHook_list.h_Entry=(HOOKFUNC) MUIHook_list;
+#else
+  MyMuiHook_list.h_Entry=(APTR) MUIHook_list;
 #endif
   MyMuiHook_list.h_Data =NULL;
   DoMethod(leftframe, MUIM_Notify,
@@ -308,26 +308,26 @@ Object* build_gui(void) {
                         (IPTR) leftframe, 2, MUIM_CallHook,(IPTR) &MyMuiHook_list);
 
   /* button events */
-#ifdef UAE_ABI_v1
-  MyMuiHook_start.h_Entry=(APTR) MUIHook_start;
-#else
+#ifdef UAE_ABI_v0
   MyMuiHook_start.h_Entry=(HOOKFUNC) MUIHook_start;
+#else
+  MyMuiHook_start.h_Entry=(APTR) MUIHook_start;
 #endif
   MyMuiHook_start.h_Data =NULL;
   DoMethod(start, MUIM_Notify, MUIA_Pressed, FALSE, start, 3, MUIM_CallHook, (IPTR) &MyMuiHook_start, TRUE);
 
-#ifdef UAE_ABI_v1
-  MyMuiHook_reset.h_Entry=(APTR) MUIHook_reset;
-#else
+#ifdef UAE_ABI_v0
   MyMuiHook_reset.h_Entry=(HOOKFUNC) MUIHook_reset;
+#else
+  MyMuiHook_reset.h_Entry=(APTR) MUIHook_reset;
 #endif
   MyMuiHook_reset.h_Data =NULL;
   DoMethod(reset, MUIM_Notify, MUIA_Pressed, FALSE, reset, 3, MUIM_CallHook, (IPTR) &MyMuiHook_reset, TRUE);
 
-#ifdef UAE_ABI_v1
-  MyMuiHook_quit.h_Entry=(APTR) MUIHook_quit;
-#else
+#ifdef UAE_ABI_v0
   MyMuiHook_quit.h_Entry=(HOOKFUNC) MUIHook_quit;
+#else
+  MyMuiHook_quit.h_Entry=(APTR) MUIHook_quit;
 #endif
   MyMuiHook_quit.h_Data =NULL;
   DoMethod(quit,  MUIM_Notify, MUIA_Pressed, FALSE, quit , 3, MUIM_CallHook, (IPTR) &MyMuiHook_quit , TRUE);
