@@ -10,10 +10,13 @@
 #define DEBUG_CD32CDTVIO 0
 #define EXCEPTION3_DEBUGGER 0
 #define CPUTRACE_DEBUG 1
-//#define OLI_DEBUG 1
+#define OLI_DEBUG 1
 
 #include "sysconfig.h"
 #include "sysdeps.h"
+
+// remove me:
+#include <proto/dos.h>
 
 #include "options.h"
 #include "events.h"
@@ -674,7 +677,7 @@ static void do_cycles_ce020_post (unsigned long cycles, uae_u32 v)
 // indirect memory access functions
 static void set_x_funcs (void)
 {
-  DebOut("entered\n");
+  //DebOut("entered\n");
 	if (currprefs.mmu_model) {
 		if (currprefs.cpu_model == 68060) {
 			x_prefetch = get_iword_mmu060;
@@ -945,7 +948,7 @@ bool is_cpu_tracer (void)
 }
 bool set_cpu_tracer (bool state)
 {
-  DebOut("entered\n");
+  //DebOut("entered\n");
 	if (cpu_tracer < 0)
 		return false;
 	int old = cpu_tracer;
@@ -969,7 +972,7 @@ void set_cpu_caches (bool flush)
 {
 	int i;
 
-  DebOut("entered\n");
+  //DebOut("entered\n");
 	regs.prefetch020addr = 0xffffffff;
 	regs.cacheholdingaddr020 = 0xffffffff;
 
@@ -1060,7 +1063,7 @@ static void build_cpufunctbl (void)
 	const struct cputbl *tbl = 0;
 	int lvl;
 
-  DebOut("entered\n");
+  //DebOut("entered\n");
 	switch (currprefs.cpu_model)
 	{
 #ifdef CPUEMU_0
@@ -2363,8 +2366,14 @@ static void Exception_normal (int nr)
 {
 	uae_u32 currpc, newpc;
 	int sv = regs.s;
+  BOOL delayme=FALSE;
 
-  DebOut("entered\n");
+#if 0
+  if(nr==11) {
+    delayme=TRUE;
+    DebOut("entered (nr: %d)\n", nr);
+    }
+#endif
 	if (nr >= 24 && nr < 24 + 8 && currprefs.cpu_model <= 68010)
 		nr = x_get_byte (0x00fffff1 | (nr << 1));
 
@@ -2387,7 +2396,7 @@ static void Exception_normal (int nr)
 			mmu_set_super (regs.s != 0);
 	}
 	if (currprefs.cpu_model > 68000) {
-		currpc = exception_pc (nr);
+		currpc = exception_pc (nr); // here we go..
 		if (nr == 2 || nr == 3) {
 			int i;
 			if (currprefs.cpu_model >= 68040) {
@@ -2514,8 +2523,10 @@ static void Exception_normal (int nr)
 			m68k_areg (regs, 7) -= 2;
 			x_put_word (m68k_areg (regs, 7), 0x1000 + nr * 4);
 		} else {
+      if(delayme) DebOut("hu!\n");
 			m68k_areg (regs, 7) -= 2;
 			x_put_word (m68k_areg (regs, 7), nr * 4);
+      if(delayme) DebOut("ha!\n");
 		}
 	} else {
 		currpc = m68k_getpc ();
@@ -2538,8 +2549,10 @@ static void Exception_normal (int nr)
 	x_put_long (m68k_areg (regs, 7), currpc);
 	m68k_areg (regs, 7) -= 2;
 	x_put_word (m68k_areg (regs, 7), regs.sr);
+  if(delayme) DebOut("he!\n");
 kludge_me_do:
 	newpc = x_get_long (regs.vbr + 4 * nr);
+  if(delayme) DebOut("ha!\n");
 	if (newpc & 1) {
 		if (nr == 2 || nr == 3)
 			cpu_halt (2);
@@ -2547,27 +2560,48 @@ kludge_me_do:
 			exception3 (regs.ir, newpc);
 		return;
 	}
+  if(delayme) DebOut("hatschi!\n");
 	m68k_setpc (newpc);
+  if(delayme) DebOut("hatschi 2!\n");
 #ifdef JIT
 	set_special (SPCFLAG_END_COMPILE);
 #endif
 	fill_prefetch ();
+  if(delayme) DebOut("hatschi 3!\n");
 	exception_trace (nr);
 }
 
 // address = format $2 stack frame address field
 static void ExceptionX (int nr, uaecptr address)
 {
+  BOOL delayme=FALSE;
+
 	regs.exception = nr;
 	if (cpu_tracer) {
 		cputrace.state = nr;
 	}
+
+#if 0
+  if(nr==11) delayme=TRUE;
+  if(delayme) {
+    DebOut("entered (nr: %d)\n", nr);
+    DebOut("Delay..\n");
+    //Delay(15);
+  }
+#endif
 
 #ifdef JIT
 	if (currprefs.cachesize)
 		regs.instruction_pc = address == -1 ? m68k_getpc () : address;
 #endif
 #ifdef CPUEMU_13
+#if 0
+   if(delayme) {
+    DebOut("Delay..\n");
+    //Delay(15);
+  }
+#endif
+
 	if (currprefs.cpu_cycle_exact && currprefs.cpu_model <= 68010)
 		Exception_ce000 (nr);
 	else
@@ -2580,6 +2614,13 @@ static void ExceptionX (int nr, uaecptr address)
 		} else {
 			Exception_normal (nr);
 		}
+#if 0
+  if(delayme) {
+    DebOut("Delay..\n");
+    //Delay(15);
+  }
+#endif
+
 
 	if (debug_illegal && !in_rom (M68K_GETPC)) {
 		int v = nr;
@@ -2588,6 +2629,14 @@ static void ExceptionX (int nr, uaecptr address)
 			activate_debugger ();
 		}
 	}
+#if 0
+  if(delayme) {
+    DebOut("Done!\n");
+    //Delay(15);
+  }
+  //sleep(1);
+#endif
+
 	regs.exception = 0;
 	if (cpu_tracer) {
 		cputrace.state = 0;
@@ -2635,7 +2684,7 @@ static void m68k_reset (bool hardreset)
 {
 	uae_u32 v;
 
-  DebOut("entered\n");
+  //DebOut("entered\n");
 	regs.spcflags = 0;
 	regs.ipl = regs.ipl_pin = 0;
 #ifdef SAVESTATE
@@ -2778,7 +2827,12 @@ uae_u32 REGPARAM2 op_illg (uae_u32 opcode)
 			write_log (_T("B-Trap %x at %x (%p)\n"), opcode, pc, regs.pc_p);
 			warned++;
 		}
-		Exception (0xB);
+    if(opcode==0xf017 && pc==0x1764e) {
+      //asm("int3");
+    }
+    else {
+    }
+		  Exception (0xB);
 		//activate_debugger ();
 		return 4;
 	}
@@ -3086,7 +3140,7 @@ STATIC_INLINE bool time_for_interrupt (void)
 
 void doint (void)
 {
-  DebOut("entered\n");
+  //DebOut("entered\n");
 	if (currprefs.cpu_cycle_exact) {
 		regs.ipl_pin = intlev ();
 		unset_special (SPCFLAG_INT);
@@ -3466,7 +3520,7 @@ static void m68k_run_1_ce (void)
 	set_cpu_tracer (false);
 
 	for (;;) {
-  DebOut("for(;;)\n");
+  //DebOut("for(;;)\n");
 		opcode = r->ir;
 
 #if DEBUG_CD32CDTVIO
@@ -4192,7 +4246,7 @@ void m68k_go (int may_quit)
 	int hardboot = 1;
 	int startup = 1;
 
-  DebOut("entered\n");
+  //DebOut("entered\n");
 
 	if (in_m68k_go || !may_quit) {
 		write_log (_T("Bug! m68k_go is not reentrant.\n"));
@@ -4220,7 +4274,7 @@ void m68k_go (int may_quit)
 		if (input_play || input_record)
 			inprec_startup ();
 
-    DebOut("quit_program: %d\n", quit_program);
+    //DebOut("quit_program: %d\n", quit_program);
 
 		if (quit_program > 0) {
 			int hardreset = (quit_program == UAE_RESET_HARD ? 1 : 0) | hardboot;

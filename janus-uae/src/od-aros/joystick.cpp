@@ -36,7 +36,9 @@
 #include <proto/lowlevel.h>
 
 #ifdef __AROS__
+#ifdef UAE_ABI_v1
 struct Library *LowLevelBase=NULL;
+#endif
 #endif
 #ifdef ____amigaos4__
 struct LowLevelIFace *ILowLevel;

@@ -1745,6 +1745,7 @@ int check_prefs_changed_gfx (void)
     }
 
     DEBUG_LOG ("Function: check_prefs_changed_gfx\n");
+    DebOut ("Function: check_prefs_changed_gfx\n");
 
 #ifdef PICASSO96
     if (!screen_is_picasso)
