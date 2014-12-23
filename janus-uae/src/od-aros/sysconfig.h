@@ -21,60 +21,77 @@
  *
  ************************************************************************/
 
-/* new */
+#include <aros/cpu.h>
 
-/* move somewhere else? */
-//#define uae_shmctl shmctl
-//#define uae_shmget shmget
-//#define uae_shmat  shmat
-//#define uae_shmdt  shmdt
+#define SUPPORT_THREADS
+#define MAX_DPATH 200
 
-#define NATMEM_OFFSET natmem_offset
-#define ARCADIA /* Arcadia arcade system */
+#define GFXFILTER
+
+#ifndef UAE_MINI
+
 #define DEBUGGER
-#define ECS_DENISE /* ECS DENISE new features */
-#define AGA        /* AGA chipset emulation (ECS_DENISE must be enabled) */
-#define FPUEMU
-#define GFXFILTER
-#define SCSIEMU
-#define JIT
-#define CDTV
-#define GFXFILTER
-#define PICASSO96
-#define A2091
-#define WITH_SLIRP
 #define FILESYS    /* filesys emulation */
 #define UAE_FILESYS_THREADS
-
-#define SAVESTATE /* State file support */
-
-#if 0
-#define CPUEMU_0
-#define CPUEMU_20
-#define CPUEMU_21
-#endif
-
-//#define NATMEM_OFFSET natmem_offset
-#define AUTOCONFIG
-#define FILESYS
-#define PICASSO96_SUPPORTED
-
-#define CPUEMU_0 /* generic 680x0 emulation */
+#define AUTOCONFIG /* autoconfig support, fast ram, harddrives etc.. */
+#define JIT
+#define NATMEM_OFFSET natmem_offset
+#define ECS_DENISE /* ECS DENISE new features */
+#define AGA        /* AGA chipset emulation (ECS_DENISE must be enabled) */
+#define CDTV
+//#define CD32
+#define SCSIEMU
+#define FPUEMU
+#define FPU_UAE
+#define MMUEMU /* Aranym 68040 MMU */
+#define FULLMMU /* Aranym 68040 MMU */
+#define CPUEMU_0 /* generic 680x0 emulation with direct memory access */
 #define CPUEMU_11 /* 68000/68010 prefetch emulation */
 #define CPUEMU_13 /* 68000/68010 cycle-exact cpu&blitter */
 #define CPUEMU_20 /* 68020 prefetch */
 #define CPUEMU_21 /* 68020 "cycle-exact" + blitter */
-#define CPUEMU_22 /* 68030 (040/060) "cycle-exact" + blitter */
+#define CPUEMU_22 /* 68030 prefetch */
+#define CPUEMU_23 /* 68030 "cycle-exact" + blitter */
+#define CPUEMU_24 /* 68060 "cycle-exact" + blitter */
+#define CPUEMU_25 /* 68040 "cycle-exact" + blitter */
 #define CPUEMU_31 /* Aranym 68040 MMU */
 #define CPUEMU_32 /* Previous 68030 MMU */
 #define CPUEMU_33 /* 68060 MMU */
-
+#define CPUEMU_40 /* generic 680x0 with indirect memory access */
+#define PICASSO96
 #define UAEGFX_INTERNAL /* built-in libs:picasso96/uaegfx.card */
+#define WITH_SLIRP
+#define ARCADIA /* Arcadia arcade system */
+#define SAVESTATE /* State file support */
+#define A2091
+#define GFXBOARD /* Hardware graphics board */
+//#define NCR /* A4000T/A4091 SCSI */
 
-#define SUPPORT_THREADS
+
+#define PICASSO96_SUPPORTED
+
+#else
+
+/* #define SINGLEFILE */
+
+#define CUSTOM_SIMPLE /* simplified custom chipset emulation */
+#define CPUEMU_0
+#define CPUEMU_68000_ONLY /* drop 68010+ commands from CPUEMU_0 */
+#define ADDRESS_SPACE_24BIT
+#ifndef UAE_NOGUI
+#define OPENGL
+#endif
+#define CAPS
+#define CPUEMU_13
+#define CPUEMU_11
+
+#endif
+
+#if (__WORDSIZE == 64)
+#undef JIT
+#endif
 
 #define MAX_PATH 255
-#define MAX_DPATH 200
 /* string */
 #define FSDB_DIR_SEPARATOR_S _T("/")
 /* char */
@@ -87,7 +104,7 @@
 #define UAE_RAND_MAX RAND_MAX
 /* missing types, maybe move somewhere else? */
 #define WPARAM UINT
-#define LPARAM ULONG
+#define LPARAM IPTR
 /* old */
 
 /* Define to 1 if you have the `alarm' function. */
@@ -404,7 +421,11 @@
 #define SIZEOF_SHORT 2
 
 /* The size of `void *', as computed by sizeof. */
+#if (__WORDSIZE == 64)
+#define SIZEOF_VOID_P 8
+#else
 #define SIZEOF_VOID_P 4
+#endif
 
 /* The size of `__int64', as computed by sizeof. */
 #define SIZEOF___INT64 0
