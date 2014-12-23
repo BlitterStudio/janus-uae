@@ -1,0 +1,18 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM local-juae-gui-png2c : local-juae-gui-png2c-dirs
+
+JUAEHOSTTOOLSDIR := $(GENDIR)/$(CURDIR)/../../..
+
+local-juae-gui-png2c: $(JUAEHOSTTOOLSDIR)/png2c
+
+$(JUAEHOSTTOOLSDIR)/png2c: png2c.c
+	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_INCLUDES) -lpng  $? -o $@
+
+#MM
+local-juae-gui-png2c-dirs :
+	%mkdirs_q $(GENDIR)/$(CURDIR)
+
+%common
