@@ -602,8 +602,8 @@ static int default_config;
 
 void uae_reset (int hardreset, int keyboardreset)
 {
-  DebOut("entered\n");
-  DebOut("quit_program: %d\n", quit_program);
+  bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
+  bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
 	if (debug_dma) {
 		record_dma_reset ();
 		record_dma_reset ();
@@ -618,19 +618,19 @@ void uae_reset (int hardreset, int keyboardreset)
 			quit_program = -UAE_RESET_HARD;
 	}
 
-  DebOut("quit_program: %d\n", quit_program);
+  bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
 
 }
 
 void aros_gui_exit(void);
 void uae_quit (void)
 {
-  DebOut("entered\n");
-  DebOut("quit_program: %d\n", quit_program);
+  bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
+  bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
 	deactivate_debugger ();
 	if (quit_program != -UAE_QUIT)
 		quit_program = -UAE_QUIT;
-  DebOut("quit_program: %d\n", quit_program);
+  bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
 	target_quit ();
   aros_gui_exit();
 }
@@ -638,15 +638,15 @@ void uae_quit (void)
 /* 0 = normal, 1 = nogui, -1 = disable nogui */
 void uae_restart (int opengui, const TCHAR *cfgfile)
 {
-  DebOut("call uae_quit\n");
-  DebOut("quit_program: %d\n", quit_program);
+  bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
+  bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
 	//uae_quit ();
   deactivate_debugger ();
-  DebOut("quit_program: %d\n", quit_program);
+  bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
   /* warning: WinUAE did not have quit_program=0 here! */
   //quit_program=0;
-  DebOut("quit_program: %d\n", quit_program);
-  DebOut("opengui: %d\n", opengui);
+  bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
+  bug("[JUAE] %s: opengui: %d\n", __PRETTY_FUNCTION__, opengui);
   printf("QQQQQQQQQQQQQQQQQQQ\n");
   printf("uae_restart(%d, %s)\n", opengui, cfgfile);
   kprintf("QQQQQQQQQQQQQQQQQQQ\n");
@@ -907,7 +907,7 @@ extern int DummyException (LPEXCEPTION_POINTERS blah, int n_except)
 
 void do_start_program (void)
 {
-  DebOut("entered (quit_program: %d)\n", quit_program);
+  bug("[JUAE] %s(quit_program: %d)\n", __PRETTY_FUNCTION__, quit_program);
 
 	if (quit_program == -UAE_QUIT) /* UAE_QUIT is 1 */
 		return;
@@ -917,10 +917,10 @@ void do_start_program (void)
 		candirect = 1;
 	/* Do a reset on startup. Whether this is elegant is debatable. */
 	inputdevice_updateconfig (&changed_prefs, &currprefs);
-  DebOut("quit_program: %d\n", quit_program);
+  bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
 	if (quit_program >= 0)
 		quit_program = UAE_RESET;
-  DebOut("quit_program: %d\n", quit_program);
+  bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
 #ifdef WITH_LUA
 	uae_lua_loadall ();
 #endif
@@ -945,7 +945,7 @@ void do_start_program (void)
 
 void do_leave_program (void)
 {
-  DebOut("do_leave_program..\n");
+  bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
 	sampler_free ();
 	graphics_leave ();
 	inputdevice_close ();
@@ -970,45 +970,45 @@ void do_leave_program (void)
 #endif
 	if (! no_gui)
 		gui_exit ();
-  DebOut("1..\n");
+  bug("[JUAE] %s: 1..\n", __PRETTY_FUNCTION__);
 #ifdef USE_SDL
 	SDL_Quit ();
 #endif
-  DebOut("1a..\n");
+  bug("[JUAE] %s: 1a..\n", __PRETTY_FUNCTION__);
 #ifdef AUTOCONFIG
 	expansion_cleanup ();
 #endif
-  DebOut("1b..\n");
+  bug("[JUAE] %s: 1b..\n", __PRETTY_FUNCTION__);
 #ifdef FILESYS
 	filesys_cleanup ();
 #endif
-  DebOut("1c..\n");
+  bug("[JUAE] %s: 1c..\n", __PRETTY_FUNCTION__);
 #ifdef BSDSOCKET
 	bsdlib_reset ();
 #endif
-  DebOut("2..vvvvvvv\n");
+  bug("[JUAE] %s: 2..vvvvvvv\n", __PRETTY_FUNCTION__);
 	gayle_free ();
-  DebOut("2a..^^^^^^\n");
+  bug("[JUAE] %s: 2a..^^^^^^\n", __PRETTY_FUNCTION__);
 	device_func_reset ();
-  DebOut("2b..\n");
+  bug("[JUAE] %s: 2b..\n", __PRETTY_FUNCTION__);
 #ifdef WITH_LUA
 	uae_lua_free ();
 #endif
-  DebOut("2c..\n");
+  bug("[JUAE] %s: 2c..\n", __PRETTY_FUNCTION__);
 	savestate_free ();
-  DebOut("3..\n");
+  bug("[JUAE] %s: 3..\n", __PRETTY_FUNCTION__);
 	memory_cleanup ();
 #ifdef NATMEM_OFFSET
 	free_shm ();
 #endif
 	cfgfile_addcfgparam (0);
 	machdep_free ();
-  DebOut("done!\n");
+  bug("[JUAE] %s: done!\n", __PRETTY_FUNCTION__);
 }
 
 void start_program (void)
 {
-  DebOut("entered\n");
+  bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
 	do_start_program ();
 }
 
@@ -1020,13 +1020,13 @@ void leave_program (void)
 
 void virtualdevice_init (void)
 {
-  DebOut("entered\n");
+  bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
 #ifdef AUTOCONFIG
-  DebOut("call rtarea_setup..\n");
+  bug("[JUAE] %s: call rtarea_setup..\n", __PRETTY_FUNCTION__);
 	rtarea_setup ();
 #endif
 #ifdef FILESYS
-  DebOut("call rtarea_init..\n");
+  bug("[JUAE] %s: call rtarea_init..\n", __PRETTY_FUNCTION__);
 	rtarea_init ();
 	uaeres_install ();
 	hardfile_install ();
@@ -1063,7 +1063,7 @@ void virtualdevice_init (void)
 static int real_main2 (int argc, TCHAR **argv)
 {
 
-  DebOut("entered\n");
+  bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
 
 #ifdef USE_SDL
 	SDL_Init (SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_NOPARACHUTE);
@@ -1104,17 +1104,17 @@ static int real_main2 (int argc, TCHAR **argv)
 	inputdevice_init ();
 
 	changed_prefs = currprefs;
-  DebOut("no_gui: %d\n", no_gui);
+  bug("[JUAE] %s: no_gui: %d\n", __PRETTY_FUNCTION__, no_gui);
 	no_gui = ! currprefs.start_gui;
 	if (restart_program == 2)
 		no_gui = 1;
 	else if (restart_program == 3)
 		no_gui = 0;
-  DebOut("no_gui: %d\n", no_gui);
+  bug("[JUAE] %s: no_gui: %d\n", __PRETTY_FUNCTION__, no_gui);
 	restart_program = 0;
 #warning REMOVE no_gui=0;
   //no_gui=0;
-  DebOut("no_gui: %d\n", no_gui);
+  bug("[JUAE] %s: no_gui: %d\n", __PRETTY_FUNCTION__, no_gui);
 	if (! no_gui) {
 		int err = gui_init ();
 		currprefs = changed_prefs;
@@ -1127,7 +1127,7 @@ static int real_main2 (int argc, TCHAR **argv)
 		}
 	}
 
-  DebOut("gui_init survived\n");
+  bug("[JUAE] %s: gui_init survived\n", __PRETTY_FUNCTION__);
 
 	memset (&gui_data, 0, sizeof gui_data);
 	gui_data.cd = -1;
@@ -1183,9 +1183,9 @@ static int real_main2 (int argc, TCHAR **argv)
 
 	gui_update ();
 
-  DebOut("calling graphics_init\n");
+  bug("[JUAE] %s: calling graphics_init\n", __PRETTY_FUNCTION__);
 	if (graphics_init (true)) {
-    DebOut("graphics_init survived\n");
+    bug("[JUAE] %s: graphics_init survived\n", __PRETTY_FUNCTION__);
 		setup_brkhandler ();
 		if (currprefs.start_debugger && debuggable ())
 			activate_debugger ();
@@ -1196,11 +1196,11 @@ static int real_main2 (int argc, TCHAR **argv)
 			}
 			currprefs.produce_sound = 0;
 		}
-    DebOut("calling start_program\n");
+    bug("[JUAE] %s: calling start_program\n", __PRETTY_FUNCTION__);
 		start_program ();
-    DebOut("start_program returned\n");
+    bug("[JUAE] %s: start_program returned\n", __PRETTY_FUNCTION__);
 	}
-  DebOut("return 0\n");
+  bug("[JUAE] %s: return 0\n", __PRETTY_FUNCTION__);
 	return 0;
 }
 
@@ -1212,7 +1212,7 @@ void real_main (int argc, TCHAR **argv)
 	_tcscat (restart_config, OPTIONSFILENAME);
 	default_config = 1;
 
-  DebOut("restart_program: %d\n", restart_program);
+  bug("[JUAE] %s: restart_program: %d\n", __PRETTY_FUNCTION__, restart_program);
 
 	while (restart_program) {
 		int ret;
@@ -1221,9 +1221,9 @@ void real_main (int argc, TCHAR **argv)
 		if (ret == 0 && quit_to_gui)
 			restart_program = 1;
 		leave_program ();
-    DebOut("quit_program: %d\n", quit_program);
+    bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
 		quit_program = 0;
-    DebOut("quit_program: %d\n", quit_program);
+    bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
 	}
 	zfile_exit ();
 }

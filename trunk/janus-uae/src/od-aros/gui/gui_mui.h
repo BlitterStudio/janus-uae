@@ -105,7 +105,9 @@ enum {
 
 int init_class(void);
 void delete_class(void);
+#if (0)
 ULONG xget(Object *obj, ULONG attr);
+#endif
 
 extern struct MUI_CustomClass *CL_Fixed;
 

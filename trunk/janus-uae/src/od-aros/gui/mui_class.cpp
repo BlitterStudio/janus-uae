@@ -38,7 +38,7 @@ struct Data {
   ULONG width, height;
   struct Element *src;
   struct TextFont *font;
-  int *(*func) (Element *hDlg, UINT msg, ULONG wParam, ULONG lParam);
+  int *(*func) (Element *hDlg, UINT msg, ULONG wParam, IPTR lParam);
 };
 
 static const char *Cycle_Dummy[] = { NULL };
@@ -50,11 +50,13 @@ static VOID mSet(struct Data *data, APTR obj, struct opSet *msg, ULONG is_new);
 
 extern Object *win;
 
-ULONG xget(Object *obj, ULONG attr) {
-  ULONG b = 0;
+#if (0)
+IPTR xget(Object *obj, IPTR attr) {
+  IPTR b = 0;
   GetAttr(attr, obj, (IPTR *)&b);
   return b;
 }
+#endif
 
 /* return index in elem[] for item IDC_* */
 static LONG get_index(Element *elem, int item) {
@@ -111,7 +113,7 @@ static int get_elem_from_obj(struct Data *data, Object *obj) {
   DebOut("data: %lx\n", data);
 
   /* first try userdata */
-  i=xget(obj, MUIA_UserData);
+  i=XGET(obj, MUIA_UserData);
   if(i>0) {
     DebOut("MUIA_UserData: %d\n", i);
     return i;
@@ -237,7 +239,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       elem[i].var[l]=strdup((TCHAR *) lParam);
       elem[i].var[l+1]=NULL;
       //DebOut("elem[i].obj: %lx\n", elem[i].obj);
-      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].mem, TAG_DONE);
+      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (IPTR) elem[i].mem, TAG_DONE);
       //DebOut("new list:\n");
       l=0;
       while(elem[i].var[l] != NULL) {
@@ -261,7 +263,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       //elem[i].var[1]=NULL;
       elem[i].var[0]=NULL;
       DebOut("elem[i].obj: %lx\n", elem[i].obj);
-      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].mem, MUIA_NoNotify, TRUE, TAG_DONE);
+      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (IPTR) elem[i].mem, MUIA_NoNotify, TRUE, TAG_DONE);
       break;
     case CB_FINDSTRING:
       /* return string index */
@@ -353,7 +355,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       /* terminate list */
       elem[i].var[l+1]=NULL;
       DebOut("elem[i].obj: %lx\n", elem[i].obj);
-      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (ULONG) elem[i].mem, TAG_DONE);
+      SetAttrs(elem[i].obj, MUIA_Cycle_Entries, (IPTR) elem[i].mem, TAG_DONE);
       if(flag_editable(elem[i].flags)) {
         SetAttrs(elem[i].obj, MUIA_Cycle_Active, 1, TAG_DONE);
       }
@@ -462,7 +464,7 @@ BOOL SetDlgItemInt(HWND elem, int item, UINT uValue, BOOL bSigned) {
 
   if(!elem[i].var) {
     /* array for text (only one line, but respect data structure here */
-    elem[i].var=(char **) malloc(16 * sizeof(ULONG *)); 
+    elem[i].var=(char **) malloc(16 * sizeof(IPTR)); 
     elem[i].var[0]=NULL;
   }
 
@@ -579,7 +581,7 @@ int MessageBox_fixed(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType/*, U
   };
 
   struct TagItem tags[]={
-    {RT_TextAttr, (ULONG) &myta},
+    {RT_TextAttr, (IPTR) &myta},
     {RT_Window, NULL},
     {RTEZ_ReqTitle , (IPTR) lpCaption},
     {RT_ReqPos, REQPOS_CENTERSCR},
@@ -597,10 +599,10 @@ int MessageBox_fixed(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType/*, U
     tags[0].ti_Tag=TAG_IGNORE;
   }
 
-  window=(struct Window *)xget(win, MUIA_Window_Window);
+  window=(struct Window *)XGET(win, MUIA_Window_Window);
   if(window) {
     DebOut("window: %lx\n", window);
-    tags[1].ti_Data=(ULONG) window;
+    tags[1].ti_Data=(IPTR) window;
   }
   else {
     DebOut("ERROR: no window !?\n");
@@ -734,7 +736,7 @@ AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
 
   DebOut("[%lx] i: %d\n", obj, i);
 
-  data->src[i].value=xget((Object *) obj, MUIA_Cycle_Active);
+  data->src[i].value=XGET((Object *) obj, MUIA_Cycle_Active);
   DebOut("[%lx] MUIA_Cycle_Active: %d (mui obj: %lx)\n", obj, data->src[i].value, obj);
   if(flag_editable(data->src[i].flags)) {
     data->src[i].value--;
@@ -773,9 +775,9 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
 
   DebOut("i: %d\n", i);
 
-  data->src[i].value=xget((Object *) obj, MUIA_Selected);
+  data->src[i].value=XGET((Object *) obj, MUIA_Selected);
 
-  DebOut("We are in state Selected: %d\n", (ULONG) xget((Object *) obj, MUIA_Selected));
+  DebOut("We are in state Selected: %d\n", (ULONG) XGET((Object *) obj, MUIA_Selected));
 
   if(data->func) {
     DebOut("call function: %lx\n", data->func);
@@ -905,14 +907,14 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
 #else
 #define ABI_CONST 
 #endif
-static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
+static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
 
   struct TagItem *tstate, *tag;
   ULONG i=0;
   ULONG s=0;
   struct Element *src=NULL;
   Object *child      =NULL; /* TODO: remove me */
-  int *(*func) (Element *hDlg, UINT msg, ULONG wParam, ULONG lParam);
+  int *(*func) (Element *hDlg, UINT msg, ULONG wParam, IPTR lParam);
   func=NULL;
 
   DebOut("mNew(fixed)\n");
@@ -921,7 +923,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
 
   if (!obj) {
     DebOut("fixed: unable to create object!");
-    return (ULONG) NULL;
+    return (IPTR) NULL;
   }
 
   tstate=((struct opSet *)msg)->ops_AttrList;
@@ -934,14 +936,14 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
         break;
       case MA_dlgproc:
         DebOut("MA_dlgproc: %lx\n", tag->ti_Data);
-        func=(int* (*)(Element*, uint32_t, ULONG, ULONG)) tag->ti_Data;
+        func=(int* (*)(Element*, uint32_t, ULONG, IPTR)) tag->ti_Data;
         break;
     }
   }
 
   if(!s) {
     DebOut("mNew: MA_src not supplied!\n");
-    return (ULONG) NULL;
+    return (IPTR) NULL;
   }
 
   /* place vertically */
@@ -967,8 +969,8 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
     TextFont *Topaz8Font = OpenDiskFont(&ta);
     DebOut("Topaz8Font: %lx\n", Topaz8Font);
 #if 0
-    foo=TextObject, MUIA_Text_Contents, (ULONG) "XYZ", End;
-    old=(struct TextFont *) xget(foo, MUIA_Font);
+    foo=TextObject, MUIA_Text_Contents, (IPTR) "XYZ", End;
+    old=(struct TextFont *) XGET(foo, MUIA_Font);
     //GetAttr(MUIA_Font, (Object *)foo, (IPTR *)old);
     DebOut("MUIA_Font: %s\n", old->tf_Message.mn_Node.ln_Name);
     DebOut("MUIA_Font: %d\n", old->tf_YSize);
@@ -1067,7 +1069,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
               data->MyMUIHook_select.h_Data =(APTR) data;
 
               DebOut("DoMethod(%lx, MUIM_Notify, MUIA_Selected, MUIV_EveryTime..)\n", src[i].obj);
-              DoMethod(src[i].obj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, (ULONG) src[i].obj, 2, MUIM_CallHook,(ULONG) &data->MyMUIHook_select, func); 
+              DoMethod(src[i].obj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_select, func); 
             }
           }
           else if(!strcmp(src[i].windows_class, "RICHEDIT")) {
@@ -1097,7 +1099,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                               Child, TextObject,
                                 MUIA_Font, Topaz8Font,
                                 MUIA_Text_PreParse, "\33c",
-                                MUIA_Text_Contents, (ULONG) src[i].text,
+                                MUIA_Text_Contents, (IPTR) src[i].text,
                               End,
                             End;
 
@@ -1110,7 +1112,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
           data->MyMUIHook_pushbutton.h_Entry=(HOOKFUNC) MUIHook_pushbutton;
 #endif
           data->MyMUIHook_pushbutton.h_Data =(APTR) data;
-          DoMethod(src[i].obj, MUIM_Notify, MUIA_Pressed, FALSE, (ULONG) src[i].obj, 2, MUIM_CallHook,(ULONG) &data->MyMUIHook_pushbutton, func); 
+          DoMethod(src[i].obj, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_pushbutton, func); 
         break;
 
         case RTEXT:
@@ -1118,7 +1120,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
                         //MUIA_Background, MUII_MARKBACKGROUND,
                         MUIA_Font, Topaz8Font,
                         MUIA_Text_PreParse, "\33r",
-                        MUIA_Text_Contents, (ULONG) src[i].text,
+                        MUIA_Text_Contents, (IPTR) src[i].text,
                       End;
           src[i].exists=TRUE;
           src[i].obj=child;
@@ -1128,7 +1130,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
           child=TextObject,
                         MUIA_Font, Topaz8Font,
                         MUIA_Text_PreParse, "\33l",
-                        MUIA_Text_Contents, (ULONG) src[i].text,
+                        MUIA_Text_Contents, (IPTR) src[i].text,
                       End;
           src[i].exists=TRUE;
           src[i].obj=child;
@@ -1140,7 +1142,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
             child=TextObject,
                         MUIA_Font, Topaz8Font,
                         MUIA_Text_PreParse, "\33c",
-                        MUIA_Text_Contents, (ULONG) src[i].text,
+                        MUIA_Text_Contents, (IPTR) src[i].text,
                       End;
             src[i].obj=child;
           }
@@ -1148,18 +1150,18 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
             child=StringObject,
                           StringFrame,
                           MUIA_Font, Topaz8Font,
-                          MUIA_String_Contents, (ULONG) src[i].text,
+                          MUIA_String_Contents, (IPTR) src[i].text,
                         End;
             src[i].obj=child;
           }
           src[i].exists=TRUE;
-          src[i].var=(char **) malloc(256 * sizeof(ULONG *)); // array for cycle texts
+          src[i].var=(char **) malloc(256 * sizeof(IPTR)); // array for cycle texts
           src[i].var[0]=NULL;
         break;
 
 
         case COMBOBOX:
-          src[i].mem=(char **) malloc(256 * sizeof(ULONG *)); // array for cycle texts
+          src[i].mem=(char **) malloc(256 * sizeof(IPTR)); // array for cycle texts
           DebOut("flags: %lx\n", src[i].flags);
           if(!flag_editable(src[i].flags)) {
             DebOut("flags: CBS_DROPDOWNLIST\n");
@@ -1184,7 +1186,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
           data->MyMUIHook_combo.h_Entry=(HOOKFUNC) MUIHook_combo;
 #endif
           data->MyMUIHook_combo.h_Data =(APTR) data;
-          DoMethod(src[i].obj, MUIM_Notify, MUIA_Cycle_Active , MUIV_EveryTime, (ULONG) src[i].obj, 2, MUIM_CallHook,(ULONG) &data->MyMUIHook_combo, func); 
+          DoMethod(src[i].obj, MUIM_Notify, MUIA_Cycle_Active , MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_combo, func); 
         break;
 
 
@@ -1196,10 +1198,10 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
       if(child) {
         if(src[i].help) {
           DebOut("add HOTHELP: %s\n", src[i].help);
-          SetAttrs(child, MUIA_ShortHelp, (ULONG) src[i].help, TAG_DONE);
+          SetAttrs(child, MUIA_ShortHelp, (IPTR) src[i].help, TAG_DONE);
         }
         if(!(src[i].flags & WS_VISIBLE)) {
-          SetAttrs(child, MUIA_ShowMe, (ULONG) 0, TAG_DONE);
+          SetAttrs(child, MUIA_ShowMe, (IPTR) 0, TAG_DONE);
         }
         child=NULL;
       }
@@ -1225,19 +1227,19 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
     i=0;
     while(src[i].exists) {
       DebOut("i: %d (add %lx to %lx\n", i, src[i].obj, obj);
-      DoMethod((Object *) obj, OM_ADDMEMBER,(LONG) src[i].obj);
+      DoMethod((Object *) obj, OM_ADDMEMBER,(IPTR) src[i].obj);
       i++;
     }
 
     mSet(data, obj, (struct opSet *) msg, 1);
     SetAttrs(obj, MUIA_Frame, MUIV_Frame_Group, TAG_DONE);
   }
-  return (ULONG)obj;
+  return (IPTR)obj;
 }
 
-static ULONG mGet(struct Data *data, APTR obj, struct opGet *msg, struct IClass *cl)
+static IPTR mGet(struct Data *data, APTR obj, struct opGet *msg, struct IClass *cl)
 {
-  ULONG rc;
+  IPTR rc;
 
   //DebOut("mGet..\n");
 
@@ -1245,7 +1247,7 @@ static ULONG mGet(struct Data *data, APTR obj, struct opGet *msg, struct IClass 
   {
     case MA_Data: 
       DebOut("data: %lx\n", data);
-      rc = (ULONG) data; 
+      rc = (IPTR) data; 
       break;
 
     default: return DoSuperMethodA(cl, (Object *) obj, (Msg)msg);

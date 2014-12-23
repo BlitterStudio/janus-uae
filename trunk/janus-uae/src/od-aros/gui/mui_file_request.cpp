@@ -12,6 +12,7 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
+#include "aros.h"
 #include "gui.h"
 #include "winnt.h"
 #include "mui_data.h"
@@ -37,7 +38,7 @@ BOOL mui_get_filename(TCHAR *lpstrTitle, TCHAR *lpstrInitialDir, TCHAR *lpstrFil
   DebOut("lpstrFilter: %s\n", lpstrFilter);
   DebOut("lpstrFileTitle: %s\n", lpstrFileTitle);
 
-  win=(struct Window *) xget(app, MUIA_Window_Window);
+  win=(struct Window *) XGET(app, MUIA_Window_Window);
 
   req=(struct FileRequester *) MUI_AllocAslRequestTags(ASL_FileRequest,
                 ASLFR_Window,win ,
@@ -93,7 +94,7 @@ BOOL mui_get_dir(TCHAR *lpstrTitle, TCHAR *path) {
   }
   DebOut("path: %s\n", path);
 
-  win=(struct Window *) xget(app, MUIA_Window_Window);
+  win=(struct Window *) XGET(app, MUIA_Window_Window);
 
   req=(struct FileRequester *) MUI_AllocAslRequestTags(ASL_FileRequest,
                 ASLFR_Window,win ,

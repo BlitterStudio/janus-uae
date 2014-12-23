@@ -4,7 +4,16 @@
 #include <stdint.h>
 
 #include "sys/mman.h"
-#include "gui/gui.h"
+#include "gui/gui_mui.h"
+
+#if !defined(XGET)
+#define XGET(object, attribute)                 \
+({                                              \
+    IPTR __storage = 0;                         \
+    GetAttr((attribute), (object), &__storage); \
+    __storage;                                  \
+})
+#endif /* !XGET */
 
 #define GETBDY(x) ((x) / 1000000 + 2000)
 #define GETBDM(x) (((x) - ((x / 10000) * 10000)) / 100)

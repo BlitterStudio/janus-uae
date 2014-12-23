@@ -72,36 +72,36 @@ static bool is_file(const TCHAR *name)
   BPTR file=NULL;
   bool ret=FALSE;
 
-  DebOut("name: %s\n", name);
+  bug("name: %s\n", name);
 
   fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, TAG_END);
   if(!fib) 
   {
-    DebOut("no FileInfoBlock!\n");
+    bug("no FileInfoBlock!\n");
     goto NOFILE;
   }
 
   file=Lock(name, SHARED_LOCK);
   if(!file) 
   {
-    DebOut("no lock..\n");
+    bug("no lock..\n");
     goto NOFILE;
   }
 
   if (!Examine(file, fib)) 
   {
-    DebOut("Examine failed\n");
+    bug("Examine failed\n");
     goto NOFILE;
   }
 
   if(fib->fib_DirEntryType <0) 
   {
-    DebOut("FILE!\n");
+    bug("FILE!\n");
     ret=TRUE;
   }
   else 
   {
-    DebOut("directory..\n");
+    bug("directory..\n");
   }
 
 NOFILE:
@@ -2008,9 +2008,9 @@ static struct zfile *zfile_fopenx2 (const TCHAR *name, const TCHAR *mode, int ma
     /* string does not begin with PROGDIR */
 		_tcscpy (tmp, "PROGDIR:");
 		_tcscat (tmp, name);
-    DebOut("try: %s\n", tmp);
+    bug("try: %s\n", tmp);
 		f = zfile_fopen_x (tmp, mode, mask, index);
-    DebOut("f: %lx\n", f);
+    bug("f: %lx\n", f);
   }
 #endif
 #if 0
@@ -2238,10 +2238,10 @@ uae_s64 zfile_size (struct zfile *z)
 uae_s64 zfile_ftell (struct zfile *z)
 {
 	if (z->data || z->dataseek || z->parent) {
-    DebOut("z->seek: %d\n", z->seek);
+    bug("z->seek: %d\n", z->seek);
 		return z->seek;
   }
-  DebOut("ftell: %d\n", ftell(z->f));
+  bug("ftell: %d\n", ftell(z->f));
 	return _ftelli64 (z->f);
 
 }
@@ -2559,11 +2559,11 @@ uae_u32 zfile_crc32 (struct zfile *f)
 	if (f->data)
 		return get_crc32 (f->data, f->size);
 	pos = zfile_ftell (f);
-  DebOut("pos: %d\n", pos);
+  bug("pos: %d\n", pos);
 	zfile_fseek (f, 0, SEEK_END);
 	size = zfile_ftell (f);
 	p = xmalloc (uae_u8, size);
-  DebOut("p: %lx, size: %d\n",p, size);
+  bug("p: %lx, size: %d\n",p, size);
 	if (!p)
 		return 0;
 	memset (p, 0, size);

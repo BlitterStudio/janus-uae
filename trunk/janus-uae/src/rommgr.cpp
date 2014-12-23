@@ -36,13 +36,13 @@ TCHAR *romlist_get (const struct romdata *rd)
 {
 	int i;
 
-  DebOut("entered(%lx)\n", rd);
-  DebOut("romlist_cnt: %d\n", romlist_cnt);
+  bug("[JUAE:ROM] entered(%lx)\n", rd);
+  bug("[JUAE:ROM] romlist_cnt: %d\n", romlist_cnt);
 
 	if (!rd)
 		return 0;
 	for (i = 0; i < romlist_cnt; i++) {
-    DebOut("compare %d %d\n", rl[i].rd->id, rd->id);
+    bug("[JUAE:ROM] compare %d %d\n", rl[i].rd->id, rd->id);
 		if (rl[i].rd->id == rd->id)
 			return rl[i].path;
 	}
@@ -67,7 +67,7 @@ void romlist_add (const TCHAR *path, struct romdata *rd)
 {
 	struct romlist *rl2;
 
-  DebOut("path: %s, rd: %lx\n", path, rd);
+  bug("[JUAE:ROM] path: %s, rd: %lx\n", path, rd);
 
 	if (path == NULL || rd == NULL) {
 		romlist_cleanup ();
@@ -565,16 +565,16 @@ static void addkey (uae_u8 *key, int size, const TCHAR *name)
 
 	//write_log (_T("addkey(%08x,%d,'%s')\n"), key, size, name);
 	if (key == NULL || size == 0) {
-    DebOut("key or size is NULL, do nothing\n");
+    bug("[JUAE:ROM] key or size is NULL, do nothing\n");
 		xfree (key);
 		return;
 	}
-  DebOut("name: %s\n", name);
+  bug("[JUAE:ROM] name: %s\n", name);
 	for (i = 0; i < ROM_KEY_NUM; i++) {
 		if (keyring[i].key && keyring[i].size == size && !memcmp (keyring[i].key, key, size)) {
 			xfree (key);
 			//write_log (_T("key already in keyring\n"));
-      DebOut("key already in keyring\n");
+      bug("[JUAE:ROM] key already in keyring\n");
 			return;
 		}
 	}
@@ -585,7 +585,7 @@ static void addkey (uae_u8 *key, int size, const TCHAR *name)
 	if (i == ROM_KEY_NUM) {
 		xfree (key);
 		//write_log (_T("keyring full\n"));
-    DebOut("keyring full\n");
+    bug("[JUAE:ROM] keyring full\n");
 		return;
 	}
 	keyring[i].key = key;
@@ -651,7 +651,7 @@ int load_keyring (struct uae_prefs *p, const TCHAR *path)
 
 	free_keyring ();
 	keybuf = target_load_keyfile (p, path, &keysize, tmp);
-  DebOut("call addkey..\n");
+  bug("[JUAE:ROM] call addkey..\n");
 	addkey (keybuf, keysize, tmp);
 	for (i = 0; keyids[i] >= 0; i++) {
 		struct romdata *rd = getromdatabyid (keyids[i]);
@@ -744,10 +744,10 @@ struct romdata *getromdatabyname (const TCHAR *name)
 struct romdata *getromdatabyid (int id)
 {
 	int i = 0;
-  DebOut("id: %d\n", i);
+  bug("[JUAE:ROM] id: %d\n", i);
 	while (roms[i].name) {
 		if (id == roms[i].id && roms[i].group == 0) {
-      DebOut("found roms[%d].name: %s\n", i, roms[i].name);
+      bug("[JUAE:ROM] found roms[%d].name: %s\n", i, roms[i].name);
 			return &roms[i];
     }
 		i++;
