@@ -51,6 +51,10 @@ happening, all ports should restrict window widths to be multiples of 16 pixels.
 #include "inputdevice.h"
 #include "debug.h"
 
+#define DRAWD(x)
+#define DRAWAGAD(x)
+#define DRAWFLUSHD(x)
+
 extern bool emulate_specialmonitors (struct vidbuffer*, struct vidbuffer*);
 
 extern int sprite_buffer_res;
@@ -341,12 +345,16 @@ STATIC_INLINE int res_shift_from_amiga (int x)
 
 void notice_screen_contents_lost (void)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	picasso_redraw_necessary = 1;
 	frame_redraw_necessary = 2;
 }
 
 bool isnativevidbuf (void)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (gfxvidinfo.outbuffer == NULL)
 		return false;
 	if (gfxvidinfo.outbuffer == &gfxvidinfo.drawbuffer)
@@ -372,7 +380,8 @@ static int stored_left_start, stored_top_start, stored_width, stored_height;
 
 void get_custom_topedge (int *xp, int *yp, bool max)
 {
-	
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (isnativevidbuf () && !max) {
 		int x, y;
 		x = visible_left_border + (DISPLAY_LEFT_SHIFT << currprefs.gfx_resolution);
@@ -398,6 +407,8 @@ void get_custom_topedge (int *xp, int *yp, bool max)
 
 static void reset_custom_limits (void)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	gclow = gcloh = gclox = gcloy = 0;
 	gclorealh = -1;
 	center_reset = true;
@@ -405,6 +416,8 @@ static void reset_custom_limits (void)
 
 static void set_blanking_limits (void)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	hblank_left_start = visible_left_start;
 	hblank_right_stop = visible_right_stop;
 
@@ -418,6 +431,8 @@ static void set_blanking_limits (void)
 
 void get_custom_raw_limits (int *pw, int *ph, int *pdx, int *pdy)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (stored_width > 0) {
 		*pw = stored_width;
 		*ph = stored_height;
@@ -450,6 +465,8 @@ void set_custom_limits (int w, int h, int dx, int dy)
 	int vts = visible_top_start;
 	int vbs = visible_bottom_stop;
 
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (w <= 0 || dx < 0) {
 		visible_left_start = 0;
 		visible_right_stop = MAX_STOP;
@@ -472,6 +489,8 @@ void set_custom_limits (int w, int h, int dx, int dy)
 
 void store_custom_limits (int w, int h, int x, int y)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	stored_left_start = x;
 	stored_top_start = y;
 	stored_width = w;
@@ -491,6 +510,8 @@ int get_custom_limits (int *pw, int *ph, int *pdx, int *pdy, int *prealh)
 	int w, h, dx, dy, y1, y2, dbl1, dbl2;
 	int ret = 0;
 
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+    
 	if (!pw || !ph || !pdx || !pdy) {
 		reset_custom_limits ();
 		return 0;
@@ -662,6 +683,8 @@ void get_custom_mouse_limits (int *pw, int *ph, int *pdx, int *pdy, int dbl)
 	int delay1, delay2;
 	int w, h, dx, dy, dbl1, dbl2, y1, y2;
 
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	w = diwlastword_total - diwfirstword_total;
 	dx = diwfirstword_total - visible_left_border;
 
@@ -722,6 +745,8 @@ static struct draw_info *dip_for_drawing;
 /* Record DIW of the current line for use by centering code.  */
 void record_diw_line (int plfstrt, int first, int last)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (last > max_diwstop)
 		max_diwstop = last;
 	if (first < min_diwstart) {
@@ -781,6 +806,8 @@ static void pfield_init_linetoscr (bool border)
 	int ddf_right = dp_for_drawing->plfright * 2 + DIW_DDF_OFFSET;
 	int leftborderhidden;
 	int native_ddf_left2;
+
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 
 	if (border)
 		ddf_left = DISPLAY_LEFT_SHIFT;
@@ -930,6 +957,8 @@ static void pfield_init_linetoscr (bool border)
 // erase sprite graphics in pixdata if they were outside of ddf
 static void pfield_erase_hborder_sprites (void)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (sprite_first_x < native_ddf_left) {
 		int size = res_shift_from_window (native_ddf_left - sprite_first_x);
 		memset (pixdata.apixels + MAX_PIXELS_PER_LINE - size, 0, size);
@@ -944,6 +973,8 @@ static void pfield_erase_hborder_sprites (void)
 // erase whole viewable area if sprite in upper or lower border
 static void pfield_erase_vborder_sprites (void)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (visible_right_border <= visible_left_border)
 		return;
 	int pos = 0;
@@ -978,6 +1009,9 @@ STATIC_INLINE void fill_line_16 (uae_u8 *buf, int start, int stop, bool blank)
 	uae_u16 *b = (uae_u16 *)buf;
 	unsigned int i;
 	unsigned int rem = 0;
+
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	xcolnr col = getbgc (blank);
 	if (((long)&b[start]) & 1)
 		b[start++] = (uae_u16) col;
@@ -1005,6 +1039,8 @@ STATIC_INLINE void fill_line_32 (uae_u8 *buf, int start, int stop, bool blank)
 }
 static void pfield_do_fill_line (int start, int stop, bool blank)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	switch (gfxvidinfo.drawbuffer.pixbytes) {
 	case 2: fill_line_16 (xlinebuffer, start, stop, blank); break;
 	case 4: fill_line_32 (xlinebuffer, start, stop, blank); break;
@@ -1017,6 +1053,8 @@ static void fill_line2 (int startpos, int len)
 	int nints, nrem;
 	int *start;
 	xcolnr val;
+
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 
 	shift = 0;
 	if (gfxvidinfo.drawbuffer.pixbytes == 2)
@@ -1063,6 +1101,8 @@ static void fill_line_border (void)
 	int lastpos = visible_left_border;
 	int endpos = visible_left_border + gfxvidinfo.drawbuffer.inwidth;
 
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	// full hblank
 	if (hposblank) {
 		hposblank = 3;
@@ -1098,6 +1138,8 @@ static uae_u8 render_sprites (int pos, int dualpf, uae_u8 apixel, int aga)
 	unsigned int v = spb->data;
 	int *shift_lookup = dualpf ? (bpldualpfpri ? dblpf_ms2 : dblpf_ms1) : dblpf_ms;
 	int maskshift, plfmask;
+
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 
 	/* The value in the shift lookup table is _half_ the shift count we
 	need.  This is because we can't shift 32 bits at once (undefined
@@ -1421,6 +1463,8 @@ static int NOINLINE linetoscr_16_shrink2f_sh (int spix, int dpix, int stoppos, i
 
 static void pfield_do_linetoscr (int start, int stop, bool blank)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	xlinecheck(start, stop);
 #ifdef AGA
 	if (issprites && (currprefs.chipset_mask & CSMASK_AGA)) {
@@ -1607,6 +1651,8 @@ static void pfield_do_linetoscr (int start, int stop, bool blank)
 // left or right AGA border sprite
 static void pfield_do_linetoscr_bordersprite_aga (int start, int stop, bool blank)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (blank) {
 		pfield_do_fill_line (start, stop, blank);
 		return;
@@ -1656,6 +1702,7 @@ static void pfield_do_linetoscr_bordersprite_aga (int start, int stop, bool blan
 
 static void dummy_worker (int start, int stop, bool blank)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 }
 
 static int ham_decode_pixel;
@@ -1669,6 +1716,8 @@ static unsigned int ham_lastcolor;
 static void init_ham_decoding (void)
 {
 	int unpainted_amiga = unpainted;
+
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 
 	ham_decode_pixel = src_pixel;
 	ham_lastcolor = color_reg_get (&colors_for_drawing, 0);
@@ -1728,6 +1777,8 @@ static void decode_ham (int pix, int stoppos, bool blank)
 {
 	int todraw_amiga = res_shift_from_window (stoppos - pix);
 
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (!bplham) {
 		while (todraw_amiga-- > 0) {
 			int pv = pixdata.apixels[ham_decode_pixel];
@@ -1786,6 +1837,8 @@ static void decode_ham (int pix, int stoppos, bool blank)
 
 static void erase_ham_right_border(int pix, int stoppos, bool blank)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (stoppos < playfield_end)
 		return;
 	// erase right border in HAM modes or old HAM data may be visible
@@ -1798,6 +1851,8 @@ static void erase_ham_right_border(int pix, int stoppos, bool blank)
 static void gen_pfield_tables (void)
 {
 	int i;
+
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 
 	for (i = 0; i < 256; i++) {
 		int plane1 = ((i >> 0) & 1) | ((i >> 1) & 2) | ((i >> 2) & 4) | ((i >> 3) & 8);
@@ -1845,6 +1900,8 @@ STATIC_INLINE void draw_sprites_1 (struct sprite_entry *e, int dualpf, int has_a
 	uae_u8 *stbuf = spixstate.bytes + e->first_pixel;
 	int spr_pos, pos;
 
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	buf -= e->pos;
 	stbuf -= e->pos;
 
@@ -1877,12 +1934,16 @@ static void NOINLINE draw_sprites_normal_dp_at (struct sprite_entry *e) { draw_s
 /* not very optimized */
 STATIC_INLINE void draw_sprites_aga (struct sprite_entry *e, int aga)
 {
+   DRAWAGAD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	draw_sprites_1 (e, bpldualpf, e->has_attached);
 }
 #endif
 
 STATIC_INLINE void draw_sprites_ecs (struct sprite_entry *e)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (e->has_attached) {
 		if (bpldualpf)
 			draw_sprites_normal_dp_at (e);
@@ -1902,6 +1963,8 @@ static void clear_bitplane_border_aga (void)
 {
 	int len, shift = res_shift;
 	uae_u8 v = 0;
+
+   DRAWAGAD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 
 	if (shift < 0) {
 		shift = -shift;
@@ -1925,6 +1988,8 @@ static void weird_bitplane_fix (int start, int end)
 	int sh = lores_shift;
 	uae_u8 *p = pixdata.apixels + pixels_offset;
 
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	for (i = start >> sh; i < end >> sh; i++) {
 		if (p[i] > 16)
 			p[i] = 16;
@@ -1944,6 +2009,8 @@ constant.  That will cause some unnecessary code to be optimized away.
 Don't touch this if you don't know what you are doing.  */
 STATIC_INLINE void pfield_doline_1 (uae_u32 *pixels, int wordcount, int planes)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	while (wordcount-- > 0) {
 		uae_u32 b0, b1, b2, b3, b4, b5, b6, b7;
 
@@ -2015,6 +2082,8 @@ static void pfield_doline (int lineno)
 	int wordcount = dp_for_drawing->plflinelen;
 	uae_u32 *data = pixdata.apixels_l + MAX_PIXELS_PER_LINE / 4;
 
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 #ifdef SMART_UPDATE
 #define DATA_POINTER(n) ((debug_bpl_mask & (1 << n)) ? (line_data[lineno] + (n) * MAX_WORDS_PER_LINE * 2) : (debug_bpl_mask_one ? all_ones : all_zeros))
 	real_bplpt[0] = DATA_POINTER (0);
@@ -2051,6 +2120,8 @@ void init_row_map (void)
 	static int oldheight, oldpitch;
 	int i, j;
 
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (gfxvidinfo.drawbuffer.height_allocated > max_uae_height) {
 		write_log (_T("Resolution too high, aborting\n"));
 		abort ();
@@ -2075,6 +2146,8 @@ void init_row_map (void)
 void init_aspect_maps (void)
 {
 	int i, maxl, h;
+
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 
 	h = gfxvidinfo.drawbuffer.height_allocated;
 
@@ -2141,6 +2214,9 @@ void init_aspect_maps (void)
 */
 static void do_flush_line_1 (struct vidbuffer *vb, int lineno)
 {
+   DRAWFLUSHD(bug("[JUAE:Draw] %s(#%d)\n", __PRETTY_FUNCTION__, lineno));
+   DRAWFLUSHD(bug("[JUAE:Draw] %s: vidbuffer @ 0x%p\n", __PRETTY_FUNCTION__, vb));
+
 	if (lineno < first_drawn_line)
 		first_drawn_line = lineno;
 	if (lineno > last_drawn_line)
@@ -2164,6 +2240,8 @@ static void do_flush_line_1 (struct vidbuffer *vb, int lineno)
 
 STATIC_INLINE void do_flush_line (struct vidbuffer *vb, int lineno)
 {
+   DRAWFLUSHD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (vb)
 		do_flush_line_1 (vb, lineno);
 }
@@ -2176,6 +2254,9 @@ STATIC_INLINE void do_flush_line (struct vidbuffer *vb, int lineno)
 
 static void do_flush_screen (struct vidbuffer *vb, int start, int stop)
 {
+   DRAWFLUSHD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+   DRAWFLUSHD(bug("[JUAE:SDL] %s: vidbuffer @ 0x%p [%d -> %d]\n", __PRETTY_FUNCTION__, vb,  start, stop));
+
 	/* TODO: this flush operation is executed outside locked state!
 	Should be corrected.
 	(sjo 26.9.99) */
@@ -2200,6 +2281,8 @@ static void do_flush_screen (struct vidbuffer *vb, int start, int stop)
 static void pfield_expand_dp_bplcon (void)
 {
 	static int b2;
+
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 
 	bplres = dp_for_drawing->bplres;
 	bplplanecnt = dp_for_drawing->nr_planes;
@@ -2248,6 +2331,8 @@ static bool isham (uae_u16 bplcon0)
 
 static void pfield_expand_dp_bplconx (int regno, int v)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (regno == 0xffff) {
 		hposblank = 1;
 		return;
@@ -2286,6 +2371,8 @@ static enum { color_match_acolors, color_match_full } color_match_type;
 line.  Try to avoid copying color tables around whenever possible.  */
 static void adjust_drawing_colors (int ctable, int need_full)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (drawing_color_matches != ctable || need_full < 0) {
 		if (need_full) {
 			color_reg_cpy (&colors_for_drawing, curr_color_tables + ctable);
@@ -2309,6 +2396,8 @@ static void do_color_changes (line_draw_func worker_border, line_draw_func worke
 	int i;
 	int lastpos = visible_left_border;
 	int endpos = visible_left_border + gfxvidinfo.drawbuffer.inwidth;
+
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 
 	for (i = dip_for_drawing->first_color_change; i <= dip_for_drawing->last_color_change; i++) {
 		int regno = curr_color_changes[i].regno;
@@ -2404,6 +2493,8 @@ static void pfield_draw_line (struct vidbuffer *vb, int lineno, int gfx_ypos, in
 	int do_double = 0;
 	bool have_color_changes;
 	enum double_how dh;
+
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 
 	dp_for_drawing = line_decisions + lineno;
 	dip_for_drawing = curr_drawinfo + lineno;
@@ -2615,6 +2706,9 @@ static void center_image (void)
 	int prev_y_adjust = thisframe_y_adjust;
 
 	int w = gfxvidinfo.drawbuffer.inwidth;
+
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (currprefs.gfx_xcenter && !currprefs.gf[0].gfx_filter_autoscale && max_diwstop > 0) {
 
 		if (max_diwstop - min_diwstart < w && currprefs.gfx_xcenter == 2)
@@ -2705,6 +2799,8 @@ static void init_drawing_frame (void)
 {
 	int i, maxline;
 	static int frame_res_old;
+
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 
 	if (lines_count > 0) {
 		int largest_count = 0;
@@ -2928,6 +3024,8 @@ static void draw_status_line (int line, int statusy)
 	int bpp, y;
 	uae_u8 *buf;
 
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (!(currprefs.leds_on_screen & STATUSLINE_CHIPSET) || (currprefs.leds_on_screen & STATUSLINE_TARGET))
 		return;
 	bpp = gfxvidinfo.drawbuffer.pixbytes;
@@ -2941,6 +3039,8 @@ static void draw_status_line (int line, int statusy)
 
 static void draw_debug_status_line (int line)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	xlinebuffer = gfxvidinfo.drawbuffer.linemem;
 	if (xlinebuffer == 0)
 		xlinebuffer = row_map[line];
@@ -2972,6 +3072,8 @@ static void draw_lightpen_cursor (int x, int y, int line, int onscreen)
 	int color1 = onscreen ? 0xff0 : 0xf00;
 	int color2 = 0x000;
 
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	xlinebuffer = gfxvidinfo.drawbuffer.linemem;
 	if (xlinebuffer == 0)
 		xlinebuffer = row_map[line];
@@ -2990,6 +3092,8 @@ static int lightpen_y1, lightpen_y2;
 static void lightpen_update (struct vidbuffer *vb)
 {
 	int i;
+
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 
 	if (lightpen_x < LIGHTPEN_WIDTH + 1)
 		lightpen_x = LIGHTPEN_WIDTH + 1;
@@ -3038,6 +3142,8 @@ static void draw_frame2 (struct vidbuffer *vbin, struct vidbuffer *vbout)
 {
 	int i;
 
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	xvbin = vbin;
 	xvbout = vbout;
 
@@ -3064,6 +3170,8 @@ bool draw_frame (struct vidbuffer *vb)
 {
 	uae_u8 oldstate[LINESTATE_SIZE];
 	struct vidbuffer oldvb;
+
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 
 	memcpy (&oldvb, &gfxvidinfo.drawbuffer, sizeof (struct vidbuffer));
 	memcpy (&gfxvidinfo.drawbuffer, vb, sizeof (struct vidbuffer));
@@ -3105,6 +3213,8 @@ static void finish_drawing_frame (void)
 	int i;
 	bool didflush = false;
 	struct vidbuffer *vb = &gfxvidinfo.drawbuffer;
+
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 
 	gfxvidinfo.outbuffer = vb;
 
@@ -3217,6 +3327,8 @@ static void check_picasso (void)
 
 void redraw_frame (void)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	last_drawn_line = 0;
 	first_drawn_line = 32767;
 	finish_drawing_frame ();
@@ -3225,6 +3337,8 @@ void redraw_frame (void)
 
 bool vsync_handle_check (void)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	int changed = check_prefs_changed_gfx ();
 	if (changed > 0) {
 		reset_drawing ();
@@ -3249,6 +3363,8 @@ bool vsync_handle_check (void)
 
 void vsync_handle_redraw (int long_field, int lof_changed, uae_u16 bplcon0p, uae_u16 bplcon3p)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	last_redraw_point++;
 	if (lof_changed || interlace_seen <= 0 || (currprefs.gfx_iscanlines && interlace_seen > 0) || last_redraw_point >= 2 || long_field || doublescan < 0) {
 		last_redraw_point = 0;
@@ -3301,6 +3417,8 @@ void vsync_handle_redraw (int long_field, int lof_changed, uae_u16 bplcon0p, uae
 void hsync_record_line_state (int lineno, enum nln_how how, int changed)
 {
 	uae_u8 *state;
+
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 
 	if (framecnt != 0)
 		return;
@@ -3357,31 +3475,39 @@ void hsync_record_line_state (int lineno, enum nln_how how, int changed)
 
 static void dummy_flush_line (struct vidbuf_description *gfxinfo, struct vidbuffer *vb, int line_no)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 }
 
 static void dummy_flush_block (struct vidbuf_description *gfxinfo, struct vidbuffer *vb, int first_line, int last_line)
 {
+   DRAWFLUSHD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 }
 
 static void dummy_flush_screen (struct vidbuf_description *gfxinfo, struct vidbuffer *vb, int first_line, int last_line)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 }
 
 static void dummy_flush_clear_screen (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 }
 
 static int  dummy_lock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 	return 1;
 }
 
 static void dummy_unlock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 }
 
 static void gfxbuffer_reset (void)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	gfxvidinfo.drawbuffer.flush_line         = dummy_flush_line;
 	gfxvidinfo.drawbuffer.flush_block        = dummy_flush_block;
 	gfxvidinfo.drawbuffer.flush_screen       = dummy_flush_screen;
@@ -3392,7 +3518,9 @@ static void gfxbuffer_reset (void)
 
 void notice_resolution_seen (int res, bool lace)
 {
-	if (res > frame_res)
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
+        if (res > frame_res)
 		frame_res = res;
 	if (res > 0)
 		can_use_lores = 0;
@@ -3403,6 +3531,9 @@ void notice_resolution_seen (int res, bool lace)
 bool notice_interlace_seen (bool lace)
 {
 	bool changed = false;
+
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	// non-lace to lace switch (non-lace active at least one frame)?
 	if (lace) {
 		if (interlace_seen == 0) {
@@ -3422,6 +3553,10 @@ bool notice_interlace_seen (bool lace)
 
 void allocvidbuffer (struct vidbuffer *buf, int width, int height, int depth)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+   DRAWD(bug("[JUAE:Draw] %s: vidbuffer @ 0x%p\n", __PRETTY_FUNCTION__, buf));
+   DRAWD(bug("[JUAE:Draw] %s: %d x %d x %d\n", __PRETTY_FUNCTION__, width, height, depth));
+
 	memset (buf, 0, sizeof (struct vidbuffer));
 	buf->pixbytes = (depth + 7) / 8;
 	buf->width_allocated = (width + 7) & ~7;
@@ -3442,6 +3577,8 @@ void allocvidbuffer (struct vidbuffer *buf, int width, int height, int depth)
 
 void freevidbuffer (struct vidbuffer *buf)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	xfree (buf->realbufmem);
 	memset (buf, 0, sizeof (struct vidbuffer));
 }
@@ -3449,6 +3586,8 @@ void freevidbuffer (struct vidbuffer *buf)
 void reset_drawing (void)
 {
 	unsigned int i;
+
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
 
 	max_diwstop = 0;
 
@@ -3484,6 +3623,8 @@ void reset_drawing (void)
 
 void drawing_init (void)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	gen_pfield_tables ();
 
 	uae_sem_init (&gui_sem, 0, 1);
@@ -3504,6 +3645,8 @@ void drawing_init (void)
 
 int isvsync_chipset (void)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (picasso_on || !currprefs.gfx_apmode[0].gfx_vsync || (currprefs.gfx_apmode[0].gfx_vsync == 0 && !currprefs.gfx_apmode[0].gfx_fullscreen))
 		return 0;
 	if (currprefs.gfx_apmode[0].gfx_vsyncmode == 0)
@@ -3515,6 +3658,8 @@ int isvsync_chipset (void)
 
 int isvsync_rtg (void)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (!picasso_on || !currprefs.gfx_apmode[1].gfx_vsync || (currprefs.gfx_apmode[1].gfx_vsync == 0 && !currprefs.gfx_apmode[1].gfx_fullscreen))
 		return 0;
 	if (currprefs.gfx_apmode[1].gfx_vsyncmode == 0)
@@ -3526,6 +3671,8 @@ int isvsync_rtg (void)
 
 int isvsync (void)
 {
+   DRAWD(bug("[JUAE:Draw] %s()\n", __PRETTY_FUNCTION__));
+
 	if (picasso_on)
 		return isvsync_rtg ();
 	else

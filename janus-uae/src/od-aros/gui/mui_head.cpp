@@ -102,7 +102,7 @@ AROS_UFH2(void, MUIHook_list, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR
 
   ULONG nr;
 
-  nr=xget((Object *) obj, MUIA_List_Active);
+  nr=XGET((Object *) obj, MUIA_List_Active);
 
   /* we have to skip those configuration load/save pages here */
   if(nr==0 || nr==4 || nr==13) {
@@ -198,14 +198,14 @@ Object* build_gui(void) {
   DebOut("send: %lx\n", &IDD_FLOPPY);
 #endif
   app = MUI_NewObject(MUIC_Application,
-                      MUIA_Application_Author, (ULONG) "Oliver Brunner",
-                      MUIA_Application_Base, (ULONG)   "AROSUAE",
-                      MUIA_Application_Copyright, (ULONG)"(c) 2014 Oliver Brunner",
-                      MUIA_Application_Description, (ULONG)"WinUAE GUI converted to Zune",
-                      MUIA_Application_Title, (ULONG)"WinUAE",
-                      MUIA_Application_Version, (ULONG)"$VER: WinUAE 0.2 (x.x.2014)",
-                      MUIA_Application_Window, (ULONG)(win = MUI_NewObject(MUIC_Window,
-                        MUIA_Window_Title, (ULONG)"WinUAE Properties",
+                      MUIA_Application_Author, (IPTR) "Oliver Brunner",
+                      MUIA_Application_Base, (IPTR)   "AROSUAE",
+                      MUIA_Application_Copyright, (IPTR)"(c) 2014 Oliver Brunner",
+                      MUIA_Application_Description, (IPTR)"WinUAE GUI converted to Zune",
+                      MUIA_Application_Title, (IPTR)"WinUAE",
+                      MUIA_Application_Version, (IPTR)"$VER: WinUAE 0.2 (x.x.2014)",
+                      MUIA_Application_Window, (IPTR)(win = MUI_NewObject(MUIC_Window,
+                        MUIA_Window_Title, (IPTR)"WinUAE Properties",
                         MUIA_Window_RootObject, root=MUI_NewObject(MUIC_Group,
                           MUIA_Group_Horiz, TRUE,
                           MUIA_Group_Child,
@@ -216,7 +216,7 @@ Object* build_gui(void) {
                                 ListviewObject,
                                           MUIA_Listview_List, leftframe=ListObject,
                                             MUIA_Frame, MUIV_Frame_ReadList,
-                                            MUIA_List_SourceArray, (ULONG) listelements,
+                                            MUIA_List_SourceArray, (IPTR) listelements,
                                             MUIA_Background, "2:FFFFFFFF,FFFFFFFF,FFFFFFFF",
                                             MUIA_Font, MUIV_Font_List, 
                                           End,
@@ -239,10 +239,10 @@ Object* build_gui(void) {
                                 pages=PageGroup,
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_LOADSAVE, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_ABOUT, 
-                                                                              MA_dlgproc, (ULONG) &AboutDlgProc,
+                                                                              MA_dlgproc, (IPTR) &AboutDlgProc,
                                                                               TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_PATHS, 
-                                                                              MA_dlgproc, (ULONG) &PathsDlgProc,
+                                                                              MA_dlgproc, (IPTR) &PathsDlgProc,
                                                                               TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_QUICKSTART, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_LOADSAVE, TAG_DONE),
@@ -250,11 +250,11 @@ Object* build_gui(void) {
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CHIPSET, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CHIPSET2, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_KICKSTART, 
-                                                                              MA_dlgproc, (ULONG) &KickstartDlgProc,
+                                                                              MA_dlgproc, (IPTR) &KickstartDlgProc,
                                                                               TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_MEMORY, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_FLOPPY, 
-                                                                              MA_dlgproc, (ULONG) &FloppyDlgProc,
+                                                                              MA_dlgproc, (IPTR) &FloppyDlgProc,
                                                                               TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CDDRIVE, TAG_DONE),
                                   Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_EXPANSION, TAG_DONE),
@@ -305,7 +305,7 @@ Object* build_gui(void) {
   MyMuiHook_list.h_Data =NULL;
   DoMethod(leftframe, MUIM_Notify,
                         MUIA_List_Active, MUIV_EveryTime, 
-                        (ULONG) leftframe, 2, MUIM_CallHook,(ULONG) &MyMuiHook_list);
+                        (IPTR) leftframe, 2, MUIM_CallHook,(IPTR) &MyMuiHook_list);
 
   /* button events */
 #ifdef UAE_ABI_v1
@@ -314,7 +314,7 @@ Object* build_gui(void) {
   MyMuiHook_start.h_Entry=(HOOKFUNC) MUIHook_start;
 #endif
   MyMuiHook_start.h_Data =NULL;
-  DoMethod(start, MUIM_Notify, MUIA_Pressed, FALSE, start, 3, MUIM_CallHook, (ULONG) &MyMuiHook_start, TRUE);
+  DoMethod(start, MUIM_Notify, MUIA_Pressed, FALSE, start, 3, MUIM_CallHook, (IPTR) &MyMuiHook_start, TRUE);
 
 #ifdef UAE_ABI_v1
   MyMuiHook_reset.h_Entry=(APTR) MUIHook_reset;
@@ -322,7 +322,7 @@ Object* build_gui(void) {
   MyMuiHook_reset.h_Entry=(HOOKFUNC) MUIHook_reset;
 #endif
   MyMuiHook_reset.h_Data =NULL;
-  DoMethod(reset, MUIM_Notify, MUIA_Pressed, FALSE, reset, 3, MUIM_CallHook, (ULONG) &MyMuiHook_reset, TRUE);
+  DoMethod(reset, MUIM_Notify, MUIA_Pressed, FALSE, reset, 3, MUIM_CallHook, (IPTR) &MyMuiHook_reset, TRUE);
 
 #ifdef UAE_ABI_v1
   MyMuiHook_quit.h_Entry=(APTR) MUIHook_quit;
@@ -330,7 +330,7 @@ Object* build_gui(void) {
   MyMuiHook_quit.h_Entry=(HOOKFUNC) MUIHook_quit;
 #endif
   MyMuiHook_quit.h_Data =NULL;
-  DoMethod(quit,  MUIM_Notify, MUIA_Pressed, FALSE, quit , 3, MUIM_CallHook, (ULONG) &MyMuiHook_quit , TRUE);
+  DoMethod(quit,  MUIM_Notify, MUIA_Pressed, FALSE, quit , 3, MUIM_CallHook, (IPTR) &MyMuiHook_quit , TRUE);
 
 
   return app;
@@ -426,7 +426,7 @@ int aros_init_gui(void) {
   w=15;
   while(w) {
     DebOut("Wait until window is really open .. #%02d\n", w);
-    if(win && xget(win, MUIA_Window_Open)) {
+    if(win && XGET(win, MUIA_Window_Open)) {
       break;
     }
     sleep(1);

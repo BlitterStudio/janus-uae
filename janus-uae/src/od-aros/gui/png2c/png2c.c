@@ -1,250 +1,283 @@
 /*
  * png2c - converts a PNG to C source
  *
+ * (c) 2014 Nick "Kalamatee" Andrews
  * (c) 2001-2002 by David Gerber <zapek@meanmachine.ch>
  *
- * http://zapek.com/software/png2c/
  */
 
 #include <stdio.h>
+#include <ctype.h>
 #include <png.h>
 
 #define ID1 "$I"
 #define ID2 "d$"
 
-#define FMT_ARGB 1
-#define FMT_RGB  2
+#define RGB888toRGB565(r, g, b) ((r >> 3) << 11)| \
+	((g >> 2) << 5)| ((b >> 3) << 0)
+
+#define RGB8888toRGB5A1(r, g, b, a) ((r >> 3) << 11)| \
+	((g >> 3) << 6)| ((b >> 3) << 1) | (a == 0x0)
 
 int main(int argc, char **argv)
 {
-	if (argc == 3 || argc == 4)
-	{
-		FILE *in, *out, *hout;
+    int showusage = 0, generate5A1 = 0;
 
-		if (in = fopen(argv[1], "rb"))
-		{
-			if (argc == 4)
-			{
-				if (!(hout = fopen(argv[3], "w")))
-				{
-					printf("unable to open hfile\n");
-					return (0);
-				}
-			}
+    if (argc >= 2)
+    {
+        if (argc == 2 && !strcasecmp("-v", argv[1]))
+        {
+            showusage = 1;
+        }
+        else
+        {
+            FILE *in, *out, *hout;
 
-			if (out = fopen(argv[2], "w"))
-			{
-				char header[8];
+            if (in = fopen(argv[1], "rb"))
+            {
+                if (argc == 4)
+                {
+                    if (!(hout = fopen(argv[3], "w")))
+                    {
+                        printf("unable to open hfile\n");
+                        return (0);
+                    }
+                }
 
-				fread(header, 1, 8, in);
-				if (!png_sig_cmp(header, 0, 8))
-				{
-					png_structp png_ptr;
+                if (out = fopen(argv[2], "w"))
+                {
+                    char header[8];
 
-					if (png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL))
-					{
-						png_infop info_ptr;
-						png_infop end_info = NULL;
+                    fread(header, 1, 8, in);
+                    if (!png_sig_cmp(header, 0, 8))
+                    {
+                        png_structp png_ptr;
 
-						if (info_ptr = png_create_info_struct(png_ptr))
-						{
-							if (end_info = png_create_info_struct(png_ptr))
-							{
-								int supported = 0;
+                        if (png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL))
+                        {
+                            png_infop info_ptr;
+                            png_infop end_info = NULL;
 
-								if (setjmp(png_jmpbuf(png_ptr)))
-								{
-									printf("fatal error\n");
-									png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
-									return (0);
-								}
-								png_init_io(png_ptr, in);
-								
-								png_set_sig_bytes(png_ptr, 8);
-								png_set_filler(png_ptr, 0x00, PNG_FILLER_BEFORE); /* for RGB */
-								
-								png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_PACKING | PNG_TRANSFORM_SWAP_ALPHA, NULL);
+                            if (info_ptr = png_create_info_struct(png_ptr))
+                            {
+                                int width, height;
+                                png_byte colorType;
+                                png_byte bitDepth;
+                                int numPasses;
 
-								printf("type is: ");
-								switch (info_ptr->color_type)
-								{
-									case PNG_COLOR_TYPE_GRAY:
-										printf("gray\n");
-										break;
+                                png_bytep *rows;
 
-									case PNG_COLOR_TYPE_PALETTE:
-										printf("palette based\n");
-										break;
+                                if (!setjmp(png_jmpbuf(png_ptr)))
+                                {
+                                    png_init_io(png_ptr, in);
+                                    
+                                    png_set_sig_bytes(png_ptr, 8);
 
-									case PNG_COLOR_TYPE_RGB:
-										printf("RGB\n");
-										supported = FMT_RGB;
-										break;
+                                    png_read_info(png_ptr, info_ptr);
+                                    width = png_get_image_width(png_ptr, info_ptr);
+                                    height = png_get_image_height(png_ptr, info_ptr);
+                                    colorType = png_get_color_type(png_ptr, info_ptr);
+                                    bitDepth = png_get_bit_depth(png_ptr, info_ptr);
+                                    numPasses = png_set_interlace_handling(png_ptr);
 
-									case PNG_COLOR_TYPE_RGB_ALPHA:
-										printf("RGBA\n");
-										supported = FMT_ARGB;
-										break;
-	
-									case PNG_COLOR_TYPE_GRAY_ALPHA:
-										printf("gray with alpha\n");
-										break;
+                                    png_read_update_info(png_ptr, info_ptr);
+                                    printf("Metadata: width: %i, height: %i, color type: %i, bit depth: %i, num passes: %i\n", width, height, colorType, bitDepth, numPasses);
 
-									default:
-										printf("unknown color type\n");
-								}
+                                    // read the file
+                                    if (!setjmp(png_jmpbuf(png_ptr))) {
+                                        switch (colorType)
+                                        {
+                                            case PNG_COLOR_TYPE_RGB:
+                                                printf("RGB");
+                                                break;
 
-								printf("width: %ld, height: %ld, bpp: %ld\n", info_ptr->width, info_ptr->height, info_ptr->pixel_depth);
+                                            case PNG_COLOR_TYPE_RGB_ALPHA:
+                                                printf("RGBA");
+                                                break;
 
-								if (supported)
-								{
-									char *p;
-									char filename[108];
-									int lines;
-									int i;
-									int fmt = 0;
-									unsigned long **row_ptr;
+                                            case PNG_COLOR_TYPE_GRAY:
+                                                printf("gray");
+                                                break;
 
-									row_ptr	= (unsigned long **)png_get_rows(png_ptr, info_ptr);
+                                            case PNG_COLOR_TYPE_GRAY_ALPHA:
+                                                printf("gray with alpha");
+                                                break;
 
-									if (p = strrchr(argv[1], '/'))
-									{
-										p++;
-									}
-									else if (p = strchr(argv[1], ':'))
-									{
-										p++;
-									}
-									else
-									{
-										p = argv[1];
-									}
+                                            case PNG_COLOR_TYPE_PALETTE:
+                                                printf("palette based");
+                                                break;
 
-									strncpy(filename, p, 108);
-									if (p = strchr(filename, '.'))
-									{
-										*p = '\0';
-									}
+                                            default:
+                                                printf("unknown");
+                                        }
 
-									fputs("/*\n * Automatically generated by png2c\n *\n * "ID1 ID2"\n */\n\n", out);
-									if (supported == FMT_RGB)
-									{
-										fprintf(out, "unsigned char %s[] = {\n\t", filename);
-									}
-									else
-									{
-										fprintf(out, "unsigned long %s[] = {\n\t", filename);
-									}
+                                        printf(" color format");
 
-									for (lines = 0; lines < info_ptr->height; lines++)
-									{
-										for (i = 0; i < info_ptr->width; i++)
-										{
-											if (fmt == info_ptr->width)
-											{
-												fputs("\n\t", out);
-												fmt = 0;
-											}
-											if (supported == FMT_RGB)
-											{
-												fprintf(out, "0x%02lx, 0x%02lx, 0x%02lx, ", *((unsigned char *)(*row_ptr + i) + 1), *((unsigned char *)(*row_ptr + i) + 2), *((unsigned char *)(*row_ptr + i) + 3));
-											}
-											else
-											{
-												fprintf(out, "0x%08lx, ", *(*row_ptr + i));
-											}
-											fmt++;
-										}
-										row_ptr++;
-									}
-									fputs("\n};\n", out);
+                                        if ((colorType == PNG_COLOR_TYPE_RGB) || (colorType == PNG_COLOR_TYPE_RGB_ALPHA))
+                                        {
+                                            int pix_r, pix_g, pix_b, pix_a;
+                                            unsigned short convPixel;
+                                            png_byte *row, *pixel;
+                                            char *p;
+                                            char imagename[108];
+                                            int x, y, namelen;
+                                            png_bytep *rows;
 
-									if (argc == 4)
-									{
-										fputs("/*\n * Automatically generated by png2c\n *\n * "ID1 ID2"\n */\n\n", hout);
-										if (supported == FMT_RGB)
-										{
-											fprintf(hout, "\nextern unsigned char %s[];\n", filename);
-										}
-										else
-										{
-											fprintf(hout, "\nextern unsigned long %s[];\n", filename);
-										}
+                                            printf("\n");
 
-										p = filename;
-										while (*p)
-										{
-											*p = toupper(*p);
-											p++;
-										}
-										fprintf(hout, "#define %s_WIDTH %ld\n", filename, info_ptr->width);
-										fprintf(hout, "#define %s_HEIGHT %ld\n", filename, info_ptr->height);
-										fprintf(hout, "#define %s_DEPTH %ld\n", filename, (supported == FMT_RGB) ? 24 : 32);
-									}
-									printf("processing finished\n");
-	
-								}
-								else
-								{
-									printf("color type not supported\n");
-								}
-							}
-							else
-							{
-								printf("couldn't create PNG end info\n");
-							}
-						}
-						else
-						{
-							printf("couldn't create PNG info\n");
-						}
+                                            rows = (png_bytep*) malloc(sizeof(png_bytep) * height);
+                                            for (x = 0; x < height; x++)
+                                                rows[x] = (png_byte*) malloc(png_get_rowbytes(png_ptr, info_ptr));
+                                            png_read_image(png_ptr, rows);
 
-						if (end_info)
-						{
-							png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
-						}
-						else if (info_ptr)
-						{
-							png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-						}
-						else
-						{
-							png_destroy_read_struct(&png_ptr, NULL, NULL);
-						}
-					}
-					else
-					{
-						printf("couldn't create PNG structure\n");
-					}
-				}
-				else
-				{
-					printf("not a PNG file\n");
-				}
-				fclose(out);
-			}
-			else
-			{
-				printf("cannot open outfile\n");
-			}
-			if (argc == 4)
-			{
-				fclose(hout);
-			}
-			fclose(in);
-		}
-	}
-	else
-	{
-		if (argc == 2 && !strcasecmp("-v", argv[1]))
-		{
-			printf("png2c 1.1\n(c) 2001-2002 by David Gerber <zapek@meanmachine.ch>\nFreeware - All Rights Reserved.\n");
-		}
-		else
-		{
-			printf("usage: %s <pngfile> <cfile> [hfile]\n       -v for version info\n", argv[0]);
-		}
-	}
+                                            if (p = strrchr(argv[1], '/'))
+                                            {
+                                                p++;
+                                            }
+                                            else if (p = strchr(argv[1], ':'))
+                                            {
+                                                p++;
+                                            }
+                                            else
+                                            {
+                                                p = argv[1];
+                                            }
 
-	return (0);
+                                            strncpy(imagename, p, 108);
+                                            p = imagename;
+                                            namelen = strlen(imagename) - 4;
+                                            while (*p)
+                                            {
+                                                if (p == (imagename + namelen))
+                                                {
+                                                    *p = 0;
+                                                    break;
+                                                }
+                                                *p = toupper(*p);
+                                                p++;
+                                            }
+
+                                            if (argc == 4)
+                                            {
+                                                // output the header
+                                                fprintf(hout,
+                                                    "/*\n * Automatically generated by png2c\n *\n * "ID1 ID2"\n */\n\n"
+                                                    "#ifndef _%s_H_\n"
+                                                    "#define _%s_H_\n\n"
+                                                    "extern const unsigned int %s_WIDTH;\n"
+                                                    "extern const unsigned int %s_HEIGHT;\n"
+                                                    "extern const int %s_DEPTH;\n"
+                                                    "extern const unsigned short %s[];\n\n"
+                                                    "#endif\n\n",
+                                                    imagename, imagename, imagename, imagename, imagename, imagename);
+                                            }
+
+                                            // output the source
+                                            fputs("/*\n * Automatically generated by png2c\n *\n * "ID1 ID2"\n */\n\n", out);
+                                            if (argc == 4)
+                                            {
+                                                fprintf(out,
+                                                    "#include \"%s\"\n\n", argv[3]);
+                                            }
+                                            fprintf(out,
+                                                "const unsigned int %s_WIDTH = %u;\n"
+                                                "const unsigned int %s_HEIGHT = %u;\n"
+                                                "const int %s_DEPTH = %u;\n"
+                                                "const unsigned short %s[] = {",
+                                                imagename, width, imagename, height, imagename, bitDepth, imagename);
+
+                                            for (y = 0; y < height; y++)
+                                            {
+                                                row = rows[y];
+                                                for (x = 0; x < width; x++)
+                                                {
+                                                    pixel = &(row[x*4]);
+
+                                                    if (x == 0)
+                                                    {
+                                                        fputs("\n\t", out);
+                                                    }
+
+                                                    if (colorType == PNG_COLOR_TYPE_RGB)
+                                                    {
+                                                        pix_r = pixel[0];
+                                                        pix_g = pixel[1];
+                                                        pix_b = pixel[2];
+                                                        pix_a = 0xFF;
+                                                    }
+                                                    else
+                                                    {
+                                                        pix_r = pixel[0];
+                                                        pix_g = pixel[1];
+                                                        pix_b = pixel[2];
+                                                        pix_a = pixel[3];
+                                                    }
+                                                    convPixel = generate5A1 ? RGB8888toRGB5A1(pix_r, pix_g, pix_b, pix_a) : RGB888toRGB565(pix_r, pix_g, pix_b);
+                                                    fprintf(out, "0x%x, ", convPixel);
+                                                }
+                                            }
+                                            fputs("\n};\n", out);
+                                        }
+                                        else
+                                        {
+                                            printf(" (unsupported!)\n");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        printf("fatal error reading PNG file\n");
+                                    }
+                                }
+                                else
+                                {
+                                    printf("fatal error reading PNG file properties\n");
+                                }
+                            }
+                            else
+                            {
+                                printf("couldn't read PNG info structure\n");
+                            }
+
+                            if (info_ptr)
+                            {
+                                png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+                            }
+                            else
+                            {
+                                png_destroy_read_struct(&png_ptr, NULL, NULL);
+                            }
+                        }
+                        else
+                        {
+                                printf("couldn't read PNG structure\n");
+                        }
+                    }
+                    else
+                    {
+                        printf("input is not a valid PNG file\n");
+                    }
+                    fclose(out);
+                }
+                else
+                {
+                    printf("cannot open outfile\n");
+                }
+                if (argc == 4)
+                {
+                    fclose(hout);
+                }
+                fclose(in);
+            }
+        }
+    }
+    else
+        showusage = 1;
+
+    if (showusage)
+    {
+        printf("png2c 1.2\n(c) 2014 Nick 'Kalamatee' Andrews, 2001-2002 by David Gerber <zapek@meanmachine.ch>\nFreeware - All Rights Reserved.\n");
+        printf("usage: %s <pngfile> <cfile> [hfile] [-a] [-v]\n       -a output in RGB5A1 instead of RGB565\n\n       -v for version info\n", argv[0]);
+    }
+
+    return (0);
 }

@@ -89,28 +89,30 @@ static void gfxmode_reset (void) {
 /* debug helper */
 
 void dump_description(vidbuf_description *vid) {
-  DebOut("----------------------\n");
-  DebOut("dump vidbuf_description %lx\n", vid);
-  DebOut("----------------------\n");
-  DebOut("flush_line: %lx\n", vid->flush_line);
-  DebOut("flush_block: %lx\n", vid->flush_block);
-  DebOut("flush_screen: %lx\n", vid->flush_screen);
-  DebOut("flush_clear_screen: %lx\n", vid->flush_clear_screen);
-  DebOut("lockscr: %lx\n", vid->lockscr);
-  DebOut("unlockscr: %lx\n", vid->unlockscr);
-  DebOut("----------------------\n");
-  DebOut("bufmem: %lx\n", vid->bufmem);
-  DebOut("realbufmem: %lx\n", vid->realbufmem);
-  DebOut("linemem: %lx\n", vid->linemem);
-  DebOut("emergmem: %lx\n", vid->emergmem);
-  DebOut("rowbytes: %d\n", vid->rowbytes);
-  DebOut("pixbytes: %d\n", vid->pixbytes);
-  DebOut("width: %d\n", vid->width);
-  DebOut("height: %d\n", vid->height);
-  DebOut("maxblocklines: %d\n", vid->maxblocklines);
-  DebOut("gfx_resolution_reserved: %d\n", vid->gfx_resolution_reserved);
-  DebOut("gfx_vresolution_reserved: %d\n", vid->gfx_vresolution_reserved);
-  DebOut("----------------------\n");
+  bug("----------------------\n");
+  bug("dump vidbuf_description %lx\n", vid);
+/*
+  bug("----------------------\n");
+  bug("flush_line: %lx\n", vid->flush_line);
+  bug("flush_block: %lx\n", vid->flush_block);
+  bug("flush_screen: %lx\n", vid->flush_screen);
+  bug("flush_clear_screen: %lx\n", vid->flush_clear_screen);
+  bug("lockscr: %lx\n", vid->lockscr);
+  bug("unlockscr: %lx\n", vid->unlockscr);
+  bug("----------------------\n");
+  bug("bufmem: %lx\n", vid->bufmem);
+  bug("realbufmem: %lx\n", vid->realbufmem);
+  bug("linemem: %lx\n", vid->linemem);
+  bug("emergmem: %lx\n", vid->emergmem);
+  bug("rowbytes: %d\n", vid->rowbytes);
+  bug("pixbytes: %d\n", vid->pixbytes);
+  bug("width: %d\n", vid->width);
+  bug("height: %d\n", vid->height);
+  bug("maxblocklines: %d\n", vid->maxblocklines);
+  bug("gfx_resolution_reserved: %d\n", vid->gfx_resolution_reserved);
+  bug("gfx_vresolution_reserved: %d\n", vid->gfx_vresolution_reserved);
+*/
+  bug("----------------------\n");
 }
 
 #if 0
@@ -130,7 +132,7 @@ static int create_windows_2 (void) {
 	currentmode->amiga_width=currentmode->current_width;
 	currentmode->amiga_height=currentmode->current_height;
 
-	DebOut("opening window with %dx%d\n", currentmode->current_width, currentmode->current_height);
+	bug("opening window with %dx%d\n", currentmode->current_width, currentmode->current_height);
 
 	hAmigaWnd= OpenWindowTags (NULL,
 			  WA_Title,        (ULONG)PACKAGE_NAME,
@@ -150,7 +152,7 @@ static int create_windows_2 (void) {
 					 | WFLG_SMART_REFRESH,
 			  TAG_DONE);
 
-	DebOut("hAmigaWnd: %lx\n", hAmigaWnd);
+	bug("hAmigaWnd: %lx\n", hAmigaWnd);
 
 	if(!hAmigaWnd) {
 		return 0;
@@ -161,7 +163,7 @@ static int create_windows_2 (void) {
 
 static void close_windows (void) {
 
-	DebOut("entered\n");
+	bug("entered\n");
 
 	if(hAmigaWnd) {
 		CloseWindow(hAmigaWnd);
@@ -186,16 +188,16 @@ static BOOL doInit (void) {
 
 	/* LOT's of stuff to do here! */
 
-	DebOut("LOT's of stuff to do here..\n");
+	bug("LOT's of stuff to do here..\n");
 
 //OOPS:
 	if(!create_windows ()) {
-		DebOut("unable to open windows!\n");
+		bug("unable to open windows!\n");
 		goto OOPS;
 	}
 
 	for(;;) {
-		DebOut("for(;;)..\n");
+		bug("for(;;)..\n");
 		if(screen_is_picasso) {
 			break;
 		}
@@ -220,37 +222,37 @@ static BOOL doInit (void) {
 			currentmode->amiga_width = currentmode->current_width;
 			currentmode->amiga_height = currentmode->current_height;
 
-			DebOut("currentmode->amiga_width: %d\n", currentmode->amiga_width);
-			DebOut("currentmode->amiga_height: %d\n", currentmode->amiga_height);
+			bug("currentmode->amiga_width: %d\n", currentmode->amiga_width);
+			bug("currentmode->amiga_height: %d\n", currentmode->amiga_height);
 
-      DebOut("hAmigaWnd: %lx\n", hAmigaWnd);
+      bug("hAmigaWnd: %lx\n", hAmigaWnd);
       if(!hAmigaWnd) {
         write_log("hAmigaWnd is NULL !?\n");
-        DebOut("hAmigaWnd is NULL !?\n");
+        bug("hAmigaWnd is NULL !?\n");
         return 0;
       }
 
 			gfxvidinfo.width = (currentmode->amiga_width + 7) & ~7;
 			gfxvidinfo.height = currentmode->amiga_height;
 
-      DebOut("gfxvidinfo.width : %4d\n", gfxvidinfo.width);
-      DebOut("gfxvidinfo.height: %4d\n", gfxvidinfo.height);
+      bug("gfxvidinfo.width : %4d\n", gfxvidinfo.width);
+      bug("gfxvidinfo.height: %4d\n", gfxvidinfo.height);
 
 			gfxvidinfo.maxblocklines = 0; // flush_screen actually does everything
 
       gfxvidinfo.pixbytes = GetCyberMapAttr (hAmigaWnd->RPort->BitMap, CYBRMATTR_BPPIX);
-      DebOut("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.pixbytes);
+      bug("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.pixbytes);
 			gfxvidinfo.rowbytes = GetCyberMapAttr (hAmigaWnd->RPort->BitMap, CYBRMATTR_XMOD);
-      DebOut("gfxvidinfo.rowbytes: %d\n", gfxvidinfo.rowbytes);
+      bug("gfxvidinfo.rowbytes: %d\n", gfxvidinfo.rowbytes);
 
 			gfxvidinfo.bufmem = (uae_u8 *) AllocVec (gfxvidinfo.rowbytes * gfxvidinfo.height, MEMF_ANY);
       /* TODO: We need to free it again!!! */
-      DebOut("gfxvidinfo.bufmem: %lx\n", gfxvidinfo.bufmem);
+      bug("gfxvidinfo.bufmem: %lx\n", gfxvidinfo.bufmem);
       gfxvidinfo.realbufmem = gfxvidinfo.bufmem; // necessary !? TODO!
 
       if(!gfxvidinfo.bufmem) {
         write_log("could not alloc gfxvidinfo.bufmem!\n");
-        DebOut("could not alloc gfxvidinfo.bufmem!\n");
+        bug("could not alloc gfxvidinfo.bufmem!\n");
         return 0;
       }
 
@@ -288,11 +290,11 @@ OOPS:
 static void updatemodes(void) {
 	WORD flags;
 
-	DebOut("entered\n");
+	bug("entered\n");
 
 	/* HACK: */
 	if(!currentmode->current_width) {
-		DebOut("hardsetting currentmode->current_width to currprefs.gfx_size.width..\n");
+		bug("hardsetting currentmode->current_width to currprefs.gfx_size.width..\n");
 		currentmode->current_width =currprefs.gfx_size.width;
 		currentmode->current_height=currprefs.gfx_size.height;
 	}
@@ -307,11 +309,11 @@ static void updatemodes(void) {
 #endif
 		currentmode->native_width = currentmode->current_width;
 		currentmode->native_height = currentmode->current_height;
-		DebOut("currentmode->current_width: %d\n", currentmode->current_width);
-		DebOut("currentmode->native_width: %d\n", currentmode->native_width);
+		bug("currentmode->current_width: %d\n", currentmode->current_width);
+		bug("currentmode->native_width: %d\n", currentmode->native_width);
 
     /* TODO: is this a good idea: */
-    DebOut("setting currentmode->fullfill to 1 .. ??\n");
+    bug("setting currentmode->fullfill to 1 .. ??\n");
     currentmode->fullfill = 1;
 #if 0
 	}
@@ -321,7 +323,7 @@ static void updatemodes(void) {
 
 static void update_gfxparams (void) {
 
-	DebOut("entered\n");
+	bug("entered\n");
 
 	//updatewinfsmode (&currprefs);
 #ifdef PICASSO96
@@ -335,8 +337,8 @@ static void update_gfxparams (void) {
 	} else {
 #endif
 		currentmode->current_width = currprefs.gfx_size.width;
-		DebOut("currprefs.gfx_size.width: %d\n", currprefs.gfx_size.width);
-		DebOut("currprefs.gfx_size.width_windowed: %d\n", currprefs.gfx_size_win.width);
+		bug("currprefs.gfx_size.width: %d\n", currprefs.gfx_size.width);
+		bug("currprefs.gfx_size.width_windowed: %d\n", currprefs.gfx_size_win.width);
 		currentmode->current_height = currprefs.gfx_size.height;
 		currentmode->frequency = abs (currprefs.gfx_refreshrate);
 		if (currprefs.gfx_avsync)
@@ -399,7 +401,7 @@ static int open_windows (int full) {
 
 	int ret;
 
-  DebOut("full: %d\n", full);
+  bug("full: %d\n", full);
 
 	inputdevice_unacquire ();
 	reset_sound ();
@@ -407,7 +409,7 @@ static int open_windows (int full) {
 	init_round = 0; /* ? */
 	ret = -2;
 	do {
-		DebOut("loop while ret<0: ret: %d, init_round: %d\n", ret, init_round);
+		bug("loop while ret<0: ret: %d, init_round: %d\n", ret, init_round);
 		if(ret < -1) {
 			updatemodes ();
 			update_gfxparams ();
@@ -418,26 +420,26 @@ static int open_windows (int full) {
 	while (ret < 0);
 
 	if(!ret) {
-		DebOut("open_windows failed: ret==0\n");
+		bug("open_windows failed: ret==0\n");
 		return ret;
 	}
 
 	inputdevice_acquire (TRUE);
 
-  DebOut("result: %d SUCCESS\n", ret);
+  bug("result: %d SUCCESS\n", ret);
 
 	return ret;
 }
 
 #if 0
 void flush_clear_screen_gfxlib(vidbuf_description *vidbuf) {
-	DebOut("entered\n");
+	bug("entered\n");
 
 }
 
 static void flush_line_planar_nodither (struct vidbuf_description *gfxinfo, int line_no) {
 
-	DebOut("entered\n");
+	bug("entered\n");
 
 }
 
@@ -445,7 +447,7 @@ static void flush_line_planar_nodither (struct vidbuf_description *gfxinfo, int 
 static void flush_block_planar_nodither (struct vidbuf_description *gfxinfo, int first_line, int last_line)
 {
 	int line_no;
-	DebOut("entered\n");
+	bug("entered\n");
 }
 #endif
 #endif
@@ -454,7 +456,7 @@ static void flush_block_planar_nodither (struct vidbuf_description *gfxinfo, int
 #if 0
 int graphics_init(void) {
 
-	DebOut("entered\n");
+	bug("entered\n");
 
 	/* TODO: free it again */
 	TempRPort = (struct RastPort *) AllocVec (sizeof (struct RastPort), MEMF_ANY | MEMF_PUBLIC);
@@ -487,12 +489,13 @@ int isscreen (void)
  * I doubt, we need this on AROS !?
  */
 int lockscr (int fullupdate) {
-	DebOut("fullupdate: %d\n", fullupdate);
+    bug("[JUAE:Gfx] %s(%d)\n", __PRETTY_FUNCTION__, fullupdate);
+
   TODO();
   return 1;
 #if 0
 	if(!isscreen()) {
-		DebOut("no screen\n");
+		bug("no screen\n");
 		return 0;
 	}
 	return 1;
@@ -500,7 +503,7 @@ int lockscr (int fullupdate) {
 }
 
 void enumeratedisplays (int multi) {
-  DebOut("entered\n");
+    bug("[JUAE:Gfx] %s()\n", __PRETTY_FUNCTION__);
 
   if (multi) {
     /*
@@ -530,7 +533,7 @@ static void flushit (int line_no) {
 	//uae_u8 *newp = gfxvidinfo.rowbytes.bufmem + yoffset;
 	//uae_u8 *oldp = oldpixbuf + yoffset;
 
-	DebOut("entered\n");
+	bug("entered\n");
 
 #if 0
 	if(uae_no_display_update) {
@@ -562,36 +565,36 @@ if (!--len)
 
 
 	/* Blit changed pixels to the display */
-	DebOut("WritePixelLine8 ..\n");
+	bug("WritePixelLine8 ..\n");
   TODO();
 #if 0
 	WritePixelLine8 (hAmigaWnd->RPort, 0, line_no, len, gfxvidinfo.bufmem, TempRPort);
 #if 0
 	WritePixelLine8 (hAmigaWnd->RPort, 0, line_no, len, gfxvidinfo.linemem, TempRPort);
-  DebOut("gfxvidinfo.linemem:\n");
+  bug("gfxvidinfo.linemem:\n");
   for(xs=0; xs<len;xs++) {
-    DebOut(" 0x%02x", *(gfxvidinfo.linemem + line_no*gfxvidinfo.width + xs));
+    bug(" 0x%02x", *(gfxvidinfo.linemem + line_no*gfxvidinfo.width + xs));
   }
-  DebOut("\n");
+  bug("\n");
 #endif
-  DebOut("gfxvidinfo.bufmem:\n");
+  bug("gfxvidinfo.bufmem:\n");
   for(xs=0; xs<len;xs++) {
     if(*(gfxvidinfo.bufmem + line_no*gfxvidinfo.rowbytes + xs) == 0) {
         last++;
     }
     else {
       if(last>0) {
-        DebOut("\n%d zero values skipped\n", last);
+        bug("\n%d zero values skipped\n", last);
         last=0;
       }
-      DebOut(" 0x%02x", *(gfxvidinfo.bufmem + line_no*gfxvidinfo.rowbytes + xs));
+      bug(" 0x%02x", *(gfxvidinfo.bufmem + line_no*gfxvidinfo.rowbytes + xs));
     }
   }
   if(last>0) {
-    DebOut("\n%d zero values skipped\n", last);
+    bug("\n%d zero values skipped\n", last);
   }
   else {
-    DebOut("\n");
+    bug("\n");
   }
 #endif
 

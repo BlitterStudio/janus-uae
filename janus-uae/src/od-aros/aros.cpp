@@ -146,36 +146,36 @@ bool is_dir(const TCHAR *name) {
   BPTR file=NULL;
   bool ret=FALSE;
 
-  DebOut("name: %s\n", name);
+  bug("[JUAE:AROS] %s('%s')\n", __PRETTY_FUNCTION__, name);
 
   fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, TAG_END);
   if(!fib) 
   {
-    DebOut("no FileInfoBlock!\n");
+    bug("[JUAE:AROS] %s: no FileInfoBlock!\n", __PRETTY_FUNCTION__);
     goto NODIR;
   }
 
   file=Lock(name, SHARED_LOCK);
   if(!file) 
   {
-    DebOut("no lock..\n");
+    bug("[JUAE:AROS] %s: no lock..\n", __PRETTY_FUNCTION__);
     goto NODIR;
   }
 
   if (!Examine(file, fib)) 
   {
-    DebOut("Examine failed\n");
+    bug("[JUAE:AROS] %s: Examine failed\n", __PRETTY_FUNCTION__);
     goto NODIR;
   }
 
   if(fib->fib_DirEntryType <0) 
   {
-    DebOut("FILE!\n");
+    bug("[JUAE:AROS] %s: FILE!\n", __PRETTY_FUNCTION__);
     goto NODIR;
   }
   else 
   {
-    DebOut("directory..\n");
+    bug("[JUAE:AROS] %s: directory..\n", __PRETTY_FUNCTION__);
     ret=TRUE;
   }
 
@@ -307,7 +307,7 @@ int translate_message (int msg, TCHAR *out) {
  * FS-UAE also has this as a pure stub
  */
 uae_u8 *target_load_keyfile (struct uae_prefs *p, const TCHAR *path, int *sizep, TCHAR *name) {
-	bug("target_load_keyfile(,%s,%d,%s)\n", path, *sizep, name);
+	bug("[JUAE:AROS] %s('%s',%d,'%s')\n", __PRETTY_FUNCTION__, path, *sizep, name);
 	TODO();
   return NULL;
 }
@@ -325,62 +325,91 @@ void fixtrailing (TCHAR *p) {
 	strcat(p, "/");
 }
 
-/* convert path to absolute or relative */
+/* return an absolute path from an absolute or relative path */
 void fullpath (TCHAR *path, int size) {
 	BPTR    lock;
 	TCHAR   tmp1[MAX_DPATH], tmp2[MAX_DPATH];
 	BOOL    result;
 
-	DebOut("path %s, %d (relativepaths is %d)\n", path, size, relativepaths);
+	bug("[JUAE:AROS] %s: path[%d] = '%s'\n", __PRETTY_FUNCTION__, size, path);
+        if  (relativepaths)
+        {
+            bug("[JUAE:AROS] %s: using relative path\n", __PRETTY_FUNCTION__);
+        }
+        else
+        {
+            bug("[JUAE:AROS] %s: using absolute path\n", __PRETTY_FUNCTION__);
+        }
 
 	if (path[0] == 0) {
 		return;
 	}
 
 	if (relativepaths) {
-		GetCurrentDirName(tmp1, MAX_DPATH);
-		//DebOut("GetCurrentDirName: %s\n", tmp1);
+                TCHAR *lockpath = path;
+                int tmp1len;
 
-		lock=Lock(path, SHARED_LOCK);
+		GetCurrentDirName(tmp1, MAX_DPATH);
+		bug("[JUAE:AROS] %s: current dir = '%s'\n", __PRETTY_FUNCTION__, tmp1);
+
+                tmp1len = strlen(tmp1);
+
+                // de-win32 the path
+                if (path[0] == '.' && (path[1] == '\\' || path[1] == '/'))
+                {
+                    if (strlen(path) > 2)
+                        lockpath += 2;
+                    else
+                    {
+                        strcpy(path, tmp1);
+                        goto fullpath_done;
+                    }
+                }
+#if (0)
+                else if (path[0] == '\\')
+                    path[0] == ':';
+#endif
+
+		lock=Lock(lockpath, SHARED_LOCK);
 		if(!lock) {
-			//DebOut("failed to lock %s\n", path);
+			bug("[JUAE:AROS] %s: failed to lock path '%s'\n", __PRETTY_FUNCTION__, lockpath);
 			return;
 		}
 		result=NameFromLock(lock, tmp2, MAX_DPATH);
 		UnLock(lock);
 		if(!result) {
-			//DebOut("failed to NameFromLock(%s)\n", path);
+			bug("[JUAE:AROS] %s: NameFromLock('%s') failed!\n", __PRETTY_FUNCTION__, lockpath);
 			return;
 		}
-		//DebOut("NameFromLock(%s): %s\n", path, tmp2);
+		bug("[JUAE:AROS] %s: NameFromLock(%s): %s\n", __PRETTY_FUNCTION__, lockpath, tmp2);
 
-
-		if (strnicmp (tmp1, tmp2, strlen (tmp1)) == 0) { // tmp2 is inside tmp1
-			//DebOut("tmp2 (%s) is inside tmp1 (%s)\n", tmp2, tmp1);
-			strcpy(path, tmp2 + strlen (tmp1) + 1);
+		if ((strnicmp (tmp1, tmp2, tmp1len) == 0) && (strlen(tmp2) > tmp1len)) { // tmp2 is inside tmp1
+			//bug("[JUAE:AROS] %s: tmp2 (%s) is inside tmp1 (%s)\n", tmp2, tmp1);
+			strcpy(path, tmp2 + tmp1len + 1);
 		}
 		else {
-			//DebOut("tmp2 (%s) is not inside tmp1 (%s)\n", tmp2, tmp1);
+			//bug("[JUAE:AROS] %s: tmp2 (%s) is not inside tmp1 (%s)\n", tmp2, tmp1);
 			strcpy(path, tmp2);
 		}
 	}
 	else {
 		lock=Lock(path, SHARED_LOCK);
 		if(!lock) {
-			//DebOut("failed to lock %s\n", path);
+			//bug("[JUAE:AROS] %s: failed to lock %s\n", path);
 			return;
 		}
 		result=NameFromLock(lock, tmp1, MAX_DPATH);
 		UnLock(lock);
 		if(!result) {
-			//DebOut("failed to NameFromLock(%s)\n", path);
+			//bug("[JUAE:AROS] %s: failed to NameFromLock(%s)\n", path);
 			return;
 		}
-		//DebOut("NameFromLock(%s): %s\n", path, tmp1);
+		//bug("[JUAE:AROS] %s: NameFromLock(%s): %s\n", path, tmp1);
 		strcpy(path, tmp1);
 	}
 
-	DebOut("result: %s\n", path);
+fullpath_done:
+	bug("[JUAE:AROS] %s: result: %s\n", __PRETTY_FUNCTION__, path);
 }
 
 /* taken from puae/misc.c */
@@ -400,7 +429,7 @@ static struct MultiDisplay *getdisplay2 (struct uae_prefs *p, int index)
 	Displays[0].monitorname     = (TCHAR *) "Display";
   //Displays[0].disabled = 0;
   if(Displays[0].DisplayModes == NULL) {
-    DebOut("alloc DisplayModes array. Should this be done here !? really !?\n");
+    bug("[JUAE:AROS] %s: alloc DisplayModes array. Should this be done here !? really !?\n", __PRETTY_FUNCTION__);
     Displays[0].DisplayModes = xmalloc (struct PicassoResolution, MAX_PICASSO_MODES);
   }
 
@@ -426,7 +455,7 @@ static int get_BytesPerPix(struct Window *win) {
   int res;
 
   if(!win) {
-    DebOut("\nERROR: win is NULL\n");
+    bug("[JUAE:AROS] %s: \nERROR: win is NULL\n", __PRETTY_FUNCTION__);
     write_log("ERROR: win is NULL\n");
     return 0;
   }
@@ -434,13 +463,13 @@ static int get_BytesPerPix(struct Window *win) {
   scr=win->WScreen;
 
   if(!scr) {
-    DebOut("\nERROR: win->WScreen is NULL\n");
+    bug("[JUAE:AROS] %s: \nERROR: win->WScreen is NULL\n", __PRETTY_FUNCTION__);
     write_log("\nERROR: win->WScreen is NULL\n");
     return 0;
   }
 
   if(!GetCyberMapAttr(scr->RastPort.BitMap, CYBRMATTR_ISCYBERGFX)) {
-    DebOut("\nERROR: !CYBRMATTR_ISCYBERGFX\n");
+    bug("[JUAE:AROS] %s: \nERROR: !CYBRMATTR_ISCYBERGFX\n", __PRETTY_FUNCTION__);
     write_log("\nERROR: !CYBRMATTR_ISCYBERGFX\n");
   }
 
@@ -477,11 +506,18 @@ int WIN32GFX_IsPicassoScreen (void)
 
 static void sleep_millis2 (int ms, bool main) {
 
-  if(main) {
-    DebOut("warning: main is %d (not cared for)\n", main);
-  }
-
-  Delay(ms);
+    D(
+        bug("[JUAE:AROS] %s: warning: main is ", __PRETTY_FUNCTION__);
+        if(main) {
+            bug("TRUE");
+        }
+        else
+        {
+            bug("FALSE");
+        }
+        bug(" (ignored)\n");
+    )
+    Delay(ms);
 }
 
 void sleep_millis_main (int ms) {
@@ -535,14 +571,17 @@ void unprotect_maprom (void) {
  * appends a terminating null character.
  */
 int LoadString(APTR hInstance, TCHAR *uID, TCHAR * lpBuffer, int nBufferMax) {
+    int len = 0;
+    bug("[JUAE:AROS] %s()\n", __PRETTY_FUNCTION__);
+    if((uID) && (uID != (TCHAR *)-1))
+    {
+    bug("[JUAE] %s: copying '%s' to buffer @ 0x%p\n", __PRETTY_FUNCTION__, uID);
 
-  DebOut("cp %s ..\n", uID);
-
-  strncpy(lpBuffer, uID, nBufferMax);
-
-  return strlen(lpBuffer)-1;
+        strncpy(lpBuffer, uID, nBufferMax);
+        len = strlen(lpBuffer)-1;
+    }
+    return len;
 }
-
 
 static int isfilesindir (const TCHAR *p)
 {
@@ -576,7 +615,7 @@ int GetFileAttributes(char *path) {
   BPTR    lock;
   BOOL    result;
 
-  DebOut("path: %s\n", path);
+  bug("[JUAE:AROS] %s: path: %s\n", __PRETTY_FUNCTION__, path);
 
   lock=Lock(path, SHARED_LOCK);
   if(!lock) {
@@ -591,16 +630,16 @@ int get_rom_path (TCHAR *out, pathtype mode)
 {
 	TCHAR tmp[MAX_DPATH];
 
-  DebOut("pathtype: %d\n", mode);
-  DebOut("start_path_data: %s\n", start_path_data);
-  DebOut("start_path_exe: %s\n", start_path_exe);
+  bug("[JUAE:AROS] %s: pathtype: %d\n", __PRETTY_FUNCTION__, mode);
+  bug("[JUAE:AROS] %s: start_path_data: %s\n", __PRETTY_FUNCTION__, start_path_data);
+  bug("[JUAE:AROS] %s: start_path_exe: %s\n", __PRETTY_FUNCTION__, start_path_exe);
 
 	tmp[0] = 0;
 	switch (mode)
 	{
 	case PATH_TYPE_DEFAULT:
 		{
-      DebOut("PATH_TYPE_DEFAULT\n");
+      bug("[JUAE:AROS] %s: PATH_TYPE_DEFAULT\n", __PRETTY_FUNCTION__);
 			if (!_tcscmp (start_path_data, start_path_exe))
 				_tcscpy (tmp, _T(""));
 			else
@@ -630,7 +669,7 @@ int get_rom_path (TCHAR *out, pathtype mode)
 		break;
 	case PATH_TYPE_NEWAF:
 		{
-      DebOut("PATH_TYPE_NEWAF\n");
+      bug("[JUAE:AROS] %s: PATH_TYPE_NEWAF\n", __PRETTY_FUNCTION__);
 			TCHAR tmp2[MAX_DPATH];
 			_tcscpy (tmp2, start_path_new1);
 			_tcscat (tmp2, _T("..\\system\\rom"));
@@ -648,7 +687,7 @@ int get_rom_path (TCHAR *out, pathtype mode)
 		break;
 	case PATH_TYPE_AMIGAFOREVERDATA:
 		{
-      DebOut("PATH_TYPE_AMIGAFOREVERDATA\n");
+      bug("[JUAE:AROS] %s: PATH_TYPE_AMIGAFOREVERDATA\n", __PRETTY_FUNCTION__);
 			TCHAR tmp2[MAX_DPATH];
 			_tcscpy (tmp2, start_path_new2);
 			_tcscat (tmp2, _T("system\\rom"));
@@ -665,7 +704,7 @@ int get_rom_path (TCHAR *out, pathtype mode)
 		}
 		break;
 	default:
-    DebOut("default: return -1\n");
+    bug("[JUAE:AROS] %s: default: return -1\n", __PRETTY_FUNCTION__);
 		return -1;
 	}
 	if (isfilesindir (tmp)) {
@@ -675,7 +714,7 @@ int get_rom_path (TCHAR *out, pathtype mode)
 	if (out[0]) {
 		fullpath (out, MAX_DPATH);
 	}
-  DebOut("result: %s\n", out);
+  bug("[JUAE:AROS] %s: result: %s\n", __PRETTY_FUNCTION__, out);
 	return out[0] ? 1 : 0;
 }
 
@@ -688,7 +727,7 @@ int getregmode (void);
 
 static void romlist_add2 (const TCHAR *path, struct romdata *rd)
 {
-  DebOut("path: %s\n", path);
+  bug("[JUAE:AROS] %s: path: %s\n", __PRETTY_FUNCTION__, path);
 	if (getregmode ()) {
 		int ok = 0;
 		TCHAR tmp[MAX_DPATH];
@@ -715,7 +754,7 @@ void read_rom_list (void)
 	TCHAR tmp[1000];
 	int size, size2, exists;
 
-  DebOut("entered\n");
+  bug("[JUAE:AROS] %s: entered\n", __PRETTY_FUNCTION__);
 
 	romlist_clear ();
 	exists = regexiststree (NULL, _T("DetectedROMs"));
@@ -732,7 +771,7 @@ void read_rom_list (void)
 	for (;;) {
 		size = sizeof (tmp) / sizeof (TCHAR);
 		size2 = sizeof (tmp2) / sizeof (TCHAR);
-    DebOut(".........\n");
+    bug("[JUAE:AROS] %s: .........\n", __PRETTY_FUNCTION__);
 		if (!regenumstr (fkey, idx, tmp, &size, tmp2, &size2))
 			break;
 		if (_tcslen (tmp) == 7 || _tcslen (tmp) == 13) {
@@ -773,7 +812,7 @@ void set_path (const TCHAR *name, TCHAR *path, pathtype mode)
 {
   TCHAR tmp[MAX_DPATH];
 
-  DebOut("name %s, path %s, pathtype %d\n", name, path, mode);
+  bug("[JUAE:AROS] %s: name %s, path %s, pathtype %d\n", __PRETTY_FUNCTION__, name, path, mode);
 
   if (!path) {
     if (!_tcscmp (start_path_data, start_path_exe))
@@ -798,7 +837,7 @@ void set_path (const TCHAR *name, TCHAR *path, pathtype mode)
     _tcscpy (tmp, path);
   }
   stripslashes (tmp);
-  DebOut("tmp: %s\n");
+  bug("[JUAE:AROS] %s: tmp: %s\n", __PRETTY_FUNCTION__, tmp);
   if (!_tcscmp (name, _T("KickstartPath"))) {
 #if 0
     DWORD v = GetFileAttributes (tmp);
@@ -814,13 +853,13 @@ void set_path (const TCHAR *name, TCHAR *path, pathtype mode)
   }
   fixtrailing (tmp);
   fullpath (tmp, sizeof tmp / sizeof (TCHAR));
-  DebOut("tmp: %s\n", tmp);
+  bug("[JUAE:AROS] %s: tmp: %s\n", __PRETTY_FUNCTION__, tmp);
   regsetstr (NULL, name, tmp);
 }
 
 void set_path (const TCHAR *name, TCHAR *path) {
 
-  DebOut("name %s, path %s\n", name, path);
+  bug("[JUAE:AROS] %s: name %s, path %s\n", __PRETTY_FUNCTION__, name, path);
   set_path (name, path, PATH_TYPE_DEFAULT);
 }
 
@@ -837,7 +876,7 @@ void create_afnewdir (int remove) {
 	TCHAR tmp[MAX_DPATH], tmp2[MAX_DPATH];
 #endif
 
-  DebOut("remove: %d\n", remove);
+  bug("[JUAE:AROS] %s: remove: %d\n", __PRETTY_FUNCTION__, remove);
 
 #if 0
 	if (SUCCEEDED (SHGetFolderPath (NULL, CSIDL_COMMON_DOCUMENTS, NULL, 0, tmp))) {

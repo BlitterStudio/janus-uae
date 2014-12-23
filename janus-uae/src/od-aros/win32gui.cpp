@@ -124,7 +124,7 @@
 #include "gfx.h"
 #include "string_resource.h"
 #include "gui/mui_data.h"
-#include "gui/gui.h"
+#include "gui/gui_mui.h"
 
 /* fix mui conflict.. */
 #undef Child
@@ -274,19 +274,30 @@ static void addaspectratios (HWND hDlg, int id)
 
 TCHAR *WIN32GUI_LoadUIString (TCHAR *id)
 {
-	TCHAR tmp[MAX_DPATH];
+    TCHAR tmp[MAX_DPATH];
+    TCHAR *ret = NULL;
 
-  DebOut("id: %s\n", id);
-	tmp[0] = 0;
-	if (LoadString (hUIDLL ? hUIDLL : hInst, id, tmp, MAX_DPATH) == 0)
-		LoadString (hInst, id, tmp, MAX_DPATH);
-	return strdup(tmp);
+    bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
+
+    if (id)
+    {
+        tmp[0] = 0;
+        bug("[JUAE] %s: string id: '%s'\n", __PRETTY_FUNCTION__, id);
+
+        if (LoadString (hUIDLL ? hUIDLL : hInst, id, tmp, MAX_DPATH) == 0)
+            LoadString (hInst, id, tmp, MAX_DPATH);
+
+	ret = strdup(tmp);
+    }
+    return ret;
 }
 
 void WIN32GUI_LoadUIString (TCHAR *id, TCHAR *string, DWORD dwStringLen)
 {
-	if (LoadString (hUIDLL ? hUIDLL : hInst, id, string, dwStringLen) == 0)
-		LoadString (hInst, id, string, dwStringLen);
+    bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
+
+    if (LoadString (hUIDLL ? hUIDLL : hInst, id, string, dwStringLen) == 0)
+        LoadString (hInst, id, string, dwStringLen);
 }
 
 static int quickstart_model = 0, quickstart_conf = 0, quickstart_compa = 1;
@@ -367,7 +378,7 @@ static void ew (HWND hDlg, DWORD id, int enable)
 		SendMessage (hDlg, WM_NEXTDLGCTL, 0, FALSE);
 	EnableWindow (w, !!enable);
 #endif
-  DebOut("hDlg: %lx, id %d, enable %d\n", hDlg, id, enable);
+  bug("hDlg: %lx, id %d, enable %d\n", hDlg, id, enable);
 	EnableWindow (hDlg, id, !!enable);
 }
 
@@ -738,7 +749,7 @@ UAEREG *read_disk_history (int type)
 	UAEREG *fkey;
 	TCHAR tmp[1000];
 
-  DebOut("entered\n");
+  bug("entered\n");
 
 	fkey = regcreatetree (NULL, type ? _T("CDImageMRUList") : _T("DiskImageMRUList"));
 	if (fkey == NULL || (regread & (1 << type)))
@@ -1117,7 +1128,7 @@ static TCHAR *favoritepopup (HWND hwnd, int drive)
 			TCHAR tmp[1000], tmp2[1000];
 			size = sizeof (tmp) / sizeof (TCHAR);
 			size2 = sizeof (tmp2) / sizeof (TCHAR);
-      DebOut("++++++++++++\n");
+      bug("++++++++++++\n");
 			if (!regenumstr (fkey, idx, tmp, &size, tmp2, &size2))
 				break;
 			p = _tcsrchr (tmp, '_');
@@ -1438,7 +1449,7 @@ static struct romdata *scan_single_rom (const TCHAR *path)
 	TCHAR tmp[MAX_DPATH];
 	struct romdata *rd;
 
-  DebOut("path: %s\n", path);
+  bug("path: %s\n", path);
 
 	_tcscpy (tmp, path);
 	rd = scan_arcadia_rom (tmp, 0);
@@ -1455,8 +1466,36 @@ static struct romdata *scan_single_rom (const TCHAR *path)
 
 static void abspathtorelative (TCHAR *name)
 {
-  DebOut("path: %s\n", name);
-  TODO();
+	BPTR    lock;
+	TCHAR   tmp1[MAX_DPATH], tmp2[MAX_DPATH];
+	BOOL    result;
+
+	bug("[JUAE:W32GUI] %s('%s')\n", __PRETTY_FUNCTION__, name);
+
+        GetCurrentDirName(tmp1, MAX_DPATH);
+        bug("[JUAE:W32GUI] %s: current dir = '%s'\n", __PRETTY_FUNCTION__, tmp1);
+
+        lock=Lock(name, SHARED_LOCK);
+        if(!lock) {
+                bug("[JUAE:W32GUI] %s: failed to lock path\n", __PRETTY_FUNCTION__);
+                return;
+        }
+        result=NameFromLock(lock, tmp2, MAX_DPATH);
+        UnLock(lock);
+        if(!result) {
+                bug("[JUAE:W32GUI] %s: NameFromLock('%s') failed!\n", __PRETTY_FUNCTION__, name);
+                return;
+        }
+        bug("[JUAE:W32GUI] %s: NameFromLock(%s): %s\n", __PRETTY_FUNCTION__, name, tmp2);
+
+        if (strnicmp (tmp1, tmp2, strlen (tmp1)) == 0) { // tmp2 is inside tmp1
+                //bug("[JUAE:W32GUI] %s: tmp2 (%s) is inside tmp1 (%s)\n", tmp2, tmp1);
+                strcpy(name, tmp2 + strlen (tmp1) + 1);
+        }
+        else {
+                //bug("[JUAE:W32GUI] %s: tmp2 (%s) is not inside tmp1 (%s)\n", tmp2, tmp1);
+                strcpy(name, tmp2);
+        }
 #if 0
 	if (!_tcsncmp (start_path_exe, name, _tcslen (start_path_exe)))
 		memmove (name, name + _tcslen (start_path_exe), (_tcslen (name) - _tcslen (start_path_exe) + 1) * sizeof (TCHAR));
@@ -1490,7 +1529,7 @@ static int addrom (UAEREG *fkey, struct romdata *rd, const TCHAR *name)
 		else
 			_stprintf (tmp2, _T(":ROM_%03d"), rd->id);
 	}
-  DebOut("regsetstr(%s, %s, %s)\n", fkey->inipath, tmp1, tmp2);
+  bug("regsetstr(%s, %s, %s)\n", fkey->inipath, tmp1, tmp2);
 	if (!regsetstr (fkey, tmp1, tmp2))
 		return 0;
 	return 1;
@@ -1572,13 +1611,13 @@ static bool scan_rom_hook (const TCHAR *name, int line)
 	MSG msg;
 #endif
   if(name) {
-    DebOut("name %s, line: %d\n", name, line);
+    bug("name %s, line: %d\n", name, line);
   }
   else {
-    DebOut("name: NULL\n");
+    bug("name: NULL\n");
   }
 	if (!infoboxhwnd) {
-    DebOut("return: true\n");
+    bug("return: true\n");
 		return true;
   }
 
@@ -1641,7 +1680,7 @@ static int scan_rom (const TCHAR *path, UAEREG *fkey, bool deepscan)
 
 	if (!isromext (path, deepscan)) {
 		//write_log("ROMSCAN: skipping file '%s', unknown extension\n", path);
-		DebOut("ROMSCAN: skipping file '%s', unknown extension\n", path);
+		bug("ROMSCAN: skipping file '%s', unknown extension\n", path);
 		return 0;
 	}
 	scan_rom_hook (path, 2);
@@ -1664,20 +1703,20 @@ static int listrom (int *roms)
 {
 	int i;
 
-  DebOut("listrom(..)\n");
+  bug("listrom(..)\n");
 
 	i = 0;
 	while (roms[i] >= 0) {
-    DebOut("i: %d\n", i);
+    bug("i: %d\n", i);
 		struct romdata *rd = getromdatabyid (roms[i]);
-    DebOut("rd: %lx\n", rd);
+    bug("rd: %lx\n", rd);
 		if (rd && romlist_get (rd)) {
-      DebOut("return 1\n");
+      bug("return 1\n");
 			return 1;
     }
 		i++;
 	}
-  DebOut("return 0\n");
+  bug("return 0\n");
 	return 0;
 }
 
@@ -1720,7 +1759,7 @@ static void show_rom_list (void)
 
 	rp = romtable;
 	while(rp[0]) {
-    DebOut("while ..\n");
+    bug("while ..\n");
 		int ok = 0;
 		p2 = p1 + _tcslen (p1) + 1;
 		_tcscat (p, _T(" "));
@@ -1758,7 +1797,7 @@ static int scan_roms_2 (UAEREG *fkey, const TCHAR *path, bool deepscan)
 	HANDLE handle;
 #endif
 
-  DebOut("----------------------------\n");
+  bug("----------------------------\n");
 
   fib_ptr=(struct FileInfoBlock *) AllocMem(sizeof(struct FileInfoBlock), MEMF_PUBLIC | MEMF_CLEAR);
   if(!fib_ptr) {
@@ -1769,27 +1808,27 @@ static int scan_roms_2 (UAEREG *fkey, const TCHAR *path, bool deepscan)
   lock=(struct FileLock *) Lock(path , SHARED_LOCK );
 
   if(!lock) {
-    DebOut("unable to lock %s\n", path);
+    bug("unable to lock %s\n", path);
     goto SDONE;
   }
 
   if(!Examine( (BPTR) lock, fib_ptr)) {
-    DebOut("Examine failed!\n");
+    bug("Examine failed!\n");
     goto SDONE;
   }
 
   if(fib_ptr->fib_DirEntryType==0) {
-    DebOut("no directory!!\n");
+    bug("no directory!!\n");
     goto SDONE;
   }
 
-  DebOut("ini: %s, path: %s, deepscan: %d\n", fkey->inipath, path, deepscan);
+  bug("ini: %s, path: %s, deepscan: %d\n", fkey->inipath, path, deepscan);
 
 	if (!path)
 		return 0;
 
 	write_log (_T("ROM scan directory '%s'\n"), path);
-	DebOut (_T("ROM scan directory '%s'\n"), path);
+	bug (_T("ROM scan directory '%s'\n"), path);
 #if 0
 	_tcscpy (buf, path);
 	_tcscat (buf, _T("*.*"));
@@ -1802,16 +1841,16 @@ static int scan_roms_2 (UAEREG *fkey, const TCHAR *path, bool deepscan)
 
 #if 0
 	for (;;) {
-    DebOut("..\n");
+    bug("..\n");
 #endif
 
     while(ExNext((BPTR) lock, fib_ptr)) {
       _tcscpy (tmppath, path);
       AddPart(tmppath, (CONST_STRPTR) fib_ptr->fib_FileName, MAX_DPATH);
-      DebOut("tmppath: %s\n", tmppath);
+      bug("tmppath: %s\n", tmppath);
       if(fib_ptr->fib_DirEntryType < 0) {
         /* is a file */
-        DebOut("size: %d\n", fib_ptr->fib_Size);
+        bug("size: %d\n", fib_ptr->fib_Size);
         if(fib_ptr->fib_Size < 10000000) {
           if (scan_rom (tmppath, fkey, deepscan)) {
             ret = 1;
@@ -1819,7 +1858,7 @@ static int scan_roms_2 (UAEREG *fkey, const TCHAR *path, bool deepscan)
         }
       }
       else {
-        DebOut("no file: %s\n", tmppath);
+        bug("no file: %s\n", tmppath);
       }
 
       //_tcscat (tmppath, fib_ptr->fib_FileName);
@@ -1841,8 +1880,8 @@ static int scan_roms_2 (UAEREG *fkey, const TCHAR *path, bool deepscan)
 	}
 #endif
 
-  DebOut("done scanning roms (ret: %d)\n", ret);
-  DebOut("----------------------------\n");
+  bug("done scanning roms (ret: %d)\n", ret);
+  bug("----------------------------\n");
 
 SDONE:
   if(lock) {
@@ -1865,7 +1904,7 @@ static int scan_roms_3 (UAEREG *fkey, TCHAR **paths, const TCHAR *path)
 	TCHAR pathp[MAX_DPATH];
 	bool deepscan = true;
 
-  DebOut("path: %s\n", path);
+  bug("path: %s\n", path);
 
 	ret = 0;
 	scan_rom_hook (NULL, 0);
@@ -1880,7 +1919,7 @@ static int scan_roms_3 (UAEREG *fkey, TCHAR **paths, const TCHAR *path)
 	if (_tcsicmp (pathp, start_path_exe) == 0)
 		deepscan = false; // do not scan root dir archives
 	for (i = 0; i < MAX_ROM_PATHS; i++) {
-    DebOut(" i: %d\n", i);
+    bug(" i: %d\n", i);
 		if (paths[i] && !_tcsicmp (paths[i], pathp))
 			return ret;
 	}
@@ -1907,7 +1946,7 @@ int scan_roms (HWND hDlg, int show)
 	MSG msg;
 #endif
 
-  DebOut("entered(mode: %lx, %d)\n", hDlg, show);
+  bug("entered(mode: %lx, %d)\n", hDlg, show);
 
 	if (recursive)
 		return 0;
@@ -1934,23 +1973,23 @@ int scan_roms (HWND hDlg, int show)
 	for (i = 0; i < MAX_ROM_PATHS; i++)
 		paths[i] = NULL;
 	scan_rom_hook (NULL, 0);
-  DebOut("enter while..\n");
+  bug("enter while..\n");
 	while (scan_rom_hook (NULL, 0)) {
 		keys = get_keyring ();
 		fetch_path (_T("KickstartPath"), path, sizeof path / sizeof (TCHAR));
 		cnt += scan_roms_3 (fkey, paths, path);
-    DebOut("cnt: %d\n", cnt);
+    bug("cnt: %d\n", cnt);
 		if (1) {
 			static pathtype pt[] = { PATH_TYPE_DEFAULT, PATH_TYPE_WINUAE, PATH_TYPE_NEWWINUAE, PATH_TYPE_NEWAF, PATH_TYPE_AMIGAFOREVERDATA, PATH_TYPE_END };
 			for (i = 0; pt[i] != PATH_TYPE_END; i++) {
-        DebOut(" i: %d\n", i);
+        bug(" i: %d\n", i);
 				ret = get_rom_path (path, pt[i]);
 				if (ret < 0)
 					break;
 				cnt += scan_roms_3 (fkey, paths, path);
 			}
-      DebOut("cnt: %d\n", cnt);
-      DebOut("call get_keyring\n");
+      bug("cnt: %d\n", cnt);
+      bug("call get_keyring\n");
 			if (get_keyring() > keys) { /* more keys detected in previous scan? */
 				write_log (_T("ROM scan: more keys found, restarting..\n"));
 				for (i = 0; i < MAX_ROM_PATHS; i++) {
@@ -2138,7 +2177,7 @@ void gui_display (int shortcut)
 	static int here;
 	int w, h;
 
-  DebOut("entered\n");
+  bug("entered\n");
 
 	if (here)
 		return;
@@ -2434,13 +2473,13 @@ static void selectdisk (struct uae_prefs *prefs, HWND hDlg, int num, int id, con
 		return;
 	}
 #endif
-  DebOut("full_path: %s\n", full_path);
+  bug("full_path: %s\n", full_path);
 	SetDlgItemText (hDlg, id, (TCHAR *) full_path);
 	_tcscpy(prefs->floppyslots[num].df, full_path);
 	fullpath (prefs->floppyslots[num].df, sizeof prefs->floppyslots[num].df / sizeof (TCHAR));
-  DebOut("1..\n");
+  bug("1..\n");
 	DISK_history_add (prefs->floppyslots[num].df, -1, HISTORY_FLOPPY, 0);
-  DebOut("left\n");
+  bug("left\n");
 }
 
 #if 0
@@ -2495,7 +2534,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 	TCHAR szFormat[MAX_DPATH];
 	TCHAR szFilter[MAX_DPATH] = { 0 };
 
-  DebOut("entered\n");
+  bug("entered\n");
 #if 0
 	memset (&openFileName, 0, sizeof (OPENFILENAME));
 
@@ -2750,7 +2789,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
     result=mui_get_filename(szTitle, init_path, full_path, szFilter, file_name, 0);
   }
 
-  DebOut("full_path: %s\n", full_path);
+  bug("full_path: %s\n", full_path);
 
 
 #if 0
@@ -2797,12 +2836,12 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 		}
 #endif
 
-    DebOut("switch (wParam: %d)\n", wParam);
+    bug("switch (wParam: %d)\n", wParam);
 		switch (wParam)
 		{
 		case IDC_PATH_NAME:
 		case IDC_PATH_FILESYS:
-      DebOut("IDC_PATH_NAME\n");
+      bug("IDC_PATH_NAME\n");
 			if (flag == 8) {
 				if(_tcsstr (full_path, _T("Configurations\\"))) {
 					_tcscpy (full_path, init_path);
@@ -2818,7 +2857,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 #endif
 		case IDC_DF0:
 		case IDC_DF0QQ:
-      DebOut("IDC_DF0\n");
+      bug("IDC_DF0\n");
 			selectdisk (prefs, hDlg, 0, IDC_DF0TEXT, full_path);
 			next = IDC_DF1;
 			break;
@@ -2863,7 +2902,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 			}
 			break;
 		case IDC_LOAD:
-      DebOut("IDC_LOAD\n");
+      bug("IDC_LOAD\n");
 			if (target_cfgfile_load (&workprefs, full_path, 0, 0) == 0) {
 				TCHAR szMessage[MAX_DPATH];
 				WIN32GUI_LoadUIString (IDS_COULDNOTLOADCONFIG, szMessage, MAX_DPATH);
@@ -2949,7 +2988,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 #if 0
 	}
 #endif
-  DebOut("done\n");
+  bug("done\n");
 	return result;
 }
 
@@ -4984,7 +5023,7 @@ static struct ConfigStruct *initloadsave (HWND hDlg, struct ConfigStruct *config
 #endif
 	TCHAR path[MAX_DPATH];
 
-  DebOut("entered\n");
+  bug("entered\n");
 
 #if 0
 	EnableWindow (GetDlgItem (hDlg, IDC_VIEWINFO), workprefs.info[0]);
@@ -5122,7 +5161,7 @@ static INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPA
 	switch (msg)
 	{
 	case WM_INITDIALOG:
-    DebOut("WM_INITDIALOG\n");
+    bug("WM_INITDIALOG\n");
 		recursive++;
 #if 0
 		if (!configstore) {
@@ -5442,7 +5481,7 @@ static void setpath (HWND hDlg, TCHAR *name, DWORD d, TCHAR *def)
 {
 	TCHAR tmp[MAX_DPATH];
 
-  DebOut("name %s, def %s\n", name, def);
+  bug("name %s, def %s\n", name, def);
 
 	_tcscpy (tmp, def);
 	fetch_path (name, tmp, sizeof (tmp) / sizeof (TCHAR));
@@ -5569,8 +5608,8 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 	int val, selpath = 0;
 	TCHAR tmp[MAX_DPATH];
 
-  DebOut("entered (hDlg: %lx)\n", hDlg);
-  DebOut("msg: %d\n", msg);
+  bug("entered (hDlg: %lx)\n", hDlg);
+  bug("msg: %d\n", msg);
 
 	switch (msg)
 	{
@@ -5621,7 +5660,7 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		SendDlgItemMessage (hDlg, IDC_PATHS_DEFAULTTYPE, CB_SETCURSEL, selpath, 0);
 		EnableWindow (GetDlgItem (hDlg, IDC_PATHS_DEFAULTTYPE), numtypes > 0 ? TRUE : FALSE);
 #endif
-    DebOut("call SetWindowText(bootlogpath %s)..\n", bootlogpath);
+    bug("call SetWindowText(bootlogpath %s)..\n", bootlogpath);
 		//RE SetWindowText (GetDlgItem (hDlg, IDC_LOGPATH), bootlogpath);
     SetDlgItemText(hDlg, IDC_LOGPATH, bootlogpath);
 
@@ -5645,13 +5684,13 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		return TRUE;
 
 	case WM_COMMAND:
-    DebOut("msg: WM_COMMAND\n");
+    bug("msg: WM_COMMAND\n");
 		if (recursive > 0)
 			break;
 		recursive++;
 		if (HIWORD (wParam) == CBN_SELCHANGE || HIWORD (wParam) == CBN_KILLFOCUS)  {
-      DebOut("CBN_SELCHANGE / CBN_KILLFOCUS\n");
-      DebOut("IDC_PATHS_ROM: %d, IDC_PATHS_ROMS: %d\n", IDC_PATHS_ROM, IDC_PATHS_ROMS);
+      bug("CBN_SELCHANGE / CBN_KILLFOCUS\n");
+      bug("IDC_PATHS_ROM: %d, IDC_PATHS_ROMS: %d\n", IDC_PATHS_ROM, IDC_PATHS_ROMS);
 			switch (LOWORD (wParam))
 			{
 				case IDC_LOGSELECT:
@@ -5670,12 +5709,12 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 #endif
 				break;
         default:
-          DebOut("LOWORD (wParam): %d (IDC_LOGSELECT) %d\n",LOWORD (wParam), IDC_LOGSELECT);
+          bug("LOWORD (wParam): %d (IDC_LOGSELECT) %d\n",LOWORD (wParam), IDC_LOGSELECT);
         break;
 			}
 		} else {
-      DebOut("else..\n");
-      DebOut("wParam: %d (IDC_PATHS_ROMS %d)\n", LOWORD (wParam), IDC_PATHS_ROMS);
+      bug("else..\n");
+      bug("wParam: %d (IDC_PATHS_ROMS %d)\n", LOWORD (wParam), IDC_PATHS_ROMS);
 
 			switch (LOWORD (wParam))
 			{
@@ -5710,9 +5749,9 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 				break;
 			case IDC_PATHS_ROMS:
 				fetch_path (_T("KickstartPath"), tmp, sizeof (tmp) / sizeof (TCHAR));
-        DebOut("tmp: %s\n", tmp);
+        bug("tmp: %s\n", tmp);
 				if (DirectorySelection (hDlg, &pathsguid, tmp)) {
-          DebOut("DirectorySelection!\n");
+          bug("DirectorySelection!\n");
 					load_keyring (&workprefs, NULL);
 					set_path (_T("KickstartPath"), tmp);
 					if (!scan_roms (hDlg, 1))
@@ -5865,18 +5904,18 @@ struct amigamodels {
 	int id;
 };
 static struct amigamodels amodels[] = {
-	{ 4, (int) IDS_QS_MODEL_A500 }, // "Amiga 500"
-	{ 4, (int) IDS_QS_MODEL_A500P }, // "Amiga 500+"
-	{ 4, (int) IDS_QS_MODEL_A600 }, // "Amiga 600"
-	{ 4, (int) IDS_QS_MODEL_A1000 }, // "Amiga 1000"
-	{ 4, (int) IDS_QS_MODEL_A1200 }, // "Amiga 1200"
-	{ 2, (int) IDS_QS_MODEL_A3000 }, // "Amiga 3000"
-	{ 1, (int) IDS_QS_MODEL_A4000 }, // "Amiga 4000"
+	{ 4, (IPTR) IDS_QS_MODEL_A500 }, // "Amiga 500"
+	{ 4, (IPTR) IDS_QS_MODEL_A500P }, // "Amiga 500+"
+	{ 4, (IPTR) IDS_QS_MODEL_A600 }, // "Amiga 600"
+	{ 4, (IPTR) IDS_QS_MODEL_A1000 }, // "Amiga 1000"
+	{ 4, (IPTR) IDS_QS_MODEL_A1200 }, // "Amiga 1200"
+	{ 2, (IPTR) IDS_QS_MODEL_A3000 }, // "Amiga 3000"
+	{ 1, (IPTR) IDS_QS_MODEL_A4000 }, // "Amiga 4000"
 	{ 0, }, //{ 1, IDS_QS_MODEL_A4000T }, // "Amiga 4000T"
-	{ 3, (int) IDS_QS_MODEL_CD32 }, // "CD32"
-	{ 4, (int) IDS_QS_MODEL_CDTV }, // "CDTV"
-	{ 4, (int) IDS_QS_MODEL_ARCADIA }, // "Arcadia"
-	{ 1, (int) IDS_QS_MODEL_UAE }, // "Expanded UAE example configuration"
+	{ 3, (IPTR) IDS_QS_MODEL_CD32 }, // "CD32"
+	{ 4, (IPTR) IDS_QS_MODEL_CDTV }, // "CDTV"
+	{ 4, (IPTR) IDS_QS_MODEL_ARCADIA }, // "Arcadia"
+	{ 1, (IPTR) IDS_QS_MODEL_UAE }, // "Expanded UAE example configuration"
 	{ -1 }
 };
 
@@ -5941,7 +5980,7 @@ static void init_quickstartdlg (HWND hDlg)
 	TCHAR tmp1[2 * MAX_DPATH], tmp2[MAX_DPATH], hostconf[MAX_DPATH];
 	TCHAR *p1, *p2;
 
-  DebOut("entered\n");
+  bug("entered\n");
 
 	qssize = sizeof (tmp1) / sizeof (TCHAR);
 	regquerystr (NULL, _T("QuickStartHostConfig"), hostconf, &qssize);
@@ -5977,7 +6016,7 @@ static void init_quickstartdlg (HWND hDlg)
 	idx = idx2 = 0;
 	i = 0;
 	while (amodels[i].compalevels >= 0) {
-    DebOut("i: %d\n", i);
+    bug("i: %d\n", i);
 		if (amodels[i].compalevels > 0) {
 			p2 = _tcschr (p1, '\n');
 			if (p2 && _tcslen (p2) > 0) {
@@ -6066,7 +6105,7 @@ static void testimage (HWND hDlg, int num)
 	int ret;
 	int reload = 0;
 	struct diskinfo di;
-	int messageid = -1;
+	IPTR messageid = -1;
 	TCHAR tmp[MAX_DPATH];
 
 	floppytooltip (hDlg, num, 0);
@@ -6095,7 +6134,7 @@ static void testimage (HWND hDlg, int num)
 		if (quickstart_model != 1 && quickstart_model != 2 && quickstart_model != 4 &&
 			quickstart_model != 5 && quickstart_model != 6 && quickstart_model != 8 && quickstart_model != 11) {
 			quickstart_model = 4;
-			messageid = (int) IDS_IMGCHK_KS2;
+			messageid = (IPTR) IDS_IMGCHK_KS2;
 			reload = 1;
 		}
 		break;
@@ -6103,18 +6142,18 @@ static void testimage (HWND hDlg, int num)
 		quickstart_ok_floppy = 1;
 		if (quickstart_model != 4 && quickstart_model != 8 && quickstart_model != 11) {
 			quickstart_model = 4;
-			messageid = (int) IDS_IMGCHK_KS3;
+			messageid = (IPTR) IDS_IMGCHK_KS3;
 			reload = 1;
 		}
 		break;
 	case 4:
-		messageid = (int) IDS_IMGCHK_BOOTBLOCKNO;
+		messageid = (IPTR) IDS_IMGCHK_BOOTBLOCKNO;
 		break;
 	case 3:
-		messageid = (int) IDS_IMGCHK_BOOTBLOCKCRCERROR;
+		messageid = (IPTR) IDS_IMGCHK_BOOTBLOCKCRCERROR;
 		break;
 	case 2:
-		messageid = (int) IDS_IMGCHK_DAMAGED;
+		messageid = (IPTR) IDS_IMGCHK_DAMAGED;
 		break;
 	}
 	if (messageid > 0) {
@@ -6140,8 +6179,8 @@ static void addallfloppies (HWND hDlg);
 static void setfloppytexts (HWND hDlg, int qs)
 {
 
-  DebOut("entered\n");
-  DebOut("workprefs.floppyslots[0].df: %s\n", workprefs.floppyslots[0].df);
+  bug("entered\n");
+  bug("workprefs.floppyslots[0].df: %s\n", workprefs.floppyslots[0].df);
 	SetDlgItemText (hDlg, IDC_DF0TEXT, workprefs.floppyslots[0].df);
 	SetDlgItemText (hDlg, IDC_DF1TEXT, workprefs.floppyslots[1].df);
 	SetDlgItemText (hDlg, IDC_DF2TEXT, workprefs.floppyslots[2].df);
@@ -6391,7 +6430,7 @@ static void init_aboutdlg (HWND hDlg)
 
 INT_PTR CALLBACK AboutDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-  DebOut("wParam: %d %d (IDC_CONTRIBUTORS: %d)\n", wParam, LOWORD(wParam), IDC_CONTRIBUTORS);
+  bug("wParam: %d %d (IDC_CONTRIBUTORS: %d)\n", wParam, LOWORD(wParam), IDC_CONTRIBUTORS);
 	switch( msg )
 	{
 	case WM_INITDIALOG:
@@ -6982,14 +7021,14 @@ static void init_resolution_combo (HWND hDlg)
 	TCHAR tmp[MAX_DPATH];
 	struct MultiDisplay *md = getdisplay (&workprefs);
 
-  DebOut("entered (md=%lx)\n", md);
-  DebOut("md->DisplayModes[0].depth: %d\n", md->DisplayModes[0].depth);
+  bug("entered (md=%lx)\n", md);
+  bug("md->DisplayModes[0].depth: %d\n", md->DisplayModes[0].depth);
 
 	idx = -1;
 	SendDlgItemMessage(hDlg, IDC_RESOLUTION, CB_RESETCONTENT, 0, 0);
 	for (i = 0; md->DisplayModes[i].depth >= 0; i++) {
-    DebOut("i: %d\n", i);
-    DebOut("md->DisplayModes[i].depth: %d\n", md->DisplayModes[i].depth);
+    bug("i: %d\n", i);
+    bug("md->DisplayModes[i].depth: %d\n", md->DisplayModes[i].depth);
 		if (md->DisplayModes[i].depth > 1 && md->DisplayModes[i].residx != idx) {
 			_stprintf (tmp, _T("%dx%d%s"), md->DisplayModes[i].res.width, md->DisplayModes[i].res.height, md->DisplayModes[i].lace ? _T("i") : _T(""));
 			if (md->DisplayModes[i].rawmode)
@@ -7265,7 +7304,7 @@ static void values_from_displaydlg (HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 
 	if (msg == WM_COMMAND && HIWORD (wParam) == CBN_SELCHANGE)
 	{
-        DebOut("CBN_SELCHANGE\n");
+        bug("CBN_SELCHANGE\n");
 		if (LOWORD (wParam) == IDC_DISPLAYSELECT) {
 			get_displays_combo (hDlg, false);
 			init_resolution_combo (hDlg);
@@ -8602,7 +8641,7 @@ static void addromfiles (UAEREG *fkey, HWND hDlg, DWORD d, TCHAR *path, int type
 	TCHAR seltmp[MAX_DPATH];
 	struct romdata *rdx;
 
-  DebOut("entered (path: %s)\n", path);
+  bug("entered (path: %s)\n", path);
 
 	rdx = scan_single_rom (path);
 	SendDlgItemMessage(hDlg, d, CB_RESETCONTENT, 0, 0);
@@ -8612,30 +8651,30 @@ static void addromfiles (UAEREG *fkey, HWND hDlg, DWORD d, TCHAR *path, int type
 	for (;fkey;) {
 		int size = sizeof (tmp) / sizeof (TCHAR);
 		int size2 = sizeof (tmp2) / sizeof (TCHAR);
-    DebOut("------------\n");
+    bug("------------\n");
 		if (!regenumstr (fkey, idx, tmp, &size, tmp2, &size2)) {
-      DebOut("break!\n");
+      bug("break!\n");
 			break;
     }
 		if (_tcslen (tmp) == 7 || _tcslen (tmp) == 13) {
 			int group = 0;
 			int subitem = 0;
 			int idx2 = _tstol (tmp + 4);
-      DebOut("7 || 13\n");
+      bug("7 || 13\n");
 			if (_tcslen (tmp) == 13) {
-        DebOut("13!\n");
+        bug("13!\n");
 				group = _tstol (tmp + 8);
 				subitem = _tstol (tmp + 11);
 			}
 			if (idx2 >= 0) {
 				struct romdata *rd = getromdatabyidgroup (idx2, group, subitem);
-        DebOut("idx2 >= 0\n");
+        bug("idx2 >= 0\n");
 				if (rd && (rd->type & type)) {
-          DebOut("..\n");
+          bug("..\n");
 					getromname (rd, tmp);
-          DebOut("tmp: %s\n", tmp);
+          bug("tmp: %s\n", tmp);
 					if (SendDlgItemMessage (hDlg, d, CB_FINDSTRING, (WPARAM)-1, (LPARAM)tmp) < 0) {
-            DebOut("<0!\n");
+            bug("<0!\n");
 						SendDlgItemMessage(hDlg, d, CB_ADDSTRING, 0, (LPARAM)tmp);
           }
 					if (rd == rdx)
@@ -8809,7 +8848,7 @@ INT_PTR CALLBACK KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lP
 			break;
 		recursive++;
 		if (HIWORD (wParam) == CBN_SELCHANGE || HIWORD (wParam) == CBN_KILLFOCUS)  {
-        DebOut("CBN_SELCHANGE\n");
+        bug("CBN_SELCHANGE\n");
 			switch (LOWORD (wParam))
 			{
 			case IDC_ROMFILE:
@@ -9654,7 +9693,7 @@ static INT_PTR CALLBACK CPUDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 	static int recursive = 0;
 	int idx;
 
-  DebOut("entered\n");
+  bug("entered\n");
 
 	switch (msg) {
 	case WM_INITDIALOG:
@@ -9798,13 +9837,13 @@ static void sound_loaddrivesamples (void)
   strcpy(dirname, "PROGDIR:floppysounds");
 
   if(!my_existsdir(dirname)) {
-    DebOut("directory %s does not exist\n", dirname);
+    bug("directory %s does not exist\n", dirname);
     return;
   }
 
   lock=Lock((STRPTR) dirname, ACCESS_READ);
   if(!lock) {
-    DebOut("unable to lock %s\n", dirname);
+    bug("unable to lock %s\n", dirname);
     return;
   }
 
@@ -9814,12 +9853,12 @@ static void sound_loaddrivesamples (void)
   }
 
   if(!Examine(lock, fib)) {
-    DebOut("Examine failed\n");
+    bug("Examine failed\n");
     goto EXIT;
   }
 
   while(ExNext(lock, fib) != DOSFALSE) {
-    DebOut("ExNext..\n");
+    bug("ExNext..\n");
     if(fib->fib_DirEntryType < 0) {
       /* not a directory */
 			TCHAR *name = (TCHAR *) fib->fib_FileName;
@@ -10372,7 +10411,7 @@ static void volumeselectfile (HWND hDlg)
 {
 	TCHAR directory_path[MAX_DPATH];
 
-  DebOut("Entered\n");
+  bug("Entered\n");
 	_tcscpy (directory_path, current_fsvdlg.ci.rootdir);
 	if (directory_path[0] == 0) {
 		int out = sizeof directory_path / sizeof (TCHAR);
@@ -10470,7 +10509,7 @@ static INT_PTR CALLBACK VolumeSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, 
 			break;
 		recursive++;
 		if (HIWORD (wParam) == BN_CLICKED) {
-      DebOut("BN_CLICKED\n");
+      bug("BN_CLICKED\n");
 			switch (LOWORD (wParam))
 			{
 			case IDC_FS_SELECT_EJECT:
@@ -11094,7 +11133,7 @@ static INT_PTR CALLBACK HarddriveSettingsProc (HWND hDlg, UINT msg, WPARAM wPara
 			break;
 		recursive++;
 		if (HIWORD (wParam) == BN_CLICKED) {
-      DebOut("BN_CLICKED\n");
+      bug("BN_CLICKED\n");
 			switch (LOWORD (wParam)) {
 			case IDOK:
 				EndDialog (hDlg, 1);
@@ -11504,7 +11543,7 @@ static INT_PTR CALLBACK HarddiskDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPA
 
 	case WM_COMMAND:
 		if (HIWORD (wParam) == CBN_SELCHANGE || HIWORD (wParam) == CBN_KILLFOCUS)  {
-        DebOut("CBN_SELCHANGE\n");
+        bug("CBN_SELCHANGE\n");
 			switch (LOWORD (wParam))
 			{
 			case IDC_CD_TEXT:
@@ -11650,7 +11689,7 @@ static void addfloppyhistory_2 (HWND hDlg, int n, int f_text, int type)
 	UAEREG *fkey;
 	int nn, curidx;
 
-  DebOut("entered: %d, %d, %d\n", n, f_text, type);
+  bug("entered: %d, %d, %d\n", n, f_text, type);
 
 	if (f_text < 0)
 		return;
@@ -11712,8 +11751,8 @@ static void addfloppyhistory (HWND hDlg)
 {
 	int f_text, max, n;
 
-  DebOut("QUICKSTART_ID: %d, FLOPPY_ID %d, DISK_ID %d\n", QUICKSTART_ID, FLOPPY_ID, DISK_ID);
-  DebOut("currentpage: %d\n", currentpage);
+  bug("QUICKSTART_ID: %d, FLOPPY_ID %d, DISK_ID %d\n", QUICKSTART_ID, FLOPPY_ID, DISK_ID);
+  bug("currentpage: %d\n", currentpage);
 
 //Das hier geht schief! QUICKSTART_ID wird von init_page gesetzt.. current page from hook..
 	if (currentpage == QUICKSTART_ID)
@@ -11725,9 +11764,9 @@ static void addfloppyhistory (HWND hDlg)
 	else
 		return;
 
-  DebOut("max: %d\n", n);
+  bug("max: %d\n", n);
 	for (n = 0; n < max; n++) {
-    DebOut("n: %d\n", n);
+    bug("n: %d\n", n);
 		if (currentpage == QUICKSTART_ID)
 			f_text = floppybuttonsq[n][0];
 		else if (currentpage == FLOPPY_ID) {
@@ -11736,7 +11775,7 @@ static void addfloppyhistory (HWND hDlg)
 		else
 			f_text = IDC_DISKTEXT;
 
-    DebOut("f_text: %d\n", f_text);
+    bug("f_text: %d\n", f_text);
 		if (f_text >= 0)
 			addfloppyhistory_2 (hDlg, n, f_text, iscd (n) ? HISTORY_CD : HISTORY_FLOPPY);
 	}
@@ -11791,12 +11830,12 @@ static void addfloppytype (HWND hDlg, int n)
 	int f_enable = floppybuttons[n][7];
 	int f_info = floppybuttons[n][8];
 
-  DebOut("addfloppytype hDlg %lx, n %d\n", hDlg, n);
+  bug("addfloppytype hDlg %lx, n %d\n", hDlg, n);
 
 	text = workprefs.floppyslots[n].df;
-  DebOut("text: %s\n", text);
+  bug("text: %s\n", text);
 	if (currentpage == QUICKSTART_ID) {
-    DebOut("QUICKSTART_ID\n");
+    bug("QUICKSTART_ID\n");
 		TCHAR tmp[MAX_DPATH];
 		f_text = floppybuttonsq[n][0];
 		f_drive = floppybuttonsq[n][1];
@@ -11833,7 +11872,7 @@ static void addfloppytype (HWND hDlg, int n)
 	if (!showcd && f_enable > 0 && n == 1 && currentpage == QUICKSTART_ID) {
 		static TCHAR drivedf1[MAX_DPATH];
 
-    DebOut("QUICKSTART_ID 2\n");
+    bug("QUICKSTART_ID 2\n");
 		if (drivedf1[0] == 0)
 			GetDlgItemText(hDlg, f_enable, drivedf1, sizeof drivedf1 / sizeof (TCHAR));
 		ew (hDlg, f_enable, TRUE);
@@ -11853,9 +11892,9 @@ static void addfloppytype (HWND hDlg, int n)
 		ShowWindow (GetDlgItem(hDlg, f_si), !showcd && zfile_exists (DISK_get_saveimagepath (text)) ? SW_SHOW : SW_HIDE);
 #endif
 
-  DebOut("here we are..\n");
+  bug("here we are..\n");
 
-  DebOut("f_text: %d, f_eject: %d, f_enable %d\n", f_text, f_eject, f_enable);
+  bug("f_text: %d, f_eject: %d, f_enable %d\n", f_text, f_eject, f_enable);
 
 	if (f_text >= 0)
 		ew (hDlg, f_text, state);
@@ -11924,18 +11963,18 @@ static int getfloppybox (HWND hDlg, int f_text, TCHAR *out, int maxlen, int type
 	TCHAR *tmp;
 	int i;
 
-  DebOut("hDlg: %lx, f_text: %d\n", hDlg, f_text);
+  bug("hDlg: %lx, f_text: %d\n", hDlg, f_text);
 
 	out[0] = 0;
 	val = SendDlgItemMessage (hDlg, f_text, CB_GETCURSEL, 0, 0L);
 	if (val != CB_ERR) {
-    DebOut("use CB_GETLBTEXT\n");
+    bug("use CB_GETLBTEXT\n");
 		val = SendDlgItemMessage (hDlg, f_text, CB_GETLBTEXT, (WPARAM)val, (LPARAM)out);
   }
 	else
 		SendDlgItemMessage (hDlg, f_text, WM_GETTEXT, (WPARAM)maxlen, (LPARAM)out);
 
-  DebOut("out: %s\n", out);
+  bug("out: %s\n", out);
 
 	tmp = xmalloc (TCHAR, maxlen + 1);
 	_tcscpy (tmp, out);
@@ -11948,7 +11987,7 @@ static int getfloppybox (HWND hDlg, int f_text, TCHAR *out, int maxlen, int type
 		_tcscat (out, tmp);
 	}
 	xfree (tmp);
-  DebOut("out: %s\n", out);
+  bug("out: %s\n", out);
 	i = 0;
 	while ((p = DISK_history_get (i, type))) {
 		if (!_tcscmp (p, out)) {
@@ -11969,7 +12008,7 @@ static void getfloppyname (HWND hDlg, int n, int cd, int f_text)
 {
 	TCHAR tmp[MAX_DPATH];
 
-  DebOut("n %d, cd %d, text %d\n", n, cd, f_text);
+  bug("n %d, cd %d, text %d\n", n, cd, f_text);
 
 	if (getfloppybox (hDlg, f_text, tmp, sizeof (tmp) / sizeof (TCHAR), cd ? HISTORY_CD : HISTORY_FLOPPY)) {
 		if (!cd) {
@@ -11988,7 +12027,7 @@ static void getfloppyname (HWND hDlg, int n)
 {
 	int cd = iscd (n);
 
-  DebOut("n: %d currentpage: %d (QUICKSTART_ID: %d) floppybuttonsq[n][0]: %d, floppybuttons[n][0] %d\n", n, currentpage, QUICKSTART_ID, floppybuttonsq[n][0], floppybuttons[n][0]);
+  bug("n: %d currentpage: %d (QUICKSTART_ID: %d) floppybuttonsq[n][0]: %d, floppybuttons[n][0] %d\n", n, currentpage, QUICKSTART_ID, floppybuttonsq[n][0], floppybuttons[n][0]);
 
 	int f_text = currentpage == QUICKSTART_ID ? floppybuttonsq[n][0] : floppybuttons[n][0];
 
@@ -12036,7 +12075,7 @@ static void diskselect (HWND hDlg, WPARAM wParam, struct uae_prefs *p, int drv, 
 {
 	int cd = iscd (drv);
 
-  DebOut("entered\n");
+  bug("entered\n");
 	MultiDiskSelection (hDlg, wParam, cd ? 17 : 0, &workprefs, defaultpath);
 	if (!cd) {
 		disk_insert (0, p->floppyslots[0].df);
@@ -12092,7 +12131,12 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 	int i;
 	static TCHAR diskname[40] = { _T("") };
 
-  DebOut("hDlg: %lx, msg: %d, wParam: %lx, lParam: %lx\n", hDlg, msg, wParam, lParam);
+    D(
+          bug("[JUAE:GUI] %s(msg: %d)\n", __PRETTY_FUNCTION__, msg);
+          bug("[JUAE:GUI] %s: hDlg: %lx\n", __PRETTY_FUNCTION__, hDlg);
+          bug("[JUAE:GUI] %s: wParam: %lx\n", __PRETTY_FUNCTION__, wParam);
+          bug("[JUAE:GUI] %s: lParam: %lx\n", __PRETTY_FUNCTION__, lParam);
+    )
 
 	switch (msg)
 	{
@@ -12154,24 +12198,29 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 
 #endif
 	case WM_COMMAND:
-    DebOut("WM_COMMAND\n");
+
+    D(
+          bug("[JUAE:GUI] %s: WM_COMMAND (IDC_DF0: %d, IDC_DF1: %d)\n", __PRETTY_FUNCTION__, IDC_DF0, IDC_DF1);
+          bug("[JUAE:GUI] %s: LOWORD (wParam): %d\n", __PRETTY_FUNCTION__, LOWORD (wParam));
+          bug("[JUAE:GUI] %s: HIWORD (wParam): %d\n", __PRETTY_FUNCTION__, HIWORD (wParam));
+    )
 		if (recursive > 0)
 			break;
 		recursive++;
 		if (HIWORD (wParam) == CBN_SELCHANGE || HIWORD (wParam) == CBN_KILLFOCUS)  {
-      DebOut("CBN_SELCHANGE\n");
+      bug("CBN_SELCHANGE\n");
 			switch (LOWORD (wParam))
 			{
 			case IDC_DF0TEXT:
 			case IDC_DF0TEXTQ:
-        DebOut("IDC_DF0TEXT received!\n");
+        bug("IDC_DF0TEXT received!\n");
 				getfloppyname (hDlg, 0);
 				addfloppytype (hDlg, 0);
 				addfloppyhistory (hDlg);
 				break;
 			case IDC_DF1TEXT:
 			case IDC_DF1TEXTQ:
-        DebOut("IDC_DF1TEXT received!\n");
+        bug("IDC_DF1TEXT received!\n");
 				getfloppyname (hDlg, 1);
 				addfloppytype (hDlg, 1);
 				addfloppyhistory (hDlg);
@@ -12213,7 +12262,7 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 #endif
 			}
 		}
-    DebOut("LOWORD (wParam): %d\n", LOWORD (wParam));
+    bug("LOWORD (wParam): %d\n", LOWORD (wParam));
 		switch (LOWORD (wParam))
 		{
 		case IDC_DF0ENABLE:
@@ -12246,7 +12295,7 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 			break;
 		case IDC_DF0:
 		case IDC_DF0QQ:
-      DebOut("IDC_DF0 received!\n");
+      bug("IDC_DF0 received!\n");
 			diskselect (hDlg, LOWORD(wParam), &workprefs, 0, NULL);
 			break;
 		case IDC_DF1:
@@ -14838,7 +14887,7 @@ static INT_PTR CALLBACK InputDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 				break;
 			}
 			if (HIWORD (wParam) == CBN_SELCHANGE || HIWORD (wParam) == CBN_KILLFOCUS)  {
-        DebOut("CBN_SELCHANGE\n");
+        bug("CBN_SELCHANGE\n");
 				switch (LOWORD (wParam))
 				{
 				case IDC_INPUTAMIGA:
@@ -15711,7 +15760,7 @@ static INT_PTR CALLBACK hw3dDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
 			break;
 		default:
 			if (HIWORD (wParam) == CBN_SELCHANGE || HIWORD (wParam) == CBN_KILLFOCUS)  {
-        DebOut("CBN_SELCHANGE\n");
+        bug("CBN_SELCHANGE\n");
 				switch (LOWORD (wParam))
 				{
 				case IDC_FILTER_NATIVERTG:
@@ -16165,7 +16214,7 @@ static INT_PTR CALLBACK AVIOutputDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 			}
 		}
 		if (HIWORD (wParam) == CBN_SELENDOK || HIWORD (wParam) == CBN_KILLFOCUS || HIWORD (wParam) == CBN_EDITCHANGE)  {
-        DebOut("CBN_SELCHANGE\n");
+        bug("CBN_SELCHANGE\n");
 			switch (LOWORD (wParam))
 			{
 				case IDC_STATEREC_RATE:
@@ -17413,7 +17462,7 @@ static int GetSettings (int all_options, HWND hwnd)
 	static struct newresource *panelresource;
 	struct newresource *tres;
 
-  DebOut("entered\n");
+  bug("entered\n");
 
 	gui_active++;
 
@@ -17483,7 +17532,7 @@ static int GetSettings (int all_options, HWND hwnd)
 			currentpage = LOADSAVE_ID;
 	}
 
-  DebOut("currentpage: %d, QUICKSTART_ID: %d, LOADSAVE_ID: %d\n", currentpage, QUICKSTART_ID, LOADSAVE_ID);
+  bug("currentpage: %d, QUICKSTART_ID: %d, LOADSAVE_ID: %d\n", currentpage, QUICKSTART_ID, LOADSAVE_ID);
 
   psresult=aros_show_gui();
 #if 0
@@ -17602,33 +17651,34 @@ void aros_main_loop(void);
  */
 int gui_init (void)
 {
-	int ret;
+    int ret;
 
-  DebOut("entered\n");
-  aros_init_gui();
+    bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
+    aros_init_gui();
 
-	read_rom_list ();
-  DebOut("rom list read done\n");
-	//inputdevice_updateconfig (NULL, &workprefs);
-  DebOut("inputdevice_updateconfig SKIPPED!\n");
-	for (;;) {
-		ret = GetSettings (1, currprefs.win32_notaskbarbutton ? hHiddenWnd : NULL);
-		if (!restart_requested)
-			break;
-		restart_requested = 0;
-	}
-	if (ret > 0) {
+    read_rom_list ();
+    bug("[JUAE] %s: rom list read done\n", __PRETTY_FUNCTION__);
+    //inputdevice_updateconfig (NULL, &workprefs);
+    bug("[JUAE] %s: inputdevice_updateconfig SKIPPED!\n", __PRETTY_FUNCTION__);
+    for (;;) {
+        ret = GetSettings (1, currprefs.win32_notaskbarbutton ? hHiddenWnd : NULL);
+        if (!restart_requested)
+            break;
+        restart_requested = 0;
+    }
+    if (ret > 0) {
 #ifdef AVIOUTPUT
-		AVIOutput_Begin ();
+        AVIOutput_Begin ();
 #endif
-	}
-  DebOut("left (ret: %d\n", ret);
-	return ret;
+    }
+    bug("[JUAE] %s: finished\n", __PRETTY_FUNCTION__);
+
+    return ret;
 }
 
 int gui_update (void)
 {
-	return 1;
+    return 1;
 }
 
 void gui_exit (void) {
@@ -17658,7 +17708,7 @@ void check_prefs_changed_gui (void)
 void gui_disk_image_change (int unitnum, const TCHAR *name, bool writeprotected)
 {
 #ifdef RETROPLATFORM
-	rp_disk_image_change (unitnum, name, writeprotected);
+    rp_disk_image_change (unitnum, name, writeprotected);
 #endif
 }
 

@@ -26,9 +26,10 @@
 #include "options.h"
 #include "sdl_aros.h"
 
-
 #include <SDL.h>
 #include <SDL_endian.h>
+
+#define SDLGD(x)
 
 void inputdevice_release_all_keys (void);
 
@@ -73,7 +74,7 @@ void gfx_unlock_picasso (bool dorender);
 #endif
 #endif
 
-#define DEBUG_LOG DebOut
+#define DEBUG_LOG bug
 
 struct gl_buffer_t
 {
@@ -130,7 +131,7 @@ extern void setid_af (struct uae_input_device *uid, int i, int slot, int sub, in
 #endif
 #endif
 
-#define DEBUG_LOG DebOut
+#define DEBUG_LOG bug
 
 SDL_Surface *display = NULL;
 SDL_Surface *screen = NULL;
@@ -296,8 +297,8 @@ unsigned int findString(char* in, char* list)
 void setupExtensions(void)
 {
   char* extensionList = (char*)glGetString(GL_EXTENSIONS);
-  DebOut("entered\n");
 
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
   if( findString("GL_ARB_shader_objects",extensionList) &&
       findString("GL_ARB_shading_language_100",extensionList) &&
@@ -369,7 +370,8 @@ int get_sdlgfx_type (void)
     char name[16] = "";
     static int driver = SDLGFX_DRIVER_UNKNOWN;
     static int search_done = 0;
-    DebOut("entered\n");
+
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
     if (!search_done) {
     if (SDL_VideoDriverName (name, sizeof name)) {
@@ -424,6 +426,8 @@ STATIC_INLINE unsigned long maskShift (unsigned long mask)
 
 static int get_color (int r, int g, int b, xcolnr *cnp)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     DEBUG_LOG ("Function: get_color\n");
 
     arSDLColors[ncolors].r = r << 4;
@@ -437,7 +441,7 @@ static void init_colors (void)
 {
     int i;
 
-    DebOut("entered\n");
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
     DEBUG_LOG ("Function: init_colors\n");
 
@@ -478,6 +482,8 @@ static int find_best_mode (int *width, int *height, int depth, int fullscreen)
 {
     int found = 0;
 
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     DEBUG_LOG ("Function: find_best_mode(%d,%d,%d)\n", *width, *height, depth);
 
     /* First test whether the specified mode is supported */
@@ -514,6 +520,8 @@ static int find_best_mode (int *width, int *height, int depth, int fullscreen)
 
 int picasso_palette (void)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
   TODO();
   return false;
 #if 0
@@ -540,6 +548,8 @@ int picasso_palette (void)
  */
 static int get_p96_pixel_format (const struct SDL_PixelFormat *fmt)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     if (fmt->BitsPerPixel == 8)
         return RGBFB_CLUT;
 
@@ -615,6 +625,8 @@ static long find_screen_modes (struct SDL_PixelFormat *vfmt, SDL_Rect *mode_list
     long count = 0;
     SDL_Rect **modes = SDL_ListModes (vfmt, SDL_FULLSCREEN | SDL_HWSURFACE);
 
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     if (modes != 0 && modes != (SDL_Rect**)-1) {
         unsigned int i;
         int w = -1;
@@ -654,6 +666,8 @@ static int round_up_to_power_of_2 (int value)
 {
     int result = 1;
 
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     while (result < value)
         result *= 2;
 
@@ -663,6 +677,8 @@ static int round_up_to_power_of_2 (int value)
 static void check_gl_extensions (void)
 {
     static int done = 0;
+
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
     if (!done) {
         const char *extensions = (const char *) glGetString(GL_EXTENSIONS);
@@ -675,6 +691,8 @@ static void check_gl_extensions (void)
 
 static void init_gl_display (GLsizei width, GLsizei height)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     glViewport (0, 0, width, height);
 
     glColor3f (1.0f, 1.0f, 1.0f);
@@ -700,6 +718,8 @@ static void init_gl_display (GLsizei width, GLsizei height)
 
 static void free_gl_buffer (struct gl_buffer_t *buffer)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     glBindTexture (buffer->target, 0);
     glDeleteTextures (1, &buffer->texture);
 
@@ -710,6 +730,8 @@ static void free_gl_buffer (struct gl_buffer_t *buffer)
 static int alloc_gl_buffer (struct gl_buffer_t *buffer, int width, int height, int want_16bit)
 {
     GLenum tex_intformat;
+
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
     buffer->width          = width;
     if (have_texture_rectangles) {
@@ -779,6 +801,8 @@ static int alloc_gl_buffer (struct gl_buffer_t *buffer, int width, int height, i
 
 void flush_gl_buffer (const struct gl_buffer_t *buffer, int first_line, int last_line)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     glTexSubImage2D (buffer->target, 0, 0, first_line, buffer->texture_width, last_line - first_line + 1, buffer->format, buffer->type, buffer->pixels + buffer->pitch * first_line);
 }
 
@@ -789,6 +813,8 @@ void render_gl_buffer (const struct gl_buffer_t *buffer, int first_line, int las
     float left_crop, right_crop, top_crop, bottom_crop;  //buffer cropping
     float amiga_real_w,amiga_real_h ; //used to calulate cropping
     float bottomledspace = 0;
+
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
     last_line++;
 
@@ -847,6 +873,8 @@ void render_gl_buffer (const struct gl_buffer_t *buffer, int first_line, int las
 
 static void sdl_flush_line (struct vidbuf_description *gfxinfo, int line_no)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
 }
 
 
@@ -856,22 +884,29 @@ static void sdl_flush_line (struct vidbuf_description *gfxinfo, int line_no)
 
 static int sdl_lock_nolock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     return 1;
 }
 
 static void sdl_unlock_nolock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
 }
 
 STATIC_INLINE void sdl_flush_block_nolock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb, int first_line, int last_line) {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
-  DebOut("entered (vidbuf_description %lx, firstline %d, last_line %d)\n", gfxinfo, first_line, last_line);
-  if(first_line >= last_line) {
-    DebOut("WARNING: %d >= %d\n", first_line, last_line);
-  }
-  else {
-    SDL_UpdateRect (display, 0, first_line, current_width, last_line - first_line + 1);
-  }
+    SDLGD(bug("[JUAE:SDL] %s: display 0x%p vidbuf_description @ 0x%p\n", __PRETTY_FUNCTION__, display, gfxinfo));
+    SDLGD(bug("[JUAE:SDL] %s: 0, %d ->  %d, %d\n", __PRETTY_FUNCTION__, first_line, current_width, last_line - first_line + 1));
+
+    if(first_line >= last_line) {
+        bug("[JUAE:SDL] WARNING: %d >= %d\n", first_line, last_line);
+    }
+    else {
+        SDL_UpdateRect (display, 0, first_line, current_width, last_line - first_line + 1);
+    }
 }
 
 /**
@@ -881,6 +916,8 @@ STATIC_INLINE void sdl_flush_block_nolock (struct vidbuf_description *gfxinfo, s
 static int sdl_lock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 {
     int success = 0;
+
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
     DEBUG_LOG ("Function: lock\n");
 
@@ -905,6 +942,8 @@ static int sdl_lock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 
 static void sdl_unlock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     DEBUG_LOG ("Function: unlock\n");
 
     SDL_UnlockSurface (display);
@@ -912,6 +951,8 @@ static void sdl_unlock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb
 
 static void sdl_flush_block (struct vidbuf_description *gfxinfo, struct vidbuffer *vb, int first_line, int last_line)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     DEBUG_LOG ("Function: flush_block %d %d\n", first_line, last_line);
 
     SDL_UnlockSurface (display);
@@ -923,6 +964,7 @@ static void sdl_flush_block (struct vidbuf_description *gfxinfo, struct vidbuffe
 
 static void sdl_flush_screen_dummy (struct vidbuf_description *gfxinfo, struct vidbuffer *vb, int first_line, int last_line)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 }
 
 //#include "hrtimer.h"
@@ -932,7 +974,9 @@ static void sdl_flush_screen_flip (struct vidbuf_description *gfxinfo, struct vi
     frame_time_t start_time;
     frame_time_t sleep_time;
 
-    SDL_BlitSurface (display,0,screen,0);
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
+    SDL_BlitSurface (display, 0, screen,0);
 
     start_time = read_processor_time ();
 
@@ -944,6 +988,8 @@ static void sdl_flush_screen_flip (struct vidbuf_description *gfxinfo, struct vi
 
 static void sdl_flush_clear_screen (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     DEBUG_LOG ("Function: flush_clear_screen\n");
 
     if (display) {
@@ -955,7 +1001,9 @@ static void sdl_flush_clear_screen (struct vidbuf_description *gfxinfo, struct v
 
 void flush_screen (struct vidbuffer *vb, int first_line, int last_line) {
 
-  DebOut("vidbuffer %lx, %d, %d)\n", vb, first_line, last_line);
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
+    SDLGD(bug("[JUAE:SDL] %s: vidbuffer @0x%p (%d -> %d)\n", __PRETTY_FUNCTION__, vb, first_line, last_line));
 
   SDL_UpdateRect (display, 0, first_line, current_width, last_line - first_line + 1);
 
@@ -1051,6 +1099,8 @@ int graphics_setup (void)
 {
     int result = 0;
 
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     max_uae_width = 8192;
     max_uae_height = 8192;
 
@@ -1065,7 +1115,7 @@ int graphics_setup (void)
 
         /* Find default display depth */
         bitdepth = info->vfmt->BitsPerPixel;
-        DebOut("bitdepth: %d\n", bitdepth);
+        SDLGD(bug("[JUAE:SDL] %s: bitdepth: %d\n", __PRETTY_FUNCTION__, bitdepth));
         bit_unit = info->vfmt->BytesPerPixel * 8;
 
         write_log ("SDLGFX: Display is %d bits deep.\n", bitdepth);
@@ -1194,7 +1244,7 @@ static int graphics_subinit_gl (void)
         gfxvidinfo.maxblocklines = MAXBLOCKLINES_MAX;
         gfxvidinfo.linemem = 0;
         gfxvidinfo.pixbytes = display->format->BytesPerPixel;
-        DebOut("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.pixbytes);
+        SDLGD(bug("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.pixbytes);
         gfxvidinfo.rowbytes = display->pitch;
         SDL_SetColors (display, arSDLColors, 0, 256);
         reset_drawing ();
@@ -1214,7 +1264,7 @@ static int graphics_subinit_gl (void)
 #endif
     }
 
-    DebOut("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.pixbytes);
+    SDLGD(bug("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.pixbytes);
 
     gfxvidinfo.emergmem = scrlinebuf; // memcpy from system-memory to video-memory
 
@@ -1231,6 +1281,8 @@ static int graphics_subinit_gl (void)
 
 static int graphics_subinit (void)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
 #ifdef USE_GL
     if (currprefs.use_gl) {
         if (graphics_subinit_gl () == 0)
@@ -1256,7 +1308,7 @@ static int graphics_subinit (void)
     }
     DEBUG_LOG ("Resolution     : %d x %d x %d\n", current_width, current_height, bitdepth);
 
-    screen = SDL_SetVideoMode (current_width, current_height, 32, uiSDLVidModFlags);
+    screen = SDL_SetVideoMode (current_width, current_height, bitdepth, uiSDLVidModFlags);
 
     if (screen == NULL) {
         gui_message ("Unable to set video mode: %s\n", SDL_GetError ());
@@ -1326,7 +1378,7 @@ static int graphics_subinit (void)
         gfxvidinfo.maxblocklines    = MAXBLOCKLINES_MAX;
         gfxvidinfo.drawbuffer.linemem      = 0;
         gfxvidinfo.drawbuffer.pixbytes     = display->format->BytesPerPixel;
-        DebOut("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.drawbuffer.pixbytes);
+        SDLGD(bug("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.drawbuffer.pixbytes));
 
         gfxvidinfo.drawbuffer.rowbytes     = display->pitch;
 
@@ -1357,7 +1409,7 @@ static int graphics_subinit (void)
     }
 #endif /* USE_GL */
 
-    //DebOut("force gfxvidinfo.pixbytes %d to 4\n", gfxvidinfo.pixbytes);
+    //bug("force gfxvidinfo.pixbytes %d to 4\n", gfxvidinfo.pixbytes);
     //gfxvidinfo.pixbytes=4;
     /* Set UAE window title and icon name */
     setmaintitle ();
@@ -1387,6 +1439,8 @@ int graphics_init (bool b)
 {
     int success = 0;
 
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     DEBUG_LOG ("Function: graphics_init\n");
 
     if (currprefs.color_mode > 5) {
@@ -1408,8 +1462,8 @@ int graphics_init (bool b)
     current_width  = currprefs.gfx_size_win.width;
     current_height = currprefs.gfx_size_win.height;
 
-    DebOut("current_width : %d\n", current_width);
-    DebOut("current_height: %d\n", current_height);
+    SDLGD(bug("current_width : %d\n", current_width));
+    SDLGD(bug("current_height: %d\n", current_height));
     
 
     if (find_best_mode (&current_width, &current_height, bitdepth, fullscreen)) {
@@ -1425,6 +1479,8 @@ int graphics_init (bool b)
 
 static void graphics_subshutdown (void)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     DEBUG_LOG ("Function: graphics_subshutdown\n");
 
 #ifdef USE_GL
@@ -1461,6 +1517,8 @@ static void graphics_subshutdown (void)
 
 void graphics_leave (void)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     DEBUG_LOG ("Function: graphics_leave\n");
 
     graphics_subshutdown ();
@@ -1470,6 +1528,8 @@ void graphics_leave (void)
 
 void graphics_notify_state (int state)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     if (last_state != state) {
     last_state = state;
     if (display)
@@ -1483,7 +1543,7 @@ bool handle_events (void)
     int istest = inputdevice_istest ();
     int scancode     = 0;
 
-    DebOut("entered\n");
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
     while (SDL_PollEvent (&rEvent)) {
     switch (rEvent.type) {
@@ -1549,7 +1609,7 @@ bool handle_events (void)
                 keycode = rEvent.key.keysym.sym;
 #endif
                 keycode = rEvent.key.keysym.sym;
-                DebOut("keycode: %d\n", keycode);
+                SDLGD(bug("keycode: %d\n", keycode));
 
 //              write_log ("Event: key: %d to: %d  %s\n", keycode, sdlk2dik (keycode), state ? "down" : "up");
 /*              if (!istest)
@@ -1704,6 +1764,8 @@ bool handle_events (void)
 
 static void switch_keymaps (void)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
 #if 0
     if (currprefs.map_raw_keys) {
         if (have_rawkeys) {
@@ -1723,14 +1785,14 @@ static void switch_keymaps (void)
 
 int check_prefs_changed_gfx (void)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
 #if 0
     if (changed_prefs.map_raw_keys != currprefs.map_raw_keys) {
         switch_keymaps ();
         currprefs.map_raw_keys = changed_prefs.map_raw_keys;
     }
 #endif
-    DebOut("entered\n");
-
 
     if (changed_prefs.gfx_size_win.width        != currprefs.gfx_size_win.width
         || changed_prefs.gfx_size_win.height    != currprefs.gfx_size_win.height
@@ -1885,7 +1947,7 @@ void DX_SetPalette_vsync(void)
 
 void DX_Fill (int dstx, int dsty, int width, int height, uae_u32 color)
 {
-    DebOut("entered\n");
+    SDLGD(bug("entered\n"));
 #ifdef USE_GL /* TODO think about optimization for GL */
     if (!currprefs.use_gl) {
 #endif /* USE_GL */
@@ -1910,7 +1972,7 @@ int DX_Blit (int srcx, int srcy, int dstx, int dsty, int width, int height, BLIT
 
 static void set_window_for_picasso (void)
 {
-    DebOut("entered\n");
+    SDLGD(bug("entered\n"));
     DEBUG_LOG ("Function: set_window_for_picasso\n");
 
     if (screen_was_picasso && current_width == picasso_vidinfo.width && current_height == picasso_vidinfo.height)
@@ -1926,13 +1988,13 @@ static void set_window_for_picasso (void)
 void gfx_set_picasso_modeinfo (uae_u32 w, uae_u32 h, uae_u32 depth, RGBFTYPE rgbfmt)
 {
     DEBUG_LOG ("Function: gfx_set_picasso_modeinfo w: %i h: %i depth: %i rgbfmt: %i\n", w, h, depth, rgbfmt);
-    DebOut    ("Function: gfx_set_picasso_modeinfo w: %i h: %i depth: %i rgbfmt: %i\n", w, h, depth, rgbfmt);
+    bug    ("Function: gfx_set_picasso_modeinfo w: %i h: %i depth: %i rgbfmt: %i\n", w, h, depth, rgbfmt);
 
     picasso_vidinfo.width = w;
     picasso_vidinfo.height = h;
     picasso_vidinfo.depth = depth;
     picasso_vidinfo.pixbytes = bit_unit >> 3;
-    DebOut("gfxvidinfo.pixbytes: %d\n", picasso_vidinfo.pixbytes);
+    SDLGD(bug("gfxvidinfo.pixbytes: %d\n", picasso_vidinfo.pixbytes));
     if (screen_is_picasso)
         set_window_for_picasso();
 }
@@ -2037,12 +2099,14 @@ int is_fullscreen (void)
 
 int is_vsync (void)
 {
+
     return vsync;
 }
 
 void toggle_fullscreen (int mode)
 {
-    DebOut("entered\n");
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     /* FIXME: Add support for separate full-screen/windowed sizes */
     fullscreen = 1 - fullscreen;
 
@@ -2059,7 +2123,10 @@ void toggle_fullscreen (int mode)
 
 void toggle_mousegrab (void)
 {
-  DebOut("toggle_mousegrab: fullscreen: %d\n", fullscreen);
+    SDLGD(
+        bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);
+        bug("[JUAE:SDL] %s: fullscreen: %d\n", __PRETTY_FUNCTION__, fullscreen);
+    )
 
     if (!fullscreen) {
         if (SDL_WM_GrabInput (SDL_GRAB_QUERY) == SDL_GRAB_OFF) {
@@ -2100,46 +2167,64 @@ void screenshot (int mode, int doprepare)
 
 static int init_mouse (void)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     return 1;
 }
 
 static void close_mouse (void)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     return;
 }
 
 static int acquire_mouse (int num, int flags)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     /* SDL supports only one mouse */
     return 1;
 }
 
 static void unacquire_mouse (int num)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     return;
 }
 
 static int get_mouse_num (void)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     return 1;
 }
 
 static TCHAR *get_mouse_friendlyname (int mouse)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     return (TCHAR *)"Default mouse";
 }
 static TCHAR *get_mouse_uniquename (int mouse)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     return (TCHAR *)"DEFMOUSE1";
 }
 
 static int get_mouse_widget_num (int mouse)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     return MAX_AXES + MAX_BUTTONS;
 }
 
 static int get_mouse_widget_first (int mouse, int type)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     switch (type) {
     case IDEV_WIDGET_BUTTON:
         return FIRST_BUTTON;
@@ -2151,6 +2236,8 @@ static int get_mouse_widget_first (int mouse, int type)
 
 static int get_mouse_widget_type (int mouse, int num, TCHAR *name, uae_u32 *code)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     if (num >= MAX_AXES && num < MAX_AXES + MAX_BUTTONS) {
         if (name)
             sprintf (name, "Button %d", num + 1 + MAX_AXES);
@@ -2165,11 +2252,15 @@ static int get_mouse_widget_type (int mouse, int num, TCHAR *name, uae_u32 *code
 
 static void read_mouse (void)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     /* We handle mouse input in handle_events() */
 }
 
 static int get_mouse_flags (int num)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     return 0;
 }
 
@@ -2193,31 +2284,43 @@ struct inputdevice_functions inputdevicefunc_mouse = {
  */
 static int get_kb_num (void)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     /* SDL supports only one keyboard */
     return 1;
 }
 
 static TCHAR *get_kb_friendlyname (int kb)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     return (TCHAR *)"Default keyboard";
 }
 static TCHAR *get_kb_uniquename (int kb)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     return (TCHAR *)"DEFKEYB1";
 }
 
 static int get_kb_widget_num (int kb)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     return 255; // fix me
 }
 
 static int get_kb_widget_first (int kb, int type)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     return 0;
 }
 
 static int get_kb_widget_type (int kb, int num, TCHAR *name, uae_u32 *code)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     if (name)
         _tcscpy (name, di_keyboard[kb].buttonname[num]);
     if (code)
@@ -2227,6 +2330,8 @@ static int get_kb_widget_type (int kb, int num, TCHAR *name, uae_u32 *code)
 
 static int init_kb (void)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     if (keyboard_inited)
         return 1;
     //oldusedleds = -1;
@@ -2281,6 +2386,8 @@ static int init_kb (void)
 
 static void close_kb (void)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     if (keyboard_inited == 0)
         return;
     keyboard_inited = 0;
@@ -2296,24 +2403,34 @@ static void close_kb (void)
 
 static int keyhack (int scancode, int pressed, int num)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     return scancode;
 }
 
 static void read_kb (void)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
 }
 
 static int acquire_kb (int num, int flags)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     return 1;
 }
 
 static void unacquire_kb (int num)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
 }
 
 static int get_kb_flags (int num)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     return 0;
 }
 
@@ -2337,17 +2454,23 @@ struct inputdevice_functions inputdevicefunc_keyboard =
 
 int getcapslockstate (void)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     return SDL_GetModState() & KMOD_CAPS;
 }
 
 void setcapslockstate (int state)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     //TODO:
 }
 
 
 static void setid (struct uae_input_device *uid, int i, int slot, int sub, int port, int evt, bool gp)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
 	if (gp)
 		inputdevice_sparecopy (&uid[i], slot, 0);
 	uid[i].eventid[slot][sub] = evt;
@@ -2355,6 +2478,8 @@ static void setid (struct uae_input_device *uid, int i, int slot, int sub, int p
 }
 static void setid (struct uae_input_device *uid, int i, int slot, int sub, int port, int evt, int af, bool gp)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
 	setid (uid, i, slot, sub, port, evt, gp);
 	uid[i].flags[slot][sub] &= ~ID_FLAG_AUTOFIRE_MASK;
 	if (af >= JPORT_AF_NORMAL)
@@ -2371,8 +2496,10 @@ static void setid (struct uae_input_device *uid, int i, int slot, int sub, int p
 //int input_get_default_mouse (struct uae_input_device *uid, int num, int port, int af)
 int input_get_default_mouse (struct uae_input_device *uid, int num, int port, int af, bool gp, bool wheel, bool joymouseswap)
 {
-  DebOut("uid %lx, num %d, port %d, af %d\n", uid, num, port, af);
-  DebOut("input_get_default_mouse: ignore parameter gp %d, wheel %d, joymouseswap %d\n", gp, wheel, joymouseswap);
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
+  SDLGD(bug("uid %lx, num %d, port %d, af %d\n", uid, num, port, af));
+  SDLGD(bug("input_get_default_mouse: ignore parameter gp %d, wheel %d, joymouseswap %d\n", gp, wheel, joymouseswap));
     /* SDL supports only one mouse */
     setid (uid, num, ID_AXIS_OFFSET + 0, 0, port, port ? INPUTEVENT_MOUSE2_HORIZ : INPUTEVENT_MOUSE1_HORIZ, gp);
     setid (uid, num, ID_AXIS_OFFSET + 1, 0, port, port ? INPUTEVENT_MOUSE2_VERT : INPUTEVENT_MOUSE1_VERT, gp);
@@ -2391,10 +2518,8 @@ int input_get_default_mouse (struct uae_input_device *uid, int num, int port, in
 //                }
     }
     if (num == 0) {
-      DebOut("return 1\n");
       return 1;
     }
-    DebOut("return 0\n");
     return 0;
 }
 
@@ -2403,7 +2528,8 @@ int input_get_default_mouse (struct uae_input_device *uid, int num, int port, in
  */
 void gfx_default_options (struct uae_prefs *p)
 {
-    DebOut("entered\n");
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
     int type = get_sdlgfx_type ();
 
 #if 0
@@ -2420,6 +2546,8 @@ void gfx_default_options (struct uae_prefs *p)
 
 void gfx_save_options (struct zfile *f, const struct uae_prefs *p)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
 #if 0
     cfgfile_write (f, GFX_NAME ".map_raw_keys=%s\n", p->map_raw_keys ? "true" : "false");
 #endif
@@ -2430,6 +2558,8 @@ void gfx_save_options (struct zfile *f, const struct uae_prefs *p)
 
 int gfx_parse_option (struct uae_prefs *p, const char *option, const char *value)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
 #if 0
     int result = (cfgfile_yesno (option, value, "map_raw_keys", &(p->map_raw_keys)));
 #endif
@@ -2442,6 +2572,8 @@ int gfx_parse_option (struct uae_prefs *p, const char *option, const char *value
 
 int target_checkcapslock (int scancode, int *state)
 {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
         if (scancode != DIK_CAPITAL && scancode != DIK_NUMLOCK && scancode != DIK_SCROLL)
                 return 0;
         if (*state == 0)
@@ -2463,7 +2595,8 @@ void makeverstr (TCHAR *s);
 void setmaintitle (void)
 {
     TCHAR txt[1000], txt2[500];
-    DebOut("entered\n");
+
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
     makeverstr(VersionStr);
     txt[0] = 0;
@@ -2492,6 +2625,9 @@ void setmaintitle (void)
 extern struct vidbuf_description gfxvidinfo;
 
 void flush_block (struct vidbuffer *vb, int first, int last) {
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    SDLGD(bug("[JUAE:SDL] %s: vidbuffer @ 0x%p [%d -> %d]\n", __PRETTY_FUNCTION__, vb,  first, last));
+
   sdl_flush_block_nolock (&gfxvidinfo, vb, first, last);
 }
 

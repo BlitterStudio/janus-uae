@@ -53,49 +53,47 @@ static TCHAR *gs (UAEREG *root) {
 
 int regsetstr (UAEREG *root, const TCHAR *name, const TCHAR *str) {
 
-  DebOut("entered\n");
-  DebOut("group: %s\n", gs(root));
-  DebOut("name: %s\n", name);
+  bug("[JUAE:Reg] %s(0x%p, '%s')\n", __PRETTY_FUNCTION__, root, name);
+  bug("[JUAE:Reg] %s: group: %s\n", __PRETTY_FUNCTION__, gs(root));
 
-  //reginitializeinit(NULL);
+    //reginitializeinit(NULL);
 
   if(CFG_SelectGroup(gs(root), TRUE)==CFG_ERROR) {
-    DebOut("could not create group %s \n", gs(root));
+    bug("[JUAE:Reg] %s: could not create group %s \n", __PRETTY_FUNCTION__, gs(root));
     return 0;
   }
 
   if(CFG_WriteText(name, str)==CFG_ERROR) {
-    DebOut("ERROR: wrong type for key %s\n", name);
+    bug("[JUAE:Reg] %s: ERROR: wrong type for key %s\n", __PRETTY_FUNCTION__, name);
     return 0;
   }
 
   //regflushfile();
 
-  DebOut("now: %s = %s\n", name, str);
+  bug("[JUAE:Reg] %s: now: %s = %s\n", __PRETTY_FUNCTION__, name, str);
   return 1;
 }
 
 int regsetint (UAEREG *root, const TCHAR *name, int val) {
 
-  DebOut("entered\n");
-  DebOut("group: %s\n", gs(root));
-  DebOut("name: %s\n", name);
+  bug("[JUAE:Reg] %s(0x%p, '%s')\n", __PRETTY_FUNCTION__, root, name);
+  bug("[JUAE:Reg] %s: group: %s\n", __PRETTY_FUNCTION__, gs(root));
 
   //reginitializeinit(NULL);
 
   if(CFG_SelectGroup(gs(root), TRUE)==CFG_ERROR) {
-    DebOut("could not create group %s \n", gs(root));
+    bug("[JUAE:Reg] %s: could not create group %s \n", __PRETTY_FUNCTION__, gs(root));
     //regflushfile();
     return 0;
   }
 
   if(CFG_WriteInt(name, val)==CFG_ERROR) {
-    DebOut("ERROR: wrong type for key %s\n", name);
+    bug("[JUAE:Reg] %s: ERROR: wrong type for key %s\n", __PRETTY_FUNCTION__, name);
     //regflushfile();
     return 0;
   }
 
-  DebOut("now: %s = %d\n", name, val);
+  bug("[JUAE:Reg] %s: now: %s = %d\n", __PRETTY_FUNCTION__, name, val);
   //regflushfile();
   return 1;
 }
@@ -103,26 +101,27 @@ int regsetint (UAEREG *root, const TCHAR *name, int val) {
 int regqueryint (UAEREG *root, const TCHAR *name, int *val) {
   signed int res;
 
-  DebOut("group: %s\n", gs(root));
+  bug("[JUAE:Reg] %s(0x%p, '%s')\n", __PRETTY_FUNCTION__, root, name);
+  bug("[JUAE:Reg] %s: group: %s\n", __PRETTY_FUNCTION__, gs(root));
 
   //reginitializeinit(NULL);
 
   if(CFG_SelectGroup(gs(root), FALSE)==CFG_ERROR) {
-    DebOut("group %s not found\n", gs(root));
+    bug("[JUAE:Reg] %s: group %s not found\n", __PRETTY_FUNCTION__, gs(root));
     //regflushfile();
     return 0;
   }
-  DebOut("name: %s\n", name);
+  bug("[JUAE:Reg] name: %s\n", __PRETTY_FUNCTION__, name);
 
   res=CFG_ReadInt(name, 6666);
   if (res == 6666) {
-    DebOut("key %s not found\n", name);
+    bug("[JUAE:Reg] %s: key %s not found\n", __PRETTY_FUNCTION__, name);
     *val=0;
     //regflushfile();
     return 0;
   }
 
-  DebOut("found %s = %d\n", name, res);
+  bug("[JUAE:Reg] %s: found %s = %d\n", __PRETTY_FUNCTION__, name, res);
   *val=res;
   //regflushfile();
   return 1;
@@ -133,14 +132,13 @@ int regsetlonglong (UAEREG *root, const TCHAR *name, ULONGLONG val) {
 
   TCHAR str[32];
 
-  DebOut("entered\n");
-  DebOut("group: %s\n", gs(root));
-  DebOut("name: %s\n", name);
+  bug("[JUAE:Reg] %s(0x%p, '%s')\n", __PRETTY_FUNCTION__, root, name);
+  bug("[JUAE:Reg] %s: group: %s\n", __PRETTY_FUNCTION__, gs(root));
 
   //reginitializeinit(NULL);
 
   if(CFG_SelectGroup(gs(root), TRUE)==CFG_ERROR) {
-    DebOut("could not create group %s \n", gs(root));
+    bug("[JUAE:Reg] %s: could not create group %s \n", __PRETTY_FUNCTION__, gs(root));
     //regflushfile();
     return 0;
   }
@@ -149,12 +147,12 @@ int regsetlonglong (UAEREG *root, const TCHAR *name, ULONGLONG val) {
 	_stprintf (str, _T("%I64d"), val);
 
   if(CFG_WriteText(name, str)==CFG_ERROR) {
-    DebOut("ERROR: wrong type for key %s\n", name);
+    bug("[JUAE:Reg] %s: ERROR: wrong type for key %s\n", __PRETTY_FUNCTION__, name);
     //regflushfile();
     return 0;
   }
 
-  DebOut("now: %s = %s\n", name, str);
+  bug("[JUAE:Reg] %s: now: %s = %s\n", __PRETTY_FUNCTION__, name, str);
   //regflushfile();
   return 1;
 }
@@ -164,20 +162,19 @@ int regquerylonglong (UAEREG *root, const TCHAR *name, ULONGLONG *val) {
 
   const char *res;
 
-  DebOut("entered\n");
-  DebOut("group: %s\n", gs(root));
-  DebOut("name: %s\n", name);
+  bug("[JUAE:Reg] %s(0x%p, '%s')\n", __PRETTY_FUNCTION__, root, name);
+  bug("[JUAE:Reg] %s: group: %s\n", __PRETTY_FUNCTION__, gs(root));
 
   //reginitializeinit(NULL);
 
   if(CFG_SelectGroup(gs(root), TRUE)==CFG_ERROR) {
-    DebOut("could not create group %s \n", gs(root));
+    bug("[JUAE:Reg] %s: could not create group %s \n", __PRETTY_FUNCTION__, gs(root));
     return 0;
   }
 
   res=CFG_ReadText(name, PUPPA);
   if (!strcmp (res, PUPPA)) {
-    DebOut("key %s not found\n", name);
+    bug("[JUAE:Reg] %s: key %s not found\n", __PRETTY_FUNCTION__, name);
     //regflushfile();
     return 0;
   }
@@ -185,7 +182,7 @@ int regquerylonglong (UAEREG *root, const TCHAR *name, ULONGLONG *val) {
   /* no 64bit support in SDL_config..*/
   *val = _tstoi64 (res);
 
-  DebOut("return: %s = %I64d\n", name, *val);
+  bug("[JUAE:Reg] %s: return: %s = %I64d\n", __PRETTY_FUNCTION__, name, *val);
   //regflushfile();
   return 1;
 }
@@ -193,25 +190,25 @@ int regquerylonglong (UAEREG *root, const TCHAR *name, ULONGLONG *val) {
 int regquerystr (UAEREG *root, const TCHAR *name, TCHAR *str, int *size)
 {
   const char *res;
-  DebOut("entered\n");
+  bug("[JUAE:Reg] %s(0x%p, '%s')\n", __PRETTY_FUNCTION__, root, name);
 
   //reginitializeinit(NULL);
 
   if(CFG_SelectGroup(gs(root), FALSE)==CFG_ERROR) {
-    DebOut("group %s not found\n", gs(root));
+    bug("[JUAE:Reg] %s: group %s not found\n", __PRETTY_FUNCTION__, gs(root));
     //regflushfile();
     return 0;
   }
 
   res=CFG_ReadText(name, PUPPA);
   if (!strcmp (res, PUPPA)) {
-    DebOut("key %s not found\n", name);
+    bug("[JUAE:Reg] %s: key %s not found\n", __PRETTY_FUNCTION__, name);
     //regflushfile();
     return 0;
   }
 
   strncpy(str, res, *size);
-  DebOut("found %s = %s\n", name, str);
+  bug("[JUAE:Reg] %s: found %s = %s\n", __PRETTY_FUNCTION__, name, str);
   //regflushfile();
   return strlen(str);
 }
@@ -228,17 +225,17 @@ int regenumstr (UAEREG *root, int idx, TCHAR *name, int *nsize, TCHAR *str, int 
 	name[0] = 0;
 	str[0]  = 0;
 
-  DebOut("idx: %d\n", idx);
-  DebOut("root: %lx\n", root);
+  bug("[JUAE:Reg] %s(0x%p)\n", __PRETTY_FUNCTION__, root);
+  bug("[JUAE:Reg] %s: idx: %d\n", __PRETTY_FUNCTION__, idx);
+  bug("[JUAE:Reg] %s: group: %s\n", __PRETTY_FUNCTION__, gs(root));
 
-  DebOut("group: %s\n", gs(root));
   CFG_SelectGroup(gs(root), TRUE);
 
   max=CFG_GetEntriesInSelectedGroup(0);
-  DebOut("number of entries: %d\n", CFG_GetEntriesInSelectedGroup(0));
+  bug("[JUAE:Reg] number of entries: %d\n", __PRETTY_FUNCTION__, CFG_GetEntriesInSelectedGroup(0));
 
   if(idx == max) {
-    DebOut("no more entries\n");
+    bug("[JUAE:Reg] no more entries\n", __PRETTY_FUNCTION__);
     //regflushfile();
     return 0;
   }
@@ -252,11 +249,11 @@ int regenumstr (UAEREG *root, int idx, TCHAR *name, int *nsize, TCHAR *str, int 
   }
 
   res=CFG_GetSelectedEntryName();
-  DebOut("name: %s\n", res);
+  bug("[JUAE:Reg] %s: name: %s\n", __PRETTY_FUNCTION__, res);
   strncpy(name, res, *nsize);
 
   res=CFG_ReadText(name, "");
-  DebOut("value: %s\n", res);
+  bug("[JUAE:Reg] %s: value: %s\n", __PRETTY_FUNCTION__, res);
   strncpy(str, res, *size);
 
   //regflushfile();
@@ -293,7 +290,7 @@ int regsetdata (UAEREG *root, const TCHAR *name, const void *str, int size) {
   //reginitializeinit(NULL);
 
   if(CFG_SelectGroup(gs(root), FALSE)==CFG_ERROR) {
-    DebOut("group %s not found\n", gs(root));
+    bug("[JUAE:Reg] %s: group %s not found\n", __PRETTY_FUNCTION__, gs(root));
     //regflushfile();
     return 0;
   }
@@ -301,7 +298,7 @@ int regsetdata (UAEREG *root, const TCHAR *name, const void *str, int size) {
     _stprintf (tmp + i * 2, _T("%02X"), in[i]); 
   }
   if(CFG_WriteText(name, tmp)==CFG_ERROR) {
-    DebOut("Error writing to key %s\n", name);
+    bug("[JUAE:Reg] %s: Error writing to key %s\n", __PRETTY_FUNCTION__, name);
     ret=0;
   }
 
@@ -353,13 +350,13 @@ err:
 /* warning: never tested */
 int regdelete (UAEREG *root, const TCHAR *name) {
 
-  DebOut("group: %s\n", gs(root));
-  DebOut("name: %s\n", name);
+  bug("[JUAE:Reg] %s(0x%p, '%s')\n", __PRETTY_FUNCTION__, root, name);
+  bug("[JUAE:Reg] %s: group: %s\n", __PRETTY_FUNCTION__, gs(root));
 
   //reginitializeinit(NULL);
 
   if(CFG_SelectGroup(gs(root), FALSE)==CFG_ERROR) {
-    DebOut("group %s not found, ok\n", gs(root));
+    bug("[JUAE:Reg] %s: group %s not found, ok\n", __PRETTY_FUNCTION__, gs(root));
     //regflushfile();
     return 1;
   }
@@ -379,26 +376,25 @@ int regexists (UAEREG *root, const TCHAR *name)
   int ret = 1;
   const TCHAR *tmp;
 
-  DebOut("entered\n");
-  DebOut("inipath: %s\n", inipath);
-  DebOut("name: %s\n", name);
+  bug("[JUAE:Reg] %s(0x%p, '%s')\n", __PRETTY_FUNCTION__, root, name);
+  bug("[JUAE:Reg] %s: inipath: %s\n", __PRETTY_FUNCTION__, inipath);
 
 #if 0
   if (CFG_OK != CFG_OpenFile("PROGDIR:winuae.ini", &config)) {
-    DebOut("winuae.ini does not exist\n");
+    bug("[JUAE:Reg] winuae.ini does not exist\n", __PRETTY_FUNCTION__);
     return 0;
   }
 
-  DebOut("opened PROGDIR:winuae\n");
+  bug("[JUAE:Reg] opened PROGDIR:winuae\n", __PRETTY_FUNCTION__);
 #endif
 
   tmp=CFG_ReadText(name, PUPPA);
   if (!_tcscmp (tmp, PUPPA)) {
-    DebOut("created new file\n");
+    bug("[JUAE:Reg] %s: new entry created\n", __PRETTY_FUNCTION__);
     ret = 0;
   }
 
-  DebOut("File was already there (%s = %s)\n", name, tmp);
+  bug("[JUAE:Reg] %s: existing entry (%s = %s)\n", __PRETTY_FUNCTION__, name, tmp);
 #if 0
 
   CFG_CloseFile(&config);
@@ -413,25 +409,24 @@ void regdeletetree (UAEREG *root, const TCHAR *name) {
 
   int ret;
 
-  DebOut("name: %s\n", name);
-  DebOut("entered\n");
-  DebOut("WARNING: never tested!!\n");
+  bug("[JUAE:Reg] %s(0x%p, '%s')\n", __PRETTY_FUNCTION__, root, name);
+  bug("[JUAE:Reg] %s: WARNING: never tested!!\n", __PRETTY_FUNCTION__);
 
   if(root!=NULL) {
-    DebOut("ERROR: root!=NULL not done!!\n");
+    bug("[JUAE:Reg] %s: ERROR: root!=NULL not done!!\n", __PRETTY_FUNCTION__);
     return;
   }
 
   //reginitializeinit(NULL);
 
   if(CFG_RemoveGroup(name)==CFG_ERROR) {
-    DebOut("group %s did not exists before\n", name);
+    bug("[JUAE:Reg] %s: group %s did not exists before\n", __PRETTY_FUNCTION__, name);
     //regflushfile();
     return;
   }
 
   //regflushfile();
-  DebOut("group %s deleted\n", name);
+  bug("[JUAE:Reg] %s: group %s deleted\n", __PRETTY_FUNCTION__, name);
 }
 
 int regexiststree (UAEREG *root, const TCHAR *name)
@@ -440,13 +435,13 @@ int regexiststree (UAEREG *root, const TCHAR *name)
 
   //reginitializeinit(NULL);
 
-  DebOut("entered\n");
-  DebOut("root: %s\n", root);
-  DebOut("name: %s\n", name);
+  bug("[JUAE:Reg] %s(0x%p, '%s')\n", __PRETTY_FUNCTION__, root, name);
+  bug("[JUAE:Reg] %s: root: %s\n", __PRETTY_FUNCTION__, root);
+  bug("[JUAE:Reg] %s: name: %s\n", __PRETTY_FUNCTION__, name);
 
   res=(int) CFG_GroupExists(name);
 
-  DebOut("result: %d\n", res);
+  bug("[JUAE:Reg] %s: result: %d\n", __PRETTY_FUNCTION__, res);
 
   //regflushfile();
 
@@ -458,9 +453,9 @@ UAEREG *regcreatetree (UAEREG *root, const TCHAR *name) {
 	UAEREG *fkey;
   TCHAR *ininame;
 
-  DebOut("entered\n");
-  DebOut("name: %s\n", name);
-  DebOut("root: %lx\n", root);
+  bug("[JUAE:Reg] %s(0x%p, '%s')\n", __PRETTY_FUNCTION__, root, name);
+  bug("[JUAE:Reg] %s: name: %s\n", __PRETTY_FUNCTION__, name);
+  bug("[JUAE:Reg] %s: root: %lx\n", __PRETTY_FUNCTION__, root);
 
   if (!root) {
     if (!name)
@@ -471,7 +466,7 @@ UAEREG *regcreatetree (UAEREG *root, const TCHAR *name) {
     ininame = xmalloc (TCHAR, _tcslen (root->inipath) + 1 + _tcslen (name) + 1);
     _stprintf (ininame, _T("%s/%s"), root->inipath, name);
   }
-  DebOut("ininame: %s\n", ininame);
+  bug("[JUAE:Reg] %s: ininame: %s\n", __PRETTY_FUNCTION__, ininame);
   fkey = xcalloc (UAEREG, 1);
   fkey->inipath = ininame;
 
@@ -479,8 +474,8 @@ UAEREG *regcreatetree (UAEREG *root, const TCHAR *name) {
   CFG_SelectGroup(name, true);
   //regflushfile();
 
-  DebOut("created key: %lx\n", fkey);
-  DebOut("selected group: %s\n", name);
+  bug("[JUAE:Reg] %s: created key: %lx\n", __PRETTY_FUNCTION__, fkey);
+  bug("[JUAE:Reg] %s: selected group: %s\n", __PRETTY_FUNCTION__, name);
 
 	return fkey;
 }
@@ -488,7 +483,7 @@ UAEREG *regcreatetree (UAEREG *root, const TCHAR *name) {
 /* free allocated memory */
 void regclosetree (UAEREG *key)
 {
-  DebOut("entered (key: %lx)\n", key);
+  bug("[JUAE:Reg] %s(key: %lx)\n", __PRETTY_FUNCTION__, key);
 	if (!key)
 		return;
 #if 0
@@ -512,27 +507,29 @@ int reginitializeinit (TCHAR **pppath)
 	int s, v1, v2, v3;
 #endif
 
+  bug("[JUAE:Reg] %s()\n", __PRETTY_FUNCTION__);
+
   /* AROS never uses the registry (we have none..), so we use INI-files */
 	inimode = 1;
 
   if (CFG_OK != CFG_OpenFile(INI_FILE, &ini )) {
-    DebOut("%s does not exist\n", INI_FILE);
+    bug("[JUAE:Reg] %s: %s does not exist\n", __PRETTY_FUNCTION__, INI_FILE);
     goto FAIL2;
   }
 
   if(CFG_SelectGroup("WinUAE", false) != CFG_OK) {
-    DebOut("%s has dubious contents\n", INI_FILE);
+    bug("[JUAE:Reg] %s: %s has dubious contents\n", __PRETTY_FUNCTION__, INI_FILE);
     goto FAIL1;
   }
 
   res=CFG_ReadText("Version", PUPPA);
   if(!strcmp(res, PUPPA)) {
-    DebOut("%s has dubious contents\n", INI_FILE);
+    bug("[JUAE:Reg] %s: %s has dubious contents\n", __PRETTY_FUNCTION__, INI_FILE);
     goto FAIL1;
   }
 
   if(CFG_SelectGroup("Warning", true)==CFG_ERROR) {
-    DebOut("%s: could not create new group\n");
+    bug("[JUAE:Reg] %s: %s: could not create new group\n", __PRETTY_FUNCTION__);
     goto FAIL1;
   }
 
@@ -542,36 +539,36 @@ int reginitializeinit (TCHAR **pppath)
 	memset (tmp1, 0, sizeof tmp1);
 	s = 200;
   res=CFG_ReadText("info1", PUPPA);
-  DebOut("info1: %s\n", res);
+  bug("[JUAE:Reg] %s: info1: %s\n", __PRETTY_FUNCTION__, res);
   if(!strcmp(res, PUPPA)) goto FAIL1;
   strcpy(tmp1, res);
   res=CFG_ReadText("info2", PUPPA);
-  DebOut("info2: %s\n", res);
+  bug("[JUAE:Reg] %s: info2: %s\n", __PRETTY_FUNCTION__, res);
   if(!strcmp(res, PUPPA)) goto FAIL1;
   strcpy(tmp1+200, res);
 	get_sha1 (tmp1, sizeof tmp1, crc);
 	if (memcmp (crc, crcok, sizeof crcok)) {
-    DebOut("sha1 check failed!\n");
+    bug("[JUAE:Reg] %s: sha1 check failed!\n", __PRETTY_FUNCTION__);
 		goto FAIL1;
   }
 #endif
 
   /* INI file is good enough for me! */
-  DebOut("%s checks done. File seems ok.\n", INI_FILE);
+  bug("[JUAE:Reg] %s: %s checks done. File seems ok.\n", __PRETTY_FUNCTION__, INI_FILE);
   return 1;
 FAIL1:
   CFG_CloseFile(NULL);
-  DebOut("%s deleted\n", INI_FILE);
+  bug("[JUAE:Reg] %s: %s deleted\n", __PRETTY_FUNCTION__, INI_FILE);
   DeleteFile(INI_FILE);
 
 FAIL2:
   if (CFG_OK == !CFG_OpenFile(NULL, &ini )) {
 
-    DebOut("FAILED TO CREATE ANY INI FILE!?\n");
-    write_log("Failed to create any ini file..!?\n");
+    bug("[JUAE:Reg] %s: FAILED TO CREATE ANY INI FILE!?\n", __PRETTY_FUNCTION__);
+    write_log("Failed to create any ini file..!?\n", __PRETTY_FUNCTION__);
     return 0;
   }
-  DebOut("%s initialized\n", INI_FILE);
+  bug("[JUAE:Reg] %s: %s initialized\n", __PRETTY_FUNCTION__, INI_FILE);
 
   CFG_SelectGroup("WinUAE", true);
   CFG_SelectGroup("Warning", true);
@@ -579,14 +576,14 @@ FAIL2:
   CFG_WriteText("info2", "Incompatible ini-files may be re-created from scratch!");
   CFG_WriteText("info0", "This file is *not* for Windows. It is for AROS, really!");
 
-  DebOut("%s saved\n");
+  bug("[JUAE:Reg] %s: saved\n", __PRETTY_FUNCTION__);
 
 	return 1;
 }
 
 void regflushfile (void) {
 
-  DebOut("entered\n");
+  bug("[JUAE:Reg] %s()\n", __PRETTY_FUNCTION__);
 
   CFG_SaveFile(INI_FILE, CFG_SORT_ORIGINAL, CFG_COMPRESS_OUTPUT);
   CFG_CloseFile(NULL);
@@ -596,13 +593,13 @@ void regflushfile (void) {
 
 void regstatus (void)
 {
-  DebOut("entered\n");
+  bug("[JUAE:Reg] %s()\n", __PRETTY_FUNCTION__);
 	if (inimode)
 		write_log (_T("WARNING: Unsupported '%s' enabled\n"), inipath);
 }
 
 int getregmode (void)
 {
-  DebOut("entered\n");
+  bug("[JUAE:Reg] %s()\n", __PRETTY_FUNCTION__);
 	return inimode;
 }

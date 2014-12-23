@@ -2774,14 +2774,17 @@ static void *ide_thread (void *uae_null)
 		struct ide_hdf *ide;
 		if (gayle_thread_running == 0 || unit == 0xfffffff)
 			break;
-		ide = idedrive[unit & 0x7f];
-		if (unit & 0x80)
-			do_process_packet_command (ide);
-		else
-			do_process_rw_command (ide);
+                if (unit < TOTAL_IDE)
+                {
+                    ide = idedrive[unit & 0x7f];
+                    if (unit & 0x80)
+                            do_process_packet_command (ide);
+                    else
+                            do_process_rw_command (ide);
+                }
 	}
 	gayle_thread_running = -1;
-  DebOut("ide_thread dead now\n");
+  DebOut("ide_thread terminating\n");
 	return 0;
 }
 

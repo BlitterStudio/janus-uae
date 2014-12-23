@@ -41,11 +41,11 @@ int my_existsfile (const TCHAR *name) {
 	BPTR lock;
 	int res=0;
 
-	DebOut("name=%s\n", name);
+    bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, name);
+
 
 	lock=Lock((CONST_STRPTR) name, SHARED_LOCK);
 	if(!lock) {
-		DebOut("could not lock %s\n", name);
 		return 0;
 	}
 
@@ -58,7 +58,6 @@ int my_existsfile (const TCHAR *name) {
 
 	UnLock(lock);
 
-	DebOut("my_existsfile(%s)=%d\n", name, res);
 	return res;
 }
 
@@ -71,11 +70,12 @@ FILE *my_opentext (const TCHAR *name) {
 	uae_u8 tmp[5];
 	int v;
 
-	DebOut("open %s\n", name);
+    bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, name);
 
 	f = fopen (name, "rb");
 	if (!f) {
-		DebOut("unable to open %s\n", name);
+                bug("[JUAE:A-FSDB] %s: failed\n", __PRETTY_FUNCTION__);
+
 		return NULL;
 	}
 	v = fread (tmp, 1, 4, f);
@@ -83,13 +83,15 @@ FILE *my_opentext (const TCHAR *name) {
 	if (v == 4) {
 		if (tmp[0] == 0xef && tmp[1] == 0xbb && tmp[2] == 0xbf) {
 			/* return fopen (name, L"r, ccs=UTF-8"); */
-			DebOut("ERROR: tried to open UTF-8 file!\n");
+                        bug("[JUAE:A-FSDB] %s: cant open UTF8 file\n", __PRETTY_FUNCTION__);
+
 			fprintf(stderr, "ERROR: tried to open UTF-8 file %s!\n", name);
 			return NULL;
 		}
 		if (tmp[0] == 0xff && tmp[1] == 0xfe) {
 			/* return fopen (name, L"r, ccs=UTF-16LE"); */
-			DebOut("ERROR: tried to open UTF-16 file!\n");
+			bug("[JUAE:A-FSDB] %s: cant open UTF16LE file\n", __PRETTY_FUNCTION__);
+
 			fprintf(stderr, "ERROR: tried to open UTF-16LE file %s!\n", name);
 			return NULL;
 		}
@@ -101,6 +103,8 @@ FILE *my_opentext (const TCHAR *name) {
 
 int fsdb_exists (const TCHAR *nname) {
   BPTR lock;
+
+    bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, nname);
 
   lock=Lock(nname, SHARED_LOCK);
   if(lock) {
@@ -125,16 +129,19 @@ bool my_stat (const TCHAR *name, struct mystat *statbuf) {
   BPTR lock;
   bool result=FALSE;
 
-  DebOut("my_stat(%s)\n", name);
+    bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, name);
+    bug("[JUAE:A-FSDB] %s: statbuf @ 0x%p\n", __PRETTY_FUNCTION__, statbuf);
 
   lock=Lock(name, SHARED_LOCK);
   if(!lock) {
-    DebOut("unable to stat %s\n", name);
+    bug("[JUAE:A-FSDB] %s: failed to lock entry\n", __PRETTY_FUNCTION__);
+
     goto exit;
   }
 
   if(!(fib=(struct FileInfoBlock *) AllocDosObject(DOS_FIB, NULL)) || !Examine(lock, fib)) {
-    DebOut("unable to examine %s\n", name);
+    bug("[JUAE:A-FSDB] %s: failed to examine lock @ 0x%p [fib @ 0x%p]\n", __PRETTY_FUNCTION__, lock, fib);
+
     goto exit;
   }
 
@@ -175,37 +182,42 @@ int my_getvolumeinfo (const TCHAR *name) {
   BPTR file=NULL;
   int ret=-1;
 
-  DebOut("name: %s\n", name);
+    bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, name);
 
   fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, TAG_END);
   if(!fib) 
   {
-    DebOut("no FileInfoBlock!\n");
+    bug("[JUAE:A-FSDB] %s: failed to allocate FIB\n", __PRETTY_FUNCTION__);
+
     goto EXIT;
   }
 
   if(!(file=Lock(name, SHARED_LOCK))) 
   {
-    DebOut("no lock..\n");
+    bug("[JUAE:A-FSDB] %s: failed to lock entry\n", __PRETTY_FUNCTION__);
+
+    bug("no lock..\n");
     goto EXIT;
   }
 
   if (!Examine(file, fib)) 
   {
-    DebOut("Examine failed\n");
+    bug("[JUAE:A-FSDB] %s: failed to examine\n", __PRETTY_FUNCTION__);
+
     goto EXIT;
   }
 
   if(fib->fib_DirEntryType >0) 
   {
-    DebOut("DIRECTORY!\n");
+    bug("DIRECTORY!\n");
     ret=0;
   }
 
-  DebOut("fib->fib_Protection: %lx\n", fib->fib_Protection);
+    bug("[JUAE:A-FSDB] %s: fib prot flags 0x%lx\n", __PRETTY_FUNCTION__, fib->fib_Protection);
 
   if(!(fib->fib_Protection && FIBF_WRITE)) {
-    DebOut("MYVOLUMEINFO_READONLY\n");
+    bug("[JUAE:A-FSDB] %s: read only entry!\n", __PRETTY_FUNCTION__);
+
     ret=MYVOLUMEINFO_READONLY;
   }
 
@@ -230,16 +242,14 @@ EXIT:
 int my_existsdir (const TCHAR *name) {
   int t;
 
-  DebOut("name: %s\n", name);
+    bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, name);
 
   t=my_getvolumeinfo(name);
 
   if(t>=0) {
-    DebOut("return 1\n");
     return 1;
   }
 
-  DebOut("return 0\n");
   return 0;
 }
 

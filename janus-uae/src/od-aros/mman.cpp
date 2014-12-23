@@ -16,12 +16,6 @@
 #include "options.h"
 #include "autoconf.h"
 
-#ifdef __x86_64__
-static int os_64bit = 1;
-#else
-static int os_64bit = 0;
-#endif
-
 #ifdef WINDOWS
 
 #else
@@ -105,6 +99,7 @@ void *VirtualAlloc(void *lpAddress, size_t dwSize, int flAllocationType,
         if (memory == NULL) {
             write_log("memory allocated failed errno %d\n", errno);
         }
+        bug("[JUAE:MMAN] %s: Allocated %d bytes @ 0x%p\n", __PRETTY_FUNCTION__, dwSize, memory);
 #if 0
         memory = mmap(lpAddress, dwSize, prot, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         printf("mmap result: %p\n", memory);
@@ -350,14 +345,12 @@ bool preinit_shm (void)
 
     GetSystemInfo (&si);
     max_allowed_mman = 512 + 256;
-#if 1
-    if (os_64bit) {
-#ifdef WIN64
+#if (SIZEOF_VOID_P == 8)
+#if defined(WIN64) || defined(__AROS__)
         max_allowed_mman = 3072;
 #else
         max_allowed_mman = 2048;
 #endif
-    }
 #endif
 
 #ifdef WINDOWS
@@ -395,13 +388,13 @@ bool preinit_shm (void)
     total64 = (uae_u64)sysconf (_SC_PHYS_PAGES) * (uae_u64)getpagesize();
 #endif
     size64 = total64;
-    if (os_64bit) {
+#if (SIZEOF_VOID_P == 8)
         if (size64 > MAXZ3MEM64)
             size64 = MAXZ3MEM64;
-    } else {
+#else
         if (size64 > MAXZ3MEM32)
             size64 = MAXZ3MEM32;
-    }
+#endif
     if (maxmem < 0)
         size64 = MAXZ3MEM64;
     else if (maxmem > 0)
@@ -410,11 +403,10 @@ bool preinit_shm (void)
         size64 = 8 * 1024 * 1024;
     if (max_allowed_mman * 1024 * 1024 > size64)
         max_allowed_mman = size64 / (1024 * 1024);
-    if (!os_64bit) {
+#if (SIZEOF_VOID_P == 4)
         if (max_allowed_mman * 1024 * 1024 > (totalphys64 / 2))
             max_allowed_mman = (totalphys64 / 2) / (1024 * 1024);
-    }
-
+#endif
 
     natmem_size = (max_allowed_mman + 1) * 1024 * 1024;
 #ifndef __AROS__
