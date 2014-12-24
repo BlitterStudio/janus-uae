@@ -325,6 +325,6 @@ $(GENDIR)/$(CURDIR)/compemu.cpp: $(JUAEHOSTTOOLSDIR)/gencomp
 #MM
 local-juae-dirs :
 	%mkdirs_q $(HOSTINCLUDEDIR) $(JUAEHOSTTOOLSDIR) $(GENDIR)/$(CURDIR)/gui
-	ln -sf $(AROS_INCLUDES)/aros $(HOSTINCLUDEDIR)/aros
+	ln -sfn $(AROS_INCLUDES)/aros $(HOSTINCLUDEDIR)/aros
 
 %common
