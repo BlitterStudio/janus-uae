@@ -54,7 +54,7 @@
 #include "registry.h"
 //#include "win32gui.h"
 #include "autoconf.h"
-#include "gui.h"
+#include "gui/gui_mui.h"
 //#include "sys/mman.h"
 //#include "avioutput.h"
 //#include "ahidsound.h"
