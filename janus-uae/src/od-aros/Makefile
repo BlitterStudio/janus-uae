@@ -178,8 +178,6 @@ COMMON_OBJS= \
 	picasso96_aros.o \
 	options.o \
 	gfx.o \
-	nogui.o \
-	fsdb.o \
 	mman.o \
 	writelog.o \
 	keymap.o \
@@ -190,6 +188,9 @@ COMMON_OBJS= \
 	rp.o \
 	registry.o \
 	win32gui.o \
+	fsdb_aros.o \
+	nogui_aros.o \
+	hardfile_aros.o \
 	stubs.o
 
 	#../picasso96.o \
