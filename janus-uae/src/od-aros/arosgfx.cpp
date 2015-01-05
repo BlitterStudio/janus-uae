@@ -268,6 +268,8 @@ void show_screen (int mode) {
 
 static volatile bool render_ok, wait_render;
 
+#include <exec/execbase.h>
+
 bool render_screen (bool immediate)
 {
 	bool v = false;
@@ -284,6 +286,21 @@ bool render_screen (bool immediate)
 			return render_ok;
 	}
 
+  /* This forced Permits get uae running on i386-32bit/v1 without lockups.
+   * Still unclear, why this only happens on i386-32bit/v1. 
+   * i386-32bit/v0 and 64bit/v1 don't have this bug..
+   *
+   * There are 3 Permits required to get multitasking going again.
+   * 
+   */
+
+  if(SysBase->TDNestCnt>=0) {
+    bug("ERROR: Should not be in Forbid here!!\n");
+    while(SysBase->TDNestCnt>=0) {
+      bug("ERROR:   => call Permit.\n");
+      Permit();
+    }
+  }
   TODO();
 #if 0
 	flushymin = 0;
