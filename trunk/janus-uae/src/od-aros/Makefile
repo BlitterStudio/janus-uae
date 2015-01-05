@@ -164,7 +164,7 @@ COMMON_OBJS= \
 	../isofs.o \
 	../zfile.o \
 	../zfile_archive.o \
-	main.o \
+	main_aros.o \
 	avioutput.o \
 	unicode.o \
 	sounddep/sound.o \
