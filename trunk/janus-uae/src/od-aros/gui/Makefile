@@ -124,11 +124,11 @@ tools:
 # ============== autogenerate some .cpp files ====================
 # never know, which one needs to be generated first. But only one
 # is actually executed as the other condition is already fulfilled.
-mui_data.cpp: test.rc parse_fixed.pl
-	./parse_fixed.pl test.rc mui_data.cpp
+mui_data.cpp: ../../od-win32/resources/winuae.rc parse_fixed.pl
+	./parse_fixed.pl ../../od-win32/resources/winuae.rc mui_data.cpp
 
-mui_data.h: test.rc parse_fixed.pl
-	./parse_fixed.pl test.rc mui_data.cpp
+mui_data.h: ../../od-win32/resources/winuae.rc parse_fixed.pl
+	./parse_fixed.pl ../../od-win32/resources/winuae.rc mui_data.cpp
 
 
 # ============== clean ====================
