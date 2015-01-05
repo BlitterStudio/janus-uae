@@ -44,7 +44,7 @@ FLAGS      = -Wno-write-strings -O2 #-Wall
 DEBUGFLAGS = -g
 
 CDEFS   =
-INCLUDES= -Iinclude
+INCLUDES= -Iinclude -I.
 
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
@@ -53,7 +53,7 @@ CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $*.c
 
-all: tools uae
+all: incs tools uae
 
 #	$(CC) $(CFLAGS) $(OBJS) -o uae
 
@@ -75,6 +75,11 @@ LDFLAGS   =
 
 %.o: %.cpp
 	$(HOST_CPP) $(HOST_FLAGS) $(INCLUDES) -o $@ -c $*.cpp  
+
+# needing AROS cpu.h for 64-bit detection
+incs: 
+	@rm -f aros
+	ln -s /home/oli/svn/$(ABI)/AROS/bin/linux-i386/gen/include/aros
 
 GENBLITTER_OBJS=genblitter.o blitops.o
 genblitter: $(GENBLITTER_OBJS)
