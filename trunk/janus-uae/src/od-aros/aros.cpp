@@ -387,7 +387,7 @@ void fullpath (TCHAR *path, int size) {
 
     if ((strnicmp (tmp1, tmp2, tmp1len) == 0) && (strlen(tmp2) > tmp1len)) { // tmp2 is inside tmp1
       //bug("[JUAE:AROS] %s: tmp2 (%s) is inside tmp1 (%s)\n", tmp2, tmp1);
-      strcpy(path, tmp2 + tmp1len + 1);
+      strcpy(path, tmp2 + tmp1len);
     }
     else {
       //bug("[JUAE:AROS] %s: tmp2 (%s) is not inside tmp1 (%s)\n", tmp2, tmp1);
