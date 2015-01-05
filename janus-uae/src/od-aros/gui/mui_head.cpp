@@ -15,7 +15,7 @@
 #include "uae.h"
 #include "threaddep/thread.h"
 #include "aros.h"
-#include "gui.h"
+#include "gui_mui.h"
 #include "mui_data.h"
 
 Object *app, *win; 
