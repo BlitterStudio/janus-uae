@@ -730,7 +730,7 @@ int getregmode (void);
 
 static void romlist_add2 (const TCHAR *path, struct romdata *rd)
 {
-  bug("[JUAE:AROS] %s: path: %s\n", __PRETTY_FUNCTION__, path);
+  bug("[JUAE:AROS] %s('%s':0x%p)\n", __PRETTY_FUNCTION__, path, rd);
   if (getregmode ()) {
     int ok = 0;
     TCHAR tmp[MAX_DPATH];
@@ -757,7 +757,7 @@ void read_rom_list (void)
   TCHAR tmp[1000];
   int size, size2, exists;
 
-  bug("[JUAE:AROS] %s: entered\n", __PRETTY_FUNCTION__);
+  bug("[JUAE:AROS] %s()\n", __PRETTY_FUNCTION__);
 
   romlist_clear ();
   exists = regexiststree (NULL, _T("DetectedROMs"));
@@ -1055,11 +1055,10 @@ void WIN32_HandleRegistryStuff (void) {
   load_keyring (NULL, NULL);
 }
 
-
 inline volatile long long rdtsc() {
-  register long long tsc asm("eax");
-  asm volatile (".byte 15, 49" : : : "eax", "edx");
-  return tsc;
+  unsigned long tsc_hi, tsc_lo;
+  asm volatile ("rdtsc" : "=a" (tsc_lo), "=d" (tsc_hi));
+  return (tsc_lo | (tsc_hi << 32));
 }
 
 frame_time_t read_processor_time (void)
