@@ -136,8 +136,6 @@ int af_path_2005;
 int quickstart = 1, configurationcache = 1, relativepaths = 1; 
 
 static int forceroms;
-int qpcdivisor = 0;
-static int userdtsc = 0;
 
 static void createdir (const TCHAR *path) {
   CreateDir(path);
