@@ -1,5 +1,6 @@
 #define OLI_DEBUG
 #include <proto/dos.h>
+#include <proto/timer.h>
 #include <intuition/intuition.h>
 
 #ifdef HAVE_LIBRARIES_CYBERGRAPHICS_H
@@ -135,6 +136,8 @@ int af_path_2005;
 int quickstart = 1, configurationcache = 1, relativepaths = 1; 
 
 static int forceroms;
+int qpcdivisor = 0;
+static int userdtsc = 0;
 
 static void createdir (const TCHAR *path) {
   CreateDir(path);
@@ -1052,5 +1055,33 @@ void WIN32_HandleRegistryStuff (void) {
 #endif
   read_rom_list ();
   load_keyring (NULL, NULL);
+}
+
+
+inline volatile long long rdtsc() {
+  register long long tsc asm("eax");
+  asm volatile (".byte 15, 49" : : : "eax", "edx");
+  return tsc;
+}
+
+frame_time_t read_processor_time (void)
+{
+  long long r;
+	frame_time_t foo = 0;
+  frame_time_t bar = 0;
+
+  r=rdtsc();
+
+  bar=r>>32; 
+  foo=r; 
+
+	/* very high speed CPU's RDTSC might overflow without this.. */
+  /* compress 64bit to 32bit */
+	foo >>= 6;
+	foo |= bar << 26;
+	if (!foo)
+		foo++;
+
+	return foo;
 }
 
