@@ -71,8 +71,12 @@ void GetSystemInfo(SYSTEM_INFO *si) {
 }
 
 void *VirtualAlloc(void *lpAddress, size_t dwSize, int flAllocationType,
-        int flProtect) {
-    write_log("- VirtualAlloc %p %zu %d %d\n", lpAddress, dwSize,
+        int flProtect)
+{
+    int prot = 0;
+    void *memory = NULL;
+
+    write_log("- VirtualAlloc %p (%zu) %08x %08x\n", lpAddress, dwSize,
             flAllocationType, flProtect);
     if (flAllocationType & MEM_RESERVE) {
         write_log("  MEM_RESERVE\n");
@@ -83,21 +87,23 @@ void *VirtualAlloc(void *lpAddress, size_t dwSize, int flAllocationType,
     if (flAllocationType & PAGE_READWRITE) {
         write_log("  PAGE_READWRITE\n");
     }
-    int prot = 0;
-    void *memory = NULL;
 
     if (flAllocationType == MEM_COMMIT && lpAddress == NULL) {
+        bug("[JUAE:MMAN] %s: (COMMIT) Allocating %d bytes.\n", __PRETTY_FUNCTION__, dwSize);
         memory = malloc(dwSize);
         if (memory == NULL) {
-            write_log("memory allocated failed errno %d\n", errno);
+            write_log("memory allocation failed: errno %d\n", errno);
         }
+        bug("[JUAE:MMAN] %s: Allocated %d bytes @ 0x%p\n", __PRETTY_FUNCTION__, dwSize, memory);
+
         return memory;
     }
 
     if (flAllocationType & MEM_RESERVE) {
+        bug("[JUAE:MMAN] %s: (RESERVE) Allocating %d bytes.\n", __PRETTY_FUNCTION__, dwSize);
         memory = malloc(dwSize);
         if (memory == NULL) {
-            write_log("memory allocated failed errno %d\n", errno);
+            write_log("memory allocation failed: errno %d\n", errno);
         }
         bug("[JUAE:MMAN] %s: Allocated %d bytes @ 0x%p\n", __PRETTY_FUNCTION__, dwSize, memory);
 #if 0
@@ -122,6 +128,8 @@ void *VirtualAlloc(void *lpAddress, size_t dwSize, int flAllocationType,
 #endif
     }
 
+    bug("[JUAE:MMAN] %s: returning 0x%p\n", __PRETTY_FUNCTION__, memory);
+
     return memory;
 }
 
@@ -142,7 +150,7 @@ bool VirtualFree(void *lpAddress, size_t dwSize, int dwFreeType) {
     }
     return result == 0;
 #endif
-    return 1;
+    return true;
 }
 
 static int GetLastError() {
@@ -307,6 +315,8 @@ typedef BOOL (CALLBACK* GLOBALMEMORYSTATUSEX)(LPMEMORYSTATUSEX);
 
 static void clear_shm (void)
 {
+    write_log("clear_shm\n");
+
     shm_start = NULL;
     for (int i = 0; i < MAX_SHMID; i++) {
         memset (&shmids[i], 0, sizeof (struct shmid_ds));
@@ -344,13 +354,14 @@ bool preinit_shm (void)
     p96mem_offset = NULL;
 
     GetSystemInfo (&si);
-    max_allowed_mman = 512 + 256;
 #if (SIZEOF_VOID_P == 8)
 #if defined(WIN64) || defined(__AROS__)
         max_allowed_mman = 3072;
 #else
         max_allowed_mman = 2048;
 #endif
+#else
+    max_allowed_mman = 512 + 256;
 #endif
 
 #ifdef WINDOWS
