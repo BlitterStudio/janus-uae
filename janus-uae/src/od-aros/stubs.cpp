@@ -676,13 +676,13 @@ void restart_sound_buffer (void)
   TODO();
 }
 
+#if 0
 void restore_a2065_finish (void)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
 }
 
-#if 0
 int target_checkcapslock (int scancode, int *state)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
