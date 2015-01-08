@@ -17,8 +17,6 @@
 #include "a2065.h"
 #include "ethernet.h"
 
-#ifndef __AROS__
-
 #include "crc32.h"
 #include "savestate.h"
 #include "autoconf.h"
@@ -58,6 +56,8 @@ static int tdr_offset, rdr_offset;
 static int dbyteswap, prom, fakeprom;
 static uae_u8 fakemac[6], realmac[6];
 static uae_u8 broadcast[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+
+void rethink_a2065 (void);
 
 #define CSR0_ERR 0x8000
 #define CSR0_BABL 0x4000
@@ -729,6 +729,26 @@ static void chip_wput (uaecptr addr, uae_u16 v)
 }
 
 
+static uae_u32 a2065_lget (uaecptr) REGPARAM;
+static uae_u32 a2065_wget (uaecptr) REGPARAM;
+static uae_u32 a2065_bget (uaecptr) REGPARAM;
+static void a2065_lput (uaecptr, uae_u32) REGPARAM;
+static void a2065_wput (uaecptr, uae_u32) REGPARAM;
+static void a2065_bput (uaecptr, uae_u32) REGPARAM;
+#if (0)
+static int gfxmem_check (uaecptr addr, uae_u32 size) REGPARAM;
+static uae_u8 *gfxmem_xlate (uaecptr addr) REGPARAM;
+#endif
+static uae_u32 a2065_lgeti (uaecptr) REGPARAM;
+static uae_u32 a2065_wgeti (uaecptr) REGPARAM;
+
+static addrbank a2065_bank = {
+	a2065_lget, a2065_wget, a2065_bget,
+	a2065_lput, a2065_wput, a2065_bput,
+	default_xlate, default_check, NULL, _T("A2065 Z2 Ethernet"),
+	a2065_lgeti, a2065_wgeti, ABFLAG_IO
+};
+
 static uae_u32 a2065_bget2 (uaecptr addr)
 {
 	uae_u32 v = 0;
@@ -831,8 +851,6 @@ static void REGPARAM2 a2065_lput (uaecptr addr, uae_u32 l)
 	a2065_wput (addr + 2, l);
 }
 
-extern addrbank a2065_bank;
-
 static void REGPARAM2 a2065_bput (uaecptr addr, uae_u32 b)
 {
 #ifdef JIT
@@ -879,13 +897,6 @@ static uae_u32 REGPARAM2 a2065_lgeti (uaecptr addr)
 	v = (a2065_wgeti (addr) << 16) | a2065_wgeti (addr + 2);
 	return v;
 }
-
-static addrbank a2065_bank = {
-	a2065_lget, a2065_wget, a2065_bget,
-	a2065_lput, a2065_wput, a2065_bput,
-	default_xlate, default_check, NULL, _T("A2065 Z2 Ethernet"),
-	a2065_lgeti, a2065_wgeti, ABFLAG_IO
-};
 
 static void a2065_config (void)
 {
@@ -971,11 +982,3 @@ void a2065_init (void)
 	configured = 0;
 	a2065_config ();
 }
-
-#else
-#warning ============= enable A2065 again ===============
-void a2065_init (void)
-{
-  TODO();
-}
-#endif /* __AROS__ */
