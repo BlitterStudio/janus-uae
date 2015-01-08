@@ -1055,15 +1055,28 @@ void WIN32_HandleRegistryStuff (void) {
   load_keyring (NULL, NULL);
 }
 
-inline volatile long long rdtsc() {
+/* 
+ * rdtsc()
+ *
+ * read the number of CPU cycles since last reset.
+ *
+ * TSC is a 64-bit register present on all x86 processors since the Pentium. 
+ *
+ * This functions works both on 32bit and 64bit intel AROS
+ */
+inline volatile unsigned long long rdtsc() {
   unsigned long tsc_hi, tsc_lo;
+  unsigned long long ret;
   asm volatile ("rdtsc" : "=a" (tsc_lo), "=d" (tsc_hi));
-  return (tsc_lo | (tsc_hi << 32));
+  ret=tsc_hi; /* ensure 64bit width on 32bit systems */
+  ret=ret << 32;
+  ret=tsc_lo | ret;
+  return ret;
 }
 
 frame_time_t read_processor_time (void)
 {
-  long long r;
+  unsigned long long r;
 	frame_time_t foo = 0;
   frame_time_t bar = 0;
 
