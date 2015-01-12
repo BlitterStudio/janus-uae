@@ -993,27 +993,25 @@ void *uae_shmat (int shmid, void *shmaddr, int shmflg)
             p96ram_start = start;
             if (start + currprefs.rtgmem_size < 10 * 1024 * 1024)
                 size += BARRIER;
-#ifndef __AROS__
         } else if(!_tcscmp (shmids[shmid].name, _T("ramsey_low"))) {
-            shmaddr=natmem_offset + a3000lmem_start;
+            shmaddr=natmem_offset + a3000lmem_bank.start;
             got = TRUE;
         } else if(!_tcscmp (shmids[shmid].name, _T("ramsey_high"))) {
-            shmaddr=natmem_offset + a3000hmem_start;
+            shmaddr=natmem_offset + a3000hmem_bank.start;
             got = TRUE;
         } else if(!_tcscmp (shmids[shmid].name, _T("z3"))) {
-            shmaddr=natmem_offset + z3fastmem_start;
+            shmaddr=natmem_offset + z3fastmem_bank.start;
             if (!currprefs.z3fastmem2_size)
                 size += BARRIER;
             got = TRUE;
         } else if(!_tcscmp (shmids[shmid].name, _T("z3_2"))) {
-            shmaddr=natmem_offset + z3fastmem_start + currprefs.z3fastmem_size;
+            shmaddr=natmem_offset + z3fastmem_bank.start + currprefs.z3fastmem_size;
             size += BARRIER;
             got = TRUE;
         } else if(!_tcscmp (shmids[shmid].name, _T("z3_chip"))) {
-            shmaddr=natmem_offset + z3chipmem_start;
+            shmaddr=natmem_offset + z3chipmem_bank.start;
             size += BARRIER;
             got = TRUE;
-#endif
         } else if(!_tcscmp (shmids[shmid].name, _T("z3_gfx"))) {
             got = TRUE;
             p96special = TRUE;
