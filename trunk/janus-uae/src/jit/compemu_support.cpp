@@ -471,8 +471,9 @@ bool check_prefs_changed_comp (void)
 		alloc_cache();
 		changed = 1;
 	}
-	if (!candirect)
+	if (!candirect) {
 		canbang = 0;
+  }
 
 	// Turn off illegal-mem logging when using JIT...
 	if(currprefs.cachesize)
@@ -5366,12 +5367,12 @@ void alloc_cache(void)
     DebOut("Call cache_free(compiled_code)\n");
 		cache_free(compiled_code);
 	}
-//#ifdef NATMEM_OFFSET
+#ifdef NATMEM_OFFSET
 	if (veccode == NULL) {
     DebOut("Call cache_alloc(256)\n");
 		veccode = cache_alloc (256);
   }
-//#endif
+#endif
 	if (popallspace == NULL) {
     DebOut("Call cache_alloc(1024)\n");
 		popallspace = cache_alloc (1024);
