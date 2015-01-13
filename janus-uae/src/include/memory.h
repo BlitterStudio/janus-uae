@@ -28,6 +28,9 @@ bool preinit_shm (void);
 extern bool canbang;
 extern int candirect;
 
+#define Z3BASE_UAE 0x10000000
+#define Z3BASE_REAL 0x40000000
+
 #ifdef ADDRESS_SPACE_24BIT
 #define MEMORY_BANKS 256
 #define MEMORY_RANGE_MASK ((1<<24)-1)
@@ -69,7 +72,12 @@ extern uaecptr rtarea_base;
 
 extern uae_u8* baseaddr[];
 
-enum { ABFLAG_UNK = 0, ABFLAG_RAM = 1, ABFLAG_ROM = 2, ABFLAG_ROMIN = 4, ABFLAG_IO = 8, ABFLAG_NONE = 16, ABFLAG_SAFE = 32 };
+enum
+{
+	ABFLAG_UNK = 0, ABFLAG_RAM = 1, ABFLAG_ROM = 2, ABFLAG_ROMIN = 4, ABFLAG_IO = 8,
+	ABFLAG_NONE = 16, ABFLAG_SAFE = 32, ABFLAG_INDIRECT = 64, ABFLAG_NOALLOC = 128,
+	ABFLAG_RTG = 256, ABFLAG_THREADSAFE = 512, ABFLAG_DIRECTMAP = 1024
+};
 typedef struct {
 	/* These ones should be self-explanatory... */
 	mem_get_func lget, wget, bget;
@@ -99,6 +107,16 @@ typedef struct {
 	uae_u32 allocated;
 } addrbank;
 
+#define MEMORY_MIN_SUBBANK 1024
+struct addrbank_sub
+{
+	addrbank *bank;
+	uae_u32 offset;
+	uae_u32 suboffset;
+	uae_u32 mask;
+	uae_u32 maskval;
+};
+
 #define CE_MEMBANK_FAST32 0
 #define CE_MEMBANK_CHIP16 1
 #define CE_MEMBANK_CHIP32 2
@@ -106,7 +124,87 @@ typedef struct {
 #define CE_MEMBANK_FAST16 4
 extern uae_u8 ce_banktype[65536], ce_cachable[65536];
 
-#define MEMORY_LGET(name) \
+#ifdef JIT
+#define MEMORY_LGET(name, nojit) \
+static uae_u32 REGPARAM3 name ## _lget (uaecptr) REGPARAM; \
+static uae_u32 REGPARAM2 name ## _lget (uaecptr addr) \
+{ \
+	uae_u8 *m; \
+	if (nojit) special_mem |= S_READ; \
+	addr -= name ## _bank.start & name ## _bank.mask; \
+	addr &= name ## _bank.mask; \
+	m = name ## _bank.baseaddr + addr; \
+	return do_get_mem_long ((uae_u32 *)m); \
+}
+#define MEMORY_WGET(name, nojit) \
+static uae_u32 REGPARAM3 name ## _wget (uaecptr) REGPARAM; \
+static uae_u32 REGPARAM2 name ## _wget (uaecptr addr) \
+{ \
+	uae_u8 *m; \
+	if (nojit) special_mem |= S_READ; \
+	addr -= name ## _bank.start & name ## _bank.mask; \
+	addr &= name ## _bank.mask; \
+	m = name ## _bank.baseaddr + addr; \
+	return do_get_mem_word ((uae_u16 *)m); \
+}
+#define MEMORY_BGET(name, nojit) \
+static uae_u32 REGPARAM3 name ## _bget (uaecptr) REGPARAM; \
+static uae_u32 REGPARAM2 name ## _bget (uaecptr addr) \
+{ \
+	if (nojit) special_mem |= S_READ; \
+	addr -= name ## _bank.start & name ## _bank.mask; \
+	addr &= name ## _bank.mask; \
+	return name ## _bank.baseaddr[addr]; \
+}
+#define MEMORY_LPUT(name, nojit) \
+static void REGPARAM3 name ## _lput (uaecptr, uae_u32) REGPARAM; \
+static void REGPARAM2 name ## _lput (uaecptr addr, uae_u32 l) \
+{ \
+	uae_u8 *m;  \
+	if (nojit) special_mem |= S_WRITE; \
+	addr -= name ## _bank.start & name ## _bank.mask; \
+	addr &= name ## _bank.mask; \
+	m = name ## _bank.baseaddr + addr; \
+	do_put_mem_long ((uae_u32 *)m, l); \
+}
+#define MEMORY_WPUT(name, nojit) \
+static void REGPARAM3 name ## _wput (uaecptr, uae_u32) REGPARAM; \
+static void REGPARAM2 name ## _wput (uaecptr addr, uae_u32 w) \
+{ \
+	uae_u8 *m;  \
+	if (nojit) special_mem |= S_WRITE; \
+	addr -= name ## _bank.start & name ## _bank.mask; \
+	addr &= name ## _bank.mask; \
+	m = name ## _bank.baseaddr + addr; \
+	do_put_mem_word ((uae_u16 *)m, w); \
+}
+#define MEMORY_BPUT(name, nojit) \
+static void REGPARAM3 name ## _bput (uaecptr, uae_u32) REGPARAM; \
+static void REGPARAM2 name ## _bput (uaecptr addr, uae_u32 b) \
+{ \
+	if (nojit) special_mem |= S_WRITE; \
+	addr -= name ## _bank.start & name ## _bank.mask; \
+	addr &= name ## _bank.mask; \
+	name ## _bank.baseaddr[addr] = b; \
+}
+#define MEMORY_CHECK(name) \
+static int REGPARAM3 name ## _check (uaecptr addr, uae_u32 size) REGPARAM; \
+static int REGPARAM2 name ## _check (uaecptr addr, uae_u32 size) \
+{ \
+	addr -= name ## _bank.start & name ## _bank.mask; \
+	addr &= name ## _bank.mask; \
+	return (addr + size) <= name ## _bank.allocated; \
+}
+#define MEMORY_XLATE(name) \
+static uae_u8 *REGPARAM3 name ## _xlate (uaecptr addr) REGPARAM; \
+static uae_u8 *REGPARAM2 name ## _xlate (uaecptr addr) \
+{ \
+	addr -= name ## _bank.start & name ## _bank.mask; \
+	addr &= name ## _bank.mask; \
+	return name ## _bank.baseaddr + addr; \
+}
+#else
+#define MEMORY_LGET(name, nojit) \
 static uae_u32 REGPARAM3 name ## _lget (uaecptr) REGPARAM; \
 static uae_u32 REGPARAM2 name ## _lget (uaecptr addr) \
 { \
@@ -116,7 +214,7 @@ static uae_u32 REGPARAM2 name ## _lget (uaecptr addr) \
 	m = name ## _bank.baseaddr + addr; \
 	return do_get_mem_long ((uae_u32 *)m); \
 }
-#define MEMORY_WGET(name) \
+#define MEMORY_WGET(name, nojit) \
 static uae_u32 REGPARAM3 name ## _wget (uaecptr) REGPARAM; \
 static uae_u32 REGPARAM2 name ## _wget (uaecptr addr) \
 { \
@@ -126,7 +224,7 @@ static uae_u32 REGPARAM2 name ## _wget (uaecptr addr) \
 	m = name ## _bank.baseaddr + addr; \
 	return do_get_mem_word ((uae_u16 *)m); \
 }
-#define MEMORY_BGET(name) \
+#define MEMORY_BGET(name, nojit) \
 static uae_u32 REGPARAM3 name ## _bget (uaecptr) REGPARAM; \
 static uae_u32 REGPARAM2 name ## _bget (uaecptr addr) \
 { \
@@ -134,7 +232,7 @@ static uae_u32 REGPARAM2 name ## _bget (uaecptr addr) \
 	addr &= name ## _bank.mask; \
 	return name ## _bank.baseaddr[addr]; \
 }
-#define MEMORY_LPUT(name) \
+#define MEMORY_LPUT(name, nojit) \
 static void REGPARAM3 name ## _lput (uaecptr, uae_u32) REGPARAM; \
 static void REGPARAM2 name ## _lput (uaecptr addr, uae_u32 l) \
 { \
@@ -144,7 +242,7 @@ static void REGPARAM2 name ## _lput (uaecptr addr, uae_u32 l) \
 	m = name ## _bank.baseaddr + addr; \
 	do_put_mem_long ((uae_u32 *)m, l); \
 }
-#define MEMORY_WPUT(name) \
+#define MEMORY_WPUT(name, nojit) \
 static void REGPARAM3 name ## _wput (uaecptr, uae_u32) REGPARAM; \
 static void REGPARAM2 name ## _wput (uaecptr addr, uae_u32 w) \
 { \
@@ -154,7 +252,7 @@ static void REGPARAM2 name ## _wput (uaecptr addr, uae_u32 w) \
 	m = name ## _bank.baseaddr + addr; \
 	do_put_mem_word ((uae_u16 *)m, w); \
 }
-#define MEMORY_BPUT(name) \
+#define MEMORY_BPUT(name, nojit) \
 static void REGPARAM3 name ## _bput (uaecptr, uae_u32) REGPARAM; \
 static void REGPARAM2 name ## _bput (uaecptr addr, uae_u32 b) \
 { \
@@ -178,14 +276,37 @@ static uae_u8 *REGPARAM2 name ## _xlate (uaecptr addr) \
 	addr &= name ## _bank.mask; \
 	return name ## _bank.baseaddr + addr; \
 }
+#endif
+
+#define DECLARE_MEMORY_FUNCTIONS(name) \
+ static uae_u32 REGPARAM3 name ## _lget (uaecptr) REGPARAM; \
+ static uae_u32 REGPARAM3 name ## _lgeti (uaecptr) REGPARAM; \
+ static uae_u32 REGPARAM3 name ## _wget (uaecptr) REGPARAM; \
+ static uae_u32 REGPARAM3 name ## _wgeti (uaecptr) REGPARAM; \
+ static uae_u32 REGPARAM3 name ## _bget (uaecptr) REGPARAM; \
+ static void REGPARAM3 name ## _lput (uaecptr, uae_u32) REGPARAM; \
+ static void REGPARAM3 name ## _wput (uaecptr, uae_u32) REGPARAM; \
+ static void REGPARAM3 name ## _bput (uaecptr, uae_u32) REGPARAM; \
+ static int REGPARAM3 name ## _check (uaecptr addr, uae_u32 size) REGPARAM; \
+ static uae_u8 *REGPARAM3 name ## _xlate (uaecptr addr) REGPARAM;
 
 #define MEMORY_FUNCTIONS(name) \
-MEMORY_LGET(name); \
-MEMORY_WGET(name); \
-MEMORY_BGET(name); \
-MEMORY_LPUT(name); \
-MEMORY_WPUT(name); \
-MEMORY_BPUT(name); \
+MEMORY_LGET(name, 0); \
+MEMORY_WGET(name, 0); \
+MEMORY_BGET(name, 0); \
+MEMORY_LPUT(name, 0); \
+MEMORY_WPUT(name, 0); \
+MEMORY_BPUT(name, 0); \
+MEMORY_CHECK(name); \
+MEMORY_XLATE(name);
+
+#define MEMORY_FUNCTIONS_NOJIT(name) \
+MEMORY_LGET(name, 1); \
+MEMORY_WGET(name, 1); \
+MEMORY_BGET(name, 1); \
+MEMORY_LPUT(name, 1); \
+MEMORY_WPUT(name, 1); \
+MEMORY_BPUT(name, 1); \
 MEMORY_CHECK(name); \
 MEMORY_XLATE(name);
 
@@ -446,5 +567,31 @@ extern void memcpyah (uae_u8 *dst, uaecptr src, int size);
 
 extern uae_s32 getz2size (struct uae_prefs *p);
 extern ULONG getz2endaddr (void);
+
+#define UAE_MEMORY_REGIONS_MAX 64
+#define UAE_MEMORY_REGION_NAME_LENGTH 64
+
+#define UAE_MEMORY_REGION_RAM (1 << 0)
+#define UAE_MEMORY_REGION_ALIAS (1 << 1)
+#define UAE_MEMORY_REGION_MIRROR (1 << 2)
+
+/* Get a list of memory regions in the Amiga address space */
+
+typedef struct UaeMemoryRegion {
+	uaecptr start;
+	int size;
+	TCHAR name[UAE_MEMORY_REGION_NAME_LENGTH];
+	TCHAR rom_name[UAE_MEMORY_REGION_NAME_LENGTH];
+	uaecptr alias;
+	int flags;
+	uae_u8 *memory;
+} UaeMemoryRegion;
+
+typedef struct UaeMemoryMap {
+	UaeMemoryRegion regions[UAE_MEMORY_REGIONS_MAX];
+	int num_regions;
+} UaeMemoryMap;
+
+void uae_memory_map(UaeMemoryMap *map);
 
 #endif /* MEMORY_H */
