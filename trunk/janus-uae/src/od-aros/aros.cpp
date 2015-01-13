@@ -1,4 +1,3 @@
-/* test */
 #define OLI_DEBUG
 #include <proto/dos.h>
 #include <proto/timer.h>
