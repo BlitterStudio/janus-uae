@@ -24,9 +24,9 @@
 #include "filesys.h"
 #include "zfile.h"
 #include "blkdev.h"
-#include "qemuvga\qemuuaeglue.h"
-#include "qemuvga\queue.h"
-#include "qemuvga\scsi\scsi.h"
+#include "qemuvga/qemuuaeglue.h"
+#include "qemuvga/queue.h"
+#include "qemuvga/scsi/scsi.h"
 
 #define ROM_VECTOR 0x0200
 #define ROM_OFFSET 0x0000
@@ -185,7 +185,14 @@ static uae_u32 ncr_bget2 (uaecptr addr)
 	return ncr_io_bget (addr);
 }
 
-extern addrbank ncr_bank;
+DECLARE_MEMORY_FUNCTIONS(ncr)
+
+static addrbank ncr_bank = {
+	ncr_lget, ncr_wget, ncr_bget,
+	ncr_lput, ncr_wput, ncr_bput,
+	default_xlate, default_check, NULL, _T("A4091"),
+	dummy_lgeti, dummy_wgeti, ABFLAG_IO
+};
 
 static uae_u32 REGPARAM2 ncr_lget (uaecptr addr)
 {
@@ -335,13 +342,6 @@ static void REGPARAM2 ncr_bput (uaecptr addr, uae_u32 b)
 	}
 	ncr_bput2 (addr, b);
 }
-
-static addrbank ncr_bank = {
-	ncr_lget, ncr_wget, ncr_bget,
-	ncr_lput, ncr_wput, ncr_bput,
-	default_xlate, default_check, NULL, _T("A4091"),
-	dummy_lgeti, dummy_wgeti, ABFLAG_IO
-};
 
 static void ew (int addr, uae_u32 value)
 {
