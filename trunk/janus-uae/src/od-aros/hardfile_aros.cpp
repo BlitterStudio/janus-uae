@@ -66,6 +66,25 @@ struct uae_driveinfo {
 #define CACHE_SIZE 16384
 #define CACHE_FLUSH_TIME 5
 
+#if defined(__AROS__)
+extern void *VirtualAlloc(void *lpAddress, size_t dwSize, int flAllocationType, int flProtect);
+
+#define MEM_COMMIT 0x00001000
+#define MEM_RESERVE 0x00002000
+#define MEM_DECOMMIT 0x4000
+#define MEM_RELEASE 0x8000
+#define MEM_WRITE_WATCH 0x00200000
+
+#define PAGE_EXECUTE 0x10
+#define PAGE_EXECUTE_READ 0x20
+#define PAGE_EXECUTE_READWRITE 0x40
+#define PAGE_EXECUTE_WRITECOPY 0x80
+#define PAGE_NOACCESS 0x01
+#define PAGE_READONLY 0x02
+#define PAGE_READWRITE 0x04
+#define PAGE_WRITECOPY 0x08
+#endif
+
 /* safety check: only accept drives that:
 * - contain RDSK in block 0
 * - block 0 is zeroed
@@ -494,24 +513,25 @@ int hdf_open_target (struct hardfiledata *hfd, const TCHAR *pname)
 	hfd->flags = 0;
 	hfd->drive_empty = 0;
 	hdf_close (hfd);
-#if (0)
 	hfd->cache = (uae_u8*)VirtualAlloc (NULL, CACHE_SIZE, MEM_COMMIT, PAGE_READWRITE);
-#endif
 	hfd->cache_valid = 0;
 	hfd->virtual_size = 0;
 	hfd->virtual_rdb = NULL;
-#if (0)
 	if (!hfd->cache) {
+#if defined(__AROS__)
+                write_log (_T("failed VirtualAlloc(%d) of hdf cache\n"), CACHE_SIZE);
+#else
 		write_log (_T("VirtualAlloc(%d) failed, error %d\n"), CACHE_SIZE, GetLastError ());
+#endif
 		goto end;
 	}
-#endif
 	hfd->handle = xcalloc (struct hardfilehandle, 1);
 #if (0)
 	hfd->handle->h = INVALID_HANDLE_VALUE;
 #endif
 	hfd_log (_T("hfd attempting to open: '%s'\n"), name);
-        
+
+#warning "TODO: Support for hardfiles using zfile, and real drives"
         if ((hfd->handle->fh = Open(name, MODE_OLDFILE)) != BNULL)
         {
             struct FileInfoBlock *fib;
@@ -521,11 +541,21 @@ int hdf_open_target (struct hardfiledata *hfd, const TCHAR *pname)
             {
                 if (ExamineFH(hfd->handle->fh, fib))
                 {
-                    hfd->emptyname = my_strdup (name);
-                    _tcscpy (hfd->vendor_id, _T("UAE"));
-                    _tcscpy (hfd->product_rev, _T("0.4"));
-                    hfd->handle_valid = HDF_HANDLE_WIN32;
-                    hfd->physsize = hfd->virtsize = fib->fib_Size;
+                    if (fib->fib_DirEntryType < 0)
+                    {
+                        hfd->emptyname = my_strdup (name);
+                        _tcscpy (hfd->vendor_id, _T("UAE"));
+                        _tcscpy (hfd->product_rev, _T("0.4"));
+                        _tcscpy (hfd->product_id, (const char *)fib->fib_FileName);
+                        hfd->handle_valid = HDF_HANDLE_WIN32;
+                        hfd->physsize = hfd->virtsize = fib->fib_Size;
+                        hfd->offset = 0;
+                        hfd->ci.blocksize = 512;
+                        if (fib->fib_Protection & FIBF_WRITE)
+                            hfd->ci.readonly = 1;
+                        else
+                            hfd->ci.readonly = 0;
+                    }
                 }
             }
         }
@@ -798,9 +828,7 @@ int hdf_dup_target (struct hardfiledata *dhfd, const struct hardfiledata *shfd)
 		dhfd->handle->zfile = 1;
 		dhfd->handle_valid = HDF_HANDLE_ZFILE;
 	}
-#if (0)
 	dhfd->cache = (uae_u8*)VirtualAlloc (NULL, CACHE_SIZE, MEM_COMMIT, PAGE_READWRITE);
-#endif
 	dhfd->cache_valid = 0;
 	if (!dhfd->cache) {
 		hdf_close (dhfd);
@@ -811,8 +839,9 @@ int hdf_dup_target (struct hardfiledata *dhfd, const struct hardfiledata *shfd)
 
 static int hdf_seek (struct hardfiledata *hfd, uae_u64 offset)
 {
-#if (0)
-	DWORD ret;
+    bug("[JUAE:HDF] %s(%d)\n", __PRETTY_FUNCTION__, offset);
+
+	IPTR ret;
 
 	if (hfd->handle_valid == 0) {
 		gui_message (_T("hd: hdf handle is not valid. bug."));
@@ -829,14 +858,23 @@ static int hdf_seek (struct hardfiledata *hfd, uae_u64 offset)
 		abort ();
 	}
 	if (hfd->handle_valid == HDF_HANDLE_WIN32) {
+#if defined(__AROS__)
+            if ((offset & 0xffffffff00000000) != 0)
+            {
+                /* 64bit sek... */
+                bug("[JUAE:HDF] %s: 64bit seek\n", __PRETTY_FUNCTION__);
+            }
+            else
+                Seek(hfd->handle->fh, offset, OFFSET_BEGINNING);
+#else
 		LONG high = (LONG)(offset >> 32);
 		ret = SetFilePointer (hfd->handle->h, (DWORD)offset, &high, FILE_BEGIN);
 		if (ret == INVALID_FILE_SIZE && GetLastError() != NO_ERROR)
 			return -1;
+#endif
 	} else if (hfd->handle_valid == HDF_HANDLE_ZFILE) {
 		zfile_fseek (hfd->handle->zf, (long)offset, SEEK_SET);
 	}
-#endif
 	return 0;
 }
 
@@ -888,8 +926,7 @@ static int isincache (struct hardfiledata *hfd, uae_u64 offset, int len)
 
 static int hdf_read_2 (struct hardfiledata *hfd, void *buffer, uae_u64 offset, int len)
 {
-#if (0)
-	DWORD outlen = 0;
+	IPTR outlen = 0;
 	int coffset;
 
 	if (offset == 0)
@@ -905,7 +942,11 @@ static int hdf_read_2 (struct hardfiledata *hfd, void *buffer, uae_u64 offset, i
 	hdf_seek (hfd, hfd->cache_offset);
 	poscheck (hfd, CACHE_SIZE);
 	if (hfd->handle_valid == HDF_HANDLE_WIN32)
+#if defined(__AROS__)
+                outlen = Read(hfd->handle->fh, buffer, len);
+#else
 		ReadFile (hfd->handle->h, hfd->cache, CACHE_SIZE, &outlen, NULL);
+#endif
 	else if (hfd->handle_valid == HDF_HANDLE_ZFILE)
 		outlen = zfile_fread (hfd->cache, 1, CACHE_SIZE, hfd->handle->zf);
 	hfd->cache_valid = 0;
@@ -919,7 +960,7 @@ static int hdf_read_2 (struct hardfiledata *hfd, void *buffer, uae_u64 offset, i
 	}
 	write_log (_T("hdf_read: cache bug! offset=%I64d len=%d\n"), offset, len);
 	hfd->cache_valid = 0;
-#endif
+
 	return 0;
 }
 
@@ -928,12 +969,8 @@ int hdf_read_target (struct hardfiledata *hfd, void *buffer, uae_u64 offset, int
 	int got = 0;
 	uae_u8 *p = (uae_u8*)buffer;
 
-    bug("[JUAE:HDF] %s()\n", __PRETTY_FUNCTION__);
+    bug("[JUAE:HDF] %s(0x%p:0x%p, %d, %d)\n", __PRETTY_FUNCTION__, hfd, buffer, offset, len);
 
-    Seek(hfd->handle->fh, offset, OFFSET_BEGINNING);
-    got = Read(hfd->handle->fh, buffer, len);
-
-#if (0)
 	if (hfd->drive_empty)
 		return 0;
 	if (offset < hfd->virtual_size) {
@@ -946,13 +983,17 @@ int hdf_read_target (struct hardfiledata *hfd, void *buffer, uae_u64 offset, int
 	offset -= hfd->virtual_size;
 	while (len > 0) {
 		int maxlen;
-		DWORD ret;
+		IPTR ret;
 		if (hfd->physsize < CACHE_SIZE) {
 			hfd->cache_valid = 0;
 			hdf_seek (hfd, offset);
 			poscheck (hfd, len);
 			if (hfd->handle_valid == HDF_HANDLE_WIN32) {
+#if defined(__AROS__)
+                                ret = Read(hfd->handle->fh, hfd->cache, len);
+#else
 				ReadFile (hfd->handle->h, hfd->cache, len, &ret, NULL);
+#endif
 				memcpy (buffer, hfd->cache, ret);
 			} else if (hfd->handle_valid == HDF_HANDLE_ZFILE) {
 				ret = zfile_fread (buffer, 1, len, hfd->handle->zf);
@@ -969,7 +1010,6 @@ int hdf_read_target (struct hardfiledata *hfd, void *buffer, uae_u64 offset, int
 		p += maxlen;
 		len -= maxlen;
 	}
-#endif
 	return got;
 }
 
@@ -1026,12 +1066,8 @@ int hdf_write_target (struct hardfiledata *hfd, void *buffer, uae_u64 offset, in
 	int got = 0;
 	uae_u8 *p = (uae_u8*)buffer;
 
-    bug("[JUAE:HDF] %s()\n", __PRETTY_FUNCTION__);
+    bug("[JUAE:HDF] %s(0x%p:0x%p, %d, %d)\n", __PRETTY_FUNCTION__, hfd, buffer, offset, len);
 
-    Seek(hfd->handle->fh, offset, OFFSET_BEGINNING);
-    got = Write(hfd->handle->fh, buffer, len);
-
-#if (0)
 	if (hfd->drive_empty)
 		return 0;
 	if (offset < hfd->virtual_size)
@@ -1039,7 +1075,12 @@ int hdf_write_target (struct hardfiledata *hfd, void *buffer, uae_u64 offset, in
 	offset -= hfd->virtual_size;
 	while (len > 0) {
 		int maxlen = len > CACHE_SIZE ? CACHE_SIZE : len;
+#if defined(__AROS__)
+                hdf_seek (hfd, offset);
+                int ret = Write(hfd->handle->fh, p, maxlen);
+#else
 		int ret = hdf_write_2 (hfd, p, offset, maxlen);
+#endif
 		if (ret < 0)
 			return ret;
 		got += ret;
@@ -1049,7 +1090,9 @@ int hdf_write_target (struct hardfiledata *hfd, void *buffer, uae_u64 offset, in
 		p += maxlen;
 		len -= maxlen;
 	}
-#endif
+
+    bug("[JUAE:HDF] %s: %d bytes written\n", __PRETTY_FUNCTION__, got);
+
 	return got;
 }
 
