@@ -61,6 +61,9 @@
 #include "aros.h"
 #include "gfx.h"
 
+#warning "FixMe: PAGE_SIZE should be defined in a header somewhere..."
+#define PAGE_SIZE 4096
+
 int debug_rtg_blitter = 3;
 
 #define ULONG_PTR int /* ?? */
@@ -90,9 +93,7 @@ int p96refresh_active;
 bool have_done_picasso = 1; /* For the JIT compiler */
 static int p96syncrate;
 int p96hsync_counter, full_refresh;
-#if defined(X86_MSVC_ASSEMBLY)
-#define SWAPSPEEDUP
-#endif
+
 #ifdef PICASSO96
 #ifdef DEBUG // Change this to _DEBUG for debugging
 #define P96TRACING_ENABLED 1
@@ -2079,17 +2080,10 @@ static void CopyLibResolutionStructureU2A (struct LibResolution *libres, uaecptr
 
 void picasso_allocatewritewatch (int gfxmemsize)
 {
-#ifndef __AROS__
-	SYSTEM_INFO si;
-#endif
-
 	xfree (gwwbuf);
-#ifndef __AROS__
-	GetSystemInfo (&si);
-	gwwpagesize = si.dwPageSize;
-#else
-  gwwpagesize = 1024*1024; /* not the silghtest idea, if this is a good value .. */
-#endif
+
+        gwwpagesize = PAGE_SIZE;
+
 	gwwbufsize = gfxmemsize / gwwpagesize + 1;
 	gwwpagemask = gwwpagesize - 1;
 	gwwbuf = xmalloc (void*, gwwbufsize);
