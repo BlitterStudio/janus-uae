@@ -545,12 +545,14 @@ void sleep_millis (int ms) {
 
 void target_restart (void)
 {
+    bug("[JUAE:AROS] %s()\n", __PRETTY_FUNCTION__);
   gui_restart ();
 }
 
 
 void fetch_rompath (TCHAR *out, int size)
 {
+    bug("[JUAE:AROS] %s()\n", __PRETTY_FUNCTION__);
   fetch_path (_T("KickstartPath"), out, size);
 }
 
@@ -570,10 +572,12 @@ int input_get_default_keyboard (int i)
 
 #ifndef NATMEM_OFFSET
 void protect_roms (bool protect) {
+    bug("[JUAE:AROS] %s()\n", __PRETTY_FUNCTION__);
 }
 
 
 void unprotect_maprom (void) {
+    bug("[JUAE:AROS] %s()\n", __PRETTY_FUNCTION__);
 }
 #endif
 
@@ -584,7 +588,7 @@ void unprotect_maprom (void) {
  */
 int LoadString(APTR hInstance, TCHAR *uID, TCHAR * lpBuffer, int nBufferMax) {
     int len = 0;
-    bug("[JUAE:AROS] %s()\n", __PRETTY_FUNCTION__);
+    bug("[JUAE:AROS] %s(0x%p)\n", __PRETTY_FUNCTION__, uID);
     if((uID) && (uID != (TCHAR *)-1))
     {
     bug("[JUAE] %s: copying '%s' to buffer @ 0x%p\n", __PRETTY_FUNCTION__, uID);
@@ -627,7 +631,7 @@ int GetFileAttributes(char *path) {
   BPTR    lock;
   BOOL    result;
 
-  bug("[JUAE:AROS] %s: path: %s\n", __PRETTY_FUNCTION__, path);
+  bug("[JUAE:AROS] %s('%s')\n", __PRETTY_FUNCTION__, path);
 
   lock=Lock(path, SHARED_LOCK);
   if(!lock) {
@@ -642,7 +646,7 @@ int get_rom_path (TCHAR *out, pathtype mode)
 {
   TCHAR tmp[MAX_DPATH];
 
-  bug("[JUAE:AROS] %s: pathtype: %d\n", __PRETTY_FUNCTION__, mode);
+  bug("[JUAE:AROS] %s(%d)\n", __PRETTY_FUNCTION__, mode);
   bug("[JUAE:AROS] %s: start_path_data: %s\n", __PRETTY_FUNCTION__, start_path_data);
   bug("[JUAE:AROS] %s: start_path_exe: %s\n", __PRETTY_FUNCTION__, start_path_exe);
 
@@ -740,6 +744,7 @@ int getregmode (void);
 static void romlist_add2 (const TCHAR *path, struct romdata *rd)
 {
   bug("[JUAE:AROS] %s('%s':0x%p)\n", __PRETTY_FUNCTION__, path, rd);
+
   if (getregmode ()) {
     int ok = 0;
     TCHAR tmp[MAX_DPATH];
@@ -824,7 +829,7 @@ void set_path (const TCHAR *name, TCHAR *path, pathtype mode)
 {
   TCHAR tmp[MAX_DPATH];
 
-  bug("[JUAE:AROS] %s: name %s, path %s, pathtype %d\n", __PRETTY_FUNCTION__, name, path, mode);
+    bug("[JUAE:AROS] %s('%s', '%s', %d)\n", __PRETTY_FUNCTION__, name, path, mode);
 
   if (!path) {
     if (!_tcscmp (start_path_data, start_path_exe))
@@ -849,7 +854,6 @@ void set_path (const TCHAR *name, TCHAR *path, pathtype mode)
     _tcscpy (tmp, path);
   }
   stripslashes (tmp);
-  bug("[JUAE:AROS] %s: tmp: %s\n", __PRETTY_FUNCTION__, tmp);
   if (!_tcscmp (name, _T("KickstartPath"))) {
 #if 0
     DWORD v = GetFileAttributes (tmp);
@@ -865,30 +869,32 @@ void set_path (const TCHAR *name, TCHAR *path, pathtype mode)
   }
   fixtrailing (tmp);
   fullpath (tmp, sizeof tmp / sizeof (TCHAR));
-  bug("[JUAE:AROS] %s: tmp: %s\n", __PRETTY_FUNCTION__, tmp);
+  bug("[JUAE:AROS] %s: path '%s'\n", __PRETTY_FUNCTION__, tmp);
   regsetstr (NULL, name, tmp);
 }
 
-void set_path (const TCHAR *name, TCHAR *path) {
+void set_path (const TCHAR *name, TCHAR *path)
+{
+    bug("[JUAE:AROS] %s('%s', '%s')\n", __PRETTY_FUNCTION__, name, path);
 
-  bug("[JUAE:AROS] %s: name %s, path %s\n", __PRETTY_FUNCTION__, name, path);
-  set_path (name, path, PATH_TYPE_DEFAULT);
+    set_path (name, path, PATH_TYPE_DEFAULT);
 }
 
-static void initpath (const TCHAR *name, TCHAR *path) {
+static void initpath (const TCHAR *name, TCHAR *path)
+{
+    bug("[JUAE:AROS] %s('%s', '%s')\n", __PRETTY_FUNCTION__, name, path);
 
-  if (regexists (NULL, name))
-    return;
-  set_path (name, NULL);
+    if (regexists (NULL, name))
+        return;
+    set_path (name, NULL);
 }
-
 
 void create_afnewdir (int remove) {
 #if 0
   TCHAR tmp[MAX_DPATH], tmp2[MAX_DPATH];
 #endif
 
-  bug("[JUAE:AROS] %s: remove: %d\n", __PRETTY_FUNCTION__, remove);
+    bug("[JUAE:AROS] %s(%d)\n", __PRETTY_FUNCTION__, remove);
 
 #if 0
   if (SUCCEEDED (SHGetFolderPath (NULL, CSIDL_COMMON_DOCUMENTS, NULL, 0, tmp))) {
@@ -908,10 +914,7 @@ void create_afnewdir (int remove) {
     }
   }
 #endif
-
-
 }
-
 
 void setpathmode (pathtype pt)
 {
@@ -1075,12 +1078,8 @@ void WIN32_HandleRegistryStuff (void) {
  */
 inline volatile unsigned long long rdtsc() {
   unsigned long tsc_hi, tsc_lo;
-  unsigned long long ret;
   asm volatile ("rdtsc" : "=a" (tsc_lo), "=d" (tsc_hi));
-  ret=tsc_hi; /* ensure 64bit width on 32bit systems */
-  ret=ret << 32;
-  ret=tsc_lo | ret;
-  return ret;
+  return ((unsigned long long)tsc_lo) | (((unsigned long long)tsc_hi) << 32);
 }
 
 frame_time_t read_processor_time (void)
@@ -1103,4 +1102,3 @@ frame_time_t read_processor_time (void)
 
 	return foo;
 }
-
