@@ -47,83 +47,78 @@ struct startupmsg
     void           *arg;
 };
 
-static void do_thread (void) {
+static void do_thread (void)
+{
+    struct Process *pr = (struct Process *) FindTask (NULL);
+    struct startupmsg *msg;
+    void *(*func) (void *);
+    void *arg;
 
-   struct Process *pr = (struct Process *) FindTask (NULL);
-   struct startupmsg *msg;
-   void *(*func) (void *);
-   void *arg;
+    bug("[JUAE:PX] %s()\n", __PRETTY_FUNCTION__);
+    bug("[JUAE:PX] %s: task = %p\n", __PRETTY_FUNCTION__, pr);
 
-   DebOut("New task started: %lx\n", pr);
+    WaitPort (&pr->pr_MsgPort);
+    msg = (struct startupmsg *) GetMsg(&pr->pr_MsgPort);
+    func = msg->func;
+    arg  = msg->arg;
+    ReplyMsg ((struct Message*)msg);
 
-   WaitPort (&pr->pr_MsgPort);
-   msg = (struct startupmsg *) GetMsg(&pr->pr_MsgPort);
-   func = msg->func;
-   arg  = msg->arg;
-   ReplyMsg ((struct Message*)msg);
-
-   func (arg);
+    func (arg);
 }
 
-static char default_name[]="ArosUAE thread";
+static char default_name[]="JUAE thread";
 
-int uae_start_thread (const TCHAR *name, void *(*f)(void *), void *arg, uae_thread_id *tid) {
-
-  struct MsgPort *replyport = CreateMsgPort();
-  struct Process *newtask;
+int uae_start_thread (const TCHAR *name, void *(*f)(void *), void *arg, uae_thread_id *tid)
+{
+    struct MsgPort *replyport;
+    struct Process *newtask = NULL;
 
 #warning Do we need to care for priorities here? WinUAE does..
+    if(!name) {
+        name=default_name;
+    }
 
-  DebOut("uae_start_thread(name %s, f %lx, arg %lx, tid %lx)\n", name, f, arg, tid);
+    bug("[JUAE:PX] %s('%s', f %lx, arg %lx, tid %lx)\n", __PRETTY_FUNCTION__, name, f, arg, tid);
 
-  if(!replyport) {
-    write_log("ERROR: Unable to create MsgPort!\n");
-  }
+    replyport = CreateMsgPort();
+    if(!replyport) {
+        write_log("ERROR: Unable to create MsgPort!\n");
+    }
 
-  if(!name) {
-    name=default_name;
-  }
+    newtask = CreateNewProcTags (
+        //NP_Output,		   Output (),
+        //NP_Input,		   Input (),
+        NP_Name,	   (IPTR) name,
+        //NP_CloseOutput,	   FALSE,
+        //NP_CloseInput,	   FALSE,
+        NP_StackSize,	   16384*4,
+        NP_Entry,	   (IPTR) do_thread,
+        TAG_DONE);
 
-  if (replyport) {
-    newtask = CreateNewProcTags (//NP_Output,		   Output (),
-             //NP_Input,		   Input (),
-             NP_Name,	   (IPTR) name,
-             //NP_CloseOutput,	   FALSE,
-             //NP_CloseInput,	   FALSE,
-             NP_StackSize,	   16384*4,
-             NP_Entry,	   (IPTR) do_thread,
-             TAG_DONE);
-
-    DebOut("New task: %lx\n", newtask);
-
+    bug("[JUAE:PX] %s: Process @ %p\n", __PRETTY_FUNCTION__, newtask);
+    bug("[JUAE:PX] %s: MsgPort @ %p\n", __PRETTY_FUNCTION__, newtask->pr_MsgPort);
 
     if(newtask) {
-      struct startupmsg msg;
-      
-      msg.msg.mn_ReplyPort = replyport;
-      msg.msg.mn_Length    = sizeof msg;
-      msg.func             = f;
-      msg.arg              = arg;
-      PutMsg (&newtask->pr_MsgPort, (struct Message*)&msg);
-      WaitPort (replyport);
+        struct startupmsg msg;
+
+        msg.msg.mn_ReplyPort = replyport;
+        msg.msg.mn_Length    = sizeof msg;
+        msg.func             = f;
+        msg.arg              = arg;
+        PutMsg (&newtask->pr_MsgPort, (struct Message*)&msg);
+        WaitPort (replyport);
     }
     DeleteMsgPort (replyport);
-  }
 
-  if(tid) {
-    *tid=newtask;
-  }
-  DebOut("thread %lx (\"%s\") started\n", newtask, name);
+    if(tid) {
+        *tid=newtask;
+    }
 
-  return newtask!=0;
+    return (newtask != 0);
 }
-
 
 int uae_start_thread_fast (void *(*f)(void *), void *arg, uae_thread_id *tid) {
-  DebOut("uae_start_thread_fast(%lx, %lx, %lx)\n", f, arg, tid);
+    bug("[JUAE:PX] %s(%lx, %lx, %lx)\n", __PRETTY_FUNCTION__, f, arg, tid);
 
-  uae_start_thread(NULL, f, arg, tid);
+    uae_start_thread(NULL, f, arg, tid);
 }
-
-
-
