@@ -284,7 +284,7 @@ static void lsi_soft_reset(LSIState *s)
 {
     DPRINTF("Reset\n");
     s->carry = 0;
-	memset (s, 0, sizeof LSIState);
+	memset (s, 0, sizeof(LSIState));
 
     s->msg_action = 0;
     s->msg_len = 0;
