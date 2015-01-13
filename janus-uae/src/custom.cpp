@@ -6916,6 +6916,9 @@ static bool framewait (void)
 			frame_rendered = render_screen (false);
 			t = read_processor_time () - start;
 		}
+#if defined(__AROS__)
+#warning "FixMe: AROS gets stuck in a loop here."
+#else
 		while (!currprefs.turbo_emulation) {
 			double v = rpt_vsync (clockadjust) / (syncbase / 1000.0);
 			if (v >= -4)
@@ -6923,6 +6926,7 @@ static bool framewait (void)
 			rtg_vsynccheck ();
 			sleep_millis_main (2);
 		}
+#endif
 		curr_time = start = read_processor_time ();
 		while (rpt_vsync (clockadjust) < 0)
 			rtg_vsynccheck ();
@@ -7005,8 +7009,12 @@ static void fpscounter (bool frameok)
 // vsync functions that are not hardware timing related
 static void vsync_handler_pre (void)
 {
+	D(bug("[JUAE:Custom] %s()\n", __PRETTY_FUNCTION__));
+
 	if (bogusframe > 0)
 		bogusframe--;
+
+	D(bug("[JUAE:Custom] %s; handle events... \n", __PRETTY_FUNCTION__));
 
 	while (handle_events ()) {
 		// we are paused, do all config checks but don't do any emulation
@@ -7017,6 +7025,8 @@ static void vsync_handler_pre (void)
 		}
 		config_check_vsync ();
 	}
+
+	D(bug("[JUAE:Custom] %s: handle chipset...\n", __PRETTY_FUNCTION__));
 
 #ifdef PICASSO96
 	if (isvsync_rtg () >= 0)
@@ -7034,6 +7044,8 @@ static void vsync_handler_pre (void)
 		return;
 	}
 
+	D(bug("[JUAE:Custom] %s: handle devices...\n", __PRETTY_FUNCTION__));
+
 	config_check_vsync ();
 	if (timehack_alive > 0)
 		timehack_alive--;
@@ -7046,6 +7058,8 @@ static void vsync_handler_pre (void)
 	rp_vsync ();
 #endif
 
+	D(bug("[JUAE:Custom] %s: handle frame...\n", __PRETTY_FUNCTION__));
+
 	if (!vsync_rendered) {
 		frame_time_t start, end;
 		start = read_processor_time ();
@@ -7055,16 +7069,23 @@ static void vsync_handler_pre (void)
 		frameskiptime += end - start;
 	}
 
+
+	D(bug("[JUAE:Custom] %s: wait for frame...\n", __PRETTY_FUNCTION__));
 	bool frameok = framewait ();
-	
+	D(bug("[JUAE:Custom] %s: frame done...\n", __PRETTY_FUNCTION__));
+
 	if (!picasso_on) {
 		if (!frame_rendered && vblank_hz_state) {
+			D(bug("[JUAE:Custom] %s: render frame...\n", __PRETTY_FUNCTION__));
 			frame_rendered = render_screen (false);
 		}
 		if (frame_rendered && !frame_shown) {
+			D(bug("[JUAE:Custom] %s: show frame...\n", __PRETTY_FUNCTION__));
 			frame_shown = show_screen_maybe (isvsync_chipset () >= 0);
 		}
 	}
+
+	D(bug("[JUAE:Custom] %s: update stats...\n", __PRETTY_FUNCTION__));
 
 	fpscounter (frameok);
 
@@ -7079,12 +7100,16 @@ static void vsync_handler_pre (void)
 
 	vsync_handle_check ();
 	//checklacecount (bplcon0_interlace_seen || lof_lace);
+
+	D(bug("[JUAE:Custom] %s: done\n", __PRETTY_FUNCTION__));
 }
 
 // emulated hardware vsync
 static void vsync_handler_post (void)
 {
 	static frame_time_t prevtime;
+
+	D(bug("[JUAE:Custom] %s()\n", __PRETTY_FUNCTION__));
 
 	//write_log (_T("%d %d %d\n"), vsynctimebase, read_processor_time () - vsyncmintime, read_processor_time () - prevtime);
 	prevtime = read_processor_time ();
@@ -7196,6 +7221,8 @@ static void vsync_handler_post (void)
 	init_hardware_frame ();
 
 	vsync_cycles = get_cycles ();
+
+	D(bug("[JUAE:Custom] %s: done\n", __PRETTY_FUNCTION__));
 }
 
 static void copper_check (int n)
@@ -7859,6 +7886,8 @@ static void hsync_handler_post (bool onvsync)
 
 static void hsync_handler (void)
 {
+	D(bug("[JUAE:Custom] %s()\n", __PRETTY_FUNCTION__));
+
 	bool vs = is_custom_vsync ();
 	hsync_handler_pre (vs);
 	if (vs) {
@@ -7869,6 +7898,8 @@ static void hsync_handler (void)
 		}
 	}
 	hsync_handler_post (vs);
+
+	D(bug("[JUAE:Custom] %s: done\n", __PRETTY_FUNCTION__));
 }
 
 void init_eventtab (void)
