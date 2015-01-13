@@ -130,41 +130,51 @@
 #undef Child
 #if 0
 int regqueryint (UAEREG *root, const TCHAR *name, int *val) {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
   TODO();
 }
 int regquerystr (UAEREG *root, const TCHAR *name, TCHAR *str, int *size) {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
   TODO();
 }
 int regsetint (UAEREG *root, const TCHAR *name, int val) {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
   TODO();
 }
 int regsetstr (UAEREG *root, const TCHAR *name, const TCHAR *str) {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
   TODO();
 }
 void regclosetree (UAEREG *key) {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
   TODO();
 }
 int regenumstr (UAEREG *root, int idx, TCHAR *name, int *nsize, TCHAR *str, int *size)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
   TODO();
   return 0;
 }
 
 UAEREG *regcreatetree (UAEREG *root, const TCHAR *name) {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
   TODO();
   return NULL;
 }
 
 int regexiststree (UAEREG *root, const TCHAR *name) {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
   TODO();
   return FALSE;
 }
 
 int regexists (UAEREG *root, const TCHAR *name) {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
   return FALSE;
 }
 
 int getregmode (void) {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
   return 0;
 }
 #endif
@@ -277,24 +287,30 @@ TCHAR *WIN32GUI_LoadUIString (TCHAR *id)
     TCHAR tmp[MAX_DPATH];
     TCHAR *ret = NULL;
 
-    bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
+    bug("[JUAE:GUI] %s(0x%p)\n", __PRETTY_FUNCTION__, id);
 
     if (id)
     {
         tmp[0] = 0;
-        bug("[JUAE] %s: string id: '%s'\n", __PRETTY_FUNCTION__, id);
+        bug("[JUAE:GUI] %s: string id: '%s'\n", __PRETTY_FUNCTION__, id);
 
         if (LoadString (hUIDLL ? hUIDLL : hInst, id, tmp, MAX_DPATH) == 0)
             LoadString (hInst, id, tmp, MAX_DPATH);
 
 	ret = strdup(tmp);
     }
+    D(
+        else
+        {
+            bug("[JUAE:GUI] %s: ******** INVALID'\n", __PRETTY_FUNCTION__);
+        }
+    )
     return ret;
 }
 
 void WIN32GUI_LoadUIString (TCHAR *id, TCHAR *string, DWORD dwStringLen)
 {
-    bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
     if (LoadString (hUIDLL ? hUIDLL : hInst, id, string, dwStringLen) == 0)
         LoadString (hInst, id, string, dwStringLen);
@@ -356,20 +372,28 @@ static struct GUIPAGE ppage[MAX_C_PAGES];
 
 static bool ischecked (HWND hDlg, DWORD id)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	return IsDlgButtonChecked (hDlg, id) == BST_CHECKED;
 }
 #if 0
 static void setchecked (HWND hDlg, DWORD id, bool checked)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	CheckDlgButton (hDlg, id, checked ? BST_CHECKED : BST_UNCHECKED);
 }
 static void setfocus (HWND hDlg, int id)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	SendMessage (hDlg, WM_NEXTDLGCTL, (WPARAM)GetDlgItem (hDlg, id), TRUE);
 }
 #endif
 static void ew (HWND hDlg, DWORD id, int enable)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 #if 0
 	HWND w = GetDlgItem (hDlg, id);
 	if (!w)
@@ -378,12 +402,14 @@ static void ew (HWND hDlg, DWORD id, int enable)
 		SendMessage (hDlg, WM_NEXTDLGCTL, 0, FALSE);
 	EnableWindow (w, !!enable);
 #endif
-  bug("hDlg: %lx, id %d, enable %d\n", hDlg, id, enable);
-	EnableWindow (hDlg, id, !!enable);
+    bug("hDlg: %lx, id %d, enable %d\n", hDlg, id, enable);
+    EnableWindow (hDlg, id, !!enable);
 }
 
 static void hide (HWND hDlg, DWORD id, int hide)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	HWND w;
 	if (id < 0)
 		return;
@@ -402,6 +428,8 @@ static void hide (HWND hDlg, DWORD id, int hide)
 static int stringboxdialogactive;
 static INT_PTR CALLBACK StringBoxDialogProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch(msg)
 	{
 	case WM_DESTROY:
@@ -433,6 +461,9 @@ static INT_PTR CALLBACK StringBoxDialogProc (HWND hDlg, UINT msg, WPARAM wParam,
 static int CALLBACK BrowseForFolderCallback (HWND hwnd, UINT uMsg, LPARAM lp, LPARAM pData)
 {
 	TCHAR szPath[MAX_PATH];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch(uMsg)
 	{
 	case BFFM_INITIALIZED:
@@ -452,6 +483,8 @@ static int DirectorySelection2 (OPENFILENAME *ofn)
 	TCHAR buf[MAX_DPATH], fullpath[MAX_DPATH];
 	TCHAR *path = ofn->lpstrFile;
 	int ret = 0;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	buf[0] = 0;
 	memset (&bi, 0, sizeof bi);
@@ -479,6 +512,9 @@ static int DirectorySelection2 (OPENFILENAME *ofn)
 static TCHAR *getfilepath (TCHAR *s)
 {
 	TCHAR *p = _tcsrchr (s, '\\');
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (p)
 		return p + 1;
 	return NULL;
@@ -500,6 +536,8 @@ static BOOL GetFileDialog (OPENFILENAME *opn, const GUID *guid, int mode)
 	int filtercnt = 0;
 
 	static const GUID fsdialogguid = { 0xe768b477, 0x3684, 0x4128, { 0x91, 0x55, 0x8c, 0x8f, 0xd9, 0x2d, 0x16, 0x7b } };
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (isfullscreen () > 0)
 		guid = &fsdialogguid;
@@ -667,12 +705,18 @@ static BOOL GetFileDialog (OPENFILENAME *opn, const GUID *guid, int mode)
 static BOOL GetOpenFileName_2 (HWND parent, OPENFILENAME *opn, const GUID *guid)
 {
 	BOOL val;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	val = GetFileDialog (opn, guid, 0);
 	return val;
 }
 static BOOL GetSaveFileName_2 (HWND parent, OPENFILENAME *opn, const GUID *guid)
 {
 	BOOL val;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	val = GetFileDialog (opn, guid, 1);
 	return val;
 }
@@ -682,6 +726,8 @@ static BOOL GetSaveFileName_2 (HWND parent, OPENFILENAME *opn, const GUID *guid)
 int DirectorySelection (HWND hDlg, const void *guid, TCHAR *path)
 {
 	int val;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
   val=mui_get_dir(NULL, path);
 #if 0
@@ -701,6 +747,8 @@ static void write_disk_history2 (int type)
 	int i, j;
 	TCHAR tmp[16];
 	UAEREG *fkey;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	fkey = regcreatetree (NULL, type ? _T("CDImageMRUList") : _T("DiskImageMRUList"));
 	if (fkey == NULL)
@@ -725,6 +773,8 @@ static void write_disk_history2 (int type)
 
 void write_disk_history (void)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	write_disk_history2 (HISTORY_FLOPPY);
 	write_disk_history2 (HISTORY_CD);
 }
@@ -732,6 +782,8 @@ void write_disk_history (void)
 void reset_disk_history (void)
 {
 	int i;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	for (i = 0; i < MAX_PREVIOUS_FLOPPIES; i++) {
 		DISK_history_add (NULL, i, HISTORY_FLOPPY, 0);
@@ -749,7 +801,7 @@ UAEREG *read_disk_history (int type)
 	UAEREG *fkey;
 	TCHAR tmp[1000];
 
-  bug("entered\n");
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	fkey = regcreatetree (NULL, type ? _T("CDImageMRUList") : _T("DiskImageMRUList"));
 	if (fkey == NULL || (regread & (1 << type)))
@@ -775,6 +827,8 @@ UAEREG *read_disk_history (int type)
 #if 0
 void exit_gui (int ok)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (!gui_active)
 		return;
 	if (guiDlg == NULL)
@@ -784,6 +838,8 @@ void exit_gui (int ok)
 
 static int getcbn (HWND hDlg, int v, TCHAR *out, int len)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	LRESULT val = SendDlgItemMessage (hDlg, v, CB_GETCURSEL, 0, 0L);
 	out[0] = 0;
 	if (val == CB_ERR) {
@@ -809,6 +865,8 @@ static void writefavoritepaths (int num, struct favitems *fitem)
 {
 	int i, idx;
 	UAEREG *fkey;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	fkey = regcreatetree (NULL, _T("FavoritePaths"));
 	if (fkey == NULL)
@@ -846,6 +904,8 @@ static int addfavoritepath (HWND hDlg, int num, struct favitems *fitem)
 	const GUID favoriteguid = 
 	{ 0xed6e5ad9, 0xc0aa, 0x42fb, { 0x83, 0x3, 0x37, 0x41, 0x77, 0xb4, 0x6f, 0x18 } };
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (num >= MAXFAVORITES)
 		return 0;
 	if (!stored_path[0])
@@ -882,6 +942,8 @@ static void removefavoritepath (int idx, int num, struct favitems *fitem)
 {
 	int i;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	xfree (fitem[idx].value);
 	xfree (fitem[idx].path);
 	fitem[idx].value = fitem[idx].path = NULL;
@@ -898,6 +960,8 @@ static void addeditmenu (HMENU menu, struct favitems *fitem)
 	int i;
 	HMENU emenu = CreatePopupMenu ();
 	TCHAR newpath[MAX_DPATH];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	MENUITEMINFO mii = { 0 };
 	mii.cbSize = sizeof mii;
@@ -943,6 +1007,8 @@ static int popupmenu (HWND hwnd, struct favitems *items, int morefiles)
 	int i, item, got;
 	HMENU menu;
 	POINT pt;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	menu = CreatePopupMenu ();
 	got = 0;
@@ -1008,6 +1074,8 @@ static int popupmenu (HWND hwnd, struct favitems *items, int morefiles)
 
 static void favitemsort (struct favitems *fitem, int start, int end)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	for (int i = start; i < end; i++) {
 		for (int j = i + 1; j < end; j++) {
 			if (_tcscmp (fitem[i].value, fitem[j].value) > 0) {
@@ -1026,6 +1094,8 @@ static int getdeepfavdiskimage (TCHAR *imgpath, struct favitems *fitem, int idx)
 	TCHAR *p;
 	struct my_opendir_s *myd = NULL;
 	int previdx = idx;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (!imgpath[0])
 		return idx;
@@ -1083,6 +1153,8 @@ static int getfavdiskimage (TCHAR *imgpath, struct favitems *fitem, int idx)
 	int i;
 	TCHAR name[MAX_DPATH];
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	_tcscpy (name, imgpath);
 	int previdx = idx;
 	for (;;) {
@@ -1114,6 +1186,8 @@ static TCHAR *favoritepopup (HWND hwnd, int drive)
 	int ret, i, num;
 	int srcdrive, dstdrive;
 	int morefiles = 0;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	srcdrive = dstdrive = drive;
 	for (;;) {
@@ -1222,6 +1296,8 @@ static TCHAR *favoritepopup (HWND hwnd, int drive)
 }
 static TCHAR *favoritepopup (HWND hwnd)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	return favoritepopup (hwnd, -1);
 }
 
@@ -1235,6 +1311,8 @@ static int drag_start (HWND hWnd, HWND hListView, LPARAM lParam)
 	int bFirst, iPos, iHeight;
 	HIMAGELIST hOneImageList, hTempImageList;
 	IMAGEINFO imf;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	// You can set your customized cursor here
 	p.x = 8;
@@ -1286,6 +1364,8 @@ static int drag_end (HWND hWnd, HWND hListView, LPARAM lParam, int **draggeditem
 	int iPos, cnt;
 	LVHITTESTINFO lvhti;
 	LVITEM  lvi;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	*draggeditems = NULL;
 	if (!bDragging)
@@ -1341,6 +1421,8 @@ static int drag_move (HWND hWnd, LPARAM lParam)
 {
 	POINT p;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (!bDragging)
 		return 0;
 	p.x = LOWORD(lParam);
@@ -1390,6 +1472,8 @@ static struct romdata *scan_single_rom_2 (struct zfile *f)
 	uae_u8 *rombuf;
 	int cl = 0, size;
 	struct romdata *rd = 0;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	zfile_fseek (f, 0, SEEK_END);
 	size = zfile_ftell (f);
@@ -1449,7 +1533,7 @@ static struct romdata *scan_single_rom (const TCHAR *path)
 	TCHAR tmp[MAX_DPATH];
 	struct romdata *rd;
 
-  bug("path: %s\n", path);
+    bug("[JUAE:GUI] %s('%s')\n", __PRETTY_FUNCTION__, path);
 
 	_tcscpy (tmp, path);
 	rd = scan_arcadia_rom (tmp, 0);
@@ -1470,30 +1554,30 @@ static void abspathtorelative (TCHAR *name)
 	TCHAR   tmp1[MAX_DPATH], tmp2[MAX_DPATH];
 	BOOL    result;
 
-	bug("[JUAE:W32GUI] %s('%s')\n", __PRETTY_FUNCTION__, name);
+	bug("[JUAE:GUI] %s('%s')\n", __PRETTY_FUNCTION__, name);
 
         GetCurrentDirName(tmp1, MAX_DPATH);
-        bug("[JUAE:W32GUI] %s: current dir = '%s'\n", __PRETTY_FUNCTION__, tmp1);
+        bug("[JUAE:GUI] %s: current dir = '%s'\n", __PRETTY_FUNCTION__, tmp1);
 
         lock=Lock(name, SHARED_LOCK);
         if(!lock) {
-                bug("[JUAE:W32GUI] %s: failed to lock path\n", __PRETTY_FUNCTION__);
+                bug("[JUAE:GUI] %s: failed to lock path\n", __PRETTY_FUNCTION__);
                 return;
         }
         result=NameFromLock(lock, tmp2, MAX_DPATH);
         UnLock(lock);
         if(!result) {
-                bug("[JUAE:W32GUI] %s: NameFromLock('%s') failed!\n", __PRETTY_FUNCTION__, name);
+                bug("[JUAE:GUI] %s: NameFromLock('%s') failed!\n", __PRETTY_FUNCTION__, name);
                 return;
         }
-        bug("[JUAE:W32GUI] %s: NameFromLock(%s): %s\n", __PRETTY_FUNCTION__, name, tmp2);
+        bug("[JUAE:GUI] %s: NameFromLock(%s): %s\n", __PRETTY_FUNCTION__, name, tmp2);
 
         if (strnicmp (tmp1, tmp2, strlen (tmp1)) == 0) { // tmp2 is inside tmp1
-                //bug("[JUAE:W32GUI] %s: tmp2 (%s) is inside tmp1 (%s)\n", tmp2, tmp1);
+                //bug("[JUAE:GUI] %s: tmp2 (%s) is inside tmp1 (%s)\n", tmp2, tmp1);
                 strcpy(name, tmp2 + strlen (tmp1) + 1);
         }
         else {
-                //bug("[JUAE:W32GUI] %s: tmp2 (%s) is not inside tmp1 (%s)\n", tmp2, tmp1);
+                //bug("[JUAE:GUI] %s: tmp2 (%s) is not inside tmp1 (%s)\n", tmp2, tmp1);
                 strcpy(name, tmp2);
         }
 #if 0
@@ -1505,6 +1589,8 @@ static void abspathtorelative (TCHAR *name)
 static int addrom (UAEREG *fkey, struct romdata *rd, const TCHAR *name)
 {
 	TCHAR tmp1[MAX_DPATH], tmp2[MAX_DPATH];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	_stprintf (tmp1, _T("ROM_%03d"), rd->id);
 	if (rd->group) {
@@ -1540,6 +1626,8 @@ static int isromext (const TCHAR *path, bool deepscan)
 	const TCHAR *ext;
 	int i;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (!path)
 		return 0;
 	ext = _tcsrchr (path, '.');
@@ -1566,6 +1654,8 @@ static HWND infoboxhwnd;
 #if 0
 static INT_PTR CALLBACK InfoBoxDialogProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch(msg)
 	{
 	case WM_DESTROY:
@@ -1607,6 +1697,8 @@ static INT_PTR CALLBACK InfoBoxDialogProc (HWND hDlg, UINT msg, WPARAM wParam, L
 #endif
 static bool scan_rom_hook (const TCHAR *name, int line)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 #if 0
 	MSG msg;
 #endif
@@ -1654,6 +1746,8 @@ static int scan_rom_2 (struct zfile *f, void *vrsd)
 	const TCHAR *romkey = _T("rom.key");
 	struct romdata *rd;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	scan_rom_hook (NULL, 0);
 	if (!isromext (path, true))
 		return 0;
@@ -1677,6 +1771,8 @@ static int scan_rom (const TCHAR *path, UAEREG *fkey, bool deepscan)
 	struct romscandata rsd = { fkey, 0 };
 	struct romdata *rd;
 	int cnt = 0;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (!isromext (path, deepscan)) {
 		//write_log("ROMSCAN: skipping file '%s', unknown extension\n", path);
@@ -1703,7 +1799,7 @@ static int listrom (int *roms)
 {
 	int i;
 
-  bug("listrom(..)\n");
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	i = 0;
 	while (roms[i] >= 0) {
@@ -1744,6 +1840,8 @@ static void show_rom_list (void)
 		57, 58, -1, -1, // A4091
 		0, 0, 0
 	};
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	WIN32GUI_LoadUIString (IDS_ROM_AVAILABLE, avail, sizeof (avail) / sizeof (TCHAR));
 	WIN32GUI_LoadUIString (IDS_ROM_UNAVAILABLE, unavail, sizeof (avail) / sizeof (TCHAR));
@@ -1797,7 +1895,7 @@ static int scan_roms_2 (UAEREG *fkey, const TCHAR *path, bool deepscan)
 	HANDLE handle;
 #endif
 
-  bug("----------------------------\n");
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
   fib_ptr=(struct FileInfoBlock *) AllocMem(sizeof(struct FileInfoBlock), MEMF_PUBLIC | MEMF_CLEAR);
   if(!fib_ptr) {
@@ -1904,7 +2002,7 @@ static int scan_roms_3 (UAEREG *fkey, TCHAR **paths, const TCHAR *path)
 	TCHAR pathp[MAX_DPATH];
 	bool deepscan = true;
 
-  bug("path: %s\n", path);
+    bug("[JUAE:GUI] %s('%s')\n", __PRETTY_FUNCTION__, path);
 
 	ret = 0;
 	scan_rom_hook (NULL, 0);
@@ -1946,7 +2044,7 @@ int scan_roms (HWND hDlg, int show)
 	MSG msg;
 #endif
 
-  bug("entered(mode: %lx, %d)\n", hDlg, show);
+    bug("[JUAE:GUI] %s(%lx, %d)\n", __PRETTY_FUNCTION__, hDlg, show);
 
 	if (recursive)
 		return 0;
@@ -2068,6 +2166,9 @@ static int configstoresize, configstoreallocated, configtype, configtypepanel;
 static struct ConfigStruct *getconfigstorefrompath (TCHAR *path, TCHAR *out, int type)
 {
 	int i;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	for (i = 0; i < configstoresize; i++) {
 		if (((configstore[i]->Type == 0 || configstore[i]->Type == 3) && type == 0) || (configstore[i]->Type == type)) {
 			TCHAR path2[MAX_DPATH];
@@ -2090,6 +2191,8 @@ int target_cfgfile_load (struct uae_prefs *p, const TCHAR *filename, int type, i
 	int ct, ct2, size;
 	TCHAR tmp1[MAX_DPATH], tmp2[MAX_DPATH];
 	TCHAR fname[MAX_DPATH];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	_tcscpy (fname, filename);
 	if (!zfile_exists (fname)) {
@@ -2154,6 +2257,8 @@ static bool gui_resize_allowed;
 static int mm = 0;
 static void m (void)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	write_log (_T("%d:0: %dx%d %dx%d %dx%d\n"), mm, currprefs.gfx_size.width, currprefs.gfx_size.height,
 		workprefs.gfx_size.width, workprefs.gfx_size.height, changed_prefs.gfx_size.width, changed_prefs.gfx_size.height);
 	write_log (_T("%d:1: %dx%d %dx%d %dx%d\n"), mm, currprefs.gfx_size_fs.width, currprefs.gfx_size_fs.height,
@@ -2163,6 +2268,8 @@ static void m (void)
 
 static void flipgui (bool opengui)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	D3D_guimode (opengui);
 	if (opengui)
 		DirectDraw_FlipToGDISurface ();
@@ -2177,7 +2284,7 @@ void gui_display (int shortcut)
 	static int here;
 	int w, h;
 
-  bug("entered\n");
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (here)
 		return;
@@ -2243,6 +2350,8 @@ void gui_display (int shortcut)
 
 static void prefs_to_gui (struct uae_prefs *p)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	workprefs = *p;
 	/* filesys hack */
 	workprefs.mountitems = currprefs.mountitems;
@@ -2260,6 +2369,8 @@ static void prefs_to_gui (struct uae_prefs *p)
 #if 0
 static void gui_to_prefs (void)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	/* Always copy our prefs to changed_prefs, ... */
 	changed_prefs = workprefs;
 	/* filesys hack */
@@ -2272,6 +2383,8 @@ static void gui_to_prefs (void)
 
 static int iscd (int n)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (quickstart_cd && n == 1 && currentpage == QUICKSTART_ID)
 		return 1;
 	return 0;
@@ -2292,12 +2405,16 @@ static const GUID diskselectionguids[] = {
 
 static void getfilter (int num, const TCHAR *name, int *filter, TCHAR *fname)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	_tcscpy (fname, name);
 	_tcscat (fname, _T("_Filter"));
 	regqueryint (NULL, fname, &filter[num]);
 }
 static void setfilter (int num, int *filter, const TCHAR *fname)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (fname == NULL || fname[0] == 0)
 		return;
 	regsetint (NULL, fname, filter[num]);
@@ -2311,6 +2428,8 @@ static UINT_PTR CALLBACK ofnhook (HWND hDlg, UINT message, WPARAM wParam, LPARAM
 	int width, height, w2, h2, x, y;
 	struct MultiDisplay *md;
 	NMHDR *nmhdr;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (message == WM_NOTIFY) {
 		nmhdr = (LPNMHDR)lParam;
@@ -2353,6 +2472,8 @@ static UINT_PTR CALLBACK ofnhook (HWND hDlg, UINT message, WPARAM wParam, LPARAM
 
 static void eject_cd (void)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	workprefs.cdslots[0].name[0] = 0;
 	if (full_property_sheet)
 		workprefs.cdslots[0].type = SCSI_UNIT_DEFAULT;
@@ -2374,6 +2495,8 @@ static void infofloppy (HWND hDlg, int n)
 	struct diskinfo di;
 	TCHAR tmp2[MAX_DPATH];
 	TCHAR text[20000];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	DISK_examine_image (&workprefs, n, &di);
 
@@ -2442,6 +2565,8 @@ static void infofloppy (HWND hDlg, int n)
 
 static void ejectfloppy (int n)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 #if 0
 	if (iscd (n)) {
 		eject_cd ();
@@ -2456,6 +2581,8 @@ static void ejectfloppy (int n)
 #if 0
 static void selectcd (struct uae_prefs *prefs, HWND hDlg, int num, int id, const TCHAR *full_path)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	SetDlgItemText (hDlg, id, full_path);
 	if (quickstart_cddrive[0])
 		eject_cd ();
@@ -2467,6 +2594,8 @@ static void selectcd (struct uae_prefs *prefs, HWND hDlg, int num, int id, const
 
 static void selectdisk (struct uae_prefs *prefs, HWND hDlg, int num, int id, const TCHAR *full_path)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 #if 0
 	if (iscd (num)) {
 		selectcd (prefs, hDlg, num, id, full_path);
@@ -2485,6 +2614,8 @@ static void selectdisk (struct uae_prefs *prefs, HWND hDlg, int num, int id, con
 #if 0
 static void setdpath (const TCHAR *name, const TCHAR *path)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	TCHAR tmp[MAX_DPATH];
 	_tcscpy (tmp, path);
 	fullpath (tmp, sizeof tmp / sizeof (TCHAR));
@@ -2534,7 +2665,8 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 	TCHAR szFormat[MAX_DPATH];
 	TCHAR szFilter[MAX_DPATH] = { 0 };
 
-  bug("entered\n");
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 #if 0
 	memset (&openFileName, 0, sizeof (OPENFILENAME));
 
@@ -2994,11 +3126,16 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 
 int DiskSelection (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs, TCHAR *path_out)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	return DiskSelection_2 (hDlg, wParam, flag, prefs, path_out, NULL);
 }
 int MultiDiskSelection (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs, TCHAR *path_out)
 {
 	int multi = 0;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	return DiskSelection_2 (hDlg, wParam, flag, prefs, path_out, &multi);
 }
 
@@ -3006,6 +3143,8 @@ int MultiDiskSelection (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *pr
 static int loopmulti (TCHAR *s, TCHAR *out)
 {
 	static int index;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (!out) {
 		index = _tcslen (s) + 1;
@@ -3038,6 +3177,8 @@ static BOOL CreateHardFile (HWND hDlg, UINT hfsizem, TCHAR *dostype, TCHAR *newp
 	uae_u32 dt;
 	uae_u8 b;
 	int sparse, dynamic;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	outpath[0] = 0;
 	sparse = 0;
@@ -3177,6 +3318,8 @@ static int CalculateHardfileSize (HWND hDlg)
 	BOOL Translated = FALSE;
 	UINT mbytes = 0;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	mbytes = GetDlgItemInt(hDlg, IDC_HF_SIZE, &Translated, FALSE);
 	if (mbytes <= 0)
 		mbytes = 0;
@@ -3197,6 +3340,8 @@ static void setguititle (HWND phwnd)
 	TCHAR title2[1000];
 	TCHAR *name;
 	static HWND hwnd;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (phwnd)
 		hwnd = phwnd;
@@ -3235,6 +3380,8 @@ static void setguititle (HWND phwnd)
 #if 0
 static void GetConfigPath (TCHAR *path, struct ConfigStruct *parent, int noroot)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (parent == NULL) {
 		path[0] = 0;
 		if (!noroot) {
@@ -3252,11 +3399,15 @@ static void GetConfigPath (TCHAR *path, struct ConfigStruct *parent, int noroot)
 
 void FreeConfigStruct (struct ConfigStruct *config)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	xfree (config);
 }
 struct ConfigStruct *AllocConfigStruct (void)
 {
 	struct ConfigStruct *config;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	config = xcalloc (struct ConfigStruct, 1);
 	return config;
@@ -3265,6 +3416,9 @@ struct ConfigStruct *AllocConfigStruct (void)
 static void FreeConfigStore (void)
 {
 	int i;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	for (i = 0; i < configstoresize; i++)
 		FreeConfigStruct (configstore[i]);
 	xfree (configstore);
@@ -3275,6 +3429,8 @@ static void FreeConfigStore (void)
 #if 0
 static void getconfigcache (TCHAR *dst, const TCHAR *path)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	_tcscpy (dst, path);
 	_tcsncat (dst, _T("configuration.cache"), MAX_DPATH);
 }
@@ -3310,6 +3466,9 @@ static void setconfighosthard (struct ConfigStruct *config)
 static void flushconfigcache (const TCHAR *cachepath)
 {
 	FILE *zcache;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	zcache = _tfopen (cachepath, _T("r"));
 	if (zcache == NULL)
 		return;
@@ -3339,6 +3498,8 @@ static struct ConfigStruct *readconfigcache (const TCHAR *path)
 	ULARGE_INTEGER t1, stt, dirtt;
 	HANDLE h;
 	WIN32_FIND_DATA ffd;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 #if CONFIGCACHE == 0
 	return NULL;
@@ -3525,6 +3686,8 @@ static void writeconfigcacheentry (FILE *zcache, const TCHAR *relpath, struct Co
 	TCHAR *p;
 	ULARGE_INTEGER li;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	GetFullPathName (cs->Fullpath, sizeof path2 / sizeof (TCHAR), path2, NULL);
 	if (_tcslen (path2) < _tcslen (relpath))
 		return;
@@ -3563,6 +3726,8 @@ static void writeconfigcacherec (FILE *zcache, const TCHAR *relpath, struct Conf
 {
 	int i;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (!cs->Directory)
 		return;
 	writeconfigcacheentry (zcache, relpath, cs);
@@ -3582,6 +3747,8 @@ static void writeconfigcache (const TCHAR *path)
 	TCHAR path2[MAX_DPATH];
 	FILETIME t;
 	SYSTEMTIME st;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (!configurationcache)
 		return;
@@ -3623,6 +3790,8 @@ static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int u
 	WIN32_FIND_DATA find_data;
 	struct ConfigStruct *config, *first;
 	HANDLE handle;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (*level == 0)
 		FreeConfigStore ();
@@ -3731,6 +3900,8 @@ static struct ConfigStruct *CreateConfigStore (struct ConfigStruct *oldconfig, i
 	TCHAR path[MAX_DPATH], name[MAX_DPATH];
 	struct ConfigStruct *cs;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (oldconfig) {
 		_tcscpy (path, oldconfig->Path);
 		_tcscpy (name, oldconfig->Name);
@@ -3753,6 +3924,8 @@ static TCHAR *HandleConfiguration (HWND hDlg, int flag, struct ConfigStruct *con
 	TCHAR path[MAX_DPATH];
 	static TCHAR full_path[MAX_DPATH];
 	int ok = 1;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	full_path[0] = 0;
 	name[0] = 0;
@@ -3851,6 +4024,9 @@ static TCHAR *HandleConfiguration (HWND hDlg, int flag, struct ConfigStruct *con
 static int disk_in_drive (int entry)
 {
 	int i;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	for (i = 0; i < 4; i++) {
 		if (_tcslen (workprefs.dfxlist[entry]) > 0 && !_tcscmp (workprefs.dfxlist[entry], workprefs.floppyslots[i].df))
 			return i;
@@ -3861,6 +4037,8 @@ static int disk_in_drive (int entry)
 static int disk_swap (int entry, int mode)
 {
 	int drv, i, drvs[4] = { -1, -1, -1, -1 };
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	for (i = 0; i < MAX_SPARE_DRIVES; i++) {
 		drv = disk_in_drive (i);
@@ -3910,6 +4088,9 @@ static int input_copy_from;
 static void getqualifiername (TCHAR *p, uae_u64 mask)
 {
 	*p = 0;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (mask == IDEV_MAPPED_QUALIFIER_SPECIAL) {
 		_tcscpy (p, _T("*"));
 	} else if (mask == (IDEV_MAPPED_QUALIFIER_SPECIAL << 1)) {
@@ -3948,6 +4129,8 @@ static void set_lventry_input (HWND list, int index)
 	TCHAR custom[MAX_DPATH];
 	TCHAR af[32], toggle[32], invert[32];
 	uae_u64 flags;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	inputdevice_get_mapping (input_selected_device, index, &flags, &port, name, custom, input_selected_sub_num);
 	if (flags & IDEV_MAPPED_AUTOFIRE_SET) {
@@ -4017,6 +4200,9 @@ static void set_lventry_input (HWND list, int index)
 static void update_listview_input (HWND hDlg)
 {
 	int i;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (!input_total_devices)
 		return;
 	for (i = 0; i < inputdevice_get_widget_num (input_selected_device); i++)
@@ -4031,6 +4217,8 @@ static int inputmap_handle (HWND list, int currentdevnum, int currentwidgetnum, 
 	int mode;
 	const int *axistable;
 	bool found2 = false;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	for (portnum = 0; portnum < 4; portnum++) {
 		if (list)
@@ -4154,6 +4342,8 @@ static int inputmap_handle (HWND list, int currentdevnum, int currentwidgetnum, 
 }
 static void update_listview_inputmap (HWND hDlg, int deleteindex)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	HWND list = GetDlgItem (hDlg, IDC_INPUTMAPLIST);
 
 	ListView_EnableGroupView (list, TRUE);
@@ -4226,6 +4416,8 @@ static struct miscentry misclist[] = {
 
 static void harddisktype (TCHAR *s, struct uaedev_config_info *ci)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch (ci->type)
 	{
 		case UAEDEV_CD:
@@ -4265,6 +4457,8 @@ void InitializeListView (HWND hDlg)
 	TCHAR tmp[10], tmp2[MAX_DPATH];
 	int listview_column_width[HARDDISK_COLUMNS];
 	DWORD extraflags = 0;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (cachedlist) {
 		if (lv_old_type >= 0) {
@@ -4709,6 +4903,9 @@ void InitializeListView (HWND hDlg)
 static int listview_find_selected (HWND list)
 {
 	int i, items;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	items = ListView_GetItemCount (list);
 	for (i = 0; i < items; i++) {
 		if (ListView_GetItemState (list, i, LVIS_SELECTED) == LVIS_SELECTED)
@@ -4723,6 +4920,8 @@ static int listview_entry_from_click (HWND list, int *column)
 	POINTS p;
 	DWORD pos = GetMessagePos ();
 	int items, entry;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	p = MAKEPOINTS (pos);
 	point.x = p.x;
@@ -4767,6 +4966,8 @@ static INT_PTR CALLBACK InfoSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 {
 	static int recursive = 0;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch (msg)
 	{
 	case WM_INITDIALOG:
@@ -4807,6 +5008,8 @@ static HTREEITEM AddConfigNode (HWND hDlg, struct ConfigStruct *config, const TC
 	TCHAR s[MAX_DPATH] = _T("");
 	TCHAR file_name[MAX_DPATH] = _T(""), file_path[MAX_DPATH] = _T("");
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	GetDlgItemText (hDlg, IDC_EDITNAME, file_name, MAX_DPATH);
 	GetDlgItemText (hDlg, IDC_EDITPATH, file_path, MAX_DPATH);
 	TVhDlg = GetDlgItem (hDlg, IDC_CONFIGTREE);
@@ -4845,6 +5048,8 @@ static int LoadConfigTreeView (HWND hDlg, int idx, HTREEITEM parent)
 {
 	struct ConfigStruct *cparent, *config;
 	int cnt = 0;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (configstoresize == 0)
 		return cnt;
@@ -4900,6 +5105,8 @@ static void InitializeConfig (HWND hDlg, struct ConfigStruct *config)
 {
 	int i, j, idx1, idx2;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (config == NULL) {
 		SetDlgItemText (hDlg, IDC_EDITNAME, _T(""));
 		SetDlgItemText (hDlg, IDC_EDITDESCRIPTION, _T(""));
@@ -4931,6 +5138,9 @@ static void InitializeConfig (HWND hDlg, struct ConfigStruct *config)
 static void DeleteConfigTree (HWND hDlg)
 {
 	int i;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	HWND TVhDlg = GetDlgItem(hDlg, IDC_CONFIGTREE);
 	for (i = 0; i < configstoresize; i++)
 		configstore[i]->item = NULL;
@@ -4943,6 +5153,8 @@ static HTREEITEM InitializeConfigTreeView (HWND hDlg)
 	HWND TVhDlg = GetDlgItem(hDlg, IDC_CONFIGTREE);
 	HTREEITEM parent;
 	TCHAR path[MAX_DPATH];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (himl) {
 		HICON icon;
@@ -4963,6 +5175,8 @@ static HTREEITEM InitializeConfigTreeView (HWND hDlg)
 
 static void ConfigToRegistry (struct ConfigStruct *config, int type)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (config) {
 		TCHAR path[MAX_DPATH];
 		_tcscpy (path, config->Path);
@@ -4972,6 +5186,8 @@ static void ConfigToRegistry (struct ConfigStruct *config, int type)
 }
 static void ConfigToRegistry2 (DWORD ct, int type, DWORD noauto)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (type > 0)
 		regsetint (NULL, configreg2[type], ct);
 	if (noauto == 0 || noauto == 1)
@@ -4981,6 +5197,8 @@ static void ConfigToRegistry2 (DWORD ct, int type, DWORD noauto)
 static void checkautoload (HWND	hDlg, struct ConfigStruct *config)
 {
 	int ct = 0;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (configtypepanel > 0)
 		regqueryint (NULL, configreg2[configtypepanel], &ct);
@@ -4997,6 +5215,8 @@ static void checkautoload (HWND	hDlg, struct ConfigStruct *config)
 static struct ConfigStruct *fixloadconfig (HWND hDlg, struct ConfigStruct *config)
 {
 	int i;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (config && configtypepanel == 0 && (config->host || config->hardware))
 		return NULL;
@@ -5023,7 +5243,8 @@ static struct ConfigStruct *initloadsave (HWND hDlg, struct ConfigStruct *config
 #endif
 	TCHAR path[MAX_DPATH];
 
-  bug("entered\n");
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 
 #if 0
 	EnableWindow (GetDlgItem (hDlg, IDC_VIEWINFO), workprefs.info[0]);
@@ -5054,6 +5275,9 @@ static struct ConfigStruct *initloadsave (HWND hDlg, struct ConfigStruct *config
 static void loadsavecommands (HWND hDlg, WPARAM wParam, struct ConfigStruct **configp, TCHAR **pcfgfile, TCHAR *newpath)
 {
 	struct ConfigStruct *config = *configp;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch (LOWORD (wParam))
 	{
 	case IDC_SAVE:
@@ -5157,6 +5381,8 @@ static INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPA
 	TCHAR *cfgfile = NULL;
 	static int recursive;
 	static struct ConfigStruct *config;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch (msg)
 	{
@@ -5274,6 +5500,8 @@ static INT_PTR CALLBACK ErrorLogProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 	CHARFORMAT CharFormat;
 	TCHAR *err;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch (msg) {
 	case WM_COMMAND:
 		if (wParam == IDOK) {
@@ -5308,6 +5536,8 @@ static INT_PTR CALLBACK ContributorsProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 	TCHAR szContributors2[MAX_CONTRIBUTORS_LENGTH];
 	TCHAR szContributors[MAX_CONTRIBUTORS_LENGTH * 2];
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch (msg) {
 	case WM_COMMAND:
 		if (wParam == ID_OK) {
@@ -5338,6 +5568,8 @@ static INT_PTR CALLBACK ContributorsProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 static void DisplayContributors (HWND hDlg)
 {
   TCHAR szContributors[MAX_CONTRIBUTORS_LENGTH * 2 + 50];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
   _stprintf (szContributors, _T("%s%s\nOliver Brunner - AROS port"), IDS_CONTRIBUTORS1, IDS_CONTRIBUTORS2);
 
@@ -5371,6 +5603,8 @@ static urlinfo urls[] =
 
 static void SetupRichText(HWND hDlg, urlinfo *url)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 #if 0
 	CHARFORMAT CharFormat;
 	CharFormat.cbSize = sizeof (CharFormat);
@@ -5403,6 +5637,8 @@ static void url_handler (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 	POINT point;
 	point.x = LOWORD (lParam);
 	point.y = HIWORD (lParam);
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	for (i = 0; urls[i].id >= 0; i++)
 	{
@@ -5457,6 +5693,8 @@ static void url_handler (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 static void setac (HWND hDlg, int id)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 #ifndef __AROS__
 	SHAutoComplete (GetDlgItem (hDlg, id), SHACF_FILESYSTEM | SHACF_AUTOAPPEND_FORCE_ON | SHACF_AUTOSUGGEST_FORCE_ON | SHACF_USETAB);
 #endif
@@ -5464,6 +5702,8 @@ static void setac (HWND hDlg, int id)
 
 static void setautocomplete (HWND hDlg, int id)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 #if 0
 	HWND item = FindWindowEx (GetDlgItem (hDlg, id), NULL, _T("Edit"), NULL);
 	if (item)
@@ -5473,6 +5713,9 @@ static void setautocomplete (HWND hDlg, int id)
 static void setmultiautocomplete (HWND hDlg, int *ids)
 {
 	int i;
+
+        bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	for (i = 0; ids[i] >= 0; i++)
 		setautocomplete (hDlg, ids[i]);
 }
@@ -5480,6 +5723,8 @@ static void setmultiautocomplete (HWND hDlg, int *ids)
 static void setpath (HWND hDlg, TCHAR *name, DWORD d, TCHAR *def)
 {
 	TCHAR tmp[MAX_DPATH];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
   bug("name %s, def %s\n", name, def);
 
@@ -5494,6 +5739,8 @@ static void setpath (HWND hDlg, TCHAR *name, DWORD d, TCHAR *def)
 
 static void values_to_pathsdialog (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	setpath (hDlg, _T("KickstartPath"), IDC_PATHS_ROM, _T("Roms"));
 	setpath (hDlg, _T("ConfigurationPath"), IDC_PATHS_CONFIG, _T("Configurations"));
 	setpath (hDlg, _T("ScreenshotPath"), IDC_PATHS_SCREENSHOT, _T("ScreenShots"));
@@ -5505,6 +5752,8 @@ static void values_to_pathsdialog (HWND hDlg)
 
 static void resetregistry (void)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	regdeletetree (NULL, _T("DetectedROMs"));
 	regdelete (NULL, _T("QuickStartMode"));
 	regdelete (NULL, _T("ConfigFile"));
@@ -5533,6 +5782,8 @@ static void copylog (const TCHAR *name, const TCHAR *path, FILE *f)
 {
 	FILE *s;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	s = my_opentext (path);
 	if (s) {
 		fputws (_T("\n"), f);
@@ -5552,7 +5803,9 @@ static void saveconfig (FILE *f)
 {
 	int len;
 	uae_u8 *s;
-	
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	s = save_configuration (&len, true);
 	if (!s)
 		return;
@@ -5565,6 +5818,8 @@ static void saveconfig (FILE *f)
 static void savelog (int all)
 {
 	FILE *f;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	TCHAR tmp[MAX_DPATH];
 	tmp[0] = 0;
@@ -5608,6 +5863,7 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 	int val, selpath = 0;
 	TCHAR tmp[MAX_DPATH];
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
   bug("entered (hDlg: %lx)\n", hDlg);
   bug("msg: %d\n", msg);
 
@@ -5921,6 +6177,8 @@ static struct amigamodels amodels[] = {
 
 static void enable_for_quickstart (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	int v = quickstart_ok && quickstart_ok_floppy ? TRUE : FALSE;
 	ew (guiDlg, IDC_RESETAMIGA, !full_property_sheet ? TRUE : FALSE);
 #if 0
@@ -5930,6 +6188,8 @@ static void enable_for_quickstart (HWND hDlg)
 
 static void load_quickstart (HWND hDlg, int romcheck)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	ew (guiDlg, IDC_RESETAMIGA, FALSE);
 	workprefs.nr_floppies = quickstart_floppy;
 	quickstart_ok = built_in_prefs (&workprefs, quickstart_model, quickstart_conf, quickstart_compa, romcheck);
@@ -5948,6 +6208,8 @@ static void quickstarthost (HWND hDlg, TCHAR *name)
 	int type = CONFIG_TYPE_HOST;
 	TCHAR tmp[MAX_DPATH];
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (getconfigstorefrompath (name, tmp, CONFIG_TYPE_HOST)) {
 		if (cfgfile_load (&workprefs, tmp, &type, 1, 0))
 			workprefs.start_gui = 1;
@@ -5956,6 +6218,8 @@ static void quickstarthost (HWND hDlg, TCHAR *name)
 
 static void init_quickstartdlg_tooltip (HWND hDlg, TCHAR *tt)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
   TODO();
 #if 0
 	TOOLINFO ti;
@@ -5980,7 +6244,7 @@ static void init_quickstartdlg (HWND hDlg)
 	TCHAR tmp1[2 * MAX_DPATH], tmp2[MAX_DPATH], hostconf[MAX_DPATH];
 	TCHAR *p1, *p2;
 
-  bug("entered\n");
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	qssize = sizeof (tmp1) / sizeof (TCHAR);
 	regquerystr (NULL, _T("QuickStartHostConfig"), hostconf, &qssize);
@@ -6108,6 +6372,8 @@ static void testimage (HWND hDlg, int num)
 	IPTR messageid = -1;
 	TCHAR tmp[MAX_DPATH];
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	floppytooltip (hDlg, num, 0);
 	quickstart_ok_floppy = 0;
 	if (workprefs.floppyslots[0].dfxtype < 0) {
@@ -6179,8 +6445,9 @@ static void addallfloppies (HWND hDlg);
 static void setfloppytexts (HWND hDlg, int qs)
 {
 
-  bug("entered\n");
-  bug("workprefs.floppyslots[0].df: %s\n", workprefs.floppyslots[0].df);
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+    bug("workprefs.floppyslots[0].df: %s\n", workprefs.floppyslots[0].df);
+
 	SetDlgItemText (hDlg, IDC_DF0TEXT, workprefs.floppyslots[0].df);
 	SetDlgItemText (hDlg, IDC_DF1TEXT, workprefs.floppyslots[1].df);
 	SetDlgItemText (hDlg, IDC_DF2TEXT, workprefs.floppyslots[2].df);
@@ -6201,6 +6468,8 @@ static INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, L
 	static int dfxtype[2] = { -1, -1 };
 	static int doinit;
 	//LRESULT val;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch(msg)
 	{
@@ -6396,6 +6665,8 @@ static INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, L
 static void init_aboutdlg (HWND hDlg)
 {
 	int i;
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 #if 0
 	CHARFORMAT CharFormat;
 
@@ -6430,6 +6701,8 @@ static void init_aboutdlg (HWND hDlg)
 
 INT_PTR CALLBACK AboutDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
   bug("wParam: %d %d (IDC_CONTRIBUTORS: %d)\n", wParam, LOWORD(wParam), IDC_CONTRIBUTORS);
 	switch( msg )
 	{
@@ -6459,6 +6732,9 @@ INT_PTR CALLBACK AboutDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 static void enable_for_displaydlg (HWND hDlg)
 {
 	int rtg = ((!workprefs.address_space_24 || !gfxboard_is_z3 (workprefs.rtgmem_type)) && workprefs.rtgmem_size) || workprefs.rtgmem_type >= GFXBOARD_HARDWARE;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 #ifndef PICASSO96
 	rtg = FALSE;
 #endif
@@ -6494,6 +6770,8 @@ static void enable_for_chipsetdlg (HWND hDlg)
 {
 	int enable = workprefs.cpu_cycle_exact ? FALSE : TRUE;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 #if !defined (CPUEMU_13)
 	ew (hDlg, IDC_CYCLEEXACT, FALSE);
 #endif
@@ -6525,6 +6803,8 @@ static void init_frequency_combo (HWND hDlg, int dmode)
 	TCHAR hz[20], hz2[20], txt[100];
 	LRESULT index;
 	struct MultiDisplay *md = getdisplay (&workprefs);
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	i = 0; index = 0;
 	while (dmode >= 0 && (freq = md->DisplayModes[dmode].refresh[i]) > 0 && index < MAX_REFRESH_RATES) {
@@ -6604,6 +6884,8 @@ static int display_mode_index (uae_u32 x, uae_u32 y, uae_u32 d)
 	int i, j;
 	struct MultiDisplay *md = getdisplay (&workprefs);
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	j = 0;
 	for (i = 0; md->DisplayModes[i].depth >= 0; i++) {
 		if (md->DisplayModes[i].res.width == x &&
@@ -6632,6 +6914,9 @@ static int da_mode_selected;
 static int *getp_da (void)
 {
 	int *p = 0;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch (da_mode_selected)
 	{
 	case 0:
@@ -6649,6 +6934,8 @@ static int *getp_da (void)
 
 static void set_da (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	int *p = getp_da ();
 	if (!p)
 		return;
@@ -6661,6 +6948,8 @@ static void set_da (HWND hDlg)
 #if 0
 static void update_da (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	currprefs.gfx_gamma = workprefs.gfx_gamma;
 	currprefs.gfx_luminance = workprefs.gfx_luminance;
 	currprefs.gfx_contrast = workprefs.gfx_contrast;
@@ -6674,6 +6963,8 @@ static void handle_da (HWND hDlg)
 {
 	int *p;
 	int v;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	p = getp_da ();
 	if (!p)
@@ -6690,6 +6981,8 @@ void init_da (HWND hDlg)
 {
 	int *p;
 	TCHAR tmp[MAX_DPATH], *p1, *p2;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	WIN32GUI_LoadUIString(IDS_DISPLAY_ATTRIBUTES, tmp, sizeof tmp / sizeof (TCHAR));
 	SendDlgItemMessage(hDlg, IDC_DA_MODE, CB_RESETCONTENT, 0, 0);
@@ -6720,6 +7013,8 @@ static void init_display_mode (HWND hDlg)
 	int d, d2, index;
 	int i, cnt;
 	struct MultiDisplay *md = getdisplay (&workprefs);
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch (workprefs.color_mode)
 	{
@@ -6787,6 +7082,8 @@ static void init_display_mode (HWND hDlg)
 #if 0
 static int display_toselect (int fs, int vsync, int p96)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (p96)
 		return fs * 2 + (vsync ? 1 : 0);
 	if (fs == 2)
@@ -6802,6 +7099,9 @@ static int display_toselect (int fs, int vsync, int p96)
 static void display_fromselect (int val, int *fs, int *vsync, int p96)
 {
 	int ofs = *fs;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (val == CB_ERR)
 		return;
 	*fs = 0;
@@ -6864,6 +7164,8 @@ static void values_to_displaydlg (HWND hDlg)
 	int rates[MAX_CHIPSET_REFRESH_TOTAL];
 	int v;
 	double d;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	init_display_mode (hDlg);
 
@@ -7021,8 +7323,8 @@ static void init_resolution_combo (HWND hDlg)
 	TCHAR tmp[MAX_DPATH];
 	struct MultiDisplay *md = getdisplay (&workprefs);
 
-  bug("entered (md=%lx)\n", md);
-  bug("md->DisplayModes[0].depth: %d\n", md->DisplayModes[0].depth);
+    bug("[JUAE:GUI] %s(%lx)\n", __PRETTY_FUNCTION__, md);
+    bug("md->DisplayModes[0].depth: %d\n", md->DisplayModes[0].depth);
 
 	idx = -1;
 	SendDlgItemMessage(hDlg, IDC_RESOLUTION, CB_RESETCONTENT, 0, 0);
@@ -7049,6 +7351,8 @@ static void init_displays_combo (HWND hDlg, bool rtg)
 	int displaynum;
 	int idx = 0;
 	int id = rtg ? IDC_RTG_DISPLAYSELECT : IDC_DISPLAYSELECT;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	displaynum = workprefs.gfx_apmode[rtg ? APMODE_RTG : APMODE_NATIVE].gfx_display - 1;
 	SendDlgItemMessage (hDlg, id, CB_RESETCONTENT, 0, 0);
@@ -7086,6 +7390,8 @@ static bool get_displays_combo (HWND hDlg, bool rtg)
 	int cnt = 0, cnt2 = 0;
 	int displaynum;
 	int id = rtg ? IDC_RTG_DISPLAYSELECT : IDC_DISPLAYSELECT;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	posn = SendDlgItemMessage (hDlg, id, CB_GETCURSEL, 0, 0);
 	if (posn == CB_ERR)
@@ -7126,6 +7432,8 @@ static void values_from_displaydlg (HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 	int gfx_height = workprefs.gfx_size_win.height;
 	LRESULT posn;
 	TCHAR tmp[200];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	workprefs.gfx_apmode[0].gfx_fullscreen = SendDlgItemMessage (hDlg, IDC_SCREENMODE_NATIVE, CB_GETCURSEL, 0, 0);
 	workprefs.gfx_lores_mode = ischecked (hDlg, IDC_LORES_SMOOTHED);
@@ -7366,6 +7674,8 @@ static INT_PTR CALLBACK DisplayDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPAR
 {
 	static int recursive = 0;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch (msg)
 	{
 	case WM_INITDIALOG:
@@ -7429,6 +7739,8 @@ static void values_to_chipsetdlg (HWND hDlg)
 	TCHAR *blah[1] = { Nth };
 	TCHAR *string = NULL;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch(workprefs.chipset_mask)
 	{
 	case 0:
@@ -7465,6 +7777,8 @@ static void values_from_chipsetdlg (HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 	BOOL success = FALSE;
 	int nn;
 	bool n;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	workprefs.genlock = ischecked (hDlg, IDC_GENLOCK);
 	workprefs.immediate_blits = ischecked (hDlg, IDC_BLITIMM);
@@ -7509,6 +7823,8 @@ static INT_PTR CALLBACK ChipsetDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPAR
 {
 	static int recursive = 0;
 	TCHAR buffer[MAX_DPATH];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch (msg) {
 	case WM_INITDIALOG:
@@ -7569,6 +7885,8 @@ static void values_to_chipsetdlg2 (HWND hDlg)
 {
 	TCHAR txt[32];
 	uae_u32 rev;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch(workprefs.cs_ciaatod)
 	{
@@ -7671,6 +7989,8 @@ static void values_from_chipsetdlg2 (HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
 	TCHAR txt[32], *p;
 	int v;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	workprefs.cs_compatible = ischecked (hDlg, IDC_CS_COMPATIBLE);
 	workprefs.cs_resetwarning = ischecked (hDlg, IDC_CS_RESETWARNING);
 	workprefs.cs_ciatodbug = ischecked (hDlg, IDC_CS_CIATODBUG);
@@ -7743,6 +8063,8 @@ static void enable_for_chipsetdlg2 (HWND hDlg)
 {
 	int e = workprefs.cs_compatible ? FALSE : TRUE;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	ew (hDlg, IDC_CS_FATGARY, e);
 	ew (hDlg, IDC_CS_RAMSEY, e);
 	ew (hDlg, IDC_CS_AGNUS, e);
@@ -7787,6 +8109,8 @@ static INT_PTR CALLBACK ChipsetDlgProc2 (HWND hDlg, UINT msg, WPARAM wParam, LPA
 {
 	static int recursive = 0;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch (msg) {
 	case WM_INITDIALOG:
 		pages[CHIPSET2_ID] = hDlg;
@@ -7816,6 +8140,8 @@ static void enable_for_memorydlg (HWND hDlg)
 {
 	int fast = workprefs.chipmem_size <= 0x200000;
 	int z3 = true;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 #ifndef AUTOCONFIG
 	z3 = FALSE;
@@ -7847,6 +8173,8 @@ static void setmax32bitram (HWND hDlg)
 	TCHAR tmp[100];
 	uae_u32 size, rtgz3size;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	rtgz3size = gfxboard_is_z3 (workprefs.rtgmem_type) ? workprefs.rtgmem_size : 0;
 	size = workprefs.z3fastmem_size + workprefs.z3fastmem2_size +
 		workprefs.z3chipmem_size + rtgz3size;
@@ -7865,6 +8193,8 @@ static int manybits (int v, int mask)
 {
 	int i, cnt;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	cnt = 0;
 	for (i = 0; i < 32; i++) {
 		if (((1 << i) & mask) & v)
@@ -7879,6 +8209,8 @@ static void values_to_memorydlg (HWND hDlg)
 {
 	uae_u32 mem_size = 0;
 	uae_u32 v;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch (workprefs.chipmem_size) {
 	case 0x00040000: mem_size = 0; break;
@@ -8123,6 +8455,8 @@ static void values_to_memorydlg (HWND hDlg)
 
 static void fix_values_memorydlg (void)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (workprefs.chipmem_size > 0x200000)
 		workprefs.fastmem_size = 0;
 }
@@ -8130,6 +8464,8 @@ static void updatez3 (uae_u32 *size1p, uae_u32 *size2p)
 {
 	int i;
 	uae_u32 s1, s2;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	// no 2GB Z3 size so we need 2x1G
 	if (*size1p >= 0x80000000) {
@@ -8176,6 +8512,8 @@ static void expansion_net (HWND hDlg)
 	TCHAR tmp[MAX_DPATH];
 	bool notset = true;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	SendDlgItemMessage (hDlg, IDC_NETDEVICE, CB_RESETCONTENT, 0, 0);
 	WIN32GUI_LoadUIString (IDS_NETDISCONNECTED, tmp, sizeof tmp / sizeof (TCHAR));
 	SendDlgItemMessage (hDlg, IDC_NETDEVICE, CB_ADDSTRING, 0, (LPARAM)tmp);
@@ -8206,6 +8544,8 @@ static void enable_for_expansiondlg (HWND hDlg)
 {
 	int z3 = true;
 	int cw, en;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	en = !!full_property_sheet;
 #ifdef CATWEASEL
@@ -8256,6 +8596,8 @@ static void values_to_expansiondlg (HWND hDlg)
 {
 	int cw;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	CheckDlgButton (hDlg, IDC_SOCKETS, workprefs.socket_emu);
 	CheckDlgButton (hDlg, IDC_CATWEASEL, workprefs.catweasel);
 	CheckDlgButton (hDlg, IDC_SCSIDEVICE, workprefs.scsi == 1);
@@ -8281,6 +8623,8 @@ static INT_PTR CALLBACK ExpansionDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 	TCHAR tmp[100];
 	static int recursive = 0;
 	static int enumerated;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch (msg)
 	{
@@ -8585,6 +8929,8 @@ static INT_PTR CALLBACK MemoryDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARA
 {
 	static int recursive = 0;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch (msg)
 	{
 	case WM_INITDIALOG:
@@ -8641,7 +8987,7 @@ static void addromfiles (UAEREG *fkey, HWND hDlg, DWORD d, TCHAR *path, int type
 	TCHAR seltmp[MAX_DPATH];
 	struct romdata *rdx;
 
-  bug("entered (path: %s)\n", path);
+    bug("[JUAE:GUI] %s('%s')\n", __PRETTY_FUNCTION__, path);
 
 	rdx = scan_single_rom (path);
 	SendDlgItemMessage(hDlg, d, CB_RESETCONTENT, 0, 0);
@@ -8692,6 +9038,8 @@ static void addromfiles (UAEREG *fkey, HWND hDlg, DWORD d, TCHAR *path, int type
 
 static void getromfile (HWND hDlg, DWORD d, TCHAR *path, int size)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	LRESULT val = SendDlgItemMessage (hDlg, d, CB_GETCURSEL, 0, 0L);
 	if (val == CB_ERR) {
 		SendDlgItemMessage (hDlg, d, WM_GETTEXT, (WPARAM)size, (LPARAM)path);
@@ -8713,6 +9061,8 @@ static void getromfile (HWND hDlg, DWORD d, TCHAR *path, int size)
 
 static void values_from_kickstartdlg (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	getromfile (hDlg, IDC_ROMFILE, workprefs.romfile, sizeof (workprefs.romfile) / sizeof (TCHAR));
 	getromfile (hDlg, IDC_ROMFILE2, workprefs.romextfile, sizeof (workprefs.romextfile) / sizeof (TCHAR));
 	getromfile (hDlg, IDC_CARTFILE, workprefs.cartfile, sizeof (workprefs.cartfile) / sizeof (TCHAR));
@@ -8723,6 +9073,8 @@ static void values_from_kickstartdlg (HWND hDlg)
 static void values_to_kickstartdlg (HWND hDlg)
 {
 	UAEREG *fkey;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	fkey = regcreatetree (NULL, _T("DetectedROMs"));
 	load_keyring(&workprefs, NULL);
@@ -8746,6 +9098,8 @@ static void values_to_kickstartdlg (HWND hDlg)
 
 static void init_kickstart (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 #if !defined(AUTOCONFIG)
 	ew (hDlg, IDC_MAPROM, FALSE);
 #endif
@@ -8772,6 +9126,8 @@ static void init_kickstart (HWND hDlg)
 
 static void kickstartfilebuttons (HWND hDlg, WPARAM wParam, TCHAR *path)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch (LOWORD(wParam))
 	{
 	case IDC_KICKCHOOSER:
@@ -8809,6 +9165,8 @@ INT_PTR CALLBACK KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lP
 {
 	static int recursive;
 	TCHAR tmp[MAX_DPATH];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch (msg)
 	{
@@ -8891,6 +9249,8 @@ INT_PTR CALLBACK KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lP
 #if 0
 static void enable_for_miscdlg (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (!full_property_sheet) {
 		ew (hDlg, IDC_NOSPEED, TRUE);
 		ew (hDlg, IDC_NOSPEEDPAUSE, TRUE);
@@ -8959,6 +9319,8 @@ static void enable_for_miscdlg (HWND hDlg)
 
 static void misc_kbled (HWND hDlg, int v, int nv)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	TCHAR *defname = v == IDC_KBLED1 ? _T("(NumLock)") : v == IDC_KBLED2 ? _T("(CapsLock)") : _T("(ScrollLock)");
 	SendDlgItemMessage (hDlg, v, CB_RESETCONTENT, 0, 0L);
 	SendDlgItemMessage (hDlg, v, CB_ADDSTRING, 0, (LPARAM)defname);
@@ -8974,6 +9336,8 @@ static void misc_kbled (HWND hDlg, int v, int nv)
 
 static void misc_getkbled (HWND hDlg, int v, int n)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	LRESULT nv = SendDlgItemMessage (hDlg, v, CB_GETCURSEL, 0, 0L);
 	if (nv != CB_ERR) {
 		workprefs.keyboard_leds[n] = nv;
@@ -8984,6 +9348,8 @@ static void misc_getkbled (HWND hDlg, int v, int n)
 
 static void misc_getpri (HWND hDlg, int v, int *n)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	LRESULT nv = SendDlgItemMessage (hDlg, v, CB_GETCURSEL, 0, 0L);
 	if (nv != CB_ERR)
 		*n = nv;
@@ -8992,6 +9358,8 @@ static void misc_getpri (HWND hDlg, int v, int *n)
 static void misc_addpri (HWND hDlg, int v, int pri)
 {
 	int i;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	DWORD opri = GetPriorityClass (GetCurrentProcess ());
 	ew (hDlg, v, !(opri != IDLE_PRIORITY_CLASS && opri != NORMAL_PRIORITY_CLASS && opri != BELOW_NORMAL_PRIORITY_CLASS && opri != ABOVE_NORMAL_PRIORITY_CLASS));
@@ -9010,7 +9378,9 @@ static void misc_scsi (HWND hDlg)
 {
 	TCHAR tmp[MAX_DPATH];
 
-	SendDlgItemMessage (hDlg, IDC_SCSIMODE, CB_RESETCONTENT, 0, 0);
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
+        SendDlgItemMessage (hDlg, IDC_SCSIMODE, CB_RESETCONTENT, 0, 0);
 	WIN32GUI_LoadUIString (IDS_SCSI_EMULATION, tmp, sizeof tmp / sizeof (TCHAR));
 	SendDlgItemMessage (hDlg, IDC_SCSIMODE, CB_ADDSTRING, 0, (LPARAM)tmp);
 	SendDlgItemMessage (hDlg, IDC_SCSIMODE, CB_ADDSTRING, 0, (LPARAM)_T("SPTI"));
@@ -9023,6 +9393,8 @@ static void misc_lang (HWND hDlg)
 	int i, idx = 0, cnt = 0, lid;
 	WORD langid = -1;
 	TCHAR tmp[MAX_DPATH];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (regqueryint (NULL, _T("Language"), &lid))
 		langid = (WORD)lid;
@@ -9064,6 +9436,9 @@ static void misc_setlang (int v)
 {
 	int i;
 	WORD langid = 0;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	v-=2;
 	if (v >= 0) {
 		for (i = 0; langs[i].name; i++) {
@@ -9091,6 +9466,8 @@ static void misc_setlang (int v)
 
 static void misc_gui_font (HWND hDlg, int fonttype)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (scaleresource_choosefont (hDlg, fonttype))
 		gui_size_changed = 1;
 }
@@ -9098,6 +9475,8 @@ static void misc_gui_font (HWND hDlg, int fonttype)
 static void values_to_miscdlg (HWND hDlg)
 {
 	TCHAR tmp[MAX_DPATH];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (currentpage == MISC1_ID) {
 
@@ -9154,6 +9533,8 @@ static void values_to_miscdlg (HWND hDlg)
 
 static void setstatefilename (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	TCHAR *s = _tcsrchr (workprefs.statefile, '\\');
 	if (s) {
 		s++;
@@ -9173,6 +9554,8 @@ static INT_PTR MiscDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	int v, i;
 	static int recursive;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (recursive)
 		return FALSE;
@@ -9414,12 +9797,16 @@ static INT_PTR MiscDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 static INT_PTR CALLBACK MiscDlgProc1 (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	currentpage = MISC1_ID;
 	return MiscDlgProc (hDlg, msg, wParam, lParam);
 }
 
 static INT_PTR CALLBACK MiscDlgProc2 (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	currentpage = MISC2_ID;
 	return MiscDlgProc (hDlg, msg, wParam, lParam);
 }
@@ -9433,6 +9820,8 @@ static void enable_for_cpudlg (HWND hDlg)
 {
 	BOOL enable = FALSE, jitenable = FALSE;
 	BOOL cpu_based_enable = FALSE;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	ew (hDlg, IDC_SPEED, !workprefs.cpu_cycle_exact);
 	ew (hDlg, IDC_COMPATIBLE24, workprefs.cpu_model == 68020);
@@ -9494,6 +9883,8 @@ static double getcpufreq (int m)
 {
 	double f;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	f = workprefs.ntscmode ? 28636360.0 : 28375160.0;
 	return f * (m >> 8) / 8.0;
 }
@@ -9502,6 +9893,8 @@ static void values_to_cpudlg (HWND hDlg)
 {
 	TCHAR buffer[8] = _T("");
 	int cpu;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	SendDlgItemMessage (hDlg, IDC_SPEED, TBM_SETPOS, TRUE, (int)(workprefs.m68k_speed_throttle / 100));
 	_stprintf (buffer, _T("%+d%%"), (int)(workprefs.m68k_speed_throttle / 10));
@@ -9559,6 +9952,8 @@ static void values_from_cpudlg (HWND hDlg)
 {
 	int newcpu, newfpu, newtrust, oldcache, jitena, idx;
 	static int cachesize_prev, trust_prev;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	workprefs.cpu_compatible = workprefs.cpu_cycle_exact | (ischecked (hDlg, IDC_COMPATIBLE) ? 1 : 0);
 	workprefs.fpu_strict = ischecked (hDlg, IDC_COMPATIBLE_FPU) ? 1 : 0;
@@ -9693,7 +10088,7 @@ static INT_PTR CALLBACK CPUDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 	static int recursive = 0;
 	int idx;
 
-  bug("entered\n");
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch (msg) {
 	case WM_INITDIALOG:
@@ -9775,6 +10170,8 @@ static void enable_for_sounddlg (HWND hDlg)
 {
 	int numdevs;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	numdevs = enumerate_sound_devices ();
 	if (numdevs == 0)
 		ew (hDlg, IDC_SOUNDCARDLIST, FALSE);
@@ -9826,6 +10223,8 @@ static void sound_loaddrivesamples (void)
 	int len = 0;
 	TCHAR dirname[1024];
   struct FileInfoBlock *fib;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	free (drivesounds);
 	p = drivesounds = 0;
@@ -9926,6 +10325,9 @@ static const int sndbufsizes[] = { 1024, 2048, 3072, 4096, 6144, 8192, 12288, 16
 static int getsoundbufsizeindex (int size)
 {
 	int idx;
+    
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	for (idx = 0; sndbufsizes[idx] < size && sndbufsizes[idx + 1] >= 0 ; idx++);
 	return idx;
 }
@@ -9934,6 +10336,8 @@ static void update_soundgui (HWND hDlg)
 {
 	int bufsize;
 	TCHAR txt[20];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	bufsize = getsoundbufsizeindex (workprefs.sound_maxbsiz) + 1;
 	_stprintf (txt, _T("%d"), bufsize);
@@ -9964,6 +10368,8 @@ static void values_to_sounddlg (HWND hDlg)
 	TCHAR txt[100], txt2[100], *p;
 	int i, selected;
 	LRESULT idx;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	SendDlgItemMessage (hDlg, IDC_SOUNDFILTER, CB_RESETCONTENT, 0, 0);
 	WIN32GUI_LoadUIString (IDS_SOUND_FILTER_OFF, txt, sizeof (txt) / sizeof (TCHAR));
@@ -10130,6 +10536,8 @@ static void values_from_sounddlg (HWND hDlg)
 	LRESULT idx;
 	int soundcard, i;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	idx = SendDlgItemMessage (hDlg, IDC_SOUNDFREQ, CB_GETCURSEL, 0, 0);
 	if (idx >= 0) {
 		workprefs.sound_freq = soundfreqs[idx];
@@ -10231,6 +10639,8 @@ static INT_PTR CALLBACK SoundDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 	static int recursive = 0;
 	int numdevs;
 	int card, i;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch (msg) {
 	case WM_INITDIALOG:
@@ -10351,6 +10761,8 @@ static void hardfile_testrdb (struct hfdlg_vals *hdf)
 	int i;
 	struct hardfiledata hfd;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	memset (id, 0, sizeof id);
 	memset (&hfd, 0, sizeof hfd);
 	hfd.ci.readonly = true;
@@ -10383,17 +10795,24 @@ static void hardfile_testrdb (struct hfdlg_vals *hdf)
 
 static void default_fsvdlg (struct fsvdlg_vals *f)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	memset (f, 0, sizeof (struct fsvdlg_vals));
 	f->ci.type = UAEDEV_DIR;
 }
 static void default_tapedlg (struct tapedlg_vals *f)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	memset (f, 0, sizeof (struct tapedlg_vals));
 	f->ci.type = UAEDEV_TAPE;
 }
 static void default_hfdlg (struct hfdlg_vals *f, bool rdb)
 {
 	int ctrl = f->ci.controller;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	memset (f, 0, sizeof (struct hfdlg_vals));
 	uci_set_defaults (&f->ci, rdb);
 	f->original = true;
@@ -10402,6 +10821,8 @@ static void default_hfdlg (struct hfdlg_vals *f, bool rdb)
 }
 static void default_rdb_hfdlg (struct hfdlg_vals *f, const TCHAR *filename)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	default_hfdlg (f, true);
 	_tcscpy (current_hfdlg.ci.rootdir, filename);
 	hardfile_testrdb (f);
@@ -10411,8 +10832,9 @@ static void volumeselectfile (HWND hDlg)
 {
 	TCHAR directory_path[MAX_DPATH];
 
-  bug("Entered\n");
-	_tcscpy (directory_path, current_fsvdlg.ci.rootdir);
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
+        _tcscpy (directory_path, current_fsvdlg.ci.rootdir);
 	if (directory_path[0] == 0) {
 		int out = sizeof directory_path / sizeof (TCHAR);
 		regquerystr (NULL, _T("FilesystemFilePath"), directory_path, &out);
@@ -10440,6 +10862,8 @@ static void volumeselectdir (HWND hDlg, int newdir)
 	TCHAR szTitle[MAX_DPATH];
 	TCHAR directory_path[MAX_DPATH];
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	_tcscpy (directory_path, current_fsvdlg.ci.rootdir);
 	if (!newdir) {
 		if (directory_path[0] == 0) {
@@ -10462,6 +10886,8 @@ static void volumeselectdir (HWND hDlg, int newdir)
 static INT_PTR CALLBACK VolumeSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static int recursive = 0;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch (msg) {
 	case WM_INITDIALOG:
@@ -10554,6 +10980,8 @@ static INT_PTR CALLBACK VolumeSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, 
 
 STATIC_INLINE bool is_hdf_rdb (void)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	return current_hfdlg.ci.sectors == 0 && current_hfdlg.ci.surfaces == 0 && current_hfdlg.ci.reserved == 0;
 }
 
@@ -10561,6 +10989,8 @@ static void sethardfile (HWND hDlg)
 {
 	bool rdb = is_hdf_rdb ();
 	bool disables = !rdb || (rdb && current_hfdlg.ci.controller == HD_CONTROLLER_UAE);
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (!disables)
 		current_hfdlg.ci.bootpri = 0;
@@ -10586,6 +11016,8 @@ static void sethardfile (HWND hDlg)
 
 static void inithdcontroller (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	SendDlgItemMessage (hDlg, IDC_HDF_CONTROLLER, CB_RESETCONTENT, 0, 0);
 	SendDlgItemMessage (hDlg, IDC_HDF_CONTROLLER, CB_ADDSTRING, 0, (LPARAM)_T("UAE"));
 	SendDlgItemMessage (hDlg, IDC_HDF_CONTROLLER, CB_ADDSTRING, 0, (LPARAM)_T("IDE0"));
@@ -10608,6 +11040,8 @@ static void inithardfile (HWND hDlg)
 {
 	TCHAR tmp[MAX_DPATH];
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	ew (hDlg, IDC_HF_DOSTYPE, FALSE);
 	ew (hDlg, IDC_HF_CREATE, FALSE);
 	inithdcontroller (hDlg);
@@ -10623,6 +11057,8 @@ static void inithardfile (HWND hDlg)
 
 static void sethfdostype (HWND hDlg, int idx)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch (idx)
 	{
 	case 1:
@@ -10647,6 +11083,8 @@ static void updatehdfinfo (HWND hDlg, bool force, bool defaults)
 	int blocks, cyls, i;
 	TCHAR tmp[200], tmp2[200];
 	TCHAR idtmp[17];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	bsize = 0;
 	if (force) {
@@ -10740,6 +11178,8 @@ static void updatehdfinfo (HWND hDlg, bool force, bool defaults)
 
 static void hardfileselecthdf (HWND hDlg, TCHAR *newpath)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	DiskSelection (hDlg, IDC_PATH_NAME, 2, &workprefs, newpath);
 	GetDlgItemText (hDlg, IDC_PATH_NAME, current_hfdlg.ci.rootdir, sizeof current_hfdlg.ci.rootdir / sizeof (TCHAR));
 	fullpath (current_hfdlg.ci.rootdir, sizeof current_hfdlg.ci.rootdir / sizeof (TCHAR));
@@ -10757,6 +11197,9 @@ static void hardfilecreatehdf (HWND hDlg, TCHAR *newpath)
 	LRESULT res;
 	UINT setting = CalculateHardfileSize (hDlg);
 	TCHAR dostype[16];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	GetDlgItemText (hDlg, IDC_HF_DOSTYPE, dostype, sizeof (dostype) / sizeof (TCHAR));
 	res = SendDlgItemMessage (hDlg, IDC_HF_TYPE, CB_GETCURSEL, 0, 0);
 	if (res == 0)
@@ -10774,6 +11217,8 @@ static INT_PTR CALLBACK TapeDriveSettingsProc (HWND hDlg, UINT msg, WPARAM wPara
 {
 	static int recursive = 0;
 	int posn, readonly;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch (msg) {
 
@@ -10850,6 +11295,8 @@ static INT_PTR CALLBACK CDDriveSettingsProc (HWND hDlg, UINT msg, WPARAM wParam,
 	static int recursive = 0;
 	int posn;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch (msg) {
 
 	case WM_INITDIALOG:
@@ -10901,6 +11348,8 @@ static INT_PTR CALLBACK HardfileSettingsProc (HWND hDlg, UINT msg, WPARAM wParam
 	TCHAR tmp[MAX_DPATH], fs[MAX_DPATH], dev[MAX_DPATH];
 	int hdctrlr;
 	int v;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch (msg) {
 	case WM_DROPFILES:
@@ -11098,6 +11547,8 @@ static INT_PTR CALLBACK HarddriveSettingsProc (HWND hDlg, UINT msg, WPARAM wPara
 	LRESULT posn;
 	static int oposn;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch (msg) {
 	case WM_INITDIALOG:
 		{
@@ -11204,6 +11655,9 @@ static void new_filesys (HWND hDlg, int entry)
 {
 	struct uaedev_config_data *uci;
 	struct uaedev_config_info ci;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	memcpy (&ci, &current_fsvdlg.ci, sizeof (struct uaedev_config_info));
 	uci = add_filesys_config (&workprefs, entry, &ci);
 	if (uci) {
@@ -11217,6 +11671,9 @@ static void new_filesys (HWND hDlg, int entry)
 static void new_cddrive (HWND hDlg, int entry)
 {
 	struct uaedev_config_info ci = { 0 };
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	ci.device_emu_unit = 0;
 	ci.controller = current_cddlg.ci.controller;
 	ci.type = UAEDEV_CD;
@@ -11229,12 +11686,16 @@ static void new_tapedrive (HWND hDlg, int entry)
 {
 	struct uaedev_config_data *uci;
 	struct uaedev_config_info ci = { 0 };
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	ci.controller = current_tapedlg.ci.controller;
 	ci.readonly = current_tapedlg.ci.readonly;
 	_tcscpy (ci.rootdir, current_tapedlg.ci.rootdir);
 	ci.type = UAEDEV_TAPE;
 	ci.blocksize = 512;
 	uci = add_filesys_config (&workprefs, entry, &ci);
+
 	if (uci && uci->unitnum >= 0) {
 		tape_media_change (uci->unitnum, &ci);
 	}
@@ -11244,8 +11705,12 @@ static void new_hardfile (HWND hDlg, int entry)
 {
 	struct uaedev_config_data *uci;
 	struct uaedev_config_info ci;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	memcpy (&ci, &current_hfdlg.ci, sizeof (struct uaedev_config_info));
 	uci = add_filesys_config (&workprefs, entry, &ci);
+
 	if (uci) {
 		struct hardfiledata *hfd = get_hardfile_data (uci->configoffset);
 		hardfile_media_change (hfd, &ci, true, false);
@@ -11255,6 +11720,8 @@ static void new_hardfile (HWND hDlg, int entry)
 static void new_harddrive (HWND hDlg, int entry)
 {
 	struct uaedev_config_data *uci;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	uci = add_filesys_config (&workprefs, entry, &current_hfdlg.ci);
 	if (uci) {
@@ -11266,6 +11733,9 @@ static void new_harddrive (HWND hDlg, int entry)
 static void harddisk_remove (HWND hDlg)
 {
 	int entry = listview_find_selected (GetDlgItem (hDlg, IDC_VOLUMELIST));
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (entry < 0)
 		return;
 	kill_filesys_unitconfig (&workprefs, entry);
@@ -11274,6 +11744,9 @@ static void harddisk_remove (HWND hDlg)
 static void harddisk_move (HWND hDlg, int up)
 {
 	int entry = listview_find_selected (GetDlgItem (hDlg, IDC_VOLUMELIST));
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (entry < 0)
 		return;
 	move_filesys_unitconfig (&workprefs, entry, up ? entry - 1 : entry + 1);
@@ -11285,6 +11758,8 @@ static void harddisk_edit (HWND hDlg)
 	int type;
 	struct uaedev_config_data *uci;
 	struct mountedinfo mi;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (entry < 0 || entry >= workprefs.mountitems)
 		return;
@@ -11340,6 +11815,9 @@ static ACCEL HarddiskAccel[] = {
 static void hilitehd (HWND hDlg)
 {
 	int total = ListView_GetItemCount (cachedlist);
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (total <= 0) {
 		ew (hDlg, IDC_EDIT, FALSE);
 		ew (hDlg, IDC_REMOVE, FALSE);
@@ -11357,6 +11835,9 @@ static void hilitehd (HWND hDlg)
 static int harddiskdlg_button (HWND hDlg, WPARAM wParam)
 {
 	int button = LOWORD (wParam);
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch (button) {
 	case IDC_CD_SELECT:
 		DiskSelection (hDlg, wParam, 17, &workprefs, NULL);
@@ -11476,6 +11957,8 @@ static void harddiskdlg_volume_notify (HWND hDlg, NM_LISTVIEW *nmlistview)
 	int dblclick = 0;
 	int entry = 0;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch (nmlistview->hdr.code) {
 	case LVN_BEGINDRAG:
 		drag_start (hDlg, cachedlist, (LPARAM)nmlistview);
@@ -11501,6 +11984,8 @@ static void harddiskdlg_volume_notify (HWND hDlg, NM_LISTVIEW *nmlistview)
 /* harddisk parent view */
 static INT_PTR CALLBACK HarddiskDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch (msg) {
 	case WM_INITDIALOG:
 		clicked_entry = 0;
@@ -11630,6 +12115,8 @@ static void out_floppyspeed (HWND hDlg)
 	TCHAR tmp1[MAX_DPATH];
 	TCHAR tmp2[MAX_DPATH];
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	WIN32GUI_LoadUIString (IDS_FLOPPY_COMPATIBLE, tmp1, sizeof (tmp1) / sizeof (TCHAR));
 	WIN32GUI_LoadUIString (IDS_FLOPPY_TURBO, tmp2, sizeof (tmp2) / sizeof (TCHAR));
 	if (workprefs.floppy_speed)
@@ -11655,6 +12142,8 @@ static int floppybuttonsq[][BUTTONSPERFLOPPY] = {
 
 static void floppytooltip (HWND hDlg, int num, uae_u32 crc32)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
   TODO();
 #if 0
 	TOOLINFO ti;
@@ -11688,6 +12177,8 @@ static void addfloppyhistory_2 (HWND hDlg, int n, int f_text, int type)
 	TCHAR *s, *text;
 	UAEREG *fkey;
 	int nn, curidx;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
   bug("entered: %d, %d, %d\n", n, f_text, type);
 
@@ -11751,6 +12242,8 @@ static void addfloppyhistory (HWND hDlg)
 {
 	int f_text, max, n;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
   bug("QUICKSTART_ID: %d, FLOPPY_ID %d, DISK_ID %d\n", QUICKSTART_ID, FLOPPY_ID, DISK_ID);
   bug("currentpage: %d\n", currentpage);
 
@@ -11784,6 +12277,9 @@ static void addfloppyhistory (HWND hDlg)
 static void addcdtype (HWND hDlg, int id)
 {
 	TCHAR tmp[MAX_DPATH];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	SendDlgItemMessage (hDlg, id, CB_RESETCONTENT, 0, 0L);
 	WIN32GUI_LoadUIString (IDS_QS_CD_AUTO, tmp, sizeof tmp / sizeof (TCHAR));
 	SendDlgItemMessage (hDlg, id, CB_ADDSTRING, 0, (LPARAM)tmp);
@@ -11829,6 +12325,8 @@ static void addfloppytype (HWND hDlg, int n)
 	int f_si = floppybuttons[n][6];
 	int f_enable = floppybuttons[n][7];
 	int f_info = floppybuttons[n][8];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
   bug("addfloppytype hDlg %lx, n %d\n", hDlg, n);
 
@@ -11926,6 +12424,9 @@ static void addfloppytype (HWND hDlg, int n)
 static void getfloppytype (HWND hDlg, int n)
 {
 	int f_type = floppybuttons[n][3];
+    
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	LRESULT val = SendDlgItemMessage (hDlg, f_type, CB_GETCURSEL, 0, 0L);
 
 	if (val != CB_ERR && workprefs.floppyslots[n].dfxtype != val - 1) {
@@ -11937,6 +12438,8 @@ static void getfloppytypeq (HWND hDlg, int n)
 {
 	int f_enable = currentpage == QUICKSTART_ID ? floppybuttonsq[n][7] : floppybuttons[n][7];
 	int chk;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (f_enable <= 0 || (n == 0 && currentpage == QUICKSTART_ID))
 		return;
@@ -11962,6 +12465,8 @@ static int getfloppybox (HWND hDlg, int f_text, TCHAR *out, int maxlen, int type
 	TCHAR *p1, *p2, *p;
 	TCHAR *tmp;
 	int i;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
   bug("hDlg: %lx, f_text: %d\n", hDlg, f_text);
 
@@ -12008,7 +12513,8 @@ static void getfloppyname (HWND hDlg, int n, int cd, int f_text)
 {
 	TCHAR tmp[MAX_DPATH];
 
-  bug("n %d, cd %d, text %d\n", n, cd, f_text);
+    bug("[JUAE:GUI] %s(%d)\n", __PRETTY_FUNCTION__, n);
+    bug("[JUAE:GUI] %s: cd %d, text %d\n", __PRETTY_FUNCTION__, cd, f_text);
 
 	if (getfloppybox (hDlg, f_text, tmp, sizeof (tmp) / sizeof (TCHAR), cd ? HISTORY_CD : HISTORY_FLOPPY)) {
 		if (!cd) {
@@ -12027,7 +12533,8 @@ static void getfloppyname (HWND hDlg, int n)
 {
 	int cd = iscd (n);
 
-  bug("n: %d currentpage: %d (QUICKSTART_ID: %d) floppybuttonsq[n][0]: %d, floppybuttons[n][0] %d\n", n, currentpage, QUICKSTART_ID, floppybuttonsq[n][0], floppybuttons[n][0]);
+    bug("[JUAE:GUI] %s(%d)\n", __PRETTY_FUNCTION__, n);
+    bug("[JUAE:GUI] %s: currentpage: %d (QUICKSTART_ID: %d) floppybuttonsq[n][0]: %d, floppybuttons[n][0] %d\n", __PRETTY_FUNCTION__, currentpage, QUICKSTART_ID, floppybuttonsq[n][0], floppybuttons[n][0]);
 
 	int f_text = currentpage == QUICKSTART_ID ? floppybuttonsq[n][0] : floppybuttons[n][0];
 
@@ -12040,6 +12547,9 @@ static void getfloppyname (HWND hDlg, int n)
 static void addallfloppies (HWND hDlg)
 {
 	int i;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+    
 #if 0
 
 	for (i = 0; i < 4; i++)
@@ -12050,6 +12560,8 @@ static void addallfloppies (HWND hDlg)
 
 static void floppysetwriteprotect (HWND hDlg, int n, bool writeprotected)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (!iscd (n)) {
 		disk_setwriteprotect (&workprefs, n, workprefs.floppyslots[n].df, writeprotected);
 		addfloppytype (hDlg, n);
@@ -12060,6 +12572,9 @@ static void floppysetwriteprotect (HWND hDlg, int n, bool writeprotected)
 static void deletesaveimage (HWND hDlg, int num)
 {
 	TCHAR *p;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (iscd (num))
 		return;
 	p = DISK_get_saveimagepath (workprefs.floppyslots[num].df);
@@ -12075,8 +12590,9 @@ static void diskselect (HWND hDlg, WPARAM wParam, struct uae_prefs *p, int drv, 
 {
 	int cd = iscd (drv);
 
-  bug("entered\n");
-	MultiDiskSelection (hDlg, wParam, cd ? 17 : 0, &workprefs, defaultpath);
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
+        MultiDiskSelection (hDlg, wParam, cd ? 17 : 0, &workprefs, defaultpath);
 	if (!cd) {
 		disk_insert (0, p->floppyslots[0].df);
 		disk_insert (1, p->floppyslots[1].df);
@@ -12089,6 +12605,8 @@ static void diskselect (HWND hDlg, WPARAM wParam, struct uae_prefs *p, int drv, 
 
 static int diskselectmenu (HWND hDlg, WPARAM wParam)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
   TODO();
 #if 0
 	int id = GetDlgCtrlID ((HWND)wParam);
@@ -12409,6 +12927,8 @@ static ACCEL SwapperAccel[] = {
 #if 0
 static void swapperhili (HWND hDlg, int entry)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	ListView_SetItemState (cachedlist, entry,
 		LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
 	SetDlgItemText (hDlg, IDC_DISKTEXT,  workprefs.dfxlist[entry]);
@@ -12417,6 +12937,9 @@ static void swapperhili (HWND hDlg, int entry)
 static void diskswapper_addfile2 (struct uae_prefs *prefs, const TCHAR *file)
 {
 	int list = 0;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	while (list < MAX_SPARE_DRIVES) {
 		if (!strcasecmp (prefs->dfxlist[list], file))
 			break;
@@ -12437,6 +12960,8 @@ static void diskswapper_addfile2 (struct uae_prefs *prefs, const TCHAR *file)
 
 static void diskswapper_addfile (struct uae_prefs *prefs, const TCHAR *file)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	struct zdirectory *zd = zfile_opendir_archive (file, ZFD_ARCHIVE | ZFD_NORECURSE);
 	if (zd && zfile_readdir_archive (zd, NULL, true) > 1) {
 		TCHAR out[MAX_DPATH];
@@ -12459,6 +12984,8 @@ static void addswapperfile (HWND hDlg, int entry, TCHAR *newpath)
 {
 	TCHAR path[MAX_DPATH];
 	int lastentry = entry;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	path[0] = 0;
 	if (newpath)
@@ -12483,6 +13010,8 @@ static INT_PTR CALLBACK SwapperDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPAR
 	static int recursive = 0;
 	static int entry;
 	TCHAR tmp[MAX_DPATH];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch (msg)
 	{
@@ -12727,6 +13256,8 @@ static BOOL bNoMidiIn = FALSE;
 
 static void enable_for_gameportsdlg (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	int v = full_property_sheet;
 	ew (hDlg, IDC_PORT_TABLET_FULL, v && is_tablet () && workprefs.input_tablet > 0);
 	//ew (hDlg, IDC_PORT_TABLET_LIBRARY, v && is_tablet () && workprefs.input_tablet > 0);
@@ -12739,6 +13270,8 @@ static void enable_for_portsdlg (HWND hDlg)
 {
 	int v;
 	int isprinter, issampler;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	ew (hDlg, IDC_SWAP, TRUE);
 #if !defined (SERIAL_PORT)
@@ -12788,6 +13321,8 @@ static void updatejoyport (HWND hDlg, int changedport)
 {
 	int i, j;
 	TCHAR tmp[MAX_DPATH], tmp2[MAX_DPATH];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	SetDlgItemInt (hDlg, IDC_INPUTSPEEDM, workprefs.input_mouse_speed, FALSE);
 	CheckDlgButton (hDlg, IDC_PORT_MOUSETRICK, workprefs.input_magic_mouse);
@@ -12861,6 +13396,8 @@ static void values_from_gameportsdlg (HWND hDlg, int d, int changedport)
 	int i, success;
 	int changed = 0;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (d) {
 		i  = GetDlgItemInt (hDlg, IDC_INPUTSPEEDM, &success, FALSE);
 		if (success)
@@ -12924,6 +13461,8 @@ static void values_from_gameportsdlg (HWND hDlg, int d, int changedport)
 
 static int midi2dev (struct midiportinfo **mid, int idx, int def)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (idx < 0)
 		return def;
 	if (mid[idx] == NULL)
@@ -12932,6 +13471,8 @@ static int midi2dev (struct midiportinfo **mid, int idx, int def)
 }
 static int midi2devidx (struct midiportinfo **mid, int devid)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	for (int i = 0; i < MAX_MIDI_PORTS; i++) {
 		if (mid[i] != NULL && mid[i]->devid == devid)
 			return i;
@@ -12945,6 +13486,8 @@ static void values_from_portsdlg (HWND hDlg)
 	TCHAR tmp[256];
 	BOOL success;
 	LRESULT item;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	item = SendDlgItemMessage (hDlg, IDC_SAMPLERLIST, CB_GETCURSEL, 0, 0L);
 	if(item != CB_ERR) {
@@ -13035,6 +13578,8 @@ static void values_to_portsdlg (HWND hDlg)
 	LRESULT result;
 	int idx;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	SendDlgItemMessage (hDlg, IDC_SAMPLERLIST, CB_SETCURSEL, workprefs.win32_samplersoundcard + 1, 0);
 	CheckDlgButton (hDlg, IDC_SAMPLER_STEREO, workprefs.sampler_stereo);
 
@@ -13124,6 +13669,8 @@ static void init_portsdlg (HWND hDlg)
 	static int first;
 	int port;
 	TCHAR tmp[MAX_DPATH];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (!first) {
 		first = 1;
@@ -13239,6 +13786,8 @@ static void ports_remap (HWND, int);
 
 static void processport (HWND hDlg, bool reset, int port)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (reset)
 		inputdevice_compa_clear (&workprefs, port);
 	values_from_gameportsdlg (hDlg, 0, port);
@@ -13256,6 +13805,8 @@ static INT_PTR CALLBACK GamePortsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 	static int recursive = 0;
 	static int first;
 	int temp, i;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch (msg)
 	{
@@ -13403,6 +13954,8 @@ static INT_PTR CALLBACK IOPortsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPAR
 {
 	static int recursive = 0;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch (msg)
 	{
 	case WM_INITDIALOG:
@@ -13483,6 +14036,8 @@ static TCHAR *eventnames[INPUTEVENT_END];
 
 static void values_to_inputdlg (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	SendDlgItemMessage (hDlg, IDC_INPUTTYPE, CB_SETCURSEL, workprefs.input_selected_setting, 0);
 	SendDlgItemMessage (hDlg, IDC_INPUTDEVICE, CB_SETCURSEL, input_selected_device, 0);
 	SetDlgItemInt (hDlg, IDC_INPUTDEADZONE, workprefs.input_joystick_deadzone, FALSE);
@@ -13496,6 +14051,8 @@ static int askinputcustom (HWND hDlg, TCHAR *custom, int maxlen, DWORD titleid)
 {
 	HWND hwnd;
 	TCHAR txt[MAX_DPATH];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	stringboxdialogactive = 1;
 	hwnd = CustomCreateDialog (IDD_STRINGBOX, hDlg, StringBoxDialogProc);
@@ -13533,6 +14090,8 @@ static void init_inputdlg_2 (HWND hDlg)
 	TCHAR name1[256], name2[256];
 	TCHAR custom1[MAX_DPATH], tmp1[MAX_DPATH];
 	int cnt, index, af, aftmp, port;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	SendDlgItemMessage (hDlg, IDC_INPUTAMIGA, CB_RESETCONTENT, 0, 0L);
 	SendDlgItemMessage (hDlg, IDC_INPUTAMIGA, CB_ADDSTRING, 0, (LPARAM)szNone.c_str());
@@ -13573,6 +14132,8 @@ static void init_inputdlg (HWND hDlg)
 	int i, num;
 	TCHAR buf[100], txt[100];
 	TCHAR input_selected_device_name[100];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	input_selected_device_name[0] = 0;
 	if (input_selected_device < 0) {
@@ -13646,6 +14207,8 @@ static void init_inputdlg (HWND hDlg)
 
 static void enable_for_inputdlg (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	bool v = workprefs.input_selected_setting != GAMEPORT_INPUT_SETTINGS;
 	ew (hDlg, IDC_INPUTLIST, TRUE);
 	ew (hDlg, IDC_INPUTAMIGA, v);
@@ -13663,6 +14226,8 @@ static void enable_for_inputdlg (HWND hDlg)
 
 static void clearinputlistview (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	ListView_DeleteAllItems (GetDlgItem (hDlg, IDC_INPUTLIST));
 }
 
@@ -13671,6 +14236,8 @@ static void doinputcustom (HWND hDlg, int newcustom)
 	TCHAR custom1[MAX_DPATH];
 	uae_u64 flags;
 	int port;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	custom1[0] = 0;
 	inputdevice_get_mapping (input_selected_device, input_selected_widget,
@@ -13688,6 +14255,8 @@ static void values_from_inputdlgbottom (HWND hDlg)
 {
 	int v;
 	BOOL success;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	v  = GetDlgItemInt (hDlg, IDC_INPUTDEADZONE, &success, FALSE);
 	if (success) {
@@ -13710,6 +14279,8 @@ static void values_from_inputdlg (HWND hDlg, int inputchange)
 	int doselect = 0;
 	LRESULT item;
 	bool iscustom = false;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	item = SendDlgItemMessage (hDlg, IDC_INPUTAMIGACNT, CB_GETCURSEL, 0, 0L);
 	if (item != CB_ERR && input_selected_sub_num != item) {
@@ -13782,6 +14353,8 @@ static void values_from_inputdlg (HWND hDlg, int inputchange)
 
 static void input_swap (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	inputdevice_swap_ports (&workprefs, input_selected_device);
 	init_inputdlg (hDlg);
 }
@@ -13793,6 +14366,8 @@ static void showextramap (HWND hDlg)
 	TCHAR name[256];
 	TCHAR custom[MAX_DPATH];
 	TCHAR out[MAX_DPATH], out2[100];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	out[0] = 0;
 	for (int i = 0; i < MAX_INPUT_SUB_EVENT; i++) {
@@ -13847,6 +14422,8 @@ static bool inputmap_oneshot;
 #if 0
 static void inputmap_next (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	HWND h = GetDlgItem (hDlg, IDC_INPUTMAPLIST);
 	int inputmap = 1;
 	if (inputmap == 1) {
@@ -13878,6 +14455,8 @@ static void CALLBACK timerfunc (HWND hDlg, UINT uMsg, UINT_PTR idEvent, DWORD dw
 	int inputmap;
 	WINDOWINFO pwi;
 	HWND myDlg;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (idEvent != 1)
 		return;
@@ -14176,6 +14755,8 @@ static int rawdisable2[] = {
 
 static void inputmap_disable (HWND hDlg, bool disable)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	int *p = pages[INPUTMAP_ID] ? rawdisable2 : rawdisable;
 	for (int i = 0; p[i] >= 0; i += 3) {
 		HWND w = GetDlgItem (p[i + 1] ? guiDlg : hDlg, p[i]);
@@ -14192,6 +14773,8 @@ static void inputmap_disable (HWND hDlg, bool disable)
 
 static void input_find (HWND hDlg, HWND mainDlg, int mode, int set, bool oneshot)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	static TCHAR tmp[200];
 	if (set && !rawmode) {
 		rawmode = mode ? 2 : 1;
@@ -14229,6 +14812,8 @@ static void input_find (HWND hDlg, HWND mainDlg, int mode, int set, bool oneshot
 #if 0
 static void input_test (HWND hDlg, int port)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	inputmap_port_remap = -1;
 	inputmap_port =-1;
 	updatePanel (INPUTMAP_ID);
@@ -14295,6 +14880,8 @@ static void input_test (HWND hDlg, int port)
 
 static void handleXbutton (WPARAM wParam, int updown)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	int b = GET_XBUTTON_WPARAM (wParam);
 	int num = (b & XBUTTON1) ? 3 : (b & XBUTTON2) ? 4 : -1;
 	if (num >= 0)
@@ -14303,6 +14890,8 @@ static void handleXbutton (WPARAM wParam, int updown)
 
 static void handlerawinput (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (msg == WM_INPUT) {
 		handle_rawinput (lParam);
 		DefWindowProc (hDlg, msg, wParam, lParam);
@@ -14311,6 +14900,8 @@ static void handlerawinput (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 static int getremapcounter(int item)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	for (int i = 0; inputmap_groupindex[i] >= 0; i++) {
 		if (item < inputmap_groupindex[i + 1] || inputmap_groupindex[i + 1] < 0)
 			return i;
@@ -14322,6 +14913,9 @@ static void fillinputmapadd (HWND hDlg)
 {
 	const int *axistable;
 	int inputlist[MAX_COMPA_INPUTLIST];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	inputdevice_get_compatibility_input (&workprefs, inputmap_port, NULL, inputlist, &axistable);
 	SendDlgItemMessage (hDlg, IDC_INPUTMAPADD, CB_RESETCONTENT, 0, 0L);
 	int evt = 1;
@@ -14356,6 +14950,8 @@ static INT_PTR CALLBACK InputMapDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPA
 	HWND h = GetDlgItem (hDlg, IDC_INPUTMAPLIST);
 	TCHAR tmp[256];
 	int i;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch (msg)
 	{
@@ -14498,6 +15094,9 @@ static void ports_remap (HWND hDlg, int port)
 {
 	inputmap_port = port;
 	HWND dlg = CustomCreateDialog (IDD_INPUTMAP, hDlg, InputMapDlgProc);
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (dlg == NULL)
 		return;
 	MSG msg;
@@ -14530,6 +15129,8 @@ static void input_togglesetmode (void)
 	TCHAR name[256];
 	TCHAR custom[MAX_DPATH];
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (input_selected_device < 0 || input_selected_widget < 0)
 		return;
 	evtnum = inputdevice_get_mapping (input_selected_device, input_selected_widget,
@@ -14558,6 +15159,8 @@ static void input_toggleautofire (void)
 	TCHAR name[256];
 	TCHAR custom[MAX_DPATH];
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (input_selected_device < 0 || input_selected_widget < 0)
 		return;
 	evt = inputdevice_get_mapping (input_selected_device, input_selected_widget,
@@ -14580,6 +15183,8 @@ static int genericpopupmenu (HWND hwnd, TCHAR **items, int *flags, int num)
 	int i, item;
 	HMENU menu;
 	POINT pt;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	menu = CreatePopupMenu ();
 	for (i = 0; i < num; i++) {
@@ -14609,6 +15214,8 @@ static void qualifierlistview (HWND list)
 	int evt;
 	TCHAR name[256];
 	TCHAR custom[MAX_DPATH];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	evt = inputdevice_get_mapping (input_selected_device, input_selected_widget,
 		&flags, NULL, name, custom, input_selected_sub_num);
@@ -14643,6 +15250,7 @@ static INT_PTR CALLBACK QualifierProc (HWND hDlg, UINT msg, WPARAM wParam, LPARA
 	static int recursive = 0;
 	HWND list = GetDlgItem (hDlg, IDC_LISTDIALOG_LIST);
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch (msg)
 	{
@@ -14752,7 +15360,9 @@ static void input_qualifiers (HWND hDlg)
 	int evt;
 	TCHAR name[256];
 	TCHAR custom[MAX_DPATH];
-	
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (input_selected_device < 0 || input_selected_widget < 0)
 		return;
 	evt = inputdevice_get_mapping (input_selected_device, input_selected_widget,
@@ -14778,6 +15388,8 @@ static void input_invert (void)
 	TCHAR name[256];
 	TCHAR custom[MAX_DPATH];
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (input_selected_device < 0 || input_selected_widget < 0)
 		return;
 	evt = inputdevice_get_mapping (input_selected_device, input_selected_widget,
@@ -14796,6 +15408,8 @@ static void input_toggletoggle (void)
 	TCHAR name[256];
 	TCHAR custom[MAX_DPATH];
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (input_selected_device < 0 || input_selected_widget < 0)
 		return;
 	evt = inputdevice_get_mapping (input_selected_device, input_selected_widget,
@@ -14809,6 +15423,8 @@ static void input_toggletoggle (void)
 
 static void input_copy (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	int dst = workprefs.input_selected_setting;
 	LRESULT src = SendDlgItemMessage (hDlg, IDC_INPUTCOPYFROM, CB_GETCURSEL, 0, 0L);
 	if (src == CB_ERR)
@@ -14820,6 +15436,8 @@ static void input_copy (HWND hDlg)
 
 static void input_restoredefault (void)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	inputdevice_copy_single_config (&workprefs, GAMEPORT_INPUT_SETTINGS, workprefs.input_selected_setting, input_selected_device, input_selected_widget);
 }
 
@@ -14832,6 +15450,8 @@ static INT_PTR CALLBACK InputDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 	NM_LISTVIEW *nmlistview;
 	int items = 0, entry = 0;
 	static int recursive;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch (msg)
 	{
@@ -14976,6 +15596,8 @@ static void enable_for_hw3ddlg (HWND hDlg)
 	struct uae_filter *uf;
 	int i, isfilter;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	isfilter = 0;
 	uf = &uaefilters[0];
 	i = 0;
@@ -15113,6 +15735,8 @@ static float getfiltermult (HWND hDlg, DWORD dlg)
 	LRESULT v = SendDlgItemMessage (hDlg, dlg, CB_GETCURSEL, 0, 0L);
 	float f;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (v != CB_ERR)
 		return filtermults[v];
 	SendDlgItemMessage (hDlg, dlg, WM_GETTEXT, (WPARAM)sizeof tmp / sizeof (TCHAR), (LPARAM)tmp);
@@ -15129,6 +15753,8 @@ static float getfiltermult (HWND hDlg, DWORD dlg)
 static void setfiltermult2 (HWND hDlg, int id, float val)
 {
 	int i, got;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	got = 0;
 	for (i = 0; filtermultnames[i]; i++) {
@@ -15149,6 +15775,8 @@ static void setfiltermult2 (HWND hDlg, int id, float val)
 
 static void setfiltermult (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	setfiltermult2 (hDlg, IDC_FILTERHZMULT, workprefs.gf[filter_nativertg].gfx_filter_horiz_zoom_mult);
 	setfiltermult2 (hDlg, IDC_FILTERVZMULT, workprefs.gf[filter_nativertg].gfx_filter_vert_zoom_mult);
 }
@@ -15160,6 +15788,8 @@ static void values_to_hw3ddlg (HWND hDlg)
 	struct uae_filter *uf;
 	int fxidx, fxcnt;
 	UAEREG *fkey;
+
+        bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	SendDlgItemMessage (hDlg, IDC_FILTERASPECT, CB_SETCURSEL,
 		(workprefs.gf[filter_nativertg].gfx_filter_aspect == 0) ? 0 :
@@ -15461,6 +16091,7 @@ static void values_to_hw3ddlg (HWND hDlg)
 
 static void values_from_hw3ddlg (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 }
 
 static void filter_preset (HWND hDlg, WPARAM wParam)
@@ -15470,6 +16101,8 @@ static void filter_preset (HWND hDlg, WPARAM wParam)
 	int outsize;
 	UAEREG *fkey;
 	LRESULT item;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	load = 0;
 	ok = 0;
@@ -15575,6 +16208,8 @@ end:
 
 static void filter_handle (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	LRESULT item = SendDlgItemMessage (hDlg, IDC_FILTERMODE, CB_GETCURSEL, 0, 0L);
 	if (item != CB_ERR) {
 		TCHAR tmp[MAX_DPATH], oldsh[MAX_DPATH];
@@ -15638,6 +16273,8 @@ static INT_PTR CALLBACK hw3dDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
 	int i;
 	static int filteroverlaypos = -1;
 	static bool firstinit;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch (msg)
 	{
@@ -15926,6 +16563,7 @@ static INT_PTR CALLBACK hw3dDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
 #ifdef AVIOUTPUT
 static void values_to_avioutputdlg (HWND hDlg)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	updatewinfsmode (&workprefs);
 	SetDlgItemText (hDlg, IDC_AVIOUTPUT_FILETEXT, avioutput_filename_gui);
@@ -15943,11 +16581,14 @@ static void values_to_avioutputdlg (HWND hDlg)
 
 static void values_from_avioutputdlg (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 }
 
 static void enable_for_avioutputdlg (HWND hDlg)
 {
 	TCHAR tmp[1000];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 #if defined (PROWIZARD)
 	ew (hDlg, IDC_PROWIZARD, TRUE);
@@ -16012,6 +16653,8 @@ static INT_PTR CALLBACK AVIOutputDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 {
 	static int recursive = 0;
 	TCHAR tmp[1000];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch(msg)
 	{
@@ -16247,6 +16890,9 @@ static INT_PTR CALLBACK AVIOutputDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 static int GetPanelRect (HWND hDlg, RECT *r)
 {
 	RECT rect;
+        
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (!GetWindowRect (guiDlg, &rect))
 		return 0;
 	if (!GetWindowRect (hDlg, r))
@@ -16270,6 +16916,8 @@ static LRESULT FAR PASCAL ToolTipWndProc (HWND hwnd, UINT message, WPARAM wParam
 	BITMAP binfo;
 	HDC memdc;
 	int w, h, i;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	for (i = 0; ToolTipHWNDS2[i].hwnd; i++) {
 		if (hwnd == ToolTipHWNDS2[i].hwnd)
@@ -16363,6 +17011,8 @@ static BOOL CALLBACK childenumproc (HWND hwnd, LPARAM lParam)
 	TCHAR tmp[MAX_DPATH];
 	TCHAR *p;
 	LRESULT v;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (GetParent (hwnd) != panelDlg)
 		return 1;
@@ -16463,6 +17113,8 @@ static void getguisize (HWND hDlg, int *width, int *height)
 {
 	RECT r;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	GetWindowRect (hDlg, &r);
 	*width = r.right - r.left;
 	*height = r.bottom - r.top;
@@ -16477,6 +17129,8 @@ static HWND updatePanel (int id)
 	int w, h, x , y, i, pw, ph;
 	int fullpanel;
 	struct newresource *tres;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (first) {
 		first = false;
@@ -16598,6 +17252,8 @@ static bool panel_done, panel_active_done;
 
 static void checkpagelabel (int id, int sub, const TCHAR *label)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (full_property_sheet) {
 		if (panel_done)
 			return;
@@ -16617,6 +17273,8 @@ static void checkpagelabel (int id, int sub, const TCHAR *label)
 
 void gui_restart (void)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	panel_done = panel_active_done = false;
 }
 
@@ -16625,6 +17283,8 @@ static HTREEITEM CreateFolderNode (HWND TVhDlg, int nameid, HTREEITEM parent, in
 {
 	TVINSERTSTRUCT is;
 	TCHAR txt[100];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	memset (&is, 0, sizeof (is));
 	is.hInsertAfter = TVI_LAST;
@@ -16645,6 +17305,8 @@ static void CreateNode (HWND TVhDlg, int page, HTREEITEM parent, const TCHAR *la
 {
 	TVINSERTSTRUCT is;
 	struct GUIPAGE *p;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (page < 0)
 		return;
@@ -16668,6 +17330,8 @@ static void createTreeView (HWND hDlg)
 	int i;
 	HIMAGELIST himl;
 	HTREEITEM p, root, p1, p2;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	himl = ImageList_Create (16, 16, ILC_COLOR8 | ILC_MASK, C_PAGES + 1, 0);
 	if (himl) {
@@ -16725,6 +17389,8 @@ static int dialog_x_offset, dialog_y_offset;
 
 static bool dodialogmousemove (void)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (full_property_sheet || isfullscreen () <= 0)
 		return false;
 	if (isfullscreen () > 0 && currprefs.gfx_size_fs.width > gui_width && currprefs.gfx_size.height > gui_height)
@@ -16744,6 +17410,8 @@ static void centerWindow (HWND hDlg)
 	int x = 0, y = 0;
 	POINT pt1, pt2;
 	struct MultiDisplay *mdc = getdisplay (&currprefs);
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	HWND owner = GetParent (hDlg);
 	if (owner == NULL)
@@ -16797,6 +17465,8 @@ static void centerWindow (HWND hDlg)
 
 static int floppyslot_addfile2 (struct uae_prefs *prefs, const TCHAR *file, int drv, int firstdrv, int maxdrv)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	_tcscpy (workprefs.floppyslots[drv].df, file);
 	disk_insert (drv, workprefs.floppyslots[drv].df);
 	drv++;
@@ -16811,6 +17481,9 @@ static int floppyslot_addfile2 (struct uae_prefs *prefs, const TCHAR *file, int 
 static int floppyslot_addfile (struct uae_prefs *prefs, const TCHAR *file, int drv, int firstdrv, int maxdrv)
 {
 	struct zdirectory *zd = zfile_opendir_archive (file, ZFD_ARCHIVE | ZFD_NORECURSE);
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (zd && zfile_readdir_archive (zd, NULL, true) > 1) {
 		TCHAR out[MAX_DPATH];
 		while (zfile_readdir_archive (zd, out, true)) {
@@ -16833,6 +17506,8 @@ static int floppyslot_addfile (struct uae_prefs *prefs, const TCHAR *file, int d
 
 static int do_filesys_insert (const TCHAR *root)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (filesys_insert (-1, NULL, root, 0, 0) == 0)
 		return filesys_media_change (root, 2, NULL);
 	return 0;
@@ -16848,6 +17523,8 @@ int dragdrop (HWND hDlg, HDROP hd, struct uae_prefs *prefs, int	currentpage)
 	RECT r, r2;
 	int ret = 0;
 	DWORD flags;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	DragQueryPoint (hd, &pt);
 	pt.y += GetSystemMetrics (SM_CYMENU) + GetSystemMetrics (SM_CYBORDER);
@@ -17059,6 +17736,8 @@ static INT_PTR CALLBACK DialogProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 	static int waitfornext;
 	static int oldwidth, oldheight;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	switch (msg)
 	{
 	case WM_SIZING:
@@ -17236,6 +17915,8 @@ static ACCEL EmptyAccel[] = {
 
 struct newresource *getresource (struct Element *tmpl)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
   TODO();
 #if 0
 	TCHAR rid[20];
@@ -17284,6 +17965,8 @@ INT_PTR CustomDialogBox (int templ, HWND hDlg, DLGPROC proc)
 	struct newresource *res, *r;
 	INT_PTR h = -1;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	res = getresource (templ);
 	if (!res)
 		return h;
@@ -17302,6 +17985,8 @@ HWND CustomCreateDialog (int templ, HWND hDlg, DLGPROC proc)
 {
 	struct newresource *res, *r;
 	HWND h = NULL;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	res = getresource (templ);
 	if (!res)
@@ -17340,6 +18025,9 @@ static int init_page (struct Element *tmpl, int icon, TCHAR *title,
 		ppage[id].title = lpstrTitle;
 	}
 #endif
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	ppage[id].dlgproc = func;
 	ppage[id].help = help;
 	ppage[id].idx = id;
@@ -17374,6 +18062,8 @@ static void dialogmousemove (HWND hDlg)
 	int sw, sh;
 	int xstart, ystart;
 	MONITORINFOEX pmi;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (!dodialogmousemove ())
 		return;
@@ -17432,6 +18122,9 @@ static void blah(void)
 	TCHAR *str2 = _T("äöå€õãñëÿüïñç");
 	TCHAR *s1;
 	char *s2;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	MessageBoxA(NULL, str1, "Test1 ANSI", MB_OK);
 	s1 = au (str1);
 	MessageBoxW(NULL, s1, _T("Test1 UNICODE"), MB_OK);
@@ -17444,6 +18137,8 @@ static void blah(void)
 
 static void setdefaultguisize (void)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	gui_width = GUI_INTERNAL_WIDTH * 100 / 100;
 	gui_height = GUI_INTERNAL_HEIGHT * 100 / 100;
 }
@@ -17462,7 +18157,7 @@ static int GetSettings (int all_options, HWND hwnd)
 	static struct newresource *panelresource;
 	struct newresource *tres;
 
-  bug("entered\n");
+        bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	gui_active++;
 
@@ -17532,7 +18227,7 @@ static int GetSettings (int all_options, HWND hwnd)
 			currentpage = LOADSAVE_ID;
 	}
 
-  bug("currentpage: %d, QUICKSTART_ID: %d, LOADSAVE_ID: %d\n", currentpage, QUICKSTART_ID, LOADSAVE_ID);
+  bug("[JUAE:GUI] %s: currentpage: %d, QUICKSTART_ID: %d, LOADSAVE_ID: %d\n", __PRETTY_FUNCTION__, currentpage, QUICKSTART_ID, LOADSAVE_ID);
 
   psresult=aros_show_gui();
 #if 0
@@ -17653,13 +18348,14 @@ int gui_init (void)
 {
     int ret;
 
-    bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
     aros_init_gui();
 
     read_rom_list ();
-    bug("[JUAE] %s: rom list read done\n", __PRETTY_FUNCTION__);
+    bug("[JUAE:GUI] %s: rom list read done\n", __PRETTY_FUNCTION__);
     //inputdevice_updateconfig (NULL, &workprefs);
-    bug("[JUAE] %s: inputdevice_updateconfig SKIPPED!\n", __PRETTY_FUNCTION__);
+    bug("[JUAE:GUI] %s: inputdevice_updateconfig SKIPPED!\n", __PRETTY_FUNCTION__);
     for (;;) {
         ret = GetSettings (1, currprefs.win32_notaskbarbutton ? hHiddenWnd : NULL);
         if (!restart_requested)
@@ -17671,18 +18367,24 @@ int gui_init (void)
         AVIOutput_Begin ();
 #endif
     }
-    bug("[JUAE] %s: finished\n", __PRETTY_FUNCTION__);
+    bug("[JUAE:GUI] %s: finished\n", __PRETTY_FUNCTION__);
 
     return ret;
 }
 
 int gui_update (void)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
     return 1;
 }
 
-void gui_exit (void) {
-  aros_gui_exit();
+void gui_exit (void)
+{
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
+    aros_gui_exit();
+
 #if 0
 	int i;
 
@@ -17703,10 +18405,12 @@ extern HWND hStatusWnd;
 
 void check_prefs_changed_gui (void)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 }
 
 void gui_disk_image_change (int unitnum, const TCHAR *name, bool writeprotected)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 #ifdef RETROPLATFORM
     rp_disk_image_change (unitnum, name, writeprotected);
 #endif
@@ -17717,6 +18421,8 @@ static void gui_flicker_led2 (int led, int unitnum, int status)
 	static int resetcounter[LED_MAX];
 	uae_s8 old;
 	uae_s8 *p;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (led == LED_HD)
 		p = &gui_data.hd;
@@ -17762,6 +18468,8 @@ static void gui_flicker_led2 (int led, int unitnum, int status)
 
 void gui_flicker_led (int led, int unitnum, int status)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (led < 0) {
 		gui_flicker_led2 (LED_HD, 0, 0);
 		gui_flicker_led2 (LED_CD, 0, 0);
@@ -17773,7 +18481,9 @@ void gui_flicker_led (int led, int unitnum, int status)
 
 void gui_fps (int fps, int idle, int color)
 {
-	gui_data.fps = fps;
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
+        gui_data.fps = fps;
 	gui_data.idle = idle;
 	gui_data.fps_color = color;
 	gui_led (LED_FPS, 0);
@@ -17790,6 +18500,8 @@ void gui_led (int led, int on)
 	int pos = -1, j;
 	int writing = 0, playing = 0, active2 = 0;
 	int center = 0;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	indicator_leds (led, on);
 #ifdef LOGITECHLCD
@@ -17919,10 +18631,13 @@ void gui_led (int led, int on)
 
 void gui_filename (int num, const TCHAR *name)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 }
 
 static int fsdialog (HWND *hwnd, DWORD *flags)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	if (gui_active) {
 		*hwnd = guiDlg;
 		*flags |= MB_SETFOREGROUND;
@@ -17958,6 +18673,8 @@ int gui_message_multibutton (int flags, const TCHAR *format,...)
 	int ret;
 	DWORD mbflags;
 	HWND hwnd;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	mbflags = MB_ICONWARNING | MB_TASKMODAL;
 	if (flags == 0)
@@ -18015,6 +18732,8 @@ void gui_message (const TCHAR *format,...)
 	DWORD flags = MB_OK | MB_TASKMODAL;
 	HWND hwnd;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	va_start (parms, format);
 	_vsntprintf (msg, sizeof msg / sizeof (TCHAR), format, parms);
 	va_end (parms);
@@ -18055,17 +18774,22 @@ void gui_message (const TCHAR *format,...)
 void gui_message_id (int id)
 {
 	TCHAR msg[MAX_DPATH];
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	WIN32GUI_LoadUIString (id, msg, sizeof (msg) / sizeof (TCHAR));
 	gui_message (msg);
 }
 #endif
 void gui_message_id (TCHAR *id)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 #if 0
 	TCHAR msg[MAX_DPATH];
 	WIN32GUI_LoadUIString (id, msg, sizeof (msg) / sizeof (TCHAR));
 #endif
-	gui_message (id);
+    gui_message (id);
 }
 
 
@@ -18075,6 +18799,8 @@ void pre_gui_message (const TCHAR *format,...)
 	TCHAR msg[2048];
 	TCHAR szTitle[MAX_DPATH];
 	va_list parms;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	va_start (parms, format);
 	_vsntprintf (msg, sizeof msg / sizeof (TCHAR), format, parms);
@@ -18119,6 +18845,8 @@ static int gettranslation (int msg)
 {
 	int i;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	i = 0;
 	while (transla[i] >= 0) {
 		if (transla[i] == msg)
@@ -18132,6 +18860,8 @@ void notify_user (int msg)
 {
 	TCHAR tmp[MAX_DPATH];
 	int c = 0;
+
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	c = gettranslation (msg);
 	if (c < 0)
@@ -18147,6 +18877,8 @@ void notify_user_parms (int msg, const TCHAR *parms, ...)
 	int c = 0;
 	va_list parms2;
 
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	c = gettranslation (msg);
 	if (c < 0)
 		return;
@@ -18160,6 +18892,8 @@ void notify_user_parms (int msg, const TCHAR *parms, ...)
 
 int translate_message (int msg,	TCHAR *out)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
 	msg = gettranslation (msg);
 	out[0] = 0;
 	if (msg < 0)
@@ -18170,9 +18904,11 @@ int translate_message (int msg,	TCHAR *out)
 
 void gui_lock (void)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 }
 
 void gui_unlock (void)
 {
+    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 }
 #endif
