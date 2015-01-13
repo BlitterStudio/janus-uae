@@ -942,11 +942,13 @@ static int hdf_read_2 (struct hardfiledata *hfd, void *buffer, uae_u64 offset, i
 	hdf_seek (hfd, hfd->cache_offset);
 	poscheck (hfd, CACHE_SIZE);
 	if (hfd->handle_valid == HDF_HANDLE_WIN32)
+	{
 #if defined(__AROS__)
-                outlen = Read(hfd->handle->fh, buffer, len);
+                outlen = Read(hfd->handle->fh, hfd->cache, CACHE_SIZE);
 #else
 		ReadFile (hfd->handle->h, hfd->cache, CACHE_SIZE, &outlen, NULL);
 #endif
+	}
 	else if (hfd->handle_valid == HDF_HANDLE_ZFILE)
 		outlen = zfile_fread (hfd->cache, 1, CACHE_SIZE, hfd->handle->zf);
 	hfd->cache_valid = 0;
