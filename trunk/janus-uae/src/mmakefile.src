@@ -102,6 +102,7 @@ JUAECOMMONSRCS := \
 	qemuvga/cirrus_vga \
 	qemuvga/qemuuaeglue \
 	qemuvga/vga \
+        qemuvga/lsi53c895a \
 	gfxutil \
 	gfxboard \
 	hardfile \
