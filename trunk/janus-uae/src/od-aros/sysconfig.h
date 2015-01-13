@@ -24,7 +24,8 @@
 #include <aros/cpu.h>
 
 #define SUPPORT_THREADS
-#define MAX_DPATH 200
+#define MAX_DPATH 1000
+#define MAX_PATH 256
 
 #define GFXFILTER
 
@@ -36,10 +37,11 @@
 #define AUTOCONFIG /* autoconfig support, fast ram, harddrives etc.. */
 #define JIT
 #define NATMEM_OFFSET natmem_offset
+//#define CATWEASEL /* Catweasel MK2/3 support */
 #define ECS_DENISE /* ECS DENISE new features */
 #define AGA        /* AGA chipset emulation (ECS_DENISE must be enabled) */
+#define CD32
 #define CDTV
-//#define CD32
 #define SCSIEMU
 #define FPUEMU
 #define FPU_UAE
@@ -58,17 +60,18 @@
 #define CPUEMU_32 /* Previous 68030 MMU */
 #define CPUEMU_33 /* 68060 MMU */
 #define CPUEMU_40 /* generic 680x0 with indirect memory access */
-#define PICASSO96
+#define ACTION_REPLAY /* Action Replay 1/2/3 support */
+#define PICASSO96 /* Picasso96 display card emulation */
 #define UAEGFX_INTERNAL /* built-in libs:picasso96/uaegfx.card */
 #define WITH_SLIRP
 #define ARCADIA /* Arcadia arcade system */
 #define SAVESTATE /* State file support */
-#define A2091
+#define A2091 /* A590/A2091 SCSI */
+#define A2065 /* A2065 Ethernet card */
 #define GFXBOARD /* Hardware graphics board */
-//#define NCR /* A4000T/A4091 SCSI */
+#define NCR /* A4000T/A4091 SCSI */
 
-
-#define PICASSO96_SUPPORTED
+//#define PICASSO96_SUPPORTED
 
 #else
 
@@ -90,12 +93,6 @@
 #if (__WORDSIZE == 64)
 #undef JIT
 #endif
-
-#define MAX_PATH 255
-/* string */
-#define FSDB_DIR_SEPARATOR_S _T("/")
-/* char */
-#define FSDB_DIR_SEPARATOR      '/'
 
 /* oli defines */
 #define NO_A2091_SCSI
@@ -405,6 +402,9 @@
 /* Define as the return type of signal handlers (`int' or `void'). */
 #define RETSIGTYPE void
 
+/* The number of bytes in a __int64.  */
+#define SIZEOF___INT64 8
+
 /* The size of `char', as computed by sizeof. */
 #define SIZEOF_CHAR 1
 
@@ -420,15 +420,15 @@
 /* The size of `short', as computed by sizeof. */
 #define SIZEOF_SHORT 2
 
+#define SIZEOF_FLOAT 4
+#define SIZEOF_DOUBLE 8
+
 /* The size of `void *', as computed by sizeof. */
 #if (__WORDSIZE == 64)
 #define SIZEOF_VOID_P 8
 #else
 #define SIZEOF_VOID_P 4
 #endif
-
-/* The size of `__int64', as computed by sizeof. */
-#define SIZEOF___INT64 0
 
 /* Define if the block counts reported by statfs may be truncated to 2GB and
    the correct values may be stored in the f_spare array. (SunOS 4.1.2, 4.1.3,
@@ -522,3 +522,5 @@
    code using `volatile' can become incorrect without. Disable with care. */
 /* #undef volatile */
 
+#define FSDB_DIR_SEPARATOR      '/'
+#define FSDB_DIR_SEPARATOR_S _T("/")

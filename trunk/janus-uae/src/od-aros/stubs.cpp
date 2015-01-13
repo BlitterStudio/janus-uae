@@ -1236,10 +1236,12 @@ bool console_isch (void) {
   return FALSE;
 }
 
+#if (0)
 void ncr_io_bput (uaecptr addr, uae_u32 val) {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
 }
+#endif
 
 void uae_end_thread (uae_thread_id *tid) {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
