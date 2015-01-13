@@ -89,23 +89,23 @@ void *VirtualAlloc(void *lpAddress, size_t dwSize, int flAllocationType,
     }
 
     if (flAllocationType == MEM_COMMIT && lpAddress == NULL) {
-        bug("[JUAE:MMAN] %s: (COMMIT) Allocating %d bytes.\n", __PRETTY_FUNCTION__, dwSize);
+        bug("[JUAE:MMAN] %s: (COMMIT) Allocating %u bytes.\n", __PRETTY_FUNCTION__, dwSize);
         memory = malloc(dwSize);
         if (memory == NULL) {
             write_log("memory allocation failed: errno %d\n", errno);
         }
-        bug("[JUAE:MMAN] %s: Allocated %d bytes @ 0x%p\n", __PRETTY_FUNCTION__, dwSize, memory);
+        bug("[JUAE:MMAN] %s: Allocated %u bytes @ 0x%p\n", __PRETTY_FUNCTION__, dwSize, memory);
 
         return memory;
     }
 
     if (flAllocationType & MEM_RESERVE) {
-        bug("[JUAE:MMAN] %s: (RESERVE) Allocating %d bytes.\n", __PRETTY_FUNCTION__, dwSize);
+        bug("[JUAE:MMAN] %s: (RESERVE) Allocating %u bytes.\n", __PRETTY_FUNCTION__, dwSize);
         memory = malloc(dwSize);
         if (memory == NULL) {
             write_log("memory allocation failed: errno %d\n", errno);
         }
-        bug("[JUAE:MMAN] %s: Allocated %d bytes @ 0x%p\n", __PRETTY_FUNCTION__, dwSize, memory);
+        bug("[JUAE:MMAN] %s: Allocated %u bytes @ 0x%p\n", __PRETTY_FUNCTION__, dwSize, memory);
 #if 0
         memory = mmap(lpAddress, dwSize, prot, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         printf("mmap result: %p\n", memory);
@@ -831,11 +831,12 @@ static int doinit_shm (void)
 
 bool init_shm (void)
 {
-    write_log("init_shm\n");
     static uae_u32 oz3fastmem_size, oz3fastmem2_size;
     static uae_u32 oz3chipmem_size;
     static uae_u32 ortgmem_size;
     static int ortgmem_type;
+
+    write_log("init_shm\n");
 
     if (
         oz3fastmem_size == changed_prefs.z3fastmem_size &&
