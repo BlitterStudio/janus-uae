@@ -22,6 +22,9 @@
 #include <proto/cybergraphics.h>
 #include <proto/dos.h>
 
+#include <proto/processor.h>
+#include <resources/processor.h>
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -88,6 +91,8 @@
 //#include "include/scsidev.h"
 
 #include "od-aros/tchar.h"
+
+APTR ProcessorBase = NULL;
 
 extern struct Window *hAmigaWnd;
 /* not really used: */
@@ -516,11 +521,15 @@ int WIN32GFX_IsPicassoScreen (void)
     return screen_is_picasso;
 }
 
+/* milli sec is 1/1000 sec
+ * delay waits for 1/50 sec
+ */
 static void sleep_millis2 (int ms, bool main) {
-
+        
     D(
-        bug("[JUAE:AROS] %s: warning: main is ", __PRETTY_FUNCTION__);
-        if(main) {
+       bug("[JUAE:AROS] %s: warning: main is ", __PRETTY_FUNCTION__);
+        if (main) 
+       {
             bug("TRUE");
         }
         else
@@ -529,6 +538,8 @@ static void sleep_millis2 (int ms, bool main) {
         }
         bug(" (ignored)\n");
     )
+
+    ms=ms/20;
     Delay(ms);
 }
 
@@ -1065,6 +1076,65 @@ void WIN32_HandleRegistryStuff (void) {
 #endif
   read_rom_list ();
   load_keyring (NULL, NULL);
+}
+
+/* 
+ * ATT: o1i: please check this. For my hosted env this gives reasonable MHz value .. 
+ *
+ * WinUAE falls back to the same trick, if the OS does not report the CPU speed,
+ * even if it is not really reliable IMHO
+ */
+static int freqset=0;
+
+static void figure_processor_speed_rdtsc (void)
+{
+  frame_time_t clockrate;
+	BYTE oldpri;
+	HANDLE th;
+
+	if (freqset)
+		return;
+
+	freqset = 1;
+  /* make us highest priority */
+  oldpri=SetTaskPri(FindTask(NULL), 125);
+	clockrate=read_processor_time();
+	sleep_millis(500);
+	clockrate=(read_processor_time() - clockrate) * 2;
+  SetTaskPri(FindTask(NULL), oldpri);
+
+  /* hmm ?? */
+  clockrate=clockrate*64;
+
+	write_log (_T("CLOCKFREQ: RDTSC %.2fMHz\n"), clockrate / 1000000.0);
+	syncbase = clockrate >> 6;
+}
+
+void figure_processor_speed (void)
+{
+    UQUAD cpuspeed;
+    struct TagItem tags [] = { {GCIT_SelectedProcessor, 0},
+                               {GCIT_ProcessorSpeed, (IPTR)&cpuspeed},
+                               {TAG_DONE, TAG_DONE} };
+
+    if (freqset)
+        return;
+
+    ProcessorBase=OpenResource(PROCESSORNAME);
+    if(ProcessorBase)
+    {
+        GetCPUInfo(tags);
+        if(cpuspeed)
+        {
+            write_log (_T("CLOCKFREQ: AROS %.2fMHz\n"), cpuspeed / 1000000.0);
+            syncbase = cpuspeed >> 6;
+            freqset = 1;
+            return;
+        }
+    }
+
+    write_log(_T("CLOCKFREQ: unable to get cpu speed with AROS API\n"));
+    return figure_processor_speed_rdtsc();
 }
 
 /* 
