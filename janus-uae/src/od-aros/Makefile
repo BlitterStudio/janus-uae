@@ -128,6 +128,7 @@ COMMON_OBJS= \
 	../qemuvga/cirrus_vga.o \
 	../qemuvga/qemuuaeglue.o \
 	../qemuvga/vga.o \
+	../qemuvga/lsi53c895a.o \
 	../gfxutil.o \
 	../hardfile.o \
 	../hrtmon.rom.o \
