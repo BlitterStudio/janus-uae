@@ -25,6 +25,8 @@
 #include <proto/processor.h>
 #include <resources/processor.h>
 
+#include <SDL.h>
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -523,24 +525,20 @@ int WIN32GFX_IsPicassoScreen (void)
 
 /* milli sec is 1/1000 sec
  * delay waits for 1/50 sec
+ *
+ * As SDL provides millisecond timing, we us it, if <50ms are requested
+ *
+ * fs-uae authors also have no idea, what "main" means here..
  */
 static void sleep_millis2 (int ms, bool main) {
-        
-    D(
-       bug("[JUAE:AROS] %s: warning: main is ", __PRETTY_FUNCTION__);
-        if (main) 
-       {
-            bug("TRUE");
-        }
-        else
-        {
-            bug("FALSE");
-        }
-        bug(" (ignored)\n");
-    )
 
-    ms=ms/20;
-    Delay(ms);
+    if(ms<50)
+    {
+        SDL_Delay(ms);
+        return;
+    }
+
+    Delay(ms/20);
 }
 
 void sleep_millis_main (int ms) {
