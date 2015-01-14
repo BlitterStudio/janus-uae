@@ -1068,37 +1068,30 @@ void WIN32_HandleRegistryStuff (void) {
 }
 
 /* 
- * rdtsc()
+ * read_processor_time
  *
- * read the number of CPU cycles since last reset.
+ * Return a "compressed" 32-bit unsigned integer generated from the 64-bit rdtsc 
+ * value. read_processor_time works both on 32bit and 64bit intel AROS
  *
- * TSC is a 64-bit register present on all x86 processors since the Pentium. 
- *
- * This functions works both on 32bit and 64bit intel AROS
+ * See also: rdtsc
+ *   Read the number of CPU cycles since last reset.
+ *   TSC is a 64-bit register present on all x86 processors since the Pentium. 
  */
-inline volatile unsigned long long rdtsc() {
+frame_time_t read_processor_time (void) {
+
   unsigned long tsc_hi, tsc_lo;
+
   asm volatile ("rdtsc" : "=a" (tsc_lo), "=d" (tsc_hi));
-  return ((unsigned long long)tsc_lo) | (((unsigned long long)tsc_hi) << 32);
+
+  //bug("[JUAE:RPT] tsc:  0x%08lx %08lx\n", tsc_hi, tsc_lo);
+
+	tsc_lo >>= 6;            /* crete space in 6 highest bits and       */
+	tsc_lo |= tsc_hi << 26;  /* copy the 6 lower bits from tsc_hi there */
+
+	if (!tsc_lo)             /* never return 0 */
+		tsc_lo++;
+
+  //bug("[JUAE:RPT] result:        0x%08lx\n", tsc_lo);
+  return tsc_lo;
 }
 
-frame_time_t read_processor_time (void)
-{
-  unsigned long long r;
-	frame_time_t foo = 0;
-  frame_time_t bar = 0;
-
-  r=rdtsc();
-
-  bar=r>>32; 
-  foo=r; 
-
-	/* very high speed CPU's RDTSC might overflow without this.. */
-  /* compress 64bit to 32bit */
-	foo >>= 6;
-	foo |= bar << 26;
-	if (!foo)
-		foo++;
-
-	return foo;
-}
