@@ -677,7 +677,6 @@ static void do_cycles_ce020_post (unsigned long cycles, uae_u32 v)
 // indirect memory access functions
 static void set_x_funcs (void)
 {
-  //DebOut("entered\n");
 	if (currprefs.mmu_model) {
 		if (currprefs.cpu_model == 68060) {
 			x_prefetch = get_iword_mmu060;
@@ -948,7 +947,6 @@ bool is_cpu_tracer (void)
 }
 bool set_cpu_tracer (bool state)
 {
-  //DebOut("entered\n");
 	if (cpu_tracer < 0)
 		return false;
 	int old = cpu_tracer;
@@ -972,7 +970,6 @@ void set_cpu_caches (bool flush)
 {
 	int i;
 
-  //DebOut("entered\n");
 	regs.prefetch020addr = 0xffffffff;
 	regs.cacheholdingaddr020 = 0xffffffff;
 
@@ -1063,7 +1060,6 @@ static void build_cpufunctbl (void)
 	const struct cputbl *tbl = 0;
 	int lvl;
 
-  //DebOut("entered\n");
 	switch (currprefs.cpu_model)
 	{
 #ifdef CPUEMU_0
@@ -2523,10 +2519,8 @@ static void Exception_normal (int nr)
 			m68k_areg (regs, 7) -= 2;
 			x_put_word (m68k_areg (regs, 7), 0x1000 + nr * 4);
 		} else {
-      if(delayme) DebOut("hu!\n");
 			m68k_areg (regs, 7) -= 2;
 			x_put_word (m68k_areg (regs, 7), nr * 4);
-      if(delayme) DebOut("ha!\n");
 		}
 	} else {
 		currpc = m68k_getpc ();
@@ -2549,10 +2543,8 @@ static void Exception_normal (int nr)
 	x_put_long (m68k_areg (regs, 7), currpc);
 	m68k_areg (regs, 7) -= 2;
 	x_put_word (m68k_areg (regs, 7), regs.sr);
-  if(delayme) DebOut("he!\n");
 kludge_me_do:
 	newpc = x_get_long (regs.vbr + 4 * nr);
-  if(delayme) DebOut("ha!\n");
 	if (newpc & 1) {
 		if (nr == 2 || nr == 3)
 			cpu_halt (2);
@@ -2560,14 +2552,11 @@ kludge_me_do:
 			exception3 (regs.ir, newpc);
 		return;
 	}
-  if(delayme) DebOut("hatschi!\n");
 	m68k_setpc (newpc);
-  if(delayme) DebOut("hatschi 2!\n");
 #ifdef JIT
 	set_special (SPCFLAG_END_COMPILE);
 #endif
 	fill_prefetch ();
-  if(delayme) DebOut("hatschi 3!\n");
 	exception_trace (nr);
 }
 
@@ -2684,7 +2673,6 @@ static void m68k_reset (bool hardreset)
 {
 	uae_u32 v;
 
-  //DebOut("entered\n");
 	regs.spcflags = 0;
 	regs.ipl = regs.ipl_pin = 0;
 #ifdef SAVESTATE
@@ -3140,7 +3128,6 @@ STATIC_INLINE bool time_for_interrupt (void)
 
 void doint (void)
 {
-  //DebOut("entered\n");
 	if (currprefs.cpu_cycle_exact) {
 		regs.ipl_pin = intlev ();
 		unset_special (SPCFLAG_INT);
@@ -3520,7 +3507,6 @@ static void m68k_run_1_ce (void)
 	set_cpu_tracer (false);
 
 	for (;;) {
-  //DebOut("for(;;)\n");
 		opcode = r->ir;
 
 #if DEBUG_CD32CDTVIO
@@ -3684,6 +3670,7 @@ typedef void compiled_handler (void);
 
 static void m68k_run_jit (void)
 {
+  DebOut("go!\n");
 	for (;;) {
 		((compiled_handler*)(pushall_call_handler))();
 		/* Whenever we return from that, we should check spcflags */
@@ -3964,7 +3951,6 @@ insretry:
 #endif
 
 
-#if 0
 /* "cycle exact" 68040+ */
 
 static void m68k_run_3ce (void)
@@ -3990,7 +3976,6 @@ static void m68k_run_3ce (void)
 			return;
 	}
 }
-#endif
 
 /* "cycle exact" 68020/030  */
 
@@ -4303,6 +4288,7 @@ void m68k_go (int may_quit)
 				memory_clear ();
 				write_log (_T("hardreset, memory cleared\n"));
 			}
+
 #ifdef SAVESTATE
 			/* We may have been restoring state, but we're done now.  */
 			if (isrestore ()) {
@@ -4393,11 +4379,9 @@ void m68k_go (int may_quit)
 			continue;
 		}
 
-#if 0
 		if (mmu_enabled && !currprefs.cachesize) {
 			run_func = m68k_run_mmu;
 		} else {
-#endif
 			run_func = currprefs.cpu_cycle_exact && currprefs.cpu_model <= 68010 ? m68k_run_1_ce :
 				currprefs.cpu_compatible && currprefs.cpu_model <= 68010 ? m68k_run_1 :
 #ifdef JIT
@@ -4411,9 +4395,7 @@ void m68k_go (int may_quit)
 #endif
 				currprefs.cpu_model >= 68020 && currprefs.cpu_cycle_exact ? m68k_run_2ce :
 				currprefs.cpu_compatible ? (currprefs.cpu_model <= 68020 ? m68k_run_2p : m68k_run_2pf) : m68k_run_2;
-#if 0
 		}
-#endif
 		unset_special(SPCFLAG_MODE_CHANGE);
 		unset_special(SPCFLAG_BRK);
 		//activate_debugger();
