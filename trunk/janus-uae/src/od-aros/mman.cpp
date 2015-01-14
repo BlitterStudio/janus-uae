@@ -70,7 +70,7 @@ typedef struct {
 
 void GetSystemInfo(SYSTEM_INFO *si) {
     //si->dwPageSize = sysconf(_SC_PAGESIZE);
-    si->dwPageSize = 1024;
+    si->dwPageSize = 4096;
 }
 
 static struct List valloc_list;
