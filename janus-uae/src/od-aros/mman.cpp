@@ -30,6 +30,9 @@
 #define uae_shmdt shmdt
 #define uae_shmctl shmctl
 #define uae_shmget shmget
+
+//this should make VirtualAlloc act like MEMF_REVERSE
+#define MEM_TOP_DOWN 0
 #endif
 
 #ifdef HAVE_SYS_PARAM_H
@@ -70,12 +73,78 @@ void GetSystemInfo(SYSTEM_INFO *si) {
     si->dwPageSize = 1024;
 }
 
+static struct List valloc_list;
+static APTR valloc_headerpool;
+struct valloc_node
+{
+    struct Node van_Node;
+    APTR            van_Addr;
+    size_t           van_Size;
+};
+
+static int valloc_prep(void)
+{
+    bug("[JUAE:MMAN] %s()\n", __PRETTY_FUNCTION__);
+    NEWLIST(&valloc_list);
+    valloc_headerpool = CreatePool(MEMF_ANY, 16384,8192);
+    bug("[JUAE:MMAN] %s: alloc list @ 0x%p\n", __PRETTY_FUNCTION__, &valloc_list);
+    bug("[JUAE:MMAN] %s: alloc header pool @ 0x%p\n", __PRETTY_FUNCTION__, valloc_headerpool);
+}
+
 void *VirtualAlloc(void *lpAddress, size_t dwSize, int flAllocationType,
         int flProtect)
 {
     int prot = 0;
     void *memory = NULL;
+    struct valloc_node *vallocNode = NULL;
 
+#if (1)
+    write_log("- VirtualAlloc %p (%zu) %08x %08x\n", lpAddress, dwSize,
+            flAllocationType, flProtect);
+
+//    D(
+        bug("[JUAE:MMAN] %s: Type : ", __PRETTY_FUNCTION__);
+        if (flAllocationType & MEM_RESERVE) {
+            bug("MEM_RESERVE ");
+        }
+        if (flAllocationType & MEM_COMMIT) {
+            bug("MEM_COMMIT ");
+        }
+        if (flAllocationType & PAGE_READWRITE) {
+            bug("PAGE_READWRITE");
+        }
+        bug("\n");
+//    )
+
+    if ((flAllocationType == MEM_COMMIT) && (lpAddress))
+    {
+        bug("[JUAE:MMAN] %s: Skipping COMMIT\n", __PRETTY_FUNCTION__);
+        memory = lpAddress;
+    }
+    else if (lpAddress)
+    {
+        bug("[JUAE:MMAN] %s: >AllocAbs\n", __PRETTY_FUNCTION__);
+        //since we cant yet map the memory we need to try and allocate it at the abolute address specified!
+        memory = AllocAbs(dwSize, lpAddress);
+        if ((vallocNode = (struct valloc_node *)AllocPooled(valloc_headerpool, sizeof(struct valloc_node))) != NULL)
+        {
+            vallocNode->van_Addr = memory;
+            vallocNode->van_Size = dwSize;
+            AddTail(&valloc_list, &vallocNode->van_Node);
+        }
+    }
+    else
+    {
+        bug("[JUAE:MMAN] %s: >AllocMem\n", __PRETTY_FUNCTION__);
+        memory = AllocMem(dwSize, MEMF_PUBLIC|MEMF_CLEAR);
+        if ((vallocNode = (struct valloc_node *)AllocPooled(valloc_headerpool, sizeof(struct valloc_node))) != NULL)
+        {
+            vallocNode->van_Addr = memory;
+            vallocNode->van_Size = dwSize;
+            AddTail(&valloc_list, &vallocNode->van_Node);
+        }
+    }
+#else
     write_log("- VirtualAlloc %p (%zu) %08x %08x\n", lpAddress, dwSize,
             flAllocationType, flProtect);
     if (flAllocationType & MEM_RESERVE) {
@@ -128,12 +197,16 @@ void *VirtualAlloc(void *lpAddress, size_t dwSize, int flAllocationType,
 #endif
     }
 
+#endif
+
     bug("[JUAE:MMAN] %s: returning 0x%p\n", __PRETTY_FUNCTION__, memory);
 
     return memory;
 }
 
 bool VirtualFree(void *lpAddress, size_t dwSize, int dwFreeType) {
+    bug("[JUAE:MMAN] %s(0x%p, %u, %lx\n", __PRETTY_FUNCTION__, lpAddress, dwSize, dwFreeType);
+
 #if 0
     int result = 0;
     if (dwFreeType == MEM_DECOMMIT) {
@@ -192,8 +265,11 @@ uae_u32 max_z3fastmem;
 /* JIT can access few bytes outside of memory block if it executes code at the very end of memory block */
 #define BARRIER 32
 
-#define MAXZ3MEM32 0x7F000000
-#define MAXZ3MEM64 0xF0000000
+#if (SIZEOF_VOID_P == 8)
+#define MAXZ3MEM 0xF0000000
+#else
+#define MAXZ3MEM 0x7F000000
+#endif
 
 static struct shmid_ds shmids[MAX_SHMID];
 uae_u8 *natmem_offset, *natmem_offset_end;
@@ -399,42 +475,29 @@ bool preinit_shm (void)
     total64 = (uae_u64)sysconf (_SC_PHYS_PAGES) * (uae_u64)getpagesize();
 #endif
     size64 = total64;
-#if (SIZEOF_VOID_P == 8)
-        if (size64 > MAXZ3MEM64)
-            size64 = MAXZ3MEM64;
-#else
-        if (size64 > MAXZ3MEM32)
-            size64 = MAXZ3MEM32;
-#endif
-    if (maxmem < 0)
-        size64 = MAXZ3MEM64;
-    else if (maxmem > 0)
-        size64 = maxmem * 1024 * 1024;
-    if (size64 < 8 * 1024 * 1024)
-        size64 = 8 * 1024 * 1024;
-    if (max_allowed_mman * 1024 * 1024 > size64)
-        max_allowed_mman = size64 / (1024 * 1024);
+    if (size64 > MAXZ3MEM)
+        size64 = MAXZ3MEM;
+    if (maxmem < 0) {
+        size64 = MAXZ3MEM;
 #if (SIZEOF_VOID_P == 4)
-        if (max_allowed_mman * 1024 * 1024 > (totalphys64 / 2))
-            max_allowed_mman = (totalphys64 / 2) / (1024 * 1024);
+        if (totalphys64 < 1536 * 1024 * 1024)
+            max_allowed_mman = 256;
+        if (max_allowed_mman < 256)
+            max_allowed_mman = 256;
 #endif
+    } else if (maxmem > 0) {
+            size64 = maxmem * 1024 * 1024;
+    }
+    if (size64 < 8 * 1024 * 1024)
+            size64 = 8 * 1024 * 1024;
+    if (max_allowed_mman * 1024 * 1024 > size64)
+            max_allowed_mman = size64 / (1024 * 1024);
 
     natmem_size = (max_allowed_mman + 1) * 1024 * 1024;
-#ifndef __AROS__
-    if (natmem_size < 256 * 1024 * 1024)
-        natmem_size = 256 * 1024 * 1024;
-    write_log (_T("Total physical RAM %lluM, all RAM %lluM. Attempting to reserve: %uM.\n"), totalphys64 >> 20, total64 >> 20, natmem_size >> 20);
-#else
-    uae_u32 natmem_size_max=total64 - 128 * 1024 *1024 ; /* leave 128M memory free, we'll need it */
-    //write_log("natmem_size_max: %d %dM\n", natmem_size_max, natmem_size_max>>20);
-    natmem_size=1024*1024;
-    /* round up nicely */
-    while(natmem_size < (natmem_size_max/2)) {
-      natmem_size=natmem_size*2;
-    }
-    write_log (_T("Total free RAM %lluM, largest free RAM %lluM. Attempting to reserve: %uM.\n"), totalphys64 >> 20, total64 >> 20, natmem_size >> 20);
-#endif
+    if (natmem_size < 17 * 1024 * 1024)
+        natmem_size = 17 * 1024 * 1024;
 
+    write_log (_T("Total physical RAM %lluM, all RAM %lluM. Attempting to reserve: %uM.\n"), totalphys64 >> 20, total64 >> 20, natmem_size >> 20);
     natmem_offset = 0;
     if (natmem_size <= 768 * 1024 * 1024) {
         uae_u32 p = 0x78000000 - natmem_size;
@@ -449,20 +512,29 @@ bool preinit_shm (void)
     }
     if (!natmem_offset) {
         for (;;) {
-            natmem_offset = (uae_u8*)VirtualAlloc (NULL, natmem_size, MEM_RESERVE | (VAMODE == 1 ? MEM_WRITE_WATCH : 0), PAGE_READWRITE);
+            natmem_offset = (uae_u8*)VirtualAlloc (NULL, natmem_size, MEM_RESERVE | (VAMODE == 1 ? MEM_WRITE_WATCH : 0) | MEM_TOP_DOWN, PAGE_READWRITE);
             if (natmem_offset)
                 break;
             natmem_size -= 128 * 1024 * 1024;
             if (!natmem_size) {
-                write_log (_T("Can't allocate 256M of virtual address space!?\n"));
-                return false;
+                write_log (_T("Can't allocate 257M of virtual address space!?\n"));
+                natmem_size = 17 * 1024 * 1024;
+                natmem_offset = (uae_u8*)VirtualAlloc (NULL, natmem_size, MEM_RESERVE | (VAMODE == 1 ? MEM_WRITE_WATCH : 0) | MEM_TOP_DOWN, PAGE_READWRITE);
+                if (!natmem_size) {
+                    write_log (_T("Can't allocate 17M of virtual address space!? Something is seriously wrong\n"));
+                    return false;
+                }
+                break;
             }
         }
     }
-    max_z3fastmem = natmem_size;
+    if (natmem_size <= 257 * 1024 * 1024)
+            max_z3fastmem = 0;
+    else
+            max_z3fastmem = natmem_size;
     write_log (_T("Reserved: 0x%p-0x%p (%08x %dM)\n"),
-        natmem_offset, (uae_u8*)natmem_offset + natmem_size,
-        natmem_size, natmem_size >> 20);
+            natmem_offset, (uae_u8*)natmem_offset + natmem_size,
+            natmem_size, natmem_size >> 20);
 
     clear_shm ();
 
@@ -1219,4 +1291,4 @@ int isinf (double x)
 }
 #endif
 
-
+ADD2INIT(valloc_prep, 0);
