@@ -125,23 +125,27 @@ void *VirtualAlloc(void *lpAddress, size_t dwSize, int flAllocationType,
     {
         bug("[JUAE:MMAN] %s: >AllocAbs\n", __PRETTY_FUNCTION__);
         //since we cant yet map the memory we need to try and allocate it at the abolute address specified!
-        memory = AllocAbs(dwSize, lpAddress);
-        if ((vallocNode = (struct valloc_node *)AllocPooled(valloc_headerpool, sizeof(struct valloc_node))) != NULL)
+        if ((memory = AllocAbs(dwSize, lpAddress)) != NULL)
         {
-            vallocNode->van_Addr = memory;
-            vallocNode->van_Size = dwSize;
-            AddTail(&valloc_list, &vallocNode->van_Node);
+            if ((vallocNode = (struct valloc_node *)AllocPooled(valloc_headerpool, sizeof(struct valloc_node))) != NULL)
+            {
+                vallocNode->van_Addr = memory;
+                vallocNode->van_Size = dwSize;
+                AddTail(&valloc_list, &vallocNode->van_Node);
+            }
         }
     }
     else
     {
         bug("[JUAE:MMAN] %s: >AllocMem\n", __PRETTY_FUNCTION__);
-        memory = AllocMem(dwSize, MEMF_PUBLIC|MEMF_CLEAR);
-        if ((vallocNode = (struct valloc_node *)AllocPooled(valloc_headerpool, sizeof(struct valloc_node))) != NULL)
+        if ((memory = AllocMem(dwSize, MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
         {
-            vallocNode->van_Addr = memory;
-            vallocNode->van_Size = dwSize;
-            AddTail(&valloc_list, &vallocNode->van_Node);
+            if ((vallocNode = (struct valloc_node *)AllocPooled(valloc_headerpool, sizeof(struct valloc_node))) != NULL)
+            {
+                vallocNode->van_Addr = memory;
+                vallocNode->van_Size = dwSize;
+                AddTail(&valloc_list, &vallocNode->van_Node);
+            }
         }
     }
 #else
