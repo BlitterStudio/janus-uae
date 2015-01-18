@@ -167,7 +167,7 @@ JUAESRCS := \
 
 %build_prog mmake=local-juae-emulator \
     progname=J-UAE targetdir=$(JUAEDIR) files="" cxxfiles="$(JUAESRCS)" \
-    uselibs="SDL arossupport z GL mui lowlevel" ldflags="-L$(GENDIR)/$(CURDIR) -lgui -lSDL_Config -lstdc++"
+    uselibs="SDL arossupport z GL mui lowlevel" ldflags="-L$(GENDIR)/$(CURDIR) -lgui -lSDL_Config -lstdc++ -lpthread"
 
 
 %build_icons mmake=local-juae-icons-emulator icons="J-UAE" \
