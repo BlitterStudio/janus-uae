@@ -176,6 +176,29 @@ int *KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *AboutDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
+Object* FixedObj(IPTR src)
+{
+    struct TagItem fo_tags[] =
+    {
+        { MA_src, src},
+        { TAG_DONE, 0}
+    };
+
+    return (Object*) NewObjectA(CL_Fixed->mcc_Class, NULL, fo_tags);
+}
+
+Object* FixedProcObj(IPTR src, IPTR proc)
+{
+    struct TagItem fo_tags[] =
+    {
+        { MA_src, src}, 
+        { MA_dlgproc, proc},
+        { TAG_DONE, 0}
+    };
+
+    return (Object*) NewObjectA(CL_Fixed->mcc_Class, NULL, fo_tags);
+}
+
 Object* build_gui(void) {
   int i=0;
 
@@ -197,6 +220,7 @@ Object* build_gui(void) {
 
   DebOut("send: %lx\n", &IDD_FLOPPY);
 #endif
+
   app = MUI_NewObject(MUIC_Application,
                       MUIA_Application_Author, (IPTR) "Oliver Brunner",
                       MUIA_Application_Base, (IPTR)   "AROSUAE",
@@ -237,38 +261,30 @@ Object* build_gui(void) {
                               MUIA_Group_Horiz, FALSE,
                               MUIA_Group_Child,
                                 pages=PageGroup,
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_LOADSAVE, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_ABOUT, 
-                                                                              MA_dlgproc, (IPTR) &AboutDlgProc,
-                                                                              TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_PATHS, 
-                                                                              MA_dlgproc, (IPTR) &PathsDlgProc,
-                                                                              TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_QUICKSTART, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_LOADSAVE, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CPU, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CHIPSET, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CHIPSET2, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_KICKSTART, 
-                                                                              MA_dlgproc, (IPTR) &KickstartDlgProc,
-                                                                              TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_MEMORY, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_FLOPPY, 
-                                                                              MA_dlgproc, (IPTR) &FloppyDlgProc,
-                                                                              TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_CDDRIVE, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_EXPANSION, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_LOADSAVE, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_DISPLAY, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_SOUND, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_GAMEPORTS, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_IOPORTS, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_INPUT, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_AVIOUTPUT, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_FILTER, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_DISK, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_MISC1, TAG_DONE),
-                                  Child, NewObject(CL_Fixed->mcc_Class, NULL, MA_src, IDD_MISC2, TAG_DONE),
+                                  Child, FixedObj((IPTR)IDD_LOADSAVE),
+                                  Child, FixedProcObj((IPTR)IDD_ABOUT, (IPTR) &AboutDlgProc),
+                                  Child, FixedProcObj((IPTR)IDD_PATHS, (IPTR) &PathsDlgProc),
+                                  Child, FixedObj((IPTR)IDD_QUICKSTART),
+                                  Child, FixedObj((IPTR)IDD_LOADSAVE),
+                                  Child, FixedObj((IPTR)IDD_CPU),
+                                  Child, FixedObj((IPTR)IDD_CHIPSET),
+                                  Child, FixedObj((IPTR)IDD_CHIPSET2),
+                                  Child, FixedProcObj((IPTR)IDD_KICKSTART, (IPTR) &KickstartDlgProc),
+                                  Child, FixedObj((IPTR)IDD_MEMORY),
+                                  Child, FixedProcObj((IPTR)IDD_FLOPPY, (IPTR) &FloppyDlgProc),
+                                  Child, FixedObj((IPTR)IDD_CDDRIVE),
+                                  Child, FixedObj((IPTR)IDD_EXPANSION),
+                                  Child, FixedObj((IPTR)IDD_LOADSAVE),
+                                  Child, FixedObj((IPTR)IDD_DISPLAY),
+                                  Child, FixedObj((IPTR)IDD_SOUND),
+                                  Child, FixedObj((IPTR)IDD_GAMEPORTS),
+                                  Child, FixedObj((IPTR)IDD_IOPORTS),
+                                  Child, FixedObj((IPTR)IDD_INPUT),
+                                  Child, FixedObj((IPTR)IDD_AVIOUTPUT),
+                                  Child, FixedObj((IPTR)IDD_FILTER),
+                                  Child, FixedObj((IPTR)IDD_DISK),
+                                  Child, FixedObj((IPTR)IDD_MISC1),
+                                  Child, FixedObj((IPTR)IDD_MISC2),
                                 End,
                               MUIA_Group_Child,
                                 MUI_NewObject(MUIC_Group,
