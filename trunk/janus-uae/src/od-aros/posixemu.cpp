@@ -72,31 +72,34 @@ int uae_start_thread (const TCHAR *name, void *(*f)(void *), void *arg, uae_thre
 {
     struct MsgPort *replyport;
     struct Process *newtask = NULL;
+    struct TagItem procTags[] =
+    {
+        { NP_Name,	   (IPTR) NULL},
+        { NP_StackSize,	   (IPTR)(64 * 1024)},
+        { NP_Entry,	   (IPTR) do_thread},
+        //{ NP_Output,		   Output ()},
+        //{ NP_Input,		   Input ()},
+        //{ NP_CloseOutput,	   FALSE},
+        //{ NP_CloseInput,	   FALSE},
+        { TAG_DONE, 0}
+    };
 
 #warning Do we need to care for priorities here? WinUAE does..
-    if(!name) {
-        name=default_name;
-    }
+    if(!name)
+        procTags[0].ti_Data = (IPTR)default_name;
+    else
+        procTags[0].ti_Data = (IPTR)name;
 
-    bug("[JUAE:PX] %s('%s', f %lx, arg %lx, tid %lx)\n", __PRETTY_FUNCTION__, name, f, arg, tid);
+    bug("[JUAE:PX] %s('%s', f %lx, arg %lx, tid %lx)\n", __PRETTY_FUNCTION__, procTags[0].ti_Data, f, arg, tid);
 
     replyport = CreateMsgPort();
     if(!replyport) {
         write_log("ERROR: Unable to create MsgPort!\n");
     }
 
-    newtask = CreateNewProcTags (
-        //NP_Output,		   Output (),
-        //NP_Input,		   Input (),
-        NP_Name,	   (IPTR) name,
-        //NP_CloseOutput,	   FALSE,
-        //NP_CloseInput,	   FALSE,
-        NP_StackSize,	   16384*4,
-        NP_Entry,	   (IPTR) do_thread,
-        TAG_DONE);
+    newtask = CreateNewProc (procTags);
 
-    bug("[JUAE:PX] %s: Process @ %p\n", __PRETTY_FUNCTION__, newtask);
-    bug("[JUAE:PX] %s: MsgPort @ %p\n", __PRETTY_FUNCTION__, newtask->pr_MsgPort);
+    bug("[JUAE:PX] %s: Process @ %p, MsgPort @ %p\n", __PRETTY_FUNCTION__, newtask, newtask->pr_MsgPort);
 
     if(newtask) {
         struct startupmsg msg;
