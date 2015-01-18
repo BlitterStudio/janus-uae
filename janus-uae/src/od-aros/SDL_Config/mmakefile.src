@@ -13,7 +13,7 @@ LIBSDLCONFFILES := \
 LIBSDLCONFOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/,$(LIBSDLCONFFILES)))
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)
 
-#MM local-juae-sdlconfig-obj : local-juae-sdlconfig-dirs
+#MM local-juae-sdlconfig-obj : contrib-sdl local-juae-sdlconfig-dirs
 
 local-juae-sdlconfig-obj: $(LIBSDLCONFOBJS)
 
