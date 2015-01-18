@@ -468,13 +468,13 @@ int aros_show_gui(void) {
 
   /* activate current page */
   DebOut("currentpage: %d\n", currentpage);
-  SetAttrs(leftframe, MUIA_List_Active, currentpage, TAG_DONE);
+  DoMethod(leftframe, MUIM_Set, MUIA_List_Active, currentpage);
 
-  SetAttrs(win, MUIA_Window_Open, TRUE, TAG_DONE);
+  DoMethod(win, MUIM_Set, MUIA_Window_Open, TRUE);
 
   aros_main_loop();
 
-  SetAttrs(win, MUIA_Window_Open, FALSE, TAG_DONE);
+  DoMethod(win, MUIM_Set, MUIA_Window_Open, FALSE);
 
   DebOut("left\n");
   return 0;
