@@ -15,7 +15,6 @@ fp_1e1
 fp_1e2
 fp_1e4
 fp_1e8
-__gxx_personality_v0
 imm8_table
 kickmem_bank
 lookuptab
@@ -46,24 +45,24 @@ xhex_exp_1
 xhex_l10_2
 xhex_l10_e
 xhex_ln_10
-_Z10cache_freePh
-_Z10do_nothingv
-_Z11cache_alloci
-_Z12exec_nostatsv
-_Z13read_table68kv
-_Z14execute_normalv
-_Z2auPKc
-_Z2uaPKc
-_Z7op_illgj
-_Z9do_mergesv
-_Z9jit_abortPKcz
+cache_free(unsigned char*)
+do_nothing()
+cache_alloc(int)
+exec_nostats()
+read_table68k()
+execute_normal()
+au(char const*)
+ua(char const*)
+op_illg(unsigned int)
+do_merges()
+jit_abort(char const*, ...)
 
 extern code uses the following jit objects/functions:
 
-_Z10build_compv
-_Z12flush_icacheji
-_Z13compemu_resetv
-_Z13compile_blockP11cpu_historyii
-_Z15set_cache_statei
-_Z20check_for_cache_missv
-_Z24check_prefs_changed_compv
+build_comp()
+flush_icache(unsigned int, int)
+compemu_reset()
+compile_block(cpu_history*, int, int)
+set_cache_state(int)
+check_for_cache_miss()
+check_prefs_changed_comp()
