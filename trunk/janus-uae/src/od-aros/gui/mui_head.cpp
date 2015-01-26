@@ -173,6 +173,7 @@ AROS_UFH2(void, MUIHook_quit, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR
 
 int *FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *CPUDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *AboutDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -266,7 +267,7 @@ Object* build_gui(void) {
                                   Child, FixedProcObj((IPTR)IDD_PATHS, (IPTR) &PathsDlgProc),
                                   Child, FixedObj((IPTR)IDD_QUICKSTART),
                                   Child, FixedObj((IPTR)IDD_LOADSAVE),
-                                  Child, FixedObj((IPTR)IDD_CPU),
+                                  Child, FixedProcObj((IPTR)IDD_CPU, (IPTR) &CPUDlgProc),
                                   Child, FixedObj((IPTR)IDD_CHIPSET),
                                   Child, FixedObj((IPTR)IDD_CHIPSET2),
                                   Child, FixedProcObj((IPTR)IDD_KICKSTART, (IPTR) &KickstartDlgProc),

@@ -376,13 +376,13 @@ static bool ischecked (HWND hDlg, DWORD id)
 
 	return IsDlgButtonChecked (hDlg, id) == BST_CHECKED;
 }
-#if 0
 static void setchecked (HWND hDlg, DWORD id, bool checked)
 {
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	CheckDlgButton (hDlg, id, checked ? BST_CHECKED : BST_UNCHECKED);
 }
+#if 0
 static void setfocus (HWND hDlg, int id)
 {
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
@@ -7771,7 +7771,6 @@ static void values_to_chipsetdlg (HWND hDlg)
 
 }
 
-#if 0
 static void values_from_chipsetdlg (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	BOOL success = FALSE;
@@ -7817,7 +7816,6 @@ static void values_from_chipsetdlg (HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 	if (nn != CB_ERR)
 		workprefs.monitoremu = nn;
 }
-#endif
 
 static INT_PTR CALLBACK ChipsetDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -7866,17 +7864,17 @@ static INT_PTR CALLBACK ChipsetDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPAR
 		recursive--;
 		break;
 
-#if 0
 	case WM_HSCROLL:
 	case WM_COMMAND:
+    /* TODO: make sure, this gets called! */
 		if (recursive > 0)
 			break;
+    bug("[JUAE:GUI] %s() WM_COMMAND:\n", __PRETTY_FUNCTION__);
 		recursive++;
 		values_from_chipsetdlg (hDlg, msg, wParam, lParam);
 		enable_for_chipsetdlg( hDlg );
 		recursive--;
 		break;
-#endif
 	}
 	return FALSE;
 }
@@ -8183,8 +8181,12 @@ static void setmax32bitram (HWND hDlg)
 	if ((workprefs.z3fastmem_size || workprefs.z3chipmem_size) && rtgz3size)
 		size += 16 * 1024 * 1024;
 
+#ifdef NATMEM_OFFSET
 	_stprintf (tmp, _T("Total configured 32-bit RAM: %dM, reserved: %dM"),
 		size / (1024 * 1024), (natmem_size - 256 * 1024 * 1024) / (1024 * 1024));
+#else
+	_stprintf (tmp, _T("Total configured 32-bit RAM: %dM"), size / (1024 * 1024));
+#endif
 	SetDlgItemText (hDlg, IDC_MAX32RAM, tmp);
 }
 
@@ -9947,7 +9949,6 @@ static void values_to_cpudlg (HWND hDlg)
 	}
 }
 
-#if 0
 static void values_from_cpudlg (HWND hDlg)
 {
 	int newcpu, newfpu, newtrust, oldcache, jitena, idx;
@@ -9961,7 +9962,8 @@ static void values_from_cpudlg (HWND hDlg)
 	workprefs.int_no_unimplemented = ischecked (hDlg, IDC_CPU_UNIMPLEMENTED) ? 0 : 1;
 	workprefs.address_space_24 = ischecked (hDlg, IDC_COMPATIBLE24) ? 1 : 0;
 	workprefs.m68k_speed = ischecked (hDlg, IDC_CS_HOST) ? -1 : 0;
-	workprefs.m68k_speed_throttle = SendMessage (GetDlgItem (hDlg, IDC_SPEED), TBM_GETPOS, 0, 0) * 100;
+	//workprefs.m68k_speed_throttle = SendMessage (GetDlgItem (hDlg, IDC_SPEED), TBM_GETPOS, 0, 0) * 100;
+	workprefs.m68k_speed_throttle = SendDlgItemMessage(hDlg, IDC_SPEED, TBM_GETPOS, 0, 0) * 100;
 	if (workprefs.m68k_speed_throttle > 0 && workprefs.m68k_speed < 0)
 		workprefs.m68k_speed_throttle = 0;
 
@@ -10028,7 +10030,7 @@ static void values_from_cpudlg (HWND hDlg)
 #ifdef JIT
 	oldcache = workprefs.cachesize;
 	jitena = (ischecked (hDlg, IDC_JITENABLE) ? 1 : 0) && !workprefs.address_space_24 && workprefs.cpu_model >= 68020;
-	workprefs.cachesize = SendMessage (GetDlgItem (hDlg, IDC_CACHE), TBM_GETPOS, 0, 0) * 1024;
+	workprefs.cachesize = SendDlgItemMessage (hDlg, IDC_CACHE, TBM_GETPOS, 0, 0) * 1024;
 	if (!jitena) {
 		cachesize_prev = workprefs.cachesize;
 		trust_prev = workprefs.comptrustbyte;
@@ -10051,16 +10053,19 @@ static void values_from_cpudlg (HWND hDlg)
 	if (oldcache == 0 && candirect && workprefs.cachesize > 0)
 		canbang = 1;
 #endif
-	workprefs.cpu_idle = SendMessage (GetDlgItem (hDlg, IDC_CPUIDLE), TBM_GETPOS, 0, 0);
+	workprefs.cpu_idle = SendDlgItemMessage (hDlg, IDC_CPUIDLE, TBM_GETPOS, 0, 0);
 	if (workprefs.cpu_idle > 0)
 		workprefs.cpu_idle = (12 - workprefs.cpu_idle) * 15;
 
+#if 0
+  /* TODO! */
 	if (pages[KICKSTART_ID])
 		SendMessage (pages[KICKSTART_ID], WM_USER, 0, 0);
 	if (pages[DISPLAY_ID])
 		SendMessage (pages[DISPLAY_ID], WM_USER, 0, 0);
 	if (pages[MEMORY_ID])
 		SendMessage (pages[MEMORY_ID], WM_USER, 0, 0);
+#endif
 
 	idx = SendDlgItemMessage (hDlg, IDC_CPU_FREQUENCY, CB_GETCURSEL, 0, 0);
 	if (idx != CB_ERR) {
@@ -10081,9 +10086,8 @@ static void values_from_cpudlg (HWND hDlg)
 		}
 	}
 }
-#endif
 
-static INT_PTR CALLBACK CPUDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK CPUDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static int recursive = 0;
 	int idx;
@@ -10143,7 +10147,6 @@ static INT_PTR CALLBACK CPUDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 		recursive--;
 		return TRUE;
 
-#if 0
 	case WM_COMMAND:
 		if (recursive > 0)
 			break;
@@ -10161,7 +10164,6 @@ static INT_PTR CALLBACK CPUDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 		values_to_cpudlg (hDlg);
 		recursive--;
 		break;
-#endif
 	}
 	return FALSE;
 }
@@ -18026,7 +18028,7 @@ static int init_page (struct Element *tmpl, int icon, TCHAR *title,
 	}
 #endif
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  bug("[JUAE:GUI] %s(%s)\n", __PRETTY_FUNCTION__, title);
 
 	ppage[id].dlgproc = func;
 	ppage[id].help = help;
