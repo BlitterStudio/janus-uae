@@ -497,6 +497,8 @@ BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDC
   int i;
   int e;
   i=nIDFirstButton;
+
+  DebOut("0x%lx, %d, %d, %d\n", elem, nIDFirstButton, nIDLastButton, nIDCheckButton);
   while(i<nIDLastButton) {
     e=get_index(elem, i);
     /* might be in a different element..*/
@@ -1025,6 +1027,16 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                       End,
 
                   End;
+
+#ifdef UAE_ABI_v0
+              data->MyMUIHook_select.h_Entry=(HOOKFUNC) MUIHook_select;
+#else
+              data->MyMUIHook_select.h_Entry=(APTR) MUIHook_select;
+#endif
+              data->MyMUIHook_select.h_Data =(APTR) data;
+
+              DebOut("DoMethod(%lx, MUIM_Notify, MUIA_Selected, MUIV_EveryTime..)\n", src[i].obj);
+              DoMethod(src[i].obj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_select, func); 
 
             }
             else {
