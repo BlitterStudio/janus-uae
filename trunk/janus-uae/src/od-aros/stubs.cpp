@@ -23,7 +23,7 @@
  *
  ************************************************************************/
 
-#define OLI_DEBUG
+//#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -352,9 +352,18 @@ void graphics_leave(void)
 }
 #endif
 
+#include <exec/execbase.h>
 int handle_msgpump (void)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
+
+  if(SysBase->TDNestCnt>=0) {
+    bug("ERROR: Should not be in Forbid here!!\n");
+    while(SysBase->TDNestCnt>=0) {
+      bug("ERROR:   => call Permit.\n");
+      Permit();
+    }
+  }
   TODO();
 	return 0;
 }
@@ -826,12 +835,6 @@ int input_get_default_joystick_analog (struct uae_input_device *uid, int i, int 
 }
 
 void f_out (void *f, const TCHAR *format, ...)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
-char *ua_fs (const WCHAR *s, int defchar) 
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();

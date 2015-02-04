@@ -64,6 +64,38 @@ char *ua_fs_copy (char *dst, int maxlen, const TCHAR *src, int defchar) {
   strncpy(dst, src, maxlen);
 }
 
+/* ua_fs
+ *  filter unusual characters (?)
+ */
+char *ua_fs (const WCHAR *s, int defchar) {
+  char *d;
+  int len, i;
+  BOOL dc;
+  char def = 0;
+
+  DebOut("s: %s, defchar %d\n", s, defchar);
+
+  if (s == NULL) {
+    return NULL;
+  }
+
+  dc=FALSE;
+  len=strlen(s);
+  d=strdup(s);
+
+  /* WinUAE uses >= 0 !? */
+  if(defchar > 0) {
+    for (i = 0; i < len; i++)  {
+      if (d[i] == 0 || (d[i] < 32 || (d[i] >= 0x7f && d[i] <= 0x9f))) {
+        d[i]=(char) defchar;
+      }
+    }
+  }
+
+  DebOut("return: %s\n", d);
+  return d;
+}
+
 WCHAR *utf8u (const char *s) {
 
 	//DebOut("s=%s\n", s);
