@@ -46,7 +46,10 @@ typedef struct {
 /* TODO: protect access with a semaphore! */
 static aros_sem sem_table[AROS_MAX_SEM+1];
 
-/* sem is a ULONG * to store number in it! */
+/* sem is a ULONG * to store number in it! 
+ * it seems to be ok, to call it a second time for a semaphore!
+ * only if sem is NULL, alloc a new one
+ */
 void uae_sem_init (uae_sem_t *sem, int manual_reset, int initial_state) {
   struct SignalSemaphore *s;
   ULONG nr=1; /* leave first slot empty */
@@ -59,17 +62,34 @@ void uae_sem_init (uae_sem_t *sem, int manual_reset, int initial_state) {
 		return;
 	}
 
+  if(manual_reset) {
+    write_log("FATAL: manual_reset not done!\n");
+    exit(1);
+  }
+
+  if(*sem) {
+    /* semaphore already exists */
+    DebOut("semaphore already exists (nr=%d)\n", *sem);
+    if(initial_state) {
+      DebOut("ObtainSemaphore(%lx)\n", &sem_table[nr].sigSem);
+      ObtainSemaphore(&sem_table[nr].sigSem);
+      sem_table[nr].owner=FindTask(NULL);
+    }
+    else {
+      sem_table[nr].owner=NULL;
+      ReleaseSemaphore(&sem_table[nr].sigSem);
+      DebOut("ReleaseSemaphore(%lx)\n", &sem_table[nr].sigSem);
+    }
+    return;
+  }
+
+  /* alloc new semaphore */
   while((nr<AROS_MAX_SEM) && (sem_table[nr].init_done!=FALSE)) {
     nr++;
   }
 
   if(nr==AROS_MAX_SEM) {
     write_log("FATAL ERROR in thread.cpp: Too many Semaphores used!\n");
-    exit(1);
-  }
-
-  if(manual_reset) {
-    write_log("FATAL: manual_reset not done!\n");
     exit(1);
   }
 
@@ -82,14 +102,13 @@ void uae_sem_init (uae_sem_t *sem, int manual_reset, int initial_state) {
   sem_table[nr].init_done=TRUE;
 
 	if(initial_state) {
-    DebOut("initial_state!: ObtainSemaphore(%lx)\n", &sem_table[nr].sigSem);
+    DebOut("initial_state, so call ObtainSemaphore(%lx)\n", &sem_table[nr].sigSem);
 		ObtainSemaphore(&sem_table[nr].sigSem);
     sem_table[nr].owner=FindTask(NULL);
 	}
 
   /* return new semaphore handle */
   *sem=nr;
-
 
 
 #if 0
@@ -168,20 +187,25 @@ int uae_sem_trywait (uae_sem_t *sem) {
   ULONG nr=*sem;
 	ULONG result;
 
+#if 0
+	return WaitForSingleObject (*event, 0) == WAIT_OBJECT_0 ? 0 : -1;
+#endif
+
 	if(!sem || !(sem_table[nr].init_done)) {
 		DebOut("WARNING: sem==NULL!\n");
 		return 0;
 	}
 
+  DebOut("AttemptSemaphore(%lx)\n", &sem_table[nr].sigSem);
 	result=AttemptSemaphore(&sem_table[nr].sigSem);
 
-	DebOut("AttemptSemaphore(nr %d)=%d\n", nr, result);
+  if(result) {
+    DebOut("AttemptSemaphore(nr %d)=%d (return 0)\n", nr, result);
+    return 0;
+  }
 
-	return result;
-
-#if 0
-	return WaitForSingleObject (*event, 0) == WAIT_OBJECT_0 ? 0 : -1;
-#endif
+  DebOut("AttemptSemaphore(nr %d)=%d (return -1)\n", nr, result);
+  return -1;
 }
 
 void uae_sem_destroy (uae_sem_t *sem) {
