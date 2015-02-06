@@ -2119,11 +2119,6 @@ int target_get_display(char const *foo) {
   return 1;
 }
 
-bool my_resolvesoftlink(TCHAR *linkfile, int size) {
-  TODO();
-  return FALSE;
-}
-
 int vsync_busywait_do (int *a, bool b, bool c) {
   TODO();
   return 1;

@@ -158,19 +158,19 @@ filesys_init:
 FSIN_explibok:
 	move.l d0,a4
 
-	tst.l $10c(a5)
+	tst.l $10c(a5)                      ; any file systems?
 	beq.s FSIN_none
 
-	move.l #PP_TOTAL,d0
+	move.l #PP_TOTAL,d0                 ; alloc memory for param packet to be sent to filesys_dev_storeinfo
 	move.l #$10001,d1
 	jsr AllocMem(a6)
 	move.l d0,a3  ; param packet
 	move.l a4,PP_EXPLIB(a3)
-	moveq #0,d6
+	moveq #0,d6                          ; counter (actual unit)
 FSIN_init_units:
-	cmp.l $10c(a5),d6
-	bcc.b FSIN_units_ok
-	move.l d6,-(sp)
+	cmp.l $10c(a5),d6                    ; any units left? (stored in 10c by init_filesys_diagentry() )
+	bcc.b FSIN_units_ok                  ; no? => FSIN_units_ok
+	move.l d6,-(sp)                      ; backup counter
 FSIN_nextsub:
 	moveq #1,d7
 	tst.w d5
@@ -178,25 +178,25 @@ FSIN_nextsub:
 	bset #2,d7
 .oldks	move.l a3,-(sp)
 	move.l a3,a0
-	bsr.w make_dev
+	bsr.w make_dev                        ; call filesys_dev_storeinfo!
 	move.l (sp)+,a3
-	cmp.l #-2,d0
-	beq.s FSIN_nomoresub
+	cmp.l #-2,d0                          ; any subunits left ?
+	beq.s FSIN_nomoresub                  ; no => FSIN_nomoresub
+	swap d6                               ; another sub id
+	addq.w #1,d6                          ; count in high word
 	swap d6
-	addq.w #1,d6
-	swap d6
-	bra.s FSIN_nextsub
+	bra.s FSIN_nextsub                    ; next sub id
 FSIN_nomoresub:	
 	move.l (sp)+,d6
-	addq.w #1,d6
-	bra.b  FSIN_init_units
-FSIN_units_ok:
+	addq.w #1,d6                          ; increment unit count
+	bra.b  FSIN_init_units                ; next unit
+FSIN_units_ok:                          ; done!
 	move.l 4.w,a6
 	move.l a3,a1
 	move.l #PP_TOTAL,d0
 	jsr FreeMem(a6)
 
-FSIN_none:
+FSIN_none:                              ; done!
 	move.l 4.w,a6
 	move.l a4,a1
 	jsr -414(a6) ; CloseLibrary
