@@ -104,7 +104,7 @@ FILE *my_opentext (const TCHAR *name) {
 int fsdb_exists (const TCHAR *nname) {
   BPTR lock;
 
-    bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, nname);
+  bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, nname);
 
   lock=Lock(nname, SHARED_LOCK);
   if(lock) {
@@ -207,13 +207,13 @@ int my_getvolumeinfo (const TCHAR *name) {
     goto EXIT;
   }
 
+  bug("[JUAE:A-FSDB] %s: fib prot flags 0x%lx\n", __PRETTY_FUNCTION__, fib->fib_Protection);
+
   if(fib->fib_DirEntryType >0) 
   {
-    bug("DIRECTORY!\n");
+    bug("[JUAE:A-FSDB] %s: DIRECTORY!\n", __PRETTY_FUNCTION__);
     ret=0;
   }
-
-    bug("[JUAE:A-FSDB] %s: fib prot flags 0x%lx\n", __PRETTY_FUNCTION__, fib->fib_Protection);
 
   if(!(fib->fib_Protection && FIBF_WRITE)) {
     bug("[JUAE:A-FSDB] %s: read only entry!\n", __PRETTY_FUNCTION__);
@@ -253,4 +253,211 @@ int my_existsdir (const TCHAR *name) {
   return 0;
 }
 
+/******************************************************************
+ ******************************************************************/
+void fullpath(TCHAR *linkfile, int size);
 
+bool my_resolvesoftlink(TCHAR *linkfile, int size) {
+
+  struct mystat statbuf;
+
+  DebOut("linkfile: %s\n", linkfile);
+
+  if(!fsdb_exists(linkfile)) {
+    DebOut("%s does not exist!\n", linkfile);
+    return FALSE;
+  }
+
+  fullpath(linkfile, size);
+
+  DebOut("return : %s\n", linkfile);
+
+  return TRUE;
+}
+
+/******************************************************************
+ * name_invalid
+ *
+ * as both host and guest are "amigaoid", filenames should always
+ * be valid.
+ ******************************************************************/
+int fsdb_name_invalid (const TCHAR *n) {
+  DebOut("name: %s is ok\n", n);
+  return FALSE;
+}
+
+int fsdb_name_invalid_dir (const TCHAR *n) {
+  DebOut("name: %s is ok\n", n);
+  return FALSE;
+}
+
+/******************************************************************
+ * int my_*dir (struct my_opendir_s *mod, TCHAR *name)
+ *
+ * These functions are used to open and scan a directory.
+ ******************************************************************/
+
+struct my_opendir_s {
+  struct FileInfoBlock *h;
+  BPTR lock;
+  int first;
+};
+
+/* return next dir entry */
+int my_readdir (struct my_opendir_s *mod, TCHAR *name) {
+
+  strcpy(name, (TCHAR *) mod->h->fib_FileName);
+  DebOut("name: %s\n", name);
+
+  if(ExNext(mod->lock, mod->h)) {
+    return TRUE;
+  }
+
+  DebOut("no more files/error!\n");
+
+  /* no more entries */
+  return FALSE;
+}
+
+void my_closedir (struct my_opendir_s *mod) {
+
+  if(mod->h) FreeDosObject(DOS_FIB, mod->h);
+  if(mod->lock) UnLock(mod->lock);
+  if(mod) free(mod);
+}
+
+
+/** WARNING: mask does *not* work !! */
+struct my_opendir_s *my_opendir (const TCHAR *name, const TCHAR *mask) {
+  struct my_opendir_s *mod;
+  TCHAR tmp[MAX_DPATH];
+  unsigned int len=strlen(name);
+
+  DebOut("name: %s, mask: %s\n", name, mask);
+
+  tmp[0] = 0;
+#if 0
+  if (currprefs.win32_filesystem_mangle_reserved_names == false)
+    _tcscpy (tmp, PATHPREFIX);
+  _tcscat (tmp, name);
+  DebOut("lastchar: %c\n", name[len-1]);
+  if(! (name[len-1]=='/' || name[len-1]==':')) {
+    _tcscat (tmp, _T("/"));
+  }
+  _tcscat (tmp, mask);
+  DebOut("tmp: %s\n", tmp);
+#else
+  strcpy(tmp, name);
+#endif
+
+  mod = xmalloc (struct my_opendir_s, 1);
+  if(!mod) return NULL;
+
+  mod->h=(struct FileInfoBlock *) AllocDosObject(DOS_FIB, TAG_END);
+  if(!mod->h) goto ERROR;
+
+  mod->lock=Lock(tmp, ACCESS_READ); /* TODO: ACCESS_READ or ACCESS_WRITE!? */
+  if(!mod->lock) {
+    DebOut("unable to lock: %s\n", tmp);
+    goto ERROR;
+  }
+
+  if(!Examine(mod->lock, mod->h)) {
+    DebOut("Examine failed!\n");
+    goto ERROR;
+  }
+
+  if(!(mod->h->fib_DirEntryType > 0 )) {
+    DebOut("%s is NOT a directory!\n", tmp);
+    goto ERROR;
+  }
+
+  if(!ExNext(mod->lock, mod->h)) {
+    DebOut("ExNext failed!\n");
+    goto ERROR;
+  }
+
+  mod->first = 1;
+
+  DebOut("ok\n");
+
+  return mod;
+ERROR:
+
+  my_closedir(mod);
+  return NULL;
+}
+
+struct my_opendir_s *my_opendir (const TCHAR *name) {
+
+  return my_opendir (name, "");
+}
+
+
+/******************************************************************
+ * fsdb_fill_file_attrs
+ *
+ * For an a_inode we have newly created based on a filename we 
+ * found on the native fs, fill in information about this 
+ * file/directory.
+ *
+ ******************************************************************/
+int fsdb_fill_file_attrs (a_inode *base, a_inode *aino) {
+  struct FileInfoBlock *fib=NULL;
+  struct ExAllControl *eac=NULL;
+  BPTR lock=0;
+  BPTR lock2=0;
+  struct ExAllData *buffer=NULL;
+  int ret=0;
+
+  DebOut("%lx %lx\n", base, aino);
+
+  DebOut("aino->dir: %s\n", aino->dir);
+  DebOut("aino->nname: %s\n", aino->nname);
+
+  fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, TAG_END);
+  if(!fib) return 0;
+
+  lock=Lock(aino->nname, SHARED_LOCK);
+  if(!lock) goto ERROR;
+
+  if (!Examine(lock, fib)) goto ERROR;
+
+  if(fib->fib_DirEntryType>0) {
+    aino->dir=1;
+    DebOut("=> directory\n");
+    eac=(struct ExAllControl *) AllocDosObject(DOS_EXALLCONTROL, TAG_END);
+    if(!eac) goto ERROR;
+    buffer=(struct ExAllData *) AllocVec(4096, MEMF_CLEAR);
+    lock2=Lock(aino->nname, SHARED_LOCK);
+    if(ExAll(lock2, (struct ExAllData *) buffer, sizeof(buffer)-1, ED_COMMENT, eac)) {
+#warning fix this, always fails on hosted
+      DebOut("ExAll failed!?\n");
+    }
+    else {
+      if(buffer->ed_Type==ST_SOFTLINK) {
+        DebOut("SoftLink detected!\n");
+        aino->softlink=1;
+      }
+    }
+  }
+  ret=1;
+
+#warning TODO!!!: care for base and rest! 
+  /*
+   * rest:
+   * aino->amigaos_mode=
+   * aino->comment=
+   * create_uaefsdb (aino, fsdb, mode);
+   * write_uaefsdb (aino->nname, fsdb);
+   */
+
+ERROR:
+  if(buffer) FreeVec(buffer);
+  if(eac) FreeDosObject(DOS_EXALLCONTROL, eac);
+  if(fib) FreeDosObject(DOS_FIB, fib);
+  if(lock) UnLock(lock);
+  if(lock2) UnLock(lock2);
+
+  return ret;
+}
