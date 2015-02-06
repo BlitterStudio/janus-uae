@@ -23,7 +23,7 @@
  *
  ************************************************************************/
 
-//#define OLI_DEBUG
+#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -62,26 +62,6 @@ int debuggable(void)
 #endif
 
 int init_sound (void)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
-my_opendir_s *my_opendir (const TCHAR *name, const TCHAR *mask) 
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
-my_opendir_s *my_opendir (const TCHAR *name) 
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
-
-
-int my_readdir (struct my_opendir_s *mod, TCHAR *name)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
@@ -151,12 +131,6 @@ void getfilepart (TCHAR *out, int size, const TCHAR *path)
 }
 
 void getpathpart (TCHAR *outpath, int size, const TCHAR *inpath)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
-void my_closedir (struct my_opendir_s *mod)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
@@ -323,7 +297,7 @@ void console_out_f (const TCHAR *format,...)
 void sampler_vsync (void)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
+  //TODO();
 }
 
 void fetch_datapath (TCHAR *out, int size)
@@ -364,7 +338,7 @@ int handle_msgpump (void)
       Permit();
     }
   }
-  TODO();
+  //TODO();
 	return 0;
 }
 
@@ -504,7 +478,7 @@ uae_u32 next_iword_030ce (void)
 void serial_check_irq (void)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
+  //TODO();
 }
 
 void serial_uartbreak (int v)
@@ -546,12 +520,6 @@ int uaeser_setparams (void *vsd, int baud, int rbuffer, int bits, int sbits, int
 }
 
 bool vsync_switchmode (int hz, int oldhz)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
-int fsdb_name_invalid (const char *n) 
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
@@ -655,7 +623,7 @@ void serial_hsynchandler (void)
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   if((serial_hsynchandler_count % 2000) == 0) {
     STUBD(bug("serial_hsynchandler was called %d times\n", serial_hsynchandler_count));
-    TODO();
+    //TODO();
   }
 
   serial_hsynchandler_count++;
@@ -938,7 +906,7 @@ void ahi_hsync (void)
 
   if((ahi_hsync_count % 2000) == 0) {
     STUBD(bug("ahi_hsync was called %d times\n", ahi_hsync_count));
-    TODO();
+    //TODO();
   }
 
   ahi_hsync_count++;
@@ -983,7 +951,7 @@ uae_u8 *save_dmac (int *len, uae_u8 *dstptr)
 void unlockscr (void) 
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
+  //TODO();
 }
 
 
@@ -1007,12 +975,6 @@ SRes XzUnpacker_Create(CXzUnpacker *p, ISzAlloc *alloc)
 	TODO();
 }
 void XzUnpacker_Free(CXzUnpacker *p) 
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-	TODO();
-}
-
-int fsdb_fill_file_attrs (a_inode *base, a_inode *aino)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
 	TODO();
@@ -1089,7 +1051,7 @@ void save_zram(int* a, int b)  {
 
 void clipboard_vsync (void) {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
+  //TODO();
 }
 
 void pause_sound_buffer (void) {
@@ -1109,12 +1071,12 @@ void update_sound(double foo) {
 
 void unlockscr (struct vidbuffer *vb) {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
+  //TODO();
 }
 
 int lockscr (struct vidbuffer *vb, bool fullupdate) {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
+  //TODO();
   return 1;
 }
 
@@ -1203,12 +1165,6 @@ void ethernet_close (struct netdriverdata *ndd, void *vsd) {
 void ethernet_trigger (void *vsd) {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
-}
-
-int fsdb_name_invalid_dir (const TCHAR *n) {
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-  return TRUE;
 }
 
 void vsync_busywait_start (void) {
