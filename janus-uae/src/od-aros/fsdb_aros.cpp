@@ -404,10 +404,7 @@ struct my_opendir_s *my_opendir (const TCHAR *name) {
  ******************************************************************/
 int fsdb_fill_file_attrs (a_inode *base, a_inode *aino) {
   struct FileInfoBlock *fib=NULL;
-  struct ExAllControl *eac=NULL;
   BPTR lock=0;
-  BPTR lock2=0;
-  struct ExAllData *buffer=NULL;
   int ret=0;
 
   DebOut("%lx %lx\n", base, aino);
@@ -424,40 +421,59 @@ int fsdb_fill_file_attrs (a_inode *base, a_inode *aino) {
   if (!Examine(lock, fib)) goto ERROR;
 
   if(fib->fib_DirEntryType>0) {
-    aino->dir=1;
     DebOut("=> directory\n");
-    eac=(struct ExAllControl *) AllocDosObject(DOS_EXALLCONTROL, TAG_END);
-    if(!eac) goto ERROR;
-    buffer=(struct ExAllData *) AllocVec(4096, MEMF_CLEAR);
-    lock2=Lock(aino->nname, SHARED_LOCK);
-    if(ExAll(lock2, (struct ExAllData *) buffer, sizeof(buffer)-1, ED_COMMENT, eac)) {
-#warning fix this, always fails on hosted
-      DebOut("ExAll failed!?\n");
-    }
-    else {
-      if(buffer->ed_Type==ST_SOFTLINK) {
-        DebOut("SoftLink detected!\n");
-        aino->softlink=1;
-      }
+    aino->dir=1;
+    if(fib->fib_DirEntryType==ST_SOFTLINK) {
+      DebOut("SoftLink detected!\n");
+      aino->softlink=2; /* 1 hardlink, 2 softlink ? */
     }
   }
+
+  if(fib->fib_Comment) {
+    DebOut("comment: >%s<\n", fib->fib_Comment);
+    aino->comment=(TCHAR *) strdup((const char *)fib->fib_Comment);
+  }
+
+  /* most likely, we could just copy it */
+  if((fib->fib_Protection & FIBF_READ) == 0) {
+    aino->amigaos_mode|=A_FIBF_READ;
+  }
+  if((fib->fib_Protection & FIBF_WRITE) == 0) {
+    aino->amigaos_mode|=A_FIBF_WRITE;
+  }
+  if((fib->fib_Protection & FIBF_DELETE) == 0) {
+    aino->amigaos_mode|=A_FIBF_DELETE;
+  }
+  if((fib->fib_Protection & FIBF_EXECUTE) == 0) {
+    aino->amigaos_mode|=A_FIBF_EXECUTE;
+  }
+  if((fib->fib_Protection & FIBF_ARCHIVE) == 0) {
+    aino->amigaos_mode|=A_FIBF_ARCHIVE;
+  }
+#if 0
+  if((fib->fib_Protection & FIBF_HIDDEN) == 0) {
+    aino->amigaos_mode|=A_FIBF_HIDDEN;
+  }
+#endif
+  if((fib->fib_Protection & FIBF_SCRIPT) == 0) {
+    aino->amigaos_mode|=A_FIBF_SCRIPT;
+  }
+
+  /* !? */
+#if 0
+  if (reset && (base->volflags & MYVOLUMEINFO_STREAMS)) {
+    create_uaefsdb (aino, fsdb, mode);
+    write_uaefsdb (aino->nname, fsdb);
+  }
+#endif
+    
   ret=1;
 
-#warning TODO!!!: care for base and rest! 
-  /*
-   * rest:
-   * aino->amigaos_mode=
-   * aino->comment=
-   * create_uaefsdb (aino, fsdb, mode);
-   * write_uaefsdb (aino->nname, fsdb);
-   */
+#warning TODO?: care for base and host changes! 
 
 ERROR:
-  if(buffer) FreeVec(buffer);
-  if(eac) FreeDosObject(DOS_EXALLCONTROL, eac);
   if(fib) FreeDosObject(DOS_FIB, fib);
   if(lock) UnLock(lock);
-  if(lock2) UnLock(lock2);
 
   return ret;
 }
