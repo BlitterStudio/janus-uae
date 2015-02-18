@@ -67,12 +67,6 @@ int init_sound (void)
   TODO();
 }
 
-int same_aname (const TCHAR *an1, const TCHAR *an2)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
 #if 0
 void screenshot (int mode) 
 {
@@ -838,24 +832,11 @@ TCHAR* buf_out (TCHAR *buffer, int *bufsize, const TCHAR *format, ...)
   TODO();
 }
 
-unsigned int my_read (struct my_openfile_s *mos, void *b, unsigned int size) 
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
 unsigned int my_write (struct my_openfile_s *mos, void *b, unsigned int size) 
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
 }
-
-struct my_openfile_s *my_open (const TCHAR *name, int flags) 
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
 
 char *ua_copy (char *dst, int maxlen, const TCHAR *src)
 {
@@ -864,12 +845,6 @@ char *ua_copy (char *dst, int maxlen, const TCHAR *src)
 }
 
 void my_close (struct my_openfile_s *mos)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
-uae_s64 int my_lseek (struct my_openfile_s *mos, uae_s64 int offset, int whence)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
