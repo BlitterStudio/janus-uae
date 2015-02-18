@@ -29,7 +29,7 @@
 #include <SDL.h>
 #include <SDL_endian.h>
 
-#define SDLGD(x)
+#define SDLGD(x) 
 
 void inputdevice_release_all_keys (void);
 
@@ -1537,11 +1537,15 @@ void graphics_notify_state (int state)
     }
 }
 
+/* see aros.cpp */
+void figure_processor_speed(void);
+
 bool handle_events (void)
 {
     SDL_Event rEvent = { SDL_NOEVENT };
     int istest = inputdevice_istest ();
     int scancode     = 0;
+    static int cnt1, cnt2;
 
     SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
@@ -1759,7 +1763,16 @@ bool handle_events (void)
 /*
     return pause_emulation != 0;
 */
-    return 0;
+
+
+	cnt1--;
+	if (cnt1 <= 0) {
+		figure_processor_speed ();
+		flush_log ();
+		cnt1 = 50 * 5;
+	}
+
+  return 0;
 }
 
 static void switch_keymaps (void)
