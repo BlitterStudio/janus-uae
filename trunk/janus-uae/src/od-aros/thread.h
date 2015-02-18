@@ -30,6 +30,8 @@
 
 #include <stdint.h>
 
+#include "sysconfig.h"
+#include "sysdeps.h"
 #include "tchar.h"
 
 #define CRITICAL_SECTION struct SignalSemaphore
@@ -44,6 +46,7 @@ extern void uae_end_thread (uae_thread_id *thread);
 extern int uae_start_thread (const TCHAR *name, void *(*f)(void *), void *arg, uae_thread_id *thread);
 extern int uae_start_thread_fast (void *(*f)(void *), void *arg, uae_thread_id *thread);
 extern void uae_set_thread_priority (uae_thread_id *, int);
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -82,6 +85,7 @@ int           fs_semaphore_try_wait(fs_semaphore *semaphore);
 
 typedef fs_semaphore *uae_sem_t;
 
+
 static inline int uae_sem_init(uae_sem_t *sem, int dummy, int init) {
    *sem = fs_semaphore_create(init);
    return (*sem == 0);
@@ -103,4 +107,9 @@ static inline int uae_sem_trywait(uae_sem_t *sem) {
 	return fs_semaphore_try_wait(*sem);
 }
 
-#endif // THREADDEP_SEM_H
+#include "commpipe.h"
+
+STATIC_INLINE void uae_wait_thread (uae_thread_id tid) {
+  TODO();
+}
+#endif // __THREAD_H__
