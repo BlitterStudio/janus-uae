@@ -23,7 +23,7 @@
  *
  ************************************************************************/
 
-#define OLI_DEBUG
+//#define OLI_DEBUG
 #include "sysconfig.h"
 
 #include <stdlib.h>
@@ -39,7 +39,7 @@
 #include "gfx.h"
 #include "picasso96_aros.h"
 #include "aros.h"
-#include "threaddep/thread.h"
+#include "thread.h"
 
 
 #define DM_DX_FULLSCREEN 1
@@ -294,6 +294,7 @@ bool render_screen (bool immediate)
    * 
    */
 
+#if 0
   if(SysBase->TDNestCnt>=0) {
     bug("ERROR: Should not be in Forbid here!!\n");
     while(SysBase->TDNestCnt>=0) {
@@ -301,6 +302,7 @@ bool render_screen (bool immediate)
       Permit();
     }
   }
+#endif
   TODO();
 #if 0
 	flushymin = 0;
