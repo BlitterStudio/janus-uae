@@ -13,7 +13,7 @@
 #include "sysdeps.h"
 
 #include "uae.h"
-#include "threaddep/thread.h"
+#include "thread.h"
 #include "aros.h"
 #include "gui_mui.h"
 #include "mui_data.h"
