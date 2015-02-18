@@ -1,10 +1,8 @@
 /************************************************************************ 
  *
- * thread.cpp
+ * Thread support
  *
- * Semaphores, Threads etc for AROS
- *
- * Copyright 2011 Oliver Brunner - aros<at>oliver-brunner.de
+ * Copyright 2015 Oliver Brunner <aros<at>oliver-brunner.de>
  *
  * This file is part of Janus-UAE.
  *
@@ -25,209 +23,12 @@
  *
  ************************************************************************/
 
-#define OLI_DEBUG
-
 #include "sysconfig.h"
 #include "sysdeps.h"
 
+#include "thread.h"
+
 #include <proto/exec.h>
-
-#include "threaddep/thread.h"
-
-#define AROS_MAX_SEM 1024
-
-typedef struct {
-  struct SignalSemaphore sigSem;
-  struct Task *owner;
-  bool init_done;
-} aros_sem;
-
-/* we use a static lookup table here for speed reasons! */
-/* TODO: protect access with a semaphore! */
-static aros_sem sem_table[AROS_MAX_SEM+1];
-
-/* sem is a ULONG * to store number in it! 
- * it seems to be ok, to call it a second time for a semaphore!
- * only if sem is NULL, alloc a new one
- */
-void uae_sem_init (uae_sem_t *sem, int manual_reset, int initial_state) {
-  struct SignalSemaphore *s;
-  ULONG nr=1; /* leave first slot empty */
-
-	DebOut("uae_sem_init(%lx, manual_reset %d, initial_state %d)\n", sem, manual_reset, initial_state);
-
-  /* test for NULL pointer */
-	if(!sem) {
-		DebOut("WARNING: sem==NULL!\n");
-		return;
-	}
-
-  if(manual_reset) {
-    write_log("FATAL: manual_reset not done!\n");
-    exit(1);
-  }
-
-  if(*sem) {
-    /* semaphore already exists */
-    DebOut("semaphore already exists (nr=%d)\n", *sem);
-    if(initial_state) {
-      DebOut("ObtainSemaphore(%lx)\n", &sem_table[nr].sigSem);
-      ObtainSemaphore(&sem_table[nr].sigSem);
-      sem_table[nr].owner=FindTask(NULL);
-    }
-    else {
-      sem_table[nr].owner=NULL;
-      ReleaseSemaphore(&sem_table[nr].sigSem);
-      DebOut("ReleaseSemaphore(%lx)\n", &sem_table[nr].sigSem);
-    }
-    return;
-  }
-
-  /* alloc new semaphore */
-  while((nr<AROS_MAX_SEM) && (sem_table[nr].init_done!=FALSE)) {
-    nr++;
-  }
-
-  if(nr==AROS_MAX_SEM) {
-    write_log("FATAL ERROR in thread.cpp: Too many Semaphores used!\n");
-    exit(1);
-  }
-
-  /* now we have found a slot */
-
-  DebOut("Init aros_sem nr %d\n", nr);
-
-  DebOut("InitSemaphore(%lx)\n", &sem_table[nr].sigSem);
-	InitSemaphore(&sem_table[nr].sigSem);
-  sem_table[nr].init_done=TRUE;
-
-	if(initial_state) {
-    DebOut("initial_state, so call ObtainSemaphore(%lx)\n", &sem_table[nr].sigSem);
-		ObtainSemaphore(&sem_table[nr].sigSem);
-    sem_table[nr].owner=FindTask(NULL);
-	}
-
-  /* return new semaphore handle */
-  *sem=nr;
-
-
-#if 0
-	if(*event) {
-		if (initial_state)
-			SetEvent (*event);
-		else
-			ResetEvent (*event);
-	} else {
-		*event = CreateEvent (NULL, manual_reset, initial_state, NULL);
-	}
-#endif
-}
-
-/*
- * In Windows this all is based on Event-Objects. They can either be signaled or not.
- * There is no nesting!
- * So for AROS this means, we won't nest either.
- * If we nest, it is save to release the semaphore again, as we hold it anyways.
- *
- */
-void uae_sem_wait (uae_sem_t *sem) {
-  ULONG nr=*sem;
-
-  DebOut("uae_sem_wait for nr %d\n", nr);
-
-	if(!sem || !(sem_table[nr].init_done)) {
-		DebOut("WARNING: sem==NULL!\n");
-		return;
-	}
-
-	DebOut("ObtainSemaphore(%lx)\n", &sem_table[nr].sigSem);
-
-	ObtainSemaphore(&sem_table[nr].sigSem);
-  DebOut("got Semaphore %lx\n", &sem_table[nr].sigSem);
-
-  /* no nesting: */
-  if(sem_table[nr].owner==FindTask(NULL)) {
-    DebOut("we already owned that one, no need to catch another..\n");
-    ReleaseSemaphore(&sem_table[nr].sigSem);
-    DebOut("released Semaphore %lx again\n", &sem_table[nr].sigSem);
-    return;
-  }
-
-  /* set new owner (safe as we now own the semaphore */
-  sem_table[nr].owner=FindTask(NULL);
-
-#if 0
-	WaitForSingleObject (*event, INFINITE);
-#endif
-}
-
-void uae_sem_post (uae_sem_t *sem) {
-  ULONG nr=*sem;
-
-	if(!sem || !(sem_table[nr].init_done)) {
-		DebOut("WARNING: sem==NULL!\n");
-		return;
-	}
-
-
-#if 0
-	SetEvent (*event);
-#endif
-
-	/* is it legal, to release a sempahore more than once !? */
-  DebOut("uae_sem_post for nr %d\n", nr);
-  /* reset owner */
-	DebOut("ReleaseSemaphore(%lx)\n", &sem_table[nr].sigSem);
-  sem_table[nr].owner=NULL;
-	ReleaseSemaphore(&sem_table[nr].sigSem);
-  DebOut("released Semaphore %lx\n", &sem_table[nr].sigSem);
-}
-
-int uae_sem_trywait (uae_sem_t *sem) {
-  ULONG nr=*sem;
-	ULONG result;
-
-#if 0
-	return WaitForSingleObject (*event, 0) == WAIT_OBJECT_0 ? 0 : -1;
-#endif
-
-	if(!sem || !(sem_table[nr].init_done)) {
-		DebOut("WARNING: sem==NULL!\n");
-		return 0;
-	}
-
-  DebOut("AttemptSemaphore(%lx)\n", &sem_table[nr].sigSem);
-	result=AttemptSemaphore(&sem_table[nr].sigSem);
-
-  if(result) {
-    DebOut("AttemptSemaphore(nr %d)=%d (return 0)\n", nr, result);
-    return 0;
-  }
-
-  DebOut("AttemptSemaphore(nr %d)=%d (return -1)\n", nr, result);
-  return -1;
-}
-
-void uae_sem_destroy (uae_sem_t *sem) {
-  ULONG nr=*sem;
-
-	DebOut("uae_sem_destroy(nr %d)\n", nr);
-
-	if(!sem) {
-		DebOut("WARNING: sem==NULL!\n");
-		return;
-	}
-
-  sem_table[nr].init_done=FALSE;
-
-	/* nothing to do here */
-#if 0
-	if (*event) {
-		CloseHandle (*event);
-		*event = NULL;
-	}
-#endif
-}
 
 /* Windows API */
 void InitializeCriticalSection(CRITICAL_SECTION *section) {
@@ -248,5 +49,273 @@ void LeaveCriticalSection(CRITICAL_SECTION *section) {
   ReleaseSemaphore(section);
 }
 
+/*
+ * taken from fs-uae (fs-uae-2.5.23dev)
+ *
+ * we don't use the thread implementaion, but we use the semaphore implementations in
+ * winuae for AROS
+ *
+ */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef __AROS__
+#define USE_SDL
+//#define USE_PTHREADS
+#define g_malloc malloc
+#define g_free free
+#endif
+
+#include <thread.h>
+//#include <fs/base.h>
+#include <stdlib.h>
+
+#ifdef USE_GLIB
+#include <glib.h>
+#endif
+
+#ifdef USE_SDL2
+#define USE_SDL
+#endif
+
+#ifdef USE_SDL
+#include <SDL.h>
+#include <SDL_thread.h>
+#endif
+
+#ifdef USE_PTHREADS
+#include <pthread.h>
+#define USE_PSEM
+#endif
+
+#ifdef USE_PSEM
+#ifndef __AROS__
+#include <semaphore.h>
+#else
+#undef USE_PSEM
+#endif
+#endif
+
+struct fs_mutex {
+#if defined(USE_PTHREADS)
+    pthread_mutex_t mutex;
+#elif defined(USE_GLIB)
+    GMutex mutex;
+#elif defined(USE_SDL)
+    SDL_mutex* mutex;
+#endif
+};
+
+struct fs_condition {
+#if defined(USE_PTHREADS)
+    pthread_cond_t condition;
+#elif defined(USE_GLIB)
+    GCond condition;
+#elif defined(USE_SDL)
+    SDL_cond* condition;
+#endif
+};
+
+struct fs_semaphore {
+#if defined(USE_PSEM)
+    sem_t semaphore;
+#elif defined(USE_SDL)
+    SDL_sem* semaphore;
+#endif
+};
+
+fs_mutex *fs_mutex_create() {
+    fs_mutex *mutex = (fs_mutex *) g_malloc(sizeof(fs_mutex));
+#if defined(USE_PTHREADS)
+    pthread_mutex_init(&mutex->mutex, NULL);
+#elif defined(USE_GLIB)
+    g_mutex_init(&mutex->mutex);
+#elif defined(USE_SDL)
+    mutex->mutex = SDL_CreateMutex();
+#else
+#error no thread support
+#endif
+    return mutex;
+}
+
+void fs_mutex_destroy(fs_mutex *mutex) {
+#if defined(USE_PTHREADS)
+    pthread_mutex_destroy(&mutex->mutex);
+#elif defined(USE_GLIB)
+    g_mutex_clear(&mutex->mutex);
+#elif defined(USE_SDL)
+    SDL_DestroyMutex(mutex->mutex);
+#else
+#error no thread support
+#endif
+    g_free(mutex);
+}
+
+int fs_mutex_lock(fs_mutex *mutex) {
+#if defined(USE_PTHREADS)
+    return pthread_mutex_lock(&mutex->mutex);
+#elif defined(USE_GLIB)
+    g_mutex_lock(&mutex->mutex);
+    return 0;
+#elif defined(USE_SDL)
+    return SDL_mutexP(mutex->mutex);
+#else
+#error no thread support
+#endif
+}
+
+int fs_mutex_unlock(fs_mutex *mutex) {
+#if defined(USE_PTHREADS)
+    return pthread_mutex_unlock(&mutex->mutex);
+#elif defined(USE_GLIB)
+    g_mutex_unlock(&mutex->mutex);
+    return 0;
+#elif defined(USE_SDL)
+    return SDL_mutexV(mutex->mutex);
+#else
+#error no thread support
+#endif
+}
+
+fs_condition *fs_condition_create(void) {
+    fs_condition *condition = (fs_condition *) g_malloc(sizeof(fs_condition));
+#if defined(USE_PTHREADS)
+    pthread_cond_init(&condition->condition, NULL);
+#elif defined(USE_GLIB)
+    g_cond_init(&condition->condition);
+#elif defined(USE_SDL)
+    condition->condition = SDL_CreateCond();
+#else
+#error no thread support
+#endif
+    return condition;
+}
+
+void fs_condition_destroy(fs_condition *condition) {
+#if defined(USE_PTHREADS)
+    pthread_cond_destroy(&condition->condition);
+#elif defined(USE_GLIB)
+    g_cond_clear(&condition->condition);
+#elif defined(USE_SDL)
+    SDL_DestroyCond(condition->condition);
+#else
+#error no thread support
+#endif
+    g_free(condition);
+}
+
+int fs_condition_wait (fs_condition *condition, fs_mutex *mutex) {
+#if defined(USE_PTHREADS)
+    return pthread_cond_wait(&condition->condition, &mutex->mutex);
+#elif defined(USE_GLIB)
+    g_cond_wait(&condition->condition, &mutex->mutex);
+    return 0;
+#elif defined(USE_SDL)
+    return SDL_CondWait(condition->condition, mutex->mutex);
+#else
+#error no thread support
+#endif
+}
+
+#ifndef __AROS__
+int64_t fs_condition_get_wait_end_time(int period) {
+#if defined(USE_GLIB)
+    return fs_get_monotonic_time() + period;
+#else
+    return fs_get_current_time() + period;
+#endif
+}
+#endif
+
+int fs_condition_wait_until(fs_condition *condition, fs_mutex *mutex,
+        int64_t end_time) {
+#if defined(USE_PTHREADS)
+    struct timespec tv;
+    tv.tv_sec = end_time / 1000000;
+    tv.tv_nsec = (end_time % 1000000) * 1000;
+    return pthread_cond_timedwait(&condition->condition, &mutex->mutex, &tv);
+#elif defined(USE_GLIB)
+    // GTimeVal tv;
+    // tv.tv_sec = end_time / 1000000;
+    // tv.tv_usec = end_time % 1000000;
+    // gboolean result = g_cond_timed_wait(
+    //         &condition->condition, &mutex->mutex, &tv);
+    gboolean result = g_cond_wait_until(
+             &condition->condition, &mutex->mutex, end_time);
+    return !result;
+#elif defined(USE_SDL)
+    // FIXME: no timed wait...
+    return SDL_CondWait(condition->condition, mutex->mutex);
+#else
+#error no thread support
+#endif
+}
+
+int fs_condition_signal(fs_condition *condition) {
+#if defined(USE_PTHREADS)
+    return pthread_cond_signal(&condition->condition);
+#elif defined(USE_GLIB)
+    g_cond_signal(&condition->condition);
+    return 0;
+#elif defined(USE_SDL)
+    return SDL_CondSignal(condition->condition);
+#else
+#error no thread support
+#endif
+}
+
+fs_semaphore *fs_semaphore_create(int value) {
+    fs_semaphore *semaphore = (fs_semaphore *) g_malloc(sizeof(fs_semaphore));
+#if defined(USE_PSEM)
+    sem_init(&semaphore->semaphore, 1, value);
+#elif defined(USE_SDL)
+    semaphore->semaphore = SDL_CreateSemaphore(value);
+#else
+#error no thread support
+#endif
+    return semaphore;
+}
+
+void fs_semaphore_destroy(fs_semaphore *semaphore) {
+#if defined(USE_PSEM)
+    sem_destroy(&semaphore->semaphore);
+#elif defined(USE_SDL)
+    SDL_DestroySemaphore(semaphore->semaphore);
+#else
+#error no thread support
+#endif
+    g_free(semaphore);
+}
+
+int fs_semaphore_post(fs_semaphore *semaphore) {
+#if defined(USE_PSEM)
+    return sem_post(&semaphore->semaphore);
+#elif defined(USE_SDL)
+    return SDL_SemPost(semaphore->semaphore);
+#else
+#error no thread support
+#endif
+}
+
+int fs_semaphore_wait(fs_semaphore *semaphore) {
+#if defined(USE_PSEM)
+    return sem_wait(&semaphore->semaphore);
+#elif defined(USE_SDL)
+    return SDL_SemWait(semaphore->semaphore);
+#else
+#error no thread support
+#endif
+}
+
+int fs_semaphore_try_wait(fs_semaphore *semaphore) {
+#if defined(USE_PSEM)
+    return sem_trywait(&semaphore->semaphore);
+#elif defined(USE_SDL)
+    return SDL_SemTryWait(semaphore->semaphore);
+#else
+#error no thread support
+#endif
+}
 
