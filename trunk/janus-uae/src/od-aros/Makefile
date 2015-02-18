@@ -199,8 +199,6 @@ COMMON_OBJS= \
 	#keyboard.o \
 #gui.o \
 
-GUI_LIB = od-aros/gui/libgui.a
-
 # build dependencies magic
 DEP_OBJS=$(COMMON_OBJS)
 
