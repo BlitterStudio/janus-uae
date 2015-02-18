@@ -1147,17 +1147,22 @@ void figure_processor_speed (void)
  */
 frame_time_t read_processor_time (void) {
 
-  unsigned long tsc_hi, tsc_lo = 0;
+  unsigned long tsc_hi, tsc_lo=0;
 
 #if defined(i386) || defined(x86_64)
-  asm volatile ("rdtsc" : "=a" (tsc_lo), "=d" (tsc_hi));
+  asm volatile ("cpuid\n"
+                "rdtsc" : "=a" (tsc_lo), "=d" (tsc_hi));
 
-    tsc_lo >>= 6;            /* crete space in 6 highest bits and       */
-    tsc_lo |= tsc_hi << 26;  /* copy the 6 lower bits from tsc_hi there */
+  //bug("[JUAE:RPT] tsc:  0x%08lx %08lx\n", tsc_hi, tsc_lo);
 
-    if (!tsc_lo)             /* never return 0 */
-        tsc_lo++;
+	tsc_lo >>= 6;            /* create space in 6 highest bits and       */
+	tsc_lo |= tsc_hi << 26;  /* copy the 6 lower bits from tsc_hi there */
 #endif
+
+	if (!tsc_lo)             /* never return 0 */
+		tsc_lo++;
+
+  //bug("[JUAE:RPT] result:        0x%08lx\n", tsc_lo);
 
   return tsc_lo;
 }
