@@ -23,6 +23,7 @@
  *
  ************************************************************************/
 
+#include <proto/utility.h>
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -105,4 +106,13 @@ WCHAR *utf8u (const char *s) {
 	}
 	
 	return strdup(s);
+}
+
+int same_aname (const TCHAR *an1, const TCHAR *an2) {
+
+  if(Stricmp(an1, an2)) {
+    return 1;
+  }
+
+  return 0;
 }
