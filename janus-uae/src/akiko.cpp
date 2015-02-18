@@ -27,6 +27,7 @@
 #include "uae.h"
 #include "custom.h"
 #include "newcpu.h"
+#include "commpipe.h"
 
 #define AKIKO_DEBUG_NVRAM 0
 #define AKIKO_DEBUG_IO 0
