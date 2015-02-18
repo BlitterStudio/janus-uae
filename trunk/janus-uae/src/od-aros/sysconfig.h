@@ -22,7 +22,13 @@
  ************************************************************************/
 
 #include <aros/cpu.h>
+
+#ifdef __AROS__
+/* not nice, but sysconfig.h is included both from native linux tools and 
+ * AROS tools. TODO: move this soemwhere else..
+ */
 #include "thread.h"
+#endif
 
 #define SUPPORT_THREADS
 #define MAX_DPATH 1000
