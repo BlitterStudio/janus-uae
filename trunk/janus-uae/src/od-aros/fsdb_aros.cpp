@@ -553,30 +553,8 @@ int fsdb_fill_file_attrs (a_inode *base, a_inode *aino) {
     aino->comment=(TCHAR *) strdup((const char *)fib->fib_Comment);
   }
 
-  /* most likely, we could just copy it */
-  if((fib->fib_Protection & FIBF_READ) == 0) {
-    aino->amigaos_mode|=A_FIBF_READ;
-  }
-  if((fib->fib_Protection & FIBF_WRITE) == 0) {
-    aino->amigaos_mode|=A_FIBF_WRITE;
-  }
-  if((fib->fib_Protection & FIBF_DELETE) == 0) {
-    aino->amigaos_mode|=A_FIBF_DELETE;
-  }
-  if((fib->fib_Protection & FIBF_EXECUTE) == 0) {
-    aino->amigaos_mode|=A_FIBF_EXECUTE;
-  }
-  if((fib->fib_Protection & FIBF_ARCHIVE) == 0) {
-    aino->amigaos_mode|=A_FIBF_ARCHIVE;
-  }
-#if 0
-  if((fib->fib_Protection & FIBF_HIDDEN) == 0) {
-    aino->amigaos_mode|=A_FIBF_HIDDEN;
-  }
-#endif
-  if((fib->fib_Protection & FIBF_SCRIPT) == 0) {
-    aino->amigaos_mode|=A_FIBF_SCRIPT;
-  }
+  aino->amigaos_mode=fib->fib_Protection;
+  DebOut("protection: %04x\n", fib->fib_Protection);
 
   /* !? */
 #if 0
