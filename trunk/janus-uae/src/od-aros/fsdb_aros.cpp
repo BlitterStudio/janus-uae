@@ -2,7 +2,7 @@
  *
  * AROS specific file system functions
  *
- * Copyright 2011       Oliver Brunner - aros<at>oliver-brunner.de
+ * Copyright 2015       Oliver Brunner - aros<at>oliver-brunner.de
  *
  * This file is part of Janus-UAE.
  *
@@ -23,6 +23,7 @@
  *
  ************************************************************************/
 
+#define DEBUG 1
 #include <stdio.h>
 #include <proto/dos.h>
 
@@ -129,31 +130,67 @@ bool my_stat (const TCHAR *name, struct mystat *statbuf) {
   BPTR lock;
   bool result=FALSE;
 
-    bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, name);
-    bug("[JUAE:A-FSDB] %s: statbuf @ 0x%p\n", __PRETTY_FUNCTION__, statbuf);
+  D(bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, name));
+  D(bug("[JUAE:A-FSDB] %s: statbuf @ 0x%p\n", __PRETTY_FUNCTION__, statbuf));
 
   lock=Lock(name, SHARED_LOCK);
   if(!lock) {
-    bug("[JUAE:A-FSDB] %s: failed to lock entry\n", __PRETTY_FUNCTION__);
-
+    bug("[JUAE:A-FSDB] %s: failed to lock entry %s\n", __PRETTY_FUNCTION__, name);
     goto exit;
   }
 
   if(!(fib=(struct FileInfoBlock *) AllocDosObject(DOS_FIB, NULL)) || !Examine(lock, fib)) {
     bug("[JUAE:A-FSDB] %s: failed to examine lock @ 0x%p [fib @ 0x%p]\n", __PRETTY_FUNCTION__, lock, fib);
-
     goto exit;
   }
 
+  D(bug("[JUAE:A-FSDB] %s: fib_FileName %s\n", __PRETTY_FUNCTION__, fib->fib_FileName));
+  D(bug("[JUAE:A-FSDB] %s: fib_Protection : 0x%04x\n", __PRETTY_FUNCTION__, fib->fib_Protection));
   statbuf->size=fib->fib_Size;
-  if(fib->fib_DiskKey) statbuf->mode |= FILEFLAG_DIR;
-  /* fib_Protection: active-low, i.e. not set means the action is allowed! (who invented this !??) */
-  if(! (fib->fib_Protection & FIBF_READ))    statbuf->mode |= FILEFLAG_WRITE;
-  if(! (fib->fib_Protection & FIBF_WRITE))   statbuf->mode |= FILEFLAG_READ;
-  if(! (fib->fib_Protection & FIBF_EXECUTE)) statbuf->mode |= FILEFLAG_EXECUTE;
-  if(! (fib->fib_Protection & FIBF_ARCHIVE)) statbuf->mode |= FILEFLAG_ARCHIVE;
-  if(! (fib->fib_Protection & FIBF_PURE))    statbuf->mode |= FILEFLAG_PURE;
-  if(! (fib->fib_Protection & FIBF_SCRIPT))  statbuf->mode |= FILEFLAG_SCRIPT;
+
+  statbuf->mode=0;
+  if(fib->fib_DiskKey) {
+    D(bug("[JUAE:A-FSDB] %s: %s FILEFLAG_DIR\n", __PRETTY_FUNCTION__, name));
+    statbuf->mode |= FILEFLAG_DIR;
+  }
+
+#ifdef DEBUG
+  {
+    char flags[8];
+    flags[0] = fib->fib_Protection & FIBF_SCRIPT  ? 's' : '-';
+    flags[1] = fib->fib_Protection & FIBF_PURE    ? 'p' : '-';
+    flags[2] = fib->fib_Protection & FIBF_ARCHIVE ? 'a' : '-';
+
+    // Active when unset!
+    flags[3] = fib->fib_Protection & FIBF_READ    ? '-' : 'r';
+    flags[4] = fib->fib_Protection & FIBF_WRITE   ? '-' : 'w';
+    flags[5] = fib->fib_Protection & FIBF_EXECUTE ? '-' : 'e';
+    flags[6] = fib->fib_Protection & FIBF_DELETE  ? '-' : 'd';
+    flags[7] = 0x00;
+    bug("[JUAE:A-FSDB] %s: %s protection: %s\n", __PRETTY_FUNCTION__, name, flags);
+  }
+#endif
+
+  /* fib_Protection: active-low, i.e. not set means active! (who invented this !??) */
+  if(!(fib->fib_Protection & FIBF_READ))    {
+    statbuf->mode |= FILEFLAG_READ;
+  }
+  if(!(fib->fib_Protection & FIBF_WRITE))   {
+    statbuf->mode |= FILEFLAG_WRITE;
+  }
+  if(!(fib->fib_Protection & FIBF_EXECUTE)) {
+    statbuf->mode |= FILEFLAG_EXECUTE;
+  }
+   /* FIBF_ARCHIVE, FIBF_PURE and FIBF_SCRIPT are active when set */
+  if(fib->fib_Protection & FIBF_ARCHIVE) {
+    statbuf->mode |= FILEFLAG_ARCHIVE;
+  }
+  if(fib->fib_Protection & FIBF_PURE)    {
+    statbuf->mode |= FILEFLAG_PURE;
+  }
+  if(fib->fib_Protection & FIBF_SCRIPT)  {
+    statbuf->mode |= FILEFLAG_SCRIPT;
+  }
 
   statbuf->mtime.tv_sec = fib->fib_Date.ds_Days*24 + fib->fib_Date.ds_Minute*60 + fib->fib_Date.ds_Tick*50;
   statbuf->mtime.tv_usec= 0;
