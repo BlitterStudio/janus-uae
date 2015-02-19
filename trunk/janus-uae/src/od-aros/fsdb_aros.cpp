@@ -131,7 +131,6 @@ bool my_stat (const TCHAR *name, struct mystat *statbuf) {
   bool result=FALSE;
 
   D(bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, name));
-  D(bug("[JUAE:A-FSDB] %s: statbuf @ 0x%p\n", __PRETTY_FUNCTION__, statbuf));
 
   lock=Lock(name, SHARED_LOCK);
   if(!lock) {
@@ -144,8 +143,6 @@ bool my_stat (const TCHAR *name, struct mystat *statbuf) {
     goto exit;
   }
 
-  D(bug("[JUAE:A-FSDB] %s: fib_FileName %s\n", __PRETTY_FUNCTION__, fib->fib_FileName));
-  D(bug("[JUAE:A-FSDB] %s: fib_Protection : 0x%04x\n", __PRETTY_FUNCTION__, fib->fib_Protection));
   statbuf->size=fib->fib_Size;
 
   statbuf->mode=0;
@@ -321,12 +318,12 @@ bool my_resolvesoftlink(TCHAR *linkfile, int size) {
  * be valid.
  ******************************************************************/
 int fsdb_name_invalid (const TCHAR *n) {
-  DebOut("name: %s is ok\n", n);
+
   return FALSE;
 }
 
 int fsdb_name_invalid_dir (const TCHAR *n) {
-  DebOut("name: %s is ok\n", n);
+
   return FALSE;
 }
 
