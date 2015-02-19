@@ -158,6 +158,8 @@ bool my_stat (const TCHAR *name, struct mystat *statbuf) {
   statbuf->mtime.tv_sec = fib->fib_Date.ds_Days*24 + fib->fib_Date.ds_Minute*60 + fib->fib_Date.ds_Tick*50;
   statbuf->mtime.tv_usec= 0;
 
+  result=TRUE;
+
 exit:
   if(lock) UnLock(lock);
   if(fib) FreeDosObject(DOS_FIB, fib);
@@ -303,6 +305,10 @@ struct my_opendir_s {
   int first;
 };
 
+struct my_openfile_s {
+  BPTR lock;
+};
+
 /* return next dir entry */
 int my_readdir (struct my_opendir_s *mod, TCHAR *name) {
 
@@ -324,6 +330,82 @@ void my_closedir (struct my_opendir_s *mod) {
   if(mod->h) FreeDosObject(DOS_FIB, mod->h);
   if(mod->lock) UnLock(mod->lock);
   if(mod) free(mod);
+}
+
+struct my_openfile_s *my_open (const TCHAR *name, int flags) {
+  struct my_openfile_s *mos;
+  BPTR h;
+  TCHAR path[MAX_DPATH];
+  LONG access_mode=MODE_OLDFILE;
+
+
+  mos=(struct my_openfile_s *) AllocVec(sizeof(struct my_openfile_s), MEMF_CLEAR);
+  if (!mos) return NULL;
+
+  DebOut("mos: %lx  name: %s, flags: %lx\n",mos ,name, flags);
+
+  if (flags & O_RDONLY) {
+    access_mode=MODE_OLDFILE;
+  }
+  else if(flags & O_TRUNC)  {
+    access_mode=MODE_NEWFILE;
+  }
+  else if(flags & O_WRONLY) {
+    access_mode=MODE_READWRITE;
+  }
+  else if(flags & O_RDWR) {
+    access_mode=MODE_READWRITE;
+  }
+  else {
+    DebOut("ERROR: strange flags!?\n");
+  }
+
+  h=Open(name, access_mode);
+
+  if(!h) {
+    FreeVec(mos);
+    return NULL;
+  }
+
+  mos->lock=h;
+  return mos;
+}
+
+uae_s64 int my_lseek (struct my_openfile_s *mos, uae_s64 int offset, int whence) {
+  uae_s64 int ret;
+  LONG old;
+
+  DebOut("mos: %lx offset: %d whence: %d\n", mos, offset, whence);
+
+  if(!mos->lock) {
+    DebOut("ERROR: no lock!\n");
+    exit(1);
+  }
+
+  switch(whence) {
+    case SEEK_CUR:
+      return (uae_s64 int) Seek(mos->lock, offset, OFFSET_CURRENT);
+    case SEEK_SET:
+      return (uae_s64 int) Seek(mos->lock, offset, OFFSET_BEGINNING);
+    case SEEK_END:
+      return (uae_s64 int) Seek(mos->lock, offset, OFFSET_END);
+  }
+
+  DebOut("ERROR: unknown whence %d\n", whence);
+  return -1;
+}
+
+unsigned int my_read (struct my_openfile_s *mos, void *b, unsigned int size) {
+
+  LONG r;
+  DebOut("mos: %lx\n", mos);
+
+  if(!mos->lock) {
+    DebOut("ERROR: no lock!\n");
+    exit(1);
+  }
+
+  return Read(mos->lock, b, size);
 }
 
 
