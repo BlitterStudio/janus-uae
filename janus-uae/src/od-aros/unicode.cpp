@@ -23,6 +23,7 @@
  *
  ************************************************************************/
 
+//#define OLI_DEBUG
 #include <proto/utility.h>
 
 #include "sysconfig.h"
@@ -52,7 +53,7 @@ char *au_fs_copy (char *dst, int maxlen, const char *src)
 {
 	int i;
 
-  DebOut("src: %s, len %d\n", src, maxlen);
+  //DebOut("src: %s, len %d\n", src, maxlen);
 
 	for (i = 0; src[i] && i < maxlen - 1; i++)
 		dst[i] = src[i];
@@ -74,7 +75,7 @@ char *ua_fs (const WCHAR *s, int defchar) {
   BOOL dc;
   char def = 0;
 
-  DebOut("s: %s, defchar %d\n", s, defchar);
+  //DebOut("s: %s, defchar %d\n", s, defchar);
 
   if (s == NULL) {
     return NULL;
@@ -93,7 +94,7 @@ char *ua_fs (const WCHAR *s, int defchar) {
     }
   }
 
-  DebOut("return: %s\n", d);
+  //DebOut("return: %s\n", d);
   return d;
 }
 
@@ -111,8 +112,8 @@ WCHAR *utf8u (const char *s) {
 int same_aname (const TCHAR *an1, const TCHAR *an2) {
 
   if(Stricmp(an1, an2)) {
-    return 1;
+    return 0;
   }
 
-  return 0;
+  return 1;
 }
