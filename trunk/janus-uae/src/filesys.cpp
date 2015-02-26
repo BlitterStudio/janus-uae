@@ -37,8 +37,8 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
-#include "threaddep/thread.h"
 #include "options.h"
+#include "threaddep/thread.h"
 #include "uae.h"
 #include "memory.h"
 #include "custom.h"
@@ -75,7 +75,7 @@
 #endif
 
 #define TRACING_ENABLED 1
-int log_filesys = 0;
+int log_filesys = 4;
 
 #if TRACING_ENABLED
 #if 0
@@ -213,7 +213,6 @@ static struct uaedev_mount_info mountinfo;
 int nr_units (void)
 {
 	int i, cnt = 0;
-  DebOut("entered\n");
 	for (i = 0; i < MAX_FILESYSTEM_UNITS; i++) {
 		if (mountinfo.ui[i].open > 0)
 			cnt++;
@@ -224,7 +223,6 @@ int nr_units (void)
 int nr_directory_units (struct uae_prefs *p)
 {
 	int i, cnt = 0;
-  DebOut("entered\n");
 	if (p) {
 		for (i = 0; i < p->mountitems; i++) {
 			if (p->mountconfig[i].ci.controller == 0)
@@ -236,36 +234,35 @@ int nr_directory_units (struct uae_prefs *p)
 				cnt++;
 		}
 	}
+  DebOut("cnt: %d\n", cnt);
 	return cnt;
 }
 
 static int is_virtual (int unit_no)
 {
 	int t = is_hardfile (unit_no);
-  DebOut("entered\n");
 	return t == FILESYS_VIRTUAL || t == FILESYS_CD;
 }
 
 int is_hardfile (int unit_no)
 {
-  DebOut("unit_no: %d\n", unit_no);
 	if (mountinfo.ui[unit_no].volname || mountinfo.ui[unit_no].wasisempty || mountinfo.ui[unit_no].unknown_media) {
     if (unit_no >= cd_unit_offset && unit_no < cd_unit_offset + cd_unit_number) {
-      DebOut("FILESYS_CD\n");
+      DebOut("unit %d (%s): FILESYS_CD\n", unit_no, mountinfo.ui[unit_no].volname);
 			return FILESYS_CD;
     }
-    DebOut("FILESYS_VIRTUAL\n");
+    //DebOut("unit %d (%s): FILESYS_VIRTUAL\n", unit_no, mountinfo.ui[unit_no].volname);
 		return FILESYS_VIRTUAL;
 	}
 	if (mountinfo.ui[unit_no].hf.ci.sectors == 0) {
 		if (mountinfo.ui[unit_no].hf.flags & 1) {
-      DebOut("FILESYS_HARDDRIVE\n");
+      DebOut("unit %d (%s): FILESYS_HARDDRIVE\n", unit_no, mountinfo.ui[unit_no].volname);
 			return FILESYS_HARDDRIVE;
     }
-    DebOut("FILESYS_HARDFILE_RDB\n");
+    DebOut("unit %d (%s): FILESYS_HARDFILE_RDB\n", unit_no, mountinfo.ui[unit_no].volname);
 		return FILESYS_HARDFILE_RDB;
 	}
-  DebOut("FILESYS_HARDFILE\n");
+  DebOut("unit %d (%s): FILESYS_HARDFILE\n", unit_no, mountinfo.ui[unit_no].volname);
 	return FILESYS_HARDFILE;
 }
 
@@ -440,11 +437,13 @@ int get_filesys_unitconfig (struct uae_prefs *p, int index, struct mountedinfo *
 
 static void stripsemicolon (TCHAR *s)
 {
-  DebOut("entered\n");
+  DebOut("entered (%s)\n", s);
 	if (!s)
 		return;
 	while (_tcslen(s) > 0 && s[_tcslen(s) - 1] == ':')
 		s[_tcslen(s) - 1] = 0;
+
+  DebOut("return: %s\n", s);
 }
 static void stripspace (TCHAR *s)
 {
@@ -469,11 +468,12 @@ static void striplength (TCHAR *s, int len)
 static void fixcharset (TCHAR *s)
 {
 	char tmp[MAX_DPATH];
-  DebOut("entered\n");
+  DebOut("entered (%s)\n", s);
 	if (!s)
 		return;
 	ua_fs_copy (tmp, MAX_DPATH, s, '_');
 	au_fs_copy (s, strlen (tmp) + 1, tmp);
+  DebOut("return: %s\n", s);
 }
 
 TCHAR *validatevolumename (TCHAR *s)
@@ -486,11 +486,12 @@ TCHAR *validatevolumename (TCHAR *s)
 }
 TCHAR *validatedevicename (TCHAR *s)
 {
-  DebOut("entered\n");
+  DebOut("entered (%s)\n", s);
 	stripsemicolon (s);
 	stripspace (s);
 	fixcharset (s);
 	striplength (s, 30);
+  DebOut("return: %s\n", s);
 	return s;
 }
 
@@ -545,6 +546,7 @@ TCHAR *filesys_createvolname (const TCHAR *volname, const TCHAR *rootdir, const 
 	}
 	validatevolumename (nvol);
 	xfree (p);
+  DebOut("nvol: %s\n", nvol);
 	return nvol;
 }
 
@@ -801,7 +803,7 @@ void filesys_addexternals (void);
 static void allocuci (struct uae_prefs *p, int nr, int idx, int unitnum)
 {
 	struct uaedev_config_data *uci = &p->mountconfig[nr];
-  DebOut("entered\n");
+  DebOut("entered (nr %d, idx %d, unitnum %d)\n", nr, idx, unitnum);
 	if (idx >= 0) {
 		UnitInfo *ui;
 		uci->configoffset = idx;
@@ -815,7 +817,6 @@ static void allocuci (struct uae_prefs *p, int nr, int idx, int unitnum)
 }
 static void allocuci (struct uae_prefs *p, int nr, int idx)
 {
-  DebOut("entered\n");
 	allocuci (p, nr, idx, -1);
 }
 
@@ -861,7 +862,7 @@ static void initialize_mountinfo (void)
 	}
 
 	for (nr = 0; nr < currprefs.mountitems; nr++) {
-    DebOut("============ %d =============\n", nr);
+    DebOut("==========vv %d vv===========\n", nr);
 		struct uaedev_config_data *uci = &currprefs.mountconfig[nr];
 		if (uci->ci.controller == HD_CONTROLLER_UAE) {
 			if (uci->ci.type == UAEDEV_TAPE) {
@@ -874,6 +875,7 @@ static void initialize_mountinfo (void)
 				}
 			}
 		}
+    DebOut("==========^^ %d ^^===========\n", nr);
 	}
 
 	for (nr = 0; nr < currprefs.mountitems; nr++) {
@@ -949,9 +951,9 @@ static void free_mountinfo (void)
 struct hardfiledata *get_hardfile_data (int nr)
 {
 	UnitInfo *uip = mountinfo.ui;
-  DebOut("entered\n");
-	if (nr < 0 || nr >= MAX_FILESYSTEM_UNITS || uip[nr].open == 0 || is_virtual (nr))
+	if (nr < 0 || nr >= MAX_FILESYSTEM_UNITS || uip[nr].open == 0 || is_virtual (nr)) {
 		return 0;
+  }
 	return &uip[nr].hf;
 }
 
@@ -1369,7 +1371,6 @@ static Unit*
 	find_unit (uaecptr port)
 {
 	Unit* u;
-  DebOut("entered\n");
 	for (u = units; u; u = u->next)
 		if (u->port == port)
 			break;
@@ -1510,7 +1511,7 @@ static void set_volume_name (Unit *unit, struct mytimeval *tv)
 	int i;
 	char *s;
 
-  DebOut("entered\n");
+  DebOut("entered(unit->ui.volname: %s)\n", unit->ui.volname);
 
 	s = ua_fs (unit->ui.volname, -1);
 	namelen = strlen (s);
@@ -2393,6 +2394,7 @@ oh_dear:
 
 static int fill_file_attrs (Unit *u, a_inode *base, a_inode *c)
 {
+  DebOut("name: %s\n", c->nname);
 	if (u->volflags & MYVOLUMEINFO_ARCHIVE) {
 		int isdir, flags;
 		TCHAR *comment;
@@ -2568,15 +2570,21 @@ static a_inode *lookup_child_aino (Unit *unit, a_inode *base, TCHAR *rel, int *e
 		return 0;
 	}
 
+  //DebOut("rel %s \n", rel);
+
 	while (c != 0) {
 		int l1 = _tcslen (c->aname);
+    //DebOut("c->aname: %s\n", c->aname);
 		if (l0 <= l1 && same_aname (rel, c->aname + l1 - l0)
 			&& (l0 == l1 || c->aname[l1-l0-1] == '/') && c->mountcount == unit->mountcount)
 			break;
 		c = c->sibling;
 	}
+  //DebOut("c: %lx\n", c);
 	if (c != 0)
 		return c;
+
+  //DebOut("2..\n");
 	c = new_child_aino (unit, base, rel);
 	if (c == 0)
 		*err = ERROR_OBJECT_NOT_AROUND;
@@ -2644,13 +2652,15 @@ static a_inode *get_aino (Unit *unit, a_inode *base, const TCHAR *rel, int *err)
 	aino_test (base);
 
 	*err = 0;
-	TRACE((_T("get_path(%s,%s)\n"), base->aname, rel));
+	//TRACE((_T("get_path(%s,%s)\n"), base->aname, rel));
 
 	/* root-relative path? */
 	for (i = 0; rel[i] && rel[i] != '/' && rel[i] != ':'; i++)
 		;
 	if (':' == rel[i])
 		rel += i+1;
+
+  //DebOut("rel: %s\n", rel);
 
 	tmp = my_strdup (rel);
 	p = tmp;
@@ -2694,6 +2704,7 @@ static a_inode *get_aino (Unit *unit, a_inode *base, const TCHAR *rel, int *err)
 		}
 	}
 	xfree (tmp);
+  //DebOut("curr: %lx\n");
 	return curr;
 }
 
@@ -2868,8 +2879,11 @@ static void filesys_start_thread (UnitInfo *ui, int nr)
 	if (is_virtual (nr)) {
 		ui->unit_pipe = xmalloc (smp_comm_pipe, 1);
 		ui->back_pipe = xmalloc (smp_comm_pipe, 1);
+    DebOut("init unit_pipe\n");
 		init_comm_pipe (ui->unit_pipe, 100, 3);
+    DebOut("init back_pipe\n");
 		init_comm_pipe (ui->back_pipe, 100, 1);
+    DebOut("start thread\n");
 		uae_start_thread (_T("UAE filesys"), filesys_thread, (void *)ui, &ui->tid);
 	}
 #endif
@@ -3182,9 +3196,13 @@ static a_inode *find_aino (Unit *unit, uaecptr lock, const TCHAR *name, int *err
 {
 	a_inode *a;
 
+  DebOut("name: %s\n", name);
+
 	if (lock) {
+    //DebOut("lock!\n");
 		a_inode *olda = aino_from_lock (unit, lock);
 		if (olda == 0) {
+      //DebOut("olda == 0\n");
 			/* That's the best we can hope to do. */
 			a = get_aino (unit, &unit->rootnode, name, err);
 		} else {
@@ -3401,9 +3419,17 @@ static void
 	if (err == 0 && a->softlink) {
 		err = test_softlink (a);
 	}
+  //DebOut("err: %d\n", err);
+  //DebOut("a->elock: %d\n",a->elock);
+  //DebOut("mode: %d (SHARED_LOCK is %d)\n", mode, SHARED_LOCK);
+  //DebOut("a->shlock: %d\n",a->shlock);
+
 	if (err == 0 && (a->elock || (mode != SHARED_LOCK && a->shlock > 0))) {
 		err = ERROR_OBJECT_IN_USE;
 	}
+
+  //DebOut("err: %d\n", err);
+
 	/* Lock() doesn't do access checks. */
 	if (err != 0) {
 		PUT_PCK_RES1 (packet, DOS_FALSE);
@@ -3806,6 +3832,9 @@ static void
 		put_byte (info + i, 0), i++;
 	xfree (x2);
 
+DebOut("fsdb_can: %d\n", fsdb_can);
+DebOut("aino->amigaos_mode: %04x\n", aino->amigaos_mode);
+DebOut("fsdb_mode_supported: %lx\n", fsdb_mode_supported(aino));
 	put_long (info + 116, fsdb_can ? aino->amigaos_mode : fsdb_mode_supported (aino));
 
 	if (kickstart_version >= 36) {
@@ -4881,6 +4910,7 @@ static void
 	} else if (!valid_address (addr, size)) {
 		/* check if filesize < size */
 		uae_s64 filesize, cur;
+    DebOut("!valid_address ..\n");
 
 		filesize = fs_fsize64 (k->fd);
 		cur = k->file_pos;
@@ -4896,6 +4926,7 @@ static void
 			
 			write_log (_T("unixfs warning: Bad pointer passed for read: %08x, size %d\n"), addr, size);
 			/* ugh this is inefficient but easy */
+
 
 			if (fs_lseek64 (k->fd, k->file_pos, SEEK_SET) < 0) {
 				PUT_PCK_RES1 (packet, 0);
@@ -6306,6 +6337,8 @@ static int handle_packet (Unit *unit, dpacket pck, uae_u32 msg)
 	uae_s32 type = GET_PCK_TYPE (pck);
 	PUT_PCK_RES2 (pck, 0);
 
+  DebOut("unit=%x packet=%d\n", unit, type);
+
 	TRACE((_T("unit=%x packet=%d\n"), unit, type));
 	if (unit->inhibited && filesys_isvolume (unit)
 		&& type != ACTION_INHIBIT && type != ACTION_MORE_CACHE
@@ -6404,13 +6437,9 @@ static int filesys_iteration(UnitInfo *ui)
 	uaecptr msg;
 	uae_u32 morelocks;
 
-  DebOut("entered\n");
-
 	pck = read_comm_pipe_u32_blocking (ui->unit_pipe);
 	msg = read_comm_pipe_u32_blocking (ui->unit_pipe);
 	morelocks = (uae_u32)read_comm_pipe_int_blocking (ui->unit_pipe);
-
-  DebOut("msg received\n");
 
 	if (ui->reset_state == FS_GO_DOWN) {
     DebOut("FS_GO_DOWN\n");
@@ -6424,7 +6453,6 @@ static int filesys_iteration(UnitInfo *ui)
 
 	put_long (get_long (morelocks), get_long (ui->self->locklist));
 	put_long (ui->self->locklist, morelocks);
-  DebOut("call handle_packet ..\n");
 	int ret = handle_packet (ui->self, pck, msg);
 	if (!ret) {
     DebOut("DOS_FALSE / ERROR_ACTION_NOT_KNOWN\n");
@@ -6440,11 +6468,12 @@ static int filesys_iteration(UnitInfo *ui)
 	/* The message is sent by our interrupt handler, so make sure an interrupt happens. */
 	do_uae_int_requested ();
 	/* Send back the locks. */
-  DebOut("send back the locks..\n");
-	if (get_long (ui->self->locklist) != 0)
+	if (get_long (ui->self->locklist) != 0) {
 		write_comm_pipe_int (ui->back_pipe, (int)(get_long (ui->self->locklist)), 0);
+  }
+
+  /* WE NEVER COME BACK HERE!!!!!*/
 	put_long (ui->self->locklist, 0);
-  DebOut("return 1\n");
 	return 1;
 }
 
@@ -6472,7 +6501,6 @@ static uae_u32 REGPARAM2 filesys_handler (TrapContext *context)
 	uaecptr packet_addr = m68k_dreg (regs, 3);
 	uaecptr message_addr = m68k_areg (regs, 4);
 
-  DebOut("entered\n");
 	if (! valid_address (packet_addr, 36) || ! valid_address (message_addr, 14)) {
 		write_log (_T("FILESYS: Bad address %x/%x passed for packet.\n"), packet_addr, message_addr);
 		goto error2;
@@ -6483,6 +6511,7 @@ static uae_u32 REGPARAM2 filesys_handler (TrapContext *context)
 		write_log (_T("FILESYS: was not initialized.\n"));
 		goto error;
 	}
+
 #ifdef UAE_FILESYS_THREADS
 	{
 		uae_u32 morelocks;
@@ -6517,11 +6546,14 @@ error2:
 
 static void init_filesys_diagentry (void)
 {
+  DebOut("entered)\n");
 	do_put_mem_long ((uae_u32 *)(filesysory + 0x2100), EXPANSION_explibname);
 	do_put_mem_long ((uae_u32 *)(filesysory + 0x2104), filesys_configdev);
 	do_put_mem_long ((uae_u32 *)(filesysory + 0x2108), EXPANSION_doslibname);
+  /* 0x210e and 0x210c are fetched from the asm code */
 	do_put_mem_word ((uae_u16 *)(filesysory + 0x210e), nr_units ());
 	do_put_mem_word ((uae_u16 *)(filesysory + 0x210c), 0);
+	//do_put_mem_long ((uae_u32 *)(filesysory + 0x210c), nr_units ());
 	native2amiga_startup ();
 }
 
@@ -6768,6 +6800,8 @@ static uae_u32 REGPARAM2 filesys_dev_bootfilesys (TrapContext *context)
 	UnitInfo *uip = &mountinfo.ui[unit_no];
 	int iscd = (m68k_dreg (regs, 6) & 0x80000000) != 0 || uip->unit_type == UNIT_CDFS;
 	int type;
+
+  DebOut("entered\n");
 	
 	if (iscd) {
 		if (!get_long (devicenode + 16))
@@ -6863,6 +6897,7 @@ static uae_u32 REGPARAM2 filesys_dev_remember (TrapContext *context)
 	int fssize;
 	uae_u8 *fs;
 
+
 	uip->devicenode = devicenode;
 	fssize = uip->rdb_filesyssize;
 	fs = uip->rdb_filesysstore;
@@ -6879,6 +6914,7 @@ static uae_u32 REGPARAM2 filesys_dev_remember (TrapContext *context)
 	if (m68k_dreg (regs, 3) >= 0)
 		uip->startup = get_long (devicenode + 28);
 
+  DebOut("devicenode: %lx\n", devicenode);
 	return devicenode;
 }
 
@@ -7082,7 +7118,7 @@ static void dump_rdb (UnitInfo *uip, struct hardfiledata *hfd, uae_u8 *bufrdb, u
 	}
 }
 
-#define rdbmnt write_log (_T("Mounting uaehf.device %d (%d) (size=%llu):\n"), unit_no, partnum, hfd->virtsize);
+#define rdbmnt write_log (_T("Mounting uaehf.device no %d (%d) (size=%llu):\n"), unit_no, partnum, hfd->virtsize);
 
 static int rdb_mount (UnitInfo *uip, int unit_no, int partnum, uaecptr parmpacket)
 {
@@ -7100,7 +7136,9 @@ static int rdb_mount (UnitInfo *uip, int unit_no, int partnum, uaecptr parmpacke
 	TCHAR *s;
 	bool showdebug = partnum == 0;
 
-	write_log (_T("%s:\n"), uip->rootdir);
+  DebOut("Rootdir: %s\n", uip->rootdir);
+
+	write_log (_T("Rootdir %s:\n"), uip->rootdir);
 	if (hfd->drive_empty) {
 		rdbmnt
 		write_log (_T("ignored, drive is empty\n"));
@@ -7524,6 +7562,7 @@ static void get_new_device (int type, uaecptr parmpacket, TCHAR **devname, uaecp
 	TCHAR buffer[80];
 	uaecptr expbase = get_long (parmpacket + PP_EXPLIB);
 
+
 	if (*devname == 0 || _tcslen (*devname) == 0) {
 		int un = unit_no;
 		for (;;) {
@@ -7536,6 +7575,7 @@ static void get_new_device (int type, uaecptr parmpacket, TCHAR **devname, uaecp
 	} else {
 		_tcscpy (buffer, *devname);
 	}
+  DebOut("buffer: %s\n", buffer);
 	*devname_amiga = ds (device_dupfix (expbase, buffer));
 	if (type == FILESYS_CD)
 		write_log (_T("FS: mounted CD unit %s\n"), buffer);
@@ -7549,6 +7589,10 @@ static void get_new_device (int type, uaecptr parmpacket, TCHAR **devname, uaecp
 }
 
 /* Fill in per-unit fields of a parampacket */
+
+/* this gets called from filesys.asm (68k rom code supplied by uae 
+ * see FF28 there
+ */
 static uae_u32 REGPARAM2 filesys_dev_storeinfo (TrapContext *context)
 {
 	UnitInfo *uip = mountinfo.ui;
@@ -7560,6 +7604,11 @@ static uae_u32 REGPARAM2 filesys_dev_storeinfo (TrapContext *context)
 	uaecptr parmpacket = m68k_areg (regs, 0);
 	struct uaedev_config_info *ci = &uip[unit_no].hf.ci;
 
+  uae_u32 foo=-2;
+  LONG foo2=-2;
+  DebOut("entered (0x%lx)\n", foo);
+  DebOut("entered (0x%lx)\n", foo2);
+
 	put_long (parmpacket + PP_ADDTOFSRES, 0);
 	put_long (parmpacket + PP_FSSIZE, 0);
 	if (iscd) {
@@ -7568,7 +7617,8 @@ static uae_u32 REGPARAM2 filesys_dev_storeinfo (TrapContext *context)
 		int cd_unit_no = unit_no - cd_unit_offset;
 
 		if (sub_no)
-			return -2;
+			return 0xfffffffe;
+			//return -2;
 
 		type = FILESYS_CD;
 		get_new_device (type, parmpacket, &uip[unit_no].devname, &uip[unit_no].devname_amiga, cd_unit_no);
@@ -7606,16 +7656,27 @@ static uae_u32 REGPARAM2 filesys_dev_storeinfo (TrapContext *context)
 
 	} else {
 
+    int ret;
+
 		gui_flicker_led (LED_HD, unit_no, 0);
 		type = is_hardfile (unit_no);
 		if (type == FILESYS_HARDFILE_RDB || type == FILESYS_HARDDRIVE) {
 			/* RDB hardfile */
+      DebOut("FILESYS_HARDFILE_RDB || FILESYS_HARDDRIVE\n");
 			uip[unit_no].devno = unit_no;
-			return rdb_mount (&uip[unit_no], unit_no, sub_no, parmpacket);
+			ret=rdb_mount (&uip[unit_no], unit_no, sub_no, parmpacket);
+      if(ret==-2) {
+        DebOut("no more subunits\n");
+        return 0xfffffffe;
+      }
+			return ret;
 		}
-		if (sub_no)
-			return -2;
-		write_log (_T("Mounting uaehf.device %d (%d):\n"), unit_no, sub_no);
+		if (sub_no) {
+      DebOut("no more subunits 2\n");
+			return 0xfffffffe;
+			//return -2;
+    }
+		write_log (_T("Mounting uaehf.device %d (sub_no %d):\n"), unit_no, sub_no);
 		get_new_device (type, parmpacket, &uip[unit_no].devname, &uip[unit_no].devname_amiga, unit_no);
 		uip[unit_no].devno = unit_no;
 		put_long (parmpacket, uip[unit_no].devname_amiga);
@@ -7782,6 +7843,7 @@ void filesys_install (void)
   DebOut("Installing filesystem..\n");
 	TRACEI ((_T("Installing filesystem\n")));
 
+  DebOut("init singlethread_int_sem\n");
 	uae_sem_init (&singlethread_int_sem, 0, 1);
 	uae_sem_init (&test_sem, 0, 1);
 

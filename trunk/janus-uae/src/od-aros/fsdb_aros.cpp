@@ -336,7 +336,6 @@ int fsdb_name_invalid_dir (const TCHAR *n) {
 struct my_opendir_s {
   struct FileInfoBlock *h;
   BPTR lock;
-  int first;
 };
 
 struct my_openfile_s {
@@ -346,10 +345,10 @@ struct my_openfile_s {
 /* return next dir entry */
 int my_readdir (struct my_opendir_s *mod, TCHAR *name) {
 
-  strcpy(name, (TCHAR *) mod->h->fib_FileName);
-  DebOut("name: %s\n", name);
-
   if(ExNext(mod->lock, mod->h)) {
+    strcpy(name, (TCHAR *) mod->h->fib_FileName);
+    DebOut("name: %s\n", name);
+
     return TRUE;
   }
 
@@ -488,13 +487,6 @@ struct my_opendir_s *my_opendir (const TCHAR *name, const TCHAR *mask) {
     goto ERROR;
   }
 
-  if(!ExNext(mod->lock, mod->h)) {
-    DebOut("ExNext failed!\n");
-    goto ERROR;
-  }
-
-  mod->first = 1;
-
   DebOut("ok\n");
 
   return mod;
@@ -523,9 +515,9 @@ int fsdb_fill_file_attrs (a_inode *base, a_inode *aino) {
   BPTR lock=0;
   int ret=0;
 
-  DebOut("%lx %lx\n", base, aino);
+  //DebOut("%lx %lx\n", base, aino);
 
-  DebOut("aino->dir: %s\n", aino->dir);
+  //DebOut("aino->dir: %s\n", aino->dir);
   DebOut("aino->nname: %s\n", aino->nname);
 
   fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, TAG_END);
@@ -537,21 +529,21 @@ int fsdb_fill_file_attrs (a_inode *base, a_inode *aino) {
   if (!Examine(lock, fib)) goto ERROR;
 
   if(fib->fib_DirEntryType>0) {
-    DebOut("=> directory\n");
+    //DebOut("=> directory\n");
     aino->dir=1;
     if(fib->fib_DirEntryType==ST_SOFTLINK) {
-      DebOut("SoftLink detected!\n");
+      DebOut("WARNING: not tested: SoftLink detected!\n");
       aino->softlink=2; /* 1 hardlink, 2 softlink ? */
     }
   }
 
   if(fib->fib_Comment) {
-    DebOut("comment: >%s<\n", fib->fib_Comment);
+    //DebOut("comment: >%s<\n", fib->fib_Comment);
     aino->comment=(TCHAR *) strdup((const char *)fib->fib_Comment);
   }
 
   aino->amigaos_mode=fib->fib_Protection;
-  DebOut("protection: %04x\n", fib->fib_Protection);
+  //DebOut("protection: %04x\n", fib->fib_Protection);
 
   /* !? */
 #if 0
