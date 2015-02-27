@@ -189,9 +189,7 @@ bool my_stat (const TCHAR *name, struct mystat *statbuf) {
     statbuf->mode |= FILEFLAG_SCRIPT;
   }
 
-  /* this is wrong! */
-  statbuf->mtime.tv_sec = fib->fib_Date.ds_Days*24 + fib->fib_Date.ds_Minute*60 + fib->fib_Date.ds_Tick*50;
-  statbuf->mtime.tv_usec= 0;
+  amiga_to_timeval(&statbuf->mtime, fib->fib_Date.ds_Days, fib->fib_Date.ds_Minute, fib->fib_Date.ds_Tick);
 
   result=TRUE;
 
