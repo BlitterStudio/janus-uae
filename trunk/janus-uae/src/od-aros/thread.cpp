@@ -49,6 +49,26 @@ void LeaveCriticalSection(CRITICAL_SECTION *section) {
   ReleaseSemaphore(section);
 }
 
+/* 
+ * UAE sets task priorities only to "1", no other values seem to
+ * be used. As for AmigaOS uncommon values may cause severe problems,
+ * we only accept NULL/1, everything else needs to be checked!
+ *
+ * Increasing the thread priority is important for the filesystem 
+ * task, otherwise virtual filesystem access is *very* slow.
+ */
+void uae_set_thread_priority (uae_thread_id *tid, int pri) {
+
+  DebOut("uae_thread_id %lx, pri %d\n", tid, pri);
+
+  if(tid!=NULL || pri>1) {
+    bug("ERROR: uae_set_thread_priority with unsupported values: uae_thread_id %lx, pri %d!\n", tid, pri);
+    return;
+  }
+
+  SetTaskPri(FindTask(NULL), pri);
+}
+
 /*
  * taken from fs-uae (fs-uae-2.5.23dev)
  *
@@ -56,7 +76,6 @@ void LeaveCriticalSection(CRITICAL_SECTION *section) {
  * winuae for AROS
  *
  */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
