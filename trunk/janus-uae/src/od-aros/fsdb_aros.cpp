@@ -404,6 +404,24 @@ struct my_openfile_s *my_open (const TCHAR *name, int flags) {
   return mos;
 }
 
+void my_close (struct my_openfile_s *mos) {
+
+  DebOut("mos: %lx\n", mos);
+
+  if(!mos) {
+    bug("[JUAE:A-FSDB] %s(): WARNING: NULL pointer received !?\n", __PRETTY_FUNCTION__);
+    return;
+  }
+
+  if(mos->lock) {
+    Close(mos->lock);
+    mos->lock=NULL;
+  }
+
+  FreeVec(mos);
+  return;
+}
+
 uae_s64 int my_lseek (struct my_openfile_s *mos, uae_s64 int offset, int whence) {
   uae_s64 int ret;
   LONG old;
@@ -511,6 +529,7 @@ struct my_opendir_s *my_opendir (const TCHAR *name) {
  *
  ******************************************************************/
 int fsdb_fill_file_attrs (a_inode *base, a_inode *aino) {
+
   struct FileInfoBlock *fib=NULL;
   BPTR lock=0;
   int ret=0;
@@ -521,7 +540,7 @@ int fsdb_fill_file_attrs (a_inode *base, a_inode *aino) {
   DebOut("aino->nname: %s\n", aino->nname);
 
   fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, TAG_END);
-  if(!fib) return 0;
+  if(!fib) goto ERROR;
 
   lock=Lock(aino->nname, SHARED_LOCK);
   if(!lock) goto ERROR;
@@ -539,7 +558,8 @@ int fsdb_fill_file_attrs (a_inode *base, a_inode *aino) {
 
   if(fib->fib_Comment) {
     //DebOut("comment: >%s<\n", fib->fib_Comment);
-    aino->comment=(TCHAR *) strdup((const char *)fib->fib_Comment);
+    aino->comment=(TCHAR *) strndup((const char *)fib->fib_Comment, 79); /* maximum length is 79 chars,
+                                                                            0 will be added automatically */
   }
 
   aino->amigaos_mode=fib->fib_Protection;
@@ -563,3 +583,35 @@ ERROR:
 
   return ret;
 }
+
+/* Return nonzero if we can represent the amigaos_mode of AINO within the
+ * native FS.  Return zero if that is not possible.  */
+int fsdb_mode_representable_p (const a_inode *aino, int amigaos_mode) {
+
+  /* trivial. Our guest OS is AROS, so yes, we can ;) */
+  return 1;
+}
+
+/* return supported combination */
+int fsdb_mode_supported (const a_inode *aino) {
+
+  int mask = aino->amigaos_mode;
+
+  DebOut("aino: %lx\n", aino);
+
+  if (0 && aino->dir)
+    return 0;
+  if (fsdb_mode_representable_p (aino, mask))
+    return mask;
+  mask &= ~(A_FIBF_SCRIPT | A_FIBF_READ | A_FIBF_EXECUTE);
+  if (fsdb_mode_representable_p (aino, mask))
+    return mask;
+  mask &= ~A_FIBF_WRITE;
+  if (fsdb_mode_representable_p (aino, mask))
+    return mask;
+  mask &= ~A_FIBF_DELETE;
+  if (fsdb_mode_representable_p (aino, mask))
+    return mask;
+  return 0;
+}
+

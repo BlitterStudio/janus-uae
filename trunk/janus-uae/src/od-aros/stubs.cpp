@@ -578,12 +578,6 @@ void ahi_finish_sound_buffer (void)
   TODO();
 }
 
-int fsdb_mode_supported (const a_inode *aino)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
 int fsdb_set_file_attrs (a_inode *aino, int mask) 
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
@@ -702,12 +696,6 @@ int check_prefs_changed_gfx (void)
   TODO();
 }
 #endif
-
-void uae_set_thread_priority (uae_thread_id *tid, int pri)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
 
 void amiga_clipboard_got_data (uaecptr data, uae_u32 size, uae_u32 actual)
 {
@@ -844,12 +832,6 @@ char *ua_copy (char *dst, int maxlen, const TCHAR *src)
   TODO();
 }
 
-void my_close (struct my_openfile_s *mos)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
 int my_mkdir (const TCHAR *name)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
@@ -950,12 +932,6 @@ SRes XzUnpacker_Create(CXzUnpacker *p, ISzAlloc *alloc)
 	TODO();
 }
 void XzUnpacker_Free(CXzUnpacker *p) 
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-	TODO();
-}
-
-int fsdb_mode_representable_p (const a_inode *aino, int amigaos_mode)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
 	TODO();
