@@ -578,18 +578,6 @@ void ahi_finish_sound_buffer (void)
   TODO();
 }
 
-int fsdb_set_file_attrs (a_inode *aino, int mask) 
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
-int fsdb_set_file_attrs (a_inode *aino)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
 void master_sound_volume (int dir)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
@@ -820,12 +808,6 @@ TCHAR* buf_out (TCHAR *buffer, int *bufsize, const TCHAR *format, ...)
   TODO();
 }
 
-unsigned int my_write (struct my_openfile_s *mos, void *b, unsigned int size) 
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
 char *ua_copy (char *dst, int maxlen, const TCHAR *src)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
@@ -1034,18 +1016,6 @@ int lockscr (struct vidbuffer *vb, bool fullupdate) {
 void init_scsi (void) {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
-}
-
-bool my_utime (const TCHAR *name, struct mytimeval *tv) {
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-  return TRUE;
-}
-
-uae_s64 int my_fsize (struct my_openfile_s *mos) {
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-  return -1;
 }
 
 bool my_chmod (const TCHAR *name, uae_u32 mode) {
