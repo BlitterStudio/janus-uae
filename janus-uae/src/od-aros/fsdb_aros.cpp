@@ -189,6 +189,7 @@ bool my_stat (const TCHAR *name, struct mystat *statbuf) {
     statbuf->mode |= FILEFLAG_SCRIPT;
   }
 
+  /* this is wrong! */
   statbuf->mtime.tv_sec = fib->fib_Date.ds_Days*24 + fib->fib_Date.ds_Minute*60 + fib->fib_Date.ds_Tick*50;
   statbuf->mtime.tv_usec= 0;
 
@@ -375,27 +376,34 @@ struct my_openfile_s *my_open (const TCHAR *name, int flags) {
   mos=(struct my_openfile_s *) AllocVec(sizeof(struct my_openfile_s), MEMF_CLEAR);
   if (!mos) return NULL;
 
-  DebOut("mos: %lx  name: %s, flags: %lx\n",mos ,name, flags);
+  DebOut("mos: %lx  name: %s, flags: 0x%lx\n",mos ,name, flags);
 
+  /* exactly one of the first three values */
   if (flags & O_RDONLY) {
+    DebOut("O_RDONLY\n");
     access_mode=MODE_OLDFILE;
   }
-  else if(flags & O_TRUNC)  {
-    access_mode=MODE_NEWFILE;
-  }
   else if(flags & O_WRONLY) {
+    DebOut("MODE_READWRITE\n");
     access_mode=MODE_READWRITE;
   }
   else if(flags & O_RDWR) {
+    DebOut("MODE_READWRITE\n");
     access_mode=MODE_READWRITE;
   }
   else {
     DebOut("ERROR: strange flags!?\n");
   }
 
+  if(flags & O_TRUNC)  {
+    DebOut("O_TRUNC\n");
+    access_mode=MODE_NEWFILE;
+  }
+
   h=Open(name, access_mode);
 
   if(!h) {
+    DebOut("Could not open %s\n", name);
     FreeVec(mos);
     return NULL;
   }
@@ -459,6 +467,18 @@ unsigned int my_read (struct my_openfile_s *mos, void *b, unsigned int size) {
   return Read(mos->lock, b, size);
 }
 
+unsigned int my_write (struct my_openfile_s *mos, void *b, unsigned int size) {
+
+  DebOut("mos: %lx, b: %lx, size: %d\n", mos, b, size);
+
+  if(!mos->lock) {
+    DebOut("ERROR: no lock!\n");
+    exit(1);
+  }
+
+  return Write(mos->lock, b, size);
+}
+
 
 /** WARNING: mask does *not* work !! */
 struct my_opendir_s *my_opendir (const TCHAR *name, const TCHAR *mask) {
@@ -519,6 +539,74 @@ struct my_opendir_s *my_opendir (const TCHAR *name) {
   return my_opendir (name, "");
 }
 
+/* TODO: 64bit sizes !? */
+uae_s64 int my_fsize (struct my_openfile_s *mos) {
+
+  struct FileInfoBlock * fib;
+  BPTR lock;
+  uae_s64 size;
+
+  if(!(fib=(struct FileInfoBlock *) AllocDosObject(DOS_FIB, NULL)) || !Examine(lock, fib)) {
+    bug("[JUAE:A-FSDB] %s: failed to examine lock @ 0x%p [fib @ 0x%p]\n", __PRETTY_FUNCTION__, lock, fib);
+    size=-1;
+    goto EXIT;
+  }
+
+  /* test for 64 bit filesize */
+  if(fib->fib_Size >= 0x7FFFFFFF) {
+
+    bug("[JUAE:A-FSDB] %s: WARNING: filesize >2GB detected. This has never been tested!\n", __PRETTY_FUNCTION__);
+    UQUAD *size_ptr=(UQUAD *)DoPkt(((struct FileLock *)lock)->fl_Task, ACTION_GET_FILE_SIZE64, (IPTR)lock, 0, 0, 0, 0);
+    if (size_ptr) {
+      size=(uae_s64) *size_ptr;
+    }
+    else {
+      bug("[JUAE:A-FSDB] %s: ERROR: DoPkt return NULL!\n");
+      size=-1;
+    }
+    goto EXIT;
+  }
+
+  /* extend 32-bit */
+  size=(uae_s64) fib->fib_Size;
+  
+EXIT:
+  DebOut("size: %d\n", size);
+  FreeDosObject(DOS_FIB, fib);
+
+  return size;
+}
+
+bool my_utime (const TCHAR *name, struct mytimeval *tv) {
+
+  struct DateStamp stamp;
+
+  DebOut("name: %s\n", name);
+
+  if(!tv) {
+    /* get current time */
+    struct DateTime dt;
+    DateStamp(&dt.dat_Stamp);
+    stamp.ds_Days   = dt.dat_Stamp.ds_Days;
+    stamp.ds_Minute = dt.dat_Stamp.ds_Minute;
+    stamp.ds_Tick   = dt.dat_Stamp.ds_Tick;
+  }
+  else {
+    /* use supplied time */
+    /* NOT TESTED! */
+    struct mytimeval tv2;
+    tv2.tv_sec = tv->tv_sec;
+    tv2.tv_usec = tv->tv_usec;
+
+    timeval_to_amiga (&tv2, &stamp.ds_Days, &stamp.ds_Minute, &stamp.ds_Tick);
+  }
+
+  DebOut("stamp.ds_Days: %d\n", stamp.ds_Days);
+  DebOut("stamp.ds_Minute: %d\n", stamp.ds_Minute);
+  DebOut("stamp.ds_Tick: %d\n", stamp.ds_Tick);
+
+  return SetFileDate(name, &stamp);
+}
 
 /******************************************************************
  * fsdb_fill_file_attrs
@@ -615,3 +703,9 @@ int fsdb_mode_supported (const a_inode *aino) {
   return 0;
 }
 
+int fsdb_set_file_attrs (a_inode *aino) {
+
+  DebOut("name: aino->nname %s\n", aino->nname);
+
+  return SetProtection(aino->nname, aino->amigaos_mode);
+}
