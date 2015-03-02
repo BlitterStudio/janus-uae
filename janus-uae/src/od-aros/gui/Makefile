@@ -55,29 +55,30 @@ COMMON_OBJS= \
 	mui_file_request.o \
 	mui_class.o 
 
-IMAGES =\
-	images/35floppy.o \
-	images/amigainfo.o \
-	images/avioutput.o \
-	images/chip.o \
-	images/configfile.o \
-	images/cpu.o \
-	images/diskimage.o \
-	images/drive.o \
-	images/expansion.o \
-	images/file.o \
-	images/folder.o \
-	images/joystick.o \
-	images/misc.o \
-	images/move_dow.o \
-	images/move_up.o \
-	images/paths.o \
-	images/port.o \
-	images/quickstart.o \
-	images/root.o \
-	images/screen.o \
-	images/sound.o \
-	images/winuae.o
+IMAGES =
+
+	#images/35floppy.o \
+	#images/amigainfo.o \
+	#images/avioutput.o \
+	#images/chip.o \
+	#images/configfile.o \
+	#images/cpu.o \
+	#images/diskimage.o \
+	#images/drive.o \
+	#images/expansion.o \
+	#images/file.o \
+	#images/folder.o \
+	#images/joystick.o \
+	#images/misc.o \
+	#images/move_dow.o \
+	#images/move_up.o \
+	#images/paths.o \
+	#images/port.o \
+	#images/quickstart.o \
+	#images/root.o \
+	#images/screen.o \
+	#images/sound.o \
+	#images/winuae.o
 
 
 	#../picasso96.o \
@@ -102,7 +103,7 @@ DEP_OBJS=$(COMMON_OBJS)
 
 all: uae
 
-uae: common images
+uae: mui_data.h common images
 	$(AR) $(ARFLAGS) $(LIB) $(COMMON_OBJS) $(IMAGES)  
 
 
