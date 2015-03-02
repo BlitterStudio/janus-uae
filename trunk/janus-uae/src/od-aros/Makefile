@@ -215,7 +215,7 @@ DEP_OBJS=$(COMMON_OBJS)
 
 all: uae
 
-uae: sdl_config gui common aros
+uae: string_resource.h sdl_config gui common aros
 	$(CPP) $(CFLAGS) $(COMMON_OBJS) $(AROS_OBJS) -o $(EXE) $(LINK_LIBS) 
 
 sdl_config:
