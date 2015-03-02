@@ -324,37 +324,6 @@ bool my_resolvesoftlink(TCHAR *linkfile, int size) {
   return TRUE;
 }
 
-int fsdb_exists (const TCHAR *nname) {
-  BPTR lock;
-
-  bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, nname);
-
-  lock=Lock(nname, SHARED_LOCK);
-  if(lock) {
-    UnLock(lock);
-    return TRUE;
-  }
-
-  return FALSE;
-}
-
-
-/******************************************************************
- * name_invalid
- *
- * as both host and guest are "amigaoid", filenames should always
- * be valid.
- ******************************************************************/
-int fsdb_name_invalid (const TCHAR *n) {
-
-  return FALSE;
-}
-
-int fsdb_name_invalid_dir (const TCHAR *n) {
-
-  return FALSE;
-}
-
 /******************************************************************
  * int my_*dir (struct my_opendir_s *mod, TCHAR *name)
  *
@@ -673,6 +642,41 @@ int my_rmdir (const TCHAR *name) {
   SetLastError(IoErr());
   return -1;
 }
+
+/******************************************************************
+ ******************* fsdb_* functions *****************************
+ ******************************************************************/
+int fsdb_exists (const TCHAR *nname) {
+  BPTR lock;
+
+  bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, nname);
+
+  lock=Lock(nname, SHARED_LOCK);
+  if(lock) {
+    UnLock(lock);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+
+/******************************************************************
+ * name_invalid
+ *
+ * as both host and guest are "amigaoid", filenames should always
+ * be valid.
+ ******************************************************************/
+int fsdb_name_invalid (const TCHAR *n) {
+
+  return FALSE;
+}
+
+int fsdb_name_invalid_dir (const TCHAR *n) {
+
+  return FALSE;
+}
+
 
 /******************************************************************
  * fsdb_fill_file_attrs
