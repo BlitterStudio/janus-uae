@@ -36,6 +36,34 @@
 #include "fsdb.h"
 #include "winnt.h"
 
+
+/******************************************************************
+ * SetLastError / GetLastError
+ *
+ * simulate Windows Error Code handling
+ ******************************************************************/
+static int my_last_error=0;
+
+int GetLastError(void) {
+  return my_last_error;
+}
+void SetLastError(int err) {
+  my_last_error=err;
+  return;
+}
+
+/*
+ * we use host system error codes, so just return last error code here,
+ * no translation necessary as on windows hosts
+ */
+int dos_errno (void) {
+
+  return GetLastError();
+}
+
+/******************************************************************
+ * my_* 
+ ******************************************************************/
 int my_existsfile (const TCHAR *name) {
 
 	struct FileInfoBlock fib;
@@ -101,20 +129,6 @@ FILE *my_opentext (const TCHAR *name) {
 	return fopen (name, "r");
 }
 
-
-int fsdb_exists (const TCHAR *nname) {
-  BPTR lock;
-
-  bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, nname);
-
-  lock=Lock(nname, SHARED_LOCK);
-  if(lock) {
-    UnLock(lock);
-    return TRUE;
-  }
-
-  return FALSE;
-}
 
 /*
 istruct mystat^M
@@ -309,6 +323,21 @@ bool my_resolvesoftlink(TCHAR *linkfile, int size) {
 
   return TRUE;
 }
+
+int fsdb_exists (const TCHAR *nname) {
+  BPTR lock;
+
+  bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, nname);
+
+  lock=Lock(nname, SHARED_LOCK);
+  if(lock) {
+    UnLock(lock);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
 
 /******************************************************************
  * name_invalid
@@ -604,6 +633,45 @@ bool my_utime (const TCHAR *name, struct mytimeval *tv) {
   DebOut("stamp.ds_Tick: %d\n", stamp.ds_Tick);
 
   return SetFileDate(name, &stamp);
+}
+
+/******************************************************************
+ * my_mkdir / my_rmdir
+ *
+ * Create/Delete directories. Return AROS host error codes for 
+ * AmigaOS guest CreateDir/DeleteFile calls.
+ ******************************************************************/
+int my_mkdir (const TCHAR *name) {
+
+  BPTR lock;
+
+  DebOut("name: %s\n", name);
+
+  lock=CreateDir(name);
+
+  if(lock) {
+    UnLock(lock); /* CreateDir returns a lock, which we don't need */
+    return 0;
+  }
+
+  SetLastError(IoErr());
+  return -1;
+}
+
+int my_rmdir (const TCHAR *name) {
+
+  BOOL ret;
+
+  DebOut("name: %s\n", name);
+
+  ret=DeleteFile(name);
+
+  if(ret) {
+    return 0;
+  }
+
+  SetLastError(IoErr());
+  return -1;
 }
 
 /******************************************************************
