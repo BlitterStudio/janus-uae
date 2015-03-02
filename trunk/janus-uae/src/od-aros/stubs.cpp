@@ -814,18 +814,6 @@ char *ua_copy (char *dst, int maxlen, const TCHAR *src)
   TODO();
 }
 
-int my_mkdir (const TCHAR *name)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
-int my_rmdir (const TCHAR *name)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
 uae_u8 *save_log (int bootlog, int *len)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
@@ -849,12 +837,6 @@ void ahi_hsync (void)
   }
 
   ahi_hsync_count++;
-}
-
-int dos_errno (void)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
 }
 
 int is_tablet (void) 
