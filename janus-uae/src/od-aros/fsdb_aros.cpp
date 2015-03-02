@@ -629,13 +629,51 @@ int my_mkdir (const TCHAR *name) {
 
 int my_rmdir (const TCHAR *name) {
 
-  BOOL ret;
+  BOOL res;
 
   DebOut("name: %s\n", name);
 
-  ret=DeleteFile(name);
+  res=DeleteFile(name);
 
-  if(ret) {
+  if(res) {
+    return 0;
+  }
+
+  SetLastError(IoErr());
+  return -1;
+}
+
+/******************************************************************
+ * my_rename
+ ******************************************************************/
+int my_rename (const TCHAR *oldname, const TCHAR *newname) {
+
+  LONG res;
+
+  DebOut("oldname: %s newname %s\n", oldname, newname);
+
+  res=Rename(oldname, newname);
+
+  if(res==DOSTRUE) {
+    return 0;
+  }
+
+  SetLastError(IoErr());
+  return -1;
+}
+
+/******************************************************************
+ * my_unlink: delete file 
+ ******************************************************************/
+int my_unlink (const TCHAR *name) {
+
+  BOOL res;
+
+  DebOut("name: %s\n", name);
+
+  res=DeleteFile(name);
+
+  if(res!=0) {
     return 0;
   }
 
