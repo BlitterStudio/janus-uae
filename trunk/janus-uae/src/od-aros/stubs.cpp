@@ -808,12 +808,6 @@ TCHAR* buf_out (TCHAR *buffer, int *bufsize, const TCHAR *format, ...)
   TODO();
 }
 
-char *ua_copy (char *dst, int maxlen, const TCHAR *src)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
 uae_u8 *save_log (int bootlog, int *len)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
@@ -846,18 +840,6 @@ int is_tablet (void)
 }
 
 void jit_abort (const TCHAR *format,...)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
-int my_rename (const TCHAR *oldname, const TCHAR *newname)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
-int my_unlink (const TCHAR *name)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();

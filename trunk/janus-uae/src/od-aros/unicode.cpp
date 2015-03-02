@@ -49,6 +49,12 @@ WCHAR *au_copy (TCHAR *dst, int maxlen, const char *src) {
 	return strncpy(dst, src, maxlen);
 }
 
+char *ua_copy (char *dst, int maxlen, const TCHAR *src) {
+
+  dst[0] = 0;
+	return strncpy(dst, src, maxlen);
+}
+
 char *au_fs_copy (char *dst, int maxlen, const char *src)
 {
 	int i;
