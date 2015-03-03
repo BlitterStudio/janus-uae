@@ -392,7 +392,7 @@ struct my_openfile_s *my_open (const TCHAR *name, int flags) {
   }
 
   if(flags & O_TRUNC)  {
-    DebOut("O_TRUNC\n");
+    DebOut("O_TRUNC => MODE_NEWFILE\n");
     access_mode=MODE_NEWFILE;
   }
 
@@ -624,6 +624,7 @@ int my_mkdir (const TCHAR *name) {
   }
 
   SetLastError(IoErr());
+  DebOut("return -1 (%d)\n", IoErr());
   return -1;
 }
 
@@ -640,6 +641,7 @@ int my_rmdir (const TCHAR *name) {
   }
 
   SetLastError(IoErr());
+  DebOut("return -1 (%d)\n", IoErr());
   return -1;
 }
 
@@ -659,6 +661,7 @@ int my_rename (const TCHAR *oldname, const TCHAR *newname) {
   }
 
   SetLastError(IoErr());
+  DebOut("return -1 (%d)\n", IoErr());
   return -1;
 }
 
@@ -678,6 +681,7 @@ int my_unlink (const TCHAR *name) {
   }
 
   SetLastError(IoErr());
+  DebOut("return -1 (%d)\n", IoErr());
   return -1;
 }
 
@@ -813,7 +817,15 @@ int fsdb_mode_supported (const a_inode *aino) {
 
 int fsdb_set_file_attrs (a_inode *aino) {
 
+  BOOL res;
+
   DebOut("name: aino->nname %s\n", aino->nname);
 
-  return SetProtection(aino->nname, aino->amigaos_mode);
+  res=SetProtection(aino->nname, aino->amigaos_mode);
+
+  if(res) {
+    return 0;
+  }
+
+  return ERROR_OBJECT_NOT_AROUND;
 }
