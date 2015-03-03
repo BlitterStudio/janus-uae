@@ -36,6 +36,8 @@
 #include "fsdb.h"
 #include "winnt.h"
 
+#define MAXFILESIZE32 (0x7fffffff)
+
 
 /******************************************************************
  * SetLastError / GetLastError
@@ -683,6 +685,57 @@ int my_unlink (const TCHAR *name) {
   SetLastError(IoErr());
   DebOut("return -1 (%d)\n", IoErr());
   return -1;
+}
+
+/******************************************************************
+ * my_truncate
+ *
+ * is used to implement SetFileSize. Would be nicer, if 
+ * ACTION_SET_FILE_SIZE would call host SetFileSize directly,
+ * but we would have to modify ../filesys.cpp, which I wanted
+ * to avoid so far..
+ *
+ * WARNING: SetFileSize seems to be broken, at least for
+ *          AROS/hosted filesystems !? Even the test
+ *          in the AROS svn fails..
+ ******************************************************************/
+int my_truncate (const TCHAR *name, uae_u64 len) {
+
+  LONG newsize;
+  BPTR fh;
+  int ret=0;
+
+  DebOut("name: %s, len: %d\n", name, len);
+
+  if(len>MAXFILESIZE32) {
+    DebOut("filesize is >2GB!\n");
+    return -1;
+  }
+
+  fh=Open(name, MODE_READWRITE);
+  if(!fh) {
+    SetLastError(IoErr());
+    DebOut("return -1 (%d)\n", IoErr());
+
+    return -1;
+  }
+
+#warning SetFileSize might be broken..
+  newsize=SetFileSize(fh, (LONG) len, OFFSET_BEGINNING);
+
+  DebOut("newsize: %d\n", newsize);
+
+  if(newsize==-1) {
+    SetLastError(IoErr());
+    DebOut("return -1 (%d)\n", IoErr());
+    ret=-1;
+  }
+
+  if(fh) {
+    Close(fh);
+  }
+
+  return ret;
 }
 
 /******************************************************************
