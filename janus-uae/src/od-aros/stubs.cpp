@@ -130,12 +130,6 @@ void getpathpart (TCHAR *outpath, int size, const TCHAR *inpath)
   TODO();
 }
 
-int my_truncate (const TCHAR *name, uae_u64 len)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
 void pause_sound (void)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
