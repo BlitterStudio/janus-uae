@@ -964,12 +964,6 @@ void init_scsi (void) {
   TODO();
 }
 
-bool my_chmod (const TCHAR *name, uae_u32 mode) {
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-  return TRUE;
-}
-
 int input_get_default_joystick_analog (struct uae_input_device *uid, int i, int port, int af, bool gp, bool joymouseswap) {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
