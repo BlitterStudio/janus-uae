@@ -813,6 +813,61 @@ exit:
   return;
 }
 
+/****************************************************************
+ * my_issamevolume
+ *
+ * return FALSE, if one path is not inside the other:
+ *
+ * SYS:s and SYS:c are not the same path!
+ * SYS:c/test and SYS:c *are*!
+ *
+ * return remaining different part in path:
+ *
+ * SYS:c and SYS:  return "c"
+ *
+ * and the number of directory levels as a return code..
+ *
+ * WARNING: This has never been tested! See od-win32
+ ****************************************************************/
+int my_issamevolume(const TCHAR *path1, const TCHAR *path2, TCHAR *path) {
+  TCHAR p1[MAX_DPATH];
+  TCHAR p2[MAX_DPATH];
+  int len, cnt;
+
+  DebOut("WARNING: This has never been tested!\n");
+  DebOut("path1: %s, path2: %s\n", path1, path2);
+
+  strncpy(p1, path1, MAX_DPATH);
+  strncpy(p2, path2, MAX_DPATH);
+  fullpath(p1, MAX_DPATH);
+  fullpath(p2, MAX_DPATH);
+
+  DebOut("p1: %s, p2: %s\n", p1, p2);
+
+  len=_tcslen (p1);
+  if (len>_tcslen (p2)) {
+    len=_tcslen (p2);
+  }
+
+  /* len: MIN(len1, len2) */
+
+  if(!same_aname(p1, p2)) {
+    DebOut("not same volume: %s and %s\n", path1, path2);
+    return 0;
+  }
+
+  _tcscpy (path, p2 + len);
+  cnt=0;
+  for (int i = 0; i < _tcslen (path); i++) {
+    if(path[i] == '/') {
+      cnt++;
+    }
+  }
+
+  write_log (_T("'%s' (%s) matched with '%s' (%s), extra = '%s'\n"), path1, p1, path2, p2, path);
+  return cnt;
+}
+
 /******************************************************************
  ******************* fsdb_* functions *****************************
  ******************************************************************/
