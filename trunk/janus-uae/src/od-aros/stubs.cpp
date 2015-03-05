@@ -970,12 +970,6 @@ bool my_chmod (const TCHAR *name, uae_u32 mode) {
   return TRUE;
 }
 
-int my_issamevolume(const TCHAR *path1, const TCHAR *path2, TCHAR *path) {
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-  return FALSE;
-}
-
 int input_get_default_joystick_analog (struct uae_input_device *uid, int i, int port, int af, bool gp, bool joymouseswap) {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
