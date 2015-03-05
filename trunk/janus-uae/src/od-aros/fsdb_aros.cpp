@@ -26,6 +26,7 @@
 #define DEBUG 1
 #include <stdio.h>
 #include <proto/dos.h>
+#include <dos/dos.h>
 
 #define OLI_DEBUG
 #include "sysconfig.h"
@@ -37,6 +38,14 @@
 #include "winnt.h"
 
 #define MAXFILESIZE32 (0x7fffffff)
+
+/* why is this not defined in dos.h? See Protect source in AROS svn */
+#ifndef FIBB_HOLD
+#define FIBB_HOLD 7
+#endif
+#ifndef FIBF_HOLD
+#define FIBF_HOLD (1<<FIBB_HOLD)
+#endif
 
 
 /******************************************************************
@@ -142,8 +151,8 @@ istruct mystat^M
 */
 
 bool my_stat (const TCHAR *name, struct mystat *statbuf) {
-  struct FileInfoBlock *fib;
-  BPTR lock;
+  struct FileInfoBlock *fib=NULL;
+  BPTR lock=NULL;
   bool result=FALSE;
 
   D(bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, name));
@@ -540,8 +549,8 @@ struct my_opendir_s *my_opendir (const TCHAR *name) {
 /* TODO: 64bit sizes !? */
 uae_s64 int my_fsize (struct my_openfile_s *mos) {
 
-  struct FileInfoBlock * fib;
-  BPTR lock;
+  struct FileInfoBlock * fib=NULL;
+  BPTR lock=NULL;
   uae_s64 size;
 
   if(!(fib=(struct FileInfoBlock *) AllocDosObject(DOS_FIB, NULL)) || !Examine(lock, fib)) {
@@ -739,6 +748,72 @@ int my_truncate (const TCHAR *name, uae_u64 len) {
 }
 
 /******************************************************************
+ * my_isfilehidden
+ *
+ * Hidden is *wrong* here. AmigaOS just knows "Hold"!
+ ******************************************************************/
+bool my_isfilehidden (const TCHAR *name) {
+
+  struct FileInfoBlock *fib=NULL;
+  BPTR lock=NULL;
+  bool result=FALSE;
+
+  D(bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, name));
+
+  lock=Lock(name, SHARED_LOCK);
+  if(!lock) {
+    bug("[JUAE:A-FSDB] %s: failed to lock entry %s\n", __PRETTY_FUNCTION__, name);
+    goto exit;
+  }
+
+  if(!(fib=(struct FileInfoBlock *) AllocDosObject(DOS_FIB, NULL)) || !Examine(lock, fib)) {
+    bug("[JUAE:A-FSDB] %s: failed to examine lock @ 0x%p [fib @ 0x%p]\n", __PRETTY_FUNCTION__, lock, fib);
+    goto exit;
+  }
+
+  if(fib->fib_Protection & FIBF_HOLD) {
+    result=TRUE;
+  }
+
+exit:
+  if(lock) UnLock(lock);
+  if(fib) FreeDosObject(DOS_FIB, fib);
+
+  return result;
+}
+
+void my_setfilehidden (const TCHAR *name, bool hidden) {
+
+  LONG mask;
+  struct FileInfoBlock *fib=NULL;
+  BPTR lock=NULL;
+
+  D(bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, name));
+
+  lock=Lock(name, SHARED_LOCK);
+  if(!lock) {
+    bug("[JUAE:A-FSDB] %s: failed to lock entry %s\n", __PRETTY_FUNCTION__, name);
+    goto exit;
+  }
+
+  if(!(fib=(struct FileInfoBlock *) AllocDosObject(DOS_FIB, NULL)) || !Examine(lock, fib)) {
+    bug("[JUAE:A-FSDB] %s: failed to examine lock @ 0x%p [fib @ 0x%p]\n", __PRETTY_FUNCTION__, lock, fib);
+    goto exit;
+  }
+
+  mask=fib->fib_Protection | FIBF_HOLD;
+  if(!SetProtection(name, mask)) {
+    bug("ERROR: could not set %s to FIBF_HOLD!\n", name);
+  }
+
+exit:
+  if(lock) UnLock(lock);
+  if(fib) FreeDosObject(DOS_FIB, fib);
+
+  return;
+}
+
+/******************************************************************
  ******************* fsdb_* functions *****************************
  ******************************************************************/
 int fsdb_exists (const TCHAR *nname) {
@@ -784,7 +859,7 @@ int fsdb_name_invalid_dir (const TCHAR *n) {
 int fsdb_fill_file_attrs (a_inode *base, a_inode *aino) {
 
   struct FileInfoBlock *fib=NULL;
-  BPTR lock=0;
+  BPTR lock=NULL;
   int ret=0;
 
   //DebOut("%lx %lx\n", base, aino);

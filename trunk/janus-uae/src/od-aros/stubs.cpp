@@ -406,12 +406,6 @@ int hdf_read_target (struct hardfiledata *hfd, void *buffer, uae_u64 offset, int
 }
 #endif
 
-bool my_isfilehidden (const TCHAR *path)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
 static void picasso96_alloc2 (TrapContext *ctx)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
@@ -444,12 +438,6 @@ int hdf_write_target (struct hardfiledata *hfd, void *buffer, uae_u64 offset, in
   TODO();
 }
 #endif
-
-void my_setfilehidden (const TCHAR *path, bool hidden)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
 
 uae_u32 next_ilong_030ce (void)
 {
