@@ -869,6 +869,35 @@ int my_issamevolume(const TCHAR *path1, const TCHAR *path2, TCHAR *path) {
 }
 
 /******************************************************************
+ * my_chmod
+ *
+ * in win32 this can set the winnt flags:
+ * FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_READONLY and 
+ * FILE_ATTRIBUTE_ARCHIVE
+ *
+ * possible input is: FILEFLAG_WRITE and FILEFLAG_ARCHIVE
+ ******************************************************************/
+bool my_chmod (const TCHAR *name, uae_u32 mode) {
+
+  ULONG attr=FIBF_READ|FIBF_DELETE; /* default */
+
+  DebOut("WARNING: This has never been tested!\n");
+
+  if (mode & FILEFLAG_WRITE) {
+    attr |= FIBF_WRITE;
+  }
+  if (mode & FILEFLAG_ARCHIVE) {
+    attr |= FIBF_ARCHIVE;
+  }
+
+  if(!SetProtection(name, attr)) {
+    return false;
+  }
+
+  return true;
+}
+
+/******************************************************************
  ******************* fsdb_* functions *****************************
  ******************************************************************/
 int fsdb_exists (const TCHAR *nname) {
