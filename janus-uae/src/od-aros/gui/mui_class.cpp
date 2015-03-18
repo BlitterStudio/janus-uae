@@ -110,8 +110,7 @@ static int get_elem_from_obj(struct Data *data, Object *obj) {
 
   int i=0;
 
-  DebOut("obj: %lx\n", obj);
-  DebOut("data: %lx\n", data);
+  DebOut("obj: %lx, data %lx\n", obj, data);
 
   /* first try userdata */
   i=XGET(obj, MUIA_UserData);
@@ -190,7 +189,7 @@ BOOL CheckDlgButton(Element *elem, int button, UINT uCheck) {
   DebOut("elem[i].obj: %lx\n", elem[i].obj);
 
 
-  DoMethod(elem[i].obj, MUIM_Set, MUIA_Selected, uCheck);
+  DoMethod(elem[i].obj, MUIM_NoNotifySet, MUIA_Selected, uCheck);
   //SET(elem[i].obj, MUIA_Pressed, uCheck);
 
   return TRUE;
@@ -400,6 +399,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       return FALSE;
   }
 
+  /* never reach this */
   return TRUE;
 }
 
@@ -496,9 +496,23 @@ BOOL SetDlgItemInt(HWND elem, int item, UINT uValue, BOOL bSigned) {
 BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDCheckButton) {
   int i;
   int e;
+  int set;
+  IPTR act;
   i=nIDFirstButton;
 
   DebOut("0x%lx, %d, %d, %d\n", elem, nIDFirstButton, nIDLastButton, nIDCheckButton);
+
+  set=get_index(elem, nIDCheckButton);
+  /* might be in a different element..*/
+  if(set<0) {
+    elem=get_elem(nIDCheckButton);
+    set=get_index(elem, nIDCheckButton);
+  }
+  /* still not found !? */
+  if(set<0) {
+    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", i);
+  }
+
   while(i<nIDLastButton) {
     e=get_index(elem, i);
     /* might be in a different element..*/
@@ -513,11 +527,18 @@ BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDC
     }
     else {
       DebOut("index: %d\n", e);
-      DoMethod(elem[e].obj, MUIM_Set, MUIA_Selected, FALSE);
+      //DoMethod(elem[e].obj, MUIM_Set, MUIA_Selected, set==e);
+      act=GetAttr(MUIA_Selected, elem[e].obj, &act);
+
+      if( (set==e) != act) {
+        SetAttrs(elem[e].obj, MUIA_NoNotify, TRUE, MUIA_Selected, set==e, TAG_DONE);
+        DebOut("set elem[%d] to %d\n", e, act);
+      }
     }
     i++;
   }
 
+#if 0
   e=get_index(elem, nIDCheckButton);
   /* might be in a different element..*/
   if(e<0) {
@@ -525,15 +546,12 @@ BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDC
     e=get_index(elem, i);
   }
 
-  /* still not found !? */
-  if(e<0) {
-    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", i);
-  }
   else {
     DebOut("index: %d\n", e);
     DebOut("elem[i].obj: %lx\n", elem[i].obj);
     DoMethod(elem[e].obj, MUIM_Set, MUIA_Selected, TRUE);
   }
+#endif
 }
 
 UINT IsDlgButtonChecked(HWND elem, int item) {
@@ -556,6 +574,9 @@ UINT IsDlgButtonChecked(HWND elem, int item) {
 
   DebOut("elem[i].obj: %lx\n", elem[i].obj);
   DebOut("elem[i].value: %lx\n", elem[i].value);
+  if(elem[i].text) {
+    DebOut("elem[i].text: %s\n", elem[i].text);
+  }
 
   return elem[i].value;
 }
@@ -759,41 +780,74 @@ AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
   AROS_USERFUNC_EXIT
 }
 
-
 AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
 
   AROS_USERFUNC_INIT
 
   int i;
+  ULONG t;
   ULONG wParam;
+  ULONG newstate;
 
   struct Data *data = (struct Data *) hook->h_Data;
 
-
-  DebOut("entered\n");
-  DebOut("hook.h_Data: %lx\n", hook->h_Data);
-  DebOut("obj: %lx\n", obj);
+  DebOut("entered (hook.h_Data: %lx)\n", hook->h_Data);
 
   i=get_elem_from_obj(data, (Object *) obj);
 
-  DebOut("i: %d\n", i);
+  if(data->src[i].text) {
+    DebOut("obj: %lx => i: %d (%s)\n", obj, i, data->src[i].text);
+  }
+  else {
+    DebOut("obj: %lx => i: %d\n", obj, i);
+  }
 
-  data->src[i].value=XGET((Object *) obj, MUIA_Selected);
+  newstate=XGET((Object *) obj, MUIA_Selected);
+  DebOut("MUIA_Selected is (now): %d (group: %d)\n", newstate, data->src[i].group);
 
-  DebOut("We are in state Selected: %d\n", (ULONG) XGET((Object *) obj, MUIA_Selected));
+  if(data->src[i].group) {
+    /* AUTORADIOBUTTON / Radio button logic: */
+    if(data->src[i].value == 1) {
+      /* we were already the active one, we want to stay that, too! */
+      DebOut("we were already the active one!\n");
+      DoMethod(data->src[i].obj, MUIM_NoNotifySet, MUIA_Selected, TRUE);
+      goto DONE;
+    }
 
+    if(newstate == 0) {
+      /* this is impossible!*/
+      DebOut("ERROR: this is impossible\n");
+    }
+
+    DebOut("deselect all my brothers\n");
+    /* as we are part of a group, unselect all our active friends */
+    t=0;
+    while(data->src[t].exists) {
+      if(data->src[t].value && data->src[i].group == data->src[t].group && t!=i) {
+        /* same group */
+        DebOut("  => also activated, same group, other guy!\n");
+        DoMethod(data->src[t].obj, MUIM_NoNotifySet, MUIA_Selected, FALSE); 
+        data->src[t].value=0;
+      }
+      t++;
+    }
+  }
+
+  /* we are the only 1 now*/
+  data->src[i].value=newstate;
+
+  /* now call the windows hook */
   if(data->func) {
-    DebOut("call function: %lx\n", data->func);
-    DebOut("IDC: %d\n", data->src[i].idc);
-    DebOut("WM_COMMAND: %d\n", WM_COMMAND);
     wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
-    DebOut("wParam: %lx\n", wParam);
+    DebOut("call function: %lx (IDC %d, wParam: %lx)\n", data->func, data->src[i].idc, wParam);
     data->func(data->src, WM_COMMAND, wParam, NULL);
   }
   else {
-    DebOut("function is zero: %lx\n", data->func);
+    DebOut("WARNING: function is zero: %lx\n", data->func);
   }
 
+DONE:
+  ;
   AROS_USERFUNC_EXIT
 }
 
@@ -1013,7 +1067,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                     MUIA_UserData         , i,
                     Child, src[i].obj=ImageObject,
                         NoFrame,
-                        MUIA_CycleChain       , 1,
+                        //MUIA_CycleChain       , 1,
                         MUIA_InputMode        , MUIV_InputMode_Toggle,
                         MUIA_Image_Spec       , MUII_RadioButton,
                         MUIA_ShowSelState     , FALSE,
@@ -1035,7 +1089,6 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
 #endif
               data->MyMUIHook_select.h_Data =(APTR) data;
 
-              DebOut("DoMethod(%lx, MUIM_Notify, MUIA_Selected, MUIV_EveryTime..)\n", src[i].obj);
               DoMethod(src[i].obj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_select, func); 
 
             }
@@ -1049,7 +1102,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                     MUIA_Image_Spec  , MUII_CheckMark,
                     MUIA_Background  , MUII_ButtonBack,
                     MUIA_ShowSelState, FALSE,
-                    MUIA_CycleChain  , TRUE,
+                    //MUIA_CycleChain  , TRUE,
                     MUIA_UserData         , i,
                   End,
                   Child, TextObject,
@@ -1069,7 +1122,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                     MUIA_Image_Spec  , MUII_CheckMark,
                     MUIA_Background  , MUII_ButtonBack,
                     MUIA_ShowSelState, FALSE,
-                    MUIA_CycleChain  , TRUE,
+                    //MUIA_CycleChain  , TRUE,
                     MUIA_UserData         , i,
                   End,
                 End;
@@ -1215,6 +1268,9 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
         }
         if(!(src[i].flags & WS_VISIBLE)) {
           DoMethod(child, MUIM_Set, MUIA_ShowMe, (IPTR) 0);
+        }
+        if(src[i].flags & WS_TABSTOP) {
+          DoMethod(child, MUIM_Set, MUIA_CycleChain, (IPTR) 1);
         }
         child=NULL;
       }
