@@ -494,11 +494,10 @@ BOOL SetDlgItemInt(HWND elem, int item, UINT uValue, BOOL bSigned) {
  * a check mark from (clears) all other radio buttons in the group. 
  */
 BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDCheckButton) {
-  int i;
-  int e;
-  int set;
+  int i=-666;
+  int e=-666;
+  int set=-666;
   IPTR act;
-  i=nIDFirstButton;
 
   DebOut("0x%lx, %d, %d, %d\n", elem, nIDFirstButton, nIDLastButton, nIDCheckButton);
 
@@ -511,8 +510,28 @@ BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDC
   /* still not found !? */
   if(set<0) {
     DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", i);
+    return FALSE;
   }
 
+  if(elem[set].flags2==BS_AUTORADIOBUTTON) {
+    if(elem[set].value) {
+      DebOut("Button was already active, nothing to do here.\n");
+      return TRUE;
+    }
+
+    /* 
+     * we are an autoradio button. only one will be active anyways, so just "click" on me,
+     * notification should reach the right button.
+     */
+    DoMethod(elem[set].obj, MUIM_Set, MUIA_Selected, TRUE);
+    return TRUE;
+  }
+
+  DebOut("WARNING: CheckRadioButton called for a non-BS_AUTORADIOBUTTON !?\n");
+
+#if 0
+  /* this is not tested..: */
+  i=nIDFirstButton;
   while(i<nIDLastButton) {
     e=get_index(elem, i);
     /* might be in a different element..*/
@@ -526,32 +545,24 @@ BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDC
       DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", i);
     }
     else {
-      DebOut("index: %d\n", e);
-      //DoMethod(elem[e].obj, MUIM_Set, MUIA_Selected, set==e);
-      act=GetAttr(MUIA_Selected, elem[e].obj, &act);
+      act=XGET(elem[e].obj, MUIA_Selected);
 
       if( (set==e) != act) {
-        SetAttrs(elem[e].obj, MUIA_NoNotify, TRUE, MUIA_Selected, set==e, TAG_DONE);
-        DebOut("set elem[%d] to %d\n", e, act);
+        DoMethod(elem[e].obj, MUIM_Set, MUIA_Selected, set==e);
+        if(elem[e].text) {
+          DebOut("set elem[%d] (%s) to %d\n", e, elem[e].text, act);
+        }
+        else {
+          DebOut("set elem[%d] to %d\n", e, act);
+        }
+
       }
     }
     i++;
   }
-
-#if 0
-  e=get_index(elem, nIDCheckButton);
-  /* might be in a different element..*/
-  if(e<0) {
-    elem=get_elem(i);
-    e=get_index(elem, i);
-  }
-
-  else {
-    DebOut("index: %d\n", e);
-    DebOut("elem[i].obj: %lx\n", elem[i].obj);
-    DoMethod(elem[e].obj, MUIM_Set, MUIA_Selected, TRUE);
-  }
 #endif
+
+  return FALSE;
 }
 
 UINT IsDlgButtonChecked(HWND elem, int item) {
