@@ -2366,8 +2366,7 @@ static void prefs_to_gui (struct uae_prefs *p)
 #endif
 }
 
-#if 0
-static void gui_to_prefs (void)
+void gui_to_prefs (void)
 {
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
@@ -2379,7 +2378,6 @@ static void gui_to_prefs (void)
 	fixup_prefs (&changed_prefs);
 	updatewinfsmode (&changed_prefs);
 }
-#endif
 
 static int iscd (int n)
 {
@@ -9954,7 +9952,7 @@ static void values_from_cpudlg (HWND hDlg)
 	int newcpu, newfpu, newtrust, oldcache, jitena, idx;
 	static int cachesize_prev, trust_prev;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  bug("[JUAE:GUI] vvvvvvvvvvvvvvvvv %s vvvvvvvvvvvvvvvvv\n", __PRETTY_FUNCTION__);
 
 	workprefs.cpu_compatible = workprefs.cpu_cycle_exact | (ischecked (hDlg, IDC_COMPATIBLE) ? 1 : 0);
 	workprefs.fpu_strict = ischecked (hDlg, IDC_COMPATIBLE_FPU) ? 1 : 0;
@@ -9973,6 +9971,7 @@ static void values_from_cpudlg (HWND hDlg)
 		: ischecked (hDlg, IDC_CPU3) ? 68030
 		: ischecked (hDlg, IDC_CPU4) ? 68040
 		: ischecked (hDlg, IDC_CPU5) ? 68060 : 0;
+
 	newfpu = ischecked (hDlg, IDC_FPU0) ? 0
 		: ischecked (hDlg, IDC_FPU1) ? 1
 		: ischecked (hDlg, IDC_FPU2) ? 2
@@ -10085,6 +10084,7 @@ static void values_from_cpudlg (HWND hDlg)
 				workprefs.cpu_frequency = 0;
 		}
 	}
+  bug("[JUAE:GUI] ^^^^^^^^^^^^^^^^^ %s ^^^^^^^^^^^^^^^^^\n", __PRETTY_FUNCTION__);
 }
 
 INT_PTR CALLBACK CPUDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -10096,6 +10096,7 @@ INT_PTR CALLBACK CPUDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	switch (msg) {
 	case WM_INITDIALOG:
+    bug("[JUAE:GUI] %s(): WM_INITDIALOG\n", __PRETTY_FUNCTION__);
 		recursive++;
 		pages[CPU_ID] = hDlg;
 		currentpage = CPU_ID;
@@ -10141,6 +10142,7 @@ INT_PTR CALLBACK CPUDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
     /* fall through! */
 
 	case WM_USER:
+    bug("[JUAE:GUI] %s(): WM_USER\n", __PRETTY_FUNCTION__);
 		recursive++;
 		enable_for_cpudlg (hDlg);
 		values_to_cpudlg (hDlg);
@@ -10148,6 +10150,8 @@ INT_PTR CALLBACK CPUDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		return TRUE;
 
 	case WM_COMMAND:
+    bug("[JUAE:GUI] %s(): WM_COMMAND\n", __PRETTY_FUNCTION__);
+    DebOut("recursive: %d\n", recursive);
 		if (recursive > 0)
 			break;
 		recursive++;

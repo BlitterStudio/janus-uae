@@ -129,6 +129,8 @@ OK:
 
 struct Hook MyMuiHook_start;
 
+void gui_to_prefs (void);
+
 AROS_UFH2(void, MUIHook_start, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
 
   AROS_USERFUNC_INIT
@@ -136,6 +138,7 @@ AROS_UFH2(void, MUIHook_start, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
   DebOut("START!\n");
 
   /* 0 = normal, 1 = nogui, -1 = disable nogui */
+  gui_to_prefs ();
   aros_hide_gui();
   quit_program=0;
   uae_restart (-1, NULL);
