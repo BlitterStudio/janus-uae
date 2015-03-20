@@ -28,6 +28,7 @@
 
 #include "SDL_Config/SDL_config_lib.h"
 
+#define DEBUG 1
 #define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -39,7 +40,7 @@
 static CFG_File ini;
 #define _tcscpy_s strncpy
 static int inimode = 1;
-static TCHAR *inipath;
+TCHAR *inipath;
 #define PUPPA _T("eitätäoo")
 
 static TCHAR *gs (UAEREG *root)
@@ -189,28 +190,31 @@ int regquerylonglong (UAEREG *root, const TCHAR *name, ULONGLONG *val)
 
 int regquerystr (UAEREG *root, const TCHAR *name, TCHAR *str, int *size)
 {
-    const char *res;
+    CFG_String_Arg res;
 
-    D(bug("[JUAE:Reg] %s(0x%p, '%s')\n", __PRETTY_FUNCTION__, root, name));
-
-    //reginitializeinit(NULL);
+    D(bug("[JUAE:Reg] %s(0x%p, '%s', %d)\n", __PRETTY_FUNCTION__, root, name, *size));
 
     if (CFG_SelectGroup(gs(root), FALSE) == CFG_ERROR) {
         bug("[JUAE:Reg] %s: group %s not found\n", __PRETTY_FUNCTION__, gs(root));
-        //regflushfile();
         return 0;
     }
 
     res = CFG_ReadText(name, PUPPA);
     if (!strcmp (res, PUPPA)) {
         bug("[JUAE:Reg] %s: key %s not found\n", __PRETTY_FUNCTION__, name);
-        //regflushfile();
         return 0;
     }
 
-    strncpy(str, res, *size);
+    if(strlen(res)>*size-1) {
+      /* WARNING: this seems to destroy the *size value !? */
+      D(bug("[JUAE:Reg] %s: Warning: truncated %s\n", __PRETTY_FUNCTION__, res));
+      strncpy(str, res, *size);
+      str[*size-1]=0;
+    }
+    else {
+      strcpy(str, res);
+    }
     D(bug("[JUAE:Reg] %s: found %s = %s\n", __PRETTY_FUNCTION__, name, str));
-    //regflushfile();
 
     return strlen(str);
 }
