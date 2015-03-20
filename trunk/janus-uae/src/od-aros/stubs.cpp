@@ -288,12 +288,6 @@ void sampler_vsync (void)
   //TODO();
 }
 
-void fetch_datapath (TCHAR *out, int size)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
 uae_u32 get_byte_ce030 (uaecptr addr)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
@@ -419,12 +413,6 @@ USHORT DMS_Process_File(struct zfile *fi, struct zfile *fo, USHORT cmd, USHORT o
   TODO();
 }
 
-void fetch_ripperpath (TCHAR *out, int size)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
 #if (0)
 void hdf_close_target (struct hardfiledata *hfd)
 {
@@ -543,12 +531,6 @@ void target_addtorecent (const TCHAR *name, int t)
 }
 
 void amiga_clipboard_die (void)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
-void fetch_statefilepath (TCHAR *out, int size)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
@@ -876,12 +858,6 @@ TCHAR *au (const char *s) {
 }
 
 void refreshtitle (void)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-	  TODO();
-}
-
-void fetch_inputfilepath (TCHAR *out, int size)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
 	  TODO();
