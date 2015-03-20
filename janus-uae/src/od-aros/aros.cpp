@@ -209,7 +209,7 @@ void stripslashes (TCHAR *p)
 
 void fetch_configurationpath (TCHAR *out, int size)
 {
-  strncpy(out, "configurations/", size);
+  fetch_path (_T("ConfigurationPath"), out, size);
 }
 
 void fetch_saveimagepath (TCHAR *out, int size, int dir)
@@ -221,7 +221,7 @@ void fetch_saveimagepath (TCHAR *out, int size, int dir)
     fetch_path (_T("SaveimagePath"), out, size);
   }
 }
-#if 0
+
 void fetch_screenshotpath (TCHAR *out, int size)
 {
   fetch_path (_T("ScreenshotPath"), out, size);
@@ -242,58 +242,90 @@ void fetch_datapath (TCHAR *out, int size)
 {
   fetch_path (NULL, out, size);
 }
-#endif
 
 
 void fetch_path (const TCHAR *name, TCHAR *out, int size) {
   int size2 = size;
+  TCHAR tmp[256];
 
-  _tcscpy (out, start_path_data);
+  DebOut("name: %s, size %d\n", name, size);
+  out[0]=0;
+
   if (!name) {
-    fullpath (out, size);
+    _tcscpy (out, start_path_data);
     return;
   }
+
   if (!_tcscmp (name, _T("FloppyPath")))
     _tcscat (out, _T("PROGDIR:adf"));
-  if (!_tcscmp (name, _T("CDPath")))
+  else if (!_tcscmp (name, _T("CDPath")))
     _tcscat (out, _T("PROGDIR:cd"));
-  if (!_tcscmp (name, _T("TapePath")))
+  else if (!_tcscmp (name, _T("TapePath")))
     _tcscat (out, _T("PROGDIR:tape\\"));
-  if (!_tcscmp (name, _T("hdfPath")))
+  else if (!_tcscmp (name, _T("hdfPath")))
     _tcscat (out, _T("PROGDIR:hdf"));
-  if (!_tcscmp (name, _T("KickstartPath")))
+  else if (!_tcscmp (name, _T("KickstartPath")))
     _tcscat (out, _T("PROGDIR:Roms/"));
-  if (!_tcscmp (name, _T("ConfigurationPath")))
+  else if (!_tcscmp (name, _T("ConfigurationPath")))
     _tcscat (out, _T("PROGDIR:Configurations\\"));
-  if (!_tcscmp (name, _T("LuaPath")))
+  else if (!_tcscmp (name, _T("LuaPath")))
     _tcscat (out, _T("PROGDIR:lua"));
-  if (!_tcscmp (name, _T("StatefilePath")))
+  else if (!_tcscmp (name, _T("StatefilePath")))
     _tcscat (out, _T("PROGDIR:Savestates"));
-  if (!_tcscmp (name, _T("InputPath")))
+  else if (!_tcscmp (name, _T("InputPath")))
     _tcscat (out, _T("PROGDIR:Inputrecordings\\"));
-#if 0
+  else {
+    _tcscpy (out, start_path_data);
+    return;
+  }
+
   if (start_data >= 0)
-    regquerystr (NULL, name, out, &size); 
-  if (GetFileAttributes (out) == INVALID_FILE_ATTRIBUTES)
-    _tcscpy (out, start_path_data);
-#endif
-#if 0
-  if (out[0] == '\\' && (_tcslen (out) >= 2 && out[1] != '\\')) { /* relative? */
-    _tcscpy (out, start_path_data);
-    if (start_data >= 0) {
-      size2 -= _tcslen (out);
-      regquerystr (NULL, name, out, &size2);
+    regquerystr (NULL, name, tmp, &size); 
+
+  /* somehow I though it would be a good idea, to strip '.\', that WinUAE uses */
+  if(tmp[0]=='.' && tmp[1]=='\\') {
+    strcpy(out, tmp+2);
+  }
+  else {
+    strcpy(out, tmp);
+  }
+
+  DebOut("out: >%s<\n", out);
+
+  if (GetFileAttributes (out) == INVALID_FILE_ATTRIBUTES) {
+    DebOut("directory %s was invalid ..\n", out);
+
+    /* try again */
+    out[0]=0;
+    if (!_tcscmp (name, _T("FloppyPath")))
+      _tcscat (out, _T("PROGDIR:adf"));
+    else if (!_tcscmp (name, _T("CDPath")))
+      _tcscat (out, _T("PROGDIR:cd"));
+    else if (!_tcscmp (name, _T("TapePath")))
+      _tcscat (out, _T("PROGDIR:tape\\"));
+    else if (!_tcscmp (name, _T("hdfPath")))
+      _tcscat (out, _T("PROGDIR:hdf"));
+    else if (!_tcscmp (name, _T("KickstartPath")))
+      _tcscat (out, _T("PROGDIR:Roms/"));
+    else if (!_tcscmp (name, _T("ConfigurationPath")))
+      _tcscat (out, _T("PROGDIR:Configurations\\"));
+    else if (!_tcscmp (name, _T("LuaPath")))
+      _tcscat (out, _T("PROGDIR:lua"));
+    else if (!_tcscmp (name, _T("StatefilePath")))
+      _tcscat (out, _T("PROGDIR:Savestates"));
+    else if (!_tcscmp (name, _T("InputPath")))
+      _tcscat (out, _T("PROGDIR:Inputrecordings\\"));
+
+    DebOut(".. try default %s\n", out);
+
+    if (GetFileAttributes (out) == INVALID_FILE_ATTRIBUTES) {
+      /* still not ok !? */
+      DebOut("default directory %s was invalid, too, use %s\n", out, start_path_data);
+      _tcscpy (out, start_path_data);
     }
   }
-#endif
+
   stripslashes (out);
-#if 0
-  if (!_tcscmp (name, _T("KickstartPath"))) {
-    DWORD v = GetFileAttributes (out);
-    if (v == INVALID_FILE_ATTRIBUTES || !(v & FILE_ATTRIBUTE_DIRECTORY))
-      _tcscpy (out, start_path_data);
-  }
-#endif
   fixtrailing (out);
   fullpath (out, size);
 }
@@ -893,8 +925,11 @@ static void initpath (const TCHAR *name, TCHAR *path)
 {
     bug("[JUAE:AROS] %s('%s', '%s')\n", __PRETTY_FUNCTION__, name, path);
 
-    if (regexists (NULL, name))
-        return;
+    if (regexists (NULL, name)) {
+      DebOut("name %s exists in registry\n", name);
+      return;
+    }
+    DebOut("not in registry: %s\n", name);
     set_path (name, NULL);
 }
 

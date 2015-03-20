@@ -25,6 +25,9 @@
 
 #define OLI_DEBUG
 
+#include <exec/execbase.h>
+#include <proto/dos.h>
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -36,55 +39,67 @@
 #include "memory.h"
 #include "gui.h"
 #include "registry.h"
+#ifdef __AROS__
+#include "winnt.h"
+#endif
 
 TCHAR VersionStr[256];
 TCHAR BetaStr[64];
 
+int start_data = 0;
 
+void fullpath(TCHAR *linkfile, int size);
+
+/*
+ * getstartpaths
+ *
+ * WinUAE does quite some magic here, to detect PROGDIR etc.
+ * This seems uneccessary for AROS.
+ *
+ * What might be still to do, is the AmigaForever etc. stuff.
+ */
 static void getstartpaths (void)
 {
-#if 0
-	TCHAR *posn, *p;
-	TCHAR tmp[MAX_DPATH], tmp2[MAX_DPATH], prevpath[MAX_DPATH];
-	DWORD v;
 	UAEREG *key;
-	TCHAR xstart_path_uae[MAX_DPATH], xstart_path_old[MAX_DPATH];
-	TCHAR xstart_path_new1[MAX_DPATH], xstart_path_new2[MAX_DPATH];
 
-	path_type = PATH_TYPE_DEFAULT;
-	prevpath[0] = 0;
-	xstart_path_uae[0] = xstart_path_old[0] = xstart_path_new1[0] = xstart_path_new2[0] = 0;
-#if 0
-	key = regcreatetree (NULL, NULL);
-	if (key)  {
-		int size = sizeof (prevpath) / sizeof (TCHAR);
-		if (!regquerystr (key, _T("PathMode"), prevpath, &size))
-			prevpath[0] = 0;
-		regclosetree (key);
-	}
-#endif
-	if (!_tcscmp (prevpath, _T("WinUAE")))
-		path_type = PATH_TYPE_WINUAE;
-	if (!_tcscmp (prevpath, _T("WinUAE_2")))
-		path_type = PATH_TYPE_NEWWINUAE;
-	if (!_tcscmp (prevpath, _T("AF2005")) || !_tcscmp (prevpath, _T("AmigaForever")))
-		path_type = PATH_TYPE_NEWAF;
-	if (!_tcscmp (prevpath, _T("AMIGAFOREVERDATA")))
-		path_type = PATH_TYPE_AMIGAFOREVERDATA;
+  DebOut("entered\n");
+
+  DebOut("inipath: %s\n", inipath);
+
+  path_type = PATH_TYPE_WINUAE;
+  relativepaths = 1;
+
+  strcpy(start_path_exe,  "PROGDIR:");
+  strcpy(start_path_data, "PROGDIR:");
+
+  if(!my_existsdir("PROGDIR:Configurations")) {
+    my_mkdir("PROGDIR:Configurations");
+  }
+  if(!my_existsdir("PROGDIR:Screenshots")) {
+    my_mkdir("PROGDIR:Screenshots");
+  }
+  if(!my_existsdir("PROGDIR:Savestates")) {
+    my_mkdir("PROGDIR:Savestates");
+  }
+  if(!my_existsdir("PROGDIR:Amiga Files")) {
+    my_mkdir("PROGDIR:Amiga Files");
+  }
+  if(!my_existsdir("PROGDIR:Roms")) {
+    my_mkdir("PROGDIR:Roms");
+  }
+
 
 #if 0
-	GetFullPathName (_wpgmptr, sizeof start_path_exe / sizeof (TCHAR), start_path_exe, NULL);
+
+  /* _wpgmptr: in Windows: "The path of the executable file" */
+	GetFullPathName (_wpgmptr, sizeof(start_path_exe) / sizeof (TCHAR), start_path_exe, NULL);
 	if((posn = _tcsrchr (start_path_exe, '\\')))
 		posn[1] = 0;
-#endif
 
-#if 0
 	if (path_type == PATH_TYPE_DEFAULT && inipath) {
-#endif
 		path_type = PATH_TYPE_WINUAE;
 		_tcscpy (xstart_path_uae, start_path_exe);
 		relativepaths = 1;
-#if 0
 	} else if (path_type == PATH_TYPE_DEFAULT && start_data == 0 && key) {
 		bool ispath = false;
 		_tcscpy (tmp2, start_path_exe);
@@ -131,7 +146,6 @@ static void getstartpaths (void)
 			}
 		}
 	}
-#endif
 
 	_tcscpy (tmp, start_path_exe);
 	_tcscat (tmp, _T("roms"));
@@ -296,8 +310,6 @@ void makeverstr (TCHAR *s) {
 
 extern int log_scsi;
 
-static TCHAR *inipath = NULL;
-
 static TCHAR *getdefaultini (void) {
   return strdup("PROGDIR:winuae.ini");
 }
@@ -322,6 +334,14 @@ int main (int argc, TCHAR **argv) {
 
   bug("main(%d, ..)\n", argc);
 
+  if(SysBase->TDNestCnt>=0) {
+    bug("Permit required a1\n");
+    Permit();
+    Permit();
+    Permit();
+  }
+
+
   inipath=getdefaultini();
   reginitializeinit(&inipath);
   getstartpaths ();
@@ -329,6 +349,11 @@ int main (int argc, TCHAR **argv) {
 	DebOut("%s", VersionStr);
 	logging_init();
 	log_scsi=1;
+
+  if(SysBase->TDNestCnt>=0) {
+    bug("Permit required a2\n");
+  }
+
 
 #ifdef NATMEM_OFFSET
   if(preinit_shm() /* && WIN32_RegisterClasses () && WIN32_InitLibraries ()*/ ) {
@@ -344,6 +369,10 @@ int main (int argc, TCHAR **argv) {
   WIN32_HandleRegistryStuff ();
 
 
+
+  if(SysBase->TDNestCnt>=0) {
+    bug("Permit required a3\n");
+  }
 
 
   // sortdisplays (); only for multi_display
@@ -393,6 +422,10 @@ int main (int argc, TCHAR **argv) {
 	//serialipc = createIPC (COMPIPENAME, 1);
 	//enumserialports ();
 	//enummidiports ();
+
+  if(SysBase->TDNestCnt>=0) {
+    bug("Permit required a4\n");
+  }
 
 	DebOut("calling real_main..\n");
 	real_main (argc, argv);
