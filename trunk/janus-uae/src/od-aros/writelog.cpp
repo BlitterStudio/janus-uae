@@ -33,7 +33,9 @@
 #include "sysdeps.h"
 
 #include "options.h"
+#include "uae.h"
 #include "aros.h"
+
 
 #define LOG_BOOT   _T("janus-uae_bootlog.txt")
 #define LOG_NORMAL _T("janus-uae_log.txt")
@@ -141,6 +143,17 @@ void logging_open (int bootlog, int append)
 
 	opentimer(UNIT_VBLANK);
 
+  if(!logpath[0]) {
+    snprintf(logpath, MAX_DPATH-1, "PROGDIR:%s", LOG_NORMAL);
+    fullpath(logpath, MAX_DPATH-1);
+  }
+  if(!bootlogpath[0]) {
+    snprintf(bootlogpath, MAX_DPATH-1, "PROGDIR:%s", LOG_BOOT);
+    fullpath(bootlogpath, MAX_DPATH-1);
+  }
+
+
+
 	debugfilename[0] = 0;
 #ifndef	SINGLEFILE
 	if (currprefs.win32_logfile)
@@ -160,6 +173,7 @@ void logging_open (int bootlog, int append)
 		}
 	}
 #endif
+
 }
 
 static void premsg (void) 
@@ -210,8 +224,6 @@ void write_log (const TCHAR *format, ...)
 	int bufsize = WRITE_LOG_BUF_SIZE;
 	TCHAR *bufp;
 	va_list parms;
-
-	//DebOut("entered\n");
 
 	premsg ();
 
