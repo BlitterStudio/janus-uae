@@ -126,58 +126,11 @@
 #include "gui/mui_data.h"
 #include "gui/gui_mui.h"
 
+#include "tchar.h"
+#define fputws fputs
+#define fgetws fgets
 /* fix mui conflict.. */
 #undef Child
-#if 0
-int regqueryint (UAEREG *root, const TCHAR *name, int *val) {
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
-  TODO();
-}
-int regquerystr (UAEREG *root, const TCHAR *name, TCHAR *str, int *size) {
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
-  TODO();
-}
-int regsetint (UAEREG *root, const TCHAR *name, int val) {
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
-  TODO();
-}
-int regsetstr (UAEREG *root, const TCHAR *name, const TCHAR *str) {
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
-  TODO();
-}
-void regclosetree (UAEREG *key) {
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
-  TODO();
-}
-int regenumstr (UAEREG *root, int idx, TCHAR *name, int *nsize, TCHAR *str, int *size)
-{
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
-  TODO();
-  return 0;
-}
-
-UAEREG *regcreatetree (UAEREG *root, const TCHAR *name) {
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
-  TODO();
-  return NULL;
-}
-
-int regexiststree (UAEREG *root, const TCHAR *name) {
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
-  TODO();
-  return FALSE;
-}
-
-int regexists (UAEREG *root, const TCHAR *name) {
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
-  return FALSE;
-}
-
-int getregmode (void) {
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
-  return 0;
-}
-#endif
 
 void pre_gui_message (const TCHAR *format,...);
 
@@ -5775,7 +5728,6 @@ static void resetregistry (void)
 	regdelete (NULL, _T("ShownsupportedModes"));
 }
 
-#if 0
 static void copylog (const TCHAR *name, const TCHAR *path, FILE *f)
 {
 	FILE *s;
@@ -5797,6 +5749,7 @@ static void copylog (const TCHAR *name, const TCHAR *path, FILE *f)
 		fclose (s);
 	}
 }
+
 static void saveconfig (FILE *f)
 {
 	int len;
@@ -5815,6 +5768,8 @@ static void saveconfig (FILE *f)
 
 static void savelog (int all)
 {
+  DebOut("all: %d\n", all);
+  TODO();
 	FILE *f;
 
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
@@ -5824,9 +5779,14 @@ static void savelog (int all)
 	if (GetTempPath (MAX_DPATH, tmp) <= 0)
 		return;
 	if (all) {
+    TODO();
 		flush_log ();
 		_tcscat (tmp, _T("winuae_debug.txt"));
+#ifndef __AROS__
 		f = _tfopen (tmp, _T("wt, ccs=UTF-8"));
+#else
+		f = _tfopen (tmp, _T("w"));
+#endif
 		copylog (_T("winuaebootlog"), bootlogpath, f);
 		copylog (_T("winuaelog"), logpath, f);
 		fputws (_T("\n"), f);
@@ -5836,14 +5796,16 @@ static void savelog (int all)
 		fclose (f);
 	} else {
 		_tcscat (tmp, _T("winuae_config.txt"));
+#ifndef __AROS__
 		f = _tfopen (tmp, _T("wt, ccs=UTF-8"));
+#else
+		f = _tfopen (tmp, _T("w"));
+#endif
 		saveconfig (f);
 		fclose (f);
 	}
 	ShellExecute (NULL, _T("open"), tmp, NULL, NULL, SW_SHOWNORMAL);
 }
-
-#endif
 
 pathtype path_type;
 INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -5861,13 +5823,12 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 	int val, selpath = 0;
 	TCHAR tmp[MAX_DPATH];
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
-  bug("entered (hDlg: %lx)\n", hDlg);
-  bug("msg: %d\n", msg);
+  bug("[JUAE:GUI] %s(msg: %d)\n", __PRETTY_FUNCTION__, msg);
 
 	switch (msg)
 	{
 	case WM_INITDIALOG:
+    DebOut("WM_INITDIALOG\n");
 		recursive++;
 		pages[PATHS_ID] = hDlg;
 		setac (hDlg, IDC_PATHS_ROM);
@@ -5907,14 +5868,14 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		}
 		WIN32GUI_LoadUIString (IDS_DEFAULT_WINUAE, tmp, sizeof tmp / sizeof (TCHAR));
 		SendDlgItemMessage (hDlg, IDC_PATHS_DEFAULTTYPE, CB_ADDSTRING, 0, (LPARAM)tmp);
-#if 0
+
 		if (path_type == PATH_TYPE_WINUAE || path_type == PATH_TYPE_DEFAULT)
 			selpath = numtypes;
 		ptypes[numtypes++] = PATH_TYPE_WINUAE;
 		SendDlgItemMessage (hDlg, IDC_PATHS_DEFAULTTYPE, CB_SETCURSEL, selpath, 0);
-		EnableWindow (GetDlgItem (hDlg, IDC_PATHS_DEFAULTTYPE), numtypes > 0 ? TRUE : FALSE);
-#endif
-    bug("call SetWindowText(bootlogpath %s)..\n", bootlogpath);
+		EnableWindow (hDlg, IDC_PATHS_DEFAULTTYPE, numtypes > 0 ? TRUE : FALSE);
+
+    DebOut("call SetWindowText(bootlogpath %s)..\n", bootlogpath);
 		//RE SetWindowText (GetDlgItem (hDlg, IDC_LOGPATH), bootlogpath);
     SetDlgItemText(hDlg, IDC_LOGPATH, bootlogpath);
 
@@ -5938,13 +5899,13 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		return TRUE;
 
 	case WM_COMMAND:
-    bug("msg: WM_COMMAND\n");
+    DebOut("msg: WM_COMMAND\n");
 		if (recursive > 0)
 			break;
 		recursive++;
 		if (HIWORD (wParam) == CBN_SELCHANGE || HIWORD (wParam) == CBN_KILLFOCUS)  {
-      bug("CBN_SELCHANGE / CBN_KILLFOCUS\n");
-      bug("IDC_PATHS_ROM: %d, IDC_PATHS_ROMS: %d\n", IDC_PATHS_ROM, IDC_PATHS_ROMS);
+      DebOut("CBN_SELCHANGE / CBN_KILLFOCUS\n");
+      DebOut("  (IDC_PATHS_ROM: would be %d, IDC_PATHS_ROMS: %d)\n", IDC_PATHS_ROM, IDC_PATHS_ROMS);
 			switch (LOWORD (wParam))
 			{
 				case IDC_LOGSELECT:
@@ -5968,7 +5929,9 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 			}
 		} else {
       bug("else..\n");
-      bug("wParam: %d (IDC_PATHS_ROMS %d)\n", LOWORD (wParam), IDC_PATHS_ROMS);
+      DebOut("wParam: %d\n", LOWORD (wParam)); 
+      DebOut("   (IDC_PATHS_ROMS would be %d)\n", IDC_PATHS_ROMS);
+      DebOut("   (IDC_PATHS_ROM  would be %d)\n", IDC_PATHS_ROM);
 
 			switch (LOWORD (wParam))
 			{
@@ -5987,7 +5950,6 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 				break;
 			case IDC_LOGOPEN:
         TODO();
-#if 0
 				flush_log ();
 				val = SendDlgItemMessage (hDlg, IDC_LOGSELECT, CB_GETCURSEL, 0, 0L);
 				if (val == 0) {
@@ -5999,13 +5961,12 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 				} else if (val == 2) {
 					savelog (0);
 				}
-#endif
 				break;
 			case IDC_PATHS_ROMS:
 				fetch_path (_T("KickstartPath"), tmp, sizeof (tmp) / sizeof (TCHAR));
-        bug("tmp: %s\n", tmp);
+        DebOut("tmp: %s\n", tmp);
 				if (DirectorySelection (hDlg, &pathsguid, tmp)) {
-          bug("DirectorySelection!\n");
+          DebOut("DirectorySelection!\n");
 					load_keyring (&workprefs, NULL);
 					set_path (_T("KickstartPath"), tmp);
 					if (!scan_roms (hDlg, 1))
@@ -12689,17 +12650,19 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 			SendDlgItemMessage (hDlg, IDC_FLOPPYTYPE, CB_SETCURSEL, 0, 0);
 			for (i = 0; i < 4; i++) {
 				int f_type = floppybuttons[i][3];
+        DebOut("v FFFFFFFFFFFFFFFFFFFFFF\n");
 				SendDlgItemMessage (hDlg, f_type, CB_RESETCONTENT, 0, 0L);
 				SendDlgItemMessage (hDlg, f_type, CB_ADDSTRING, 0, (LPARAM)ftdis);
 				SendDlgItemMessage (hDlg, f_type, CB_ADDSTRING, 0, (LPARAM)ft35dd);
 				SendDlgItemMessage (hDlg, f_type, CB_ADDSTRING, 0, (LPARAM)ft35hd);
 				SendDlgItemMessage (hDlg, f_type, CB_ADDSTRING, 0, (LPARAM)ft525sd);
 				SendDlgItemMessage (hDlg, f_type, CB_ADDSTRING, 0, (LPARAM)ft35ddescom);
+        DebOut("^ FFFFFFFFFFFFFFFFFFFFFF\n");
 			}
 			setmultiautocomplete (hDlg, df0texts);
 		}
-#if 0
 	case WM_USER:
+#if 0
 		recursive++;
 		setfloppytexts (hDlg, false);
 		SetDlgItemText (hDlg, IDC_CREATE_NAME, diskname);
@@ -12710,16 +12673,17 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 #endif
 		break;
 
-#if 0
 	case WM_CONTEXTMENU:
+#if 0
 		recursive++;
 		diskselectmenu (hDlg, wParam);
 		setfloppytexts (hDlg, false);
 		recursive--;
+#endif
 		break;
 
-#endif
 	case WM_COMMAND:
+#if TEST
 
     D(
           bug("[JUAE:GUI] %s: WM_COMMAND (IDC_DF0: %d, IDC_DF1: %d)\n", __PRETTY_FUNCTION__, IDC_DF0, IDC_DF1);
@@ -12896,9 +12860,10 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 #endif
 		recursive--;
 		break;
+#endif /* TEST */
 
-#if 0
 	case WM_HSCROLL:
+#if 0
 		workprefs.floppy_speed = (int)SendMessage (GetDlgItem (hDlg, IDC_FLOPPYSPD), TBM_GETPOS, 0, 0);
 		if (workprefs.floppy_speed > 0) {
 			workprefs.floppy_speed--;
@@ -12906,9 +12871,9 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 			workprefs.floppy_speed *= 100;
 		}
 		out_floppyspeed (hDlg);
-		break;
 #endif
-	}
+		break;
+	} /* switch msg */
 
 	return FALSE;
 }
