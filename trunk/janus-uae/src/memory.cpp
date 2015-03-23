@@ -69,6 +69,7 @@ static bool needmman (void)
 
 static void nocanbang (void)
 {
+
 	canbang = 0;
 }
 
@@ -2397,6 +2398,7 @@ void memory_cleanup (void)
 {
 	mapped_free (a3000lmem_bank.baseaddr);
 	mapped_free (a3000hmem_bank.baseaddr);
+  bug("WARNING: this might crash!");
 	mapped_free (bogomem_bank.baseaddr);
 	mapped_free (kickmem_bank.baseaddr);
 	xfree (a1000_bootrom);
