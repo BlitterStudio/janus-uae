@@ -37,6 +37,7 @@ struct MultiDisplay *getdisplay (struct uae_prefs *p);
 
 int WIN32GFX_IsPicassoScreen (void);
 
+extern TCHAR *inipath;
 
 extern int screen_is_picasso, scalepicasso;
 extern int default_freq;
@@ -48,6 +49,7 @@ extern bool winuaelog_temporary_enable;
 extern int af_path_2005;
 extern TCHAR start_path_new1[MAX_DPATH], start_path_new2[MAX_DPATH];
 extern TCHAR bootlogpath[MAX_DPATH];
+extern TCHAR logpath[MAX_DPATH];
 
 enum pathtype { PATH_TYPE_DEFAULT, PATH_TYPE_WINUAE, PATH_TYPE_NEWWINUAE, PATH_TYPE_NEWAF, PATH_TYPE_AMIGAFOREVERDATA, PATH_TYPE_END };
 extern pathtype path_type;
@@ -67,7 +69,8 @@ extern char *_tzname[2];
 /* ? */
 void _tzset(void);
 
-extern TCHAR start_path_exe[ ];
+extern TCHAR start_path_exe[MAX_DPATH];
+extern int start_data;
 
 void sleep_millis (int ms);
 void sleep_millis_main (int ms);
@@ -85,6 +88,11 @@ extern uaecptr p96ram_start;
 
 int GetFileAttributes(char *path);
 
+/* file stuff */
+int my_existsdir (const TCHAR *name);
+int my_mkdir (const TCHAR *name);
+int my_rmdir (const TCHAR *name);
+
 /* gui */
 extern void *hInst;
 extern void *hUIDLL;
@@ -100,6 +108,9 @@ int MessageBox_fixed(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType);
 UINT IsDlgButtonChecked(HWND elem, int item);
 BOOL EnableWindow(HWND hWnd, DWORD id, BOOL bEnable);
 UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount);
+
+void *ShellExecute(HWND hwnd, TCHAR *lpOperation, TCHAR *lpFile, TCHAR *lpParameters, TCHAR *lpDirectory, int nShowCmd);
+DWORD GetTempPath(DWORD nBufferLength, TCHAR *lpBuffer);
 
 void read_rom_list (void);
 void set_path (const TCHAR *name, TCHAR *path, pathtype mode);

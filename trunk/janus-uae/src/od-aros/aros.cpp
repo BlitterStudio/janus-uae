@@ -1234,3 +1234,19 @@ void *ShellExecute(HWND hwnd, TCHAR *lpOperation, TCHAR *lpFile, TCHAR *lpParame
   return NULL;
 }
 
+/*
+ * GetTempPath
+ *
+ * simulate Windows call
+ * GetTempPath: retrieves the path of the directory designated for temporary files.
+ *
+ * If the function succeeds, the return value is the length, in TCHARs, of the 
+ * string copied to lpBuffer, not including the terminating null character.
+ */
+DWORD GetTempPath(DWORD nBufferLength, TCHAR *lpBuffer) {
+
+  snprintf(lpBuffer, nBufferLength-1, "T:");
+  return 2;
+}
+
+
