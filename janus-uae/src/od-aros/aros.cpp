@@ -1202,3 +1202,35 @@ frame_time_t read_processor_time (void) {
   return tsc_lo;
 }
 
+/*
+ * ShellExecute
+ *
+ * simulate Windows call 
+ * ShellExecute: Performs an operation on a specified file.
+ *
+ * We use multiview here. But this will *not* handle all cases!
+ */
+void *ShellExecute(HWND hwnd, TCHAR *lpOperation, TCHAR *lpFile, TCHAR *lpParameters, TCHAR *lpDirectory, int nShowCmd) {
+  
+  char cmd[1024];
+  char arg[1024];
+
+  DebOut("lpOperation %s, lpFile %s, lpParameters %s, lpDirectory %s, nShowCmd %d\n", lpOperation, lpFile, lpParameters, lpDirectory, nShowCmd);
+
+  if(strcmp(lpOperation, "open")) {
+    DebOut("ERROR: unknow command >%s< for ShellExecute!\n", lpOperation);
+    return NULL;
+  }
+
+  snprintf(arg, 1023, "%s", lpFile); /* yeah, strncpy, but this seems to be not reliable !? */
+  fullpath(arg, 1023);
+
+  snprintf(cmd, 1023, "multiview %s", arg);
+
+  DebOut("execute >%s<\n", cmd);
+
+  Execute(cmd, NULL, Output());
+
+  return NULL;
+}
+
