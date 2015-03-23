@@ -155,7 +155,8 @@ BOOL SetDlgItemText(Element *elem, int item, TCHAR *lpString) {
 
   DebOut("elem[i].obj: %lx\n", elem[i].obj);
 
-  if(elem[i].windows_type==EDITTEXT) {
+  if(elem[i].windows_type==EDITTEXT && !(elem[i].flags & ES_READONLY)) {
+    DebOut("call MUIA_String_Contents, %s", lpString);
     DoMethod(elem[i].obj, MUIM_Set, MUIA_String_Contents, lpString);
   }
   else if (elem[i].windows_type==COMBOBOX) {
@@ -163,6 +164,7 @@ BOOL SetDlgItemText(Element *elem, int item, TCHAR *lpString) {
     return SendDlgItemMessage(elem, item, CB_ADDSTRING, 0, (LPARAM) lpString);
   }
   else {
+    DebOut("call MUIA_Text_Contents, %s", lpString);
     DoMethod(elem[i].obj, MUIM_Set, MUIA_Text_Contents,   lpString);
   }
 
@@ -883,14 +885,13 @@ AROS_UFH2(void, MUIHook_pushbutton, AROS_UFHA(struct Hook *, hook, A0), AROS_UFH
     DebOut("IDC: %d\n", data->src[i].idc);
     DebOut("WM_COMMAND: %d\n", WM_COMMAND);
     wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
-    DebOut("wParam: %lx\n", wParam);
+    DebOut("wParam: %lx (CBN_SELCHANGE)\n", wParam);
     data->func(data->src, WM_COMMAND, wParam, NULL);
-    /* double call is not a good idea! */
-    DebOut("WARNING: should we send BN_CLICKED here, too?\n");
-#if 0
+    /* double call is not a good idea?! */
+    /* we we disable double calling here, PATH dialog won't open fileselect requester */
+    DebOut("WARNING: should we really send BN_CLICKED here, too?\n");
     wParam=MAKELPARAM(data->src[i].idc, BN_CLICKED);
     data->func(data->src, WM_COMMAND, wParam, NULL);
-#endif
   }
   else {
     DebOut("function is zero: %lx\n", data->func);
@@ -1217,6 +1218,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
         case EDITTEXT:
           if(src[i].flags & ES_READONLY) {
             child=TextObject,
+                        TextFrame,
                         MUIA_Font, Topaz8Font,
                         MUIA_Text_PreParse, "\33c",
                         MUIA_Text_Contents, (IPTR) src[i].text,
