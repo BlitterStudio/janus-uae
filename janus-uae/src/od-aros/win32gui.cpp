@@ -5886,14 +5886,12 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		SendDlgItemMessage (hDlg, IDC_LOGSELECT, CB_ADDSTRING, 0, (LPARAM)tmp);
 		SendDlgItemMessage (hDlg, IDC_LOGSELECT, CB_SETCURSEL, 0, 0);
 		CheckDlgButton (hDlg, IDC_LOGENABLE, winuaelog_temporary_enable || (full_property_sheet == 0 && currprefs.win32_logfile));
-#if 0
 		ew (hDlg, IDC_LOGENABLE, winuaelog_temporary_enable == false && full_property_sheet);
 		extern int consoleopen;
 		if (consoleopen || !full_property_sheet) {
 			CheckDlgButton (hDlg, IDC_LOGENABLE2, consoleopen ? TRUE : FALSE);
 			ew (hDlg, IDC_LOGENABLE2, FALSE);
 		}
-#endif
 		values_to_pathsdialog (hDlg);
 		recursive--;
 		return TRUE;
@@ -5910,18 +5908,19 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 			{
 				case IDC_LOGSELECT:
 					val = SendDlgItemMessage (hDlg, IDC_LOGSELECT, CB_GETCURSEL, 0, 0L);
-#if 0
 					if (val == 0) {
-						SetWindowText (GetDlgItem (hDlg, IDC_LOGPATH), bootlogpath);
+						//SetWindowText (GetDlgItem (hDlg, IDC_LOGPATH), bootlogpath);
+            SetDlgItemText(hDlg, IDC_LOGPATH, bootlogpath);
 						ew (hDlg, IDC_LOGOPEN, bootlogpath[0]);
 					} else if (val == 1) {
-						SetWindowText (GetDlgItem (hDlg, IDC_LOGPATH), logpath);
+						//SetWindowText (GetDlgItem (hDlg, IDC_LOGPATH), logpath);
+            SetDlgItemText(hDlg, IDC_LOGPATH, logpath);
 						ew (hDlg, IDC_LOGOPEN, logpath[0]);
 					} else if (val == 2) {
-						SetWindowText (GetDlgItem (hDlg, IDC_LOGPATH), _T("Configuration"));
+						//SetWindowText (GetDlgItem (hDlg, IDC_LOGPATH), _T("Configuration"));
+            SetDlgItemText(hDlg, IDC_LOGPATH, _T("Configuration"));
 						ew (hDlg, IDC_LOGOPEN, TRUE);
 					}
-#endif
 				break;
         default:
           bug("LOWORD (wParam): %d (IDC_LOGSELECT) %d\n",LOWORD (wParam), IDC_LOGSELECT);
@@ -5936,16 +5935,14 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 			switch (LOWORD (wParam))
 			{
 			case IDC_LOGSAVE:
-        TODO();
-#if 0
 				savelog (1);
-#endif
 				break;
 			case IDC_LOGENABLE:
 				winuaelog_temporary_enable = ischecked (hDlg, IDC_LOGENABLE);
 				break;
 			case IDC_LOGENABLE2:
 				extern int console_logging;
+        DebOut("write_log: console_logging = 1\n");
 				console_logging = 1;
 				break;
 			case IDC_LOGOPEN:
