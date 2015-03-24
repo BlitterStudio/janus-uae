@@ -135,6 +135,71 @@ static int get_elem_from_obj(struct Data *data, Object *obj) {
 /*****************************************************************************
  * WinAPI
  *****************************************************************************/
+
+/*
+ * Sends the specified message to a window or windows. The SendMessage function 
+ * calls the window procedure for the specified window and does not return 
+ * until the window procedure has processed the message.
+ *
+ * Usually, this function takes a HWND, but we just take a IDC_ define here.
+ * TAKE CARE FOR THIS!
+ *
+ * MAYBE better rewrite caller to use SendDlgItemMessage!!
+ */
+LRESULT SendMessage____untested____(int item, UINT Msg, WPARAM wParam, LPARAM lParam) {
+  Element *elem;
+  LONG i;
+#if 0
+  struct Data *data = NULL;
+  Object *foo;
+#endif
+  LRESULT res;
+
+  DebOut("item %d, Msg %d, wParam %d, lParam %d\n", item, Msg, wParam, lParam);
+
+  elem=get_elem(item);
+  i=get_index(elem, item);
+
+  if(i<0) {
+    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", item);
+    return 0;
+  }
+  DebOut("elem: %lx, i: %d\n", elem, i);
+
+#if 0
+  /* yes, I know, this is ugly ..
+   * accessing objects data from outside
+   */
+  foo=elem[i].obj;
+  while(foo && !data) {
+    data=(struct Data *) XGET(foo, MA_Data);
+    foo=_parent(foo);
+  }
+  if(!data) {
+    DebOut("ERROR: retrieve data from Object hack failed!\n");
+    return 0;
+  }
+#endif
+
+  switch(Msg) {
+    case TBM_GETPOS:
+      DebOut("TBM_GETPOS\n");
+      /*
+       * Retrieves the current logical position of the slider in a trackbar. 
+       * The logical positions are the integer values in the trackbar's range 
+       * of minimum to maximum slider positions. 
+       */
+      res=XGET(elem[i].obj, MUIA_Numeric_Default);
+      DebOut("result: %d\n", res);
+      return res;
+
+    default:
+      TODO();
+  }
+
+  return FALSE;
+}
+
 BOOL SetDlgItemText(Element *elem, int item, TCHAR *lpString) {
   Object *obj;
   LONG i;
@@ -150,7 +215,7 @@ BOOL SetDlgItemText(Element *elem, int item, TCHAR *lpString) {
   }
 
   if(i<0) {
-    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n");
+    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", item);
     return FALSE;
   }
 
@@ -207,7 +272,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
   TCHAR *buf;
 
   DebOut("== entered ==\n");
-  DebOut("elem: %lx, nIDDlgItem: %d\n", elem, nIDDlgItem);
+  DebOut("elem: %lx, nIDDlgItem: %d, lParam: %lx\n", elem, nIDDlgItem, lParam);
 
   i=get_index(elem, nIDDlgItem);
   /* might be in a different element..*/
@@ -401,7 +466,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       /* lParam: The LOWORD specifies the minimum position for the slider, 
        *         and the HIWORD specifies the maximum position.
        */
-       DebOut("TBM_SETRANGE(%d, %d)\n", LOWORD(lParam), HIWORD(lParam));
+       DebOut("TBM_SETRANGE %lx (%d, %d)\n", lParam, LOWORD(lParam), HIWORD(lParam));
        DoMethod(elem[i].obj, MUIM_Set, MUIA_Numeric_Min, LOWORD(lParam));
        DoMethod(elem[i].obj, MUIM_Set, MUIA_Numeric_Max, HIWORD(lParam));
        break;
@@ -410,7 +475,13 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       break;
     case TBM_SETPOS:
        DebOut("TBM_SETPOS(%d)\n", lParam);
-       DoMethod(elem[i].obj, MUIM_Set, MUIA_Numeric_Value, lParam);
+       DoMethod(elem[i].obj, MUIM_NoNotifySet, MUIA_Numeric_Value, lParam);
+      break;
+    case TBM_GETPOS:
+        LONG res;
+        res=XGET(elem[i].obj, MUIA_Numeric_Value);
+        DebOut("TBM_GETPOS: %d\n", res);
+        return res;
       break;
     default:
       DebOut("WARNING: unkown Windows Message-ID: %d\n", Msg);
@@ -813,8 +884,32 @@ AROS_UFH2(void, MUIHook_slide, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
 
   AROS_USERFUNC_INIT
 
+  struct Data *data = (struct Data *) hook->h_Data;
+  int i;
+  ULONG wParam;
+
   DebOut("Sliding..\n");
-  ;
+
+  i=get_elem_from_obj(data, (Object *) obj);
+
+  if(data->func) {
+#if 0
+    wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
+    DebOut("call function: %lx (IDC %d, wParam: %lx)\n", data->func, data->src[i].idc, wParam);
+    data->func(data->src, WM_COMMAND, wParam, NULL);
+#endif
+
+    /* warning: should we call BN_CLICKED here, too?
+     * open console in Paths won't work without .. 
+     */
+    wParam=MAKELPARAM(data->src[i].idc, BN_CLICKED);
+    data->func(data->src, WM_COMMAND, wParam, NULL);
+  }
+  else {
+    DebOut("WARNING: function is zero: %lx\n", data->func);
+    /* Solution: add DlgProc in mNew in mui_head.cpp */
+  }
+
   AROS_USERFUNC_EXIT
 }
 
