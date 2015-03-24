@@ -114,6 +114,14 @@ sub min_height($) {
   return $h
 }
 
+sub min_height_slider($) {
+  my $h=shift;
+  if($h<20) {
+    return 20;
+  }
+  return $h
+}
+
 # strings may contain hot helps (mouse over help), splitted with [] from the button texts..
 sub get_text($) {
   my $line=shift;
@@ -296,6 +304,9 @@ sub gen_line($$) {
       $debug && print "      h:      ".$attr[7]."\n";
       $debug && print "    }\n";
       push @idc, $attr[1];
+      if($attr[2] =~ /msctls_trackbar32/) {
+        $attr[7]=min_height_slider($attr[7]);
+      }
       printf(CPPFILE  "  { 0, %-20s, %d, NULL, NULL, NULL, %-11s, %-10s, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d, 0 },\n", $attr[1], add_group($attr[3]), $type, $attr[2], $attr[4], $attr[5]+$plus_height, $attr[6], $attr[7], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[3]), parse_flags2($attr[3]));
     }
     case "PUSHBUTTON" {
