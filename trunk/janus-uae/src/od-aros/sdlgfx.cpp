@@ -902,7 +902,8 @@ STATIC_INLINE void sdl_flush_block_nolock (struct vidbuf_description *gfxinfo, s
     SDLGD(bug("[JUAE:SDL] %s: 0, %d ->  %d, %d\n", __PRETTY_FUNCTION__, first_line, current_width, last_line - first_line + 1));
 
     if(first_line >= last_line) {
-        bug("[JUAE:SDL] WARNING: %d >= %d\n", first_line, last_line);
+#warning first_line >= last_line should not happen at all?
+        SDLGD(bug("[JUAE:SDL] WARNING: %d >= %d\n", first_line, last_line));
     }
     else {
         SDL_UpdateRect (display, 0, first_line, current_width, last_line - first_line + 1);

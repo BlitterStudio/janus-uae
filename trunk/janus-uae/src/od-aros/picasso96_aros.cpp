@@ -40,7 +40,7 @@
 #if defined(PICASSO96)
 
 #include "options.h"
-#include "threaddep/thread.h"
+#include "thread.h"
 #include "memory.h"
 #include "custom.h"
 #include "events.h"
@@ -71,8 +71,8 @@ int debug_rtg_blitter = 3;
 #define NOBLITTER_BLIT (0 || !(debug_rtg_blitter & 2))
 
 #define USE_HARDWARESPRITE 1
-#define P96TRACING_ENABLED 0
-#define P96SPRTRACING_ENABLED 0
+#define P96TRACING_ENABLED 1
+#define P96SPRTRACING_ENABLED 1
 
 #ifndef NATMEM_OFFSET
 #warning CARE FOR natmem_offset variable here !!!!!!
@@ -95,7 +95,7 @@ static int p96syncrate;
 int p96hsync_counter, full_refresh;
 
 #ifdef PICASSO96
-#ifdef DEBUG // Change this to _DEBUG for debugging
+#ifdef _DEBUG // Change this to _DEBUG for debugging
 #define P96TRACING_ENABLED 1
 #define P96TRACING_LEVEL 1
 #endif
@@ -2194,8 +2194,10 @@ static void picasso96_alloc2 (TrapContext *ctx)
 	xfree (newmodes);
 	newmodes = NULL;
 	picasso96_amem = picasso96_amemend = 0;
-	if (gfxmem_bank.allocated == 0)
+	if (gfxmem_bank.allocated == 0) {
+    DebOut("ERROR: gfxmem_bank.allocated == 0\n");
 		return;
+  }
 	misscnt = 0;
 	newmodes = xmalloc (struct PicassoResolution, MAX_PICASSO_MODES);
 	size = 0;
@@ -2212,8 +2214,12 @@ static void picasso96_alloc2 (TrapContext *ctx)
 	if (p96depth (32))
 		depths++;
 
+  DebOut("depths: %d\n", depths);
+
+
 	for (int mon = 0; Displays[mon].monitorname; mon++) {
 		struct PicassoResolution *DisplayModes = Displays[mon].DisplayModes;
+    DebOut("mon: %d (%s)\n", mon, Displays[mon].monitorname);
 		i = 0;
 		while (DisplayModes[i].depth >= 0) {
 			for (j = 0; missmodes[j * 2] >= 0; j++) {
@@ -2282,6 +2288,7 @@ static void picasso96_alloc2 (TrapContext *ctx)
 
 	for (i = 0; i < cnt; i++) {
 		int depth;
+    DebOut("i: %d\n", i);
 		for (depth = 8; depth <= 32; depth++) {
 			if (!p96depth (depth))
 				continue;
@@ -2313,9 +2320,7 @@ static void picasso96_alloc2 (TrapContext *ctx)
 			}
 		}
 	}
-#if 0
 	ShowSupportedResolutions ();
-#endif
 	uaegfx_card_install (ctx, size);
 	init_alloc (ctx, size);
 }
@@ -4349,6 +4354,8 @@ addrbank gfxmem_bank = {
 void InitPicasso96 (void)
 {
 	int i;
+
+  DebOut("entered\n");
 
 	//fastscreen
 	oldscr = 0;
