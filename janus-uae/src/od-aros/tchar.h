@@ -229,9 +229,12 @@ typedef char	TCHAR;
 #define	_ttoi		atoi
 #define _tcsftime	strftime
 
+
 #define _tstoi64 atoi
 
 #endif	/* Not _UNICODE */
+
+#define fputws fputs
 
 #endif	/* Not _TCHAR_H_ */
 

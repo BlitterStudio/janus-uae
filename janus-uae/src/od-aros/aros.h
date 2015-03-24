@@ -32,6 +32,8 @@
 
 #define MAX_DISPLAYS 10
 
+typedef ULONG LRESULT;
+
 extern struct MultiDisplay Displays[MAX_DISPLAYS + 1];
 struct MultiDisplay *getdisplay (struct uae_prefs *p);
 
@@ -108,6 +110,7 @@ int MessageBox_fixed(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType);
 UINT IsDlgButtonChecked(HWND elem, int item);
 BOOL EnableWindow(HWND hWnd, DWORD id, BOOL bEnable);
 UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount);
+LRESULT SendMessage(int hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
 void *ShellExecute(HWND hwnd, TCHAR *lpOperation, TCHAR *lpFile, TCHAR *lpParameters, TCHAR *lpDirectory, int nShowCmd);
 DWORD GetTempPath(DWORD nBufferLength, TCHAR *lpBuffer);
@@ -136,7 +139,6 @@ typedef struct {
   WORD cmd;
 } ACCEL;
 
-typedef ULONG LRESULT;
 
 #define MAX_SOUND_DEVICES 100
 #define SOUND_DEVICE_DS 1

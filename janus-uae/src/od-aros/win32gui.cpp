@@ -6135,8 +6135,13 @@ static void enable_for_quickstart (HWND hDlg)
 {
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
+  DebOut("hDlg: %lx\n", hDlg);
+
 	int v = quickstart_ok && quickstart_ok_floppy ? TRUE : FALSE;
+#if 0
+  /* this is the reset button, which is not emulated, but coded directly in MUI */
 	ew (guiDlg, IDC_RESETAMIGA, !full_property_sheet ? TRUE : FALSE);
+#endif
 #if 0
 	ShowWindow (GetDlgItem (hDlg, IDC_QUICKSTART_SETCONFIG), quickstart ? SW_HIDE : SW_SHOW);
 #endif
@@ -6202,6 +6207,8 @@ static void init_quickstartdlg (HWND hDlg)
 
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
+  DebOut("entered\n");
+
 	qssize = sizeof (tmp1) / sizeof (TCHAR);
 	regquerystr (NULL, _T("QuickStartHostConfig"), hostconf, &qssize);
 	if (firsttime == 0 && workprefs.start_gui) {
@@ -6229,6 +6236,8 @@ static void init_quickstartdlg (HWND hDlg)
 	CheckDlgButton (hDlg, IDC_QUICKSTARTMODE, quickstart);
 	CheckDlgButton (hDlg, IDC_NTSC, quickstart_ntsc != 0);
 
+  DebOut("load IDS_QS_MODELS\n");
+
 	WIN32GUI_LoadUIString (IDS_QS_MODELS, tmp1, sizeof (tmp1) / sizeof (TCHAR));
 	_tcscat (tmp1, _T("\n"));
 	p1 = tmp1;
@@ -6236,7 +6245,7 @@ static void init_quickstartdlg (HWND hDlg)
 	idx = idx2 = 0;
 	i = 0;
 	while (amodels[i].compalevels >= 0) {
-    bug("i: %d\n", i);
+    DebOut("i: %d\n", i);
 		if (amodels[i].compalevels > 0) {
 			p2 = _tcschr (p1, '\n');
 			if (p2 && _tcslen (p2) > 0) {
@@ -6251,6 +6260,8 @@ static void init_quickstartdlg (HWND hDlg)
 		i++;
 	}
 	SendDlgItemMessage (hDlg, IDC_QUICKSTART_MODEL, CB_SETCURSEL, idx2, 0);
+
+  DebOut("done\n");
 
 	total = 0;
 	SendDlgItemMessage (hDlg, IDC_QUICKSTART_CONFIGURATION, CB_RESETCONTENT, 0, 0L);
@@ -6414,7 +6425,7 @@ static void setfloppytexts (HWND hDlg, int qs)
 		addallfloppies (hDlg);
 }
 
-static INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static int recursive;
 	int ret = FALSE, i;
@@ -6423,25 +6434,33 @@ static INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, L
 	static TCHAR df1[MAX_DPATH];
 	static int dfxtype[2] = { -1, -1 };
 	static int doinit;
-	//LRESULT val;
+	LRESULT val;
 
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
+  DebOut("hDlg: %lx, msg %d, wParam; 0x%lx, lParam: 0x%lx\n", hDlg, msg, wParam, lParam);
 
 	switch(msg)
 	{
 	case WM_INITDIALOG:
 		{
 			int ids[] = { IDC_DF0TEXTQ, IDC_DF1TEXTQ, -1 };
+      DebOut("WM_INITDIALOG\n");
 			pages[QUICKSTART_ID] = hDlg;
 			currentpage = QUICKSTART_ID;
 			enable_for_quickstart (hDlg);
 			setfloppytexts (hDlg, true);
 			setmultiautocomplete (hDlg, ids);
 			doinit = 1;
+#ifndef __AROS__
 			break;
+#endif
 		}
-#if 0
 	case WM_NULL:
+    /* seems, like Windows sends WM_NULL messages (sometimes?) during init..
+     * nowhere written in the Windows docs.. so fall-through above added.
+     */
+    DebOut("WM_NULL received!\n");
 		if (recursive > 0)
 			break;
 		recursive++;
@@ -6455,6 +6474,7 @@ static INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, L
 		recursive--;
 		break;
 
+#if 0
 	case WM_CONTEXTMENU:
 		if (recursive > 0)
 			break;
@@ -6466,7 +6486,7 @@ static INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, L
 #endif
 
 	case WM_COMMAND:
-#if 0
+    DebOut("WM_COMMAND\n");
 		if (recursive > 0)
 			break;
 		recursive++;
@@ -6479,6 +6499,7 @@ static INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, L
 					quickstart_cdtype = val;
 					if (full_property_sheet)
 						workprefs.cdslots[0].type = SCSI_UNIT_DEFAULT;
+#if 0
 					if (quickstart_cdtype >= 2) {
 						int len = sizeof quickstart_cddrive / sizeof (TCHAR);
 						quickstart_cdtype = 2;
@@ -6488,12 +6509,14 @@ static INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, L
 						eject_cd ();
 						quickstart_cdtype = val;
 					}
+#endif
 					workprefs.cdslots[0].inuse = quickstart_cdtype > 0;
 					addfloppytype (hDlg, 1);
 					addfloppyhistory (hDlg);
 				}
 			break;
 			case IDC_QUICKSTART_MODEL:
+        DebOut("IDC_QUICKSTART_MODEL received\n");
 				val = SendDlgItemMessage (hDlg, IDC_QUICKSTART_MODEL, CB_GETCURSEL, 0, 0L);
 				if (val != CB_ERR) {
 					i = 0;
@@ -6513,9 +6536,7 @@ static INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, L
 							qs_request_reset = 2;
 					}
 				}
-#endif
 				break;
-#if 0
 			case IDC_QUICKSTART_CONFIGURATION:
 				val = SendDlgItemMessage (hDlg, IDC_QUICKSTART_CONFIGURATION, CB_GETCURSEL, 0, 0L);
 				if (val != CB_ERR && val != quickstart_conf) {
@@ -6575,8 +6596,11 @@ static INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, L
 		case IDC_DF1QENABLE:
 		case IDC_INFO0Q:
 		case IDC_INFO1Q:
+#if 0
 		if (currentpage == QUICKSTART_ID)
 				ret = FloppyDlgProc (hDlg, msg, wParam, lParam);
+#endif
+      TODO();
 			break;
 		case IDC_QUICKSTART_SETCONFIG:
 			load_quickstart (hDlg, 1);
@@ -6587,18 +6611,23 @@ static INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, L
 		if (recursive > 0)
 			break;
 		recursive++;
+#ifndef __AROS__
 		if ((HWND)lParam == GetDlgItem (hDlg, IDC_QUICKSTART_COMPATIBILITY)) {
-			val = SendMessage ((HWND)lParam, TBM_GETPOS, 0, 0);
+      val = SendMessage ((HWND) lParam, TBM_GETPOS, 0, 0);
+#else
+    val = SendDlgItemMessage (hDlg, IDC_QUICKSTART_COMPATIBILITY, TBM_GETPOS, 0, 0);
+#endif
 			if (val >= 0 && val != quickstart_compa) {
 				quickstart_compa = val;
 				init_quickstartdlg (hDlg);
 				if (quickstart)
 					load_quickstart (hDlg, 0);
+#ifndef __AROS__
 			}
+#endif
 		}
 		recursive--;
 		break;
-#endif
 	}
 	if (recursive == 0 && quickstart) {
 		recursive++;
