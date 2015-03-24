@@ -1225,7 +1225,7 @@ void *ShellExecute(HWND hwnd, TCHAR *lpOperation, TCHAR *lpFile, TCHAR *lpParame
   snprintf(arg, 1023, "%s", lpFile); /* yeah, strncpy, but this seems to be not reliable !? */
   fullpath(arg, 1023);
 
-  snprintf(cmd, 1023, "multiview %s", arg);
+  snprintf(cmd, 1023, "multiview \"%s\"", arg);
 
   DebOut("execute >%s<\n", cmd);
 
