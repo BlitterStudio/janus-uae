@@ -854,6 +854,13 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
     wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
     DebOut("call function: %lx (IDC %d, wParam: %lx)\n", data->func, data->src[i].idc, wParam);
     data->func(data->src, WM_COMMAND, wParam, NULL);
+
+    /* warning: should we call BN_CLICKED here, too?
+     * open console in Paths won't work without .. 
+     */
+    wParam=MAKELPARAM(data->src[i].idc, BN_CLICKED);
+    data->func(data->src, WM_COMMAND, wParam, NULL);
+
   }
   else {
     DebOut("WARNING: function is zero: %lx\n", data->func);
