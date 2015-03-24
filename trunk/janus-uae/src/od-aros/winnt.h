@@ -25,7 +25,10 @@
 #define FILE_ATTRIBUTE_VALID_FLAGS         0x00017fb7
 #define FILE_ATTRIBUTE_VALID_SET_FLAGS     0x000031a7 
 
-#define MAKELONG(a,b) ((LONG)(((WORD)(a))|(((DWORD)((WORD)(b)))<<16)))
+/* usually, this macro seems to be defined as: */
+//#define MAKELONG(a,b) ((LONG)(((WORD)(a))|(((DWORD)((WORD)(b)))<<16)))
+/* but for -9, -1 it is *worng*, at least on AROS. This one works correct: */
+#define MAKELONG(a,b) (a&0xFFFF)|(b&0xFFFF)<<16
 
 #define LOWORD(l) ((WORD)((DWORD)(l)))
 #define HIWORD(l) ((WORD)(((DWORD)(l)>>16)&0xFFFF))
