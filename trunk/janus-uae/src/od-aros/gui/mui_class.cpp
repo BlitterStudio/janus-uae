@@ -35,6 +35,7 @@ struct Data {
   struct Hook LayoutHook;
   struct Hook MyMUIHook_pushbutton;
   struct Hook MyMUIHook_select;
+  struct Hook MyMUIHook_slide;
   struct Hook MyMUIHook_combo;
   ULONG width, height;
   struct Element *src;
@@ -396,6 +397,21 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       }
       DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, foo);
       return TRUE;
+    case TBM_SETRANGE:
+      /* lParam: The LOWORD specifies the minimum position for the slider, 
+       *         and the HIWORD specifies the maximum position.
+       */
+       DebOut("TBM_SETRANGE(%d, %d)\n", LOWORD(lParam), HIWORD(lParam));
+       DoMethod(elem[i].obj, MUIM_Set, MUIA_Numeric_Min, LOWORD(lParam));
+       DoMethod(elem[i].obj, MUIM_Set, MUIA_Numeric_Max, HIWORD(lParam));
+       break;
+    case TBM_SETPAGESIZE:
+      DebOut("WARNING: TBM_SETPAGESIZE seems not to be possible in Zune/MUI !?\n");
+      break;
+    case TBM_SETPOS:
+       DebOut("TBM_SETPOS(%d)\n", lParam);
+       DoMethod(elem[i].obj, MUIM_Set, MUIA_Numeric_Value, lParam);
+      break;
     default:
       DebOut("WARNING: unkown Windows Message-ID: %d\n", Msg);
       return FALSE;
@@ -793,6 +809,15 @@ AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
   AROS_USERFUNC_EXIT
 }
 
+AROS_UFH2(void, MUIHook_slide, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
+
+  AROS_USERFUNC_INIT
+
+  DebOut("Sliding..\n");
+  ;
+  AROS_USERFUNC_EXIT
+}
+
 AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
 
   AROS_USERFUNC_INIT
@@ -864,6 +889,7 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
   }
   else {
     DebOut("WARNING: function is zero: %lx\n", data->func);
+    /* Solution: add DlgProc in mNew in mui_head.cpp */
   }
 
 DONE:
@@ -1079,7 +1105,40 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
         break;
 
         case CONTROL:
-          if(src[i].windows_class==NULL || !strcmp(src[i].windows_class, "Button") || /* implement those: !!!  */ !strcmp(src[i].windows_class, "SysListView32") || !strcmp(src[i].windows_class, "msctls_trackbar32") || !strcmp(src[i].windows_class, "Static") || !strcmp(src[i].windows_class, "SysTreeView32")) {
+          if(!strcmp(src[i].windows_class, "msctls_trackbar32")) {
+            /* Proportional/slider gadget! */
+            child=VGroup,
+                    Child, VSpace(0),
+                    Child, SliderObject,
+                      MUIA_Group_Horiz, TRUE,
+                      MUIA_Slider_Quiet, TRUE,
+#if 0
+                      MUIA_Numeric_Min, 0,
+                      MUIA_Numeric_Max, 10,
+                      MUIA_Numeric_Value, 0,
+#endif
+                      MUIA_Weight, 0,
+                    End,
+                    Child, VSpace(0),
+                  End;
+
+            if(child) {
+              src[i].exists=TRUE;
+              src[i].obj=child;
+#ifdef UAE_ABI_v0
+              data->MyMUIHook_slide.h_Entry=(HOOKFUNC) MUIHook_slide;
+#else
+              data->MyMUIHook_slide.h_Entry=(APTR) MUIHook_slide;
+#endif
+              data->MyMUIHook_slide.h_Data =(APTR) data;
+
+              DebOut("DoMethod(%lx, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime..)\n", src[i].obj);
+              DoMethod(src[i].obj, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_slide, func); 
+ 
+            }
+            break;
+          }
+          if(src[i].windows_class==NULL || !strcmp(src[i].windows_class, "Button") || /* implement those: !!!  */ !strcmp(src[i].windows_class, "SysListView32") || !strcmp(src[i].windows_class, "Static") || !strcmp(src[i].windows_class, "SysTreeView32")) {
             DebOut("Button found\n");
             if(src[i].flags2==BS_AUTORADIOBUTTON) {
               child=HGroup,
