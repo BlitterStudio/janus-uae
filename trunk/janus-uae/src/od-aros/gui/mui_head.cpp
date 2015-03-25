@@ -20,7 +20,8 @@
 
 Object *app, *win; 
 static Object *root, *leftframe, *pages;
-static Object *start, *cancel, *help, *errorlog, *reset, *quit;
+static Object *start, *cancel, *help, *errorlog, *quit;
+Object *reset;
 
 /* GUI thread */
 //static uae_thread_id tid;
