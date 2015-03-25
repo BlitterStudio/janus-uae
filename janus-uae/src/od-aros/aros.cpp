@@ -247,6 +247,7 @@ void fetch_datapath (TCHAR *out, int size)
 void fetch_path (const TCHAR *name, TCHAR *out, int size) {
   int size2 = size;
   TCHAR tmp[256];
+  int old;
 
   DebOut("name: %s, size %d\n", name, size);
   out[0]=0;
@@ -327,7 +328,12 @@ void fetch_path (const TCHAR *name, TCHAR *out, int size) {
 
   stripslashes (out);
   fixtrailing (out);
+
+  /* please, no relative paths here.. */
+  old=relativepaths;
+  relativepaths=0;
   fullpath (out, size);
+  relativepaths=old;
 }
 
 /* resides in win32gui.cpp normally 
@@ -435,8 +441,10 @@ void fullpath (TCHAR *path, int size) {
                 tmp1len += 1;
             strcpy(path, tmp2 + tmp1len);
         }
-        else
-           strcpy(path, "./");
+        else {
+           /* is there something like '.' in AmigaOS ? */
+           strcpy(path, "");
+        }
     }
     else {
       //bug("[JUAE:AROS] %s: tmp2 (%s) is not inside tmp1 (%s)\n", tmp2, tmp1);
