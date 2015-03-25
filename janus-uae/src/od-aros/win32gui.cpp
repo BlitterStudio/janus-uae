@@ -203,6 +203,10 @@ static const int defaultaspectratios[] = {
 		5, 4, 4, 3, 16, 10, 15, 9, 27, 16, 128, 75, 16, 9, 256, 135, 21, 9, 16, 3,
 		-1
 };
+
+
+INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+
 static int getaspectratioindex (int ar)
 {
 	for (int i = 0; defaultaspectratios[i] >= 0; i += 2) {
@@ -2607,26 +2611,24 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 	TCHAR *p, *nextp;
 	int all = 1;
 	int next;
-#if 0
 	int nosavepath = 0;
-#endif
 //	const GUID *guid = NULL;
 
 	TCHAR szTitle[MAX_DPATH] = { 0 };
 	TCHAR szFormat[MAX_DPATH];
 	TCHAR szFilter[MAX_DPATH] = { 0 };
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+    bug("[JUAE:GUI] %s(flag: %d)\n", __PRETTY_FUNCTION__, flag);
 
 #if 0
 	memset (&openFileName, 0, sizeof (OPENFILENAME));
+#endif
 
 	if (path_out && path_out[0]) {
 		_tcscpy (init_path, path_out);
 		nosavepath = 1;
 	} else {
 		_tcsncpy (init_path, start_path_data, MAX_DPATH);
-#endif
 		switch (flag) {
 		case 0:
 		case 1:
@@ -2634,26 +2636,25 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 			fetch_path (_T("FloppyPath"), init_path, sizeof (init_path) / sizeof (TCHAR));
 			//guid = &diskselectionguids[0];
 			break;
-#if 0
 		case 2:
 		case 3:
 			getfilter (flag, _T("hdfPath"), previousfilter, filtername);
 			fetch_path (_T("hdfPath"), init_path, sizeof (init_path) / sizeof (TCHAR));
-			guid = &diskselectionguids[1];
+			//guid = &diskselectionguids[1];
 			break;
 		case 6:
 		case 7:
 		case 11:
 			getfilter (flag, _T("KickstartPath"), previousfilter, filtername);
 			fetch_path (_T("KickstartPath"), init_path, sizeof (init_path) / sizeof (TCHAR));
-			guid = &diskselectionguids[2];
+			//guid = &diskselectionguids[2];
 			break;
 		case 4:
 		case 5:
 		case 8:
 			getfilter (flag, _T("ConfigurationPath"), previousfilter, filtername);
 			fetch_path (_T("ConfigurationPath"), init_path, sizeof (init_path) / sizeof (TCHAR));
-			guid = &diskselectionguids[3];
+			//guid = &diskselectionguids[3];
 			break;
 		case 9:
 		case 10:
@@ -2679,30 +2680,31 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 					getfilter (flag, _T("StatefilePath"), previousfilter, filtername);
 					fetch_path (_T("StatefilePath"), init_path, sizeof (init_path) / sizeof (TCHAR));
 				}
-				guid = &diskselectionguids[4];
+				//guid = &diskselectionguids[4];
 			}
 			break;
 		case 15:
 		case 16:
 			getfilter (flag, _T("InputPath"), previousfilter, filtername);
 			fetch_path (_T("InputPath"), init_path, sizeof (init_path) / sizeof (TCHAR));
-			guid = &diskselectionguids[5];
+			//guid = &diskselectionguids[5];
 			break;
 		case 17:
 			getfilter (flag, _T("CDPath"), previousfilter, filtername);
 			fetch_path (_T("CDPath"), init_path, sizeof (init_path) / sizeof (TCHAR));
-			guid = &diskselectionguids[6];
+			//guid = &diskselectionguids[6];
 			break;
 		case 18:
 			getfilter (flag, _T("TapePath"), previousfilter, filtername);
 			fetch_path (_T("TapePath"), init_path, sizeof (init_path) / sizeof (TCHAR));
-			guid = &diskselectionguids[7];
+			//guid = &diskselectionguids[7];
 			break;
-#endif
+    default:
+        TODO();
 		}
-#if 0
 	}
-#endif
+
+  DebOut("init_path: %s\n", init_path);
 
 	szFilter[0] = 0;
 	szFilter[1] = 0;
@@ -5768,9 +5770,10 @@ static void saveconfig (FILE *f)
 
 static void savelog (int all)
 {
+	FILE *f;
+
   DebOut("all: %d\n", all);
   TODO();
-	FILE *f;
 
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
@@ -5875,7 +5878,6 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		SendDlgItemMessage (hDlg, IDC_PATHS_DEFAULTTYPE, CB_SETCURSEL, selpath, 0);
 		EnableWindow (hDlg, IDC_PATHS_DEFAULTTYPE, numtypes > 0 ? TRUE : FALSE);
 
-    DebOut("call SetWindowText(bootlogpath %s)..\n", bootlogpath);
 		//RE SetWindowText (GetDlgItem (hDlg, IDC_LOGPATH), bootlogpath);
     SetDlgItemText(hDlg, IDC_LOGPATH, bootlogpath);
 
@@ -5903,7 +5905,6 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		recursive++;
 		if (HIWORD (wParam) == CBN_SELCHANGE || HIWORD (wParam) == CBN_KILLFOCUS)  {
       DebOut("CBN_SELCHANGE / CBN_KILLFOCUS\n");
-      DebOut("  (IDC_PATHS_ROM: would be %d, IDC_PATHS_ROMS: %d)\n", IDC_PATHS_ROM, IDC_PATHS_ROMS);
 			switch (LOWORD (wParam))
 			{
 				case IDC_LOGSELECT:
@@ -5927,10 +5928,7 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
         break;
 			}
 		} else {
-      bug("else..\n");
       DebOut("wParam: %d\n", LOWORD (wParam)); 
-      DebOut("   (IDC_PATHS_ROMS would be %d)\n", IDC_PATHS_ROMS);
-      DebOut("   (IDC_PATHS_ROM  would be %d)\n", IDC_PATHS_ROM);
 
 			switch (LOWORD (wParam))
 			{
@@ -5942,7 +5940,6 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 				break;
 			case IDC_LOGENABLE2:
 				extern int console_logging;
-        DebOut("write_log: console_logging = 1\n");
 				console_logging = 1;
 				break;
 			case IDC_LOGOPEN:
@@ -5961,7 +5958,6 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 				break;
 			case IDC_PATHS_ROMS:
 				fetch_path (_T("KickstartPath"), tmp, sizeof (tmp) / sizeof (TCHAR));
-        DebOut("tmp: %s\n", tmp);
 				if (DirectorySelection (hDlg, &pathsguid, tmp)) {
           DebOut("DirectorySelection!\n");
 					load_keyring (&workprefs, NULL);
@@ -6135,16 +6131,13 @@ static void enable_for_quickstart (HWND hDlg)
 {
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
-  DebOut("hDlg: %lx\n", hDlg);
-
 	int v = quickstart_ok && quickstart_ok_floppy ? TRUE : FALSE;
-#if 0
-  /* this is the reset button, which is not emulated, but coded directly in MUI */
 	ew (guiDlg, IDC_RESETAMIGA, !full_property_sheet ? TRUE : FALSE);
-#endif
 #if 0
 	ShowWindow (GetDlgItem (hDlg, IDC_QUICKSTART_SETCONFIG), quickstart ? SW_HIDE : SW_SHOW);
 #endif
+	ShowWindow (hDlg, IDC_QUICKSTART_SETCONFIG, quickstart ? SW_HIDE : SW_SHOW);
+
 }
 
 static void load_quickstart (HWND hDlg, int romcheck)
@@ -6207,8 +6200,6 @@ static void init_quickstartdlg (HWND hDlg)
 
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
-  DebOut("entered\n");
-
 	qssize = sizeof (tmp1) / sizeof (TCHAR);
 	regquerystr (NULL, _T("QuickStartHostConfig"), hostconf, &qssize);
 	if (firsttime == 0 && workprefs.start_gui) {
@@ -6236,8 +6227,6 @@ static void init_quickstartdlg (HWND hDlg)
 	CheckDlgButton (hDlg, IDC_QUICKSTARTMODE, quickstart);
 	CheckDlgButton (hDlg, IDC_NTSC, quickstart_ntsc != 0);
 
-  DebOut("load IDS_QS_MODELS\n");
-
 	WIN32GUI_LoadUIString (IDS_QS_MODELS, tmp1, sizeof (tmp1) / sizeof (TCHAR));
 	_tcscat (tmp1, _T("\n"));
 	p1 = tmp1;
@@ -6245,7 +6234,6 @@ static void init_quickstartdlg (HWND hDlg)
 	idx = idx2 = 0;
 	i = 0;
 	while (amodels[i].compalevels >= 0) {
-    DebOut("i: %d\n", i);
 		if (amodels[i].compalevels > 0) {
 			p2 = _tcschr (p1, '\n');
 			if (p2 && _tcslen (p2) > 0) {
@@ -6260,8 +6248,6 @@ static void init_quickstartdlg (HWND hDlg)
 		i++;
 	}
 	SendDlgItemMessage (hDlg, IDC_QUICKSTART_MODEL, CB_SETCURSEL, idx2, 0);
-
-  DebOut("done\n");
 
 	total = 0;
 	SendDlgItemMessage (hDlg, IDC_QUICKSTART_CONFIGURATION, CB_RESETCONTENT, 0, 0L);
@@ -6460,7 +6446,6 @@ INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
     /* seems, like Windows sends WM_NULL messages (sometimes?) during init..
      * nowhere written in the Windows docs.. so fall-through above added.
      */
-    DebOut("WM_NULL received!\n");
 		if (recursive > 0)
 			break;
 		recursive++;
@@ -6596,11 +6581,8 @@ INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 		case IDC_DF1QENABLE:
 		case IDC_INFO0Q:
 		case IDC_INFO1Q:
-#if 0
 		if (currentpage == QUICKSTART_ID)
 				ret = FloppyDlgProc (hDlg, msg, wParam, lParam);
-#endif
-      TODO();
 			break;
 		case IDC_QUICKSTART_SETCONFIG:
 			load_quickstart (hDlg, 1);
@@ -10136,7 +10118,6 @@ INT_PTR CALLBACK CPUDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	case WM_COMMAND:
     bug("[JUAE:GUI] %s(): WM_COMMAND\n", __PRETTY_FUNCTION__);
-    DebOut("recursive: %d\n", recursive);
 		if (recursive > 0)
 			break;
 		recursive++;
@@ -12347,6 +12328,7 @@ static void addfloppytype (HWND hDlg, int n)
 #if 0
 			SetWindowText (GetDlgItem (hDlg, f_enable), tmp);
 #endif
+      SetDlgItemText(hDlg, f_enable, tmp);
 			addcdtype (hDlg, IDC_CD0Q_TYPE);
 			hide (hDlg, IDC_CD0Q_TYPE, 0);
 			text = workprefs.cdslots[0].name;
@@ -12709,7 +12691,8 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 		break;
 
 	case WM_COMMAND:
-#if TEST
+//#if TEST
+#if 1
 
     D(
           bug("[JUAE:GUI] %s: WM_COMMAND (IDC_DF0: %d, IDC_DF1: %d)\n", __PRETTY_FUNCTION__, IDC_DF0, IDC_DF1);
