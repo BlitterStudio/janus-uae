@@ -71,6 +71,7 @@ typedef Element *HWND;
 /* fix MUI conflict */
 #undef ShowWindow
 BOOL ShowWindow(HWND hWnd, int nCmdShow);
+BOOL ShowWindow(HWND hWnd, DWORD id, int nCmdShow);
 
 UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount);
 
