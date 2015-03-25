@@ -104,6 +104,7 @@ AROS_UFH2(void, MUIHook_list, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR
 
   nr=XGET((Object *) obj, MUIA_List_Active);
 
+#if 0
   /* we have to skip those configuration load/save pages here */
   if(nr==0 || nr==4 || nr==13) {
     DebOut("TODO: tree collapse? Try to load config here..?\n");
@@ -111,7 +112,7 @@ AROS_UFH2(void, MUIHook_list, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR
     nr=0;
   }
   else if(nr<4) {
-    currentpage=nr-1; /* skip "Settings" tab */
+    currentpage=nr; /* skip "Settings" tab */
   }
   else if(nr<13) {
     currentpage=nr-2; /* skip "Settings" and "Hardware" tabs */
@@ -119,6 +120,8 @@ AROS_UFH2(void, MUIHook_list, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR
   else {
     currentpage=nr-3; /* skip "Settings", "Hardware" and "Host" tabs */
   }
+#endif
+  currentpage=nr;
 
 OK:
   DebOut("currentpage is now: %d\n", currentpage);
