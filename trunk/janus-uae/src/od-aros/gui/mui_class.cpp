@@ -838,9 +838,41 @@ BOOL SetWindowText(HWND hDlg, TCHAR *lpString) {
   DebOut("hWnd: %lx\n", hWnd);
 }
 #endif
+
 BOOL ShowWindow(HWND hWnd, int nCmdShow) {
   TODO();
 }; 
+
+/* WARNING: not same API call as in Windows */
+BOOL ShowWindow(HWND hWnd, DWORD id, int nCmdShow) {
+  int i;
+
+  DebOut("elem: %lx, id %d\n", hWnd, id);
+
+  i=get_index(hWnd, id);
+  if(i<0) {
+    hWnd=get_elem(id);
+    i=get_index(hWnd, id);
+  }
+
+  if(i<0) {
+    DebOut("ERROR: could not find elem %lx id %d\n", hWnd, id);
+    return FALSE;
+  }
+
+  DebOut("hWnd[%d].obj: %lx\n", i, hWnd[i].obj);
+
+  if(nCmdShow==SW_SHOW) {
+    DoMethod(hWnd[i].obj, MUIM_Set, MUIA_ShowMe, TRUE);
+  }
+  else {
+    DoMethod(hWnd[i].obj, MUIM_Set, MUIA_ShowMe, FALSE);
+  }
+
+  return TRUE;
+}
+
+ 
 
 AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
 
