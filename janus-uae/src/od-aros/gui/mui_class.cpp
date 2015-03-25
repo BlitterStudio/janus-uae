@@ -111,24 +111,24 @@ static int get_elem_from_obj(struct Data *data, Object *obj) {
 
   int i=0;
 
-  DebOut("obj: %lx, data %lx\n", obj, data);
+  //DebOut("obj: %lx, data %lx\n", obj, data);
 
   /* first try userdata */
   i=XGET(obj, MUIA_UserData);
   if(i>0) {
-    DebOut("MUIA_UserData: %d\n", i);
+    //DebOut("MUIA_UserData: %d\n", i);
     return i;
   }
 
   while(data->src[i].exists) {
     if(data->src[i].obj == obj) {
-      DebOut("found! i: %d\n", i);
+      //DebOut("found! i: %d\n", i);
       return i;
     }
     i++;
   }
 
-  DebOut("ERROR: not found!\n");
+  DebOut("ERROR: obj %lx, data %lx not found!\n", obj, data);
   return -1;
 }
 
@@ -271,7 +271,6 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
   IPTR activate;
   TCHAR *buf;
 
-  DebOut("== entered ==\n");
   DebOut("elem: %lx, nIDDlgItem: %d, lParam: %lx\n", elem, nIDDlgItem, lParam);
 
   i=get_index(elem, nIDDlgItem);
@@ -898,10 +897,10 @@ AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
 
   i=get_elem_from_obj(data, (Object *) obj);
 
-  DebOut("[%lx] i: %d\n", obj, i);
+  //DebOut("[%lx] i: %d\n", obj, i);
 
   data->src[i].value=XGET((Object *) obj, MUIA_Cycle_Active);
-  DebOut("[%lx] MUIA_Cycle_Active: %d (mui obj: %lx)\n", obj, data->src[i].value, obj);
+  //DebOut("[%lx] MUIA_Cycle_Active: %d (mui obj: %lx)\n", obj, data->src[i].value, obj);
   if(flag_editable(data->src[i].flags)) {
     data->src[i].value--;
   }
@@ -953,6 +952,11 @@ AROS_UFH2(void, MUIHook_slide, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
   AROS_USERFUNC_EXIT
 }
 
+/*
+ * Which control sends which default event on click, soo
+ * https://msdn.microsoft.com/en-us/library/9y0at277.aspx
+ */
+
 AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
 
   AROS_USERFUNC_INIT
@@ -978,12 +982,17 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
   newstate=XGET((Object *) obj, MUIA_Selected);
   DebOut("MUIA_Selected is (now): %d (group: %d)\n", newstate, data->src[i].group);
 
-  if(data->src[i].group) {
-    /* AUTORADIOBUTTON / Radio button logic: */
+  if((data->src[i].windows_type==CONTROL) && 
+     (data->src[i].flags2==BS_AUTORADIOBUTTON) && 
+     (data->src[i].group)) {
+
+    /*** AUTORADIOBUTTON / Radio button logic: ***/
+
     if(data->src[i].value == 1) {
       /* we were already the active one, we want to stay that, too! */
       DebOut("we were already the active one!\n");
       DoMethod(data->src[i].obj, MUIM_NoNotifySet, MUIA_Selected, TRUE);
+      /* no event */
       goto DONE;
     }
 
@@ -1005,27 +1014,35 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
       t++;
     }
   }
+  else if(data->src[i].windows_type==COMBOBOX) {
 
-  /* we are the only 1 now*/
+    /*** COMBOBOX ***/
+
+    /* CBN_SELCHANGE: A new combo box list item is selected. */
+    if(data->func) {
+      wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
+      DebOut("call function: %lx (IDC %d, wParam: %lx)\n", data->func, data->src[i].idc, wParam);
+      data->func(data->src, WM_COMMAND, wParam, NULL);
+    }
+    goto DONE;
+  }
   data->src[i].value=newstate;
 
-  /* now call the windows hook */
-  if(data->func) {
-    wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
-    DebOut("call function: %lx (IDC %d, wParam: %lx)\n", data->func, data->src[i].idc, wParam);
-    data->func(data->src, WM_COMMAND, wParam, NULL);
 
+  if(data->func) {
     /* warning: should we call BN_CLICKED here, too?
      * open console in Paths won't work without .. 
      */
     wParam=MAKELPARAM(data->src[i].idc, BN_CLICKED);
     data->func(data->src, WM_COMMAND, wParam, NULL);
-
   }
   else {
     DebOut("WARNING: function is zero: %lx\n", data->func);
     /* Solution: add DlgProc in mNew in mui_head.cpp */
   }
+
+
+
 
 DONE:
   ;
@@ -1040,9 +1057,7 @@ AROS_UFH2(void, MUIHook_pushbutton, AROS_UFHA(struct Hook *, hook, A0), AROS_UFH
 
   struct Data *data = (struct Data *) hook->h_Data;
 
-
   DebOut("[%lx] entered\n", obj);
-  DebOut("hook.h_Data: %lx\n", hook->h_Data);
 
   i=get_elem_from_obj(data, (Object *) obj);
 
@@ -1052,12 +1067,7 @@ AROS_UFH2(void, MUIHook_pushbutton, AROS_UFHA(struct Hook *, hook, A0), AROS_UFH
     DebOut("call function: %lx\n", data->func);
     DebOut("IDC: %d\n", data->src[i].idc);
     DebOut("WM_COMMAND: %d\n", WM_COMMAND);
-    wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
-    DebOut("wParam: %lx (CBN_SELCHANGE)\n", wParam);
-    data->func(data->src, WM_COMMAND, wParam, NULL);
-    /* double call is not a good idea?! */
-    /* we we disable double calling here, PATH dialog won't open fileselect requester */
-    DebOut("WARNING: should we really send BN_CLICKED here, too?\n");
+
     wParam=MAKELPARAM(data->src[i].idc, BN_CLICKED);
     data->func(data->src, WM_COMMAND, wParam, NULL);
   }
@@ -1509,7 +1519,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
     DoMethod(obj, MUIM_Set, MUIA_Group_LayoutHook, &data->LayoutHook);
     i=0;
     while(src[i].exists) {
-      DebOut("i: %d (add %lx to %lx\n", i, src[i].obj, obj);
+      DebOut("i: %d (add %lx to %lx)\n", i, src[i].obj, obj);
       DoMethod((Object *) obj, OM_ADDMEMBER,(IPTR) src[i].obj);
       i++;
     }
