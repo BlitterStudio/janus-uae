@@ -782,12 +782,20 @@ int MessageBox(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType) {
 }
 
 
+extern Object *reset;
 /* WARNING: not same API call as in Windows */
 BOOL EnableWindow(HWND hWnd, DWORD id, BOOL bEnable) {
   int i;
   int res;
 
   DebOut("elem: %lx, id %d\n", hWnd, id);
+
+  if(id==IDC_RESETAMIGA) {
+    /* special case, IDC_RESETAMIGA is handcoded and now Windows button */
+    DoMethod(reset, MUIM_Set, MUIA_Disabled, !bEnable);
+
+    return TRUE;
+  }
 
   i=get_index(hWnd, id);
   if(i<0) {
