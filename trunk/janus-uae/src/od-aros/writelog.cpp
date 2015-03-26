@@ -188,6 +188,8 @@ static TCHAR *writets (void)
 
 	//DebOut("entered (TimerBase %lx, timer_ioreq %lx, timer_msgport %lx\n", TimerBase, timer_ioreq, timer_msgport);
 
+  opentimer(UNIT_VBLANK); /* does nothing, if already open */
+
 	GetSysTime(&acttime);
 
 	//DebOut("got sys time..\n");
