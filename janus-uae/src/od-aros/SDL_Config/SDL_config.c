@@ -36,6 +36,25 @@
 
  #undef HEADER_HACK_INCLUDED_IN_SDL_CONFIG
 
+/* write SDL errors to WinUAE log.
+ * SLD logs errors even for noncritical, intended actions, like creating new groups.
+ * (You tried to select group DiskImageMRUList that doesn't exist - new group was created)
+ */
+#undef SDL_SetError 
+void write_log (const char *format, ...);
+
+void SDL_SetError(const char *format, ...) {
+  char tmp[256];
+  va_list args;
+
+  va_start(args, format);
+  vsnprintf(tmp, 254, format, args);
+  va_end(args);
+
+  strcat(tmp, "\n");
+  write_log(tmp);
+}
+
 /* ------------------------------------------------------- start globals */
 
 /* ---> Globals used for loading: */
@@ -1472,7 +1491,7 @@ int CFG_SelectGroup(CFG_String_Arg group, CFG_Bool create)
       internal_file->selected_group->entry_iterator = internal_file->selected_group->entries.end();             
 
       /* This isn't error, but we have to do it */
-      CFG_SetError("You tried to select group that doesn't exist - new group was created.");
+      CFG_SetError("You tried to select group %s that doesn't exist - new group was created.", group);
       return CFG_GROUP_CREATED;
      }
    else if ( iterator == internal_file->groups.end() && (create == 0) )
