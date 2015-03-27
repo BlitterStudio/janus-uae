@@ -7291,13 +7291,13 @@ static void init_resolution_combo (HWND hDlg)
 	struct MultiDisplay *md = getdisplay (&workprefs);
 
     bug("[JUAE:GUI] %s(%lx)\n", __PRETTY_FUNCTION__, md);
-    bug("md->DisplayModes[0].depth: %d\n", md->DisplayModes[0].depth);
+    //bug("md->DisplayModes[0].depth: %d\n", md->DisplayModes[0].depth);
 
 	idx = -1;
 	SendDlgItemMessage(hDlg, IDC_RESOLUTION, CB_RESETCONTENT, 0, 0);
 	for (i = 0; md->DisplayModes[i].depth >= 0; i++) {
-    bug("i: %d\n", i);
-    bug("md->DisplayModes[i].depth: %d\n", md->DisplayModes[i].depth);
+    //bug("i: %d\n", i);
+    //bug("md->DisplayModes[i].depth: %d\n", md->DisplayModes[i].depth);
 		if (md->DisplayModes[i].depth > 1 && md->DisplayModes[i].residx != idx) {
 			_stprintf (tmp, _T("%dx%d%s"), md->DisplayModes[i].res.width, md->DisplayModes[i].res.height, md->DisplayModes[i].lace ? _T("i") : _T(""));
 			if (md->DisplayModes[i].rawmode)
@@ -8420,7 +8420,6 @@ static void values_to_memorydlg (HWND hDlg)
 	setmax32bitram (hDlg);
 
 }
-#if 0
 
 static void fix_values_memorydlg (void)
 {
@@ -8471,7 +8470,6 @@ static void updatez3 (uae_u32 *size1p, uae_u32 *size2p)
 	*size1p = s1;
 	*size2p = s2;
 }
-#endif
 
 static struct netdriverdata *ndd[MAX_TOTAL_NET_DEVICES + 1];
 
@@ -8892,9 +8890,7 @@ static INT_PTR CALLBACK ExpansionDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 	return FALSE;
 }
 
-#if 0
-
-static INT_PTR CALLBACK MemoryDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK MemoryDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static int recursive = 0;
 
@@ -8924,20 +8920,40 @@ static INT_PTR CALLBACK MemoryDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARA
 		break;
 
 	case WM_COMMAND:
+    DebOut("WM_COMMAND\n");
 		recursive++;
 		workprefs.fastmem_autoconfig = ischecked (hDlg, IDC_FASTMEMAUTOCONFIG);
 		recursive--;
+#warning WM_HSCROLL should be really sent, not just fall-through!
+#ifndef __AROS__
 		break;
+#endif
 
 	case WM_HSCROLL:
+    DebOut("WM_HSCROLL\n");
+#ifndef __AROS__
 		workprefs.chipmem_size = memsizes[msi_chip[SendMessage (GetDlgItem (hDlg, IDC_CHIPMEM), TBM_GETPOS, 0, 0)]];
 		workprefs.bogomem_size = memsizes[msi_bogo[SendMessage (GetDlgItem (hDlg, IDC_SLOWMEM), TBM_GETPOS, 0, 0)]];
 		workprefs.fastmem_size = memsizes[msi_fast[SendMessage (GetDlgItem (hDlg, IDC_FASTMEM), TBM_GETPOS, 0, 0)]];
 		workprefs.z3fastmem_size = memsizes[msi_z3fast[SendMessage (GetDlgItem (hDlg, IDC_Z3FASTMEM), TBM_GETPOS, 0, 0)]];
+#else
+		workprefs.chipmem_size = memsizes[msi_chip[SendDlgItemMessage (hDlg, IDC_CHIPMEM, TBM_GETPOS, 0, 0)]];
+		workprefs.bogomem_size = memsizes[msi_bogo[SendDlgItemMessage (hDlg, IDC_SLOWMEM, TBM_GETPOS, 0, 0)]];
+		workprefs.fastmem_size = memsizes[msi_fast[SendDlgItemMessage (hDlg, IDC_FASTMEM, TBM_GETPOS, 0, 0)]];
+		workprefs.z3fastmem_size = memsizes[msi_z3fast[SendDlgItemMessage (hDlg, IDC_Z3FASTMEM, TBM_GETPOS, 0, 0)]];
+
+#endif
 		updatez3 (&workprefs.z3fastmem_size, &workprefs.z3fastmem2_size);
+#ifndef __AROS__
 		workprefs.z3chipmem_size = memsizes[msi_z3chip[SendMessage (GetDlgItem (hDlg, IDC_Z3CHIPMEM), TBM_GETPOS, 0, 0)]];
 		workprefs.mbresmem_low_size = memsizes[msi_gfx[SendMessage (GetDlgItem (hDlg, IDC_MBMEM1), TBM_GETPOS, 0, 0)]];
 		workprefs.mbresmem_high_size = memsizes[msi_gfx[SendMessage (GetDlgItem (hDlg, IDC_MBMEM2), TBM_GETPOS, 0, 0)]];
+#else
+		workprefs.z3chipmem_size = memsizes[msi_z3chip[SendDlgItemMessage(hDlg, IDC_Z3CHIPMEM, TBM_GETPOS, 0, 0)]];
+		workprefs.mbresmem_low_size = memsizes[msi_gfx[SendDlgItemMessage (hDlg, IDC_MBMEM1, TBM_GETPOS, 0, 0)]];
+		workprefs.mbresmem_high_size = memsizes[msi_gfx[SendDlgItemMessage (hDlg, IDC_MBMEM2, TBM_GETPOS, 0, 0)]];
+
+#endif
 		fix_values_memorydlg ();
 		values_to_memorydlg (hDlg);
 		enable_for_memorydlg (hDlg);
@@ -8946,7 +8962,6 @@ static INT_PTR CALLBACK MemoryDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARA
 	}
 	return FALSE;
 }
-#endif
 
 static void addromfiles (UAEREG *fkey, HWND hDlg, DWORD d, TCHAR *path, int type)
 {
@@ -9173,9 +9188,10 @@ INT_PTR CALLBACK KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lP
 	case WM_COMMAND:
 		if (recursive > 0)
 			break;
+    DebOut("WM_COMMAND\n");
 		recursive++;
 		if (HIWORD (wParam) == CBN_SELCHANGE || HIWORD (wParam) == CBN_KILLFOCUS)  {
-        bug("CBN_SELCHANGE\n");
+        DebOut("CBN_SELCHANGE\n");
 			switch (LOWORD (wParam))
 			{
 			case IDC_ROMFILE:
@@ -10067,10 +10083,8 @@ INT_PTR CALLBACK CPUDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		recursive++;
 		pages[CPU_ID] = hDlg;
 		currentpage = CPU_ID;
-#if 0
 		SendDlgItemMessage (hDlg, IDC_CACHE, TBM_SETRANGE, TRUE, MAKELONG (MIN_CACHE_SIZE, MAX_CACHE_SIZE));
 		SendDlgItemMessage (hDlg, IDC_CACHE, TBM_SETPAGESIZE, 0, 1);
-#endif
 		SendDlgItemMessage (hDlg, IDC_CPUIDLE, TBM_SETRANGE, (WPARAM) TRUE, MAKELONG (0, 10));
 		SendDlgItemMessage (hDlg, IDC_CPUIDLE, TBM_SETPAGESIZE, 0, 1);
 
@@ -18163,9 +18177,7 @@ static int GetSettings (int all_options, HWND hwnd)
 		CHIPSET_ID = init_page (IDD_CHIPSET, IDI_CPU, IDS_CHIPSET, ChipsetDlgProc, NULL, _T("gui/chipset.htm"), 0);
 		CHIPSET2_ID = init_page (IDD_CHIPSET2, IDI_CPU, IDS_CHIPSET2, ChipsetDlgProc2, NULL, _T("gui/chipset.htm"), 0);
 		KICKSTART_ID = init_page (IDD_KICKSTART, IDI_MEMORY, IDS_KICKSTART, KickstartDlgProc, NULL, _T("gui/rom.htm"), 0);
-#if 0
 		MEMORY_ID = init_page (IDD_MEMORY, IDI_MEMORY, IDS_MEMORY, MemoryDlgProc, NULL, _T("gui/ram.htm"), 0);
-#endif
 		FLOPPY_ID = init_page (IDD_FLOPPY, IDI_FLOPPY, IDS_FLOPPY, FloppyDlgProc, NULL, _T("gui/floppies.htm"), 0);
 
 
@@ -18208,6 +18220,7 @@ static int GetSettings (int all_options, HWND hwnd)
   bug("[JUAE:GUI] %s: currentpage: %d, QUICKSTART_ID: %d, LOADSAVE_ID: %d\n", __PRETTY_FUNCTION__, currentpage, QUICKSTART_ID, LOADSAVE_ID);
 
   psresult=aros_show_gui();
+
 #if 0
 
 	int fmultx = 0, fmulty = 0;

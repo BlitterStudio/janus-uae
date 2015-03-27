@@ -184,6 +184,7 @@ int *CPUDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *AboutDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *MemoryDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
 Object* FixedObj(IPTR src)
 {
@@ -279,7 +280,7 @@ Object* build_gui(void) {
                                   Child, FixedObj((IPTR)IDD_CHIPSET),
                                   Child, FixedObj((IPTR)IDD_CHIPSET2),
                                   Child, FixedProcObj((IPTR)IDD_KICKSTART,  (IPTR) &KickstartDlgProc ),
-                                  Child, FixedObj((IPTR)IDD_MEMORY),
+                                  Child, FixedProcObj((IPTR)IDD_MEMORY,     (IPTR) &MemoryDlgProc    ),
                                   Child, FixedProcObj((IPTR)IDD_FLOPPY,     (IPTR) &FloppyDlgProc    ),
                                   Child, FixedObj((IPTR)IDD_CDDRIVE),
                                   Child, FixedObj((IPTR)IDD_EXPANSION),
