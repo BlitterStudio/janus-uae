@@ -43,7 +43,7 @@ Element IDD_FLOPPY[] = {
 #define IDS_HARDDISK            "CD & Hard drives"
 #define IDS_FLOPPY              "Floppy drives"
 #define IDS_ABOUT               "About"
-#define IDS_LOADSAVE            "\33bConfigurations"
+#define IDS_LOADSAVE            "Configurations"
 #define IDS_LOADSAVE1           "\33bHardware"
 #define IDS_LOADSAVE2           "\33bHost"
 #define IDS_AVIOUTPUT           "Output"
@@ -66,10 +66,10 @@ Element IDD_FLOPPY[] = {
 
 
 static const char *listelements[] = {
-  IDS_LOADSAVE,
   IDS_ABOUT,
   IDS_PATHS,
   IDS_QUICKSTART,
+  IDS_LOADSAVE,
   IDS_LOADSAVE1,
   IDS_CPU,
   IDS_CHIPSET,
@@ -271,11 +271,12 @@ Object* build_gui(void) {
                               MUIA_Group_Horiz, FALSE,
                               MUIA_Group_Child,
                                 pages=PageGroup,
-                                  Child, FixedObj((IPTR)IDD_LOADSAVE),
                                   Child, FixedProcObj((IPTR)IDD_ABOUT,      (IPTR) &AboutDlgProc     ),
                                   Child, FixedProcObj((IPTR)IDD_PATHS,      (IPTR) &PathsDlgProc     ),
                                   Child, FixedProcObj((IPTR)IDD_QUICKSTART, (IPTR) &QuickstartDlgProc),
                                   Child, FixedObj((IPTR)IDD_LOADSAVE),
+                                  //Child, FixedObj((IPTR)IDD_LOADSAVE),
+                                  Child, TextObject,  MUIA_Text_Contents, "\33c\33bTODO", End,
                                   Child, FixedProcObj((IPTR)IDD_CPU,        (IPTR) &CPUDlgProc       ),
                                   Child, FixedObj((IPTR)IDD_CHIPSET),
                                   Child, FixedObj((IPTR)IDD_CHIPSET2),
@@ -284,7 +285,8 @@ Object* build_gui(void) {
                                   Child, FixedProcObj((IPTR)IDD_FLOPPY,     (IPTR) &FloppyDlgProc    ),
                                   Child, FixedObj((IPTR)IDD_CDDRIVE),
                                   Child, FixedObj((IPTR)IDD_EXPANSION),
-                                  Child, FixedObj((IPTR)IDD_LOADSAVE),
+                                  //Child, FixedObj((IPTR)IDD_LOADSAVE),
+                                  Child, TextObject,  MUIA_Text_Contents, "\33c\33bTODO", End,
                                   Child, FixedObj((IPTR)IDD_DISPLAY),
                                   Child, FixedObj((IPTR)IDD_SOUND),
                                   Child, FixedObj((IPTR)IDD_GAMEPORTS),
@@ -321,7 +323,7 @@ Object* build_gui(void) {
 
 
   /* List click events */
-  kprintf("leftframe: %lx\n", leftframe);
+  //kprintf("leftframe: %lx\n", leftframe);
 
 #ifdef UAE_ABI_v0
   MyMuiHook_list.h_Entry=(HOOKFUNC) MUIHook_list;
