@@ -179,6 +179,10 @@ static int qs_request_reset;
 static int qs_override;
 int gui_active;
 
+#ifdef __AROS__
+void check_currentpage(int shouldbe);
+#endif
+
 #if 0
 extern HWND (WINAPI *pHtmlHelp)(HWND, LPCWSTR, UINT, LPDWORD);
 
@@ -2874,7 +2878,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
     result=mui_get_filename(szTitle, init_path, full_path, szFilter, file_name, 0);
   }
 
-  bug("full_path: %s\n", full_path);
+  DebOut("full_path: %s\n", full_path);
 
 
 #if 0
@@ -2921,12 +2925,12 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 		}
 #endif
 
-    bug("switch (wParam: %d)\n", wParam);
+    DebOut("switch (wParam: %d)\n", wParam);
 		switch (wParam)
 		{
 		case IDC_PATH_NAME:
 		case IDC_PATH_FILESYS:
-      bug("IDC_PATH_NAME\n");
+      DebOut("IDC_PATH_NAME\n");
 			if (flag == 8) {
 				if(_tcsstr (full_path, _T("Configurations\\"))) {
 					_tcscpy (full_path, init_path);
@@ -2942,7 +2946,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 #endif
 		case IDC_DF0:
 		case IDC_DF0QQ:
-      bug("IDC_DF0\n");
+      DebOut("IDC_DF0\n");
 			selectdisk (prefs, hDlg, 0, IDC_DF0TEXT, full_path);
 			next = IDC_DF1;
 			break;
@@ -2987,7 +2991,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 			}
 			break;
 		case IDC_LOAD:
-      bug("IDC_LOAD\n");
+      DebOut("IDC_LOAD\n");
 			if (target_cfgfile_load (&workprefs, full_path, 0, 0) == 0) {
 				TCHAR szMessage[MAX_DPATH];
 				WIN32GUI_LoadUIString (IDS_COULDNOTLOADCONFIG, szMessage, MAX_DPATH);
@@ -3073,7 +3077,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 #if 0
 	}
 #endif
-  bug("done\n");
+  DebOut("done (result: %d)\n", result);
 	return result;
 }
 
@@ -5899,6 +5903,8 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		return TRUE;
 
 	case WM_COMMAND:
+
+    check_currentpage(PATHS_ID);
     DebOut("msg: WM_COMMAND\n");
 		if (recursive > 0)
 			break;
@@ -6471,6 +6477,8 @@ INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 #endif
 
 	case WM_COMMAND:
+
+    check_currentpage(QUICKSTART_ID);
     DebOut("WM_COMMAND\n");
 		if (recursive > 0)
 			break;
@@ -6679,6 +6687,7 @@ INT_PTR CALLBACK AboutDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		init_aboutdlg (hDlg);
 		break;
 	case WM_COMMAND:
+    check_currentpage(ABOUT_ID);
 		if (LOWORD(wParam) == IDC_CONTRIBUTORS)
 			DisplayContributors (hDlg);
 		break;
@@ -8920,6 +8929,8 @@ INT_PTR CALLBACK MemoryDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 		break;
 
 	case WM_COMMAND:
+    
+    check_currentpage(MEMORY_ID);
     DebOut("WM_COMMAND\n");
 		recursive++;
 		workprefs.fastmem_autoconfig = ischecked (hDlg, IDC_FASTMEMAUTOCONFIG);
@@ -9023,6 +9034,8 @@ static void addromfiles (UAEREG *fkey, HWND hDlg, DWORD d, TCHAR *path, int type
 static void getromfile (HWND hDlg, DWORD d, TCHAR *path, int size)
 {
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
+  DebOut("hDlg: %lx, d %d, path %s, size %d\n", hDlg, d, path, size);
 
 	LRESULT val = SendDlgItemMessage (hDlg, d, CB_GETCURSEL, 0, 0L);
 	if (val == CB_ERR) {
@@ -9186,6 +9199,7 @@ INT_PTR CALLBACK KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lP
 #endif
 
 	case WM_COMMAND:
+    check_currentpage(KICKSTART_ID);
 		if (recursive > 0)
 			break;
     DebOut("WM_COMMAND\n");
@@ -10131,6 +10145,7 @@ INT_PTR CALLBACK CPUDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		return TRUE;
 
 	case WM_COMMAND:
+    check_currentpage(CPU_ID);
     bug("[JUAE:GUI] %s(): WM_COMMAND\n", __PRETTY_FUNCTION__);
 		if (recursive > 0)
 			break;
@@ -12705,6 +12720,7 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 		break;
 
 	case WM_COMMAND:
+    check_currentpage(FLOPPY_ID);
 //#if TEST
 #if 1
 
@@ -17993,13 +18009,14 @@ HWND CustomCreateDialog (int templ, HWND hDlg, DLGPROC proc)
 }
 #endif
 
+static int id = 0;
+
 static int init_page (struct Element *tmpl, int icon, TCHAR *title,
 	INT_PTR (CALLBACK FAR *func) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam), ACCEL *accels, const TCHAR *help, int focusid)
 {
 #if 0
 	LPTSTR lpstrTitle;
 #endif
-	static int id = 0;
 	int i = -1;
 #if 0
 	struct newresource *res;
@@ -18169,10 +18186,11 @@ static int GetSettings (int all_options, HWND hwnd)
      * reordered them to mach the tree on the left side. Otherwise ID <-> nr page mapping would be
      * necessary. take care of that, when merging new stuff from upstream!
      */
-		LOADSAVE_ID = init_page (IDD_LOADSAVE, IDI_FILE, IDS_LOADSAVE, LoadSaveDlgProc, NULL, _T("gui/configurations.htm"), IDC_CONFIGTREE);
 		ABOUT_ID = init_page (IDD_ABOUT, IDI_ABOUT, IDS_ABOUT, AboutDlgProc, NULL, NULL, 0);
 		PATHS_ID = init_page (IDD_PATHS, IDI_PATHS, IDS_PATHS, PathsDlgProc, NULL, _T("gui/paths.htm"), 0);
 		QUICKSTART_ID = init_page (IDD_QUICKSTART, IDI_QUICKSTART, IDS_QUICKSTART, QuickstartDlgProc, NULL, _T("gui/quickstart.htm"), 0);
+		LOADSAVE_ID = init_page (IDD_LOADSAVE, IDI_FILE, IDS_LOADSAVE, LoadSaveDlgProc, NULL, _T("gui/configurations.htm"), IDC_CONFIGTREE);
+    id++; /* skip "Hardware" */
 		CPU_ID = init_page (IDD_CPU, IDI_CPU, IDS_CPU, CPUDlgProc, NULL, _T("gui/cpu.htm"), 0);
 		CHIPSET_ID = init_page (IDD_CHIPSET, IDI_CPU, IDS_CHIPSET, ChipsetDlgProc, NULL, _T("gui/chipset.htm"), 0);
 		CHIPSET2_ID = init_page (IDD_CHIPSET2, IDI_CPU, IDS_CHIPSET2, ChipsetDlgProc2, NULL, _T("gui/chipset.htm"), 0);
