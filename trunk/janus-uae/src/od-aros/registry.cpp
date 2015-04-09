@@ -475,6 +475,8 @@ void regclosetree (UAEREG *key)
 static uae_u8 crcok[20] = { 0xaf,0xb7,0x36,0x15,0x05,0xca,0xe6,0x9d,0x23,0x17,0x4d,0x50,0x2b,0x5c,0xc3,0x64,0x38,0xb8,0x4e,0xfc };
 #endif
 
+int my_existsfile (const TCHAR *name);
+
 int reginitializeinit (TCHAR **pppath)
 {
     const char *res;
@@ -489,7 +491,7 @@ int reginitializeinit (TCHAR **pppath)
     /* AROS never uses the registry (we have none..), so we use INI-files */
     inimode = 1;
 
-    if (CFG_OK != CFG_OpenFile(INI_FILE, &ini )) {
+    if (!my_existsfile(INI_FILE) || (CFG_OK != CFG_OpenFile(INI_FILE, &ini ))) {
         bug("[JUAE:Reg] %s: %s does not exist\n", __PRETTY_FUNCTION__, INI_FILE);
         goto FAIL2;
     }
