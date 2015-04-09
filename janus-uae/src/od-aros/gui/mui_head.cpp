@@ -97,6 +97,13 @@ extern int currentpage;
 
 struct Hook MyMuiHook_list;
 
+void check_currentpage(int shouldbe) {
+
+  if(currentpage != shouldbe) {
+    DebOut("==> ERROR <==   currentpage %d != shouldbe %d\n", currentpage, shouldbe);
+  }
+}
+
 AROS_UFH2(void, MUIHook_list, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
 
   AROS_USERFUNC_INIT
