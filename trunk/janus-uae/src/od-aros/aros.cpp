@@ -371,104 +371,53 @@ void fixtrailing (TCHAR *p) {
   strcat(p, "/");
 }
 
-/* return an absolute path from an absolute or relative path */
-void fullpath (TCHAR *path, int size) {
+/* WinUAE converts path to absolute or relative 
+ *
+ * As relative paths always somehow fail on AROS, we only use absolute paths here
+ */
+void fullpath(TCHAR *inpath, int size) {
+  char    abs_in  [MAX_DPATH];
+  char    tmp     [MAX_DPATH];
+  TCHAR  *path = inpath;
   BPTR    lock;
-  TCHAR   tmp1[MAX_DPATH], tmp2[MAX_DPATH];
   BOOL    result;
 
-  bug("[JUAE:AROS] %s: path[%d] = '%s'\n", __PRETTY_FUNCTION__, size, path);
-  if  (relativepaths)
-  {
-    bug("[JUAE:AROS] %s: using relative path\n", __PRETTY_FUNCTION__);
-  }
-  else
-  {
-    bug("[JUAE:AROS] %s: using absolute path\n", __PRETTY_FUNCTION__);
+  bug("[JUAE:AROS] %s: convert %s to a reative path\n", __PRETTY_FUNCTION__, path);
+
+  if(path[0] == '.' && (path[1] == '\\' || path[1] == '/')) {
+    /* skip .\ or ./ */
+    path=path+2;
   }
 
-  if (path[0] == 0) {
+  tmp[0]     =(char) 0;
+  abs_in[0]  =(char) 0;
+
+  /* is input path relative? */
+  if(!strchr(path, ':')) {
+    strcpy(tmp, "PROGDIR:");
+  }
+  strcat(tmp, path);
+  DebOut("tmp: %s\n", tmp);
+
+
+  lock=Lock(tmp, SHARED_LOCK);
+  if(!lock) {
+    bug("[JUAE:AROS] %s: failed to lock path '%s'\n", __PRETTY_FUNCTION__, tmp);
     return;
   }
 
-  if (relativepaths) {
-    TCHAR *lockpath = path;
-    int tmp1len;
-
-    GetCurrentDirName(tmp1, MAX_DPATH);
-    bug("[JUAE:AROS] %s: current dir = '%s'\n", __PRETTY_FUNCTION__, tmp1);
-
-    tmp1len = strlen(tmp1);
-
-    // de-win32 the path
-    if (path[0] == '.' && (path[1] == '\\' || path[1] == '/'))
-    {
-      if (strlen(path) > 2) {
-        lockpath += 2;
-      }
-      else
-      {
-        strcpy(path, tmp1);
-        goto fullpath_done;
-      }
-    }
-#if (0)
-    else if (path[0] == '\\') {
-      path[0] == ':';
-    }
-#endif
-
-    lock=Lock(lockpath, SHARED_LOCK);
-    if(!lock) {
-      bug("[JUAE:AROS] %s: failed to lock path '%s'\n", __PRETTY_FUNCTION__, lockpath);
-      return;
-    }
-    result=NameFromLock(lock, tmp2, MAX_DPATH);
-    UnLock(lock);
-    if(!result) {
-      bug("[JUAE:AROS] %s: NameFromLock('%s') failed!\n", __PRETTY_FUNCTION__, lockpath);
-      return;
-    }
-    bug("[JUAE:AROS] %s: NameFromLock(%s): %s\n", __PRETTY_FUNCTION__, lockpath, tmp2);
-
-    if (strnicmp (tmp1, tmp2, tmp1len) == 0)
-    {
-      //bug("[JUAE:AROS] %s: tmp2 (%s) is inside tmp1 (%s)\n", tmp2, tmp1);
-
-        if (strlen(tmp2) > tmp1len)
-        {
-            if (tmp2[tmp1len] == '/')
-                tmp1len += 1;
-            strcpy(path, tmp2 + tmp1len);
-        }
-        else {
-           /* is there something like '.' in AmigaOS ? */
-           strcpy(path, "");
-        }
-    }
-    else {
-      //bug("[JUAE:AROS] %s: tmp2 (%s) is not inside tmp1 (%s)\n", tmp2, tmp1);
-      strcpy(path, tmp2);
-    }
+  result=NameFromLock(lock, abs_in, MAX_DPATH);
+  UnLock(lock);
+  if(!result) {
+    bug("[JUAE:AROS] %s: NameFromLock('%s') failed!\n", __PRETTY_FUNCTION__, tmp);
+    return;
   }
-  else {
-    lock=Lock(path, SHARED_LOCK);
-    if(!lock) {
-      //bug("[JUAE:AROS] %s: failed to lock %s\n", path);
-      return;
-    }
-    result=NameFromLock(lock, tmp1, MAX_DPATH);
-    UnLock(lock);
-    if(!result) {
-      //bug("[JUAE:AROS] %s: failed to NameFromLock(%s)\n", path);
-      return;
-    }
-    //bug("[JUAE:AROS] %s: NameFromLock(%s): %s\n", path, tmp1);
-    strcpy(path, tmp1);
-  }
+  DebOut("NameFromLock(%s): %s\n", tmp, abs_in);
+  /* now we have an absolute path!  */
 
-fullpath_done:
-  bug("[JUAE:AROS] %s: result: %s\n", __PRETTY_FUNCTION__, path);
+  strcpy(inpath, abs_in);
+
+  DebOut("result: %s\n", inpath);
 }
 
 /* taken from puae/misc.c */
@@ -837,9 +786,12 @@ void read_rom_list (void)
   for (;;) {
     size = sizeof (tmp) / sizeof (TCHAR);
     size2 = sizeof (tmp2) / sizeof (TCHAR);
-    bug("[JUAE:AROS] %s: .........\n", __PRETTY_FUNCTION__);
-    if (!regenumstr (fkey, idx, tmp, &size, tmp2, &size2))
+    DebOut("idx: %d\n", idx);
+    if (!regenumstr (fkey, idx, tmp, &size, tmp2, &size2)) {
+      DebOut("BREAK!\n");
       break;
+    }
+
     if (_tcslen (tmp) == 7 || _tcslen (tmp) == 13) {
       int group = 0;
       int subitem = 0;
