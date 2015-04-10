@@ -235,10 +235,10 @@ int regenumstr (UAEREG *root, int idx, TCHAR *name, int *nsize, TCHAR *str, int 
     CFG_SelectGroup(gs(root), TRUE);
 
     max = CFG_GetEntriesInSelectedGroup(0);
-    D(bug("[JUAE:Reg] number of entries: %d\n", __PRETTY_FUNCTION__, CFG_GetEntriesInSelectedGroup(0)));
+    D(bug("[JUAE:Reg] %s: number of entries: %d\n", __PRETTY_FUNCTION__, CFG_GetEntriesInSelectedGroup(0)));
 
     if (idx == max) {
-        D(bug("[JUAE:Reg] no more entries\n", __PRETTY_FUNCTION__));
+        D(bug("[JUAE:Reg] %s: no more entries\n", __PRETTY_FUNCTION__));
         return 0;
     }
 
