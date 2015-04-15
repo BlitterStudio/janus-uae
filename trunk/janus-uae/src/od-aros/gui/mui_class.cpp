@@ -31,6 +31,8 @@
 
 #define MA_Data 0xfece0000
 
+#define EMPTY_SELECTION "<-- none -->"
+
 struct Data {
   struct Hook LayoutHook;
   struct Hook MyMUIHook_pushbutton;
@@ -451,16 +453,50 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
        * selected. If wParam is greater than the number of items in the list or 
        * if wParam is 1, the return value is CB_ERR and the selection is cleared. 
        */
-    case CB_SETCURSEL:
+    case CB_SETCURSEL: {
       LONG foo;
+      LONG empty_idx=-1;
       DebOut("CB_SETCURSEL\n");
       DebOut("wParam: %d\n", wParam);
       foo=wParam;
+#ifdef EDIT
       if(flag_editable(elem[i].flags)) {
         foo++;
       }
-      DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, foo);
+#endif
+      if(foo<0) {
+        /* clearing is not so simple, our field is not editable at all,
+         * so we add a empty selection, if there is not already one.
+         */
+
+        /* search for empty selection, count entries in l */
+        l=0;
+        while(elem[i].var[l] != NULL) {
+          DebOut("  compare with >%s<\n", elem[i].var[l]);
+          if(!strcmp(elem[i].var[l], (TCHAR *) EMPTY_SELECTION)) {
+            empty_idx=l;
+          }
+          l++;
+        }
+        if(empty_idx==-1) {
+          /* add EMPTY_SELECTION */
+          elem[i].var[l]=strdup((TCHAR *) EMPTY_SELECTION);
+          /* terminate list */
+          elem[i].var[l+1]=NULL;
+          DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Entries, (IPTR) elem[i].mem);
+          empty_idx=l;
+        }
+        /* select empty index */
+        DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, empty_idx);
+
+      }
+      else {
+        DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, foo);
+      }
       return TRUE;
+      } /* case block */
+      break;
+
     case TBM_SETRANGE:
       /* lParam: The LOWORD specifies the minimum position for the slider, 
        *         and the HIWORD specifies the maximum position.
@@ -901,16 +937,23 @@ AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
 
   data->src[i].value=XGET((Object *) obj, MUIA_Cycle_Active);
   //DebOut("[%lx] MUIA_Cycle_Active: %d (mui obj: %lx)\n", obj, data->src[i].value, obj);
+#ifdef EDIT
   if(flag_editable(data->src[i].flags)) {
     data->src[i].value--;
   }
+#endif
 
   DebOut("[%lx] We are in state: %d\n", obj, data->src[i].value);
 
   if(data->func) {
-    wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
-    DebOut("[%lx] call function: %lx(wParam %lx) IDC: %d\n", obj, data->func, wParam, data->src[i].idc);
-    data->func(data->src, WM_COMMAND, wParam, NULL);
+    if(!strcmp(data->src[i].mem[data->src[i].value], EMPTY_SELECTION)) {
+      DebOut("Empty selection (%s), do nothing\n", EMPTY_SELECTION);
+    }
+    else {
+      wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
+      DebOut("[%lx] call function: %lx(wParam %lx) IDC: %d\n", obj, data->func, wParam, data->src[i].idc);
+      data->func(data->src, WM_COMMAND, wParam, NULL);
+    }
   }
   else {
     DebOut("[%lx] function is zero: %lx\n", obj, data->func);
@@ -1453,16 +1496,20 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
         case COMBOBOX:
           src[i].mem=(char **) malloc(256 * sizeof(IPTR)); // array for cycle texts
           DebOut("flags: %lx\n", src[i].flags);
+#ifdef EDIT
           if(!flag_editable(src[i].flags)) {
             DebOut("flags: CBS_DROPDOWNLIST\n");
+#endif
             src[i].var=src[i].mem;
+#ifdef EDIT
           }
           else {
             /* must contain "<<empty>>" statement */
             DebOut("flags: CBS_DROPDOWN\n");
-            src[i].mem[0]=strdup("<<empty>>");
+            src[i].mem[0]=strdup("<-- undef -->");
             src[i].var=src[i].mem+1;
           }
+#endif
           src[i].var[0]=NULL;
           src[i].exists=TRUE;
           child=CycleObject,
