@@ -382,7 +382,7 @@ void fullpath(TCHAR *inpath, int size) {
   BPTR    lock;
   BOOL    result;
 
-  bug("[JUAE:AROS] %s: convert %s to a reative path\n", __PRETTY_FUNCTION__, path);
+  bug("[JUAE:AROS] %s: convert %s to an absolute, full path\n", __PRETTY_FUNCTION__, path);
 
   if(path[0] == '.' && (path[1] == '\\' || path[1] == '/')) {
     /* skip .\ or ./ */

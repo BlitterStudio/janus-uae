@@ -1514,6 +1514,7 @@ static void abspathtorelative (TCHAR *name)
 	BPTR    lock;
 	TCHAR   tmp1[MAX_DPATH], tmp2[MAX_DPATH];
 	BOOL    result;
+  ULONG   i;
 
 	bug("[JUAE:GUI] %s('%s')\n", __PRETTY_FUNCTION__, name);
 
@@ -1533,9 +1534,23 @@ static void abspathtorelative (TCHAR *name)
         }
         bug("[JUAE:GUI] %s: NameFromLock(%s): %s\n", __PRETTY_FUNCTION__, name, tmp2);
 
+
         if (strnicmp (tmp1, tmp2, strlen (tmp1)) == 0) { // tmp2 is inside tmp1
                 //bug("[JUAE:GUI] %s: tmp2 (%s) is inside tmp1 (%s)\n", tmp2, tmp1);
-                strcpy(name, tmp2 + strlen (tmp1) + 1);
+                DebOut("tmp1: %s\n", tmp1);
+                DebOut("tmp2: %s\n", tmp2);
+                strcpy(name, tmp2 + strlen (tmp1));
+                /* now test, if name starts with a ':' or '/' which was part of the
+                 * result value of NameFromLock and still dangles in name:
+                 */
+                if(name[0]==':' || name[0]=='/') {
+                  /* strcpy may not overlap, so do it manually: */
+                  for(i=0; i<strlen(name)-1;i++) {
+                    name[i]=name[i+1];
+                  }
+                  DebOut("name: %s\n", name);
+                }
+
         }
         else {
                 //bug("[JUAE:GUI] %s: tmp2 (%s) is not inside tmp1 (%s)\n", tmp2, tmp1);
@@ -1545,6 +1560,7 @@ static void abspathtorelative (TCHAR *name)
 	if (!_tcsncmp (start_path_exe, name, _tcslen (start_path_exe)))
 		memmove (name, name + _tcslen (start_path_exe), (_tcslen (name) - _tcslen (start_path_exe) + 1) * sizeof (TCHAR));
 #endif
+    DebOut("result: %s\n", name);
 }
 
 static int addrom (UAEREG *fkey, struct romdata *rd, const TCHAR *name)
@@ -1554,6 +1570,7 @@ static int addrom (UAEREG *fkey, struct romdata *rd, const TCHAR *name)
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	_stprintf (tmp1, _T("ROM_%03d"), rd->id);
+  DebOut("%s, %s\n", tmp1, name);
 	if (rd->group) {
 		TCHAR *p = tmp1 + _tcslen (tmp1);
 		_stprintf (p, _T("_%02d_%02d"), rd->group >> 16, rd->group & 65535);
@@ -12193,9 +12210,7 @@ static void addfloppyhistory_2 (HWND hDlg, int n, int f_text, int type)
 		nn = workprefs.floppyslots[n].dfxtype + 1;
 		text = workprefs.floppyslots[n].df;
 	}
-#if 0
 	SendDlgItemMessage (hDlg, f_text, WM_SETTEXT, 0, (LPARAM)text);
-#endif
 	fkey = read_disk_history (type);
 	if (fkey == NULL)
 		return;
