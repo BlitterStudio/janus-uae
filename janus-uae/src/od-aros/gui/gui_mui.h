@@ -49,6 +49,11 @@ enum {
 extern Object *app;
 BOOL mui_get_dir(TCHAR *lpstrTitle, TCHAR *path);
 
+/* mem[0]:         "empty"
+ * mem[1], var[0]: "item1"
+ * mem[2], var[1]: "item2"
+ * ..
+ */
 typedef struct Element {
   BOOL    exists;  // element exists
   ULONG   idc;     // windows rc identifier (IDC_CPU0, IDC_Z3CHIPRAM, etc)

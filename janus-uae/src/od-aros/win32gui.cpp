@@ -12210,7 +12210,14 @@ static void addfloppyhistory_2 (HWND hDlg, int n, int f_text, int type)
 		nn = workprefs.floppyslots[n].dfxtype + 1;
 		text = workprefs.floppyslots[n].df;
 	}
+#if 0
+  /* this one really would make the AROS version more complicated.
+   * And this call has no effect in WinUAE either (gets overwritten with
+   * SendDlgItemMessage (hDlg, f_text, CB_SETCURSEL, curidx, 0);
+   * at the end anyways..)
+   */
 	SendDlgItemMessage (hDlg, f_text, WM_SETTEXT, 0, (LPARAM)text);
+#endif
 	fkey = read_disk_history (type);
 	if (fkey == NULL)
 		return;
