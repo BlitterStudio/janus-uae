@@ -293,8 +293,14 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
   switch(Msg) {
 
     case CB_ADDSTRING:
+    {
+      ULONG old_active;
       /* add string to popup window */
       DebOut("CB_ADDSTRING (%s)\n", (TCHAR *) lParam);
+
+      /* remember old selection */
+      GetAttr(MUIA_Cycle_Active, elem[i].obj, (IPTR *) &old_active);
+
       l=0;
       //DebOut("old list:\n");
       while(elem[i].var[l] != NULL) {
@@ -315,7 +321,8 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
         //DebOut("  elem[i].var[%d]: %s\n", l, elem[i].var[l]);
         l++;
       }
-      DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, activate);
+      DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, old_active);
+    }
       break;
 
     case CB_RESETCONTENT:
@@ -455,15 +462,16 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
        */
     case CB_SETCURSEL: {
       LONG foo;
+#if 0
       LONG empty_idx=-1;
+#endif
       DebOut("CB_SETCURSEL\n");
       DebOut("wParam: %d\n", wParam);
       foo=wParam;
-#ifdef EDIT
       if(flag_editable(elem[i].flags)) {
         foo++;
       }
-#endif
+#if 0
       if(foo<0) {
         /* clearing is not so simple, our field is not editable at all,
          * so we add a empty selection, if there is not already one.
@@ -491,8 +499,11 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
 
       }
       else {
+#endif
         DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, foo);
+#if 0
       }
+#endif
       return TRUE;
       } /* case block */
       break;
@@ -937,21 +948,19 @@ AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
 
   data->src[i].value=XGET((Object *) obj, MUIA_Cycle_Active);
   //DebOut("[%lx] MUIA_Cycle_Active: %d (mui obj: %lx)\n", obj, data->src[i].value, obj);
-#ifdef EDIT
-  if(flag_editable(data->src[i].flags)) {
-    data->src[i].value--;
-  }
-#endif
 
-  DebOut("[%lx] We are in state: %d\n", obj, data->src[i].value);
+  DebOut("[%lx] state: %d\n", obj, data->src[i].value);
 
   if(data->func) {
-    if(!strcmp(data->src[i].mem[data->src[i].value], EMPTY_SELECTION)) {
-      DebOut("Empty selection (%s), do nothing\n", EMPTY_SELECTION);
+    if(data->src[i].mem[data->src[i].value] && !strcmp(data->src[i].mem[data->src[i].value], EMPTY_SELECTION)) {
+      DebOut("[%lx] Empty selection (%s), do nothing\n", obj, EMPTY_SELECTION);
     }
     else {
+      if(flag_editable(data->src[i].flags)) {
+        data->src[i].value--;
+      }
       wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
-      DebOut("[%lx] call function: %lx(wParam %lx) IDC: %d\n", obj, data->func, wParam, data->src[i].idc);
+      DebOut("[%lx] call function: %lx(IDC %d, CBN_SELCHANGE)\n", obj, data->func, data->src[i].idc);
       data->func(data->src, WM_COMMAND, wParam, NULL);
     }
   }
@@ -1496,20 +1505,16 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
         case COMBOBOX:
           src[i].mem=(char **) malloc(256 * sizeof(IPTR)); // array for cycle texts
           DebOut("flags: %lx\n", src[i].flags);
-#ifdef EDIT
           if(!flag_editable(src[i].flags)) {
             DebOut("flags: CBS_DROPDOWNLIST\n");
-#endif
             src[i].var=src[i].mem;
-#ifdef EDIT
           }
           else {
             /* must contain "<<empty>>" statement */
             DebOut("flags: CBS_DROPDOWN\n");
-            src[i].mem[0]=strdup("<-- undef -->");
+            src[i].mem[0]=strdup(EMPTY_SELECTION);
             src[i].var=src[i].mem+1;
           }
-#endif
           src[i].var[0]=NULL;
           src[i].exists=TRUE;
           child=CycleObject,
