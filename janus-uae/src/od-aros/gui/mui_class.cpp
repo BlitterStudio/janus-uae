@@ -22,6 +22,7 @@
 #include "gui.h"
 #include "winnt.h"
 #include "mui_data.h"
+#include "combo.h"
 
 //#define RESIZE 155 / 100
 #define RESIZE_X 150 /100
@@ -31,7 +32,8 @@
 
 #define MA_Data 0xfece0000
 
-#define EMPTY_SELECTION "<-- none -->"
+//#define EMPTY_SELECTION "<-- none -->"
+#define EMPTY_SELECTION ""
 
 struct Data {
   struct Hook LayoutHook;
@@ -224,7 +226,7 @@ BOOL SetDlgItemText(Element *elem, int item, TCHAR *lpString) {
   DebOut("elem[i].obj: %lx\n", elem[i].obj);
 
   if(elem[i].windows_type==EDITTEXT && !(elem[i].flags & ES_READONLY)) {
-    DebOut("call MUIA_String_Contents, %s", lpString);
+    DebOut("call MUIA_String_Contents, %s\n", lpString);
     DoMethod(elem[i].obj, MUIM_Set, MUIA_String_Contents, lpString);
   }
   else if (elem[i].windows_type==COMBOBOX) {
@@ -232,7 +234,7 @@ BOOL SetDlgItemText(Element *elem, int item, TCHAR *lpString) {
     return SendDlgItemMessage(elem, item, CB_ADDSTRING, 0, (LPARAM) lpString);
   }
   else {
-    DebOut("call MUIA_Text_Contents, %s", lpString);
+    DebOut("call MUIA_Text_Contents, %s\n", lpString);
     DoMethod(elem[i].obj, MUIM_Set, MUIA_Text_Contents,   lpString);
   }
 
@@ -299,11 +301,11 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       DebOut("CB_ADDSTRING (%s)\n", (TCHAR *) lParam);
 
       /* remember old selection */
-      GetAttr(MUIA_Cycle_Active, elem[i].obj, (IPTR *) &old_active);
+      //GetAttr(MUIA_Cycle_Active, elem[i].obj, (IPTR *) &old_active);
 
       l=0;
       //DebOut("old list:\n");
-      while(elem[i].var[l] != NULL) {
+      while(elem[i].mem[l] != NULL) {
         //DebOut("  elem[i].var[%d]: %s\n", l, elem[i].var[l]);
         l++;
       }
@@ -311,17 +313,43 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       //DebOut("  next free line: %d\n", l);
       activate=l;
 #warning TODO: free strings again!
-      elem[i].var[l]=strdup((TCHAR *) lParam);
-      elem[i].var[l+1]=NULL;
+      elem[i].mem[l]=strdup((TCHAR *) lParam);
+      elem[i].mem[l+1]=NULL;
       //DebOut("elem[i].obj: %lx\n", elem[i].obj);
-      DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Entries, (IPTR) elem[i].mem);
+
+#if 0
+ /* sucks */
+      if(elem[i].mem[0] && !strcmp(elem[i].mem[0], (TCHAR *) lParam)) {
+        /* somebody added an empty string, although we already have a dummy.
+         * so we remove the dommuy now
+         */
+         DebOut("remove dummy empty entry\n");
+         free(elem[i].mem[0]);
+         elem[i].mem[0]=NULL;
+         l=0;
+         while(elem[i].mem[l+1]) {
+           /* shift all rentries */
+           elem[i].mem[l]=elem[i].mem[l+1];
+           l++;
+         }
+         elem[i].var=elem[i].mem;
+      }
+#endif
+
+      SetAttrs(elem[i].obj, MUIA_String_Contents, (IPTR) lParam, TAG_DONE);
       //DebOut("new list:\n");
       l=0;
-      while(elem[i].var[l] != NULL) {
-        //DebOut("  elem[i].var[%d]: %s\n", l, elem[i].var[l]);
+      if(elem[i].mem[0]) {
+        DebOut("  CB_ADDSTRING: elem[%d].mem[0]: %s\n", i, elem[i].mem[0]);
+      }
+      else {
+        DebOut("  CB_ADDSTRING: elem[%d].mem[0]: NULL\n", i);
+      }
+      while(elem[i].mem[l] != NULL) {
+        DebOut("  CB_ADDSTRING: elem[%d].var[%d]: %s\n", i, l, elem[i].mem[l]);
         l++;
       }
-      DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, old_active);
+      //DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, old_active);
     }
       break;
 
@@ -330,25 +358,26 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       DebOut("CB_RESETCONTENT\n");
       l=0;
       /* free old strings */
-      while(elem[i].var[l] != NULL) {
-        free(elem[i].var[l]);
-        elem[i].var[l]=NULL;
+      while(elem[i].mem[l] != NULL) {
+#warning free them!
+        //free(elem[i].mem[l]);
+        elem[i].mem[l]=NULL;
         l++;
       }
       //elem[i].var[0]=strdup("<empty>");
       //elem[i].var[1]=NULL;
-      elem[i].var[0]=NULL;
+      elem[i].mem[0]=NULL;
       DebOut("elem[i].obj: %lx\n", elem[i].obj);
-      DoMethod(elem[i].obj, MUIM_NoNotifySet, MUIA_Cycle_Entries, (IPTR) elem[i].mem);
+      DoMethod(elem[i].obj, MUIM_NoNotifySet, MUIA_List_Entries, (IPTR) elem[i].mem);
       break;
     case CB_FINDSTRING:
       /* return string index */
       DebOut("CB_FINDSTRING\n");
       DebOut("search for string >%s<\n", (TCHAR *) lParam);
       l=0;
-      while(elem[i].var[l] != NULL) {
-        DebOut("  compare with >%s<\n", elem[i].var[l]);
-        if(!strcmp(elem[i].var[l], (TCHAR *) lParam)) {
+      while(elem[i].mem[l] != NULL) {
+        DebOut("  compare with >%s<\n", elem[i].mem[l]);
+        if(!strcmp(elem[i].mem[l], (TCHAR *) lParam)) {
           return l;
         }
         l++;
@@ -385,7 +414,10 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       }
       break;
     case WM_SETTEXT:
+
       DebOut("WM_SETTEXT\n");
+          SetAttrs(elem[i].obj, MUIA_String_Contents, lParam, TAG_DONE);
+#if 0
       if(lParam==0 || strlen((TCHAR *)lParam)==0) {
         DebOut("lParam is empty\n");
         DebOut("elem[i].obj: %lx\n", elem[i].obj);
@@ -396,14 +428,14 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       DebOut("search for string >%s<\n", (TCHAR *) lParam);
 
       l=0;
-      while(elem[i].var[l] != NULL) {
-        DebOut("  compare with >%s<\n", elem[i].var[l]);
+      while(elem[i].mem[l] != NULL) {
+        DebOut("  compare with >%s<\n", elem[i].mem[l]);
         DebOut("  l: %d\n", l);
-        if(!strcmp(elem[i].var[l], (TCHAR *) lParam)) {
+        if(!strcmp(elem[i].mem[l], (TCHAR *) lParam)) {
           DebOut("we already have that string!\n");
           DebOut("activate string %d in combo box!\n", l);
           DebOut("elem[i].obj: %lx\n", elem[i].obj);
-          DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, l);
+          SetAttrs(elem[i].obj, MUIA_String_Contents, lParam, TAG_DONE);
           return 0;
         }
         l++;
@@ -414,22 +446,22 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
 
       l=0;
       DebOut("old list:\n");
-      while(elem[i].var[l] != NULL) {
-        DebOut("  elem[i].var[%d]: %s\n", l, elem[i].var[l]);
+      while(elem[i].mem[l] != NULL) {
+        DebOut("  elem[i].mem[%d]: %s\n", l, elem[i].mem[l]);
         l++;
       }
 
       l=0;
-      buf=elem[i].var[l+1];
+      buf=elem[i].mem[l+1];
       while(buf != NULL) {
-        elem[i].var[l+1]=elem[i].var[l];
+        elem[i].mem[l+1]=elem[i].mem[l];
         l++;
-        buf=elem[i].var[l+1];
+        buf=elem[i].mem[l+1];
       }
       /* store new string */
-      elem[i].var[0]=strdup((TCHAR *) lParam);
+      elem[i].mem[0]=strdup((TCHAR *) lParam);
       /* terminate list */
-      elem[i].var[l+1]=NULL;
+      elem[i].mem[l+1]=NULL;
       DebOut("elem[i].obj: %lx\n", elem[i].obj);
       DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Entries, (IPTR) elem[i].mem);
       if(flag_editable(elem[i].flags)) {
@@ -441,10 +473,11 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
 
       DebOut("new list:\n");
       l=0;
-      while(elem[i].var[l]!=NULL) {
-        DebOut("  elem[i].var[%d]: %s\n", l, elem[i].var[l]);
+      while(elem[i].mem[l]!=NULL) {
+        DebOut("  elem[i].mem[%d]: %s\n", l, elem[i].mem[l]);
         l++;
       }
+#endif
       return TRUE;
       
       /* An application sends a CB_SETCURSEL message to select a string in the 
@@ -453,7 +486,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
        * selection, and any previous selection in the list is removed. 
        *
        * wParam: Specifies the zero-based index of the string to select. 
-       * If this parameter is 1, any current selection in the list is removed and 
+       * If this parameter is -1, any current selection in the list is removed and 
        * the edit control is cleared.
        *
        * If the message is successful, the return value is the index of the item 
@@ -461,50 +494,32 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
        * if wParam is 1, the return value is CB_ERR and the selection is cleared. 
        */
     case CB_SETCURSEL: {
-      LONG foo;
-#if 0
-      LONG empty_idx=-1;
-#endif
-      DebOut("CB_SETCURSEL\n");
-      DebOut("wParam: %d\n", wParam);
-      foo=wParam;
+      DebOut("CB_SETCURSEL: wParam: %d\n", wParam);
+
       if(flag_editable(elem[i].flags)) {
-        foo++;
-      }
-#if 0
-      if(foo<0) {
-        /* clearing is not so simple, our field is not editable at all,
-         * so we add a empty selection, if there is not already one.
-         */
-
-        /* search for empty selection, count entries in l */
-        l=0;
-        while(elem[i].var[l] != NULL) {
-          DebOut("  compare with >%s<\n", elem[i].var[l]);
-          if(!strcmp(elem[i].var[l], (TCHAR *) EMPTY_SELECTION)) {
-            empty_idx=l;
-          }
-          l++;
+        /* zune combo object */
+        if(wParam==-1) {
+          DebOut("clear string gadget\n");
+          SetAttrs(elem[i].obj, MUIA_String_Contents, (IPTR) "", TAG_DONE);
+          return CB_ERR;
         }
-        if(empty_idx==-1) {
-          /* add EMPTY_SELECTION */
-          elem[i].var[l]=strdup((TCHAR *) EMPTY_SELECTION);
-          /* terminate list */
-          elem[i].var[l+1]=NULL;
-          DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Entries, (IPTR) elem[i].mem);
-          empty_idx=l;
+        else {
+          DebOut("activate string: %s\n", elem[i].mem[wParam]);
+          SetAttrs(elem[i].obj, MUIA_String_Contents, (IPTR) elem[i].mem[wParam], TAG_DONE);
         }
-        /* select empty index */
-        DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, empty_idx);
-
       }
       else {
-#endif
-        DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, foo);
-#if 0
+        /* cycle gadget */
+        if(wParam >= 0) {
+          DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, wParam);
+        }
+        else {
+          DebOut("ERROR: what to do with a -1 here !?\n");
+          return CB_ERR;
+        }
       }
-#endif
-      return TRUE;
+
+      return wParam;
       } /* case block */
       break;
 
@@ -1504,6 +1519,8 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
 
         case COMBOBOX:
           src[i].mem=(char **) malloc(256 * sizeof(IPTR)); // array for cycle texts
+          src[i].mem[0];
+#if 0
           DebOut("flags: %lx\n", src[i].flags);
           if(!flag_editable(src[i].flags)) {
             DebOut("flags: CBS_DROPDOWNLIST\n");
@@ -1529,6 +1546,11 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
 #endif
           data->MyMUIHook_combo.h_Data =(APTR) data;
           DoMethod(src[i].obj, MUIM_Notify, MUIA_Cycle_Active , MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_combo, func); 
+#endif
+          child=(Object *) NewObject(CL_Combo->mcc_Class, NULL,TAG_DONE);
+          src[i].exists=TRUE;
+          src[i].obj=child;
+          DoMethod(child, MUIM_List_Insert, src[i].mem);
         break;
 
 
@@ -1656,6 +1678,8 @@ int init_class(void) {
     CL_Fixed = MUI_CreateCustomClass(NULL, MUIC_Group, NULL, sizeof(struct Data), (APTR)&mDispatcher);
   }
 
+  create_combo_class();
+
   return CL_Fixed ? 1 : 0;
 }
 
@@ -1665,6 +1689,7 @@ void delete_class(void) {
     MUI_DeleteCustomClass(CL_Fixed);
     CL_Fixed=NULL;
   }
+  delete_combo_class();
 }
 
 
