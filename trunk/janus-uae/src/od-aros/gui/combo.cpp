@@ -53,6 +53,7 @@
 #include <proto/utility.h>
 #include <clib/alib_protos.h>
 
+#include "combo.h"
 
 #if !defined(XGET)
 #define XGET(object, attribute)                 \
@@ -78,10 +79,7 @@
 #define TODO(...)
 #endif
 
-int create_combo_class(void);
-void delete_combo_class(void);
-
-static struct MUI_CustomClass *CL_Combo;
+struct MUI_CustomClass *CL_Combo=NULL;
 
 struct Data {
   Object *obj_entry;
@@ -143,7 +141,7 @@ static VOID ShowPopupWin(Object *obj, struct Data *data) {
   }
 
   winw = _width(data->obj_entry) - 1;
-  winx = _mleft(_parent(data->obj_entry)) + 1; /* _parent for the frame */
+  winx = _left(data->obj_entry) + 1; /* _parent for the frame */
   winy = _bottom(data->obj_entry) + 1;
 
   SetAttrs(data->obj_popup_win, MUIA_Window_Width, winw, 
@@ -550,7 +548,9 @@ BOOPSI_DISPATCHER(IPTR, mDispatcher, cl, obj, msg) {
 BOOPSI_DISPATCHER_END
 
 int create_combo_class(void) {
-  CL_Combo = MUI_CreateCustomClass(NULL, MUIC_String, NULL, sizeof(struct Data), (APTR)&mDispatcher);
+  if(!CL_Combo) {
+    CL_Combo = MUI_CreateCustomClass(NULL, MUIC_String, NULL, sizeof(struct Data), (APTR)&mDispatcher);
+  }
 }
 
 void delete_combo_class(void) {
