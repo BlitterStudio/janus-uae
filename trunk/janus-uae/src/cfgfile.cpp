@@ -7,7 +7,7 @@
 * Copyright 1998 Brian King, Bernd Schmidt
 */
 
-//#define OLI_DEBUG
+#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -3185,6 +3185,7 @@ static int cfgfile_parse_newfilesys (struct uae_prefs *p, int nr, int type, TCHA
 	TCHAR *str = NULL;
 	TCHAR devname[MAX_DPATH], volname[MAX_DPATH];
 
+
 	devname[0] = volname[0] = 0;
 	uci_set_defaults (&uci, false);
 
@@ -3307,6 +3308,7 @@ static int cfgfile_parse_filesys (struct uae_prefs *p, const TCHAR *option, TCHA
 		TCHAR tmp[100];
 		_stprintf (tmp, _T("uaehf%d"), i);
 		if (_tcscmp (option, tmp) == 0) {
+      DebOut("%d: %s\n", i, tmp);
 			for (;;) {
 				int  type = -1;
 				int unit = -1;
@@ -5056,6 +5058,8 @@ uae_u8 *save_configuration (int *len, bool fullconfig)
 	int tmpsize = 100000;
 	uae_u8 *dstbak, *dst, *p;
 	int index = -1;
+
+  DebOut("fullconfig: %d\n", fullconfig);
 
 	dstbak = dst = xcalloc (uae_u8, tmpsize);
 	p = dst;
