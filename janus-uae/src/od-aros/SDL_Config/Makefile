@@ -8,19 +8,30 @@
 # AROS ABI v0: ABI=v0
 # AROS ABI v1: ABI=v1
 
-SVN     = /home/oli/svn
 
-CPP     = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-g++
-CC      = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-gcc
-AR      = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-ar
+BITS := $(shell getconf LONG_BIT)
+ifeq ($(BITS),64)
+	# 64 bit
+	CPU      = x86_64
+	# AROS source svn
+	SVN        = /home/oli/tc/svn
+else
+	# 32 bit
+	CPU      = i386
+	SVN        = /home/oli/svn
+endif
+
+CPP     = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-c++
+CC      = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-gcc
+AR      = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ar
 
 OBJS    = SDL_config.o 
 TESTOBJ = initest.o
-TESTEXE = $(SVN)/$(ABI)/AROS/bin/linux-i386/AROS/initest
+TESTEXE = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/AROS/initest
 LINKOBJ = SDL_config.o 
 #INCS    = -I$(SVN)/$(ABI)/AROS/bin/linux-i386/gen/include/SDL
 #INCS    = -I$(SVN)/$(ABI)/AROS/bin/linux-i386/AROS/Development/include/SDL
-INCS =
+INCS     = 
 
 BIN     = libSDL_Config.a
 CPPFLAGS= $(INCS) -fexpensive-optimizations -O3

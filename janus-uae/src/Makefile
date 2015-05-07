@@ -27,15 +27,27 @@
 # AROS ABI v0: ABI=v0
 # AROS ABI v1: ABI=v1
 ABI        = v1
-SVN        = /home/oli/svn
+
+BITS := $(shell getconf LONG_BIT)
+ifeq ($(BITS),64)
+	# 64 bit
+	CPU      = x86_64
+	# AROS source svn
+	SVN        = /home/oli/tc/svn
+	INCLUDES   = /home/oli/tc/svn/v1/AROS/bin/linux-x86_64/tools/crosstools/lib/gcc/x86_64-aros/4.6.4/include/c++/tr
+else
+	# 32 bit
+	CPU      = i386
+	SVN        = /home/oli/svn
+endif
 
 # you have to adjust this of course..
-TARGET     = $(SVN)/$(ABI)/AROS/bin/linux-i386/AROS/wuae
+TARGET     = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/AROS/wuae
 
-CC         = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-gcc
+CC         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-gcc
 #RANLIB = 
-AR         = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-ar
-LD         = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-ld
+AR         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ar
+LD         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ld
 
 HOST_CC    = gcc
 
@@ -44,7 +56,7 @@ FLAGS      = -Wno-write-strings -O2 #-Wall
 DEBUGFLAGS = -g
 
 CDEFS   =
-INCLUDES= -Iinclude -I.
+INCLUDES= $(INCLUDES) -Iinclude -I.
 
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
@@ -79,7 +91,7 @@ LDFLAGS   =
 # needing AROS cpu.h for 64-bit detection
 incs: 
 	@rm -f aros
-	ln -s /home/oli/svn/$(ABI)/AROS/bin/linux-i386/gen/include/aros
+	ln -s /home/oli/svn/$(ABI)/AROS/bin/linux-$(CPU)/gen/include/aros
 
 GENBLITTER_OBJS=genblitter.o blitops.o
 genblitter: $(GENBLITTER_OBJS)
