@@ -206,7 +206,7 @@ static BOOL MakePopupWin(Object *obj, struct Data *data) {
     data->MyMuiHook_list.h_Data =data;
     DoMethod(data->obj_list, MUIM_Notify,
                   MUIA_List_Active, MUIV_EveryTime, 
-                  (ULONG) data->obj_list, 2,
+                  (IPTR) data->obj_list, 2,
                   MUIM_CallHook, (IPTR) &data->MyMuiHook_list);
 
     return TRUE;
@@ -331,7 +331,7 @@ static ULONG mGoInactive (struct IClass *cl, APTR obj, Msg msg) {
   return 0;
 }
 
-static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
+static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
   struct TagItem *tstate, *tag;
 
   obj = (APTR)DoSuperMethodA(cl, obj, msg);
@@ -351,14 +351,14 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
   data->MyMuiHook_ack.h_Data =NULL;
   DoMethod(obj, MUIM_Notify,
                 MUIA_String_Acknowledge, MUIV_EveryTime, 
-                (ULONG) obj, 2,
+                (IPTR) obj, 2,
                 MUIM_CallHook, (IPTR) &data->MyMuiHook_ack);
 
   data->MyMuiHook_content.h_Entry=(APTR) MUIHook_content;
   data->MyMuiHook_content.h_Data =data;
   DoMethod(obj, MUIM_Notify,
                 MUIA_String_Contents, MUIV_EveryTime, 
-                (ULONG) obj, 2,
+                (IPTR) obj, 2,
                 MUIM_CallHook, (IPTR) &data->MyMuiHook_content);
 
   data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | /*IDCMP_RAWKEY |*/ IDCMP_NEWSIZE | IDCMP_CHANGEWINDOW;
@@ -367,7 +367,7 @@ static ULONG mNew(struct IClass *cl, APTR obj, Msg msg) {
   data->ehn.ehn_Object = (Object *) obj;
   data->ehn.ehn_Class = cl;
 
-  return (ULONG)obj;
+  return (IPTR) obj;
 }
 
 static IPTR mSet(struct IClass *cl, APTR obj, struct opSet *msg) {
