@@ -21,9 +21,9 @@
  *
  ************************************************************************/
 
-#include <aros/cpu.h>
 
 #ifdef __AROS__
+#include <aros/cpu.h>
 /* not nice, but sysconfig.h is included both from native linux tools and 
  * AROS tools. TODO: move this soemwhere else..
  */
