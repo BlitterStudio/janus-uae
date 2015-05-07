@@ -34,7 +34,6 @@ ifeq ($(BITS),64)
 	CPU      = x86_64
 	# AROS source svn
 	SVN        = /home/oli/tc/svn
-	INCLUDES   = /home/oli/tc/svn/v1/AROS/bin/linux-x86_64/tools/crosstools/lib/gcc/x86_64-aros/4.6.4/include/c++/tr
 else
 	# 32 bit
 	CPU      = i386
@@ -56,7 +55,7 @@ FLAGS      = -Wno-write-strings -O2 #-Wall
 DEBUGFLAGS = -g
 
 CDEFS   =
-INCLUDES= $(INCLUDES) -Iinclude -I.
+INCLUDES= -Iinclude -I.
 
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
