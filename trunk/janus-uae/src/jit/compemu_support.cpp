@@ -2,7 +2,7 @@
 #define writemem_special writemem
 #define readmem_special  readmem
 
-#define OLI_DEBUG
+//#define OLI_DEBUG
 
 #define USE_MATCHSTATE 0
 #include "sysconfig.h"
@@ -165,11 +165,13 @@ is in the register and/or the native flags is seen as valid.
 
 STATIC_INLINE blockinfo* get_blockinfo(uae_u32 cl)
 {
+  //DebOut("entered\n");
 	return cache_tags[cl+1].bi;
 }
 
 STATIC_INLINE blockinfo* get_blockinfo_addr(void* addr)
 {
+  //DebOut("entered\n");
 	blockinfo*  bi=get_blockinfo(cacheline(addr));
 
 	while (bi) {
@@ -187,6 +189,7 @@ STATIC_INLINE blockinfo* get_blockinfo_addr(void* addr)
 
 STATIC_INLINE void remove_from_cl_list(blockinfo* bi)
 {
+  DebOut("entered\n");
 	uae_u32 cl=cacheline(bi->pc_p);
 
 	if (bi->prev_same_cl_p)
@@ -201,6 +204,7 @@ STATIC_INLINE void remove_from_cl_list(blockinfo* bi)
 
 STATIC_INLINE void remove_from_list(blockinfo* bi)
 {
+  DebOut("entered\n");
 	if (bi->prev_p)
 		*(bi->prev_p)=bi->next;
 	if (bi->next)
@@ -209,6 +213,7 @@ STATIC_INLINE void remove_from_list(blockinfo* bi)
 
 STATIC_INLINE void remove_from_lists(blockinfo* bi)
 {
+  DebOut("entered\n");
 	remove_from_list(bi);
 	remove_from_cl_list(bi);
 }
@@ -216,6 +221,7 @@ STATIC_INLINE void remove_from_lists(blockinfo* bi)
 STATIC_INLINE void add_to_cl_list(blockinfo* bi)
 {
 	uae_u32 cl=cacheline(bi->pc_p);
+  DebOut("entered\n");
 
 	if (cache_tags[cl+1].bi)
 		cache_tags[cl+1].bi->prev_same_cl_p=&(bi->next_same_cl);
@@ -229,12 +235,14 @@ STATIC_INLINE void add_to_cl_list(blockinfo* bi)
 
 STATIC_INLINE void raise_in_cl_list(blockinfo* bi)
 {
+  DebOut("entered\n");
 	remove_from_cl_list(bi);
 	add_to_cl_list(bi);
 }
 
 STATIC_INLINE void add_to_active(blockinfo* bi)
 {
+  DebOut("entered\n");
 	if (active)
 		active->prev_p=&(bi->next);
 	bi->next=active;
@@ -245,6 +253,7 @@ STATIC_INLINE void add_to_active(blockinfo* bi)
 
 STATIC_INLINE void add_to_dormant(blockinfo* bi)
 {
+  DebOut("entered\n");
 	if (dormant)
 		dormant->prev_p=&(bi->next);
 	bi->next=dormant;
@@ -255,6 +264,7 @@ STATIC_INLINE void add_to_dormant(blockinfo* bi)
 
 STATIC_INLINE void remove_dep(dependency* d)
 {
+  DebOut("entered\n");
 	if (d->prev_p)
 		*(d->prev_p)=d->next;
 	if (d->next)
@@ -267,12 +277,14 @@ STATIC_INLINE void remove_dep(dependency* d)
 depends on anything else */
 STATIC_INLINE void remove_deps(blockinfo* bi)
 {
+  DebOut("entered\n");
 	remove_dep(&(bi->dep[0]));
 	remove_dep(&(bi->dep[1]));
 }
 
 STATIC_INLINE void adjust_jmpdep(dependency* d, void* a)
 {
+  DebOut("entered\n");
 	*(d->jmp_off)=(uae_u32)a-((uae_u32)d->jmp_off+4);
 }
 
@@ -282,6 +294,7 @@ STATIC_INLINE void adjust_jmpdep(dependency* d, void* a)
 
 STATIC_INLINE void set_dhtu(blockinfo* bi, void* dh)
 {
+  DebOut("entered\n");
 	//write_log (_T("JIT: bi is %p\n"),bi);
 	if (dh!=bi->direct_handler_to_use) {
 		dependency* x=bi->deplist;
@@ -303,6 +316,7 @@ STATIC_INLINE void set_dhtu(blockinfo* bi, void* dh)
 STATIC_INLINE void invalidate_block(blockinfo* bi)
 {
 	int i;
+  DebOut("entered\n");
 
 	bi->optlevel=0;
 	bi->count=currprefs.optcount[0]-1;
@@ -322,6 +336,7 @@ STATIC_INLINE void invalidate_block(blockinfo* bi)
 STATIC_INLINE void create_jmpdep(blockinfo* bi, int i, uae_u32* jmpaddr, uae_u32 target)
 {
 	blockinfo*  tbi=get_blockinfo_addr((void*)target);
+  DebOut("entered\n");
 
 	Dif(!tbi) {
 		jit_abort (_T("JIT: Could not create jmpdep!\n"));
@@ -340,6 +355,7 @@ STATIC_INLINE void big_to_small_state(bigstate* b, smallstate* s)
 	int i;
 	int count=0;
 
+  DebOut("entered\n");
 	for (i=0;i<N_REGS;i++) {
 		s->nat[i].validsize=0;
 		s->nat[i].dirtysize=0;
@@ -360,6 +376,7 @@ STATIC_INLINE void big_to_small_state(bigstate* b, smallstate* s)
 
 STATIC_INLINE void attached_state(blockinfo* bi)
 {
+  DebOut("entered\n");
 	bi->havestate=1;
 	if (bi->direct_handler_to_use==bi->direct_handler)
 		set_dhtu(bi,(void *) bi->direct_pen);
@@ -372,6 +389,7 @@ STATIC_INLINE blockinfo* get_blockinfo_addr_new(void* addr, int setstate)
 	blockinfo*  bi=get_blockinfo_addr(addr);
 	int i;
 
+  DebOut("entered\n");
 #if USE_OPTIMIZER
 	if (reg_alloc_run)
 		return NULL;
@@ -412,6 +430,7 @@ STATIC_INLINE void alloc_blockinfos(void)
 	int i;
 	blockinfo* bi;
 
+  DebOut("entered\n");
 	for (i=0;i<MAX_HOLD_BI;i++) {
 		if (hold_bi[i])
 			return;
@@ -471,9 +490,12 @@ bool check_prefs_changed_comp (void)
 		alloc_cache();
 		changed = 1;
 	}
+#if 0
+  /* fs-uae has this removed .. */
 	if (!candirect) {
 		canbang = 0;
   }
+#endif
 
 	// Turn off illegal-mem logging when using JIT...
 	if(currprefs.cachesize)
@@ -561,23 +583,27 @@ static  void emit_init(void)
 
 STATIC_INLINE void emit_byte(uae_u8 x)
 {
+  DebOut("entered\n");
 	*target++=x;
 }
 
 STATIC_INLINE void emit_word(uae_u16 x)
 {
+  DebOut("entered\n");
 	*((uae_u16*)target)=x;
 	target+=2;
 }
 
 STATIC_INLINE void emit_long(uae_u32 x)
 {
+  DebOut("entered\n");
 	*((uae_u32*)target)=x;
 	target+=4;
 }
 
 STATIC_INLINE uae_u32 reverse32(uae_u32 oldv)
 {
+  DebOut("entered\n");
 	return ((oldv>>24)&0xff) | ((oldv>>8)&0xff00) |
 		((oldv<<8)&0xff0000) | ((oldv<<24)&0xff000000);
 }
@@ -585,17 +611,20 @@ STATIC_INLINE uae_u32 reverse32(uae_u32 oldv)
 
 void set_target(uae_u8* t)
 {
+  DebOut("t=%lx\n", t);
 	lopt_emit_all();
 	target=t;
 }
 
 STATIC_INLINE uae_u8* get_target_noopt(void)
 {
+  DebOut("get_target_noopt entered (return target=%lx)\n", target);
 	return target;
 }
 
 STATIC_INLINE uae_u8* get_target(void)
 {
+  DebOut("get_target entered\n");
 	lopt_emit_all();
 	return get_target_noopt();
 }
@@ -616,6 +645,7 @@ static void bt_l_ri_noclobber(R4 r, IMM i);
 
 static void make_flags_live_internal(void)
 {
+  DebOut("entered\n");
 	if (live.flags_in_flags==VALID)
 		return;
 	Dif (live.flags_on_stack==TRASH) {
@@ -636,6 +666,7 @@ static void make_flags_live_internal(void)
 
 static void flags_to_stack(void)
 {
+  DebOut("entered\n");
 	if (live.flags_on_stack==VALID)
 		return;
 	if (!live.flags_are_important) {
@@ -655,6 +686,7 @@ static void flags_to_stack(void)
 
 STATIC_INLINE void clobber_flags(void)
 {
+  DebOut("entered\n");
 	if (live.flags_in_flags==VALID && live.flags_on_stack!=VALID)
 		flags_to_stack();
 	live.flags_in_flags=TRASH;
@@ -663,6 +695,7 @@ STATIC_INLINE void clobber_flags(void)
 /* Prepare for leaving the compiled stuff */
 STATIC_INLINE void flush_flags(void)
 {
+  DebOut("entered\n");
 	flags_to_stack();
 	return;
 }
@@ -684,6 +717,7 @@ static uae_s8 nstate[N_REGS];
 STATIC_INLINE void log_startblock(void)
 {
 	int i;
+  DebOut("entered\n");
 	for (i=0;i<VREGS;i++)
 		vstate[i]=L_UNKNOWN;
 	for (i=0;i<N_REGS;i++)
@@ -692,12 +726,14 @@ STATIC_INLINE void log_startblock(void)
 
 STATIC_INLINE void log_isused(int n)
 {
+  DebOut("entered\n");
 	if (nstate[n]==L_UNKNOWN)
 		nstate[n]=L_UNAVAIL;
 }
 
 STATIC_INLINE void log_isreg(int n, int r)
 {
+  DebOut("entered\n");
 	if (nstate[n]==L_UNKNOWN)
 		nstate[n]=r;
 	if (vstate[r]==L_UNKNOWN)
@@ -706,6 +742,7 @@ STATIC_INLINE void log_isreg(int n, int r)
 
 STATIC_INLINE void log_clobberreg(int r)
 {
+  DebOut("entered\n");
 	if (vstate[r]==L_UNKNOWN)
 		vstate[r]=L_UNNEEDED;
 }
@@ -715,6 +752,7 @@ STATIC_INLINE void log_clobberreg(int r)
 STATIC_INLINE void log_flush(void)
 {
 	int i;
+  DebOut("entered\n");
 	for (i=0;i<VREGS;i++)
 		if (vstate[i]==L_UNKNOWN)
 			vstate[i]=L_NEEDED;
@@ -726,8 +764,9 @@ STATIC_INLINE void log_flush(void)
 STATIC_INLINE void log_dump(void)
 {
 	int i;
+  DebOut("entered\n");
 
-	return;
+	//return;
 
 	write_log (_T("----------------------\n"));
 	for (i=0;i<N_REGS;i++) {
@@ -749,6 +788,7 @@ STATIC_INLINE void log_dump(void)
 
 STATIC_INLINE void set_status(int r, int status)
 {
+  DebOut("entered\n");
 	if (status==ISCONST)
 		log_clobberreg(r);
 	live.state[r].status=status;
@@ -757,11 +797,13 @@ STATIC_INLINE void set_status(int r, int status)
 
 STATIC_INLINE int isinreg(int r)
 {
+  DebOut("entered\n");
 	return live.state[r].status==CLEAN || live.state[r].status==DIRTY;
 }
 
 STATIC_INLINE void adjust_nreg(int r, uae_u32 val)
 {
+  DebOut("entered\n");
 	if (!val)
 		return;
 	raw_lea_l_brr(r,r,val);
@@ -770,6 +812,7 @@ STATIC_INLINE void adjust_nreg(int r, uae_u32 val)
 static  void tomem(int r)
 {
 	int rr=live.state[r].realreg;
+  DebOut("entered\n");
 
 	if (isinreg(r)) {
 		if (live.state[r].val &&
@@ -798,16 +841,19 @@ static  void tomem(int r)
 
 STATIC_INLINE int isconst(int r)
 {
+  DebOut("entered\n");
 	return live.state[r].status==ISCONST;
 }
 
 int is_const(int r)
 {
+  DebOut("entered\n");
 	return isconst(r);
 }
 
 STATIC_INLINE void writeback_const(int r)
 {
+  DebOut("entered\n");
 	if (!isconst(r))
 		return;
 	Dif (live.state[r].needflush==NF_HANDLER) {
@@ -821,6 +867,7 @@ STATIC_INLINE void writeback_const(int r)
 
 STATIC_INLINE void tomem_c(int r)
 {
+  DebOut("entered\n");
 	if (isconst(r)) {
 		writeback_const(r);
 	}
@@ -831,6 +878,7 @@ STATIC_INLINE void tomem_c(int r)
 static  void evict(int r)
 {
 	int rr;
+  DebOut("entered\n");
 
 	if (!isinreg(r))
 		return;
@@ -856,6 +904,7 @@ static  void evict(int r)
 STATIC_INLINE void free_nreg(int r)
 {
 	int i=live.nat[r].nholds;
+  DebOut("entered\n");
 
 	while (i) {
 		int vr;
@@ -872,6 +921,7 @@ STATIC_INLINE void free_nreg(int r)
 /* Use with care! */
 STATIC_INLINE void isclean(int r)
 {
+  DebOut("entered\n");
 	if (!isinreg(r))
 		return;
 	live.state[r].validsize=4;
@@ -882,12 +932,14 @@ STATIC_INLINE void isclean(int r)
 
 STATIC_INLINE void disassociate(int r)
 {
+  DebOut("entered\n");
 	isclean(r);
 	evict(r);
 }
 
 STATIC_INLINE void set_const(int r, uae_u32 val)
 {
+  DebOut("entered\n");
 	disassociate(r);
 	live.state[r].val=val;
 	set_status(r,ISCONST);
@@ -895,6 +947,7 @@ STATIC_INLINE void set_const(int r, uae_u32 val)
 
 STATIC_INLINE uae_u32 get_offset(int r)
 {
+  DebOut("entered\n");
 	return live.state[r].val;
 }
 
@@ -906,6 +959,7 @@ static  int alloc_reg_hinted(int r, int size, int willclobber, int hint)
 	uae_s32 badness=0; /* to shut up gcc */
 	bestreg=-1;
 	when=2000000000;
+  DebOut("entered\n");
 
 	for (i=N_REGS;i--;) {
 		badness=live.nat[i].touched;
@@ -1021,11 +1075,13 @@ static  int alloc_reg_hinted(int r, int size, int willclobber, int hint)
 
 static  int alloc_reg(int r, int size, int willclobber)
 {
+  DebOut("entered\n");
 	return alloc_reg_hinted(r,size,willclobber,-1);
 }
 
 static  void unlock(int r)
 {
+  DebOut("entered\n");
 	Dif (!live.nat[r].locked)
 		jit_abort (_T("unlock %d not locked"), r);
 	live.nat[r].locked--;
@@ -1033,6 +1089,7 @@ static  void unlock(int r)
 
 static  void setlock(int r)
 {
+  DebOut("entered\n");
 	live.nat[r].locked++;
 }
 
@@ -1042,6 +1099,7 @@ static void mov_nregs(int d, int s)
 	int ns=live.nat[s].nholds;
 	int nd=live.nat[d].nholds;
 	int i;
+  DebOut("entered\n");
 
 	if (s==d)
 		return;
@@ -1074,6 +1132,7 @@ STATIC_INLINE void make_exclusive(int r, int size, int spec)
 	int ndirt=0;
 	int i;
 
+  DebOut("entered\n");
 	if (!isinreg(r))
 		return;
 	if (live.nat[rr].nholds==1)
@@ -1137,12 +1196,14 @@ STATIC_INLINE void make_exclusive(int r, int size, int spec)
 
 STATIC_INLINE void add_offset(int r, uae_u32 off)
 {
+  DebOut("entered\n");
 	live.state[r].val+=off;
 }
 
 STATIC_INLINE void remove_offset(int r, int spec)
 {
 	int rr;
+  DebOut("entered\n");
 
 	if (isconst(r))
 		return;
@@ -1179,6 +1240,7 @@ STATIC_INLINE void remove_offset(int r, int spec)
 STATIC_INLINE void remove_all_offsets(void)
 {
 	int i;
+  DebOut("entered\n");
 
 	for (i=0;i<VREGS;i++)
 		remove_offset(i,-1);
@@ -1188,6 +1250,7 @@ STATIC_INLINE int readreg_general(int r, int size, int spec, int can_offset)
 {
 	int n;
 	int answer=-1;
+  DebOut("entered\n");
 
 	if (live.state[r].status==UNDEF) {
 		write_log (_T("JIT: WARNING: Unexpected read of undefined register %d\n"),r);
@@ -1236,16 +1299,19 @@ STATIC_INLINE int readreg_general(int r, int size, int spec, int can_offset)
 
 static int readreg(int r, int size)
 {
+  DebOut("entered\n");
 	return readreg_general(r,size,-1,0);
 }
 
 static int readreg_specific(int r, int size, int spec)
 {
+  DebOut("entered\n");
 	return readreg_general(r,size,spec,0);
 }
 
 static int readreg_offset(int r, int size)
 {
+  DebOut("entered\n");
 	return readreg_general(r,size,-1,1);
 }
 
@@ -1255,6 +1321,7 @@ STATIC_INLINE int writereg_general(int r, int size, int spec)
 	int n;
 	int answer=-1;
 
+  DebOut("entered\n");
 	if (size<4) {
 		remove_offset(r,spec);
 	}
@@ -1322,11 +1389,13 @@ STATIC_INLINE int writereg_general(int r, int size, int spec)
 
 static int writereg(int r, int size)
 {
+  DebOut("entered\n");
 	return writereg_general(r,size,-1);
 }
 
 static int writereg_specific(int r, int size, int spec)
 {
+  DebOut("entered\n");
 	return writereg_general(r,size,spec);
 }
 
@@ -1335,6 +1404,7 @@ STATIC_INLINE int rmw_general(int r, int wsize, int rsize, int spec)
 	int n;
 	int answer=-1;
 
+  DebOut("entered\n");
 	if (live.state[r].status==UNDEF) {
 		write_log (_T("JIT: WARNING: Unexpected read of undefined register %d\n"),r);
 	}
@@ -1396,11 +1466,13 @@ STATIC_INLINE int rmw_general(int r, int wsize, int rsize, int spec)
 
 static int rmw(int r, int wsize, int rsize)
 {
+  DebOut("entered\n");
 	return rmw_general(r,wsize,rsize,-1);
 }
 
 static int rmw_specific(int r, int wsize, int rsize, int spec)
 {
+  DebOut("entered\n");
 	return rmw_general(r,wsize,rsize,spec);
 }
 
@@ -1409,6 +1481,7 @@ static int rmw_specific(int r, int wsize, int rsize, int spec)
 static void bt_l_ri_noclobber(R4 r, IMM i)
 {
 	int size=4;
+  DebOut("entered\n");
 	if (i<16)
 		size=2;
 	r=readreg(r,size);
@@ -1422,6 +1495,7 @@ static void bt_l_ri_noclobber(R4 r, IMM i)
 
 static  void f_tomem(int r)
 {
+  DebOut("entered\n");
 	if (live.fate[r].status==DIRTY) {
 #if USE_LONG_DOUBLE
 		raw_fmov_ext_mr((uae_u32)live.fate[r].mem,live.fate[r].realreg);
@@ -1434,6 +1508,7 @@ static  void f_tomem(int r)
 
 static  void f_tomem_drop(int r)
 {
+  DebOut("entered\n");
 	if (live.fate[r].status==DIRTY) {
 #if USE_LONG_DOUBLE
 		raw_fmov_ext_mr_drop((uae_u32)live.fate[r].mem,live.fate[r].realreg);
@@ -1447,11 +1522,13 @@ static  void f_tomem_drop(int r)
 
 STATIC_INLINE int f_isinreg(int r)
 {
+  DebOut("entered\n");
 	return live.fate[r].status==CLEAN || live.fate[r].status==DIRTY;
 }
 
 static void f_evict(int r)
 {
+  DebOut("entered\n");
 	int rr;
 
 	if (!f_isinreg(r))
@@ -1480,6 +1557,7 @@ static void f_evict(int r)
 
 STATIC_INLINE void f_free_nreg(int r)
 {
+  DebOut("entered\n");
 	int i=live.fat[r].nholds;
 
 	while (i) {
@@ -1498,6 +1576,7 @@ STATIC_INLINE void f_free_nreg(int r)
 /* Use with care! */
 STATIC_INLINE void f_isclean(int r)
 {
+  DebOut("entered\n");
 	if (!f_isinreg(r))
 		return;
 	live.fate[r].status=CLEAN;
@@ -1505,6 +1584,7 @@ STATIC_INLINE void f_isclean(int r)
 
 STATIC_INLINE void f_disassociate(int r)
 {
+  DebOut("entered\n");
 	f_isclean(r);
 	f_evict(r);
 }
@@ -1513,6 +1593,7 @@ STATIC_INLINE void f_disassociate(int r)
 
 static  int f_alloc_reg(int r, int willclobber)
 {
+  DebOut("entered\n");
 	int bestreg;
 	uae_s32 when;
 	int i;
@@ -1565,6 +1646,7 @@ static  int f_alloc_reg(int r, int willclobber)
 
 static  void f_unlock(int r)
 {
+  DebOut("entered\n");
 	Dif (!live.fat[r].locked)
 		jit_abort (_T("unlock %d"), r);
 	live.fat[r].locked--;
@@ -1572,11 +1654,13 @@ static  void f_unlock(int r)
 
 static  void f_setlock(int r)
 {
+  DebOut("entered\n");
 	live.fat[r].locked++;
 }
 
 STATIC_INLINE int f_readreg(int r)
 {
+  DebOut("entered\n");
 	int n;
 	int answer=-1;
 
@@ -1596,6 +1680,7 @@ STATIC_INLINE int f_readreg(int r)
 
 STATIC_INLINE void f_make_exclusive(int r, int clobber)
 {
+  DebOut("entered\n");
 	freg_status oldstate;
 	int rr=live.fate[r].realreg;
 	int nr;
@@ -1654,6 +1739,7 @@ STATIC_INLINE void f_make_exclusive(int r, int clobber)
 
 STATIC_INLINE int f_writereg(int r)
 {
+  DebOut("entered\n");
 	int n;
 	int answer=-1;
 
@@ -1673,6 +1759,7 @@ STATIC_INLINE int f_writereg(int r)
 
 static int f_rmw(int r)
 {
+  DebOut("entered\n");
 	int n;
 
 	f_make_exclusive(r,0);
@@ -1689,6 +1776,7 @@ static int f_rmw(int r)
 
 static void fflags_into_flags_internal(uae_u32 tmp)
 {
+  DebOut("entered\n");
 	int r;
 
 	clobber_flags();
@@ -1726,6 +1814,7 @@ static void fflags_into_flags_internal(uae_u32 tmp)
 
 MIDFUNC(0,live_flags,(void))
 {
+  DebOut("entered\n");
 	live.flags_on_stack=TRASH;
 	live.flags_in_flags=VALID;
 	live.flags_are_important=1;
@@ -1734,6 +1823,7 @@ MENDFUNC(0,live_flags,(void))
 
 	MIDFUNC(0,dont_care_flags,(void))
 {
+  DebOut("entered\n");
 	live.flags_are_important=0;
 }
 MENDFUNC(0,dont_care_flags,(void))
@@ -1748,6 +1838,7 @@ MENDFUNC(0,dont_care_flags,(void))
 	*/
 	MIDFUNC(0,duplicate_carry,(void))
 {
+  DebOut("entered\n");
 	evict(FLAGX);
 	make_flags_live_internal();
 	COMPCALL(setcc_m)((uae_u32)live.state[FLAGX].mem + 1,2);
@@ -1763,6 +1854,7 @@ MENDFUNC(0,duplicate_carry,(void))
 	*/
 	MIDFUNC(0,restore_carry,(void))
 {
+  DebOut("entered\n");
 	if (!have_rat_stall) { /* Not a P6 core, i.e. no partial stalls */
 		bt_l_ri_noclobber(FLAGX, 8);
 	}
@@ -1779,24 +1871,28 @@ MENDFUNC(0,restore_carry,(void))
 
 	MIDFUNC(0,start_needflags,(void))
 {
+  DebOut("entered\n");
 	needflags=1;
 }
 MENDFUNC(0,start_needflags,(void))
 
 	MIDFUNC(0,end_needflags,(void))
 {
+  DebOut("entered\n");
 	needflags=0;
 }
 MENDFUNC(0,end_needflags,(void))
 
 	MIDFUNC(0,make_flags_live,(void))
 {
+  DebOut("entered\n");
 	make_flags_live_internal();
 }
 MENDFUNC(0,make_flags_live,(void))
 
 	MIDFUNC(1,fflags_into_flags,(W2 tmp))
 {
+  DebOut("entered\n");
 	clobber_flags();
 	fflags_into_flags_internal(tmp);
 }
@@ -1805,6 +1901,7 @@ MENDFUNC(1,fflags_into_flags,(W2 tmp))
 
 	MIDFUNC(2,bt_l_ri,(R4 r, IMM i)) /* This is defined as only affecting C */
 {
+  DebOut("entered\n");
 	int size=4;
 	if (i<16)
 		size=2;
@@ -1817,6 +1914,7 @@ MENDFUNC(2,bt_l_ri,(R4 r, IMM i)) /* This is defined as only affecting C */
 
 	MIDFUNC(2,bt_l_rr,(R4 r, R4 b)) /* This is defined as only affecting C */
 {
+  DebOut("entered\n");
 	CLOBBER_BT;
 	r=readreg(r,4);
 	b=readreg(b,4);
@@ -1828,6 +1926,7 @@ MENDFUNC(2,bt_l_rr,(R4 r, R4 b)) /* This is defined as only affecting C */
 
 	MIDFUNC(2,btc_l_ri,(RW4 r, IMM i))
 {
+  DebOut("entered\n");
 	int size=4;
 	if (i<16)
 		size=2;
@@ -1840,6 +1939,7 @@ MENDFUNC(2,btc_l_ri,(RW4 r, IMM i))
 
 	MIDFUNC(2,btc_l_rr,(RW4 r, R4 b))
 {
+  DebOut("entered\n");
 	CLOBBER_BT;
 	b=readreg(b,4);
 	r=rmw(r,4,4);
@@ -1852,6 +1952,7 @@ MENDFUNC(2,btc_l_rr,(RW4 r, R4 b))
 
 	MIDFUNC(2,btr_l_ri,(RW4 r, IMM i))
 {
+  DebOut("entered\n");
 	int size=4;
 	if (i<16)
 		size=2;
@@ -1864,6 +1965,7 @@ MENDFUNC(2,btr_l_ri,(RW4 r, IMM i))
 
 	MIDFUNC(2,btr_l_rr,(RW4 r, R4 b))
 {
+  DebOut("entered\n");
 	CLOBBER_BT;
 	b=readreg(b,4);
 	r=rmw(r,4,4);
@@ -1876,6 +1978,7 @@ MENDFUNC(2,btr_l_rr,(RW4 r, R4 b))
 
 	MIDFUNC(2,bts_l_ri,(RW4 r, IMM i))
 {
+  DebOut("entered\n");
 	int size=4;
 	if (i<16)
 		size=2;
@@ -1888,6 +1991,7 @@ MENDFUNC(2,bts_l_ri,(RW4 r, IMM i))
 
 	MIDFUNC(2,bts_l_rr,(RW4 r, R4 b))
 {
+  DebOut("entered\n");
 	CLOBBER_BT;
 	b=readreg(b,4);
 	r=rmw(r,4,4);
@@ -1899,6 +2003,7 @@ MENDFUNC(2,bts_l_rr,(RW4 r, R4 b))
 
 	MIDFUNC(2,mov_l_rm,(W4 d, IMM s))
 {
+  DebOut("entered\n");
 	CLOBBER_MOV;
 	d=writereg(d,4);
 	raw_mov_l_rm(d,s);
@@ -1909,6 +2014,7 @@ MENDFUNC(2,mov_l_rm,(W4 d, IMM s))
 
 	MIDFUNC(1,call_r,(R4 r)) /* Clobbering is implicit */
 {
+  DebOut("entered\n");
 	r=readreg(r,4);
 	raw_call_r(r);
 	unlock(r);
@@ -1917,6 +2023,7 @@ MENDFUNC(1,call_r,(R4 r)) /* Clobbering is implicit */
 
 	MIDFUNC(2,sub_l_mi,(IMM d, IMM s))
 {
+  DebOut("entered\n");
 	CLOBBER_SUB;
 	raw_sub_l_mi(d,s) ;
 }
@@ -1924,6 +2031,7 @@ MENDFUNC(2,sub_l_mi,(IMM d, IMM s))
 
 	MIDFUNC(2,mov_l_mi,(IMM d, IMM s))
 {
+  DebOut("entered\n");
 	CLOBBER_MOV;
 	raw_mov_l_mi(d,s) ;
 }
@@ -1931,6 +2039,7 @@ MENDFUNC(2,mov_l_mi,(IMM d, IMM s))
 
 	MIDFUNC(2,mov_w_mi,(IMM d, IMM s))
 {
+  DebOut("entered\n");
 	CLOBBER_MOV;
 	raw_mov_w_mi(d,s) ;
 }
@@ -1938,6 +2047,7 @@ MENDFUNC(2,mov_w_mi,(IMM d, IMM s))
 
 	MIDFUNC(2,mov_b_mi,(IMM d, IMM s))
 {
+  DebOut("entered\n");
 	CLOBBER_MOV;
 	raw_mov_b_mi(d,s) ;
 }
@@ -1945,6 +2055,7 @@ MENDFUNC(2,mov_b_mi,(IMM d, IMM s))
 
 	MIDFUNC(2,rol_b_ri,(RW1 r, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 	CLOBBER_ROL;
@@ -1956,6 +2067,7 @@ MENDFUNC(2,rol_b_ri,(RW1 r, IMM i))
 
 	MIDFUNC(2,rol_w_ri,(RW2 r, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 	CLOBBER_ROL;
@@ -1967,6 +2079,7 @@ MENDFUNC(2,rol_w_ri,(RW2 r, IMM i))
 
 	MIDFUNC(2,rol_l_ri,(RW4 r, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 	CLOBBER_ROL;
@@ -1978,6 +2091,7 @@ MENDFUNC(2,rol_l_ri,(RW4 r, IMM i))
 
 	MIDFUNC(2,rol_l_rr,(RW4 d, R1 r))
 {
+  DebOut("entered\n");
 	if (isconst(r)) {
 		COMPCALL(rol_l_ri)(d,(uae_u8)live.state[r].val);
 		return;
@@ -1996,6 +2110,7 @@ MENDFUNC(2,rol_l_rr,(RW4 d, R1 r))
 
 	MIDFUNC(2,rol_w_rr,(RW2 d, R1 r))
 { /* Can only do this with r==1, i.e. cl */
+  DebOut("entered\n");
 
 	if (isconst(r)) {
 		COMPCALL(rol_w_ri)(d,(uae_u8)live.state[r].val);
@@ -2015,6 +2130,7 @@ MENDFUNC(2,rol_w_rr,(RW2 d, R1 r))
 
 	MIDFUNC(2,rol_b_rr,(RW1 d, R1 r))
 { /* Can only do this with r==1, i.e. cl */
+  DebOut("entered\n");
 
 	if (isconst(r)) {
 		COMPCALL(rol_b_ri)(d,(uae_u8)live.state[r].val);
@@ -2036,6 +2152,7 @@ MENDFUNC(2,rol_b_rr,(RW1 d, R1 r))
 
 	MIDFUNC(2,shll_l_rr,(RW4 d, R1 r))
 {
+  DebOut("entered\n");
 	if (isconst(r)) {
 		COMPCALL(shll_l_ri)(d,(uae_u8)live.state[r].val);
 		return;
@@ -2054,6 +2171,7 @@ MENDFUNC(2,shll_l_rr,(RW4 d, R1 r))
 
 	MIDFUNC(2,shll_w_rr,(RW2 d, R1 r))
 { /* Can only do this with r==1, i.e. cl */
+  DebOut("entered\n");
 
 	if (isconst(r)) {
 		COMPCALL(shll_w_ri)(d,(uae_u8)live.state[r].val);
@@ -2073,6 +2191,7 @@ MENDFUNC(2,shll_w_rr,(RW2 d, R1 r))
 
 	MIDFUNC(2,shll_b_rr,(RW1 d, R1 r))
 { /* Can only do this with r==1, i.e. cl */
+  DebOut("entered\n");
 
 	if (isconst(r)) {
 		COMPCALL(shll_b_ri)(d,(uae_u8)live.state[r].val);
@@ -2094,6 +2213,7 @@ MENDFUNC(2,shll_b_rr,(RW1 d, R1 r))
 
 	MIDFUNC(2,ror_b_ri,(R1 r, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 	CLOBBER_ROR;
@@ -2105,6 +2225,7 @@ MENDFUNC(2,ror_b_ri,(R1 r, IMM i))
 
 	MIDFUNC(2,ror_w_ri,(R2 r, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 	CLOBBER_ROR;
@@ -2116,6 +2237,7 @@ MENDFUNC(2,ror_w_ri,(R2 r, IMM i))
 
 	MIDFUNC(2,ror_l_ri,(R4 r, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 	CLOBBER_ROR;
@@ -2127,6 +2249,7 @@ MENDFUNC(2,ror_l_ri,(R4 r, IMM i))
 
 	MIDFUNC(2,ror_l_rr,(R4 d, R1 r))
 {
+  DebOut("entered\n");
 	if (isconst(r)) {
 		COMPCALL(ror_l_ri)(d,(uae_u8)live.state[r].val);
 		return;
@@ -2142,6 +2265,7 @@ MENDFUNC(2,ror_l_rr,(R4 d, R1 r))
 
 	MIDFUNC(2,ror_w_rr,(R2 d, R1 r))
 {
+  DebOut("entered\n");
 	if (isconst(r)) {
 		COMPCALL(ror_w_ri)(d,(uae_u8)live.state[r].val);
 		return;
@@ -2157,6 +2281,7 @@ MENDFUNC(2,ror_w_rr,(R2 d, R1 r))
 
 	MIDFUNC(2,ror_b_rr,(R1 d, R1 r))
 {
+  DebOut("entered\n");
 	if (isconst(r)) {
 		COMPCALL(ror_b_ri)(d,(uae_u8)live.state[r].val);
 		return;
@@ -2173,6 +2298,7 @@ MENDFUNC(2,ror_b_rr,(R1 d, R1 r))
 
 	MIDFUNC(2,shrl_l_rr,(RW4 d, R1 r))
 {
+  DebOut("entered\n");
 	if (isconst(r)) {
 		COMPCALL(shrl_l_ri)(d,(uae_u8)live.state[r].val);
 		return;
@@ -2191,6 +2317,7 @@ MENDFUNC(2,shrl_l_rr,(RW4 d, R1 r))
 
 	MIDFUNC(2,shrl_w_rr,(RW2 d, R1 r))
 { /* Can only do this with r==1, i.e. cl */
+  DebOut("entered\n");
 
 	if (isconst(r)) {
 		COMPCALL(shrl_w_ri)(d,(uae_u8)live.state[r].val);
@@ -2210,6 +2337,7 @@ MENDFUNC(2,shrl_w_rr,(RW2 d, R1 r))
 
 	MIDFUNC(2,shrl_b_rr,(RW1 d, R1 r))
 { /* Can only do this with r==1, i.e. cl */
+  DebOut("entered\n");
 
 	if (isconst(r)) {
 		COMPCALL(shrl_b_ri)(d,(uae_u8)live.state[r].val);
@@ -2230,6 +2358,7 @@ MENDFUNC(2,shrl_b_rr,(RW1 d, R1 r))
 
 	MIDFUNC(2,shll_l_ri,(RW4 r, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 	if (isconst(r) && !needflags) {
@@ -2245,6 +2374,7 @@ MENDFUNC(2,shll_l_ri,(RW4 r, IMM i))
 
 	MIDFUNC(2,shll_w_ri,(RW2 r, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 	CLOBBER_SHLL;
@@ -2256,6 +2386,7 @@ MENDFUNC(2,shll_w_ri,(RW2 r, IMM i))
 
 	MIDFUNC(2,shll_b_ri,(RW1 r, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 	CLOBBER_SHLL;
@@ -2267,6 +2398,7 @@ MENDFUNC(2,shll_b_ri,(RW1 r, IMM i))
 
 	MIDFUNC(2,shrl_l_ri,(RW4 r, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 	if (isconst(r) && !needflags) {
@@ -2282,6 +2414,7 @@ MENDFUNC(2,shrl_l_ri,(RW4 r, IMM i))
 
 	MIDFUNC(2,shrl_w_ri,(RW2 r, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 	CLOBBER_SHRL;
@@ -2293,6 +2426,7 @@ MENDFUNC(2,shrl_w_ri,(RW2 r, IMM i))
 
 	MIDFUNC(2,shrl_b_ri,(RW1 r, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 	CLOBBER_SHRL;
@@ -2304,6 +2438,7 @@ MENDFUNC(2,shrl_b_ri,(RW1 r, IMM i))
 
 	MIDFUNC(2,shra_l_ri,(RW4 r, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 	CLOBBER_SHRA;
@@ -2315,6 +2450,7 @@ MENDFUNC(2,shra_l_ri,(RW4 r, IMM i))
 
 	MIDFUNC(2,shra_w_ri,(RW2 r, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 	CLOBBER_SHRA;
@@ -2326,6 +2462,7 @@ MENDFUNC(2,shra_w_ri,(RW2 r, IMM i))
 
 	MIDFUNC(2,shra_b_ri,(RW1 r, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 	CLOBBER_SHRA;
@@ -2337,6 +2474,7 @@ MENDFUNC(2,shra_b_ri,(RW1 r, IMM i))
 
 	MIDFUNC(2,shra_l_rr,(RW4 d, R1 r))
 {
+  DebOut("entered\n");
 	if (isconst(r)) {
 		COMPCALL(shra_l_ri)(d,(uae_u8)live.state[r].val);
 		return;
@@ -2355,6 +2493,7 @@ MENDFUNC(2,shra_l_rr,(RW4 d, R1 r))
 
 	MIDFUNC(2,shra_w_rr,(RW2 d, R1 r))
 { /* Can only do this with r==1, i.e. cl */
+  DebOut("entered\n");
 
 	if (isconst(r)) {
 		COMPCALL(shra_w_ri)(d,(uae_u8)live.state[r].val);
@@ -2374,6 +2513,7 @@ MENDFUNC(2,shra_w_rr,(RW2 d, R1 r))
 
 	MIDFUNC(2,shra_b_rr,(RW1 d, R1 r))
 { /* Can only do this with r==1, i.e. cl */
+  DebOut("entered\n");
 
 	if (isconst(r)) {
 		COMPCALL(shra_b_ri)(d,(uae_u8)live.state[r].val);
@@ -2394,6 +2534,7 @@ MENDFUNC(2,shra_b_rr,(RW1 d, R1 r))
 
 	MIDFUNC(2,setcc,(W1 d, IMM cc))
 {
+  DebOut("entered\n");
 	CLOBBER_SETCC;
 	d=writereg(d,1);
 	raw_setcc(d,cc);
@@ -2403,6 +2544,7 @@ MENDFUNC(2,setcc,(W1 d, IMM cc))
 
 	MIDFUNC(2,setcc_m,(IMM d, IMM cc))
 {
+  DebOut("entered\n");
 	CLOBBER_SETCC;
 	raw_setcc_m(d,cc);
 }
@@ -2410,6 +2552,7 @@ MENDFUNC(2,setcc_m,(IMM d, IMM cc))
 
 	MIDFUNC(3,cmov_b_rr,(RW1 d, R1 s, IMM cc))
 {
+  DebOut("entered\n");
 	if (d==s)
 		return;
 	CLOBBER_CMOV;
@@ -2423,6 +2566,7 @@ MENDFUNC(3,cmov_b_rr,(RW1 d, R1 s, IMM cc))
 
 	MIDFUNC(3,cmov_w_rr,(RW2 d, R2 s, IMM cc))
 {
+  DebOut("entered\n");
 	if (d==s)
 		return;
 	CLOBBER_CMOV;
@@ -2436,6 +2580,7 @@ MENDFUNC(3,cmov_w_rr,(RW2 d, R2 s, IMM cc))
 
 	MIDFUNC(3,cmov_l_rr,(RW4 d, R4 s, IMM cc))
 {
+  DebOut("entered\n");
 	if (d==s)
 		return;
 	CLOBBER_CMOV;
@@ -2449,6 +2594,7 @@ MENDFUNC(3,cmov_l_rr,(RW4 d, R4 s, IMM cc))
 
 	MIDFUNC(1,setzflg_l,(RW4 r))
 {
+  DebOut("entered\n");
 	if (setzflg_uses_bsf) {
 		CLOBBER_BSF;
 		r=rmw(r,4,4);
@@ -2475,6 +2621,7 @@ MENDFUNC(1,setzflg_l,(RW4 r))
 
 	MIDFUNC(3,cmov_l_rm,(RW4 d, IMM s, IMM cc))
 {
+  DebOut("entered\n");
 	CLOBBER_CMOV;
 	d=rmw(d,4,4);
 	raw_cmov_l_rm(d,s,cc);
@@ -2484,6 +2631,7 @@ MENDFUNC(3,cmov_l_rm,(RW4 d, IMM s, IMM cc))
 
 	MIDFUNC(2,bsf_l_rr,(W4 d, R4 s))
 {
+  DebOut("entered\n");
 	CLOBBER_BSF;
 	s=readreg(s,4);
 	d=writereg(d,4);
@@ -2495,6 +2643,7 @@ MENDFUNC(2,bsf_l_rr,(W4 d, R4 s))
 
 	MIDFUNC(2,imul_32_32,(RW4 d, R4 s))
 {
+  DebOut("entered\n");
 	CLOBBER_MUL;
 	s=readreg(s,4);
 	d=rmw(d,4,4);
@@ -2506,6 +2655,7 @@ MENDFUNC(2,imul_32_32,(RW4 d, R4 s))
 
 	MIDFUNC(2,imul_64_32,(RW4 d, RW4 s))
 {
+  DebOut("entered\n");
 	CLOBBER_MUL;
 	s=rmw_specific(s,4,4,MUL_NREG2);
 	d=rmw_specific(d,4,4,MUL_NREG1);
@@ -2517,6 +2667,7 @@ MENDFUNC(2,imul_64_32,(RW4 d, RW4 s))
 
 	MIDFUNC(2,mul_64_32,(RW4 d, RW4 s))
 {
+  DebOut("entered\n");
 	CLOBBER_MUL;
 	s=rmw_specific(s,4,4,MUL_NREG2);
 	d=rmw_specific(d,4,4,MUL_NREG1);
@@ -2528,6 +2679,7 @@ MENDFUNC(2,mul_64_32,(RW4 d, RW4 s))
 
 	MIDFUNC(2,sign_extend_16_rr,(W4 d, R2 s))
 {
+  DebOut("entered\n");
 	int isrmw;
 
 	if (isconst(s)) {
@@ -2558,6 +2710,7 @@ MENDFUNC(2,sign_extend_16_rr,(W4 d, R2 s))
 
 	MIDFUNC(2,sign_extend_8_rr,(W4 d, R1 s))
 {
+  DebOut("entered\n");
 	int isrmw;
 
 	if (isconst(s)) {
@@ -2590,6 +2743,7 @@ MENDFUNC(2,sign_extend_8_rr,(W4 d, R1 s))
 
 	MIDFUNC(2,zero_extend_16_rr,(W4 d, R2 s))
 {
+  DebOut("entered\n");
 	int isrmw;
 
 	if (isconst(s)) {
@@ -2620,6 +2774,7 @@ MENDFUNC(2,zero_extend_16_rr,(W4 d, R2 s))
 
 	MIDFUNC(2,zero_extend_8_rr,(W4 d, R1 s))
 {
+  DebOut("entered\n");
 	int isrmw;
 	if (isconst(s)) {
 		set_const(d,(uae_u32)(uae_u8)live.state[s].val);
@@ -2651,6 +2806,7 @@ MENDFUNC(2,zero_extend_8_rr,(W4 d, R1 s))
 
 	MIDFUNC(2,mov_b_rr,(W1 d, R1 s))
 {
+  DebOut("entered\n");
 	if (d==s)
 		return;
 	if (isconst(s)) {
@@ -2669,6 +2825,7 @@ MENDFUNC(2,mov_b_rr,(W1 d, R1 s))
 
 	MIDFUNC(2,mov_w_rr,(W2 d, R2 s))
 {
+  DebOut("entered\n");
 	if (d==s)
 		return;
 	if (isconst(s)) {
@@ -2687,6 +2844,7 @@ MENDFUNC(2,mov_w_rr,(W2 d, R2 s))
 
 	MIDFUNC(3,mov_l_rrm_indexed,(W4 d,R4 baser, R4 index))
 {
+  DebOut("entered\n");
 	CLOBBER_MOV;
 	baser=readreg(baser,4);
 	index=readreg(index,4);
@@ -2701,6 +2859,7 @@ MENDFUNC(3,mov_l_rrm_indexed,(W4 d,R4 baser, R4 index))
 
 	MIDFUNC(3,mov_w_rrm_indexed,(W2 d, R4 baser, R4 index))
 {
+  DebOut("entered\n");
 	CLOBBER_MOV;
 	baser=readreg(baser,4);
 	index=readreg(index,4);
@@ -2715,6 +2874,7 @@ MENDFUNC(3,mov_w_rrm_indexed,(W2 d, R4 baser, R4 index))
 
 	MIDFUNC(3,mov_b_rrm_indexed,(W1 d, R4 baser, R4 index))
 {
+  DebOut("entered\n");
 	CLOBBER_MOV;
 	baser=readreg(baser,4);
 	index=readreg(index,4);
@@ -2730,6 +2890,7 @@ MENDFUNC(3,mov_b_rrm_indexed,(W1 d, R4 baser, R4 index))
 
 	MIDFUNC(3,mov_l_mrr_indexed,(R4 baser, R4 index, R4 s))
 {
+  DebOut("entered\n");
 	CLOBBER_MOV;
 	baser=readreg(baser,4);
 	index=readreg(index,4);
@@ -2747,6 +2908,7 @@ MENDFUNC(3,mov_l_mrr_indexed,(R4 baser, R4 index, R4 s))
 
 	MIDFUNC(3,mov_w_mrr_indexed,(R4 baser, R4 index, R2 s))
 {
+  DebOut("entered\n");
 	CLOBBER_MOV;
 	baser=readreg(baser,4);
 	index=readreg(index,4);
@@ -2761,6 +2923,7 @@ MENDFUNC(3,mov_w_mrr_indexed,(R4 baser, R4 index, R2 s))
 
 	MIDFUNC(3,mov_b_mrr_indexed,(R4 baser, R4 index, R1 s))
 {
+  DebOut("entered\n");
 	CLOBBER_MOV;
 	s=readreg(s,1);
 	baser=readreg(baser,4);
@@ -2776,6 +2939,7 @@ MENDFUNC(3,mov_b_mrr_indexed,(R4 baser, R4 index, R1 s))
 	/* Read a long from base+4*index */
 	MIDFUNC(3,mov_l_rm_indexed,(W4 d, IMM base, R4 index))
 {
+  DebOut("entered\n");
 	int indexreg=index;
 
 	if (isconst(index)) {
@@ -2797,6 +2961,7 @@ MENDFUNC(3,mov_l_rm_indexed,(W4 d, IMM base, R4 index))
 	/* read the long at the address contained in s+offset and store in d */
 	MIDFUNC(3,mov_l_rR,(W4 d, R4 s, IMM offset))
 {
+  DebOut("entered\n");
 	if (isconst(s)) {
 		COMPCALL(mov_l_rm)(d,live.state[s].val+offset);
 		return;
@@ -2814,6 +2979,7 @@ MENDFUNC(3,mov_l_rR,(W4 d, R4 s, IMM offset))
 	/* read the word at the address contained in s+offset and store in d */
 	MIDFUNC(3,mov_w_rR,(W2 d, R4 s, IMM offset))
 {
+  DebOut("entered\n");
 	if (isconst(s)) {
 		COMPCALL(mov_w_rm)(d,live.state[s].val+offset);
 		return;
@@ -2831,6 +2997,7 @@ MENDFUNC(3,mov_w_rR,(W2 d, R4 s, IMM offset))
 	/* read the word at the address contained in s+offset and store in d */
 	MIDFUNC(3,mov_b_rR,(W1 d, R4 s, IMM offset))
 {
+  DebOut("entered\n");
 	if (isconst(s)) {
 		COMPCALL(mov_b_rm)(d,live.state[s].val+offset);
 		return;
@@ -2848,6 +3015,7 @@ MENDFUNC(3,mov_b_rR,(W1 d, R4 s, IMM offset))
 	/* read the long at the address contained in s+offset and store in d */
 	MIDFUNC(3,mov_l_brR,(W4 d, R4 s, IMM offset))
 {
+  DebOut("entered\n");
 	int sreg=s;
 	if (isconst(s)) {
 		COMPCALL(mov_l_rm)(d,live.state[s].val+offset);
@@ -2867,6 +3035,7 @@ MENDFUNC(3,mov_l_brR,(W4 d, R4 s, IMM offset))
 	/* read the word at the address contained in s+offset and store in d */
 	MIDFUNC(3,mov_w_brR,(W2 d, R4 s, IMM offset))
 {
+  DebOut("entered\n");
 	int sreg=s;
 	if (isconst(s)) {
 		COMPCALL(mov_w_rm)(d,live.state[s].val+offset);
@@ -2887,6 +3056,7 @@ MENDFUNC(3,mov_w_brR,(W2 d, R4 s, IMM offset))
 	/* read the word at the address contained in s+offset and store in d */
 	MIDFUNC(3,mov_b_brR,(W1 d, R4 s, IMM offset))
 {
+  DebOut("entered\n");
 	int sreg=s;
 	if (isconst(s)) {
 		COMPCALL(mov_b_rm)(d,live.state[s].val+offset);
@@ -2906,6 +3076,7 @@ MENDFUNC(3,mov_b_brR,(W1 d, R4 s, IMM offset))
 
 	MIDFUNC(3,mov_l_Ri,(R4 d, IMM i, IMM offset))
 {
+  DebOut("entered\n");
 	int dreg=d;
 	if (isconst(d)) {
 		COMPCALL(mov_l_mi)(live.state[d].val+offset,i);
@@ -2922,6 +3093,7 @@ MENDFUNC(3,mov_l_Ri,(R4 d, IMM i, IMM offset))
 
 	MIDFUNC(3,mov_w_Ri,(R4 d, IMM i, IMM offset))
 {
+  DebOut("entered\n");
 	int dreg=d;
 	if (isconst(d)) {
 		COMPCALL(mov_w_mi)(live.state[d].val+offset,i);
@@ -2938,6 +3110,7 @@ MENDFUNC(3,mov_w_Ri,(R4 d, IMM i, IMM offset))
 
 	MIDFUNC(3,mov_b_Ri,(R4 d, IMM i, IMM offset))
 {
+  DebOut("entered\n");
 	int dreg=d;
 	if (isconst(d)) {
 		COMPCALL(mov_b_mi)(live.state[d].val+offset,i);
@@ -2955,6 +3128,7 @@ MENDFUNC(3,mov_b_Ri,(R4 d, IMM i, IMM offset))
 	/* Warning! OFFSET is byte sized only! */
 	MIDFUNC(3,mov_l_Rr,(R4 d, R4 s, IMM offset))
 {
+  DebOut("entered\n");
 	if (isconst(d)) {
 		COMPCALL(mov_l_mr)(live.state[d].val+offset,s);
 		return;
@@ -2976,6 +3150,7 @@ MENDFUNC(3,mov_l_Rr,(R4 d, R4 s, IMM offset))
 
 	MIDFUNC(3,mov_w_Rr,(R4 d, R2 s, IMM offset))
 {
+  DebOut("entered\n");
 	if (isconst(d)) {
 		COMPCALL(mov_w_mr)(live.state[d].val+offset,s);
 		return;
@@ -2996,6 +3171,7 @@ MENDFUNC(3,mov_w_Rr,(R4 d, R2 s, IMM offset))
 
 	MIDFUNC(3,mov_b_Rr,(R4 d, R1 s, IMM offset))
 {
+  DebOut("entered\n");
 	if (isconst(d)) {
 		COMPCALL(mov_b_mr)(live.state[d].val+offset,s);
 		return;
@@ -3016,6 +3192,7 @@ MENDFUNC(3,mov_b_Rr,(R4 d, R1 s, IMM offset))
 
 	MIDFUNC(3,lea_l_brr,(W4 d, R4 s, IMM offset))
 {
+  DebOut("entered\n");
 	if (isconst(s)) {
 		COMPCALL(mov_l_ri)(d,live.state[s].val+offset);
 		return;
@@ -3037,6 +3214,7 @@ MENDFUNC(3,lea_l_brr,(W4 d, R4 s, IMM offset))
 
 	MIDFUNC(5,lea_l_brr_indexed,(W4 d, R4 s, R4 index, IMM factor, IMM offset))
 {
+  DebOut("entered\n");
 	CLOBBER_LEA;
 	s=readreg(s,4);
 	index=readreg(index,4);
@@ -3052,6 +3230,7 @@ MENDFUNC(5,lea_l_brr_indexed,(W4 d, R4 s, R4 index, IMM factor, IMM offset))
 	/* write d to the long at the address contained in s+offset */
 	MIDFUNC(3,mov_l_bRr,(R4 d, R4 s, IMM offset))
 {
+  DebOut("entered\n");
 	int dreg=d;
 	if (isconst(d)) {
 		COMPCALL(mov_l_mr)(live.state[d].val+offset,s);
@@ -3072,6 +3251,7 @@ MENDFUNC(3,mov_l_bRr,(R4 d, R4 s, IMM offset))
 	/* write the word at the address contained in s+offset and store in d */
 	MIDFUNC(3,mov_w_bRr,(R4 d, R2 s, IMM offset))
 {
+  DebOut("entered\n");
 	int dreg=d;
 
 	if (isconst(d)) {
@@ -3091,6 +3271,7 @@ MENDFUNC(3,mov_w_bRr,(R4 d, R2 s, IMM offset))
 
 	MIDFUNC(3,mov_b_bRr,(R4 d, R1 s, IMM offset))
 {
+  DebOut("entered\n");
 	int dreg=d;
 	if (isconst(d)) {
 		COMPCALL(mov_b_mr)(live.state[d].val+offset,s);
@@ -3109,6 +3290,7 @@ MENDFUNC(3,mov_b_bRr,(R4 d, R1 s, IMM offset))
 
 	MIDFUNC(1,gen_bswap_32,(RW4 r))
 {
+  DebOut("entered\n");
 	int reg=r;
 
 	if (isconst(r)) {
@@ -3126,6 +3308,7 @@ MENDFUNC(1,gen_bswap_32,(RW4 r))
 
 	MIDFUNC(1,gen_bswap_16,(RW2 r))
 {
+  DebOut("entered\n");
 	if (isconst(r)) {
 		uae_u32 oldv=live.state[r].val;
 		live.state[r].val=((oldv>>8)&0xff) | ((oldv<<8)&0xff00) |
@@ -3145,6 +3328,7 @@ MENDFUNC(1,gen_bswap_16,(RW2 r))
 
 	MIDFUNC(2,mov_l_rr,(W4 d, R4 s))
 {
+  DebOut("entered\n");
 	int olds;
 
 	if (d==s) { /* How pointless! */
@@ -3186,6 +3370,7 @@ MENDFUNC(2,mov_l_rr,(W4 d, R4 s))
 
 	MIDFUNC(2,mov_l_mr,(IMM d, R4 s))
 {
+  DebOut("entered\n");
 	if (isconst(s)) {
 		COMPCALL(mov_l_mi)(d,live.state[s].val);
 		return;
@@ -3201,6 +3386,7 @@ MENDFUNC(2,mov_l_mr,(IMM d, R4 s))
 
 	MIDFUNC(2,mov_w_mr,(IMM d, R2 s))
 {
+  DebOut("entered\n");
 	if (isconst(s)) {
 		COMPCALL(mov_w_mi)(d,(uae_u16)live.state[s].val);
 		return;
@@ -3215,6 +3401,7 @@ MENDFUNC(2,mov_w_mr,(IMM d, R2 s))
 
 	MIDFUNC(2,mov_w_rm,(W2 d, IMM s))
 {
+  DebOut("entered\n");
 	CLOBBER_MOV;
 	d=writereg(d,2);
 
@@ -3225,6 +3412,7 @@ MENDFUNC(2,mov_w_rm,(W2 d, IMM s))
 
 	MIDFUNC(2,mov_b_mr,(IMM d, R1 s))
 {
+  DebOut("entered\n");
 	if (isconst(s)) {
 		COMPCALL(mov_b_mi)(d,(uae_u8)live.state[s].val);
 		return;
@@ -3240,6 +3428,7 @@ MENDFUNC(2,mov_b_mr,(IMM d, R1 s))
 
 	MIDFUNC(2,mov_b_rm,(W1 d, IMM s))
 {
+  DebOut("entered\n");
 	CLOBBER_MOV;
 	d=writereg(d,1);
 
@@ -3250,6 +3439,7 @@ MENDFUNC(2,mov_b_rm,(W1 d, IMM s))
 
 	MIDFUNC(2,mov_l_ri,(W4 d, IMM s))
 {
+  DebOut("entered\n");
 	set_const(d,s);
 	return;
 }
@@ -3257,6 +3447,7 @@ MENDFUNC(2,mov_l_ri,(W4 d, IMM s))
 
 	MIDFUNC(2,mov_w_ri,(W2 d, IMM s))
 {
+  DebOut("entered\n");
 	CLOBBER_MOV;
 	d=writereg(d,2);
 
@@ -3267,6 +3458,7 @@ MENDFUNC(2,mov_w_ri,(W2 d, IMM s))
 
 	MIDFUNC(2,mov_b_ri,(W1 d, IMM s))
 {
+  DebOut("entered\n");
 	CLOBBER_MOV;
 	d=writereg(d,1);
 
@@ -3278,6 +3470,7 @@ MENDFUNC(2,mov_b_ri,(W1 d, IMM s))
 
 	MIDFUNC(2,add_l_mi,(IMM d, IMM s))
 {
+  DebOut("entered\n");
 	CLOBBER_ADD;
 	raw_add_l_mi(d,s) ;
 }
@@ -3285,6 +3478,7 @@ MENDFUNC(2,add_l_mi,(IMM d, IMM s))
 
 	MIDFUNC(2,add_w_mi,(IMM d, IMM s))
 {
+  DebOut("entered\n");
 	CLOBBER_ADD;
 	raw_add_w_mi(d,s) ;
 }
@@ -3292,6 +3486,7 @@ MENDFUNC(2,add_w_mi,(IMM d, IMM s))
 
 	MIDFUNC(2,add_b_mi,(IMM d, IMM s))
 {
+  DebOut("entered\n");
 	CLOBBER_ADD;
 	raw_add_b_mi(d,s) ;
 }
@@ -3300,6 +3495,7 @@ MENDFUNC(2,add_b_mi,(IMM d, IMM s))
 
 	MIDFUNC(2,test_l_ri,(R4 d, IMM i))
 {
+  DebOut("entered\n");
 	CLOBBER_TEST;
 	d=readreg(d,4);
 
@@ -3310,6 +3506,7 @@ MENDFUNC(2,test_l_ri,(R4 d, IMM i))
 
 	MIDFUNC(2,test_l_rr,(R4 d, R4 s))
 {
+  DebOut("entered\n");
 	CLOBBER_TEST;
 	d=readreg(d,4);
 	s=readreg(s,4);
@@ -3322,6 +3519,7 @@ MENDFUNC(2,test_l_rr,(R4 d, R4 s))
 
 	MIDFUNC(2,test_w_rr,(R2 d, R2 s))
 {
+  DebOut("entered\n");
 	CLOBBER_TEST;
 	d=readreg(d,2);
 	s=readreg(s,2);
@@ -3334,6 +3532,7 @@ MENDFUNC(2,test_w_rr,(R2 d, R2 s))
 
 	MIDFUNC(2,test_b_rr,(R1 d, R1 s))
 {
+  DebOut("entered\n");
 	CLOBBER_TEST;
 	d=readreg(d,1);
 	s=readreg(s,1);
@@ -3346,6 +3545,7 @@ MENDFUNC(2,test_b_rr,(R1 d, R1 s))
 
 	MIDFUNC(2,and_l_ri,(RW4 d, IMM i))
 {
+  DebOut("entered\n");
 	if (isconst (d) && ! needflags) {
 		live.state[d].val &= i;
 		return;
@@ -3361,6 +3561,7 @@ MENDFUNC(2,and_l_ri,(RW4 d, IMM i))
 
 	MIDFUNC(2,and_l,(RW4 d, R4 s))
 {
+  DebOut("entered\n");
 	CLOBBER_AND;
 	s=readreg(s,4);
 	d=rmw(d,4,4);
@@ -3373,6 +3574,7 @@ MENDFUNC(2,and_l,(RW4 d, R4 s))
 
 	MIDFUNC(2,and_w,(RW2 d, R2 s))
 {
+  DebOut("entered\n");
 	CLOBBER_AND;
 	s=readreg(s,2);
 	d=rmw(d,2,2);
@@ -3385,6 +3587,7 @@ MENDFUNC(2,and_w,(RW2 d, R2 s))
 
 	MIDFUNC(2,and_b,(RW1 d, R1 s))
 {
+  DebOut("entered\n");
 	CLOBBER_AND;
 	s=readreg(s,1);
 	d=rmw(d,1,1);
@@ -3397,6 +3600,7 @@ MENDFUNC(2,and_b,(RW1 d, R1 s))
 
 	MIDFUNC(2,or_l_ri,(RW4 d, IMM i))
 {
+  DebOut("entered\n");
 	if (isconst(d) && !needflags) {
 		live.state[d].val|=i;
 		return;
@@ -3411,6 +3615,7 @@ MENDFUNC(2,or_l_ri,(RW4 d, IMM i))
 
 	MIDFUNC(2,or_l,(RW4 d, R4 s))
 {
+  DebOut("entered\n");
 	if (isconst(d) && isconst(s) && !needflags) {
 		live.state[d].val|=live.state[s].val;
 		return;
@@ -3427,6 +3632,7 @@ MENDFUNC(2,or_l,(RW4 d, R4 s))
 
 	MIDFUNC(2,or_w,(RW2 d, R2 s))
 {
+  DebOut("entered\n");
 	CLOBBER_OR;
 	s=readreg(s,2);
 	d=rmw(d,2,2);
@@ -3439,6 +3645,7 @@ MENDFUNC(2,or_w,(RW2 d, R2 s))
 
 	MIDFUNC(2,or_b,(RW1 d, R1 s))
 {
+  DebOut("entered\n");
 	CLOBBER_OR;
 	s=readreg(s,1);
 	d=rmw(d,1,1);
@@ -3451,6 +3658,7 @@ MENDFUNC(2,or_b,(RW1 d, R1 s))
 
 	MIDFUNC(2,adc_l,(RW4 d, R4 s))
 {
+  DebOut("entered\n");
 	CLOBBER_ADC;
 	s=readreg(s,4);
 	d=rmw(d,4,4);
@@ -3464,6 +3672,7 @@ MENDFUNC(2,adc_l,(RW4 d, R4 s))
 
 	MIDFUNC(2,adc_w,(RW2 d, R2 s))
 {
+  DebOut("entered\n");
 	CLOBBER_ADC;
 	s=readreg(s,2);
 	d=rmw(d,2,2);
@@ -3476,6 +3685,7 @@ MENDFUNC(2,adc_w,(RW2 d, R2 s))
 
 	MIDFUNC(2,adc_b,(RW1 d, R1 s))
 {
+  DebOut("entered\n");
 	CLOBBER_ADC;
 	s=readreg(s,1);
 	d=rmw(d,1,1);
@@ -3488,6 +3698,7 @@ MENDFUNC(2,adc_b,(RW1 d, R1 s))
 
 	MIDFUNC(2,add_l,(RW4 d, R4 s))
 {
+  DebOut("entered\n");
 	if (isconst(s)) {
 		COMPCALL(add_l_ri)(d,live.state[s].val);
 		return;
@@ -3506,6 +3717,7 @@ MENDFUNC(2,add_l,(RW4 d, R4 s))
 
 	MIDFUNC(2,add_w,(RW2 d, R2 s))
 {
+  DebOut("entered\n");
 	if (isconst(s)) {
 		COMPCALL(add_w_ri)(d,(uae_u16)live.state[s].val);
 		return;
@@ -3523,6 +3735,7 @@ MENDFUNC(2,add_w,(RW2 d, R2 s))
 
 	MIDFUNC(2,add_b,(RW1 d, R1 s))
 {
+  DebOut("entered\n");
 	if (isconst(s)) {
 		COMPCALL(add_b_ri)(d,(uae_u8)live.state[s].val);
 		return;
@@ -3540,6 +3753,7 @@ MENDFUNC(2,add_b,(RW1 d, R1 s))
 
 	MIDFUNC(2,sub_l_ri,(RW4 d, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 	if (isconst(d) && !needflags) {
@@ -3563,6 +3777,7 @@ MENDFUNC(2,sub_l_ri,(RW4 d, IMM i))
 
 	MIDFUNC(2,sub_w_ri,(RW2 d, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 
@@ -3576,6 +3791,7 @@ MENDFUNC(2,sub_w_ri,(RW2 d, IMM i))
 
 	MIDFUNC(2,sub_b_ri,(RW1 d, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 
@@ -3590,6 +3806,7 @@ MENDFUNC(2,sub_b_ri,(RW1 d, IMM i))
 
 	MIDFUNC(2,add_l_ri,(RW4 d, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 	if (isconst(d) && !needflags) {
@@ -3611,6 +3828,7 @@ MENDFUNC(2,add_l_ri,(RW4 d, IMM i))
 
 	MIDFUNC(2,add_w_ri,(RW2 d, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 
@@ -3624,6 +3842,7 @@ MENDFUNC(2,add_w_ri,(RW2 d, IMM i))
 
 	MIDFUNC(2,add_b_ri,(RW1 d, IMM i))
 {
+  DebOut("entered\n");
 	if (!i && !needflags)
 		return;
 
@@ -3638,6 +3857,7 @@ MENDFUNC(2,add_b_ri,(RW1 d, IMM i))
 
 	MIDFUNC(2,sbb_l,(RW4 d, R4 s))
 {
+  DebOut("entered\n");
 	CLOBBER_SBB;
 	s=readreg(s,4);
 	d=rmw(d,4,4);
@@ -3650,6 +3870,7 @@ MENDFUNC(2,sbb_l,(RW4 d, R4 s))
 
 	MIDFUNC(2,sbb_w,(RW2 d, R2 s))
 {
+  DebOut("entered\n");
 	CLOBBER_SBB;
 	s=readreg(s,2);
 	d=rmw(d,2,2);
@@ -3662,6 +3883,7 @@ MENDFUNC(2,sbb_w,(RW2 d, R2 s))
 
 	MIDFUNC(2,sbb_b,(RW1 d, R1 s))
 {
+  DebOut("entered\n");
 	CLOBBER_SBB;
 	s=readreg(s,1);
 	d=rmw(d,1,1);
@@ -3674,6 +3896,7 @@ MENDFUNC(2,sbb_b,(RW1 d, R1 s))
 
 	MIDFUNC(2,sub_l,(RW4 d, R4 s))
 {
+  DebOut("entered\n");
 	if (isconst(s)) {
 		COMPCALL(sub_l_ri)(d,live.state[s].val);
 		return;
@@ -3691,6 +3914,7 @@ MENDFUNC(2,sub_l,(RW4 d, R4 s))
 
 	MIDFUNC(2,sub_w,(RW2 d, R2 s))
 {
+  DebOut("entered\n");
 	if (isconst(s)) {
 		COMPCALL(sub_w_ri)(d,(uae_u16)live.state[s].val);
 		return;
@@ -3708,6 +3932,7 @@ MENDFUNC(2,sub_w,(RW2 d, R2 s))
 
 	MIDFUNC(2,sub_b,(RW1 d, R1 s))
 {
+  DebOut("entered\n");
 	if (isconst(s)) {
 		COMPCALL(sub_b_ri)(d,(uae_u8)live.state[s].val);
 		return;
@@ -3725,6 +3950,7 @@ MENDFUNC(2,sub_b,(RW1 d, R1 s))
 
 	MIDFUNC(2,cmp_l,(R4 d, R4 s))
 {
+  DebOut("entered\n");
 	CLOBBER_CMP;
 	s=readreg(s,4);
 	d=readreg(d,4);
@@ -3737,6 +3963,7 @@ MENDFUNC(2,cmp_l,(R4 d, R4 s))
 
 	MIDFUNC(2,cmp_l_ri,(R4 r, IMM i))
 {
+  DebOut("entered\n");
 	CLOBBER_CMP;
 	r=readreg(r,4);
 
@@ -3747,6 +3974,7 @@ MENDFUNC(2,cmp_l_ri,(R4 r, IMM i))
 
 	MIDFUNC(2,cmp_w,(R2 d, R2 s))
 {
+  DebOut("entered\n");
 	CLOBBER_CMP;
 	s=readreg(s,2);
 	d=readreg(d,2);
@@ -3759,6 +3987,7 @@ MENDFUNC(2,cmp_w,(R2 d, R2 s))
 
 	MIDFUNC(2,cmp_b,(R1 d, R1 s))
 {
+  DebOut("entered\n");
 	CLOBBER_CMP;
 	s=readreg(s,1);
 	d=readreg(d,1);
@@ -3772,6 +4001,7 @@ MENDFUNC(2,cmp_b,(R1 d, R1 s))
 
 	MIDFUNC(2,xor_l,(RW4 d, R4 s))
 {
+  DebOut("entered\n");
 	CLOBBER_XOR;
 	s=readreg(s,4);
 	d=rmw(d,4,4);
@@ -3784,6 +4014,7 @@ MENDFUNC(2,xor_l,(RW4 d, R4 s))
 
 	MIDFUNC(2,xor_w,(RW2 d, R2 s))
 {
+  DebOut("entered\n");
 	CLOBBER_XOR;
 	s=readreg(s,2);
 	d=rmw(d,2,2);
@@ -3796,6 +4027,7 @@ MENDFUNC(2,xor_w,(RW2 d, R2 s))
 
 	MIDFUNC(2,xor_b,(RW1 d, R1 s))
 {
+  DebOut("entered\n");
 	CLOBBER_XOR;
 	s=readreg(s,1);
 	d=rmw(d,1,1);
@@ -3808,6 +4040,7 @@ MENDFUNC(2,xor_b,(RW1 d, R1 s))
 
 	MIDFUNC(5,call_r_11,(W4 out1, R4 r, R4 in1, IMM osize, IMM isize))
 {
+  DebOut("entered\n");
 	clobber_flags();
 	remove_all_offsets();
 	if (osize==4) {
@@ -3853,6 +4086,7 @@ MENDFUNC(5,call_r_11,(W4 out1, R4 r, R4 in1, IMM osize, IMM isize))
 
 	MIDFUNC(5,call_r_02,(R4 r, R4 in1, R4 in2, IMM isize1, IMM isize2))
 {
+  DebOut("entered\n");
 	clobber_flags();
 	remove_all_offsets();
 	in1=readreg_specific(in1,isize1,REG_PAR1);
@@ -3878,6 +4112,7 @@ MENDFUNC(5,call_r_02,(R4 r, R4 in1, R4 in2, IMM isize1, IMM isize2))
 
 	MIDFUNC(1,forget_about,(W4 r))
 {
+  DebOut("entered\n");
 	if (isinreg(r))
 		disassociate(r);
 	live.state[r].val=0;
@@ -3887,12 +4122,14 @@ MENDFUNC(1,forget_about,(W4 r))
 
 	MIDFUNC(0,nop,(void))
 {
+  DebOut("entered\n");
 	raw_nop();
 }
 MENDFUNC(0,nop,(void))
 
 	MIDFUNC(1,f_forget_about,(FW r))
 {
+  DebOut("entered\n");
 	if (f_isinreg(r))
 		f_disassociate(r);
 	live.fate[r].status=UNDEF;
@@ -3901,6 +4138,7 @@ MENDFUNC(1,f_forget_about,(FW r))
 
 	MIDFUNC(1,fmov_pi,(FW r))
 {
+  DebOut("entered\n");
 	r=f_writereg(r);
 	raw_fmov_pi(r);
 	f_unlock(r);
@@ -3909,6 +4147,7 @@ MENDFUNC(1,fmov_pi,(FW r))
 
 	MIDFUNC(1,fmov_log10_2,(FW r))
 {
+  DebOut("entered\n");
 	r=f_writereg(r);
 	raw_fmov_log10_2(r);
 	f_unlock(r);
@@ -3917,6 +4156,7 @@ MENDFUNC(1,fmov_log10_2,(FW r))
 
 	MIDFUNC(1,fmov_log2_e,(FW r))
 {
+  DebOut("entered\n");
 	r=f_writereg(r);
 	raw_fmov_log2_e(r);
 	f_unlock(r);
@@ -3925,6 +4165,7 @@ MENDFUNC(1,fmov_log2_e,(FW r))
 
 	MIDFUNC(1,fmov_loge_2,(FW r))
 {
+  DebOut("entered\n");
 	r=f_writereg(r);
 	raw_fmov_loge_2(r);
 	f_unlock(r);
@@ -3933,6 +4174,7 @@ MENDFUNC(1,fmov_loge_2,(FW r))
 
 	MIDFUNC(1,fmov_1,(FW r))
 {
+  DebOut("entered\n");
 	r=f_writereg(r);
 	raw_fmov_1(r);
 	f_unlock(r);
@@ -3941,6 +4183,7 @@ MENDFUNC(1,fmov_1,(FW r))
 
 	MIDFUNC(1,fmov_0,(FW r))
 {
+  DebOut("entered\n");
 	r=f_writereg(r);
 	raw_fmov_0(r);
 	f_unlock(r);
@@ -3949,6 +4192,7 @@ MENDFUNC(1,fmov_0,(FW r))
 
 	MIDFUNC(2,fmov_rm,(FW r, MEMR m))
 {
+  DebOut("entered\n");
 	r=f_writereg(r);
 	raw_fmov_rm(r,m);
 	f_unlock(r);
@@ -3957,6 +4201,7 @@ MENDFUNC(2,fmov_rm,(FW r, MEMR m))
 
 	MIDFUNC(2,fmovi_rm,(FW r, MEMR m))
 {
+  DebOut("entered\n");
 	r=f_writereg(r);
 	raw_fmovi_rm(r,m);
 	f_unlock(r);
@@ -3965,6 +4210,7 @@ MENDFUNC(2,fmovi_rm,(FW r, MEMR m))
 
 	MIDFUNC(3,fmovi_mrb,(MEMW m, FR r, double *bounds))
 {
+  DebOut("entered\n");
 	r=f_readreg(r);
 	raw_fmovi_mrb(m,r,bounds);
 	f_unlock(r);
@@ -3973,6 +4219,7 @@ MENDFUNC(3,fmovi_mrb,(MEMW m, FR r, double *bounds))
 
 	MIDFUNC(2,fmovs_rm,(FW r, MEMR m))
 {
+  DebOut("entered\n");
 	r=f_writereg(r);
 	raw_fmovs_rm(r,m);
 	f_unlock(r);
@@ -3981,6 +4228,7 @@ MENDFUNC(2,fmovs_rm,(FW r, MEMR m))
 
 	MIDFUNC(2,fmovs_mr,(MEMW m, FR r))
 {
+  DebOut("entered\n");
 	r=f_readreg(r);
 	raw_fmovs_mr(m,r);
 	f_unlock(r);
@@ -3989,6 +4237,7 @@ MENDFUNC(2,fmovs_mr,(MEMW m, FR r))
 
 	MIDFUNC(1,fcuts_r,(FRW r))
 {
+  DebOut("entered\n");
 	r=f_rmw(r);
 	raw_fcuts_r(r);
 	f_unlock(r);
@@ -3997,6 +4246,7 @@ MENDFUNC(1,fcuts_r,(FRW r))
 
 	MIDFUNC(1,fcut_r,(FRW r))
 {
+  DebOut("entered\n");
 	r=f_rmw(r);
 	raw_fcut_r(r);
 	f_unlock(r);
@@ -4005,6 +4255,7 @@ MENDFUNC(1,fcut_r,(FRW r))
 
 	MIDFUNC(2,fmov_ext_mr,(MEMW m, FR r))
 {
+  DebOut("entered\n");
 	r=f_readreg(r);
 	raw_fmov_ext_mr(m,r);
 	f_unlock(r);
@@ -4013,6 +4264,7 @@ MENDFUNC(2,fmov_ext_mr,(MEMW m, FR r))
 
 	MIDFUNC(2,fmov_mr,(MEMW m, FR r))
 {
+  DebOut("entered\n");
 	r=f_readreg(r);
 	raw_fmov_mr(m,r);
 	f_unlock(r);
@@ -4021,6 +4273,7 @@ MENDFUNC(2,fmov_mr,(MEMW m, FR r))
 
 	MIDFUNC(2,fmov_ext_rm,(FW r, MEMR m))
 {
+  DebOut("entered\n");
 	r=f_writereg(r);
 	raw_fmov_ext_rm(r,m);
 	f_unlock(r);
@@ -4029,6 +4282,7 @@ MENDFUNC(2,fmov_ext_rm,(FW r, MEMR m))
 
 	MIDFUNC(2,fmov_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	if (d==s) { /* How pointless! */
 		return;
 	}
@@ -4053,6 +4307,7 @@ MENDFUNC(2,fmov_rr,(FW d, FR s))
 
 	MIDFUNC(2,fldcw_m_indexed,(R4 index, IMM base))
 {
+  DebOut("entered\n");
 	index=readreg(index,4);
 
 	raw_fldcw_m_indexed(index,base);
@@ -4062,6 +4317,7 @@ MENDFUNC(2,fldcw_m_indexed,(R4 index, IMM base))
 
 	MIDFUNC(1,ftst_r,(FR r))
 {
+  DebOut("entered\n");
 	r=f_readreg(r);
 	raw_ftst_r(r);
 	f_unlock(r);
@@ -4070,12 +4326,14 @@ MENDFUNC(1,ftst_r,(FR r))
 
 	MIDFUNC(0,dont_care_fflags,(void))
 {
+  DebOut("entered\n");
 	f_disassociate(FP_RESULT);
 }
 MENDFUNC(0,dont_care_fflags,(void))
 
 	MIDFUNC(2,fsqrt_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_fsqrt_rr(d,s);
@@ -4086,6 +4344,7 @@ MENDFUNC(2,fsqrt_rr,(FW d, FR s))
 
 	MIDFUNC(2,fabs_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_fabs_rr(d,s);
@@ -4096,6 +4355,7 @@ MENDFUNC(2,fabs_rr,(FW d, FR s))
 
 	MIDFUNC(2,frndint_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_frndint_rr(d,s);
@@ -4106,6 +4366,7 @@ MENDFUNC(2,frndint_rr,(FW d, FR s))
 
 	MIDFUNC(2,fgetexp_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_fgetexp_rr(d,s);
@@ -4116,6 +4377,7 @@ MENDFUNC(2,fgetexp_rr,(FW d, FR s))
 
 	MIDFUNC(2,fgetman_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_fgetman_rr(d,s);
@@ -4126,6 +4388,7 @@ MENDFUNC(2,fgetman_rr,(FW d, FR s))
 
 	MIDFUNC(2,fsin_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_fsin_rr(d,s);
@@ -4136,6 +4399,7 @@ MENDFUNC(2,fsin_rr,(FW d, FR s))
 
 	MIDFUNC(2,fcos_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_fcos_rr(d,s);
@@ -4146,6 +4410,7 @@ MENDFUNC(2,fcos_rr,(FW d, FR s))
 
 	MIDFUNC(2,ftan_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_ftan_rr(d,s);
@@ -4156,6 +4421,7 @@ MENDFUNC(2,ftan_rr,(FW d, FR s))
 
 	MIDFUNC(3,fsincos_rr,(FW d, FW c, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);  /* s for source */
 	d=f_writereg(d); /* d for sine   */
 	c=f_writereg(c); /* c for cosine */
@@ -4168,6 +4434,7 @@ MENDFUNC(3,fsincos_rr,(FW d, FW c, FR s))
 
 	MIDFUNC(2,fscale_rr,(FRW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_rmw(d);
 	raw_fscale_rr(d,s);
@@ -4178,6 +4445,7 @@ MENDFUNC(2,fscale_rr,(FRW d, FR s))
 
 	MIDFUNC(2,ftwotox_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_ftwotox_rr(d,s);
@@ -4188,6 +4456,7 @@ MENDFUNC(2,ftwotox_rr,(FW d, FR s))
 
 	MIDFUNC(2,fetox_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_fetox_rr(d,s);
@@ -4198,6 +4467,7 @@ MENDFUNC(2,fetox_rr,(FW d, FR s))
 
 	MIDFUNC(2,fetoxM1_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_fetoxM1_rr(d,s);
@@ -4208,6 +4478,7 @@ MENDFUNC(2,fetoxM1_rr,(FW d, FR s))
 
 	MIDFUNC(2,ftentox_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_ftentox_rr(d,s);
@@ -4218,6 +4489,7 @@ MENDFUNC(2,ftentox_rr,(FW d, FR s))
 
 	MIDFUNC(2,flog2_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_flog2_rr(d,s);
@@ -4228,6 +4500,7 @@ MENDFUNC(2,flog2_rr,(FW d, FR s))
 
 	MIDFUNC(2,flogN_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_flogN_rr(d,s);
@@ -4238,6 +4511,7 @@ MENDFUNC(2,flogN_rr,(FW d, FR s))
 
 	MIDFUNC(2,flogNP1_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_flogNP1_rr(d,s);
@@ -4248,6 +4522,7 @@ MENDFUNC(2,flogNP1_rr,(FW d, FR s))
 
 	MIDFUNC(2,flog10_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_flog10_rr(d,s);
@@ -4258,6 +4533,7 @@ MENDFUNC(2,flog10_rr,(FW d, FR s))
 
 	MIDFUNC(2,fasin_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_fasin_rr(d,s);
@@ -4268,6 +4544,7 @@ MENDFUNC(2,fasin_rr,(FW d, FR s))
 
 	MIDFUNC(2,facos_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_facos_rr(d,s);
@@ -4278,6 +4555,7 @@ MENDFUNC(2,facos_rr,(FW d, FR s))
 
 	MIDFUNC(2,fatan_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_fatan_rr(d,s);
@@ -4288,6 +4566,7 @@ MENDFUNC(2,fatan_rr,(FW d, FR s))
 
 	MIDFUNC(2,fatanh_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_fatanh_rr(d,s);
@@ -4298,6 +4577,7 @@ MENDFUNC(2,fatanh_rr,(FW d, FR s))
 
 	MIDFUNC(2,fsinh_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_fsinh_rr(d,s);
@@ -4308,6 +4588,7 @@ MENDFUNC(2,fsinh_rr,(FW d, FR s))
 
 	MIDFUNC(2,fcosh_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_fcosh_rr(d,s);
@@ -4318,6 +4599,7 @@ MENDFUNC(2,fcosh_rr,(FW d, FR s))
 
 	MIDFUNC(2,ftanh_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_ftanh_rr(d,s);
@@ -4328,6 +4610,7 @@ MENDFUNC(2,ftanh_rr,(FW d, FR s))
 
 	MIDFUNC(2,fneg_rr,(FW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_writereg(d);
 	raw_fneg_rr(d,s);
@@ -4338,6 +4621,7 @@ MENDFUNC(2,fneg_rr,(FW d, FR s))
 
 	MIDFUNC(2,fadd_rr,(FRW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_rmw(d);
 	raw_fadd_rr(d,s);
@@ -4348,6 +4632,7 @@ MENDFUNC(2,fadd_rr,(FRW d, FR s))
 
 	MIDFUNC(2,fsub_rr,(FRW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_rmw(d);
 	raw_fsub_rr(d,s);
@@ -4358,6 +4643,7 @@ MENDFUNC(2,fsub_rr,(FRW d, FR s))
 
 	MIDFUNC(2,fcmp_rr,(FR d, FR s))
 {
+  DebOut("entered\n");
 	d=f_readreg(d);
 	s=f_readreg(s);
 	raw_fcmp_rr(d,s);
@@ -4368,6 +4654,7 @@ MENDFUNC(2,fcmp_rr,(FR d, FR s))
 
 	MIDFUNC(2,fdiv_rr,(FRW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_rmw(d);
 	raw_fdiv_rr(d,s);
@@ -4378,6 +4665,7 @@ MENDFUNC(2,fdiv_rr,(FRW d, FR s))
 
 	MIDFUNC(2,frem_rr,(FRW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_rmw(d);
 	raw_frem_rr(d,s);
@@ -4388,6 +4676,7 @@ MENDFUNC(2,frem_rr,(FRW d, FR s))
 
 	MIDFUNC(2,frem1_rr,(FRW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_rmw(d);
 	raw_frem1_rr(d,s);
@@ -4398,6 +4687,7 @@ MENDFUNC(2,frem1_rr,(FRW d, FR s))
 
 	MIDFUNC(2,fmul_rr,(FRW d, FR s))
 {
+  DebOut("entered\n");
 	s=f_readreg(s);
 	d=f_rmw(d);
 	raw_fmul_rr(d,s);
@@ -4412,6 +4702,7 @@ MENDFUNC(2,fmul_rr,(FRW d, FR s))
 
 	int kill_rodent(int r)
 {
+  DebOut("entered\n");
 	return KILLTHERAT &&
 		have_rat_stall &&
 		(live.state[r].status==INMEM ||
@@ -4422,6 +4713,7 @@ MENDFUNC(2,fmul_rr,(FRW d, FR s))
 
 uae_u32 get_const(int r)
 {
+  DebOut("entered\n");
 #if USE_OPTIMIZER
 	if (!reg_alloc_run)
 #endif
@@ -4433,6 +4725,7 @@ uae_u32 get_const(int r)
 
 void sync_m68k_pc(void)
 {
+  DebOut("entered\n");
 	if (m68k_pc_offset) {
 		add_l_ri(PC_P,m68k_pc_offset);
 		comp_pc_p+=m68k_pc_offset;
@@ -4449,6 +4742,7 @@ fptype fscratch[VFREGS];
 
 void init_comp(void)
 {
+  DebOut("entered\n");
 	int i;
 	uae_u8* cb=can_byte;
 	uae_u8* cw=can_word;
@@ -4538,6 +4832,7 @@ void init_comp(void)
 
 static void vinton(int i, uae_s8* vton, int depth)
 {
+  DebOut("entered\n");
 	int n;
 	int rr;
 
@@ -4562,6 +4857,7 @@ static void vinton(int i, uae_s8* vton, int depth)
 flush() */
 STATIC_INLINE void match_states(smallstate* s)
 {
+  DebOut("entered\n");
 	uae_s8 vton[VREGS];
 	uae_s8 ndone[N_REGS];
 	int i;
@@ -4737,6 +5033,7 @@ STATIC_INLINE void match_states(smallstate* s)
 #else
 STATIC_INLINE void match_states(smallstate* s)
 {
+  DebOut("entered\n");
 	flush(1);
 }
 #endif
@@ -4744,8 +5041,10 @@ STATIC_INLINE void match_states(smallstate* s)
 /* Only do this if you really mean it! The next call should be to init!*/
 void flush(int save_regs)
 {
+  DebOut("entered\n");
 	int i;
 
+  DebOut("entered\n");
 	log_flush();
 	flush_flags(); /* low level */
 	sync_m68k_pc(); /* mid level */
@@ -4798,6 +5097,7 @@ void flush(int save_regs)
 
 static void flush_keepflags(void)
 {
+  DebOut("entered\n");
 	int i;
 
 	for (i=0;i<VFREGS;i++) {
@@ -4835,7 +5135,9 @@ static void flush_keepflags(void)
 
 void freescratch(void)
 {
+  DebOut("entered\n");
 	int i;
+  DebOut("entered\n");
 	for (i=0;i<N_REGS;i++)
 		if (live.nat[i].locked && i!=4)
 			write_log (_T("JIT: Warning! %d is locked\n"),i);
@@ -4858,6 +5160,7 @@ void freescratch(void)
 
 static void align_target(uae_u32 a)
 {
+  DebOut("entered\n");
 	lopt_emit_all();
 	/* Fill with NOPs --- makes debugging with gdb easier */
 	while ((uae_u32)target&(a-1))
@@ -4866,14 +5169,20 @@ static void align_target(uae_u32 a)
 
 STATIC_INLINE int isinrom(uae_u32 addr)
 {
-	return (addr>=(uae_u32)kickmem_bank.baseaddr &&
-		addr<(uae_u32)kickmem_bank.baseaddr+8*65536);
+  if (addr >= (uae_u32)kickmem_bank.baseaddr && addr < (uae_u32)kickmem_bank.baseaddr+8*65536) {
+    DebOut("addr: %lx is in rom\n", addr);
+    return 1;
+  }
+
+  DebOut("addr: %lx not in rom\n", addr);
+  return 0;
 }
 
 static void flush_all(void)
 {
 	int i;
 
+  DebOut("entered\n");
 	log_flush();
 	for (i=0;i<VREGS;i++)
 		if (live.state[i].status==DIRTY) {
@@ -4891,6 +5200,7 @@ static void flush_all(void)
 save and sound in memory */
 static void prepare_for_call_1(void)
 {
+  DebOut("entered\n");
 	flush_all();  /* If there are registers that don't get clobbered,
 				  * we should be a bit more selective here */
 }
@@ -4900,6 +5210,7 @@ so we need to disassociate everything */
 static void prepare_for_call_2(void)
 {
 	int i;
+  DebOut("entered\n");
 	for (i=0;i<N_REGS;i++)
 		if (!call_saved[i] && live.nat[i].nholds>0)
 			free_nreg(i);
@@ -4920,6 +5231,7 @@ static void prepare_for_call_2(void)
 
 void register_branch(uae_u32 not_taken, uae_u32 taken, uae_u8 cond)
 {
+  DebOut("entered\n");
 	next_pc_p=not_taken;
 	taken_pc_p=taken;
 	branch_cc=cond;
@@ -4928,6 +5240,7 @@ void register_branch(uae_u32 not_taken, uae_u32 taken, uae_u8 cond)
 static uae_u32 get_handler_address(uae_u32 addr)
 {
 	uae_u32 cl=cacheline(addr);
+  DebOut("entered\n");
 	blockinfo* bi=get_blockinfo_addr_new((void*)addr,0);
 
 #if USE_OPTIMIZER
@@ -4939,6 +5252,7 @@ static uae_u32 get_handler_address(uae_u32 addr)
 
 static uae_u32 get_handler(uae_u32 addr)
 {
+  DebOut("entered\n");
 	uae_u32 cl=cacheline(addr);
 	blockinfo* bi=get_blockinfo_addr_new((void*)addr,0);
 
@@ -4951,6 +5265,7 @@ static uae_u32 get_handler(uae_u32 addr)
 
 static void load_handler(int reg, uae_u32 addr)
 {
+  DebOut("entered\n");
 	mov_l_rm(reg,get_handler_address(addr));
 }
 
@@ -4960,7 +5275,9 @@ static void load_handler(int reg, uae_u32 addr)
 
 static void writemem_real(int address, int source, int offset, int size, int tmp, int clobber)
 {
+  DebOut("entered\n");
 	int f=tmp;
+  DebOut("entered\n");
 
 #ifdef NATMEM_OFFSET
 	if (canbang) {  /* Woohoo! go directly at the memory! */
@@ -5005,6 +5322,7 @@ STATIC_INLINE void writemem(int address, int source, int offset, int size, int t
 {
 	int f=tmp;
 
+  DebOut("entered\n");
 	mov_l_rr(f,address);
 	shrl_l_ri(f,16);   /* The index into the mem bank table */
 	mov_l_rm_indexed(f,(uae_u32)mem_banks,f);
@@ -5018,6 +5336,7 @@ STATIC_INLINE void writemem(int address, int source, int offset, int size, int t
 void writebyte(int address, int source, int tmp)
 {
 	int distrust = currprefs.comptrustbyte;
+  DebOut("entered\n");
 #if 0
 	switch (currprefs.comptrustbyte) {
 	case 0: distrust=0; break;
@@ -5036,6 +5355,7 @@ void writebyte(int address, int source, int tmp)
 STATIC_INLINE void writeword_general(int address, int source, int tmp,
 	int clobber)
 {
+  DebOut("entered\n");
 	int distrust = currprefs.comptrustword;
 #if 0
 	switch (currprefs.comptrustword) {
@@ -5054,18 +5374,22 @@ STATIC_INLINE void writeword_general(int address, int source, int tmp,
 
 void writeword_clobber(int address, int source, int tmp)
 {
+  DebOut("entered\n");
 	writeword_general(address,source,tmp,1);
 }
 
 void writeword(int address, int source, int tmp)
 {
+  DebOut("entered\n");
 	writeword_general(address,source,tmp,0);
 }
 
 STATIC_INLINE void writelong_general(int address, int source, int tmp,
 	int clobber)
 {
+  DebOut("entered\n");
 	int  distrust = currprefs.comptrustlong;
+  DebOut("entered\n");
 #if 0
 	switch (currprefs.comptrustlong) {
 	case 0: distrust=0; break;
@@ -5083,11 +5407,13 @@ STATIC_INLINE void writelong_general(int address, int source, int tmp,
 
 void writelong_clobber(int address, int source, int tmp)
 {
+  DebOut("entered\n");
 	writelong_general(address,source,tmp,1);
 }
 
 void writelong(int address, int source, int tmp)
 {
+  DebOut("entered\n");
 	writelong_general(address,source,tmp,0);
 }
 
@@ -5099,11 +5425,12 @@ void writelong(int address, int source, int tmp)
 
 static void readmem_real(int address, int dest, int offset, int size, int tmp)
 {
+  DebOut("entered\n");
 	int f=tmp;
 
+  DebOut("entered\n");
 	if (size==4 && address!=dest)
 		f=dest;
-    DebOut("entered (canbang: %d)\n", canbang);
 
 #ifdef NATMEM_OFFSET
 	if (canbang) {  /* Woohoo! go directly at the memory! */
@@ -5168,6 +5495,7 @@ void readbyte(int address, int dest, int tmp)
 
 void readword(int address, int dest, int tmp)
 {
+  DebOut("entered\n");
 	int distrust = currprefs.comptrustword;
 #if 0
 	switch (currprefs.comptrustword) {
@@ -5186,6 +5514,7 @@ void readword(int address, int dest, int tmp)
 
 void readlong(int address, int dest, int tmp)
 {
+  DebOut("entered\n");
 	int distrust = currprefs.comptrustlong;
 #if 0
 	switch (currprefs.comptrustlong) {
@@ -5207,11 +5536,13 @@ void readlong(int address, int dest, int tmp)
 /* This one might appear a bit odd... */
 STATIC_INLINE void get_n_addr_old(int address, int dest, int tmp)
 {
+  DebOut("entered\n");
 	readmem(address,dest,24,4,tmp);
 }
 
 STATIC_INLINE void get_n_addr_real(int address, int dest, int tmp)
 {
+  DebOut("entered\n");
 	int f=tmp;
 	if (address!=dest)
 		f=dest;
@@ -5233,6 +5564,7 @@ STATIC_INLINE void get_n_addr_real(int address, int dest, int tmp)
 
 void get_n_addr(int address, int dest, int tmp)
 {
+  DebOut("entered\n");
 	int distrust = currprefs.comptrustnaddr;
 #if 0
 	switch (currprefs.comptrustnaddr) {
@@ -5251,6 +5583,7 @@ void get_n_addr(int address, int dest, int tmp)
 
 void get_n_addr_jmp(int address, int dest, int tmp)
 {
+  DebOut("entered\n");
 #if 0 /* For this, we need to get the same address as the rest of UAE
 would --- otherwise we end up translating everything twice */
 	get_n_addr(address,dest,tmp);
@@ -5270,6 +5603,7 @@ would --- otherwise we end up translating everything twice */
 /* base, target and tmp are registers, but dp is the actual opcode extension word */
 void calc_disp_ea_020(int base, uae_u32 dp, int target, int tmp)
 {
+  DebOut("entered\n");
 	int reg = (dp >> 12) & 15;
 	int regd_shift=(dp >> 9) & 3;
 
@@ -5336,11 +5670,13 @@ void calc_disp_ea_020(int base, uae_u32 dp, int target, int tmp)
 
 STATIC_INLINE unsigned int cft_map (unsigned int f)
 {
+  DebOut("entered\n");
 	return ((f >> 8) & 255) | ((f & 255) << 8);
 }
 
 void set_cache_state(int enabled)
 {
+  DebOut("entered\n");
 	if (enabled!=letit)
 		flush_icache_hard(0, 3);
 	letit=enabled;
@@ -5348,11 +5684,13 @@ void set_cache_state(int enabled)
 
 int get_cache_state(void)
 {
+  DebOut("entered\n");
 	return letit;
 }
 
 uae_u32 get_jitted_size(void)
 {
+  DebOut("entered\n");
 	if (compiled_code)
 		return current_compile_p-compiled_code;
 	return 0;
@@ -5362,6 +5700,7 @@ extern uae_u8* veccode;
 
 void alloc_cache(void)
 {
+  DebOut("entered\n");
 	if (compiled_code) {
 		flush_icache_hard(0, 3);
     DebOut("Call cache_free(compiled_code)\n");
@@ -5398,6 +5737,7 @@ void alloc_cache(void)
 
 static void calc_checksum(blockinfo* bi, uae_u32* c1, uae_u32* c2)
 {
+  DebOut("entered\n");
 	uae_u32 k1=0;
 	uae_u32 k2=0;
 	uae_s32 len=bi->len;
@@ -5426,6 +5766,7 @@ static void calc_checksum(blockinfo* bi, uae_u32* c1, uae_u32* c2)
 
 static void show_checksum(blockinfo* bi)
 {
+  DebOut("entered\n");
 	uae_u32 k1=0;
 	uae_u32 k2=0;
 	uae_s32 len=bi->len;
@@ -5452,6 +5793,7 @@ static void show_checksum(blockinfo* bi)
 
 int check_for_cache_miss(void)
 {
+  //DebOut("entered\n");
 	blockinfo* bi=get_blockinfo_addr(regs.pc_p);
 
 	if (bi) {
@@ -5465,8 +5807,11 @@ int check_for_cache_miss(void)
 }
 
 
+//static int foo=0;
+
 static void recompile_block(void)
 {
+  DebOut("entered\n");
 	/* An existing block's countdown code has expired. We need to make
 	sure that execute_normal doesn't refuse to recompile due to a
 	perceived cache miss... */
@@ -5475,18 +5820,26 @@ static void recompile_block(void)
 	Dif (!bi)
 		jit_abort (_T("recompile_block"));
 	raise_in_cl_list(bi);
+  DebOut("call execute_normal\n");
 	execute_normal();
+  //foo++;
+  //DebOut("back from execute_normal (foo %d)\n", foo);
+  //if(foo>4) asm("int3");
 	return;
 }
 
 static void cache_miss(void)
 {
+  DebOut("entered\n");
 	blockinfo*  bi=get_blockinfo_addr(regs.pc_p);
 	uae_u32     cl=cacheline(regs.pc_p);
 	blockinfo*  bi2=get_blockinfo(cl);
 
 	if (!bi) {
-		execute_normal(); /* Compile this block now */
+    DebOut("call execute_normal\n");
+    execute_normal(); /* Compile this block now */
+    DebOut("back from  execute_normal\n");
+
 		return;
 	}
 	Dif (!bi2 || bi==bi2) {
@@ -5498,6 +5851,7 @@ static void cache_miss(void)
 
 static void check_checksum(void)
 {
+  DebOut("entered\n");
 	blockinfo*  bi=get_blockinfo_addr(regs.pc_p);
 	uae_u32     cl=cacheline(regs.pc_p);
 	blockinfo*  bi2=get_blockinfo(cl);
@@ -5510,7 +5864,11 @@ static void check_checksum(void)
 		/* Whoever is the primary target is in a dormant state, but
 		calling it was accidental, and we should just compile this
 		new block */
-		execute_normal();
+    DebOut("call execute_normal\n");
+    execute_normal();
+    DebOut("back from  execute_normal\n");
+
+
 		return;
 	}
 	if (bi!=bi2) {
@@ -5543,13 +5901,18 @@ static void check_checksum(void)
 		c1,c2,bi->c1,bi->c2); */
 		invalidate_block(bi);
 		raise_in_cl_list(bi);
-		execute_normal();
+    DebOut("call execute_normal\n");
+    execute_normal();
+    DebOut("back from  execute_normal\n");
+
+
 	}
 }
 
 
 STATIC_INLINE void create_popalls(void)
 {
+  DebOut("entered\n");
 	int i,r;
 
 	current_compile_p=popallspace;
@@ -5564,7 +5927,9 @@ STATIC_INLINE void create_popalls(void)
 		if (need_to_preserve[i])
 			raw_pop_l_r(i);
 	}
+  DebOut("call do_nothing\n");
 	raw_jmp((uae_u32)do_nothing);
+  DebOut("returned from do_nothing\n");
 	align_target(32);
 
 	popall_execute_normal=get_target();
@@ -5572,7 +5937,9 @@ STATIC_INLINE void create_popalls(void)
 		if (need_to_preserve[i])
 			raw_pop_l_r(i);
 	}
+    DebOut("call execute_normal\n");
 	raw_jmp((uae_u32)execute_normal);
+    DebOut("back from  execute_normal\n");
 	align_target(32);
 
 	popall_cache_miss=get_target();
@@ -5609,17 +5976,18 @@ STATIC_INLINE void create_popalls(void)
 
 	current_compile_p=get_target();
 #else
-	popall_exec_nostats=exec_nostats;
-	popall_execute_normal=execute_normal;
-	popall_cache_miss=cache_miss;
-	popall_recompile_block=recompile_block;
-	popall_do_nothing=do_nothing;
-	popall_check_checksum=check_checksum;
+	popall_exec_nostats=(void *) exec_nostats;
+	popall_execute_normal=(void *) execute_normal;
+	popall_cache_miss=(void *) cache_miss;
+	popall_recompile_block=(void *) recompile_block;
+	popall_do_nothing=(void *) do_nothing;
+	popall_check_checksum=(void *) check_checksum;
 #endif
 
 	/* And now, the code to do the matching pushes and then jump
 	into a handler routine */
 	pushall_call_handler=get_target();
+  DebOut("pushall_call_handler=%lx\n", pushall_call_handler);
 #if USE_PUSH_POP
 	for (i=N_REGS;i--;) {
 		if (need_to_preserve[i])
@@ -5634,6 +6002,7 @@ STATIC_INLINE void create_popalls(void)
 
 STATIC_INLINE void reset_lists(void)
 {
+  DebOut("entered\n");
 	int i;
 
 	for (i=0;i<MAX_HOLD_BI;i++)
@@ -5644,6 +6013,7 @@ STATIC_INLINE void reset_lists(void)
 
 static void prepare_block(blockinfo* bi)
 {
+  DebOut("entered\n");
 	int i;
 
 	set_target(current_compile_p);
@@ -5675,11 +6045,13 @@ static void prepare_block(blockinfo* bi)
 
 void compemu_reset(void)
 {
+  DebOut("entered\n");
 	set_cache_state(0);
 }
 
 void build_comp(void)
 {
+  DebOut("entered\n");
 	int i;
 	int jumpcount=0;
 	unsigned long opcode;
@@ -5824,6 +6196,7 @@ void build_comp(void)
 
 static void flush_icache_hard(uae_u32 ptr, int n)
 {
+  DebOut("entered\n");
 	blockinfo* bi;
 
 	hard_flush_count++;
@@ -5858,6 +6231,7 @@ we simply mark everything as "needs to be checked".
 
 void flush_icache(uaecptr ptr, int n)
 {
+  DebOut("entered\n");
 	blockinfo* bi;
 	blockinfo* bi2;
 
@@ -5900,15 +6274,19 @@ void flush_icache(uaecptr ptr, int n)
 
 static void catastrophe(void)
 {
+  DebOut("entered\n");
 	jit_abort (_T("catastprophe"));
 }
 
 int failure;
 
+int olifoobar=0;
 
 void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
 {
 	if (letit && compiled_code && currprefs.cpu_model>=68020) {
+
+  DebOut("vv compile_block vv\n");
 
 		/* OK, here we need to 'compile' a block */
 		int i;
@@ -6279,6 +6657,8 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
 			flush_icache_hard(0, 3);
 
 		do_extra_cycles(totcycles); /* for the compilation time */
+  DebOut("^^ compile_block ^^\n");
+  olifoobar=1;
 	}
 }
 
