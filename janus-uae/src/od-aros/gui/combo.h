@@ -4,4 +4,5 @@
 int create_combo_class(void);
 void delete_combo_class(void);
 
+extern struct MUI_CustomClass *CL_Combo;
 #endif /* __COMBO_H__ */
