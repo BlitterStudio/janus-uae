@@ -24,15 +24,25 @@
 # AROS ABI v1: ABI=v1
 #ABI        = v0
 
-SVN        = /home/oli/svn
+BITS := $(shell getconf LONG_BIT)
+ifeq ($(BITS),64)
+	# 64 bit
+	CPU      = x86_64
+	# AROS source svn
+	SVN        = /home/oli/tc/svn
+else
+	# 32 bit
+	CPU      = i386
+	SVN        = /home/oli/svn
+endif
 
 LIB        = libgui.a
 
-CC         = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-gcc
-CPP        = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-g++
+CC         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-gcc
+CPP        = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-g++
 #RANLIB = 
-AR         = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-ar
-LD         = $(SVN)/$(ABI)/AROS/bin/linux-i386/tools/crosstools/i386-aros-ld
+AR         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ar
+LD         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ld
 
 # suppress warning: deprecated conversion from string constant to ‘char*’
 FLAGS      = -Wno-write-strings -O2 #-Wall
@@ -40,7 +50,7 @@ ARFLAGS    = rc
 DEBUGFLAGS = -g
 
 CDEFS   = -DUAE_ABI_$(ABI)
-INCLUDES= -I. -I.. -I../../include -I../../md-i386-gcc  -I/home/oli/svn/v0/AROS/bin/linux-i386/gen/include/SDL
+INCLUDES= -I. -I.. -I../../include -I../../md-i386-gcc  -I$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/gen/include/SDL
 
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 CPPFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
