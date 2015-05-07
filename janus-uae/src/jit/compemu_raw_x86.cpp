@@ -5,7 +5,12 @@ only target, and it's easier this way... */
 * Some basic information about the the target CPU                       *
 *************************************************************************/
 
+#ifdef NATMEM_OFFSET
 extern uae_u32 natmem_offset;
+#endif
+
+#define JIT_DEBUG
+
 #define EAX_INDEX 0
 #define ECX_INDEX 1
 #define EDX_INDEX 2
@@ -2231,8 +2236,8 @@ static void vec(int x, struct sigcontext sc)
 	signal(SIGSEGV,SIG_DFL);  /* returning here will cause a "real" SEGV */
 }
 #endif /* AROS */
-#endif
-#endif
+#endif /* !windows */
+#endif /* NATMEM_OFFSET */
 
 /*************************************************************************
 * Checking for CPU features                                             *
@@ -2332,8 +2337,13 @@ static void cpuid(uae_u32 op, uae_u32 *eax, uae_u32 *ebx, uae_u32 *ecx, uae_u32 
 	static uae_u32 s_op, s_eax, s_ebx, s_ecx, s_edx;
 	uae_u8* tmp=get_target();
 
-  DebOut("entered\n");
+  DebOut("entered (op 0x%08lx)\n", op);
 
+  /* o1i: here we build some machine code at cpuid_space and run it..
+   * I don't see the point, why not just run those assembler
+   * functions directly !?
+   * Maybe compiler problems/differences ..?
+   */
 	s_op = op;
 	set_target(cpuid_space);
 	raw_push_l_r(0); /* eax */
@@ -2353,15 +2363,21 @@ static void cpuid(uae_u32 op, uae_u32 *eax, uae_u32 *ebx, uae_u32 *ecx, uae_u32 
 	raw_ret();
 	set_target(tmp);
 
+  /* run generated code */
 	((compop_func*)cpuid_space)(0);
+
+  /* return results */
 	if (eax != NULL) *eax = s_eax;
 	if (ebx != NULL) *ebx = s_ebx;
 	if (ecx != NULL) *ecx = s_ecx;
 	if (edx != NULL) *edx = s_edx;
 
 	cache_free (cpuid_space);
+
+  DebOut("left (eax 0x%08lx, ebx 0x%08lx, ecx 0x%08lx, edx 0x%08lx)\n", s_eax, s_ebx, s_ecx, s_edx);
 }
 
+/* seems to be working for AROS/x86 */
 static void raw_init_cpu(void)
 {
 	struct cpuinfo_x86 *c = &cpuinfo;
