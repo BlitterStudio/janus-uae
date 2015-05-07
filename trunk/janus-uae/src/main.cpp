@@ -7,7 +7,12 @@
 * Copyright 1995, 1996, 1997 Bernd Schmidt
 */
 
+#ifdef __AROS__
 #define OLI_DEBUG
+#include <exec/execbase.h>
+#include <proto/dos.h>
+#endif
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include <assert.h>
@@ -647,15 +652,15 @@ void uae_restart (int opengui, const TCHAR *cfgfile)
   //quit_program=0;
   bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
   bug("[JUAE] %s: opengui: %d\n", __PRETTY_FUNCTION__, opengui);
-  printf("QQQQQQQQQQQQQQQQQQQ\n");
   printf("uae_restart(%d, %s)\n", opengui, cfgfile);
-  kprintf("QQQQQQQQQQQQQQQQQQQ\n");
   kprintf("uae_restart(%d, %s)\n", opengui, cfgfile);
 	restart_program = opengui > 0 ? 1 : (opengui == 0 ? 2 : 3);
 	restart_config[0] = 0;
 	default_config = 0;
-	if (cfgfile)
+	if (cfgfile) {
+    DebOut("restart_config: %s\n", restart_config);
 		_tcscpy (restart_config, cfgfile);
+  }
 	target_restart ();
 }
 
@@ -826,6 +831,7 @@ static void parse_cmdline_and_init_file (int argc, TCHAR **argv)
 	parse_cmdline_2 (argc, argv);
 
 	_tcscat (optionsfile, restart_config);
+  DebOut("optionsfile: %s\n", optionsfile);
 
 	if (! target_cfgfile_load (&currprefs, optionsfile, 0, default_config)) {
 		write_log (_T("failed to load config '%s'\n"), optionsfile);
@@ -908,6 +914,11 @@ extern int DummyException (LPEXCEPTION_POINTERS blah, int n_except)
 void do_start_program (void)
 {
   bug("[JUAE] %s(quit_program: %d)\n", __PRETTY_FUNCTION__, quit_program);
+  if(SysBase->TDNestCnt>=0) {
+    bug("Permit required a\n");
+  }
+
+
 
 	if (quit_program == -UAE_QUIT) /* UAE_QUIT is 1 */
 		return;
@@ -916,6 +927,8 @@ void do_start_program (void)
 	if (canbang && candirect < 0)
 		candirect = 1;
 	/* Do a reset on startup. Whether this is elegant is debatable. */
+  bug("[JUAE] %s: canbang:   %d\n", __PRETTY_FUNCTION__, canbang);
+  bug("[JUAE] %s: candirect: %d\n", __PRETTY_FUNCTION__, candirect);
 	inputdevice_updateconfig (&changed_prefs, &currprefs);
   bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
 	if (quit_program >= 0)
@@ -924,6 +937,7 @@ void do_start_program (void)
 #ifdef WITH_LUA
 	uae_lua_loadall ();
 #endif
+
 #if (defined (_WIN32) || defined (_WIN64)) && !defined (NO_WIN32_EXCEPTION_HANDLER)
 	extern int EvalException (LPEXCEPTION_POINTERS blah, int n_except);
 	__try
@@ -1065,6 +1079,11 @@ static int real_main2 (int argc, TCHAR **argv)
 
   bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
 
+  if(SysBase->TDNestCnt>=0) {
+    bug("Permit required aa\n");
+  }
+
+
 #ifdef USE_SDL
 	SDL_Init (SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_NOPARACHUTE);
 #endif
@@ -1146,11 +1165,14 @@ static int real_main2 (int argc, TCHAR **argv)
 	picasso_reset ();
 #endif
 
-#if 0
+  if(SysBase->TDNestCnt>=0) {
+    bug("Permit required a\n");
+  }
+
+
 #ifdef JIT
 	if (!(currprefs.cpu_model >= 68020 && currprefs.address_space_24 == 0 && currprefs.cachesize))
 		canbang = 0;
-#endif
 #endif
 
 	fixup_prefs (&currprefs);
@@ -1162,6 +1184,11 @@ static int real_main2 (int argc, TCHAR **argv)
 	/* force sound settings change */
 	currprefs.produce_sound = 0;
 
+  if(SysBase->TDNestCnt>=0) {
+    bug("Permit required b\n");
+  }
+
+
 	savestate_init ();
 	keybuf_init (); /* Must come after init_joystick */
 
@@ -1172,6 +1199,10 @@ static int real_main2 (int argc, TCHAR **argv)
 	native2amiga_install ();
 #endif
 
+  if(SysBase->TDNestCnt>=0) {
+    bug("Permit required c\n");
+  }
+
 	custom_init (); /* Must come after memory_init */
 #ifdef SERIAL_PORT
 	serial_init ();
@@ -1180,6 +1211,11 @@ static int real_main2 (int argc, TCHAR **argv)
 
 	reset_frame_rate_hack ();
 	init_m68k (); /* must come after reset_frame_rate_hack (); */
+
+  if(SysBase->TDNestCnt>=0) {
+    bug("Permit required d\n");
+  }
+
 
 	gui_update ();
 
@@ -1208,8 +1244,18 @@ void real_main (int argc, TCHAR **argv)
 {
 	restart_program = 1;
 
+  if(SysBase->TDNestCnt>=0) {
+    bug("Permit required ba\n");
+  }
+
+
 	fetch_configurationpath (restart_config, sizeof (restart_config) / sizeof (TCHAR));
+#ifndef __AROS__
 	_tcscat (restart_config, OPTIONSFILENAME);
+#else
+  AddPart(restart_config, OPTIONSFILENAME, MAX_DPATH-1);
+#endif
+  DebOut("restart_config: %s\n", restart_config);
 	default_config = 1;
 
   bug("[JUAE] %s: restart_program: %d\n", __PRETTY_FUNCTION__, restart_program);
