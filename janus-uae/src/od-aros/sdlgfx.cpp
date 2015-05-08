@@ -25,6 +25,7 @@
 #include "sdlkeys_dik.h"
 #include "options.h"
 #include "sdl_aros.h"
+#include "gfx.h"
 
 #include <SDL.h>
 #include <SDL_endian.h>
@@ -1096,39 +1097,60 @@ static void sdl_gl_flush_clear_screen (struct vidbuf_description *gfxinfo)
 
 #endif /* USE_GL */
 
-int graphics_setup (void)
-{
-    int result = 0;
+static int graphics_setup_success=0;
 
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+void fill_DisplayModes(struct MultiDisplay *md) {
+  int result = 0;
+  unsigned int i;
 
-    max_uae_width = 8192;
-    max_uae_height = 8192;
+  SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+
+  max_uae_width = 8192;
+  max_uae_height = 8192;
 
 
-    if (SDL_InitSubSystem (SDL_INIT_VIDEO) == 0) {
+  if (SDL_InitSubSystem (SDL_INIT_VIDEO) == 0) {
 
-        const SDL_version   *version = SDL_Linked_Version ();
-        const SDL_VideoInfo *info    = SDL_GetVideoInfo ();
+      const SDL_version   *version = SDL_Linked_Version ();
+      const SDL_VideoInfo *info    = SDL_GetVideoInfo ();
 
-        write_log ("SDLGFX: Initialized.\n");
-        write_log ("SDLGFX: Using SDL version %d.%d.%d.\n", version->major, version->minor, version->patch);
+      write_log ("SDLGFX: Initialized.\n");
+      write_log ("SDLGFX: Using SDL version %d.%d.%d.\n", version->major, version->minor, version->patch);
 
-        /* Find default display depth */
-        bitdepth = info->vfmt->BitsPerPixel;
-        SDLGD(bug("[JUAE:SDL] %s: bitdepth: %d\n", __PRETTY_FUNCTION__, bitdepth));
-        bit_unit = info->vfmt->BytesPerPixel * 8;
+      /* Find default display depth */
+      bitdepth = info->vfmt->BitsPerPixel;
+      SDLGD(bug("[JUAE:SDL] %s: bitdepth: %d\n", __PRETTY_FUNCTION__, bitdepth));
+      bit_unit = info->vfmt->BytesPerPixel * 8;
 
-        write_log ("SDLGFX: Display is %d bits deep.\n", bitdepth);
+      write_log ("SDLGFX: Display is %d bits deep.\n", bitdepth);
 
-        /* Build list of screenmodes */
-        mode_count = find_screen_modes (info->vfmt, &screenmode[0], MAX_SDL_SCREENMODE);
+      /* Build list of screenmodes */
+      mode_count = find_screen_modes (info->vfmt, &screenmode[0], MAX_SDL_SCREENMODE);
+      md->DisplayModes = xmalloc (struct PicassoResolution, MAX_PICASSO_MODES);
+      for (i=0; i<mode_count; i++) {
+        //md->DisplayModes[i]=(struct PicassoResolution *) malloc(sizeof(struct PicassoResolution));
+        md->DisplayModes[i].res.width=screenmode[i].w;
+        md->DisplayModes[i].res.height=screenmode[i].h;
+        md->DisplayModes[i].depth=bitdepth;
+        md->DisplayModes[i].lace=0;
+        md->DisplayModes[i].residx=i;
+        DebOut("%dx%d, %d-bit\n", screenmode[i].w, screenmode[i].h, bitdepth);
+        _stprintf (md->DisplayModes[i].name, _T("%dx%d, %d-bit"), screenmode[i].w, screenmode[i].h, bitdepth);
+      }
+      /* terminat list */
+      md->DisplayModes[i+1].depth = -1;
+      md->DisplayModes[i+1].residx = -1;
 
-        result = 1;
-    } else
-        write_log ("SDLGFX: initialization failed - %s\n", SDL_GetError());
+      graphics_setup_success=1;
+  }
 
-    return result;
+  return;
+}
+
+int graphics_setup(void) {
+
+  /* fill_DisplayModes was hopefully called before! */
+  return graphics_setup_success;
 }
 
 #ifdef USE_GL

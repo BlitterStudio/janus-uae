@@ -23,7 +23,7 @@
  *
  ************************************************************************/
 
-//#define OLI_DEBUG
+#define OLI_DEBUG
 #include "sysconfig.h"
 
 #include <stdlib.h>
@@ -603,3 +603,10 @@ int WIN32GFX_AdjustScreenmode (struct MultiDisplay *md, int *pwidth, int *pheigh
 	return index;
 }
 
+/* call SDL .. */
+void fill_DisplayModes(struct MultiDisplay *md);
+
+void sortdisplays (void) {
+
+  fill_DisplayModes(Displays);
+}
