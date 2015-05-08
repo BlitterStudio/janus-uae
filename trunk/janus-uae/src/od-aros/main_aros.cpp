@@ -321,6 +321,7 @@ static TCHAR *getdefaultini (void) {
  * This is the equivalent to WinMain2 in win32.cpp (hopefully)
  ************************************************************************/
 void WIN32_HandleRegistryStuff (void);
+int graphics_setup (void);
 
 int main (int argc, TCHAR **argv) {
   /* win32:
@@ -375,7 +376,9 @@ int main (int argc, TCHAR **argv) {
   }
 
 
-  // sortdisplays (); only for multi_display
+  /* call graphics_setup already here, this fills the screenmodes, we need in sortdisplays.. */
+  graphics_setup();
+  sortdisplays(); 
 
   // TODO: Command line parsing here!
   // some process_arg()/argv magic

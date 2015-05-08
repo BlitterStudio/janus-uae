@@ -386,7 +386,7 @@ int get_guid_target (uae_u8 *out)
   TODO();
 }
 
-#if (0)
+#if 0
 int hdf_open_target (struct hardfiledata *hfd, const TCHAR *pname)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
@@ -400,12 +400,13 @@ int hdf_read_target (struct hardfiledata *hfd, void *buffer, uae_u64 offset, int
 }
 #endif
 
+#if 0
 static void picasso96_alloc2 (TrapContext *ctx)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
 }
-
+#endif
 
 USHORT DMS_Process_File(struct zfile *fi, struct zfile *fo, USHORT cmd, USHORT opt, USHORT PCRC, USHORT pwd, int part, struct zfile **extra)
 {
@@ -413,7 +414,7 @@ USHORT DMS_Process_File(struct zfile *fi, struct zfile *fo, USHORT cmd, USHORT o
   TODO();
 }
 
-#if (0)
+#if 0
 void hdf_close_target (struct hardfiledata *hfd)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));

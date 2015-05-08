@@ -126,6 +126,7 @@ extern int quickstart, configurationcache, relativepaths;
 
 /* gfx */
 void updatewinfsmode (struct uae_prefs *p);
+void sortdisplays (void);
 
 void create_afnewdir (int remove);
 
