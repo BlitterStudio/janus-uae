@@ -325,11 +325,11 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       }
 
       while(elem[i].mem[l] != NULL) {
-        DebOut("  CB_ADDSTRING: elem[%d].var[%d]: %s\n", i, l, elem[i].mem[l]);
+        DebOut("  CB_ADDSTRING: elem[%d].mem[%d]: %s\n", i, l, elem[i].mem[l]);
         l++;
       }
       if(!flag_editable(elem[i].flags)) {
-        DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, old_active);
+        DoMethod(elem[i].obj, MUIM_NoNotifySet, MUIA_Cycle_Active, old_active);
       }
     }
     break;
@@ -367,7 +367,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       return -1;
 
     case CB_GETCURSEL:
-      DebOut("CB_GETCURSEL\n");
+      DebOut("CB_GETCURSEL (return elem[i].value: %d)\n", elem[i].value);
       return elem[i].value;
       break;
     case WM_GETTEXT:
