@@ -527,8 +527,8 @@ extern struct MUI_CustomClass *CL_Fixed;
 #define BN_UNPUSHED 3
 
 /* combobox styles
- *  CBS_DROPDOWN: editable (must contain "empty")
- *  CBS_DROPDOWNLIST: fixed
+ *  CBS_DROPDOWN: editable 
+ *  CBS_DROPDOWNLIST: fixed (not editable)
  */
 #define CBS_DROPDOWN          0x0002L
 #define CBS_DROPDOWNLIST      0x0003L

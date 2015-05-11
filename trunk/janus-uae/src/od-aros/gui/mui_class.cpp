@@ -297,11 +297,13 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
     case CB_ADDSTRING:
     {
       ULONG old_active;
-      /* add string to popup window */
+      /* add string  */
       DebOut("CB_ADDSTRING (%s)\n", (TCHAR *) lParam);
 
-      /* remember old selection */
-      //GetAttr(MUIA_Cycle_Active, elem[i].obj, (IPTR *) &old_active);
+      if(!flag_editable(elem[i].flags)) {
+        /* remember old selection */
+        GetAttr(MUIA_Cycle_Active, elem[i].obj, (IPTR *) &old_active);
+      }
 
       l=0;
       //DebOut("old list:\n");
@@ -310,48 +312,27 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
         l++;
       }
       /* found next free string */
-      //DebOut("  next free line: %d\n", l);
       activate=l;
 #warning TODO: free strings again!
       elem[i].mem[l]=strdup((TCHAR *) lParam);
       elem[i].mem[l+1]=NULL;
-      //DebOut("elem[i].obj: %lx\n", elem[i].obj);
 
-#if 0
- /* sucks */
-      if(elem[i].mem[0] && !strcmp(elem[i].mem[0], (TCHAR *) lParam)) {
-        /* somebody added an empty string, although we already have a dummy.
-         * so we remove the dommuy now
-         */
-         DebOut("remove dummy empty entry\n");
-         free(elem[i].mem[0]);
-         elem[i].mem[0]=NULL;
-         l=0;
-         while(elem[i].mem[l+1]) {
-           /* shift all rentries */
-           elem[i].mem[l]=elem[i].mem[l+1];
-           l++;
-         }
-         elem[i].var=elem[i].mem;
-      }
-#endif
-
-      SetAttrs(elem[i].obj, MUIA_String_Contents, (IPTR) lParam, TAG_DONE);
-      //DebOut("new list:\n");
-      l=0;
-      if(elem[i].mem[0]) {
-        DebOut("  CB_ADDSTRING: elem[%d].mem[0]: %s\n", i, elem[i].mem[0]);
+      if(flag_editable(elem[i].flags)) {
+        SetAttrs(elem[i].obj, MUIA_String_Contents, (IPTR) lParam, TAG_DONE);
       }
       else {
-        DebOut("  CB_ADDSTRING: elem[%d].mem[0]: NULL\n", i);
+        DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Entries, (IPTR) elem[i].mem);
       }
+
       while(elem[i].mem[l] != NULL) {
         DebOut("  CB_ADDSTRING: elem[%d].var[%d]: %s\n", i, l, elem[i].mem[l]);
         l++;
       }
-      //DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, old_active);
+      if(!flag_editable(elem[i].flags)) {
+        DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, old_active);
+      }
     }
-      break;
+    break;
 
     case CB_RESETCONTENT:
       /* delete all strings */
@@ -397,18 +378,18 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
         DebOut("[%lx] elem[i].value: %d\n", elem[i].obj, elem[i].value);
         DebOut("[%lx] wParam: %d\n", elem[i].obj, wParam);
         /* warning: care for non-comboboxes, too! */
-        if(elem[i].value<0 || elem[i].var[elem[i].value]==NULL) {
+        if(elem[i].value<0 || elem[i].mem[elem[i].value]==NULL) {
           string[0]=(char) 0;
         }
         else {
-          DebOut("return: %s\n", elem[i].var[elem[i].value]);
+          DebOut("return: %s\n", elem[i].mem[elem[i].value]);
           if(Msg == CB_GETLBTEXT) {
             DebOut("CB_GETLBTEXT\n");
             /* CB_GETLBTEXT has no range check! */
-            strcpy(string, elem[i].var[elem[i].value]);
+            strcpy(string, elem[i].mem[elem[i].value]);
           }
           else {
-            strncpy(string, elem[i].var[elem[i].value], wParam);
+            strncpy(string, elem[i].mem[elem[i].value], wParam);
           }
         }
       }
@@ -1020,7 +1001,7 @@ AROS_UFH2(void, MUIHook_slide, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
 }
 
 /*
- * Which control sends which default event on click, soo
+ * Which control sends which default event on click, see
  * https://msdn.microsoft.com/en-us/library/9y0at277.aspx
  */
 
@@ -1519,38 +1500,30 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
 
         case COMBOBOX:
           src[i].mem=(char **) malloc(256 * sizeof(IPTR)); // array for cycle texts
-          src[i].mem[0];
-#if 0
-          DebOut("flags: %lx\n", src[i].flags);
+          src[i].mem[0]=NULL; // always terminate
           if(!flag_editable(src[i].flags)) {
-            DebOut("flags: CBS_DROPDOWNLIST\n");
-            src[i].var=src[i].mem;
+            DebOut("not editable => Cycle Gadget\n");
+            child=CycleObject,
+                         MUIA_Font, Topaz8Font,
+                         MUIA_Cycle_Entries, src[i].mem,  // start empty
+                       End;
+            src[i].exists=TRUE;
+            src[i].obj=child;
+#ifdef UAE_ABI_v0
+            data->MyMUIHook_combo.h_Entry=(HOOKFUNC) MUIHook_combo;
+#else
+            data->MyMUIHook_combo.h_Entry=(APTR) MUIHook_combo;
+#endif
+            data->MyMUIHook_combo.h_Data =(APTR) data;
+            DoMethod(src[i].obj, MUIM_Notify, MUIA_Cycle_Active , MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_combo, func); 
           }
           else {
-            /* must contain "<<empty>>" statement */
-            DebOut("flags: CBS_DROPDOWN\n");
-            src[i].mem[0]=strdup(EMPTY_SELECTION);
-            src[i].var=src[i].mem+1;
+            DebOut("Editable => use own Combo class\n");
+            child=(Object *) NewObject(CL_Combo->mcc_Class, NULL,TAG_DONE);
+            src[i].exists=TRUE;
+            src[i].obj=child;
+            DoMethod(child, MUIM_List_Insert, src[i].mem);
           }
-          src[i].var[0]=NULL;
-          src[i].exists=TRUE;
-          child=CycleObject,
-                       MUIA_Font, Topaz8Font,
-                       MUIA_Cycle_Entries, src[i].mem,
-                     End;
-          src[i].obj=child;
-#ifdef UAE_ABI_v0
-          data->MyMUIHook_combo.h_Entry=(HOOKFUNC) MUIHook_combo;
-#else
-          data->MyMUIHook_combo.h_Entry=(APTR) MUIHook_combo;
-#endif
-          data->MyMUIHook_combo.h_Data =(APTR) data;
-          DoMethod(src[i].obj, MUIM_Notify, MUIA_Cycle_Active , MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_combo, func); 
-#endif
-          child=(Object *) NewObject(CL_Combo->mcc_Class, NULL,TAG_DONE);
-          src[i].exists=TRUE;
-          src[i].obj=child;
-          DoMethod(child, MUIM_List_Insert, src[i].mem);
         break;
 
 
