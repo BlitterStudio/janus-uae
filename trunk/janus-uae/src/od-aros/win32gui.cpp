@@ -2578,13 +2578,10 @@ static void selectdisk (struct uae_prefs *prefs, HWND hDlg, int num, int id, con
 		return;
 	}
 #endif
-  bug("full_path: %s\n", full_path);
 	SetDlgItemText (hDlg, id, (TCHAR *) full_path);
 	_tcscpy(prefs->floppyslots[num].df, full_path);
 	fullpath (prefs->floppyslots[num].df, sizeof prefs->floppyslots[num].df / sizeof (TCHAR));
-  bug("1..\n");
 	DISK_history_add (prefs->floppyslots[num].df, -1, HISTORY_FLOPPY, 0);
-  bug("left\n");
 }
 
 #if 0
@@ -12673,12 +12670,10 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 	int i;
 	static TCHAR diskname[40] = { _T("") };
 
-    D(
-          bug("[JUAE:GUI] %s(msg: %d)\n", __PRETTY_FUNCTION__, msg);
-          bug("[JUAE:GUI] %s: hDlg: %lx\n", __PRETTY_FUNCTION__, hDlg);
-          bug("[JUAE:GUI] %s: wParam: %lx\n", __PRETTY_FUNCTION__, wParam);
-          bug("[JUAE:GUI] %s: lParam: %lx\n", __PRETTY_FUNCTION__, lParam);
-    )
+  DebOut("msg: %d\n", msg);
+  DebOut("hDlg: %lx\n", hDlg);
+  DebOut("wParam: %lx\n", wParam);
+  DebOut("lParam: %lx\n", lParam);
 
 	switch (msg)
 	{
@@ -12721,7 +12716,6 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 			setmultiautocomplete (hDlg, df0texts);
 		}
 	case WM_USER:
-#if 0
 		recursive++;
 		setfloppytexts (hDlg, false);
 		SetDlgItemText (hDlg, IDC_CREATE_NAME, diskname);
@@ -12729,7 +12723,6 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 			workprefs.floppy_speed ? exact_log2 ((workprefs.floppy_speed) / 100) + 1 : 0);
 		out_floppyspeed (hDlg);
 		recursive--;
-#endif
 		break;
 
 	case WM_CONTEXTMENU:
@@ -12924,15 +12917,16 @@ INT_PTR CALLBACK FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 #endif /* TEST */
 
 	case WM_HSCROLL:
-#if 0
-		workprefs.floppy_speed = (int)SendMessage (GetDlgItem (hDlg, IDC_FLOPPYSPD), TBM_GETPOS, 0, 0);
+  DebOut("WM_HSCROLL received..\n");
+		//workprefs.floppy_speed = (int)SendMessage (GetDlgItem (hDlg, IDC_FLOPPYSPD), TBM_GETPOS, 0, 0);
+		workprefs.floppy_speed = (int)SendDlgItemMessage (hDlg, IDC_FLOPPYSPD, TBM_GETPOS, 0, 0);
+
 		if (workprefs.floppy_speed > 0) {
 			workprefs.floppy_speed--;
 			workprefs.floppy_speed = 1 << workprefs.floppy_speed;
 			workprefs.floppy_speed *= 100;
 		}
 		out_floppyspeed (hDlg);
-#endif
 		break;
 	} /* switch msg */
 
