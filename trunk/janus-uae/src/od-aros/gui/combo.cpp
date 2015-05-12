@@ -522,6 +522,9 @@ static IPTR mInsert(struct IClass *cl, Object *obj, struct MUIP_List_Insert *msg
 
   data->entries=(char **)msg->entries;
 
+  DoMethod(data->obj_list, MUIM_List_Clear);
+  DoMethod(data->obj_list, MUIM_List_Insert, (IPTR) data->entries, -1, MUIV_List_Insert_Top);
+
   return TRUE;
 }
 
