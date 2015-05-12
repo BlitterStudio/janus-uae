@@ -302,13 +302,16 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
 
       if(!flag_editable(elem[i].flags)) {
         /* remember old selection */
+        DebOut("not editable\n");
         GetAttr(MUIA_Cycle_Active, elem[i].obj, (IPTR *) &old_active);
       }
 
+      DebOut("elem[i].mem: %lx\n", elem[i].mem);
+
       l=0;
-      //DebOut("old list:\n");
+      DebOut("old list:\n");
       while(elem[i].mem[l] != NULL) {
-        //DebOut("  elem[i].var[%d]: %s\n", l, elem[i].var[l]);
+        DebOut("  elem[i].mem[%d]: %s\n", l, elem[i].mem[l]);
         l++;
       }
       /* found next free string */
@@ -317,13 +320,24 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       elem[i].mem[l]=strdup((TCHAR *) lParam);
       elem[i].mem[l+1]=NULL;
 
+#if 0
+      l=0;
+      DebOut("new list:\n");
+      while(elem[i].mem[l] != NULL) {
+        DebOut("  elem[i].mem[%d]: %s\n", l, elem[i].mem[l]);
+        l++;
+      }
+#endif
+ 
       if(flag_editable(elem[i].flags)) {
-        SetAttrs(elem[i].obj, MUIA_String_Contents, (IPTR) lParam, TAG_DONE);
+        DoMethod(elem[i].obj, MUIM_List_Insert, (IPTR) elem[i].mem);
+        DoMethod(elem[i].obj, MUIM_NoNotifySet, MUIA_String_Contents, (IPTR) lParam);
       }
       else {
         DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Entries, (IPTR) elem[i].mem);
       }
 
+      l=0;
       while(elem[i].mem[l] != NULL) {
         DebOut("  CB_ADDSTRING: elem[%d].mem[%d]: %s\n", i, l, elem[i].mem[l]);
         l++;
@@ -336,7 +350,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
 
     case CB_RESETCONTENT:
       /* delete all strings */
-      DebOut("CB_RESETCONTENT\n");
+      DebOut("CB_RESETCONTENT (elem: %d)\n", i);
       l=0;
       /* free old strings */
       while(elem[i].mem[l] != NULL) {
@@ -394,44 +408,65 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
         }
       }
       break;
-    case WM_SETTEXT:
+    case WM_SETTEXT: {
+      LONG found=-1;
 
       DebOut("WM_SETTEXT\n");
-          SetAttrs(elem[i].obj, MUIA_String_Contents, lParam, TAG_DONE);
-#if 0
+
       if(lParam==0 || strlen((TCHAR *)lParam)==0) {
-        DebOut("lParam is empty\n");
-        DebOut("elem[i].obj: %lx\n", elem[i].obj);
-        DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, 1);
+        DebOut("lParam is empty!\n");
         return 0;
       }
-      /* check, if the string is already available */
-      DebOut("search for string >%s<\n", (TCHAR *) lParam);
+
+      if(elem[i].windows_type==EDITTEXT) {
+        /* no combobox or similiar! */
+        DebOut("set EDITTEXT to %s\n", lParam);
+        SetAttrs(elem[i].obj, MUIA_String_Contents, lParam, TAG_DONE);
+        return 1;
+      }
+
+      if(elem[i].windows_type!=COMBOBOX) {
+        DebOut("ERROR: unknown type %d for WM_SETTEXT!!\n", elem[i].windows_type);
+        return CB_ERR;
+      }
+
+      if(!flag_editable(elem[i].flags)) {
+        DebOut("WM_SETTEXT for !editable!\n");
+        /* "It is CB_ERR if this message is sent to a combo box without an edit control." */
+        /* REALLY !? */
+        return CB_ERR;
+      }
+
+      DebOut("i: %d\n", i);
+      DebOut("elem[i]: %lx\n", elem[i]);
+      DebOut("elem[i].mem[0]: %lx\n", elem[i].mem[0]);
 
       l=0;
       while(elem[i].mem[l] != NULL) {
         DebOut("  compare with >%s<\n", elem[i].mem[l]);
         DebOut("  l: %d\n", l);
         if(!strcmp(elem[i].mem[l], (TCHAR *) lParam)) {
-          DebOut("we already have that string!\n");
-          DebOut("activate string %d in combo box!\n", l);
-          DebOut("elem[i].obj: %lx\n", elem[i].obj);
-          SetAttrs(elem[i].obj, MUIA_String_Contents, lParam, TAG_DONE);
-          return 0;
+          found=l;
+          DebOut("we already have that string at position %d!\n", found);
+          //DebOut("activate string %d in combo box!\n", l);
+          //DebOut("elem[i].obj: %lx\n", elem[i].obj);
+          //SetAttrs(elem[i].obj, MUIA_String_Contents, lParam, TAG_DONE);
+          break;
         }
         l++;
       }
-      /* new string, add it to top */
 
-      DebOut("new string, add it to top\n");
-
-      l=0;
-      DebOut("old list:\n");
-      while(elem[i].mem[l] != NULL) {
-        DebOut("  elem[i].mem[%d]: %s\n", l, elem[i].mem[l]);
-        l++;
+      DebOut("found: %d\n", found);
+ 
+      if(flag_editable(elem[i].flags)) {
+        /* custom combo box */
+        if(found > -1) {
+          DoMethod(elem[i].obj, MUIM_NoNotifySet, MUIA_String_Contents, lParam);
+          /* we are done! */
+          return 1;
+        }
       }
-
+      DebOut("new string, add it to top\n");
       l=0;
       buf=elem[i].mem[l+1];
       while(buf != NULL) {
@@ -443,39 +478,33 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       elem[i].mem[0]=strdup((TCHAR *) lParam);
       /* terminate list */
       elem[i].mem[l+1]=NULL;
-      DebOut("elem[i].obj: %lx\n", elem[i].obj);
-      DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Entries, (IPTR) elem[i].mem);
+
       if(flag_editable(elem[i].flags)) {
-        DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, 1);
+        DoMethod(elem[i].obj, MUIM_List_Insert, elem[i].mem);
       }
       else {
-        DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, 0);
+        DoMethod(elem[i].obj, MUIM_Set,         MUIA_Cycle_Entries, (IPTR) elem[i].mem);
+        DoMethod(elem[i].obj, MUIM_NoNotifySet, MUIA_Cycle_Active, 0);
       }
-
-      DebOut("new list:\n");
-      l=0;
-      while(elem[i].mem[l]!=NULL) {
-        DebOut("  elem[i].mem[%d]: %s\n", l, elem[i].mem[l]);
-        l++;
-      }
-#endif
+ 
       return TRUE;
+    }
       
-      /* An application sends a CB_SETCURSEL message to select a string in the 
-       * list of a combo box. If necessary, the list scrolls the string into view. 
-       * The text in the edit control of the combo box changes to reflect the new 
-       * selection, and any previous selection in the list is removed. 
-       *
-       * wParam: Specifies the zero-based index of the string to select. 
-       * If this parameter is -1, any current selection in the list is removed and 
-       * the edit control is cleared.
-       *
-       * If the message is successful, the return value is the index of the item 
-       * selected. If wParam is greater than the number of items in the list or 
-       * if wParam is 1, the return value is CB_ERR and the selection is cleared. 
-       */
+    /* An application sends a CB_SETCURSEL message to select a string in the 
+     * list of a combo box. If necessary, the list scrolls the string into view. 
+     * The text in the edit control of the combo box changes to reflect the new 
+     * selection, and any previous selection in the list is removed. 
+     *
+     * wParam: Specifies the zero-based index of the string to select. 
+     * If this parameter is -1, any current selection in the list is removed and 
+     * the edit control is cleared.
+     *
+     * If the message is successful, the return value is the index of the item 
+     * selected. If wParam is greater than the number of items in the list or 
+     * if wParam is -1, the return value is CB_ERR and the selection is cleared. 
+     */
     case CB_SETCURSEL: {
-      DebOut("CB_SETCURSEL: wParam: %d\n", wParam);
+      DebOut("CB_SETCURSEL: elem %,d wParam: %d\n", i, wParam);
 
       if(flag_editable(elem[i].flags)) {
         /* zune combo object */
@@ -485,8 +514,9 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
           return CB_ERR;
         }
         else {
+          /* check, if wParam is valid!? */
           DebOut("activate string: %s\n", elem[i].mem[wParam]);
-          SetAttrs(elem[i].obj, MUIA_String_Contents, (IPTR) elem[i].mem[wParam], TAG_DONE);
+          DoMethod(elem[i].obj, MUIM_NoNotifySet, MUIA_String_Contents, (IPTR) elem[i].mem[wParam]);
         }
       }
       else {
