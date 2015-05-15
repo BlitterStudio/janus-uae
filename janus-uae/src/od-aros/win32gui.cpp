@@ -248,33 +248,35 @@ TCHAR *WIN32GUI_LoadUIString (TCHAR *id)
     TCHAR tmp[MAX_DPATH];
     TCHAR *ret = NULL;
 
-    bug("[JUAE:GUI] %s(0x%p)\n", __PRETTY_FUNCTION__, id);
+    DebOut("id %d\n", id);
 
     if (id)
     {
         tmp[0] = 0;
-        bug("[JUAE:GUI] %s: string id: '%s'\n", __PRETTY_FUNCTION__, id);
 
         if (LoadString (hUIDLL ? hUIDLL : hInst, id, tmp, MAX_DPATH) == 0)
             LoadString (hInst, id, tmp, MAX_DPATH);
 
-	ret = strdup(tmp);
+        DebOut("string of id %d: '%s'\n",id, tmp);
+        ret = strdup(tmp);
     }
-    D(
-        else
-        {
-            bug("[JUAE:GUI] %s: ******** INVALID'\n", __PRETTY_FUNCTION__);
-        }
-    )
+    else
+    {
+        DebOut("******** INVALID id 0'\n");
+    }
     return ret;
 }
 
 void WIN32GUI_LoadUIString (TCHAR *id, TCHAR *string, DWORD dwStringLen)
 {
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+    DebOut("id: %d\n", id);
+
+    string[0]=(char) 0;
 
     if (LoadString (hUIDLL ? hUIDLL : hInst, id, string, dwStringLen) == 0)
         LoadString (hInst, id, string, dwStringLen);
+
+    DebOut("result: %s\n", string);
 }
 
 static int quickstart_model = 0, quickstart_conf = 0, quickstart_compa = 1;
@@ -1537,8 +1539,6 @@ static void abspathtorelative (TCHAR *name)
 
         if (strnicmp (tmp1, tmp2, strlen (tmp1)) == 0) { // tmp2 is inside tmp1
                 //bug("[JUAE:GUI] %s: tmp2 (%s) is inside tmp1 (%s)\n", tmp2, tmp1);
-                DebOut("tmp1: %s\n", tmp1);
-                DebOut("tmp2: %s\n", tmp2);
                 strcpy(name, tmp2 + strlen (tmp1));
                 /* now test, if name starts with a ':' or '/' which was part of the
                  * result value of NameFromLock and still dangles in name:
@@ -6129,7 +6129,7 @@ INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 
 struct amigamodels {
 	int compalevels;
-	int id;
+	IPTR id;
 };
 static struct amigamodels amodels[] = {
 	{ 4, (IPTR) IDS_QS_MODEL_A500 }, // "Amiga 500"
@@ -6218,7 +6218,7 @@ static void init_quickstartdlg (HWND hDlg)
 	TCHAR tmp1[2 * MAX_DPATH], tmp2[MAX_DPATH], hostconf[MAX_DPATH];
 	TCHAR *p1, *p2;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("entered\n");
 
 	qssize = sizeof (tmp1) / sizeof (TCHAR);
 	regquerystr (NULL, _T("QuickStartHostConfig"), hostconf, &qssize);
@@ -6279,6 +6279,7 @@ static void init_quickstartdlg (HWND hDlg)
 		}
 		xfree (rl);
 	} else {
+    DebOut("quickstart_model: %d\n", quickstart_model);
 		WIN32GUI_LoadUIString ((TCHAR *) amodels[quickstart_model].id, tmp1, sizeof (tmp1) / sizeof (TCHAR));
 		_tcscat (tmp1, _T("\n"));
 		p1 = tmp1;
@@ -6289,6 +6290,7 @@ static void init_quickstartdlg (HWND hDlg)
 			if (!p2)
 				break;
 			*p2++= 0;
+      DebOut("add: %s\n", p1);
 			SendDlgItemMessage (hDlg, IDC_QUICKSTART_CONFIGURATION, CB_ADDSTRING, 0, (LPARAM)p1);
 			p1 = p2;
 			p2 = _tcschr (p1, '\n');
@@ -6530,7 +6532,7 @@ INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 					while (amodels[i].compalevels >= 0) {
 						if (amodels[i].compalevels > 0)
 							val--;
-						if (val < 0)
+						if (val < 0) 
 							break;
 						i++;
 					}
