@@ -32,7 +32,7 @@
 
 #define MAX_DISPLAYS 10
 
-typedef ULONG LRESULT;
+typedef LONG LRESULT;
 
 extern struct MultiDisplay Displays[MAX_DISPLAYS + 1];
 struct MultiDisplay *getdisplay (struct uae_prefs *p);
