@@ -30,8 +30,6 @@
 
 #define MAX_ENTRIES 255
 
-#define MA_Data 0xfece0000
-
 //#define EMPTY_SELECTION "<-- none -->"
 #define EMPTY_SELECTION ""
 
@@ -391,20 +389,27 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
         TCHAR *string=(TCHAR *) lParam;
         DebOut("[%lx] elem[i].value: %d\n", elem[i].obj, elem[i].value);
         DebOut("[%lx] wParam: %d\n", elem[i].obj, wParam);
-        /* warning: care for non-comboboxes, too! */
-        if(elem[i].value<0 || elem[i].mem[elem[i].value]==NULL) {
-          string[0]=(char) 0;
-        }
-        else {
-          DebOut("return: %s\n", elem[i].mem[elem[i].value]);
-          if(Msg == CB_GETLBTEXT) {
-            DebOut("CB_GETLBTEXT\n");
-            /* CB_GETLBTEXT has no range check! */
-            strcpy(string, elem[i].mem[elem[i].value]);
+        if(elem[i].windows_type==COMBOBOX) {
+          if(elem[i].value<0 || elem[i].mem[elem[i].value]==NULL) {
+            string[0]=(char) 0;
           }
           else {
-            strncpy(string, elem[i].mem[elem[i].value], wParam);
+            DebOut("return: %s\n", elem[i].mem[elem[i].value]);
+            if(Msg == CB_GETLBTEXT) {
+              DebOut("CB_GETLBTEXT\n");
+              /* CB_GETLBTEXT has no range check! */
+              strcpy(string, elem[i].mem[elem[i].value]);
+            }
+            else {
+              strncpy(string, elem[i].mem[elem[i].value], wParam);
+            }
           }
+        }
+        else if(elem[i].windows_type==EDITTEXT) {
+          GetAttr(MUIA_String_Contents, elem[i].obj, (IPTR *) &string);
+        }
+        else {
+          TODO();
         }
       }
       break;
@@ -504,13 +509,13 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
      * if wParam is -1, the return value is CB_ERR and the selection is cleared. 
      */
     case CB_SETCURSEL: {
-      DebOut("CB_SETCURSEL: elem %,d wParam: %d\n", i, wParam);
+      DebOut("CB_SETCURSEL: elem %d wParam: %d\n", i, wParam);
 
       if(flag_editable(elem[i].flags)) {
         /* zune combo object */
         if(wParam==-1) {
           DebOut("clear string gadget\n");
-          SetAttrs(elem[i].obj, MUIA_String_Contents, (IPTR) "", TAG_DONE);
+          DoMethod(elem[i].obj, MUIM_NoNotifySet, MUIA_String_Contents, (IPTR) "");
           return CB_ERR;
         }
         else {
@@ -522,7 +527,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       else {
         /* cycle gadget */
         if(wParam >= 0) {
-          DoMethod(elem[i].obj, MUIM_Set, MUIA_Cycle_Active, wParam);
+          DoMethod(elem[i].obj, MUIM_NoNotifySet, MUIA_Cycle_Active, wParam);
         }
         else {
           DebOut("ERROR: what to do with a -1 here !?\n");
@@ -952,6 +957,23 @@ BOOL ShowWindow(HWND hWnd, DWORD id, int nCmdShow) {
   return TRUE;
 }
 
+/****************************************
+ * send_WM_INITDIALOG
+ *
+ * called from mui_head
+ *
+ * send WM_INITDIALOG to the now active
+ * page
+ ****************************************/
+#if 0
+void send_WM_INITDIALOG(ULONG nr) {
+
+  //SendMessage (IDD_ELEMENT[nr], WM_INITDIALOG, 0, 0);
+  //oli
+
+  data->func(data->src, WM_INITDIALOG, 0, 0);
+}
+#endif
  
 
 AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
@@ -1573,6 +1595,13 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
         if(!(src[i].flags & WS_VISIBLE)) {
           DoMethod(child, MUIM_Set, MUIA_ShowMe, (IPTR) 0);
         }
+        /*
+         * bad idea?
+        if(src[i].flags & WS_DISABLED) {
+          DebOut("WS_DISABLED!\n");
+          DoMethod(child, MUIM_Set, MUIA_Disabled, TRUE);
+        }
+        */
         if(src[i].flags & WS_TABSTOP) {
           DoMethod(child, MUIM_Set, MUIA_CycleChain, (IPTR) 1);
         }
@@ -1592,7 +1621,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
     data->LayoutHook.h_Data=data;
 
     /*
-     * ATTENTION: Add children *after* seting the LayoutHook,
+     * ATTENTION: Add children *after* setting the LayoutHook,
      *            otherwise we get recursions!
      */
   
@@ -1621,6 +1650,13 @@ static IPTR mGet(struct Data *data, APTR obj, struct opGet *msg, struct IClass *
     case MA_Data: 
       DebOut("data: %lx\n", data);
       rc = (IPTR) data; 
+      break;
+    case MA_dlgproc:
+      DebOut("data: %lx\n", data);
+      rc = (IPTR) data->func; 
+      break;
+    case MA_src:
+      rc = (IPTR) data->src; 
       break;
 
     default: return DoSuperMethodA(cl, (Object *) obj, (Msg)msg);
