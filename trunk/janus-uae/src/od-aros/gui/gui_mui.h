@@ -79,11 +79,13 @@ BOOL ShowWindow(HWND hWnd, int nCmdShow);
 BOOL ShowWindow(HWND hWnd, DWORD id, int nCmdShow);
 
 UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount);
+void send_WM_INITDIALOG(ULONG nr);
 
 #define MY_TAGBASE 0xfece0000
 enum {
   MA_src = MY_TAGBASE,
   MA_dlgproc,
+  MA_Data
 };
 
 #define GETDATA struct Data *data = (struct Data *)INST_DATA(cl, obj)

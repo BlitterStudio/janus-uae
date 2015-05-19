@@ -93,6 +93,8 @@ static const char *listelements[] = {
   NULL
 };
 
+static Object *page_obj[39];
+
 extern int currentpage;
 
 struct Hook MyMuiHook_list;
@@ -109,6 +111,8 @@ AROS_UFH2(void, MUIHook_list, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR
   AROS_USERFUNC_INIT
 
   ULONG nr;
+  int *(*func) (Element *hDlg, UINT msg, ULONG wParam, IPTR lParam);
+  Element *elem;
 
   nr=XGET((Object *) obj, MUIA_List_Active);
 
@@ -130,6 +134,16 @@ AROS_UFH2(void, MUIHook_list, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR
   }
 #endif
   currentpage=nr;
+
+  if(page_obj[nr]) {
+    func=(int* (*)(Element*, uint32_t, ULONG, IPTR)) XGET(page_obj[nr], MA_dlgproc);
+    elem=(Element *) XGET(page_obj[nr], MA_src);
+
+    if(func && elem) {
+      DebOut("call WM_INITDIALOG\n");
+      func(elem, WM_INITDIALOG, 0, 0);
+    }
+  }
 
 OK:
   DebOut("currentpage is now: %d\n", currentpage);
@@ -187,6 +201,7 @@ AROS_UFH2(void, MUIHook_quit, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR
 
 int *FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *ChipsetDlgProc2 (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *CPUDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *AboutDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -278,32 +293,32 @@ Object* build_gui(void) {
                               MUIA_Group_Horiz, FALSE,
                               MUIA_Group_Child,
                                 pages=PageGroup,
-                                  Child, FixedProcObj((IPTR)IDD_ABOUT,      (IPTR) &AboutDlgProc     ),
-                                  Child, FixedProcObj((IPTR)IDD_PATHS,      (IPTR) &PathsDlgProc     ),
-                                  Child, FixedProcObj((IPTR)IDD_QUICKSTART, (IPTR) &QuickstartDlgProc),
-                                  Child, FixedObj((IPTR)IDD_LOADSAVE),
+                                  Child, page_obj[0]=FixedProcObj((IPTR)IDD_ABOUT,      (IPTR) &AboutDlgProc     ),
+                                  Child, page_obj[1]=FixedProcObj((IPTR)IDD_PATHS,      (IPTR) &PathsDlgProc     ),
+                                  Child, page_obj[2]=FixedProcObj((IPTR)IDD_QUICKSTART, (IPTR) &QuickstartDlgProc),
+                                  Child, page_obj[3]=FixedObj((IPTR)IDD_LOADSAVE),
                                   //Child, FixedObj((IPTR)IDD_LOADSAVE),
                                   Child, TextObject,  MUIA_Text_Contents, "\33c\33bTODO", End,
-                                  Child, FixedProcObj((IPTR)IDD_CPU,        (IPTR) &CPUDlgProc       ),
-                                  Child, FixedObj((IPTR)IDD_CHIPSET),
-                                  Child, FixedObj((IPTR)IDD_CHIPSET2),
-                                  Child, FixedProcObj((IPTR)IDD_KICKSTART,  (IPTR) &KickstartDlgProc ),
-                                  Child, FixedProcObj((IPTR)IDD_MEMORY,     (IPTR) &MemoryDlgProc    ),
-                                  Child, FixedProcObj((IPTR)IDD_FLOPPY,     (IPTR) &FloppyDlgProc    ),
-                                  Child, FixedObj((IPTR)IDD_CDDRIVE),
-                                  Child, FixedObj((IPTR)IDD_EXPANSION),
+                                  Child, page_obj[5]=FixedProcObj((IPTR)IDD_CPU,        (IPTR) &CPUDlgProc       ),
+                                  Child, page_obj[6]=FixedObj((IPTR)IDD_CHIPSET),
+                                  Child, page_obj[7]=FixedProcObj((IPTR)IDD_CHIPSET2,   (IPTR) &ChipsetDlgProc2),
+                                  Child, page_obj[8]=FixedProcObj((IPTR)IDD_KICKSTART,  (IPTR) &KickstartDlgProc ),
+                                  Child, page_obj[9]=FixedProcObj((IPTR)IDD_MEMORY,     (IPTR) &MemoryDlgProc    ),
+                                  Child, page_obj[10]=FixedProcObj((IPTR)IDD_FLOPPY,     (IPTR) &FloppyDlgProc    ),
+                                  Child, page_obj[11]=FixedObj((IPTR)IDD_CDDRIVE),
+                                  Child, page_obj[12]=FixedObj((IPTR)IDD_EXPANSION),
                                   //Child, FixedObj((IPTR)IDD_LOADSAVE),
                                   Child, TextObject,  MUIA_Text_Contents, "\33c\33bTODO", End,
-                                  Child, FixedObj((IPTR)IDD_DISPLAY),
-                                  Child, FixedObj((IPTR)IDD_SOUND),
-                                  Child, FixedObj((IPTR)IDD_GAMEPORTS),
-                                  Child, FixedObj((IPTR)IDD_IOPORTS),
-                                  Child, FixedObj((IPTR)IDD_INPUT),
-                                  Child, FixedObj((IPTR)IDD_AVIOUTPUT),
-                                  Child, FixedObj((IPTR)IDD_FILTER),
-                                  Child, FixedObj((IPTR)IDD_DISK),
-                                  Child, FixedObj((IPTR)IDD_MISC1),
-                                  Child, FixedObj((IPTR)IDD_MISC2),
+                                  Child, page_obj[14]=FixedObj((IPTR)IDD_DISPLAY),
+                                  Child, page_obj[15]=FixedObj((IPTR)IDD_SOUND),
+                                  Child, page_obj[16]=FixedObj((IPTR)IDD_GAMEPORTS),
+                                  Child, page_obj[17]=FixedObj((IPTR)IDD_IOPORTS),
+                                  Child, page_obj[18]=FixedObj((IPTR)IDD_INPUT),
+                                  Child, page_obj[19]=FixedObj((IPTR)IDD_AVIOUTPUT),
+                                  Child, page_obj[20]=FixedObj((IPTR)IDD_FILTER),
+                                  Child, page_obj[21]=FixedObj((IPTR)IDD_DISK),
+                                  Child, page_obj[22]=FixedObj((IPTR)IDD_MISC1),
+                                  Child, page_obj[23]=FixedObj((IPTR)IDD_MISC2),
                                 End,
                               MUIA_Group_Child,
                                 MUI_NewObject(MUIC_Group,
