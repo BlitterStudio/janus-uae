@@ -6149,9 +6149,10 @@ static struct amigamodels amodels[] = {
 
 static void enable_for_quickstart (HWND hDlg)
 {
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
-
 	int v = quickstart_ok && quickstart_ok_floppy ? TRUE : FALSE;
+
+  DebOut("quickstart: %d (SW_SHOW: %d)\n", quickstart, SW_SHOW);
+
 	ew (guiDlg, IDC_RESETAMIGA, !full_property_sheet ? TRUE : FALSE);
 #if 0
 	ShowWindow (GetDlgItem (hDlg, IDC_QUICKSTART_SETCONFIG), quickstart ? SW_HIDE : SW_SHOW);
@@ -7932,9 +7933,12 @@ static void values_to_chipsetdlg2 (HWND hDlg)
 	CheckDlgButton (hDlg, IDC_CS_CIATODBUG, workprefs.cs_ciatodbug);
 	CheckDlgButton (hDlg, IDC_CS_IDE1, workprefs.cs_ide > 0 && (workprefs.cs_ide & 1));
 	CheckDlgButton (hDlg, IDC_CS_IDE2, workprefs.cs_ide > 0 && (workprefs.cs_ide & 2));
+  DebOut("danger?\n");
 	txt[0] = 0;
 	_stprintf (txt, _T("%d"), workprefs.cs_rtc_adjust);
+  DebOut("text: %s\n", txt);
 	SetDlgItemText(hDlg, IDC_CS_RTCADJUST, txt);
+  DebOut("ok!\n");
 	txt[0] = 0;
 	if (workprefs.cs_fatgaryrev >= 0)
 		_stprintf (txt, _T("%02X"), workprefs.cs_fatgaryrev);
@@ -7973,7 +7977,6 @@ static void values_to_chipsetdlg2 (HWND hDlg)
 	SetDlgItemText(hDlg, IDC_CS_DENISEREV, txt);
 }
 
-#if 0
 static void values_from_chipsetdlg2 (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	TCHAR txt[32], *p;
@@ -8014,6 +8017,7 @@ static void values_from_chipsetdlg2 (HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
 
 	if (workprefs.cs_rtc) {
 		txt[0] = 0;
+    DebOut("..\n");
 		SendDlgItemMessage (hDlg, IDC_CS_RTCADJUST, WM_GETTEXT, (WPARAM)sizeof (txt) / sizeof (TCHAR), (LPARAM)txt);
 		workprefs.cs_rtc_adjust = _tstol(txt);
 	}
@@ -8047,7 +8051,6 @@ static void values_from_chipsetdlg2 (HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
 	}
 
 }
-#endif
 
 static void enable_for_chipsetdlg2 (HWND hDlg)
 {
@@ -8095,7 +8098,7 @@ static void enable_for_chipsetdlg2 (HWND hDlg)
 	ew (hDlg, IDC_CS_RTCADJUST, e);
 }
 
-static INT_PTR CALLBACK ChipsetDlgProc2 (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK ChipsetDlgProc2 (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static int recursive = 0;
 
@@ -8111,7 +8114,6 @@ static INT_PTR CALLBACK ChipsetDlgProc2 (HWND hDlg, UINT msg, WPARAM wParam, LPA
 		enable_for_chipsetdlg2 (hDlg);
 		recursive--;
 		break;
-#if 0
 	case WM_HSCROLL:
 	case WM_COMMAND:
 		if (recursive > 0)
@@ -8121,7 +8123,6 @@ static INT_PTR CALLBACK ChipsetDlgProc2 (HWND hDlg, UINT msg, WPARAM wParam, LPA
 		enable_for_chipsetdlg2 (hDlg);
 		recursive--;
 		break;
-#endif
 	}
 	return FALSE;
 }
@@ -12462,10 +12463,12 @@ static void getfloppytypeq (HWND hDlg, int n)
 	int f_enable = currentpage == QUICKSTART_ID ? floppybuttonsq[n][7] : floppybuttons[n][7];
 	int chk;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+    DebOut("entered\n");
 
-	if (f_enable <= 0 || (n == 0 && currentpage == QUICKSTART_ID))
+	if (f_enable <= 0 || (n == 0 && currentpage == QUICKSTART_ID)) {
+    DebOut("do nothing!\n");
 		return;
+  }
 	if (iscd (n))
 		return;
 	chk = ischecked (hDlg, f_enable) ? 0 : -1;
@@ -12573,12 +12576,9 @@ static void addallfloppies (HWND hDlg)
 
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
     
-#if 0
-
 	for (i = 0; i < 4; i++)
 		addfloppytype (hDlg, i);
 	addfloppyhistory (hDlg);
-#endif
 }
 
 static void floppysetwriteprotect (HWND hDlg, int n, bool writeprotected)

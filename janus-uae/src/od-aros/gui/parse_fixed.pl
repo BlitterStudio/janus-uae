@@ -165,18 +165,21 @@ sub parse_flags($) {
       $res|= 0x0800;
     }
     elsif($a eq 'CBS_DROPDOWN') {
-      $res=$res|=0x2;
+      $res|=0x2;
     }
     elsif($a eq 'CBS_DROPDOWNLIST') {
       $res=$res|=0x3;
     }
     elsif($a eq 'WS_GROUP') {
       # argl. This starts a group of autoradio buttons. Only one can be selected.. 
-      $res=$res|=0x00020000;
+      $res|=0x00020000;
     }
     elsif($a eq 'WS_TABSTOP') {
       # used for TAB cycling. Maybe us this for MUI, too.
-      $res=$res|=0x00010000;
+      $res|=0x00010000;
+    }
+    elsif($a eq 'WS_DISABLED') {
+      $res|=0x08000000;
     }
   }
   return $res;
