@@ -199,14 +199,16 @@ AROS_UFH2(void, MUIHook_quit, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR
   AROS_USERFUNC_EXIT
 }
 
-int *FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-int *KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-int *ChipsetDlgProc2 (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-int *CPUDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *AboutDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+
+int *CPUDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *ChipsetDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *ChipsetDlgProc2 (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *MemoryDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
 Object* FixedObj(IPTR src)
 {
@@ -300,7 +302,7 @@ Object* build_gui(void) {
                                   //Child, FixedObj((IPTR)IDD_LOADSAVE),
                                   Child, TextObject,  MUIA_Text_Contents, "\33c\33bTODO", End,
                                   Child, page_obj[5]=FixedProcObj((IPTR)IDD_CPU,        (IPTR) &CPUDlgProc       ),
-                                  Child, page_obj[6]=FixedObj((IPTR)IDD_CHIPSET),
+                                  Child, page_obj[6]=FixedProcObj((IPTR)IDD_CHIPSET,    (IPTR) &ChipsetDlgProc),
                                   Child, page_obj[7]=FixedProcObj((IPTR)IDD_CHIPSET2,   (IPTR) &ChipsetDlgProc2),
                                   Child, page_obj[8]=FixedProcObj((IPTR)IDD_KICKSTART,  (IPTR) &KickstartDlgProc ),
                                   Child, page_obj[9]=FixedProcObj((IPTR)IDD_MEMORY,     (IPTR) &MemoryDlgProc    ),
