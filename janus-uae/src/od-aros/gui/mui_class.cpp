@@ -13,6 +13,9 @@
 #include <graphics/gfxbase.h>
 #include <mui/Rawimage_mcc.h>
 #include <proto/reqtools.h>
+#include <mui/NListtree_mcc.h>
+#include <mui/NListview_mcc.h>
+
 
 #define OLI_DEBUG
 #include "sysconfig.h"
@@ -39,6 +42,8 @@ struct Data {
   struct Hook MyMUIHook_select;
   struct Hook MyMUIHook_slide;
   struct Hook MyMUIHook_combo;
+  struct Hook MyMUIHook_tree_construct;
+  struct Hook MyMUIHook_tree_destruct;
   ULONG width, height;
   struct Element *src;
   struct TextFont *font;
@@ -1385,6 +1390,66 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
             }
             break;
           }
+          if(!strcmp(src[i].windows_class, "SysTreeView32")) {
+            Object *xxx;
+            /* Tree gadget! */
+            DebOut("SysTreeView32\n");
+            child=HGroup,
+                    MUIA_UserData         , i,
+                    //Child, VSpace(0),
+                    Child, (NListviewObject,
+                      MUIA_UserData         , i,
+                      MUIA_NListview_NList, (NListtreeObject,
+                        MUIA_UserData         , i,
+                        ReadListFrame,
+                        MUIA_CycleChain, TRUE,
+                        //MUIA_NListtree_ConstructHook, (IPTR)&data->MyMUIHook_tree_construct,
+                        //MUIA_NListtree_DestructHook,  (IPTR)&data->MyMUIHook_tree_destruct,
+                        //LISTV_EntryArray, bla,
+                        MUIA_NListtree_DragDropSort,  FALSE,
+                        End),
+                        End),
+                    End;
+                    //Child, VSpace(0),
+            DebOut("child: %lx\n", child);
+            if(child) {
+              src[i].exists=TRUE;
+              src[i].obj=child;
+              DoMethod(child, MUIM_NListtree_Insert, "Hello", NULL,
+                          MUIV_NListtree_Insert_ListNode_Root,
+                                      MUIV_NListtree_Insert_PrevNode_Head,
+                                                  MUIV_NListtree_Insert_Flag_Active);
+#if 0
+              DoMethod(xxx, MUIM_NListtree_Insert, "Hi", NULL,
+                          MUIV_NListtree_Insert_ListNode_Root,
+                                      MUIV_NListtree_Insert_PrevNode_Head,
+                                                  MUIV_NListtree_Insert_Flag_Active);
+#endif
+
+#if 0
+#ifdef UAE_ABI_v0
+              data->MyMUIHook_tree_construct.h_Entry=(HOOKFUNC) tree_construct;
+#else
+              data->MyMUIHook_tree_construct.h_Entry=(APTR) tree_construct;
+#endif
+              data->MyMUIHook_tree_construct.h_Data =(APTR) data;
+#ifdef UAE_ABI_v0
+              data->MyMUIHook_tree_destruct.h_Entry=(HOOKFUNC) tree_destruct;
+#else
+              data->MyMUIHook_tree_destruct.h_Entry=(APTR) tree_destruct;
+#endif
+              data->MyMUIHook_tree_destruct.h_Data =(APTR) data;
+#endif
+
+#if 0
+              DebOut("DoMethod(%lx, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime..)\n", src[i].obj);
+              DoMethod(src[i].obj, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_slide, func); 
+ 
+#endif
+            }
+            break;
+          }
+
           if(src[i].windows_class==NULL || !strcmp(src[i].windows_class, "Button") || /* implement those: !!!  */ !strcmp(src[i].windows_class, "SysListView32") || !strcmp(src[i].windows_class, "Static") || !strcmp(src[i].windows_class, "SysTreeView32")) {
             DebOut("Button found\n");
             if(src[i].flags2==BS_AUTORADIOBUTTON) {

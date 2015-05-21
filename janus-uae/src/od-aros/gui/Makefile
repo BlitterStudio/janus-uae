@@ -63,6 +63,7 @@ COMMON_OBJS= \
 	mui_head.o \
 	mui_data.o \
 	mui_file_request.o \
+	mui_tree.o \
 	combo.o \
 	mui_class.o 
 
