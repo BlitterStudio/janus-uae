@@ -122,6 +122,7 @@ static int get_elem_from_obj(struct Data *data, Object *obj) {
     return i;
   }
 
+  i=0;
   while(data->src[i].exists) {
     if(data->src[i].obj == obj) {
       //DebOut("found! i: %d\n", i);
@@ -1132,6 +1133,7 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
   data->src[i].value=newstate;
 
 
+DONE:
   if(data->func) {
     /* warning: should we call BN_CLICKED here, too?
      * open console in Paths won't work without .. 
@@ -1144,11 +1146,6 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
     /* Solution: add DlgProc in mNew in mui_head.cpp */
   }
 
-
-
-
-DONE:
-  ;
   AROS_USERFUNC_EXIT
 }
 
@@ -1356,8 +1353,10 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
           if(!strcmp(src[i].windows_class, "msctls_trackbar32")) {
             /* Proportional/slider gadget! */
             child=VGroup,
+                    MUIA_UserData         , i,
                     Child, VSpace(0),
                     Child, SliderObject,
+                      MUIA_UserData         , i,
                       MUIA_Group_Horiz, TRUE,
                       MUIA_Slider_Quiet, TRUE,
 #if 0
@@ -1489,6 +1488,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                               ButtonFrame,
                               MUIA_InputMode , MUIV_InputMode_RelVerify,
                               Child, TextObject,
+                                MUIA_UserData         , i,
                                 MUIA_Font, Topaz8Font,
                                 MUIA_Text_PreParse, "\33c",
                                 MUIA_Text_Contents, (IPTR) src[i].text,
