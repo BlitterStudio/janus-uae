@@ -2128,11 +2128,11 @@ struct ConfigStruct {
 	TCHAR Fullpath[MAX_DPATH];
 	TCHAR HostLink[MAX_DPATH];
 	TCHAR HardwareLink[MAX_DPATH];
-	//TCHAR Description[CFG_DESCRIPTION_LENGTH];
+	TCHAR Description[CFG_DESCRIPTION_LENGTH];
 	int Type, Directory;
 	struct ConfigStruct *Parent, *Child;
 	int host, hardware;
-	//HTREEITEM item;
+	HTREEITEM item;
 	//FILETIME t;
 };
 
@@ -3348,7 +3348,6 @@ static void setguititle (HWND phwnd)
 #endif
 }
 
-#if 0
 static void GetConfigPath (TCHAR *path, struct ConfigStruct *parent, int noroot)
 {
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
@@ -3366,7 +3365,6 @@ static void GetConfigPath (TCHAR *path, struct ConfigStruct *parent, int noroot)
 		_tcsncat (path, _T("\\"), MAX_DPATH);
 	}
 }
-#endif
 
 void FreeConfigStruct (struct ConfigStruct *config)
 {
@@ -4971,6 +4969,7 @@ static INT_PTR CALLBACK InfoSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 	}
 	return FALSE;
 }
+#endif
 
 static HTREEITEM AddConfigNode (HWND hDlg, struct ConfigStruct *config, const TCHAR *name, const TCHAR *desc, const TCHAR *path, int isdir, int expand, HTREEITEM parent)
 {
@@ -4983,7 +4982,9 @@ static HTREEITEM AddConfigNode (HWND hDlg, struct ConfigStruct *config, const TC
 
 	GetDlgItemText (hDlg, IDC_EDITNAME, file_name, MAX_DPATH);
 	GetDlgItemText (hDlg, IDC_EDITPATH, file_path, MAX_DPATH);
+#if 0
 	TVhDlg = GetDlgItem (hDlg, IDC_CONFIGTREE);
+#endif
 	memset (&is, 0, sizeof (is));
 	is.hInsertAfter = isdir < 0 ? TVI_ROOT : TVI_SORT;
 	is.hParent = parent;
@@ -5012,7 +5013,8 @@ static HTREEITEM AddConfigNode (HWND hDlg, struct ConfigStruct *config, const TC
 	is.itemex.pszText = s;
 	is.itemex.iImage = is.itemex.iSelectedImage = isdir > 0 ? 0 : (isdir < 0) ? 2 : 1;
 	is.itemex.lParam = (LPARAM)config;
-	return TreeView_InsertItem (TVhDlg, &is);
+	//return TreeView_InsertItem (TVhDlg, &is);
+	return TreeView_InsertItem (TVhDlg, IDC_CONFIGTREE, &is);
 }
 
 static int LoadConfigTreeView (HWND hDlg, int idx, HTREEITEM parent)
@@ -5052,7 +5054,8 @@ static int LoadConfigTreeView (HWND hDlg, int idx, HTREEITEM parent)
 						config->item = par;
 						if (LoadConfigTreeView (hDlg, idx2, par) == 0) {
 							if (!config->hardware && !config->host && !config->Directory)
-								TreeView_DeleteItem (GetDlgItem(hDlg, IDC_CONFIGTREE), par);
+								//TreeView_DeleteItem (GetDlgItem(hDlg, IDC_CONFIGTREE), par);
+								TreeView_DeleteItem (hDlg, IDC_CONFIGTREE, par);
 						}
 						break;
 					}
@@ -5112,18 +5115,22 @@ static void DeleteConfigTree (HWND hDlg)
 
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
+#if 0
 	HWND TVhDlg = GetDlgItem(hDlg, IDC_CONFIGTREE);
+#endif
 	for (i = 0; i < configstoresize; i++)
 		configstore[i]->item = NULL;
-	TreeView_DeleteAllItems (TVhDlg);
+	//TreeView_DeleteAllItems (TVhDlg);
+	TreeView_DeleteAllItems (hDlg, IDC_CONFIGTREE);
 }
 
 static HTREEITEM InitializeConfigTreeView (HWND hDlg)
 {
+	TCHAR path[MAX_DPATH];
+	HTREEITEM parent;
+#if 0
 	HIMAGELIST himl = ImageList_Create (16, 16, ILC_COLOR8 | ILC_MASK, 3, 0);
 	HWND TVhDlg = GetDlgItem(hDlg, IDC_CONFIGTREE);
-	HTREEITEM parent;
-	TCHAR path[MAX_DPATH];
 
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
@@ -5137,6 +5144,7 @@ static HTREEITEM InitializeConfigTreeView (HWND hDlg)
 		ImageList_AddIcon (himl, icon);
 		TreeView_SetImageList (TVhDlg, himl, TVSIL_NORMAL);
 	}
+#endif
 	DeleteConfigTree (hDlg);
 	GetConfigPath (path, NULL, FALSE);
 	parent = AddConfigNode (hDlg, NULL, path, NULL, NULL, 0, 1, NULL);
@@ -5203,26 +5211,20 @@ static struct ConfigStruct *fixloadconfig (HWND hDlg, struct ConfigStruct *confi
 	}
 	return config;
 }
-#endif
 
 static struct ConfigStruct *initloadsave (HWND hDlg, struct ConfigStruct *config)
 {
-#if 0
 	HTREEITEM root;
 	TCHAR name_buf[MAX_DPATH];
 	int dwRFPsize = sizeof (name_buf) / sizeof (TCHAR);
-#endif
 	TCHAR path[MAX_DPATH];
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
-
-#if 0
-	EnableWindow (GetDlgItem (hDlg, IDC_VIEWINFO), workprefs.info[0]);
-#endif
+	//EnableWindow (GetDlgItem (hDlg, IDC_VIEWINFO), workprefs.info[0]);
+	EnableWindow (hDlg, IDC_VIEWINFO, workprefs.info[0]);
 	SetDlgItemText (hDlg, IDC_EDITPATH, _T(""));
 	SetDlgItemText (hDlg, IDC_EDITDESCRIPTION, workprefs.description);
-#if 0
 	root = InitializeConfigTreeView (hDlg);
 	if (regquerystr (NULL, configreg[configtypepanel], name_buf, &dwRFPsize)) {
 		struct ConfigStruct *config2 = getconfigstorefrompath (name_buf, path, configtypepanel);
@@ -5231,14 +5233,19 @@ static struct ConfigStruct *initloadsave (HWND hDlg, struct ConfigStruct *config
 		checkautoload (hDlg, config);
 	}
 	config = fixloadconfig (hDlg, config);
+  TODO();
+#if 0
 	if (config && config->item)
 		TreeView_SelectItem (GetDlgItem(hDlg, IDC_CONFIGTREE), config->item);
 	else
 		TreeView_SelectItem (GetDlgItem(hDlg, IDC_CONFIGTREE), root);
-	EnableWindow (GetDlgItem(hDlg, IDC_CONFIGAUTO), configtypepanel > 0);
-	EnableWindow (GetDlgItem(hDlg, IDC_CONFIGLINK), configtypepanel == 0);
-	EnableWindow (GetDlgItem(hDlg, IDC_CONFIGNOLINK), configtypepanel == 0);
 #endif
+	//EnableWindow (GetDlgItem(hDlg, IDC_CONFIGAUTO), configtypepanel > 0);
+	EnableWindow (hDlg, IDC_CONFIGAUTO, configtypepanel > 0);
+	//EnableWindow (GetDlgItem(hDlg, IDC_CONFIGLINK), configtypepanel == 0);
+	EnableWindow (hDlg, IDC_CONFIGLINK, configtypepanel == 0);
+	//EnableWindow (GetDlgItem(hDlg, IDC_CONFIGNOLINK), configtypepanel == 0);
+	EnableWindow (hDlg, IDC_CONFIGNOLINK, configtypepanel == 0);
 	return config;
 }
 

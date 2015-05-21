@@ -44,4 +44,32 @@
 #define MAKELPARAM(low,high)   ((LPARAM)(DWORD)MAKELONG(low,high))
 #define MAKEWPARAM(low,high)   ((WPARAM)(DWORD)MAKELONG(low,high))
 #define MAKELRESULT(low,high)  ((LRESULT)(DWORD)MAKELONG(low,high))i
+
+#define TVIF_TEXT             0x0001
+#define TVIF_IMAGE            0x0002
+#define TVIF_PARAM            0x0004
+#define TVIF_STATE            0x0008
+#define TVIF_HANDLE           0x0010
+#define TVIF_SELECTEDIMAGE    0x0020
+#define TVIF_CHILDREN         0x0040
+#define TVIF_INTEGRAL         0x0080
+#define TVIF_DI_SETITEM     0x1000
+
+#define TVI_ROOT              ((HTREEITEM)0xffff0000)     /* -65536 */
+#define TVI_FIRST             ((HTREEITEM)0xffff0001)     /* -65535 */
+#define TVI_LAST              ((HTREEITEM)0xffff0002)     /* -65534 */
+#define TVI_SORT              ((HTREEITEM)0xffff0003)     /* -65533 */
+
+#define TVIS_FOCUSED          0x0001
+#define TVIS_SELECTED         0x0002
+#define TVIS_CUT              0x0004
+#define TVIS_DROPHILITED      0x0008
+#define TVIS_BOLD             0x0010
+#define TVIS_EXPANDED         0x0020
+#define TVIS_EXPANDEDONCE     0x0040
+#define TVIS_EXPANDPARTIAL    0x0080
+#define TVIS_OVERLAYMASK      0x0f00
+#define TVIS_STATEIMAGEMASK   0xf000
+#define TVIS_USERMASK         0xf000
+
 #endif /* __WINNT_H__ */
