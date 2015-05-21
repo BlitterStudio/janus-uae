@@ -5,6 +5,8 @@
 #include <exec/types.h>
 #include <libraries/mui.h>
 
+#define CFG_DESCRIPTION_LENGTH 256
+
 enum {
   NJET,
   GROUPBOX,
@@ -46,6 +48,12 @@ enum {
   IDI_EXPANSION, // "expansion.ico"
 };
 
+struct TREEITEM {
+  APTR foo;
+};
+
+typedef struct TREEITEM *HTREEITEM;
+
 extern Object *app;
 BOOL mui_get_dir(TCHAR *lpstrTitle, TCHAR *path);
 
@@ -73,12 +81,62 @@ typedef struct Element {
 
 typedef Element *HWND;
 
+typedef char* LPTSTR;
+typedef struct tagTVITEM {
+  UINT      mask;
+  HTREEITEM hItem;
+  UINT      state;
+  UINT      stateMask;
+  LPTSTR    pszText;
+  int       cchTextMax;
+  int       iImage;
+  int       iSelectedImage;
+  int       cChildren;
+  LPARAM    lParam;
+} TVITEM, *LPTVITEM;
+
+typedef struct tagTVITEMEX {
+  UINT      mask;
+  HTREEITEM hItem;
+  UINT      state;
+  UINT      stateMask;
+  LPTSTR    pszText;
+  int       cchTextMax;
+  int       iImage;
+  int       iSelectedImage;
+  int       cChildren;
+  LPARAM    lParam;
+  int       iIntegral;
+  UINT      uStateEx;
+  HWND      hwnd;
+  int       iExpandedImage;
+#if (NTDDI_VERSION >= NTDDI_WIN7)
+  int       iReserved;
+#endif 
+} TVITEMEX, *LPTVITEMEX;
+
+typedef struct {
+  HTREEITEM hParent;
+  HTREEITEM hInsertAfter;
+#if 0
+  union {
+#endif
+    TVITEMEX itemex;
+#if 0
+    TVITEM   item;
+  } DUMMYUNIONNAME;
+#endif
+} TVINSERTSTRUCT, *LPTVINSERTSTRUCT;
+
 /* fix MUI conflict */
 #undef ShowWindow
 BOOL ShowWindow(HWND hWnd, int nCmdShow);
 BOOL ShowWindow(HWND hWnd, DWORD id, int nCmdShow);
 
 UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount);
+BOOL TreeView_DeleteAllItems(HWND hDlg, int nIDDlgItem);
+HTREEITEM TreeView_InsertItem(HWND hwnd, int nIDDlgItem, LPTVINSERTSTRUCT lpis);
+BOOL TreeView_DeleteItem(HWND hwndTV, int nIDDlgItem, HTREEITEM hitem);
 void send_WM_INITDIALOG(ULONG nr);
 
 #define MY_TAGBASE 0xfece0000
