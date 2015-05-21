@@ -31,8 +31,33 @@ BOOL TreeView_DeleteAllItems(HWND hDlg, int nIDDlgItem) {
   DebOut("hDlg %lx, nIDDlgItem %d\n", hDlg, nIDDlgItem);
 }
 
-HTREEITEM TreeView_InsertItem(HWND hwnd, int nIDDlgItem, LPTVINSERTSTRUCT lpis) {
-  TODO();
+HTREEITEM TreeView_InsertItem(HWND elem, int item, LPTVINSERTSTRUCT lpis) {
+
+  LONG i;
+
+  DebOut("elem: %lx\n", elem);
+  DebOut("item: %d\n", item);
+  DebOut("is.itemex.pszText: %s\n", lpis->itemex.pszText);
+  
+  i=get_index(elem, item);
+  if(i<0) {
+    elem=get_elem(item);
+    i=get_index(elem, item);
+  }
+  
+  if(i<0) {
+    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", item);
+    return NULL;
+  }
+
+  DebOut("elem[i].obj: %lx\n", elem[i].obj);
+
+  DoMethod(elem[i].obj, MUIM_NListtree_Insert, lpis->itemex.pszText, NULL,
+                        MUIV_NListtree_Insert_ListNode_Root,
+                        MUIV_NListtree_Insert_PrevNode_Head,
+                        MUIV_NListtree_Insert_Flag_Active);
+  
+  // care for hInsertAfter = TVI_ROOT : TVI_SORT .. */
 }
 
 BOOL TreeView_DeleteItem(HWND hwndTV, int nIDDlgItem, HTREEITEM hitem) {

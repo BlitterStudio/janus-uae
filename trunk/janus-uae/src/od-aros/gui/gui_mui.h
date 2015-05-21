@@ -176,6 +176,9 @@ void delete_class(void);
 ULONG xget(Object *obj, ULONG attr);
 #endif
 
+LONG get_index(Element *elem, int item);
+Element *get_elem(int nIDDlgItem);
+
 extern struct MUI_CustomClass *CL_Fixed;
 
 #define WS_BORDER 0x00800000

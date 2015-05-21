@@ -68,7 +68,7 @@ IPTR xget(Object *obj, IPTR attr) {
 #endif
 
 /* return index in elem[] for item IDC_* */
-static LONG get_index(Element *elem, int item) {
+LONG get_index(Element *elem, int item) {
   int i=0;
 
   if(!elem) {
@@ -1415,11 +1415,11 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
             if(child) {
               src[i].exists=TRUE;
               src[i].obj=child;
+#if 0
               DoMethod(child, MUIM_NListtree_Insert, "Hello", NULL,
                           MUIV_NListtree_Insert_ListNode_Root,
                                       MUIV_NListtree_Insert_PrevNode_Head,
                                                   MUIV_NListtree_Insert_Flag_Active);
-#if 0
               DoMethod(xxx, MUIM_NListtree_Insert, "Hi", NULL,
                           MUIV_NListtree_Insert_ListNode_Root,
                                       MUIV_NListtree_Insert_PrevNode_Head,
