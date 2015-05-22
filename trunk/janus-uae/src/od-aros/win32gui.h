@@ -14,14 +14,18 @@ extern int DiskSelection (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *
 void InitializeListView (HWND hDlg);
 extern void pre_gui_message (const TCHAR*,...);
 extern void gui_message_id (int id);
+#if 0
 int dragdrop (HWND hDlg, HDROP hd, struct uae_prefs *prefs, int currentpage);
+#endif
 UAEREG *read_disk_history (int type);
 void write_disk_history (void);
 
 struct newresource
 {
+#if 0
     LPCDLGTEMPLATEW resource;
     HINSTANCE inst;
+#endif
     int size;
     int tmpl;
     int width, height;
@@ -35,8 +39,10 @@ extern struct newresource *scaleresource (struct newresource *res, HWND, int, DW
 extern void freescaleresource (struct newresource*);
 extern void scaleresource_setmult (HWND hDlg, int w, int h);
 extern void scaleresource_getmult (int *mx, int *my);
+#if 0
 extern HWND CustomCreateDialog (int templ, HWND hDlg, DLGPROC proc);
 extern INT_PTR CustomDialogBox (int templ, HWND hDlg, DLGPROC proc);
+#endif
 extern struct newresource *getresource (int tmpl);
 extern struct newresource *resourcefont (struct newresource*, TCHAR *font, int size);
 extern void scaleresource_init (const TCHAR*);

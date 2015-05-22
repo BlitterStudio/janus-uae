@@ -5,8 +5,6 @@
 #include <exec/types.h>
 #include <libraries/mui.h>
 
-#define CFG_DESCRIPTION_LENGTH 256
-
 enum {
   NJET,
   GROUPBOX,

@@ -73,10 +73,11 @@
 #include "picasso96_win.h"
 #else
 #include "picasso96_aros.h"
+#include "gui/gui_mui.h"
 #include "winnt.h"
 #endif
-#if 0
 #include "win32gui.h"
+#if 0
 #include "win32gfx.h"
 #endif
 #include "sounddep/sound.h"
@@ -124,7 +125,6 @@
 #include "gfx.h"
 #include "string_resource.h"
 #include "gui/mui_data.h"
-#include "gui/gui_mui.h"
 
 #include "tchar.h"
 #define fputws fputs
@@ -3350,20 +3350,23 @@ static void setguititle (HWND phwnd)
 
 static void GetConfigPath (TCHAR *path, struct ConfigStruct *parent, int noroot)
 {
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("fill in path..\n");
 
 	if (parent == NULL) {
 		path[0] = 0;
 		if (!noroot) {
 			fetch_path (_T("ConfigurationPath"), path, MAX_DPATH);
 		}
+    DebOut("path => %s\n", path);
 		return;
 	}
 	if (parent) {
+    TODO();
 		GetConfigPath (path, parent->Parent, noroot);
 		_tcsncat (path, parent->Name, MAX_DPATH);
 		_tcsncat (path, _T("\\"), MAX_DPATH);
 	}
+  DebOut("path => %s\n", path);
 }
 
 void FreeConfigStruct (struct ConfigStruct *config)
@@ -3395,13 +3398,15 @@ static void FreeConfigStore (void)
 	configstoresize = configstoreallocated = 0;
 }
 
-#if 0
 static void getconfigcache (TCHAR *dst, const TCHAR *path)
 {
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
-
 	_tcscpy (dst, path);
+#ifdef __AROS__
+  AddPart(dst, _T("configuration.cache"), MAX_DPATH);
+#else
 	_tcsncat (dst, _T("configuration.cache"), MAX_DPATH);
+#endif
+  DebOut("path: %s => %s\n", path, dst);
 }
 
 static TCHAR *fgetsx (TCHAR *dst, FILE *f)
@@ -3422,6 +3427,7 @@ static TCHAR *fgetsx (TCHAR *dst, FILE *f)
 
 static const TCHAR configcachever[] = _T("WinUAE Configuration.Cache");
 
+#if 0
 static void setconfighosthard (struct ConfigStruct *config)
 {
 	if (!config->Directory)
@@ -3431,6 +3437,7 @@ static void setconfighosthard (struct ConfigStruct *config)
 	if (!_tcsicmp (config->Name, CONFIG_HARDWARE))
 		config->hardware = 1;
 }
+#endif
 
 static void flushconfigcache (const TCHAR *cachepath)
 {
@@ -3451,6 +3458,11 @@ static void flushconfigcache (const TCHAR *cachepath)
 	write_log (_T("'%s' flushed\n"), cachepath);
 }
 
+/* WARNING: THIS WILL CAUSE TROUBLE !? */
+#include "zfile.h"
+#define ULARGE_INTEGER mytimeval
+#define QuadPart tv_sec
+
 static struct ConfigStruct *readconfigcache (const TCHAR *path)
 {
 	FILE *zcache;
@@ -3462,13 +3474,15 @@ static struct ConfigStruct *readconfigcache (const TCHAR *path)
 	int err;
 	int filelines, dirlines, headlines, dirmode, lines;
 	TCHAR dirsep = '\\';
+#if 0
 	FILETIME t;
 	SYSTEMTIME st;
+#endif
 	ULARGE_INTEGER t1, stt, dirtt;
-	HANDLE h;
 	WIN32_FIND_DATA ffd;
+	HANDLE h;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("path: %s\n", path);
 
 #if CONFIGCACHE == 0
 	return NULL;
@@ -3477,8 +3491,10 @@ static struct ConfigStruct *readconfigcache (const TCHAR *path)
 	first = NULL;
 	getconfigcache (cachepath, path);
 	zcache = my_opentext (cachepath);
+  DebOut("zcache: %lx\n", zcache);
 	if (!zcache)
 		return NULL;
+  TODO();
 	if (!configurationcache) {
 		fclose (zcache);
 		_wunlink (cachepath);
@@ -3496,6 +3512,7 @@ static struct ConfigStruct *readconfigcache (const TCHAR *path)
 	h = FindFirstFile (path2, &ffd);
 	if (h == INVALID_HANDLE_VALUE)
 		goto end;
+
 	FindClose (h);
 	memcpy (&dirtt, &ffd.ftLastWriteTime, sizeof (ULARGE_INTEGER));
 
@@ -3510,6 +3527,8 @@ static struct ConfigStruct *readconfigcache (const TCHAR *path)
 	fgetsx (buf, zcache);
 	t1.QuadPart = _tstoi64 (buf);
 	headlines--;
+  TODO();
+#if 0
 	GetSystemTime (&st);
 	SystemTimeToFileTime (&st, &t);
 	memcpy (&stt, &t, sizeof (ULARGE_INTEGER));
@@ -3632,6 +3651,7 @@ static struct ConfigStruct *readconfigcache (const TCHAR *path)
 
 	}
 
+#endif
 end:
 	if (!feof (zcache))
 		err = 1;
@@ -3647,6 +3667,7 @@ end:
 	return first;
 }
 
+#if 0
 static void writeconfigcacheentry (FILE *zcache, const TCHAR *relpath, struct ConfigStruct *cs)
 {
 	TCHAR path2[MAX_DPATH];
@@ -3749,6 +3770,7 @@ static void writeconfigcache (const TCHAR *path)
 	my_setfilehidden (cachepath, hidden);
 	write_log (_T("'%s' created\n"), cachepath);
 }
+#endif
 
 static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int usedirs, int *level, int flushcache)
 {
@@ -3756,11 +3778,13 @@ static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int u
 	TCHAR path[MAX_DPATH];
 	TCHAR path2[MAX_DPATH];
 	TCHAR shortpath[MAX_DPATH];
+#if 0
+#endif
 	WIN32_FIND_DATA find_data;
 	struct ConfigStruct *config, *first;
 	HANDLE handle;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("entered (level: %d)\n", *level);
 
 	if (*level == 0)
 		FreeConfigStore ();
@@ -3769,13 +3793,20 @@ static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int u
 	GetConfigPath (path, configparent, FALSE);
 	GetConfigPath (shortpath, configparent, TRUE);
 	_tcscpy (path2, path);
+#ifdef __AROS__
+	AddPart(path2, _T("#?"), MAX_DPATH);
+#else
 	_tcsncat (path2, _T("*.*"), MAX_DPATH);
+#endif
 
 	if (*level == 0) {
 		if (flushcache) {
 			TCHAR cachepath[MAX_DPATH];
 			getconfigcache (cachepath, path);
+      TODO();
+#if 0
 			flushconfigcache (cachepath);
+#endif
 		}
 		first = readconfigcache (path);
 		if (first)
@@ -3790,15 +3821,20 @@ static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int u
 		// we may be doing this on a read-only media like CD-ROM.
 		if (configparent == NULL) {
 			GetConfigPath (path, NULL, FALSE);
+#if 0
 			CreateDirectory (path, NULL);
+#endif
 		}
 #endif
 		return NULL;
 	}
 	for (;;) {
 		config = NULL;
+    //olioli
 		if (_tcscmp (find_data.cFileName, _T(".")) && _tcscmp (find_data.cFileName, _T(".."))) {
+      DebOut("ok!\n");
 			int ok = 0;
+#if 0
 			config = AllocConfigStruct ();
 			_tcscpy (config->Path, shortpath);
 			_tcscpy (config->Fullpath, path);
@@ -3838,8 +3874,10 @@ static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int u
 				FreeConfigStruct (config);
 				config = NULL;
 			}
+#endif
 		}
 		if (config) {
+#if 0
 			if (configparent) {
 				config->host = configparent->host;
 				config->hardware = configparent->hardware;
@@ -3852,14 +3890,17 @@ static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int u
 			configstore[configstoresize++] = config;
 			if (first == NULL)
 				first = config;
+#endif
 		}
 		if (FindNextFile (handle, &find_data) == 0) {
 			FindClose(handle);
 			break;
 		}
 	}
+#if 0
 	if (*level == 0 && CONFIGCACHE)
 		writeconfigcache (path);
+#endif
 	return first;
 }
 
@@ -3887,6 +3928,7 @@ static struct ConfigStruct *CreateConfigStore (struct ConfigStruct *oldconfig, i
 	return 0;
 }
 
+#if 0
 static TCHAR *HandleConfiguration (HWND hDlg, int flag, struct ConfigStruct *config, TCHAR *newpath)
 {
 	TCHAR name[MAX_DPATH], desc[MAX_DPATH];
@@ -4978,7 +5020,7 @@ static HTREEITEM AddConfigNode (HWND hDlg, struct ConfigStruct *config, const TC
 	TCHAR s[MAX_DPATH] = _T("");
 	TCHAR file_name[MAX_DPATH] = _T(""), file_path[MAX_DPATH] = _T("");
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("name: %s (%s, %s)\n", name, desc, path);
 
 	GetDlgItemText (hDlg, IDC_EDITNAME, file_name, MAX_DPATH);
 	GetDlgItemText (hDlg, IDC_EDITPATH, file_path, MAX_DPATH);
@@ -5022,7 +5064,7 @@ static int LoadConfigTreeView (HWND hDlg, int idx, HTREEITEM parent)
 	struct ConfigStruct *cparent, *config;
 	int cnt = 0;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("configstoresize: %d\n", configstoresize);
 
 	if (configstoresize == 0)
 		return cnt;
@@ -5249,15 +5291,15 @@ static struct ConfigStruct *initloadsave (HWND hDlg, struct ConfigStruct *config
 	return config;
 }
 
-#if 0
 static void loadsavecommands (HWND hDlg, WPARAM wParam, struct ConfigStruct **configp, TCHAR **pcfgfile, TCHAR *newpath)
 {
 	struct ConfigStruct *config = *configp;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("wParam: %d\n", LOWORD (wParam));
 
 	switch (LOWORD (wParam))
 	{
+#if 0
 	case IDC_SAVE:
 		if (HandleConfiguration (hDlg, CONFIG_SAVE_FULL, config, newpath)) {
 			DeleteConfigTree (hDlg);
@@ -5349,10 +5391,10 @@ static void loadsavecommands (HWND hDlg, WPARAM wParam, struct ConfigStruct **co
 			_tcscpy (workprefs.config_host_path, tmp);
 		}
 		break;
+#endif
 	}
 	*configp = config;
 }
-#endif
 
 static INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -5360,14 +5402,13 @@ static INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPA
 	static int recursive;
 	static struct ConfigStruct *config;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("msg: %d\n", msg);
 
 	switch (msg)
 	{
 	case WM_INITDIALOG:
     bug("WM_INITDIALOG\n");
 		recursive++;
-#if 0
 		if (!configstore) {
 			DeleteConfigTree (hDlg);
 			CreateConfigStore (NULL, FALSE);
@@ -5375,7 +5416,6 @@ static INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPA
 		}
 		pages[LOADSAVE_ID] = hDlg;
 		currentpage = LOADSAVE_ID;
-#endif
 		config = initloadsave (hDlg, config);
 		recursive--;
 		return TRUE;
@@ -5396,6 +5436,7 @@ static INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPA
 			}
 			break;
 		}
+#endif
 
 	case WM_COMMAND:
 		{
@@ -5405,6 +5446,7 @@ static INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPA
 			break;
 		}
 
+#if 0
 	case WM_NOTIFY:
 		{
 			LPNMHDR nm = (LPNMHDR)lParam;

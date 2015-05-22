@@ -114,10 +114,10 @@ FILE *my_opentext (const TCHAR *name) {
 
 	f = fopen (name, "rb");
 	if (!f) {
-                bug("[JUAE:A-FSDB] %s: failed\n", __PRETTY_FUNCTION__);
-
+    DebOut("could not open %s\n", name);
 		return NULL;
 	}
+
 	v = fread (tmp, 1, 4, f);
 	fclose (f);
 	if (v == 4) {

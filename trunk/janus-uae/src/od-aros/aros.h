@@ -5,6 +5,7 @@
 
 #include "sys/mman.h"
 #include "gui/gui_mui.h"
+#include "zfile.h"
 
 #if !defined(XGET)
 #define XGET(object, attribute)                 \
@@ -82,6 +83,7 @@ void gui_restart (void);
 int  aros_show_gui(void);
 void aros_hide_gui(void);
 void aros_gui_exit(void);
+void exit_gui (int);
 
 void fetch_path (const TCHAR *name, TCHAR *out, int size);
 
@@ -114,6 +116,7 @@ LRESULT SendMessage(int hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
 void *ShellExecute(HWND hwnd, TCHAR *lpOperation, TCHAR *lpFile, TCHAR *lpParameters, TCHAR *lpDirectory, int nShowCmd);
 DWORD GetTempPath(DWORD nBufferLength, TCHAR *lpBuffer);
+DWORD GetFullPathName(const TCHAR *lpFileName, DWORD nBufferLength, LPTSTR lpBuffer, LPTSTR *lpFilePart);
 
 void read_rom_list (void);
 void set_path (const TCHAR *name, TCHAR *path, pathtype mode);
@@ -140,6 +143,27 @@ typedef struct {
   WORD cmd;
 } ACCEL;
 
+#define INVALID_HANDLE_VALUE NULL
+#define FILETIME mytimeval
+
+typedef struct _WIN32_FIND_DATA {
+  DWORD    dwFileAttributes;
+  FILETIME ftCreationTime;
+  FILETIME ftLastAccessTime;
+  FILETIME ftLastWriteTime;
+  DWORD    nFileSizeHigh;
+  DWORD    nFileSizeLow;
+  DWORD    dwReserved0;
+  DWORD    dwReserved1;
+  TCHAR    cFileName[MAX_PATH];
+  TCHAR    cAlternateFileName[14];
+} WIN32_FIND_DATA, *PWIN32_FIND_DATA, *LPWIN32_FIND_DATA;
+
+
+#define HANDLE void *
+HANDLE FindFirstFile(const TCHAR *lpFileName, WIN32_FIND_DATA *lpFindFileData);
+BOOL FindNextFile(HANDLE hFindFile, LPWIN32_FIND_DATA lpFindFileData);
+BOOL FindClose(HANDLE hFindFile);
 
 #define MAX_SOUND_DEVICES 100
 #define SOUND_DEVICE_DS 1

@@ -420,6 +420,13 @@ void fullpath(TCHAR *inpath, int size) {
   DebOut("result: %s\n", inpath);
 }
 
+DWORD GetFullPathName(const TCHAR *lpFileName, DWORD nBufferLength, LPTSTR lpBuffer, LPTSTR *lpFilePart) {
+
+  DebOut("lpFileName:%s\n", lpFileName);
+  TODO();
+
+}
+
 /* taken from puae/misc.c */
 
 static struct MultiDisplay *getdisplay2 (struct uae_prefs *p, int index)
@@ -639,6 +646,121 @@ int GetFileAttributes(char *path) {
   UnLock(lock);
   return 1;
 }
+
+typedef struct {
+  struct FileLock *lock;
+  struct FileInfoBlock fib_ptr;
+  char wildcard_tokens[1024];
+} INTERNAL_HANDLE;
+
+BOOL FindNextFile(HANDLE hFindFile, LPWIN32_FIND_DATA lpFindFileData) {
+
+  INTERNAL_HANDLE *h=(INTERNAL_HANDLE*) hFindFile;
+  struct timespec time;
+
+next:
+  if(!ExNext((BPTR) h->lock, &h->fib_ptr)) {
+    DebOut("no more files ..\n");
+    return FALSE;
+  }
+
+  if(h->wildcard_tokens[0]) {
+    if(!MatchPatternNoCase(h->wildcard_tokens, (const char *) h->fib_ptr.fib_FileName)) {
+      DebOut("no wildcard match!\n");
+      goto next;
+    }
+  }
+
+  strncpy(lpFindFileData->cFileName, (const char *)h->fib_ptr.fib_FileName, MAX_PATH-1);
+  DebOut("lpFindFileData->cFileName: %s\n", lpFindFileData->cFileName);
+
+  amiga_to_timeval(&lpFindFileData->ftCreationTime, h->fib_ptr.fib_Date.ds_Days, h->fib_ptr.fib_Date.ds_Minute, h->fib_ptr.fib_Date.ds_Tick);
+  amiga_to_timeval(&lpFindFileData->ftLastAccessTime, h->fib_ptr.fib_Date.ds_Days, h->fib_ptr.fib_Date.ds_Minute, h->fib_ptr.fib_Date.ds_Tick);
+  amiga_to_timeval(&lpFindFileData->ftLastWriteTime, h->fib_ptr.fib_Date.ds_Days, h->fib_ptr.fib_Date.ds_Minute, h->fib_ptr.fib_Date.ds_Tick);
+  
+
+  return TRUE;
+}
+
+/* Searches a directory for a file or subdirectory with a 
+ * name that matches a specific name (or partial name if wildcards are used).
+ */
+HANDLE FindFirstFile(const TCHAR *lpFileName, WIN32_FIND_DATA *lpFindFileData) {
+  
+  char wildcard[256];
+  char path[256];
+  INTERNAL_HANDLE *h=NULL;
+
+  DebOut("lpFileName: %s\n", lpFileName);
+  wildcard[0]=(char) 0;
+  path[0]=(char) 0;
+  h=(INTERNAL_HANDLE *) AllocVec(sizeof(INTERNAL_HANDLE), MEMF_CLEAR);
+  h->wildcard_tokens[0]=(char) 0;
+
+  if(is_dir(lpFileName)) {
+    DebOut("lpFileName is a directory\n");
+    strncpy(path, lpFileName, 255);
+  }
+  else {
+    strncpy(wildcard, FilePart(lpFileName), 255);
+    DebOut("wildcard: %s\n", wildcard);
+    strncpy(path, lpFileName, strlen(lpFileName)-strlen(wildcard));
+    ParsePatternNoCase(wildcard, h->wildcard_tokens, 1023);
+  }
+
+  DebOut("path: %s\n", path);
+
+  h->lock=(struct FileLock *) Lock((STRPTR) path, ACCESS_READ);
+  if(!h->lock) {
+    DebOut("path %s is not valid directory!\n", path);
+    goto error;
+  }
+
+  if(!Examine((BPTR) h->lock, &h->fib_ptr)) {
+    UnLock((BPTR) h->lock);
+    h->lock=NULL;
+    goto error;
+  }
+
+  if(h->fib_ptr.fib_DirEntryType==0) {
+    DebOut("no directory!?\n");
+    TODO();
+    goto error;
+  }
+
+  if(FindNextFile(h, lpFindFileData)) {
+    return (HANDLE) h;
+  }
+
+error:
+  FindClose(h);
+  DebOut("return NULL\n");
+  return NULL;
+}
+
+BOOL FindClose(HANDLE hFindFile) {
+
+  INTERNAL_HANDLE *h=(INTERNAL_HANDLE*) hFindFile;
+
+  DebOut("hFindFile: %lx\n", h);
+
+  if(!h) {
+    return TRUE;
+  }
+
+  if(h->lock) {
+    UnLock(h->lock);
+    h->lock=NULL;
+  }
+
+  if(h) {
+    FreeVec(h);
+    h=NULL;
+  }
+
+  return TRUE;
+}
+
 
 int get_rom_path (TCHAR *out, pathtype mode)
 {
