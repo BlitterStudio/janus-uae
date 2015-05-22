@@ -1,4 +1,6 @@
- /*
+#ifndef __ZFILE_H__
+#define __ZFILE_H__
+/*
   * UAE - The Un*x Amiga Emulator
   *
   * routines to handle compressed file automatically
@@ -147,4 +149,6 @@ struct mystat
 };
 extern void timeval_to_amiga (struct mytimeval *tv, int* days, int* mins, int* ticks);
 extern void amiga_to_timeval (struct mytimeval *tv, int days, int mins, int ticks);
+
+#endif
 
