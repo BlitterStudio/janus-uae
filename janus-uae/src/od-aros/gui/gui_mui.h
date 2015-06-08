@@ -114,7 +114,8 @@ typedef struct tagTVITEMEX {
 } TVITEMEX, *LPTVITEMEX;
 
 typedef struct tagNMHDR {
-  HWND     hwndFrom;
+  //HWND     hwndFrom;
+  ULONG    hwndFrom;
   UINT    *idFrom;
   UINT     code;
 } NMHDR, *LPNMHDR;
