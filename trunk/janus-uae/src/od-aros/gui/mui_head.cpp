@@ -202,6 +202,7 @@ AROS_UFH2(void, MUIHook_quit, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR
 int *AboutDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
 int *CPUDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *ChipsetDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -298,15 +299,15 @@ Object* build_gui(void) {
                                   Child, page_obj[0]=FixedProcObj((IPTR)IDD_ABOUT,      (IPTR) &AboutDlgProc     ),
                                   Child, page_obj[1]=FixedProcObj((IPTR)IDD_PATHS,      (IPTR) &PathsDlgProc     ),
                                   Child, page_obj[2]=FixedProcObj((IPTR)IDD_QUICKSTART, (IPTR) &QuickstartDlgProc),
-                                  Child, page_obj[3]=FixedObj((IPTR)IDD_LOADSAVE),
+                                  Child, page_obj[3]=FixedProcObj((IPTR)IDD_LOADSAVE,   (IPTR) &LoadSaveDlgProc  ),
                                   //Child, FixedObj((IPTR)IDD_LOADSAVE),
                                   Child, TextObject,  MUIA_Text_Contents, "\33c\33bTODO", End,
                                   Child, page_obj[5]=FixedProcObj((IPTR)IDD_CPU,        (IPTR) &CPUDlgProc       ),
-                                  Child, page_obj[6]=FixedProcObj((IPTR)IDD_CHIPSET,    (IPTR) &ChipsetDlgProc),
-                                  Child, page_obj[7]=FixedProcObj((IPTR)IDD_CHIPSET2,   (IPTR) &ChipsetDlgProc2),
+                                  Child, page_obj[6]=FixedProcObj((IPTR)IDD_CHIPSET,    (IPTR) &ChipsetDlgProc   ),
+                                  Child, page_obj[7]=FixedProcObj((IPTR)IDD_CHIPSET2,   (IPTR) &ChipsetDlgProc2  ),
                                   Child, page_obj[8]=FixedProcObj((IPTR)IDD_KICKSTART,  (IPTR) &KickstartDlgProc ),
                                   Child, page_obj[9]=FixedProcObj((IPTR)IDD_MEMORY,     (IPTR) &MemoryDlgProc    ),
-                                  Child, page_obj[10]=FixedProcObj((IPTR)IDD_FLOPPY,     (IPTR) &FloppyDlgProc    ),
+                                  Child, page_obj[10]=FixedProcObj((IPTR)IDD_FLOPPY,     (IPTR) &FloppyDlgProc   ),
                                   Child, page_obj[11]=FixedObj((IPTR)IDD_CDDRIVE),
                                   Child, page_obj[12]=FixedObj((IPTR)IDD_EXPANSION),
                                   //Child, FixedObj((IPTR)IDD_LOADSAVE),

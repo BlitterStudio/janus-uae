@@ -5393,7 +5393,7 @@ static void loadsavecommands (HWND hDlg, WPARAM wParam, struct ConfigStruct **co
 	*configp = config;
 }
 
-static INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	TCHAR *cfgfile = NULL;
 	static int recursive;
@@ -5443,13 +5443,19 @@ static INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPA
 			break;
 		}
 
-#if 0
 	case WM_NOTIFY:
 		{
 			LPNMHDR nm = (LPNMHDR)lParam;
-			if (nm->hwndFrom == GetDlgItem (hDlg, IDC_CONFIGTREE)) {
+      DebOut("WM_NOTIFY (nm: %lx)!\n", nm);
+      if(!nm) {
+        DebOut("ERROR: nm is NULL!!\n");
+      }
+			//if (nm->hwndFrom == GetDlgItem (hDlg, IDC_CONFIGTREE)) {
+			if (nm->hwndFrom == IDC_CONFIGTREE) {
+        DebOut("nm->hwndFrom == IDC_CONFIGTREE\n");
 				switch (nm->code)
 				{
+#if 0
 				case NM_DBLCLK:
 					{
 						HTREEITEM ht = TreeView_GetSelection (GetDlgItem (hDlg, IDC_CONFIGTREE));
@@ -5474,10 +5480,13 @@ static INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPA
 						return TRUE;
 					}
 					break;
+#endif
 				case TVN_SELCHANGING:
 					return FALSE;
 				case TVN_SELCHANGED:
 					{
+            DebOut("TVN_SELCHANGED\n");
+#if 0
 						LPNMTREEVIEW tv = (LPNMTREEVIEW)lParam;
 						struct ConfigStruct *c = (struct ConfigStruct*)tv->itemNew.lParam;
 						if (c) {
@@ -5496,14 +5505,17 @@ static INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPA
 							}
 							checkautoload (hDlg, c);
 						}
+#endif
 						return TRUE;
 					}
 					break;
 				}
 			}
+      else {
+        DebOut("unknown event!\n");
+      }
 			break;
 		}
-#endif
 	}
 
 	return FALSE;

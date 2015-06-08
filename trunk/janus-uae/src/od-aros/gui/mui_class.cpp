@@ -42,8 +42,7 @@ struct Data {
   struct Hook MyMUIHook_select;
   struct Hook MyMUIHook_slide;
   struct Hook MyMUIHook_combo;
-  struct Hook MyMUIHook_tree_construct;
-  struct Hook MyMUIHook_tree_destruct;
+  struct Hook MyMUIHook_tree_active;
   ULONG width, height;
   struct Element *src;
   struct TextFont *font;
@@ -1199,6 +1198,46 @@ AROS_UFH2(void, MUIHook_pushbutton, AROS_UFHA(struct Hook *, hook, A0), AROS_UFH
   AROS_USERFUNC_EXIT
 }
 
+AROS_UFH2(void, tree_active, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
+
+  AROS_USERFUNC_INIT
+  int i;
+  ULONG lParam;
+  ULONG state;
+  LPNMHDR nm;
+
+  struct Data *data = (struct Data *) hook->h_Data;
+
+  DebOut("[%lx] entered\n", obj);
+  DebOut("[%lx] hook.h_Data: %lx\n", obj, hook->h_Data);
+  DebOut("[%lx] obj: %lx\n", obj);
+
+  i=get_elem_from_obj(data, (Object *) obj);
+
+  //data->src[i].value=XGET((Object *) obj, MUIA_Cycle_Active);
+ 
+  if(data->func) {
+    state=XGET((Object *) obj, MUIA_List_Active);
+    if(state!=MUIV_List_Active_Off) {
+      nm=(LPNMHDR) malloc(sizeof(NMHDR));
+      nm->idFrom=NULL; /* not used by WinUAE! */
+      nm->code=TVN_SELCHANGED;
+      nm->hwndFrom=data->src[i].idc;
+
+      DebOut("[%lx] call function: %lx(IDC %d, WM_NOTIFY)\n", obj, data->func, data->src[i].idc);
+      data->func(data->src, WM_NOTIFY, NULL, (IPTR) nm);
+    }
+    else {
+      DebOut("MUIV_List_Active_Off? What to do now!?\n");
+    }
+  }
+  else {
+    DebOut("[%lx] function is zero: %lx\n", obj, data->func);
+  }
+
+  AROS_USERFUNC_EXIT
+}
+ 
 /*****************************************************************************
  * Class
  *****************************************************************************/
@@ -1442,26 +1481,15 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                                                   MUIV_NListtree_Insert_Flag_Active);
 #endif
 
-#if 0
 #ifdef UAE_ABI_v0
-              data->MyMUIHook_tree_construct.h_Entry=(HOOKFUNC) tree_construct;
+              data->MyMUIHook_tree_active.h_Entry=(HOOKFUNC) tree_active;
 #else
-              data->MyMUIHook_tree_construct.h_Entry=(APTR) tree_construct;
+              data->MyMUIHook_tree_active.h_Entry=(APTR) tree_active;
 #endif
-              data->MyMUIHook_tree_construct.h_Data =(APTR) data;
-#ifdef UAE_ABI_v0
-              data->MyMUIHook_tree_destruct.h_Entry=(HOOKFUNC) tree_destruct;
-#else
-              data->MyMUIHook_tree_destruct.h_Entry=(APTR) tree_destruct;
-#endif
-              data->MyMUIHook_tree_destruct.h_Data =(APTR) data;
-#endif
+              data->MyMUIHook_tree_active.h_Data =(APTR) data;
 
-#if 0
-              DebOut("DoMethod(%lx, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime..)\n", src[i].obj);
-              DoMethod(src[i].obj, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_slide, func); 
+              DoMethod(src[i].obj, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_tree_active, func); 
  
-#endif
             }
             break;
           }
