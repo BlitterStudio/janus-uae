@@ -2133,7 +2133,7 @@ struct ConfigStruct {
 	struct ConfigStruct *Parent, *Child;
 	int host, hardware;
 	HTREEITEM item;
-	//FILETIME t;
+	FILETIME t;
 };
 
 static TCHAR *configreg[] = { _T("ConfigFile"), _T("ConfigFileHardware"), _T("ConfigFileHost") };
@@ -3427,7 +3427,6 @@ static TCHAR *fgetsx (TCHAR *dst, FILE *f)
 
 static const TCHAR configcachever[] = _T("WinUAE Configuration.Cache");
 
-#if 0
 static void setconfighosthard (struct ConfigStruct *config)
 {
 	if (!config->Directory)
@@ -3437,7 +3436,6 @@ static void setconfighosthard (struct ConfigStruct *config)
 	if (!_tcsicmp (config->Name, CONFIG_HARDWARE))
 		config->hardware = 1;
 }
-#endif
 
 static void flushconfigcache (const TCHAR *cachepath)
 {
@@ -3490,6 +3488,7 @@ static struct ConfigStruct *readconfigcache (const TCHAR *path)
 	err = 0;
 	first = NULL;
 	getconfigcache (cachepath, path);
+  DebOut("cachepath: %s\n", cachepath);
 	zcache = my_opentext (cachepath);
   DebOut("zcache: %lx\n", zcache);
 	if (!zcache)
@@ -3527,11 +3526,13 @@ static struct ConfigStruct *readconfigcache (const TCHAR *path)
 	fgetsx (buf, zcache);
 	t1.QuadPart = _tstoi64 (buf);
 	headlines--;
+  DebOut("t1.QuadPart: %d\n", t1.QuadPart);
   TODO();
 #if 0
 	GetSystemTime (&st);
 	SystemTimeToFileTime (&st, &t);
 	memcpy (&stt, &t, sizeof (ULARGE_INTEGER));
+#endif
 
 	if (headlines < 0 || dirlines < 3 || filelines < 3 ||
 		t1.QuadPart == 0 || t1.QuadPart > stt.QuadPart || dirtt.QuadPart > t1.QuadPart)
@@ -3651,7 +3652,6 @@ static struct ConfigStruct *readconfigcache (const TCHAR *path)
 
 	}
 
-#endif
 end:
 	if (!feof (zcache))
 		err = 1;
@@ -3667,7 +3667,6 @@ end:
 	return first;
 }
 
-#if 0
 static void writeconfigcacheentry (FILE *zcache, const TCHAR *relpath, struct ConfigStruct *cs)
 {
 	TCHAR path2[MAX_DPATH];
@@ -3736,9 +3735,11 @@ static void writeconfigcache (const TCHAR *path)
 	TCHAR cachepath[MAX_DPATH];
 	TCHAR path2[MAX_DPATH];
 	FILETIME t;
+#if 0
 	SYSTEMTIME st;
+#endif
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("path: %s\n", path);
 
 	if (!configurationcache)
 		return;
@@ -3748,9 +3749,11 @@ static void writeconfigcache (const TCHAR *path)
 	zcache = _tfopen (cachepath, _T("w, ccs=UTF-8"));
 	if (!zcache)
 		return;
+#if 0
 	t.dwHighDateTime = t.dwLowDateTime = 0;
 	GetSystemTime (&st);
 	SystemTimeToFileTime (&st, &t);
+#endif
 	fwrite (configcachever, _tcslen (configcachever), sizeof (TCHAR), zcache);
 	fwrite (&lf, 1, sizeof (TCHAR), zcache);
 	_stprintf (path2, _T("3\n4\n7\n%I64u\n;\n"), t);
@@ -3770,7 +3773,6 @@ static void writeconfigcache (const TCHAR *path)
 	my_setfilehidden (cachepath, hidden);
 	write_log (_T("'%s' created\n"), cachepath);
 }
-#endif
 
 static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int usedirs, int *level, int flushcache)
 {
@@ -3778,8 +3780,6 @@ static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int u
 	TCHAR path[MAX_DPATH];
 	TCHAR path2[MAX_DPATH];
 	TCHAR shortpath[MAX_DPATH];
-#if 0
-#endif
 	WIN32_FIND_DATA find_data;
 	struct ConfigStruct *config, *first;
 	HANDLE handle;
@@ -3803,10 +3803,7 @@ static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int u
 		if (flushcache) {
 			TCHAR cachepath[MAX_DPATH];
 			getconfigcache (cachepath, path);
-      TODO();
-#if 0
 			flushconfigcache (cachepath);
-#endif
 		}
 		first = readconfigcache (path);
 		if (first)
@@ -3821,8 +3818,10 @@ static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int u
 		// we may be doing this on a read-only media like CD-ROM.
 		if (configparent == NULL) {
 			GetConfigPath (path, NULL, FALSE);
-#if 0
+#ifndef __AROS__
 			CreateDirectory (path, NULL);
+#else
+      CreateDir(path);
 #endif
 		}
 #endif
@@ -3830,11 +3829,9 @@ static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int u
 	}
 	for (;;) {
 		config = NULL;
-    //olioli
 		if (_tcscmp (find_data.cFileName, _T(".")) && _tcscmp (find_data.cFileName, _T(".."))) {
-      DebOut("ok!\n");
 			int ok = 0;
-#if 0
+      DebOut("find_data.cFileName: %s\n", find_data.cFileName);
 			config = AllocConfigStruct ();
 			_tcscpy (config->Path, shortpath);
 			_tcscpy (config->Fullpath, path);
@@ -3874,10 +3871,8 @@ static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int u
 				FreeConfigStruct (config);
 				config = NULL;
 			}
-#endif
 		}
 		if (config) {
-#if 0
 			if (configparent) {
 				config->host = configparent->host;
 				config->hardware = configparent->hardware;
@@ -3890,17 +3885,14 @@ static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int u
 			configstore[configstoresize++] = config;
 			if (first == NULL)
 				first = config;
-#endif
 		}
 		if (FindNextFile (handle, &find_data) == 0) {
 			FindClose(handle);
 			break;
 		}
 	}
-#if 0
 	if (*level == 0 && CONFIGCACHE)
 		writeconfigcache (path);
-#endif
 	return first;
 }
 

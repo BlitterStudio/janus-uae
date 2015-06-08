@@ -54,7 +54,7 @@ HTREEITEM TreeView_InsertItem(HWND elem, int item, LPTVINSERTSTRUCT lpis) {
 
   DoMethod(elem[i].obj, MUIM_NListtree_Insert, lpis->itemex.pszText, NULL,
                         MUIV_NListtree_Insert_ListNode_Root,
-                        MUIV_NListtree_Insert_PrevNode_Head,
+                        MUIV_NListtree_Insert_PrevNode_Tail,
                         MUIV_NListtree_Insert_Flag_Active);
   
   // care for hInsertAfter = TVI_ROOT : TVI_SORT .. */
