@@ -561,6 +561,20 @@ extern struct MUI_CustomClass *CL_Fixed;
 #define MB_ICONERROR 0x00000010L
 #define MB_YESNOCANCEL 0x00000003L
 
+/* MessageBox return codes */
+#define IDABORT 3
+#define IDCONTINUE 11
+#define IDIGNORE 5
+#define IDNO 7
+/*
+ * WARNING: these are already defined by mui_data.h
+ #define IDOK 1 
+ #define IDCANCEL 2
+ */
+#define IDRETRY 4
+#define IDTRYAGAIN 10
+#define IDYES 6
+
 /* Combo box notification codes */
 #define CBN_ERRSPACE        (-1)
 #define CBN_SELCHANGE       1
