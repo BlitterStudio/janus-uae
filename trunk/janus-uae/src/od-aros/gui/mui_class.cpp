@@ -844,6 +844,7 @@ int MessageBox_fixed(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType/*, U
 int MessageBox(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType) {
 
   struct EasyStruct req;
+  LONG res;
 
   DebOut("MessageBox(): %s \n", lpText);
 
@@ -859,9 +860,24 @@ int MessageBox(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType) {
   else {
     req.es_Title="Error";
   }
-  req.es_GadgetFormat="Ok";
 
-  EasyRequestArgs(NULL, &req, NULL, NULL );
+  if(uType & MB_OK) {
+    req.es_GadgetFormat="Ok";
+  }
+  else if(uType & MB_YESNO) {
+    req.es_GadgetFormat="Yes|No";
+  }
+
+  res=EasyRequestArgs(NULL, &req, NULL, NULL );
+
+  if(uType & MB_YESNO) {
+    if(res==1) {
+      return IDYES;
+    }
+    return IDNO;
+  }
+
+  return IDOK;
 }
 
 

@@ -787,16 +787,18 @@ UAEREG *read_disk_history (int type)
 	return fkey;
 }
 
-#if 0
 void exit_gui (int ok)
 {
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("ok: %d\n", ok);
+  TODO();
+#if 0
 
 	if (!gui_active)
 		return;
 	if (guiDlg == NULL)
 		return;
 	SendMessage (guiDlg, WM_COMMAND, ok ? IDOK : IDCANCEL, 0);
+#endif
 }
 
 static int getcbn (HWND hDlg, int v, TCHAR *out, int len)
@@ -860,6 +862,7 @@ static void writefavoritepaths (int num, struct favitems *fitem)
 }
 
 
+#if 0
 static int askinputcustom (HWND hDlg, TCHAR *custom, int maxlen, DWORD titleid);
 static int addfavoritepath (HWND hDlg, int num, struct favitems *fitem)
 {
@@ -1396,8 +1399,8 @@ static int drag_move (HWND hWnd, LPARAM lParam)
 }
 
 static HWND cachedlist = NULL;
-
 #endif
+
 #define MIN_CHIP_MEM 0
 #define MAX_CHIP_MEM 6
 #define MIN_FAST_MEM 0
@@ -3920,7 +3923,6 @@ static struct ConfigStruct *CreateConfigStore (struct ConfigStruct *oldconfig, i
 	return 0;
 }
 
-#if 0
 static TCHAR *HandleConfiguration (HWND hDlg, int flag, struct ConfigStruct *config, TCHAR *newpath)
 {
 	TCHAR name[MAX_DPATH], desc[MAX_DPATH];
@@ -3961,7 +3963,8 @@ static TCHAR *HandleConfiguration (HWND hDlg, int flag, struct ConfigStruct *con
 
 	case CONFIG_LOAD_FULL:
 		if ((ok = DiskSelection(hDlg, IDC_LOAD, 4, &workprefs, newpath))) {
-			EnableWindow(GetDlgItem (hDlg, IDC_VIEWINFO), workprefs.info[0]);
+			//EnableWindow(GetDlgItem (hDlg, IDC_VIEWINFO), workprefs.info[0]);
+			EnableWindow(hDlg, IDC_VIEWINFO, workprefs.info[0]);
 			GetDlgItemText (hDlg, IDC_EDITNAME, name, MAX_DPATH);
 			_tcscpy (config_filename, name);
 		}
@@ -4022,6 +4025,7 @@ static TCHAR *HandleConfiguration (HWND hDlg, int flag, struct ConfigStruct *con
 	setguititle (NULL);
 	return ok ? full_path : NULL;
 }
+#if 0
 
 
 static int disk_in_drive (int entry)
@@ -5162,11 +5166,11 @@ static HTREEITEM InitializeConfigTreeView (HWND hDlg)
 {
 	TCHAR path[MAX_DPATH];
 	HTREEITEM parent;
+
+  DebOut("%lx\n", hDlg);
 #if 0
 	HIMAGELIST himl = ImageList_Create (16, 16, ILC_COLOR8 | ILC_MASK, 3, 0);
 	HWND TVhDlg = GetDlgItem(hDlg, IDC_CONFIGTREE);
-
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	if (himl) {
 		HICON icon;
@@ -5291,7 +5295,6 @@ static void loadsavecommands (HWND hDlg, WPARAM wParam, struct ConfigStruct **co
 
 	switch (LOWORD (wParam))
 	{
-#if 0
 	case IDC_SAVE:
 		if (HandleConfiguration (hDlg, CONFIG_SAVE_FULL, config, newpath)) {
 			DeleteConfigTree (hDlg);
@@ -5355,8 +5358,11 @@ static void loadsavecommands (HWND hDlg, WPARAM wParam, struct ConfigStruct **co
 		}
 		break;
 	case IDC_SETINFO:
+    TODO();
+#if 0
 		if (CustomDialogBox(IDD_SETINFO, hDlg, InfoSettingsProc))
 			EnableWindow( GetDlgItem( hDlg, IDC_VIEWINFO ), workprefs.info[0] );
+#endif
 		break;
 	case IDC_CONFIGAUTO:
 		if (configtypepanel > 0) {
@@ -5383,7 +5389,6 @@ static void loadsavecommands (HWND hDlg, WPARAM wParam, struct ConfigStruct **co
 			_tcscpy (workprefs.config_host_path, tmp);
 		}
 		break;
-#endif
 	}
 	*configp = config;
 }
