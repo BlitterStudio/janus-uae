@@ -113,6 +113,12 @@ typedef struct tagTVITEMEX {
 #endif 
 } TVITEMEX, *LPTVITEMEX;
 
+typedef struct tagNMHDR {
+  HWND     hwndFrom;
+  UINT    *idFrom;
+  UINT     code;
+} NMHDR, *LPNMHDR;
+
 typedef struct {
   HTREEITEM hParent;
   HTREEITEM hInsertAfter;
