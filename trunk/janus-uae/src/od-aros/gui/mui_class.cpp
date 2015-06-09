@@ -378,8 +378,8 @@ AROS_UFH2(void, tree_active, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR,
   //data->src[i].value=XGET((Object *) obj, MUIA_Cycle_Active);
  
   if(data->func) {
-    state=XGET((Object *) obj, MUIA_List_Active);
-    if(state!=MUIV_List_Active_Off) {
+    state=XGET((Object *) obj, MUIA_NList_Active);
+    if(state!=MUIV_NList_Active_Off) {
       /* LPNMHDR is sent in wParam */
       nm=(LPNMHDR) malloc(sizeof(NMHDR));
       nm->idFrom=NULL; /* not used by WinUAE! */
