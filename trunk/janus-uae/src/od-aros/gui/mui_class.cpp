@@ -852,7 +852,9 @@ int MessageBox(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType) {
   }
 
   req.es_StructSize=sizeof(struct EasyStruct);
+  req.es_Flags = 0;
   req.es_TextFormat=lpText;
+
   if(lpCaption) {
     req.es_Title=lpCaption;
   }
@@ -860,14 +862,15 @@ int MessageBox(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType) {
     req.es_Title="Error";
   }
 
-  if(uType & MB_OK) {
-    req.es_GadgetFormat="Ok";
-  }
-  else if(uType & MB_YESNO) {
+  if(uType & MB_YESNO) {
     req.es_GadgetFormat="Yes|No";
   }
+  else {
+    /* MB_OK 0x00000000L is the default */
+    req.es_GadgetFormat="Ok";
+  }
 
-  res=EasyRequestArgs(NULL, &req, NULL, NULL );
+  res=EasyRequestArgs(0, &req, 0, 0);
 
   if(uType & MB_YESNO) {
     if(res==1) {
@@ -1204,7 +1207,7 @@ AROS_UFH2(void, tree_active, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR,
   int i;
   ULONG lParam;
   ULONG state;
-  LPNMHDR nm;
+  LPNMHDR nm=NULL;
 
   struct Data *data = (struct Data *) hook->h_Data;
 
@@ -1219,10 +1222,18 @@ AROS_UFH2(void, tree_active, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR,
   if(data->func) {
     state=XGET((Object *) obj, MUIA_List_Active);
     if(state!=MUIV_List_Active_Off) {
+      /* LPNMHDR is sent in wParam */
       nm=(LPNMHDR) malloc(sizeof(NMHDR));
       nm->idFrom=NULL; /* not used by WinUAE! */
       nm->code=TVN_SELCHANGED;
       nm->hwndFrom=data->src[i].idc;
+
+      /* LPNMTREEVIEW is sent in lParam */
+      TODO();
+      /* lParam needs to hold a pointer to the ConfigStruct of the selected item !? */
+      //lParam=(LPARAM) configstruct;
+      lParam=NULL;
+
 
       DebOut("[%lx] call function: %lx(IDC %d, WM_NOTIFY)\n", obj, data->func, data->src[i].idc);
       data->func(data->src, WM_NOTIFY, NULL, (IPTR) nm);
@@ -1234,6 +1245,8 @@ AROS_UFH2(void, tree_active, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR,
   else {
     DebOut("[%lx] function is zero: %lx\n", obj, data->func);
   }
+
+  if(nm) free(nm);
 
   AROS_USERFUNC_EXIT
 }
