@@ -2757,9 +2757,13 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 	case 4:
 	case 5:
 		WIN32GUI_LoadUIString (IDS_SELECTUAE, szTitle, MAX_DPATH);
+#ifndef __AROS__
 		WIN32GUI_LoadUIString (IDS_UAE, szFormat, MAX_DPATH );
 		_stprintf (szFilter, _T("%s "), szFormat);
 		memcpy (szFilter + _tcslen (szFilter), _T("(*.uae)\0*.uae\0"), 15 * sizeof (TCHAR));
+#else
+    _stprintf (szFilter, _T("%s"), _T("#?.uae"));
+#endif
 		defext = _T("uae");
 		break;
 	case 6:
@@ -5486,9 +5490,12 @@ INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPa
 				case TVN_SELCHANGED:
 					{
             DebOut("TVN_SELCHANGED\n");
-#if 0
 						LPNMTREEVIEW tv = (LPNMTREEVIEW)lParam;
+#ifndef __AROS__
 						struct ConfigStruct *c = (struct ConfigStruct*)tv->itemNew.lParam;
+#else
+						struct ConfigStruct *c = (struct ConfigStruct*) lParam;
+#endif
 						if (c) {
 							config = c;
 							if (!config->Directory) {
@@ -5505,7 +5512,6 @@ INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPa
 							}
 							checkautoload (hDlg, c);
 						}
-#endif
 						return TRUE;
 					}
 					break;
