@@ -8,7 +8,11 @@ LIBGUIFILES := \
         mui_class \
         mui_head \
         mui_data \
-        mui_file_request
+        mui_file_request \
+        mui_messagebox \
+        mui_tree \
+        mui_win \
+        combo
 
 LIBGUIIMAGES := \
 	35floppy \
