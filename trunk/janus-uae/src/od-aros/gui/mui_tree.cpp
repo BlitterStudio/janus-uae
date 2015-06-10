@@ -27,8 +27,24 @@
 /* Deletes all items from a tree-view control. 
  * WARNING: nIDDlgItem is not in the Windows API!
  */
-BOOL TreeView_DeleteAllItems(HWND hDlg, int nIDDlgItem) {
-  DebOut("hDlg %lx, nIDDlgItem %d\n", hDlg, nIDDlgItem);
+BOOL TreeView_DeleteAllItems(HWND elem, int item) {
+
+  LONG i;
+
+  i=get_index(elem, item);
+  if(i<0) {
+    elem=get_elem(item);
+    i=get_index(elem, item);
+  }
+  
+  if(i<0) {
+    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", item);
+    return NULL;
+  }
+
+  DebOut("elem[i].obj: %lx\n", elem[i].obj);
+
+  DoMethod(elem[i].obj, MUIM_List_Clear);
 }
 
 HTREEITEM TreeView_InsertItem(HWND elem, int item, LPTVINSERTSTRUCT lpis) {
@@ -58,6 +74,8 @@ HTREEITEM TreeView_InsertItem(HWND elem, int item, LPTVINSERTSTRUCT lpis) {
                         MUIV_NListtree_Insert_Flag_Active);
   
   // care for hInsertAfter = TVI_ROOT : TVI_SORT .. */
+  TODO();
+  // care for is.itemex.lParam = (LPARAM)config;
 }
 
 BOOL TreeView_DeleteItem(HWND hwndTV, int nIDDlgItem, HTREEITEM hitem) {

@@ -133,6 +133,16 @@ typedef struct {
 #endif
 } TVINSERTSTRUCT, *LPTVINSERTSTRUCT;
 
+typedef struct tagNMTREEVIEW {
+  NMHDR  hdr;
+  UINT   action;
+  TVITEM itemOld;
+  TVITEM itemNew;
+#if 0
+  POINT  ptDrag;
+#endif
+} NMTREEVIEW, *LPNMTREEVIEW;
+
 /* fix MUI conflict */
 #undef ShowWindow
 BOOL ShowWindow(HWND hWnd, int nCmdShow);
