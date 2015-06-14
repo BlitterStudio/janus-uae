@@ -5026,7 +5026,10 @@ static HTREEITEM AddConfigNode (HWND hDlg, struct ConfigStruct *config, const TC
 	GetDlgItemText (hDlg, IDC_EDITPATH, file_path, MAX_DPATH);
 #if 0
 	TVhDlg = GetDlgItem (hDlg, IDC_CONFIGTREE);
+#else
+	TVhDlg = hDlg;
 #endif
+
 	memset (&is, 0, sizeof (is));
 	is.hInsertAfter = isdir < 0 ? TVI_ROOT : TVI_SORT;
 	is.hParent = parent;
@@ -5154,16 +5157,19 @@ static void InitializeConfig (HWND hDlg, struct ConfigStruct *config)
 static void DeleteConfigTree (HWND hDlg)
 {
 	int i;
+	HWND TVhDlg;
 
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 #if 0
-	HWND TVhDlg = GetDlgItem(hDlg, IDC_CONFIGTREE);
+	TVhDlg = GetDlgItem(hDlg, IDC_CONFIGTREE);
+#else
+	TVhDlg = hDlg;
 #endif
 	for (i = 0; i < configstoresize; i++)
 		configstore[i]->item = NULL;
 	//TreeView_DeleteAllItems (TVhDlg);
-	TreeView_DeleteAllItems (hDlg, IDC_CONFIGTREE);
+	TreeView_DeleteAllItems (TVhDlg, IDC_CONFIGTREE);
 }
 
 static HTREEITEM InitializeConfigTreeView (HWND hDlg)
