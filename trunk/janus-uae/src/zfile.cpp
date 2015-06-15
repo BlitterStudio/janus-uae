@@ -9,7 +9,7 @@
 
 #define RECURSIVE_ARCHIVES 1
 //#define ZFILE_DEBUG
-#define OLI_DEBUG
+//#define OLI_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -1813,15 +1813,12 @@ static struct zfile *zfile_fopen_2 (const TCHAR *name, const TCHAR *mode, int ma
 	if(*name == '\0' || is_dir(name))
 		return NULL;
 
-  DebOut("1..\n");
 #ifdef SINGLEFILE
 	if (zfile_opensinglefile (l))
 		return l;
 #endif
-  DebOut("1..\n");
 	l = openzip (name);
 	if (l) {
-  DebOut("1..\n");
 		if (writeneeded (mode)) {
 			zfile_fclose (l);
 			return 0;
@@ -1829,7 +1826,6 @@ static struct zfile *zfile_fopen_2 (const TCHAR *name, const TCHAR *mode, int ma
 		l->zfdmask = mask;
 	} else {
 		struct mystat st;
-  DebOut("1..\n");
 		l = zfile_create (NULL);
 		l->mode = my_strdup (mode);
 		l->name = my_strdup (name);
@@ -1842,7 +1838,6 @@ static struct zfile *zfile_fopen_2 (const TCHAR *name, const TCHAR *mode, int ma
 		}
 		if (!f) {
 			zfile_fclose (l);
-  DebOut("1..\n");
 			return 0;
 		}
 		if (my_stat (l->name, &st))
