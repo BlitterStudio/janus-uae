@@ -705,6 +705,7 @@ HANDLE FindFirstFile(const TCHAR *lpFileName, WIN32_FIND_DATA *lpFindFileData) {
     strncpy(wildcard, FilePart(lpFileName), 255);
     DebOut("wildcard: %s\n", wildcard);
     strncpy(path, lpFileName, strlen(lpFileName)-strlen(wildcard));
+    path[strlen(lpFileName)-strlen(wildcard)]=(char) 0;
     ParsePatternNoCase(wildcard, h->wildcard_tokens, 1023);
   }
 
@@ -1180,6 +1181,7 @@ void WIN32_HandleRegistryStuff (void) {
   }
   fetch_path (_T("StatefilePath"), path, sizeof (path) / sizeof (TCHAR));
   createdir (path);
+  TODO(); /*tcscat -> AddPart ? */
   _tcscat (path, _T("default.uss"));
   _tcscpy (savestate_fname, path);
   fetch_path (_T("InputPath"), path, sizeof (path) / sizeof (TCHAR));
