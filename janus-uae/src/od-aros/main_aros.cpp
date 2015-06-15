@@ -323,7 +323,11 @@ static TCHAR *getdefaultini (void) {
 void WIN32_HandleRegistryStuff (void);
 int graphics_setup (void);
 
+#if 0
+static int newstack_main (int argc, TCHAR **argv) {
+#else
 int main (int argc, TCHAR **argv) {
+#endif
   /* win32:
   DEVMODE devmode;
    * The DEVMODE data structure contains information about the initialization 
@@ -438,3 +442,79 @@ int main (int argc, TCHAR **argv) {
 	return 0;
 }
 
+#if 0
+struct StartMessage { 
+  struct Message msg; 
+  int argc; 
+  char **argv; 
+  int rc; 
+}; 
+
+static void proc_entry () { 
+
+  struct Process *me=(struct Process *)FindTask(NULL); 
+  IPTR stacksize=(IPTR)me->pr_Task.tc_SPUpper-(IPTR)me->pr_Task.tc_SPLower; 
+  struct MsgPort *my_mp=&me->pr_MsgPort; 
+  struct StartMessage *my_msg; 
+
+  DebOut("Stack size: %d\n", (unsigned int) stacksize);
+  
+  while (!(my_msg = (struct StartMessage *)GetMsg(my_mp))) { 
+    WaitPort(my_mp); 
+  } 
+  
+  my_msg->rc=newstack_main(my_msg->argc, my_msg->argv); 
+  
+  Forbid(); 
+  ReplyMsg(&my_msg->msg); 
+}
+#define MIN_STACK 128*1024
+
+int main (int argc, char *argv[]) { 
+  struct Process *me=(struct Process *) FindTask(NULL); 
+  IPTR stacksize=(IPTR)me->pr_Task.tc_SPUpper-(IPTR)me->pr_Task.tc_SPLower; 
+  int rc;
+
+  DebOut("Stack size: %d\n", (unsigned int) stacksize);
+  if(stacksize > MIN_STACK) {
+    DebOut("-> enough stack\n");
+    rc=newstack_main(argc, argv);
+  }
+  else {
+    struct StartMessage msg; 
+    struct Process *child_proc; 
+    struct MsgPort *my_mp; 
+    struct MsgPort *child_mp; 
+    struct StartMessage *my_msg; 
+    
+    DebOut("stack too small for us. Starting child process with bigger stack ..\n"); 
+    child_proc = CreateNewProcTags( NP_Entry, proc_entry, 
+                                    NP_StackSize, MIN_STACK, 
+                                    TAG_END); 
+
+    if (!child_proc) { 
+      DebOut("Unable to locate bigger stack!\n");
+      fprintf(stderr, "Unable to locate bigger stack!\n"); 
+      return RETURN_FAIL; 
+    } 
+    
+    my_mp = &me->pr_MsgPort; 
+    child_mp = &child_proc->pr_MsgPort; 
+    
+    msg.msg.mn_Node.ln_Type = NT_MESSAGE; 
+    msg.msg.mn_Length = sizeof(msg); 
+    msg.msg.mn_ReplyPort = my_mp; 
+    msg.argc = argc; 
+    msg.argv = argv; 
+    
+    PutMsg(child_mp, &msg.msg); 
+    while (!(my_msg = (struct StartMessage *)GetMsg(my_mp))) { 
+      WaitPort(my_mp); 
+    } 
+    rc = my_msg->rc; 
+  } 
+    
+  return rc; 
+} 
+#endif
+ 
