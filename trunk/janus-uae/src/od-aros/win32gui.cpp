@@ -3369,9 +3369,15 @@ static void GetConfigPath (TCHAR *path, struct ConfigStruct *parent, int noroot)
 	}
 	if (parent) {
     TODO();
+    DebOut("parent->Name: %s\n", parent->Name);
 		GetConfigPath (path, parent->Parent, noroot);
+    DebOut("path: %s\n", path);
+#ifndef __AROS__
 		_tcsncat (path, parent->Name, MAX_DPATH);
 		_tcsncat (path, _T("\\"), MAX_DPATH);
+#else
+    AddPart(path, parent->Name, MAX_DPATH-1);
+#endif
 	}
   DebOut("path => %s\n", path);
 }
