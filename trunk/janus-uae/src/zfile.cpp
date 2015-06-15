@@ -9,7 +9,7 @@
 
 #define RECURSIVE_ARCHIVES 1
 //#define ZFILE_DEBUG
-//#define OLI_DEBUG
+#define OLI_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -64,6 +64,61 @@ static struct zcache *zcachedata;
 
 
 /* AROS crashes in reading from a handle, if it was an fopened directory, which succeeded */
+static bool is_dir(const TCHAR *name) {
+#ifdef __AROS__
+  struct FileInfoBlock *fib;
+  BPTR file=NULL;
+  bool ret=FALSE;
+
+  bug("name: %s\n", name);
+
+  fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, TAG_END);
+  if(!fib) 
+  {
+    bug("no FileInfoBlock!\n");
+    goto NODIR;
+  }
+
+  file=Lock(name, SHARED_LOCK);
+  if(!file) 
+  {
+    bug("no lock..\n");
+    goto NODIR;
+  }
+
+  if (!Examine(file, fib)) 
+  {
+    bug("Examine failed\n");
+    goto NODIR;
+  }
+
+  if(fib->fib_DirEntryType <0) 
+  {
+    bug("FILE!\n");
+  }
+  else 
+  {
+    bug("directory..\n");
+    ret=TRUE;
+  }
+
+NODIR:
+  if(fib) 
+  {
+    FreeDosObject(DOS_FIB, fib);
+  }
+  if(file) 
+  {
+    UnLock(file);
+  }
+
+  return ret;
+#else
+  return FALSE;
+#endif
+}
+
+#if 0
 static bool is_file(const TCHAR *name) 
 {
 #ifdef __AROS__
@@ -119,6 +174,7 @@ NOFILE:
   return TRUE;
 #endif
 }
+#endif
 
 static struct zcache *cache_get (const TCHAR *name)
 {
@@ -1690,7 +1746,7 @@ static struct zfile *zfile_fopen_nozip (const TCHAR *name, const TCHAR *mode)
 	struct zfile *l;
 	FILE *f;
 
-	if(*name == '\0' || !is_file(name))
+	if(*name == '\0' || is_dir(name))
 		return NULL;
 	l = zfile_create (NULL);
 	l->name = my_strdup (name);
@@ -1752,14 +1808,20 @@ static struct zfile *zfile_fopen_2 (const TCHAR *name, const TCHAR *mode, int ma
 	struct zfile *l;
 	FILE *f;
 
-	if(*name == '\0' || !is_file(name))
+  DebOut("name: %s\n", name);
+
+	if(*name == '\0' || is_dir(name))
 		return NULL;
+
+  DebOut("1..\n");
 #ifdef SINGLEFILE
 	if (zfile_opensinglefile (l))
 		return l;
 #endif
+  DebOut("1..\n");
 	l = openzip (name);
 	if (l) {
+  DebOut("1..\n");
 		if (writeneeded (mode)) {
 			zfile_fclose (l);
 			return 0;
@@ -1767,6 +1829,7 @@ static struct zfile *zfile_fopen_2 (const TCHAR *name, const TCHAR *mode, int ma
 		l->zfdmask = mask;
 	} else {
 		struct mystat st;
+  DebOut("1..\n");
 		l = zfile_create (NULL);
 		l->mode = my_strdup (mode);
 		l->name = my_strdup (name);
@@ -1779,6 +1842,7 @@ static struct zfile *zfile_fopen_2 (const TCHAR *name, const TCHAR *mode, int ma
 		}
 		if (!f) {
 			zfile_fclose (l);
+  DebOut("1..\n");
 			return 0;
 		}
 		if (my_stat (l->name, &st))
@@ -1816,6 +1880,8 @@ static void manglefilename (TCHAR *out, const TCHAR *in)
 static void manglefilename(TCHAR *out, const TCHAR *in)
 {
 	_tcscpy (out, in);
+  DebOut("in: %s\n", in);
+  DebOut("out: %s\n", out);
 }
 #endif
 
@@ -1989,6 +2055,7 @@ static struct zfile *zfile_fopenx2 (const TCHAR *name, const TCHAR *mode, int ma
 	if (isinternetfile (name))
 		return zfile_fopen_internet (name, mode, mask);
 #endif
+  DebOut("name: %s\n", name);
 	f = zfile_fopen_x (name, mode, mask, index);
 	if (f)
 		return f;
@@ -2039,6 +2106,7 @@ static struct zfile *zfile_fopenx (const TCHAR *name, const TCHAR *mode, int mas
 {
 	struct zfile *zf;
 	//write_log (_T("zfile_fopen('%s','%s',%08x,%d)\n"), name, mode, mask, index);
+  DebOut("name: %s\n", name);
 	zf = zfile_fopenx2 (name, mode, mask, index);
 	//write_log (_T("=%p\n"), zf);
 	return zf;
@@ -2054,6 +2122,7 @@ struct zfile *zfile_fopen (const TCHAR *name, const TCHAR *mode)
 }
 struct zfile *zfile_fopen (const TCHAR *name, const TCHAR *mode, int mask, int index)
 {
+  DebOut("name: %s\n", name);
 	return zfile_fopenx (name, mode, mask, index);
 }
 
@@ -2080,7 +2149,7 @@ struct zfile *zfile_dup (struct zfile *zf)
 			if (nzf)
 				return nzf;
 		}
-    if(!is_file(zf->name)) {
+    if(is_dir(zf->name)) {
       return NULL;
     }
 
