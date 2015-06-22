@@ -81,3 +81,15 @@ HTREEITEM TreeView_InsertItem(HWND elem, int item, LPTVINSERTSTRUCT lpis) {
 BOOL TreeView_DeleteItem(HWND hwndTV, int nIDDlgItem, HTREEITEM hitem) {
   TODO();
 }
+
+HTREEITEM TreeView_GetSelection(HWND elem, int item) {
+
+  TODO();
+}
+
+BOOL TreeView_GetItem(HWND elem, int item, APTR pitem_void) {
+
+  LPTVITEM pitem=(LPTVITEM) pitem_void; /* gcc does no automatic cast here, as MS C++ does */
+
+  TODO();
+}

@@ -3940,13 +3940,14 @@ static TCHAR *HandleConfiguration (HWND hDlg, int flag, struct ConfigStruct *con
 	static TCHAR full_path[MAX_DPATH];
 	int ok = 1;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("newpath: %s\n", newpath);
 
 	full_path[0] = 0;
 	name[0] = 0;
 	desc[0] = 0;
 	GetDlgItemText (hDlg, IDC_EDITNAME, name, MAX_DPATH);
 	_tcscpy (config_filename, name);
+  DebOut("name: %s\n", name);
 	if (flag == CONFIG_SAVE_FULL || flag == CONFIG_SAVE) {
 		if (_tcslen (name) < 4 || strcasecmp (name + _tcslen (name) - 4, _T(".uae"))) {
 			_tcscat (name, _T(".uae"));
@@ -3955,6 +3956,7 @@ static TCHAR *HandleConfiguration (HWND hDlg, int flag, struct ConfigStruct *con
 		if (config)
 			_tcscpy (config->Name, name);
 	}
+  DebOut("name: %s\n", name);
 	GetDlgItemText (hDlg, IDC_EDITDESCRIPTION, desc, MAX_DPATH);
 	if (config) {
 		_tcscpy (path, config->Fullpath);
@@ -5130,12 +5132,14 @@ static void InitializeConfig (HWND hDlg, struct ConfigStruct *config)
 {
 	int i, j, idx1, idx2;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("config: %ls\n", config);
 
 	if (config == NULL) {
 		SetDlgItemText (hDlg, IDC_EDITNAME, _T(""));
 		SetDlgItemText (hDlg, IDC_EDITDESCRIPTION, _T(""));
 	} else {
+    DebOut("config->Name: %s\n", config->Name);
+    DebOut("config->Description: %s\n", config->Description);
 		SetDlgItemText (hDlg, IDC_EDITNAME, config->Name);
 		SetDlgItemText (hDlg, IDC_EDITDESCRIPTION, config->Description);
 	}
@@ -5471,16 +5475,17 @@ INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPa
         DebOut("nm->hwndFrom == IDC_CONFIGTREE\n");
 				switch (nm->code)
 				{
-#if 0
 				case NM_DBLCLK:
 					{
-						HTREEITEM ht = TreeView_GetSelection (GetDlgItem (hDlg, IDC_CONFIGTREE));
+            DebOut("NM_DBLCLK!\n");
+						//HTREEITEM ht = TreeView_GetSelection (GetDlgItem (hDlg, IDC_CONFIGTREE));
+						HTREEITEM ht = TreeView_GetSelection (hDlg, IDC_CONFIGTREE);
 						if (ht != NULL) {
 							TVITEMEX pitem;
 							memset (&pitem, 0, sizeof (pitem));
 							pitem.mask = TVIF_HANDLE | TVIF_PARAM;
 							pitem.hItem = ht;
-							if (TreeView_GetItem (GetDlgItem(hDlg, IDC_CONFIGTREE), &pitem)) {
+							if (TreeView_GetItem (hDlg, IDC_CONFIGTREE, &pitem)) {
 								struct ConfigStruct *config = (struct ConfigStruct*)pitem.lParam;
 								if (config && !config->Directory) {
 									cfgfile = HandleConfiguration (hDlg, CONFIG_LOAD, config, NULL);
@@ -5496,7 +5501,6 @@ INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPa
 						return TRUE;
 					}
 					break;
-#endif
 				case TVN_SELCHANGING:
 					return FALSE;
 				case TVN_SELCHANGED:
