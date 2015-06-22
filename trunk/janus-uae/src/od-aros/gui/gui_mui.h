@@ -152,6 +152,9 @@ UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount);
 BOOL TreeView_DeleteAllItems(HWND hDlg, int nIDDlgItem);
 HTREEITEM TreeView_InsertItem(HWND hwnd, int nIDDlgItem, LPTVINSERTSTRUCT lpis);
 BOOL TreeView_DeleteItem(HWND hwndTV, int nIDDlgItem, HTREEITEM hitem);
+HTREEITEM TreeView_GetSelection(HWND elem, int item);
+BOOL TreeView_GetItem(HWND elem, int item, APTR pitem);
+
 void send_WM_INITDIALOG(ULONG nr);
 
 #define MY_TAGBASE 0xfece0000
