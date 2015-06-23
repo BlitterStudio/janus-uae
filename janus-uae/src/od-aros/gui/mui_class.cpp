@@ -44,6 +44,10 @@ struct Data {
   struct Hook MyMUIHook_combo;
   struct Hook MyMUIHook_tree_active;
   struct Hook MyMUIHook_tree_double;
+  struct Hook MyMUIHook_tree_insert;
+  struct Hook MyMUIHook_tree_construct;
+  struct Hook MyMUIHook_tree_destruct;
+  struct Hook MyMUIHook_tree_display;
   ULONG width, height;
   struct Element *src;
   struct TextFont *font;
@@ -537,6 +541,8 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
 #else
 #define ABI_CONST 
 #endif
+Object *new_tree(ULONG i, struct Hook *construct_hook, struct Hook *destruct_hook, struct Hook *display_hook);
+
 static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
 
   struct TagItem *tstate, *tag;
@@ -671,6 +677,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
           if(!strcmp(src[i].windows_class, "SysTreeView32")) {
             /* Tree gadget! */
             DebOut("SysTreeView32\n");
+#if 0
             child=HGroup,
                     MUIA_UserData         , i,
                     //Child, VSpace(0),
@@ -687,7 +694,11 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                         End),
                         End),
                     End;
+#endif
                     //Child, VSpace(0),
+            child=new_tree(i, &data->MyMUIHook_tree_construct,
+                              &data->MyMUIHook_tree_destruct,
+                              &data->MyMUIHook_tree_display);
             DebOut("child: %lx\n", child);
             if(child) {
               src[i].exists=TRUE;
@@ -710,6 +721,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
               data->MyMUIHook_tree_double.h_Data =(APTR) data;
 
               DoMethod(src[i].obj, MUIM_Notify, MUIA_NList_DoubleClick, MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_tree_double, func); 
+
             }
             break;
           }
