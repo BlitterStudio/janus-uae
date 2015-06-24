@@ -55,8 +55,7 @@ HTREEITEM TreeView_InsertItem(HWND elem, int item, LPTVINSERTSTRUCT lpis) {
 
   LONG i;
 
-  DebOut("elem: %lx\n", elem);
-  DebOut("item: %d\n", item);
+  DebOut("elem: %lx, item: %d\n", elem, item);
   DebOut("is.itemex.pszText: %s\n", lpis->itemex.pszText);
   
   i=get_index(elem, item);
@@ -70,8 +69,7 @@ HTREEITEM TreeView_InsertItem(HWND elem, int item, LPTVINSERTSTRUCT lpis) {
     return NULL;
   }
 
-  DebOut("elem[i].obj: %lx\n", elem[i].obj);
-  DebOut("lpis: %lx\n", lpis);
+  DebOut("elem[%d].obj: %lx\n", i, elem[i].obj);
 
   /* save config (lParam) in UserData */
   DoMethod(elem[i].obj, MUIM_NListtree_Insert, lpis->itemex.pszText, (IPTR) lpis->itemex.lParam,
@@ -81,23 +79,72 @@ HTREEITEM TreeView_InsertItem(HWND elem, int item, LPTVINSERTSTRUCT lpis) {
   
   // care for hInsertAfter = TVI_ROOT : TVI_SORT .. */
   TODO();
-  // care for is.itemex.lParam = (LPARAM)config;
 }
 
 BOOL TreeView_DeleteItem(HWND hwndTV, int nIDDlgItem, HTREEITEM hitem) {
   TODO();
 }
 
+/* WARNING: this is just a minimal implementation to get win32gui.cpp/LoadSaveDlgProc working!*/
 HTREEITEM TreeView_GetSelection(HWND elem, int item) {
 
-  TODO();
+  LONG i;
+
+  DebOut("elem: %lx, item: %d\n", elem, item);
+  
+  i=get_index(elem, item);
+  if(i<0) {
+    elem=get_elem(item);
+    i=get_index(elem, item);
+  }
+  
+  if(i<0) {
+    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", item);
+    return NULL;
+  }
+
+  DebOut("WARNING: This is just a fake function, only working for win32gui.cpp/LoadSaveDlgProc!\n");
+  return (HTREEITEM) 666;
 }
+
+/* we need to return the selected config in pitem.lParam
+ * WARNING: this is just a minimal implementation to get win32gui.cpp/LoadSaveDlgProc working!
+ */
 
 BOOL TreeView_GetItem(HWND elem, int item, APTR pitem_void) {
 
   LPTVITEM pitem=(LPTVITEM) pitem_void; /* gcc does no automatic cast here, as MS C++ does */
 
-  TODO();
+  LONG i;
+  struct MUI_NListtree_TreeNode *act_node;
+
+  DebOut("elem: %lx, item: %d\n", elem, item);
+  
+  i=get_index(elem, item);
+  if(i<0) {
+    elem=get_elem(item);
+    i=get_index(elem, item);
+  }
+  if(i<0) {
+    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", item);
+    return NULL;
+  }
+
+  act_node=(struct MUI_NListtree_TreeNode *) XGET(elem[i].obj, MUIA_NListtree_Active);
+
+  DebOut("act_node: %lx\n", act_node);
+  DebOut("act_node->tn_User: %lx\n", act_node->tn_User);
+
+  /* is this correct !? */
+  if(act_node == MUIV_NListtree_Active_Off) {
+    pitem->lParam=(LPARAM) NULL;
+    return FALSE;
+  }
+
+  pitem->lParam=(LPARAM) act_node->tn_User;
+  DebOut("pitem->lParam: %lx\n", pitem->lParam);
+
+  return TRUE;
 }
 
 /**********************************************************************************************/
@@ -182,7 +229,7 @@ HOOKPROTONHNO(TreeView_DestructHook, void, struct NList_DestructMessage *ndm) {
 }
 #endif
 
-Object *new_tree(ULONG i, struct Hook *construct_hook, struct Hook *destruct_hook, struct Hook *display_hook) {
+Object *new_tree(ULONG i/*, struct Hook *construct_hook, struct Hook *destruct_hook, struct Hook *display_hook*/) {
 
   Object *tree=NULL;
 
