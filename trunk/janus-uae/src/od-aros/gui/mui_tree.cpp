@@ -232,52 +232,65 @@ HOOKPROTONHNO(TreeView_DestructHook, void, struct NList_DestructMessage *ndm) {
 #endif
 
 
-AROS_UFH2(void, tree_active, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
+static void tree_send_notify(ULONG type, Object *obj, struct Data *data, struct ConfigStruct *config) {
 
-  AROS_USERFUNC_INIT
   int i;
-  ULONG lParam;
   ULONG state;
   LPNMHDR nm=NULL;
-
-  struct Data *data = (struct Data *) hook->h_Data;
+  LPNMTREEVIEW tv;
+  struct MUI_NListtree_TreeNode *node;
 
   DebOut("[%lx] entered\n", obj);
-  DebOut("[%lx] hook.h_Data: %lx\n", obj, hook->h_Data);
-  DebOut("[%lx] obj: %lx\n", obj);
 
   i=get_elem_from_obj(data, (Object *) obj);
 
-  //data->src[i].value=XGET((Object *) obj, MUIA_Cycle_Active);
- 
-  if(data->func) {
-    state=XGET((Object *) obj, MUIA_NList_Active);
-    if(state!=MUIV_NList_Active_Off) {
-      /* LPNMHDR is sent in wParam */
-      nm=(LPNMHDR) malloc(sizeof(NMHDR));
-      nm->idFrom=NULL; /* not used by WinUAE! */
-      nm->code=TVN_SELCHANGED;
-      nm->hwndFrom=data->src[i].idc;
-
-      /* LPNMTREEVIEW is sent in lParam */
-      TODO();
-      /* lParam needs to hold a pointer to the ConfigStruct of the selected item !? */
-      //lParam=(LPARAM) configstruct;
-      lParam=NULL;
-
-
-      DebOut("[%lx] call function: %lx(IDC %d, WM_NOTIFY)\n", obj, data->func, data->src[i].idc);
-      data->func(data->src, WM_NOTIFY, NULL, (IPTR) nm);
-    }
-    else {
-      DebOut("MUIV_List_Active_Off? What to do now!?\n");
-    }
-  }
-  else {
+  if(!data->func) {
     DebOut("[%lx] function is zero: %lx\n", obj, data->func);
+    goto TREE_SEND_NOTIFY_EXIT;
   }
 
-  if(nm) free(nm);
+  node=(struct MUI_NListtree_TreeNode *) XGET((Object *) obj, MUIA_NListtree_Active);
+  if(node==(struct MUI_NListtree_TreeNode *) MUIA_NListtree_Active) {
+    DebOut("MUIA_Listtree_Active_Off! Do nothing!\n");
+    goto TREE_SEND_NOTIFY_EXIT;
+  }
+ 
+  /* LPNMHDR is sent in itemNew.lParam */
+  /* WARNING: all other fields are not correctly set */
+  /* NMTREEVIEW contains NMHDR */
+  nm=(LPNMHDR) AllocVec(sizeof(NMTREEVIEW), MEMF_CLEAR);
+  nm->idFrom=NULL; /* not used by WinUAE! */
+  nm->code=type;
+  nm->hwndFrom=IDC_CONFIGTREE; 
+
+  /* LPNMTREEVIEW is sent in itemNew.lParam */
+  tv=(LPNMTREEVIEW) nm;
+  tv->itemNew.lParam=(LPARAM) node->tn_User;
+
+  /* still a lot of unfilled attributes! */
+  TODO();
+
+  DebOut("[%lx] call function: %lx(IDC %d, WM_NOTIFY, %lx)\n", obj, data->func, data->src[i].idc, nm);
+  data->func(data->src, WM_NOTIFY, NULL, (IPTR) nm);
+
+TREE_SEND_NOTIFY_EXIT:
+  if(nm) FreeVec(nm);
+}
+
+AROS_UFH2(void, tree_active, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
+
+  AROS_USERFUNC_INIT
+
+  struct MUI_NListtree_TreeNode *node;
+  struct Data *data = (struct Data *) hook->h_Data;
+
+  DebOut("entered (obj %lx)\n", obj);
+
+  node=(struct MUI_NListtree_TreeNode *) XGET((Object *) obj, MUIA_NListtree_Active);
+
+  if(node!=(struct MUI_NListtree_TreeNode *) MUIA_NListtree_Active) {
+    tree_send_notify(TVN_SELCHANGED, (Object *) obj, data, (struct ConfigStruct *) node->tn_User);
+  }
 
   AROS_USERFUNC_EXIT
 }
@@ -286,48 +299,16 @@ AROS_UFH2(void, tree_double, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR,
 
   AROS_USERFUNC_INIT
 
-  int i;
-  ULONG lParam;
-  ULONG state;
-  LPNMHDR nm=NULL;
-
+  struct MUI_NListtree_TreeNode *node;
   struct Data *data = (struct Data *) hook->h_Data;
 
-  DebOut("[%lx] entered\n", obj);
-  DebOut("[%lx] hook.h_Data: %lx\n", obj, hook->h_Data);
-  DebOut("[%lx] obj: %lx\n", obj);
+  DebOut("entered (obj %lx)\n", obj);
 
-  i=get_elem_from_obj(data, (Object *) obj);
+  node=(struct MUI_NListtree_TreeNode *) XGET((Object *) obj, MUIA_NListtree_Active);
 
-  //data->src[i].value=XGET((Object *) obj, MUIA_Cycle_Active);
- 
-  if(data->func) {
-    if(state!=MUIV_NList_Active_Off) {
-      /* LPNMHDR is sent in wParam */
-      nm=(LPNMHDR) malloc(sizeof(NMHDR));
-      nm->idFrom=NULL; /* not used by WinUAE! */
-      nm->code=NM_DBLCLK;
-      nm->hwndFrom=IDC_CONFIGTREE; 
-
-      /* LPNMTREEVIEW is sent in lParam */
-      TODO();
-      /* lParam needs to hold a pointer to the ConfigStruct of the selected item !? */
-      //lParam=(LPARAM) configstruct;
-      lParam=NULL;
-
-
-      DebOut("[%lx] call function: %lx(IDC %d, WM_NOTIFY)\n", obj, data->func, data->src[i].idc);
-      data->func(data->src, WM_NOTIFY, NULL, (IPTR) nm);
-    }
-    else {
-      DebOut("MUIV_List_Active_Off? What to do now!?\n");
-    }
+  if(node!=(struct MUI_NListtree_TreeNode *) MUIA_NListtree_Active) {
+    tree_send_notify(NM_DBLCLK, (Object *) obj, data, (struct ConfigStruct *) node->tn_User);
   }
-  else {
-    DebOut("[%lx] function is zero: %lx\n", obj, data->func);
-  }
-
-  if(nm) free(nm);
 
   AROS_USERFUNC_EXIT
 }

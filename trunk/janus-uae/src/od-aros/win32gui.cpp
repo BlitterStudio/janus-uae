@@ -1684,13 +1684,13 @@ static bool scan_rom_hook (const TCHAR *name, int line)
 	MSG msg;
 #endif
   if(name) {
-    bug("name %s, line: %d\n", name, line);
+    DebOut("name %s, line: %d\n", name, line);
   }
   else {
-    bug("name: NULL\n");
+    DebOut("name: NULL\n");
   }
 	if (!infoboxhwnd) {
-    bug("return: true\n");
+    DebOut("return: true\n");
 		return true;
   }
 
@@ -3848,8 +3848,11 @@ static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int u
 			config = AllocConfigStruct ();
 			_tcscpy (config->Path, shortpath);
 			_tcscpy (config->Fullpath, path);
+      DebOut("config->Path: %s\n", config->Path);
+      DebOut("config->Fullpath: %s\n", config->Fullpath);
 			memcpy (&config->t, &find_data.ftLastWriteTime, sizeof (FILETIME));
 			if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && usedirs) {
+        DebOut("FILE_ATTRIBUTE_DIRECTORY\n");
 				if ((*level) < 2) {
 					struct ConfigStruct *child;
 					_tcscpy (config->Name, find_data.cFileName);
@@ -3870,10 +3873,16 @@ static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int u
 					ok = 1;
 				}
 			} else if (!(find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+        DebOut("not FILE_ATTRIBUTE_DIRECTORY\n");
 				TCHAR path3[MAX_DPATH];
 				if (_tcslen (find_data.cFileName) > 4 && !strcasecmp (find_data.cFileName + _tcslen (find_data.cFileName) - 4, _T(".uae"))) {
 					_tcscpy (path3, path);
+#ifndef __AROS__
 					_tcsncat (path3, find_data.cFileName, MAX_DPATH);
+#else
+          AddPart(path3, find_data.cFileName, MAX_DPATH);
+#endif
+          DebOut("path3: %s\n", path3);
 					if (cfgfile_get_description (path3, config->Description, config->HostLink, config->HardwareLink, &config->Type)) {
 						_tcscpy (config->Name, find_data.cFileName);
 						ok = 1;
@@ -5132,7 +5141,7 @@ static void InitializeConfig (HWND hDlg, struct ConfigStruct *config)
 {
 	int i, j, idx1, idx2;
 
-  DebOut("config: %ls\n", config);
+  DebOut("config: %lx\n", config);
 
 	if (config == NULL) {
 		SetDlgItemText (hDlg, IDC_EDITNAME, _T(""));
@@ -5487,7 +5496,10 @@ INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPa
 							pitem.hItem = ht;
 							if (TreeView_GetItem (hDlg, IDC_CONFIGTREE, &pitem)) {
 								struct ConfigStruct *config = (struct ConfigStruct*)pitem.lParam;
+                DebOut("config: %lx\n", config);
+                DebOut("config->Directory: %d\n", config->Directory);
 								if (config && !config->Directory) {
+                  DebOut("config && !config->Directory\n");
 									cfgfile = HandleConfiguration (hDlg, CONFIG_LOAD, config, NULL);
 									if (cfgfile) {
 										ConfigToRegistry (config, configtypepanel);
@@ -5507,11 +5519,9 @@ INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPa
 					{
             DebOut("TVN_SELCHANGED\n");
 						LPNMTREEVIEW tv = (LPNMTREEVIEW)lParam;
-#ifndef __AROS__
+            DebOut("tv: %lx\n", tv);
 						struct ConfigStruct *c = (struct ConfigStruct*)tv->itemNew.lParam;
-#else
-						struct ConfigStruct *c = (struct ConfigStruct*) lParam;
-#endif
+            DebOut("ConfigStruct *c: %lx\n", c);
 						if (c) {
 							config = c;
 							if (!config->Directory) {
