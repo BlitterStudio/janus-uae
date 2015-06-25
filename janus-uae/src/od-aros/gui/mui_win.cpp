@@ -115,7 +115,7 @@ BOOL SetDlgItemText(Element *elem, int item, TCHAR *lpString) {
   DebOut("elem[i].obj: %lx\n", elem[i].obj);
 
   if(elem[i].windows_type==EDITTEXT && !(elem[i].flags & ES_READONLY)) {
-    DebOut("call MUIA_String_Contents, %s\n", lpString);
+    DebOut("call set(%lx, MUIA_String_Contents, %s)\n", elem[i].obj,lpString);
     DoMethod(elem[i].obj, MUIM_Set, MUIA_String_Contents, lpString);
   }
   else if (elem[i].windows_type==COMBOBOX) {
@@ -463,7 +463,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
 UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount) {
   int i;
   UINT ret;
-  char buffer[256]; // ATTENTION: this might crash badly..
+  char *buffer; 
 
   i=get_index(elem, nIDDlgItem);
   /* might be in a different element..*/
@@ -480,9 +480,13 @@ UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount) {
   DebOut("index: %d\n", i);
   DebOut("elem[i].obj: %lx\n", elem[i].obj);
 
+  //GET(elem[i].obj, MUIA_String_Contents, (IPTR *) &buffer);
   GetAttr(MUIA_String_Contents, elem[i].obj, (IPTR *) &buffer);
 
+  DebOut("buffer: %s\n", buffer);
+
   strncpy(lpString, buffer, nMaxCount);
+  DebOut("lpString: %s\n", lpString);
 
   return strlen(lpString);
 }

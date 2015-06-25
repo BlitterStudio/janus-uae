@@ -256,7 +256,7 @@ int my_getvolumeinfo (const TCHAR *name) {
   {
     bug("[JUAE:A-FSDB] %s: failed to lock entry\n", __PRETTY_FUNCTION__);
 
-    bug("no lock..\n");
+    DebOut("no lock..\n");
     goto EXIT;
   }
 
