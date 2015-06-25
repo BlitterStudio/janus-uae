@@ -28,6 +28,8 @@
 #include "mui_data.h"
 #include "gui_mui.h"
 
+#include "mui_class.h"
+
 /* Deletes all items from a tree-view control. 
  * WARNING: nIDDlgItem is not in the Windows API!
  */
@@ -229,9 +231,112 @@ HOOKPROTONHNO(TreeView_DestructHook, void, struct NList_DestructMessage *ndm) {
 }
 #endif
 
-Object *new_tree(ULONG i/*, struct Hook *construct_hook, struct Hook *destruct_hook, struct Hook *display_hook*/) {
+
+AROS_UFH2(void, tree_active, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
+
+  AROS_USERFUNC_INIT
+  int i;
+  ULONG lParam;
+  ULONG state;
+  LPNMHDR nm=NULL;
+
+  struct Data *data = (struct Data *) hook->h_Data;
+
+  DebOut("[%lx] entered\n", obj);
+  DebOut("[%lx] hook.h_Data: %lx\n", obj, hook->h_Data);
+  DebOut("[%lx] obj: %lx\n", obj);
+
+  i=get_elem_from_obj(data, (Object *) obj);
+
+  //data->src[i].value=XGET((Object *) obj, MUIA_Cycle_Active);
+ 
+  if(data->func) {
+    state=XGET((Object *) obj, MUIA_NList_Active);
+    if(state!=MUIV_NList_Active_Off) {
+      /* LPNMHDR is sent in wParam */
+      nm=(LPNMHDR) malloc(sizeof(NMHDR));
+      nm->idFrom=NULL; /* not used by WinUAE! */
+      nm->code=TVN_SELCHANGED;
+      nm->hwndFrom=data->src[i].idc;
+
+      /* LPNMTREEVIEW is sent in lParam */
+      TODO();
+      /* lParam needs to hold a pointer to the ConfigStruct of the selected item !? */
+      //lParam=(LPARAM) configstruct;
+      lParam=NULL;
+
+
+      DebOut("[%lx] call function: %lx(IDC %d, WM_NOTIFY)\n", obj, data->func, data->src[i].idc);
+      data->func(data->src, WM_NOTIFY, NULL, (IPTR) nm);
+    }
+    else {
+      DebOut("MUIV_List_Active_Off? What to do now!?\n");
+    }
+  }
+  else {
+    DebOut("[%lx] function is zero: %lx\n", obj, data->func);
+  }
+
+  if(nm) free(nm);
+
+  AROS_USERFUNC_EXIT
+}
+ 
+AROS_UFH2(void, tree_double, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
+
+  AROS_USERFUNC_INIT
+
+  int i;
+  ULONG lParam;
+  ULONG state;
+  LPNMHDR nm=NULL;
+
+  struct Data *data = (struct Data *) hook->h_Data;
+
+  DebOut("[%lx] entered\n", obj);
+  DebOut("[%lx] hook.h_Data: %lx\n", obj, hook->h_Data);
+  DebOut("[%lx] obj: %lx\n", obj);
+
+  i=get_elem_from_obj(data, (Object *) obj);
+
+  //data->src[i].value=XGET((Object *) obj, MUIA_Cycle_Active);
+ 
+  if(data->func) {
+    if(state!=MUIV_NList_Active_Off) {
+      /* LPNMHDR is sent in wParam */
+      nm=(LPNMHDR) malloc(sizeof(NMHDR));
+      nm->idFrom=NULL; /* not used by WinUAE! */
+      nm->code=NM_DBLCLK;
+      nm->hwndFrom=IDC_CONFIGTREE; 
+
+      /* LPNMTREEVIEW is sent in lParam */
+      TODO();
+      /* lParam needs to hold a pointer to the ConfigStruct of the selected item !? */
+      //lParam=(LPARAM) configstruct;
+      lParam=NULL;
+
+
+      DebOut("[%lx] call function: %lx(IDC %d, WM_NOTIFY)\n", obj, data->func, data->src[i].idc);
+      data->func(data->src, WM_NOTIFY, NULL, (IPTR) nm);
+    }
+    else {
+      DebOut("MUIV_List_Active_Off? What to do now!?\n");
+    }
+  }
+  else {
+    DebOut("[%lx] function is zero: %lx\n", obj, data->func);
+  }
+
+  if(nm) free(nm);
+
+  AROS_USERFUNC_EXIT
+}
+ 
+Object *new_tree(ULONG i, void *f, struct Data *data) {
 
   Object *tree=NULL;
+  int *(*func) (Element *hDlg, UINT msg, ULONG wParam, IPTR lParam);
+  func=(int* (*)(Element*, uint32_t, ULONG, IPTR)) f;
 
 #if 0
   construct_hook->h_Entry=(APTR) TreeView_ConstructHookFunction;
@@ -259,6 +364,29 @@ Object *new_tree(ULONG i/*, struct Hook *construct_hook, struct Hook *destruct_h
               End),
             End),
           End;
+
+  if(tree) {
+
+
+#ifdef UAE_ABI_v0
+              data->MyMUIHook_tree_active.h_Entry=(HOOKFUNC) tree_active;
+#else
+              data->MyMUIHook_tree_active.h_Entry=(APTR) tree_active;
+#endif
+              data->MyMUIHook_tree_active.h_Data =(APTR) data;
+
+              DoMethod(tree, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR) tree, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_tree_active, func); 
+
+#ifdef UAE_ABI_v0
+              data->MyMUIHook_tree_double.h_Entry=(HOOKFUNC) tree_double;
+#else
+              data->MyMUIHook_tree_double.h_Entry=(APTR) tree_double;
+#endif
+              data->MyMUIHook_tree_double.h_Data =(APTR) data;
+
+              DoMethod(tree, MUIM_Notify, MUIA_NList_DoubleClick, MUIV_EveryTime, (IPTR) tree, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_tree_double, func); 
+
+  }
 
   return tree;
 }
