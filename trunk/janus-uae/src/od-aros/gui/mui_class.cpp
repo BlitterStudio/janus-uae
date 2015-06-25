@@ -27,6 +27,8 @@
 #include "mui_data.h"
 #include "combo.h"
 
+#include "mui_class.h"
+
 //#define RESIZE 155 / 100
 #define RESIZE_X 150 /100
 #define RESIZE_Y 140 /100
@@ -35,26 +37,6 @@
 
 //#define EMPTY_SELECTION "<-- none -->"
 #define EMPTY_SELECTION ""
-
-struct Data {
-  struct Hook LayoutHook;
-  struct Hook MyMUIHook_pushbutton;
-  struct Hook MyMUIHook_select;
-  struct Hook MyMUIHook_slide;
-  struct Hook MyMUIHook_combo;
-  struct Hook MyMUIHook_tree_active;
-  struct Hook MyMUIHook_tree_double;
-#if 0
-  struct Hook MyMUIHook_tree_insert;
-  struct Hook MyMUIHook_tree_construct;
-  struct Hook MyMUIHook_tree_destruct;
-  struct Hook MyMUIHook_tree_display;
-#endif
-  ULONG width, height;
-  struct Element *src;
-  struct TextFont *font;
-  int *(*func) (Element *hDlg, UINT msg, ULONG wParam, IPTR lParam);
-};
 
 static const char *Cycle_Dummy[] = { NULL };
 
@@ -120,7 +102,7 @@ BOOL flag_editable(ULONG flags) {
 /*************************************
  * get index of Zune object
  *************************************/
-static int get_elem_from_obj(struct Data *data, Object *obj) {
+int get_elem_from_obj(struct Data *data, Object *obj) {
 
   int i=0;
 
@@ -366,106 +348,7 @@ AROS_UFH2(void, MUIHook_pushbutton, AROS_UFHA(struct Hook *, hook, A0), AROS_UFH
   AROS_USERFUNC_EXIT
 }
 
-AROS_UFH2(void, tree_active, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
 
-  AROS_USERFUNC_INIT
-  int i;
-  ULONG lParam;
-  ULONG state;
-  LPNMHDR nm=NULL;
-
-  struct Data *data = (struct Data *) hook->h_Data;
-
-  DebOut("[%lx] entered\n", obj);
-  DebOut("[%lx] hook.h_Data: %lx\n", obj, hook->h_Data);
-  DebOut("[%lx] obj: %lx\n", obj);
-
-  i=get_elem_from_obj(data, (Object *) obj);
-
-  //data->src[i].value=XGET((Object *) obj, MUIA_Cycle_Active);
- 
-  if(data->func) {
-    state=XGET((Object *) obj, MUIA_NList_Active);
-    if(state!=MUIV_NList_Active_Off) {
-      /* LPNMHDR is sent in wParam */
-      nm=(LPNMHDR) malloc(sizeof(NMHDR));
-      nm->idFrom=NULL; /* not used by WinUAE! */
-      nm->code=TVN_SELCHANGED;
-      nm->hwndFrom=data->src[i].idc;
-
-      /* LPNMTREEVIEW is sent in lParam */
-      TODO();
-      /* lParam needs to hold a pointer to the ConfigStruct of the selected item !? */
-      //lParam=(LPARAM) configstruct;
-      lParam=NULL;
-
-
-      DebOut("[%lx] call function: %lx(IDC %d, WM_NOTIFY)\n", obj, data->func, data->src[i].idc);
-      data->func(data->src, WM_NOTIFY, NULL, (IPTR) nm);
-    }
-    else {
-      DebOut("MUIV_List_Active_Off? What to do now!?\n");
-    }
-  }
-  else {
-    DebOut("[%lx] function is zero: %lx\n", obj, data->func);
-  }
-
-  if(nm) free(nm);
-
-  AROS_USERFUNC_EXIT
-}
- 
-AROS_UFH2(void, tree_double, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
-
-  AROS_USERFUNC_INIT
-
-  int i;
-  ULONG lParam;
-  ULONG state;
-  LPNMHDR nm=NULL;
-
-  struct Data *data = (struct Data *) hook->h_Data;
-
-  DebOut("[%lx] entered\n", obj);
-  DebOut("[%lx] hook.h_Data: %lx\n", obj, hook->h_Data);
-  DebOut("[%lx] obj: %lx\n", obj);
-
-  i=get_elem_from_obj(data, (Object *) obj);
-
-  //data->src[i].value=XGET((Object *) obj, MUIA_Cycle_Active);
- 
-  if(data->func) {
-    if(state!=MUIV_NList_Active_Off) {
-      /* LPNMHDR is sent in wParam */
-      nm=(LPNMHDR) malloc(sizeof(NMHDR));
-      nm->idFrom=NULL; /* not used by WinUAE! */
-      nm->code=NM_DBLCLK;
-      nm->hwndFrom=IDC_CONFIGTREE; 
-
-      /* LPNMTREEVIEW is sent in lParam */
-      TODO();
-      /* lParam needs to hold a pointer to the ConfigStruct of the selected item !? */
-      //lParam=(LPARAM) configstruct;
-      lParam=NULL;
-
-
-      DebOut("[%lx] call function: %lx(IDC %d, WM_NOTIFY)\n", obj, data->func, data->src[i].idc);
-      data->func(data->src, WM_NOTIFY, NULL, (IPTR) nm);
-    }
-    else {
-      DebOut("MUIV_List_Active_Off? What to do now!?\n");
-    }
-  }
-  else {
-    DebOut("[%lx] function is zero: %lx\n", obj, data->func);
-  }
-
-  if(nm) free(nm);
-
-  AROS_USERFUNC_EXIT
-}
- 
 
 /*****************************************************************************
  * Class
@@ -543,7 +426,6 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
 #else
 #define ABI_CONST 
 #endif
-Object *new_tree(ULONG i/*, struct Hook *construct_hook, struct Hook *destruct_hook, struct Hook *display_hook*/);
 
 static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
 
@@ -698,32 +580,13 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                     End;
 #endif
                     //Child, VSpace(0),
-            child=new_tree(i); /*, &data->MyMUIHook_tree_construct,
+            child=new_tree(i, (void *) func, data); /*, &data->MyMUIHook_tree_construct,
                               &data->MyMUIHook_tree_destruct,
                               &data->MyMUIHook_tree_display);*/
             DebOut("child: %lx\n", child);
             if(child) {
               src[i].exists=TRUE;
               src[i].obj=child;
-
-#ifdef UAE_ABI_v0
-              data->MyMUIHook_tree_active.h_Entry=(HOOKFUNC) tree_active;
-#else
-              data->MyMUIHook_tree_active.h_Entry=(APTR) tree_active;
-#endif
-              data->MyMUIHook_tree_active.h_Data =(APTR) data;
-
-              DoMethod(src[i].obj, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_tree_active, func); 
-
-#ifdef UAE_ABI_v0
-              data->MyMUIHook_tree_double.h_Entry=(HOOKFUNC) tree_double;
-#else
-              data->MyMUIHook_tree_double.h_Entry=(APTR) tree_double;
-#endif
-              data->MyMUIHook_tree_double.h_Data =(APTR) data;
-
-              DoMethod(src[i].obj, MUIM_Notify, MUIA_NList_DoubleClick, MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_tree_double, func); 
-
             }
             break;
           }
