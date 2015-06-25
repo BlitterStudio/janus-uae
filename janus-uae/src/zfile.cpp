@@ -70,35 +70,35 @@ static bool is_dir(const TCHAR *name) {
   BPTR file=NULL;
   bool ret=FALSE;
 
-  bug("name: %s\n", name);
+  DebOut("name: %s\n", name);
 
   fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, TAG_END);
   if(!fib) 
   {
-    bug("no FileInfoBlock!\n");
+    DebOut("no FileInfoBlock!\n");
     goto NODIR;
   }
 
   file=Lock(name, SHARED_LOCK);
   if(!file) 
   {
-    bug("no lock..\n");
+    DebOut("no lock..\n");
     goto NODIR;
   }
 
   if (!Examine(file, fib)) 
   {
-    bug("Examine failed\n");
+    DebOut("Examine failed\n");
     goto NODIR;
   }
 
   if(fib->fib_DirEntryType <0) 
   {
-    bug("FILE!\n");
+    DebOut("FILE!\n");
   }
   else 
   {
-    bug("directory..\n");
+    DebOut("directory..\n");
     ret=TRUE;
   }
 
@@ -127,7 +127,7 @@ static bool is_file(const TCHAR *name)
   BPTR file=NULL;
   bool ret=FALSE;
 
-  bug("name: %s\n", name);
+  DebOut("name: %s\n", name);
 
   fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, TAG_END);
   if(!fib) 
@@ -2070,9 +2070,9 @@ static struct zfile *zfile_fopenx2 (const TCHAR *name, const TCHAR *mode, int ma
     /* string does not begin with PROGDIR */
 		_tcscpy (tmp, "PROGDIR:");
 		_tcscat (tmp, name);
-    bug("try: %s\n", tmp);
+    DebOut("try: %s\n", tmp);
 		f = zfile_fopen_x (tmp, mode, mask, index);
-    bug("f: %lx\n", f);
+    DebOut("f: %lx\n", f);
   }
 #endif
 #if 0
@@ -2302,10 +2302,10 @@ uae_s64 zfile_size (struct zfile *z)
 uae_s64 zfile_ftell (struct zfile *z)
 {
 	if (z->data || z->dataseek || z->parent) {
-    bug("z->seek: %d\n", z->seek);
+    DebOut("z->seek: %d\n", z->seek);
 		return z->seek;
   }
-  bug("ftell: %d\n", ftell(z->f));
+  DebOut("ftell: %d\n", ftell(z->f));
 	return _ftelli64 (z->f);
 
 }
@@ -2623,11 +2623,11 @@ uae_u32 zfile_crc32 (struct zfile *f)
 	if (f->data)
 		return get_crc32 (f->data, f->size);
 	pos = zfile_ftell (f);
-  bug("pos: %d\n", pos);
+  DebOut("pos: %d\n", pos);
 	zfile_fseek (f, 0, SEEK_END);
 	size = zfile_ftell (f);
 	p = xmalloc (uae_u8, size);
-  bug("p: %lx, size: %d\n",p, size);
+  DebOut("p: %lx, size: %d\n",p, size);
 	if (!p)
 		return 0;
 	memset (p, 0, size);
