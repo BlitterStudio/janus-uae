@@ -50,7 +50,7 @@ BOOL TreeView_DeleteAllItems(HWND elem, int item) {
 
   DebOut("elem[i].obj: %lx\n", elem[i].obj);
 
-  DoMethod(elem[i].obj, MUIM_List_Clear);
+  DoMethod(elem[i].obj, MUIM_NListtree_Clear, NULL, 0);
 }
 
 HTREEITEM TreeView_InsertItem(HWND elem, int item, LPTVINSERTSTRUCT lpis) {
@@ -250,10 +250,12 @@ static void tree_send_notify(ULONG type, Object *obj, struct Data *data, struct 
   }
 
   node=(struct MUI_NListtree_TreeNode *) XGET((Object *) obj, MUIA_NListtree_Active);
-  if(node==(struct MUI_NListtree_TreeNode *) MUIA_NListtree_Active) {
-    DebOut("MUIA_Listtree_Active_Off! Do nothing!\n");
+  if(!node || node==(struct MUI_NListtree_TreeNode *) MUIA_NListtree_Active) {
+    DebOut("no node / MUIA_Listtree_Active_Off! Do nothing!\n");
     goto TREE_SEND_NOTIFY_EXIT;
   }
+
+  DebOut("node: %lx\n", node);
  
   /* LPNMHDR is sent in itemNew.lParam */
   /* WARNING: all other fields are not correctly set */
