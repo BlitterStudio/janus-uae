@@ -3972,7 +3972,12 @@ static TCHAR *HandleConfiguration (HWND hDlg, int flag, struct ConfigStruct *con
 	} else {
 		fetch_configurationpath (path, sizeof (path) / sizeof (TCHAR));
 	}
+#ifndef __AROS__
 	_tcsncat (path, name, MAX_DPATH);
+#else
+  AddPart(path, name, MAX_DPATH);
+#endif
+  DebOut("path: %s\n", path);
 	_tcscpy (full_path, path);
 	switch (flag)
 	{
@@ -5178,7 +5183,7 @@ static void DeleteConfigTree (HWND hDlg)
 	int i;
 	HWND TVhDlg;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("[JUAE:GUI] ()\n");
 
 #if 0
 	TVhDlg = GetDlgItem(hDlg, IDC_CONFIGTREE);
