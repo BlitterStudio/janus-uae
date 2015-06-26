@@ -477,13 +477,10 @@ UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount) {
     DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", nIDDlgItem);
     return 0;
   }
-  DebOut("index: %d\n", i);
-  DebOut("elem[i].obj: %lx\n", elem[i].obj);
+  DebOut("elem[%d].obj: %lx\n", i, elem[i].obj);
 
   //GET(elem[i].obj, MUIA_String_Contents, (IPTR *) &buffer);
   GetAttr(MUIA_String_Contents, elem[i].obj, (IPTR *) &buffer);
-
-  DebOut("buffer: %s\n", buffer);
 
   strncpy(lpString, buffer, nMaxCount);
   DebOut("lpString: %s\n", lpString);
