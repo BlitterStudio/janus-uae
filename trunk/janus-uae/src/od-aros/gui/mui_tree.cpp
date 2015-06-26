@@ -56,6 +56,9 @@ BOOL TreeView_DeleteAllItems(HWND elem, int item) {
 HTREEITEM TreeView_InsertItem(HWND elem, int item, LPTVINSERTSTRUCT lpis) {
 
   LONG i;
+  struct MUI_NListtree_TreeNode *listnode;
+  struct MUI_NListtree_TreeNode *prevtreenode;
+  ULONG flags;
 
   DebOut("elem: %lx, item: %d\n", elem, item);
   DebOut("is.itemex.pszText: %s\n", lpis->itemex.pszText);
@@ -73,14 +76,44 @@ HTREEITEM TreeView_InsertItem(HWND elem, int item, LPTVINSERTSTRUCT lpis) {
 
   DebOut("elem[%d].obj: %lx\n", i, elem[i].obj);
 
+  /* Handle to the parent item. 
+   * If this member is the TVI_ROOT value or NULL, the item is inserted 
+   * at the root of the tree-view control.
+   */
+  if(!lpis->hParent || lpis->hParent==TVI_ROOT) {
+    DebOut("New Root node\n");
+  }
+  else {
+    DebOut("insert in hParent (TODO)!!\n");
+  }
+
+  /* Handle to the item after which the new item is to be inserted, 
+   * or one of the following values: 
+   * 
+   * TVI_FIRST Inserts the item at the beginning of the list.
+   * TVI_LAST  Inserts the item at the end of the list.
+   * TVI_ROOT  Add the item as a root item.
+   * TVI_SORT  Inserts the item into the list in alphabetical order.
+   */
+  if(lpis->hInsertAfter == TVI_ROOT) {
+    listnode=MUIV_NListtree_Insert_ListNode_Root;
+  }
+  else {
+    DebOut("WARNING: unknown lpis->hInsertAfter!\n");
+    listnode=MUIV_NListtree_Insert_ListNode_Root;
+  }
+
+
   /* save config (lParam) in UserData */
   DoMethod(elem[i].obj, MUIM_NListtree_Insert, lpis->itemex.pszText, (IPTR) lpis->itemex.lParam,
-                        MUIV_NListtree_Insert_ListNode_Root,
+                        listnode,
                         MUIV_NListtree_Insert_PrevNode_Tail,
                         MUIV_NListtree_Insert_Flag_Active);
   
   // care for hInsertAfter = TVI_ROOT : TVI_SORT .. */
   TODO();
+
+  /* TODO: return value!? */
 }
 
 BOOL TreeView_DeleteItem(HWND hwndTV, int nIDDlgItem, HTREEITEM hitem) {
