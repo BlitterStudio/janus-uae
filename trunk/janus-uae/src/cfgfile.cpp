@@ -13,6 +13,7 @@
 
 #ifdef __AROS__
 #include <proto/bsdsocket.h>
+#include <proto/dos.h>
 #define htonl(n) (((((unsigned long)(n) & 0xFF)) << 24) | \
                  ((((unsigned long)(n) & 0xFF00)) << 8) | \
                  ((((unsigned long)(n) & 0xFF0000)) >> 8) | \
@@ -4240,8 +4241,15 @@ void cfgfile_backup (const TCHAR *path)
 {
 	TCHAR dpath[MAX_DPATH];
 
+  DebOut("path: %s\n", path);
 	fetch_configurationpath (dpath, sizeof (dpath) / sizeof (TCHAR));
+  DebOut("dpath: %s\n", dpath);
+#ifndef __AROS__
 	_tcscat (dpath, _T("configuration.backup"));
+#else
+  AddPart(dpath, "configuration.backup", MAX_DPATH-1);
+#endif
+  DebOut("dpath: %s\n", dpath);
 	bool hidden = my_isfilehidden (dpath);
 	my_unlink (dpath);
 	my_rename (path, dpath);
@@ -4253,10 +4261,14 @@ int cfgfile_save (struct uae_prefs *p, const TCHAR *filename, int type)
 {
 	struct zfile *fh;
 
+  DebOut("filename: %s\n", filename);
+
 	cfgfile_backup (filename);
 	fh = zfile_fopen (filename, unicode_config ? _T("w, ccs=UTF-8") : _T("w"), ZFD_NORMAL);
-	if (! fh)
+	if (! fh) {
+    DebOut("unable to create %s\n", filename);
 		return 0;
+  }
 
 	if (!type)
 		type = CONFIG_TYPE_HARDWARE | CONFIG_TYPE_HOST;
