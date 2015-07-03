@@ -3952,7 +3952,7 @@ insretry:
 
 
 /* "cycle exact" 68040+ */
-
+#if (0)
 static void m68k_run_3ce (void)
 {
 	struct regstruct *r = &regs;
@@ -3976,6 +3976,7 @@ static void m68k_run_3ce (void)
 			return;
 	}
 }
+#endif
 
 /* "cycle exact" 68020/030  */
 
