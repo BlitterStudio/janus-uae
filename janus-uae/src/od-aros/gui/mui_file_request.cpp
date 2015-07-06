@@ -36,9 +36,12 @@ BOOL mui_get_filename(TCHAR *lpstrTitle, TCHAR *lpstrInitialDir, TCHAR *lpstrFil
   DebOut("lpstrInitialDir: %s\n", lpstrInitialDir);
   DebOut("lpstrFile: %s\n", lpstrFile);
   DebOut("lpstrFilter: %s\n", lpstrFilter);
-  DebOut("lpstrFileTitle: %s\n", lpstrFileTitle);
 
   win=(struct Window *) XGET(app, MUIA_Window_Window);
+  DebOut("win: %lx\n", win);
+  GetAttr(MUIA_Window_Window, app, (IPTR *)&win);
+  DebOut("win: %lx\n", win);
+  /* TODO: win is always NULL!? */
 
   req=(struct FileRequester *) MUI_AllocAslRequestTags(ASL_FileRequest,
                 ASLFR_Window,win ,
