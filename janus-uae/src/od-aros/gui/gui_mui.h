@@ -46,16 +46,11 @@ enum {
   IDI_EXPANSION, // "expansion.ico"
 };
 
-#if 0
 struct TREEITEM {
-  struct MUI_NListtree_TreeNode *node;
+  APTR foo;
 };
-#endif
 
-typedef struct MUI_NListtree_TreeNode TREEITEM;
-typedef struct MUI_NListtree_TreeNode * HTREEITEM;
-
-//typedef struct TREEITEM *HTREEITEM;
+typedef struct TREEITEM *HTREEITEM;
 
 extern Object *app;
 BOOL mui_get_dir(TCHAR *lpstrTitle, TCHAR *path);
