@@ -56,9 +56,8 @@ BOOL TreeView_DeleteAllItems(HWND elem, int item) {
 HTREEITEM TreeView_InsertItem(HWND elem, int item, LPTVINSERTSTRUCT lpis) {
 
   LONG i;
-  struct MUI_NListtree_TreeNode *listnode=NULL;
-  struct MUI_NListtree_TreeNode *prevtreenode=NULL;
-  struct MUI_NListtree_TreeNode *treenode=NULL;
+  struct MUI_NListtree_TreeNode *listnode;
+  struct MUI_NListtree_TreeNode *prevtreenode;
   ULONG flags;
 
   DebOut("elem: %lx, item: %d\n", elem, item);
@@ -81,15 +80,11 @@ HTREEITEM TreeView_InsertItem(HWND elem, int item, LPTVINSERTSTRUCT lpis) {
    * If this member is the TVI_ROOT value or NULL, the item is inserted 
    * at the root of the tree-view control.
    */
-  /* which parent to use */
-  DebOut("lpis->hParent: %lx\n", lpis->hParent);
   if(!lpis->hParent || lpis->hParent==TVI_ROOT) {
     DebOut("New Root node\n");
-    listnode=MUIV_NListtree_Insert_ListNode_Root;
   }
   else {
-    DebOut("insert in hParent (%lx)\n", lpis->hParent);
-    listnode=(MUI_NListtree_TreeNode*) lpis->hParent;
+    DebOut("insert in hParent (TODO)!!\n");
   }
 
   /* Handle to the item after which the new item is to be inserted, 
@@ -100,38 +95,25 @@ HTREEITEM TreeView_InsertItem(HWND elem, int item, LPTVINSERTSTRUCT lpis) {
    * TVI_ROOT  Add the item as a root item.
    * TVI_SORT  Inserts the item into the list in alphabetical order.
    */
-  if(lpis->hInsertAfter == TVI_FIRST) {
-    DebOut("TVI_FIRST\n");
-    prevtreenode=(struct MUI_NListtree_TreeNode *) MUIV_NListtree_Insert_PrevNode_Head;
-  }
-  else if(lpis->hInsertAfter == TVI_LAST) {
-    DebOut("TVI_LAST\n");
-    prevtreenode=(struct MUI_NListtree_TreeNode *) MUIV_NListtree_Insert_PrevNode_Tail;
-  }
-  else if(lpis->hInsertAfter == TVI_SORT) {
-    DebOut("TVI_SORT\n");
-    prevtreenode=(struct MUI_NListtree_TreeNode *) MUIV_NListtree_Insert_PrevNode_Sorted;
+  if(lpis->hInsertAfter == TVI_ROOT) {
+    listnode=MUIV_NListtree_Insert_ListNode_Root;
   }
   else {
-    DebOut("what does that mean!?\n");
+    DebOut("WARNING: unknown lpis->hInsertAfter!\n");
     listnode=MUIV_NListtree_Insert_ListNode_Root;
-    prevtreenode=(struct MUI_NListtree_TreeNode *) MUIV_NListtree_Insert_PrevNode_Tail;
   }
 
 
   /* save config (lParam) in UserData */
-  treenode=(struct MUI_NListtree_TreeNode *) DoMethod(elem[i].obj, 
-                        MUIM_NListtree_Insert, lpis->itemex.pszText, (IPTR) lpis->itemex.lParam,
+  DoMethod(elem[i].obj, MUIM_NListtree_Insert, lpis->itemex.pszText, (IPTR) lpis->itemex.lParam,
                         listnode,
-                        prevtreenode,
+                        MUIV_NListtree_Insert_PrevNode_Tail,
                         MUIV_NListtree_Insert_Flag_Active);
   
   // care for hInsertAfter = TVI_ROOT : TVI_SORT .. */
+  TODO();
 
   /* TODO: return value!? */
-  DebOut("treenode: %lx\n", treenode);
-
-  return treenode;
 }
 
 BOOL TreeView_DeleteItem(HWND hwndTV, int nIDDlgItem, HTREEITEM hitem) {
