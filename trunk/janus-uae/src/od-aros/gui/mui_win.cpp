@@ -479,10 +479,17 @@ UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount) {
   }
   DebOut("elem[%d].obj: %lx\n", i, elem[i].obj);
 
-  //GET(elem[i].obj, MUIA_String_Contents, (IPTR *) &buffer);
-  GetAttr(MUIA_String_Contents, elem[i].obj, (IPTR *) &buffer);
-
-  strncpy(lpString, buffer, nMaxCount);
+  if(elem[i].windows_type==EDITTEXT) {
+    GetAttr(MUIA_String_Contents, elem[i].obj, (IPTR *) &buffer);
+    DebOut("buffer: %s\n", buffer);
+    strncpy(lpString, buffer, nMaxCount);
+  }
+  else {
+    DebOut("Warning: elem[i].windows_type=%d, GetText..?\n", elem[i].windows_type);
+    DebOut("return elem[i].text: %s\n", elem[i].text);
+    strncpy(lpString, elem[i].text, nMaxCount);
+  }
+ 
   DebOut("lpString: %s\n", lpString);
 
   return strlen(lpString);
