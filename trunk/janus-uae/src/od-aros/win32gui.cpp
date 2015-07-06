@@ -5502,7 +5502,6 @@ INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPa
 							if (TreeView_GetItem (hDlg, IDC_CONFIGTREE, &pitem)) {
 								struct ConfigStruct *config = (struct ConfigStruct*)pitem.lParam;
                 DebOut("config: %lx\n", config);
-                DebOut("config->Directory: %d\n", config->Directory);
 								if (config && !config->Directory) {
                   DebOut("config && !config->Directory\n");
 									cfgfile = HandleConfiguration (hDlg, CONFIG_LOAD, config, NULL);
