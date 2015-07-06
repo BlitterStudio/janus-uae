@@ -33,7 +33,7 @@ ifeq ($(BITS),64)
 else
 	# 32 bit
 	CPU      = i386
-	SVN        = /home/oli/svn
+	SVN        = /home/oli
 endif
 
 LIB        = libgui.a
@@ -69,38 +69,6 @@ COMMON_OBJS= \
 	combo.o \
 	mui_class.o 
 
-IMAGES =
-
-	#images/35floppy.o \
-	#images/amigainfo.o \
-	#images/avioutput.o \
-	#images/chip.o \
-	#images/configfile.o \
-	#images/cpu.o \
-	#images/diskimage.o \
-	#images/drive.o \
-	#images/expansion.o \
-	#images/file.o \
-	#images/folder.o \
-	#images/joystick.o \
-	#images/misc.o \
-	#images/move_dow.o \
-	#images/move_up.o \
-	#images/paths.o \
-	#images/port.o \
-	#images/quickstart.o \
-	#images/root.o \
-	#images/screen.o \
-	#images/sound.o \
-	#images/winuae.o
-
-
-	#../picasso96.o \
-	#../ersatz.o \
-	#keyboard.o \
-#../zfile_archive.o 
-#gui.o \
-
 # build dependencies magic
 DEP_OBJS=$(COMMON_OBJS)
 
@@ -115,17 +83,14 @@ DEP_OBJS=$(COMMON_OBJS)
 	$(CPP) $(CPPFLAGS) -o $@ -c $*.cpp
 
 
-all: uae
+all: uae 
 
-uae: mui_data.h common images
-	$(AR) $(ARFLAGS) $(LIB) $(COMMON_OBJS) $(IMAGES)  
+uae: tools mui_data.h common 
+	$(AR) $(ARFLAGS) $(LIB) $(COMMON_OBJS) 
 
 
 common: $(COMMON_OBJS)
 	@echo building common ..
-
-images: $(IMAGES)
-	@echo building images ..
 
 aros: $(AROS_OBJS)
 	@echo building aros objects ..
@@ -134,7 +99,6 @@ tools:
 	@echo builing tools ..
 	cd png2c;export CC=gcc;make
 
-#for i in $(IMAGES);do echo " $(i)  .."; icotool -i 1 -x $i;done
 	
 # ============== autogenerate some .cpp files ====================
 # never know, which one needs to be generated first. But only one
