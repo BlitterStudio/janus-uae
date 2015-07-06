@@ -69,7 +69,7 @@ ifeq ($(ABI), v0)
 V0_LIBS=-lGL
 endif
 
-LINK_LIBS=-Lgui -lgui -larossupport -lz -lGL -lmui -lSDL -LSDL_Config -lSDL_Config $(V0_LIBS)
+LINK_LIBS=-Lgui -lgui -limagedata -larossupport -lz -lGL -lmui -lSDL -LSDL_Config -lSDL_Config $(V0_LIBS)
 # ============== common ====================
 
 AROS_OBJS= 
