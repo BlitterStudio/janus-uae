@@ -15,8 +15,7 @@
 #include <mui/NListtree_mcc.h>
 #include <mui/NListview_mcc.h>
 #include <mui/NFloattext_mcc.h>
-
-#include <SDI/SDI_hook.h>
+#include <mui/NBitmap_mcc.h>
 
 #define OLI_DEBUG
 #include "sysconfig.h"
@@ -29,6 +28,12 @@
 #include "gui_mui.h"
 
 #include "mui_class.h"
+
+#if 0
+#include "png2c/misc.h"
+#include "png2c/folder.h"
+#include "png2c/quickstart.h"
+#endif
 
 /* Deletes all items from a tree-view control. 
  * WARNING: nIDDlgItem is not in the Windows API!
@@ -51,14 +56,23 @@ BOOL TreeView_DeleteAllItems(HWND elem, int item) {
   DebOut("elem[i].obj: %lx\n", elem[i].obj);
 
   DoMethod(elem[i].obj, MUIM_NListtree_Clear, NULL, 0);
+
+#if 0
+  DoMethod(elem[i].obj, MUIM_NListtree_Insert, "TEST >\33o[0]< TEST", NULL,
+                        MUIV_NListtree_Insert_ListNode_Root,
+                        MUIV_NListtree_Insert_PrevNode_Tail,
+                        MUIV_NListtree_Insert_Flag_Active);
+#endif
+ 
 }
 
 HTREEITEM TreeView_InsertItem(HWND elem, int item, LPTVINSERTSTRUCT lpis) {
 
   LONG i;
-  struct MUI_NListtree_TreeNode *listnode;
-  struct MUI_NListtree_TreeNode *prevtreenode;
-  ULONG flags;
+  struct MUI_NListtree_TreeNode *listnode=NULL;
+  struct MUI_NListtree_TreeNode *prevtreenode=NULL;
+  struct MUI_NListtree_TreeNode *newnode=NULL;
+  ULONG flags=0;
 
   DebOut("elem: %lx, item: %d\n", elem, item);
   DebOut("is.itemex.pszText: %s\n", lpis->itemex.pszText);
@@ -80,12 +94,15 @@ HTREEITEM TreeView_InsertItem(HWND elem, int item, LPTVINSERTSTRUCT lpis) {
    * If this member is the TVI_ROOT value or NULL, the item is inserted 
    * at the root of the tree-view control.
    */
+#if 0
   if(!lpis->hParent || lpis->hParent==TVI_ROOT) {
     DebOut("New Root node\n");
   }
   else {
     DebOut("insert in hParent (TODO)!!\n");
+    DebOut("hParent: %lx\n", lpis->hParent);
   }
+#endif
 
   /* Handle to the item after which the new item is to be inserted, 
    * or one of the following values: 
@@ -95,25 +112,43 @@ HTREEITEM TreeView_InsertItem(HWND elem, int item, LPTVINSERTSTRUCT lpis) {
    * TVI_ROOT  Add the item as a root item.
    * TVI_SORT  Inserts the item into the list in alphabetical order.
    */
+#if 0
   if(lpis->hInsertAfter == TVI_ROOT) {
+    DebOut("TVI_ROOT\n");
+    listnode=MUIV_NListtree_Insert_ListNode_Root;
+  }
+  else if(lpis->hInsertAfter == TVI_SORT) {
+    DebOut("TVI_SORT..\n");
+    /* TODO */
     listnode=MUIV_NListtree_Insert_ListNode_Root;
   }
   else {
-    DebOut("WARNING: unknown lpis->hInsertAfter!\n");
-    listnode=MUIV_NListtree_Insert_ListNode_Root;
+    DebOut("WARNING: unknown lpis->hInsertAfter (%lx)!\n", lpis->hInsertAfter);
+  }
+#endif
+
+  if(lpis->itemex.state && TVIS_BOLD) {
+    /* abuse bold as folder indicator, windows makes no difference between folder and item ..*/
+    DebOut("BOLD => assume this is a folder! (%lx)\n", lpis->itemex.state);
+    flags=TNF_LIST | TNF_OPEN;
   }
 
+  listnode=MUIV_NListtree_Insert_ListNode_Root;
+  if(lpis->hParent && lpis->hParent!=TVI_ROOT) {
+    DebOut("we need to insert into node: %lx\n", lpis->hParent);
+    listnode=(struct MUI_NListtree_TreeNode *)lpis->hParent;
+  }
 
   /* save config (lParam) in UserData */
-  DoMethod(elem[i].obj, MUIM_NListtree_Insert, lpis->itemex.pszText, (IPTR) lpis->itemex.lParam,
-                        listnode,
-                        MUIV_NListtree_Insert_PrevNode_Tail,
-                        MUIV_NListtree_Insert_Flag_Active);
-  
-  // care for hInsertAfter = TVI_ROOT : TVI_SORT .. */
-  TODO();
+  newnode=(struct MUI_NListtree_TreeNode *) DoMethod(elem[i].obj, MUIM_NListtree_Insert, 
+                    lpis->itemex.pszText, (IPTR) lpis->itemex.lParam,
+                    listnode,
+                    MUIV_NListtree_Insert_PrevNode_Tail,
+                    flags);
 
-  /* TODO: return value!? */
+  DebOut("newnode: %lx\n", newnode);
+  
+  return (HTREEITEM) newnode;
 }
 
 BOOL TreeView_DeleteItem(HWND hwndTV, int nIDDlgItem, HTREEITEM hitem) {
@@ -145,7 +180,6 @@ HTREEITEM TreeView_GetSelection(HWND elem, int item) {
 /* we need to return the selected config in pitem.lParam
  * WARNING: this is just a minimal implementation to get win32gui.cpp/LoadSaveDlgProc working!
  */
-
 BOOL TreeView_GetItem(HWND elem, int item, APTR pitem_void) {
 
   LPTVITEM pitem=(LPTVITEM) pitem_void; /* gcc does no automatic cast here, as MS C++ does */
@@ -348,7 +382,10 @@ AROS_UFH2(void, tree_double, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR,
   AROS_USERFUNC_EXIT
 }
  
-Object *new_tree(ULONG i, void *f, struct Data *data) {
+/* return the object to be inserted in the app
+ * store pointer to nlisttree in &nlisttree
+ */
+Object *new_tree(ULONG i, void *f, struct Data *data, Object **nlisttree) {
 
   Object *tree=NULL;
   int *(*func) (Element *hDlg, UINT msg, ULONG wParam, IPTR lParam);
@@ -367,7 +404,7 @@ Object *new_tree(ULONG i, void *f, struct Data *data) {
           MUIA_UserData, i,
           Child, (NListviewObject,
             MUIA_UserData, i,
-            MUIA_NListview_NList, (NListtreeObject,
+            MUIA_NListview_NList, (*nlisttree=NListtreeObject,
                 MUIA_UserData, i,
                 ReadListFrame,
                 MUIA_CycleChain, TRUE,
@@ -381,28 +418,77 @@ Object *new_tree(ULONG i, void *f, struct Data *data) {
             End),
           End;
 
-  if(tree) {
-
-
-#ifdef UAE_ABI_v0
-              data->MyMUIHook_tree_active.h_Entry=(HOOKFUNC) tree_active;
-#else
-              data->MyMUIHook_tree_active.h_Entry=(APTR) tree_active;
-#endif
-              data->MyMUIHook_tree_active.h_Data =(APTR) data;
-
-              DoMethod(tree, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR) tree, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_tree_active, func); 
-
-#ifdef UAE_ABI_v0
-              data->MyMUIHook_tree_double.h_Entry=(HOOKFUNC) tree_double;
-#else
-              data->MyMUIHook_tree_double.h_Entry=(APTR) tree_double;
-#endif
-              data->MyMUIHook_tree_double.h_Data =(APTR) data;
-
-              DoMethod(tree, MUIM_Notify, MUIA_NList_DoubleClick, MUIV_EveryTime, (IPTR) tree, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_tree_double, func); 
-
+  if(!tree) {
+    DebOut("ERROR: unable to create tree!\n");
+    return NULL;
   }
+
+  DebOut("new tree: %lx\n", tree);
+  DebOut("new listtree: %lx\n", *nlisttree);
+
+  /* setup hooks */
+#ifdef UAE_ABI_v0
+  data->MyMUIHook_tree_active.h_Entry=(HOOKFUNC) tree_active;
+#else
+  data->MyMUIHook_tree_active.h_Entry=(APTR) tree_active;
+#endif
+  data->MyMUIHook_tree_active.h_Data =(APTR) data;
+
+  DoMethod(tree, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR) tree, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_tree_active, func); 
+
+#ifdef UAE_ABI_v0
+  data->MyMUIHook_tree_double.h_Entry=(HOOKFUNC) tree_double;
+#else
+  data->MyMUIHook_tree_double.h_Entry=(APTR) tree_double;
+#endif
+  data->MyMUIHook_tree_double.h_Data =(APTR) data;
+
+  DoMethod(tree, MUIM_Notify, MUIA_NList_DoubleClick, MUIV_EveryTime, (IPTR) tree, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_tree_double, func); 
+
+#if 0
+  Object *img1;
+
+  ULONG QUICKSTART_WIDTH1=32;
+  ULONG QUICKSTART_HEIGHT1=16;
+  ULONG QUICKSTART_DEPTH1=4;
+
+  img1= BodychunkObject,
+    MUIA_FixWidth , QUICKSTART_WIDTH1 ,
+    MUIA_FixHeight , QUICKSTART_HEIGHT1,
+    MUIA_Bitmap_Width , QUICKSTART_WIDTH1 ,
+    MUIA_Bitmap_Height , QUICKSTART_HEIGHT1,
+    MUIA_Bodychunk_Depth , QUICKSTART_DEPTH1 ,
+
+    MUIA_Bodychunk_Body , (UBYTE *) QUICKSTART,
+    MUIA_Bodychunk_Compression, 0,
+    //MUIA_Bodychunk_Masking , 2,
+    MUIA_Bitmap_SourceColors , (ULONG *) list2_colors,
+    MUIA_Bitmap_Transparent , 0,
+  End;
+#endif
+
+
+#if 0
+  img1=NBitmapObject,
+        MUIA_FixWidth,       QUICKSTART_WIDTH*2,
+        MUIA_FixHeight,      QUICKSTART_HEIGHT*2,
+        MUIA_NBitmap_Type,   MUIV_NBitmap_Type_ARGB32,
+        MUIA_NBitmap_Normal, QUICKSTART,
+        MUIA_NBitmap_Width,  QUICKSTART_WIDTH,
+        MUIA_NBitmap_Height, QUICKSTART_HEIGHT,
+        MUIA_NBitmap_Alpha,  TRUE,
+        End;
+
+
+
+  /* setup images */
+  if(DoMethod(tree, MUIM_NList_UseImage, img1, 0, 0)) {
+    DebOut("ERROR: can't create image!\n");
+  }
+  else {
+    DebOut("MUIM_NList_UseImage: SUCCESS!\n");
+  }
+#endif
 
   return tree;
 }
