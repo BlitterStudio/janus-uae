@@ -561,6 +561,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
           if(!strcmp(src[i].windows_class, "SysTreeView32")) {
             /* Tree gadget! */
             DebOut("SysTreeView32\n");
+            Object *nlisttree=NULL;
 #if 0
             child=HGroup,
                     MUIA_UserData         , i,
@@ -580,13 +581,11 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                     End;
 #endif
                     //Child, VSpace(0),
-            child=new_tree(i, (void *) func, data); /*, &data->MyMUIHook_tree_construct,
-                              &data->MyMUIHook_tree_destruct,
-                              &data->MyMUIHook_tree_display);*/
+            child=new_tree(i, (void *) func, data, &nlisttree); 
             DebOut("child: %lx\n", child);
             if(child) {
               src[i].exists=TRUE;
-              src[i].obj=child;
+              src[i].obj=nlisttree;
             }
             break;
           }

@@ -22,6 +22,6 @@ struct Data {
 };
 
 int get_elem_from_obj(struct Data *data, Object *obj);
-Object *new_tree(ULONG i, void *f, struct Data *data);
+Object *new_tree(ULONG i, void *f, struct Data *data, Object **nlisttree);
 
 #endif
