@@ -88,6 +88,10 @@
 #include "gfx.h"
 #include "sys/mman.h"
 
+#include "fsdb.h"
+#include "winnt.h"
+
+
 
 //#include "options.h"
 //#include "include/scsidev.h"
@@ -633,18 +637,37 @@ static int isfilesindir (const TCHAR *p)
 }
 
 int GetFileAttributes(char *path) {
-  BPTR    lock;
-  BOOL    result;
 
-  bug("[JUAE:AROS] %s('%s')\n", __PRETTY_FUNCTION__, path);
+  struct mystat statbuf;
+  int result=0;
 
-  lock=Lock(path, SHARED_LOCK);
-  if(!lock) {
+  DebOut("path: %s\n", path);
+  if(!my_stat(path, &statbuf)) {
+    DebOut("unable to lock path %s\n", path);
     return INVALID_FILE_ATTRIBUTES;
   }
 
-  UnLock(lock);
-  return 1;
+  if(is_dir(path)) {
+    DebOut("FILE_ATTRIBUTE_DIRECTORY\n");
+    return FILE_ATTRIBUTE_DIRECTORY;
+  }
+
+  if(my_isfilehidden(path)) {
+    DebOut("FILE_ATTRIBUTE_HIDDEN\n");
+    result=result|FILE_ATTRIBUTE_HIDDEN;
+  }
+
+  if(!(statbuf.mode && FILEFLAG_WRITE)) {
+    DebOut("FILE_ATTRIBUTE_READONLY");
+    result=result|FILE_ATTRIBUTE_READONLY;
+  }
+
+  if(result==0) {
+    DebOut("FILE_ATTRIBUTE_NORMAL\n");
+    result=FILE_ATTRIBUTE_NORMAL;
+  }
+
+  return result;
 }
 
 typedef struct {
@@ -657,6 +680,7 @@ BOOL FindNextFile(HANDLE hFindFile, LPWIN32_FIND_DATA lpFindFileData) {
 
   INTERNAL_HANDLE *h=(INTERNAL_HANDLE*) hFindFile;
   struct timespec time;
+  char full_path[256];
 
 next:
   if(!ExNext((BPTR) h->lock, &h->fib_ptr)) {
@@ -677,19 +701,31 @@ next:
   amiga_to_timeval(&lpFindFileData->ftCreationTime, h->fib_ptr.fib_Date.ds_Days, h->fib_ptr.fib_Date.ds_Minute, h->fib_ptr.fib_Date.ds_Tick);
   amiga_to_timeval(&lpFindFileData->ftLastAccessTime, h->fib_ptr.fib_Date.ds_Days, h->fib_ptr.fib_Date.ds_Minute, h->fib_ptr.fib_Date.ds_Tick);
   amiga_to_timeval(&lpFindFileData->ftLastWriteTime, h->fib_ptr.fib_Date.ds_Days, h->fib_ptr.fib_Date.ds_Minute, h->fib_ptr.fib_Date.ds_Tick);
-  
+
+  NameFromLock(h->lock, full_path, 255);
+  DebOut("full_path: %s\n", full_path);
+  AddPart(full_path, lpFindFileData->cFileName, 255);
+  DebOut("full_path: %s\n", full_path);
+  lpFindFileData->dwFileAttributes=GetFileAttributes(full_path);
+  DebOut("lpFindFileData->dwFileAttributes: %lx\n", lpFindFileData->dwFileAttributes);
 
   return TRUE;
 }
 
 /* Searches a directory for a file or subdirectory with a 
  * name that matches a specific name (or partial name if wildcards are used).
+ *
+ * lpFindFileData [out]:
+ * A pointer to the WIN32_FIND_DATA structure that receives information about 
+ * a found file or directory.
  */
 HANDLE FindFirstFile(const TCHAR *lpFileName, WIN32_FIND_DATA *lpFindFileData) {
   
   char wildcard[256];
   char path[256];
   INTERNAL_HANDLE *h=NULL;
+
+  memset(lpFindFileData, 0, sizeof(lpFindFileData));
 
   DebOut("lpFileName: %s\n", lpFileName);
   wildcard[0]=(char) 0;
