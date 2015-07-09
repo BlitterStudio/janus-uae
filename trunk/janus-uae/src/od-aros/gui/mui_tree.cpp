@@ -29,6 +29,8 @@
 
 #include "mui_class.h"
 
+#include "registry.h"
+#include "win32gui.h"
 #if 0
 #include "png2c/misc.h"
 #include "png2c/folder.h"
@@ -104,39 +106,26 @@ HTREEITEM TreeView_InsertItem(HWND elem, int item, LPTVINSERTSTRUCT lpis) {
   }
 #endif
 
-  /* Handle to the item after which the new item is to be inserted, 
-   * or one of the following values: 
-   * 
+  /* 
    * TVI_FIRST Inserts the item at the beginning of the list.
    * TVI_LAST  Inserts the item at the end of the list.
    * TVI_ROOT  Add the item as a root item.
    * TVI_SORT  Inserts the item into the list in alphabetical order.
    */
-#if 0
-  if(lpis->hInsertAfter == TVI_ROOT) {
-    DebOut("TVI_ROOT\n");
-    listnode=MUIV_NListtree_Insert_ListNode_Root;
-  }
-  else if(lpis->hInsertAfter == TVI_SORT) {
-    DebOut("TVI_SORT..\n");
-    /* TODO */
-    listnode=MUIV_NListtree_Insert_ListNode_Root;
-  }
-  else {
-    DebOut("WARNING: unknown lpis->hInsertAfter (%lx)!\n", lpis->hInsertAfter);
-  }
-#endif
-
-  if(lpis->itemex.state && TVIS_BOLD) {
-    /* abuse bold as folder indicator, windows makes no difference between folder and item ..*/
-    DebOut("BOLD => assume this is a folder! (%lx)\n", lpis->itemex.state);
+  if(lpis->itemex.state & TVIS_EXPANDED) {
+    DebOut("TVIS_EXPANDED\n");
     flags=TNF_LIST | TNF_OPEN;
   }
 
-  listnode=MUIV_NListtree_Insert_ListNode_Root;
+  if(lpis->itemex.state & TVIS_SELECTED) {
+    DebOut("TVIS_SELECTED\n");
+    flags=flags | MUIV_NListtree_Insert_Flag_Active;
+  }
+
+  listnode=(struct MUI_NListtree_TreeNode *) MUIV_NListtree_Insert_ListNode_Root;
   if(lpis->hParent && lpis->hParent!=TVI_ROOT) {
     DebOut("we need to insert into node: %lx\n", lpis->hParent);
-    listnode=(struct MUI_NListtree_TreeNode *)lpis->hParent;
+    listnode=(struct MUI_NListtree_TreeNode *) lpis->hParent;
   }
 
   /* save config (lParam) in UserData */
@@ -297,7 +286,6 @@ HOOKPROTONHNO(TreeView_DestructHook, void, struct NList_DestructMessage *ndm) {
 
 }
 #endif
-
 
 static void tree_send_notify(ULONG type, Object *obj, struct Data *data, struct ConfigStruct *config) {
 
@@ -492,3 +480,4 @@ Object *new_tree(ULONG i, void *f, struct Data *data, Object **nlisttree) {
 
   return tree;
 }
+
