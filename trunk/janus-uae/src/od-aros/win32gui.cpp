@@ -3590,6 +3590,7 @@ static struct ConfigStruct *readconfigcache (const TCHAR *path)
 			configstore = xrealloc (struct ConfigStruct*, configstore, configstoreallocated);
 		}
 		configstore[configstoresize++] = cs;
+    DebOut("new configstoresize: %d\n", configstoresize);
 		if (!first)
 			first = cs;
 
@@ -3852,7 +3853,7 @@ static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int u
       DebOut("config->Fullpath: %s\n", config->Fullpath);
 			memcpy (&config->t, &find_data.ftLastWriteTime, sizeof (FILETIME));
 			if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && usedirs) {
-        DebOut("FILE_ATTRIBUTE_DIRECTORY\n");
+        DebOut("FILE_ATTRIBUTE_DIRECTORY: %s (dir)\n", find_data.cFileName);
 				if ((*level) < 2) {
 					struct ConfigStruct *child;
 					_tcscpy (config->Name, find_data.cFileName);
@@ -3873,7 +3874,7 @@ static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int u
 					ok = 1;
 				}
 			} else if (!(find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-        DebOut("not FILE_ATTRIBUTE_DIRECTORY\n");
+        DebOut("!FILE_ATTRIBUTE_DIRECTORY: %s (file)\n", find_data.cFileName);
 				TCHAR path3[MAX_DPATH];
 				if (_tcslen (find_data.cFileName) > 4 && !strcasecmp (find_data.cFileName + _tcslen (find_data.cFileName) - 4, _T(".uae"))) {
 					_tcscpy (path3, path);
@@ -3905,6 +3906,7 @@ static struct ConfigStruct *GetConfigs (struct ConfigStruct *configparent, int u
 				configstore = xrealloc (struct ConfigStruct*, configstore, configstoreallocated);
 			}
 			configstore[configstoresize++] = config;
+      DebOut("new configstoresize: %d\n", configstoresize);
 			if (first == NULL)
 				first = config;
 		}
@@ -3924,14 +3926,17 @@ static struct ConfigStruct *CreateConfigStore (struct ConfigStruct *oldconfig, i
 	TCHAR path[MAX_DPATH], name[MAX_DPATH];
 	struct ConfigStruct *cs;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("oldconfig %lx, flushcache %d\n", oldconfig, flushcache);
 
 	if (oldconfig) {
 		_tcscpy (path, oldconfig->Path);
 		_tcscpy (name, oldconfig->Name);
+    DebOut("path %s, name %s\n", path, name);
 	}
 	level = 0;
+  DebOut("configstoresize: %d\n", configstoresize);
 	GetConfigs (NULL, 1, &level, flushcache);
+  DebOut("configstoresize: %d\n", configstoresize);
 	if (oldconfig) {
 		for (i = 0; i < configstoresize; i++) {
 			cs = configstore[i];
@@ -3982,12 +3987,14 @@ static TCHAR *HandleConfiguration (HWND hDlg, int flag, struct ConfigStruct *con
 	switch (flag)
 	{
 	case CONFIG_SAVE_FULL:
+    DebOut("CONFIG_SAVE_FULL\n");
 		ok = DiskSelection(hDlg, IDC_SAVE, 5, &workprefs, newpath);
 		GetDlgItemText (hDlg, IDC_EDITNAME, name, MAX_DPATH);
 		_tcscpy (config_filename, name);
 		break;
 
 	case CONFIG_LOAD_FULL:
+    DebOut("CONFIG_LOAD_FULL\n");
 		if ((ok = DiskSelection(hDlg, IDC_LOAD, 4, &workprefs, newpath))) {
 			//EnableWindow(GetDlgItem (hDlg, IDC_VIEWINFO), workprefs.info[0]);
 			EnableWindow(hDlg, IDC_VIEWINFO, workprefs.info[0]);
@@ -3997,17 +4004,21 @@ static TCHAR *HandleConfiguration (HWND hDlg, int flag, struct ConfigStruct *con
 		break;
 
 	case CONFIG_SAVE:
+    DebOut("CONFIG_SAVE\n");
 		if (_tcslen (name) == 0 || _tcscmp (name, _T(".uae")) == 0) {
+      DebOut("1\n");
 			TCHAR szMessage[MAX_DPATH];
 			WIN32GUI_LoadUIString(IDS_MUSTENTERNAME, szMessage, MAX_DPATH);
 			pre_gui_message (szMessage);
 		} else {
+      DebOut("name: %s\n", name);
 			_tcscpy (workprefs.description, desc);
 			cfgfile_save (&workprefs, path, configtypepanel);
 		}
 		break;
 
 	case CONFIG_LOAD:
+    DebOut("CONFIG_LOAD\n");
 		if (_tcslen (name) == 0) {
 			TCHAR szMessage[MAX_DPATH];
 			WIN32GUI_LoadUIString (IDS_MUSTSELECTCONFIG, szMessage, MAX_DPATH);
@@ -4026,6 +4037,7 @@ static TCHAR *HandleConfiguration (HWND hDlg, int flag, struct ConfigStruct *con
 		break;
 
 	case CONFIG_DELETE:
+    DebOut("CONFIG_DELETE\n");
 		if (_tcslen (name) == 0) {
 			TCHAR szMessage[MAX_DPATH];
 			WIN32GUI_LoadUIString (IDS_MUSTSELECTCONFIGFORDELETE, szMessage, MAX_DPATH);
@@ -5042,7 +5054,7 @@ static HTREEITEM AddConfigNode (HWND hDlg, struct ConfigStruct *config, const TC
 	TCHAR s[MAX_DPATH] = _T("");
 	TCHAR file_name[MAX_DPATH] = _T(""), file_path[MAX_DPATH] = _T("");
 
-  DebOut("name: %s (%s, %s)\n", name, desc, path);
+  DebOut("name: %s (%s, %s, diretory %d)\n", name, desc, path, isdir);
 
 	GetDlgItemText (hDlg, IDC_EDITNAME, file_name, MAX_DPATH);
 	GetDlgItemText (hDlg, IDC_EDITPATH, file_path, MAX_DPATH);
@@ -5081,6 +5093,7 @@ static HTREEITEM AddConfigNode (HWND hDlg, struct ConfigStruct *config, const TC
 	is.itemex.iImage = is.itemex.iSelectedImage = isdir > 0 ? 0 : (isdir < 0) ? 2 : 1;
 	is.itemex.lParam = (LPARAM)config;
 	//return TreeView_InsertItem (TVhDlg, &is);
+  DebOut("calling TreeView_InsertItem:\n");
 	return TreeView_InsertItem (TVhDlg, IDC_CONFIGTREE, &is);
 }
 
@@ -5088,6 +5101,8 @@ static int LoadConfigTreeView (HWND hDlg, int idx, HTREEITEM parent)
 {
 	struct ConfigStruct *cparent, *config;
 	int cnt = 0;
+
+  DebOut("hDlg: %lx, idx %d, parent: %lx\n", hDlg, idx, parent);
 
   DebOut("configstoresize: %d\n", configstoresize);
 
@@ -5219,7 +5234,9 @@ static HTREEITEM InitializeConfigTreeView (HWND hDlg)
 #endif
 	DeleteConfigTree (hDlg);
 	GetConfigPath (path, NULL, FALSE);
+  DebOut("path: %s\n", path);
 	parent = AddConfigNode (hDlg, NULL, path, NULL, NULL, 0, 1, NULL);
+  DebOut("parent: %lx\n", parent);
 	LoadConfigTreeView (hDlg, -1, parent);
 	return parent;
 }
@@ -5291,7 +5308,7 @@ static struct ConfigStruct *initloadsave (HWND hDlg, struct ConfigStruct *config
 	int dwRFPsize = sizeof (name_buf) / sizeof (TCHAR);
 	TCHAR path[MAX_DPATH];
 
-  bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("config: %lx\n", config);
 
 	//EnableWindow (GetDlgItem (hDlg, IDC_VIEWINFO), workprefs.info[0]);
 	EnableWindow (hDlg, IDC_VIEWINFO, workprefs.info[0]);
@@ -5339,6 +5356,7 @@ static void loadsavecommands (HWND hDlg, WPARAM wParam, struct ConfigStruct **co
 		}
 		break;
 	case IDC_QUICKSAVE:
+    DebOut("IDC_QUICKSAVE\n");
 		if (HandleConfiguration (hDlg, CONFIG_SAVE, config, NULL)) {
 			DeleteConfigTree (hDlg);
 			config = CreateConfigStore (config, TRUE);
@@ -5346,6 +5364,9 @@ static void loadsavecommands (HWND hDlg, WPARAM wParam, struct ConfigStruct **co
 			config = initloadsave (hDlg, config);
 			InitializeConfig (hDlg, config);
 		}
+    else {
+      DebOut("HandleConfiguration failed!\n");
+    }
 		break;
 	case IDC_QUICKLOAD:
 		*pcfgfile = HandleConfiguration (hDlg, CONFIG_LOAD, config, NULL);
@@ -17403,7 +17424,7 @@ static HTREEITEM CreateFolderNode (HWND TVhDlg, int nameid, HTREEITEM parent, in
 	TVINSERTSTRUCT is;
 	TCHAR txt[100];
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("label: %s\n", label);
 
 	memset (&is, 0, sizeof (is));
 	is.hInsertAfter = TVI_LAST;
@@ -17412,11 +17433,14 @@ static HTREEITEM CreateFolderNode (HWND TVhDlg, int nameid, HTREEITEM parent, in
 	WIN32GUI_LoadUIString (nameid, txt, sizeof (txt) / sizeof (TCHAR));
 	is.itemex.pszText = txt;
 	is.itemex.lParam = (LPARAM)(nodeid | (sub << 16));
+  DebOut("nodeid: %d, sub %d lParam: %lx\n", nodeid, sub, nodeid | (sub << 16));
 	is.itemex.iImage = C_PAGES;
 	is.itemex.iSelectedImage = C_PAGES;
 	is.itemex.state = TVIS_BOLD | TVIS_EXPANDED;
 	is.itemex.stateMask = TVIS_BOLD | TVIS_EXPANDED;
+
 	checkpagelabel (nodeid, sub, label);
+  DebOut("calling TreeView_InsertItem:\n");
 	return TreeView_InsertItem (TVhDlg, &is);
 }
 
@@ -17425,7 +17449,7 @@ static void CreateNode (HWND TVhDlg, int page, HTREEITEM parent, const TCHAR *la
 	TVINSERTSTRUCT is;
 	struct GUIPAGE *p;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("label: %s\n", label);
 
 	if (page < 0)
 		return;
@@ -17436,8 +17460,10 @@ static void CreateNode (HWND TVhDlg, int page, HTREEITEM parent, const TCHAR *la
 	is.itemex.mask = TVIF_TEXT | TVIF_PARAM | TVIF_STATE | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
 	is.itemex.pszText = (TCHAR*)p->title;
 	is.itemex.lParam = (LPARAM)p->idx;
+  DebOut("lParam: %lx\n", is.itemex.lParam);
 	is.itemex.iImage = p->himg;
 	is.itemex.iSelectedImage = is.itemex.iImage;
+  DebOut("calling TreeView_InsertItem:\n");
 	p->tv = TreeView_InsertItem (TVhDlg, &is);
 	checkpagelabel (page, 0, label);
 }
