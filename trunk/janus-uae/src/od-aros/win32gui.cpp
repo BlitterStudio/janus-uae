@@ -3319,14 +3319,12 @@ static void setguititle (HWND phwnd)
 	TCHAR *name;
 	static HWND hwnd;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("phwnd: %lx\n", phwnd);
 
 	if (phwnd)
 		hwnd = phwnd;
 	if (hwnd && !title[0]) {
-#if 0
 		GetWindowText (hwnd, title, sizeof title / sizeof (TCHAR));
-#endif
 		if (_tcslen (WINUAEBETA) > 0) {
 			_tcscat (title, BetaStr);
 			if (_tcslen (WINUAEEXTRA) > 0) {
@@ -3335,6 +3333,12 @@ static void setguititle (HWND phwnd)
 			}
 		}
 	}
+#ifdef __AROS__
+  else {
+    /* no idea, how this work in WinUAE, setguititle is *always* called with a NULL pointer.. */
+    _tcscat (title, "Janus-UAE2 Properties");
+  }
+#endif
 	title2[0] = 0;
 	name = workprefs.config_window_title;
 	if (name && _tcslen (name) > 0) {
@@ -3350,9 +3354,7 @@ static void setguititle (HWND phwnd)
 		}
 	}
 	_tcscat (title2, title);
-#if 0
 	SetWindowText (hwnd, title2);
-#endif
 }
 
 static void GetConfigPath (TCHAR *path, struct ConfigStruct *parent, int noroot)
@@ -3961,7 +3963,6 @@ static TCHAR *HandleConfiguration (HWND hDlg, int flag, struct ConfigStruct *con
 	desc[0] = 0;
 	GetDlgItemText (hDlg, IDC_EDITNAME, name, MAX_DPATH);
 	_tcscpy (config_filename, name);
-  DebOut("name: %s\n", name);
 	if (flag == CONFIG_SAVE_FULL || flag == CONFIG_SAVE) {
 		if (_tcslen (name) < 4 || strcasecmp (name + _tcslen (name) - 4, _T(".uae"))) {
 			_tcscat (name, _T(".uae"));
