@@ -106,6 +106,7 @@ LONG SendDlgItemMessage(struct Element *hDlg, int nIDDlgItem, UINT Msg, WPARAM w
 BOOL CheckDlgButton(Element *elem, int button, UINT uCheck);
 BOOL SetDlgItemInt(HWND hDlg, int nIDDlgItem, UINT uValue, BOOL bSigned);
 BOOL SetWindowText(HWND hWnd, TCHAR *lpString);
+int GetWindowText(HWND   hWnd, LPTSTR lpString, int nMaxCount);
 BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDCheckButton);
 int MessageBox(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType);
 int MessageBox_fixed(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType);
@@ -125,7 +126,7 @@ void setpathmode (pathtype pt);
 void gui_message_id (TCHAR *id);
 
 extern int quickstart, configurationcache, relativepaths;
-
+extern Object *app, *win;
 
 /* gfx */
 void updatewinfsmode (struct uae_prefs *p);

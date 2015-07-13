@@ -711,16 +711,37 @@ HWND GetDlgItem(HWND hDlg, int nIDDlgItem) {
   return hDlg[i];
 }
 
+#endif
 
 /* Changes the text of the specified window's title bar (if it has one). 
  * If the specified window is a control, the text of the control is changed.
  */
-BOOL SetWindowText(HWND hDlg, TCHAR *lpString) {
+BOOL SetWindowText(HWND hWnd, TCHAR *lpString) {
+
+  if(hWnd!=NULL) {
+    DebOut("hWnd: %lx\n", hWnd);
+    TODO();
+    return FALSE;
+  }
+  DebOut("lpString: %s\n", lpString);
+  SetAttrs(win, MUIA_Window_Title, lpString, TAG_DONE);
+}
+
+int GetWindowText(HWND   hWnd, LPTSTR lpString, int nMaxCount) {
+  DebOut("hWnd: %lx\n", hWnd);
+
+  if(hWnd!=NULL) {
+    DebOut("hWnd: %lx\n", hWnd);
+    TODO();
+    return 0;
+  }
+
+  /* pray for enough space!! */
+  GetAttr(MUIA_String_Contents, win, (IPTR *) lpString);
 
   DebOut("lpString: %s\n", lpString);
-  DebOut("hWnd: %lx\n", hWnd);
+
 }
-#endif
 
 BOOL ShowWindow(HWND hWnd, int nCmdShow) {
   TODO();
