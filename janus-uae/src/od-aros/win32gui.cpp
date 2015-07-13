@@ -3336,7 +3336,9 @@ static void setguititle (HWND phwnd)
 #ifdef __AROS__
   else {
     /* no idea, how this work in WinUAE, setguititle is *always* called with a NULL pointer.. */
-    _tcscat (title, "Janus-UAE2 Properties");
+    if(!title[0]) {
+      _tcscat (title, "Janus-UAE2 Properties");
+    }
   }
 #endif
 	title2[0] = 0;
