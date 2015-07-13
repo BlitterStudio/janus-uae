@@ -6783,7 +6783,11 @@ static void init_aboutdlg (HWND hDlg)
 	CharFormat.cbSize = sizeof (CharFormat);
 #endif
 
+#ifndef __AROS__
 	SetDlgItemText (hDlg, IDC_RICHEDIT1, _T("WinUAE"));
+#else
+	SetDlgItemText (hDlg, IDC_RICHEDIT1, _T("Janus-UAE2"));
+#endif
 #if 0
 	SendDlgItemMessage (hDlg, IDC_RICHEDIT1, EM_GETCHARFORMAT, 0, (LPARAM) & CharFormat);
 	CharFormat.dwMask |= CFM_BOLD | CFM_SIZE | CFM_FACE;

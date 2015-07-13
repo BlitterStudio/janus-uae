@@ -74,7 +74,12 @@ while(<RESFILE>) {
             $back=$key." ";
           }
           else {
+            # don't patch IDS_CONTRIBUTOR lines
+            if(not $key =~ /IDS_CONTRIBUTORS/) {
+              $value=~s/WinUAE/Janus-UAE2/g;
+            }
             print HFILE "#define $key $value\n";
+
           }
 
         }
