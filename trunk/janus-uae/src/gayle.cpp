@@ -6,7 +6,6 @@
 * (c) 2006 - 2013 Toni Wilen
 */
 
-#define OLI_DEBUG
 #define GAYLE_LOG 0
 #define IDE_LOG 0
 #define MBRES_LOG 0

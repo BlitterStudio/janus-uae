@@ -2,8 +2,6 @@
 #define writemem_special writemem
 #define readmem_special  readmem
 
-//#define OLI_DEBUG
-
 #define USE_MATCHSTATE 0
 #include "sysconfig.h"
 #include "sysdeps.h"

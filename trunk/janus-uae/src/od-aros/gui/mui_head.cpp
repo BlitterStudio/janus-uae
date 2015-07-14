@@ -8,7 +8,6 @@
 #include <clib/alib_protos.h>
 #include <utility/hooks.h>
 
-#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 

@@ -28,8 +28,6 @@
 
 #include "SDL_Config/SDL_config_lib.h"
 
-#define DEBUG 1
-#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 

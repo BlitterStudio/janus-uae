@@ -16,8 +16,6 @@
 #include <mui/NListtree_mcc.h>
 #include <mui/NListview_mcc.h>
 
-
-#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 

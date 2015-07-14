@@ -7,7 +7,6 @@
 * Copyright 1998 Brian King, Bernd Schmidt
 */
 
-#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 

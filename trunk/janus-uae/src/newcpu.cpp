@@ -10,7 +10,6 @@
 #define DEBUG_CD32CDTVIO 0
 #define EXCEPTION3_DEBUGGER 0
 #define CPUTRACE_DEBUG 1
-#define OLI_DEBUG 1
 
 #include "sysconfig.h"
 #include "sysdeps.h"

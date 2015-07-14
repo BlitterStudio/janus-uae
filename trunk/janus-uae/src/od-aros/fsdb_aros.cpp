@@ -23,12 +23,10 @@
  *
  ************************************************************************/
 
-#define DEBUG 1
 #include <stdio.h>
 #include <proto/dos.h>
 #include <dos/dos.h>
 
-#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 

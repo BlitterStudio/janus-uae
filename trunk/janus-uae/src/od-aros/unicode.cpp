@@ -23,7 +23,6 @@
  *
  ************************************************************************/
 
-//#define OLI_DEBUG
 #include <proto/utility.h>
 
 #include "sysconfig.h"

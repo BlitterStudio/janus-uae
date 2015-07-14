@@ -24,6 +24,7 @@ HOSTINCLUDEDIR := $(GENDIR)/$(CURDIR)/host-include
 HOST_INCLUDES := -I$(HOSTINCLUDEDIR) -I$(SRCDIR)/$(CURDIR)/include
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/od-aros -I$(SRCDIR)/$(CURDIR)/od-aros/gui -I$(SRCDIR)/$(CURDIR)/include -I$(GENDIR)/$(CURDIR) -I$(GENDIR)/$(CURDIR)/od-aros -I$(AROS_INCLUDES)/SDL
 USER_CFLAGS := -fexceptions
+##USER_CFLAGS += -DJUAE_DEBUG=1 -DDEBUG=1
 
 PERL:=/usr/bin/perl
 

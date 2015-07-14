@@ -10,8 +10,6 @@
 #include <proto/diskfont.h>
 #include <clib/alib_protos.h>
 
-
-#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 

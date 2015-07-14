@@ -28,7 +28,6 @@ resolution.
 To prevent extremely bad things (think pixels cut in half by window borders) from
 happening, all ports should restrict window widths to be multiples of 16 pixels.  */
 
-#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 

@@ -8,7 +8,6 @@
 
 #define DEBUG_STUPID 0
 
-#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
