@@ -7,7 +7,6 @@
  *           2010-2011 Mustafa Tufan
  */
 
-#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 

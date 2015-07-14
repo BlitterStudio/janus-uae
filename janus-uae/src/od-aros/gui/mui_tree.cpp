@@ -17,7 +17,6 @@
 #include <mui/NFloattext_mcc.h>
 #include <mui/NBitmap_mcc.h>
 
-#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 

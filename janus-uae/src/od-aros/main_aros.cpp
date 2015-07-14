@@ -23,8 +23,6 @@
  *
  ************************************************************************/
 
-#define OLI_DEBUG
-
 #include <exec/execbase.h>
 #include <proto/dos.h>
 

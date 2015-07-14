@@ -11,7 +11,6 @@
 *
 */
 
-#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 

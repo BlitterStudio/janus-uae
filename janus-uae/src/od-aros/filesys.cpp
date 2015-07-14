@@ -1,6 +1,5 @@
 #include <stdio.h>
 
-#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 

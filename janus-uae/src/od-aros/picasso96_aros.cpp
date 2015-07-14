@@ -32,7 +32,6 @@
 
 #define MULTIDISPLAY 0
 #define WINCURSOR 1
-#define OLI_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"

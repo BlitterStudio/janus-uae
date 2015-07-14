@@ -9,7 +9,6 @@
 
 #define RECURSIVE_ARCHIVES 1
 //#define ZFILE_DEBUG
-//#define OLI_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"

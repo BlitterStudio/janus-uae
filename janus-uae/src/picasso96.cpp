@@ -44,12 +44,10 @@
 #include "memory.h"
 #include "picasso96.h"
 
-#ifndef __AROS__
 #ifdef JIT
 int have_done_picasso = 0; /* For the JIT compiler */
 int picasso_is_special = PIC_WRITE; /* ditto */
 int picasso_is_special_read = PIC_READ; /* ditto */
-#endif
 #endif
 
 int p96hack_vpos, p96hack_vpos2, p96refresh_active;

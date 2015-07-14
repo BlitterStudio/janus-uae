@@ -212,8 +212,9 @@ STATIC_INLINE void m68k_do_rts_ce030 (void)
 	m68k_areg (regs, 7) += 4;
 }
 
+#if (0)
 extern uae_u32 get_word_ce040_prefetch (int);
-
+#endif
 #endif
 
 #ifdef CPUEMU_11
