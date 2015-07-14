@@ -500,7 +500,8 @@ static bool getdeviceinfo (HANDLE hDevice, struct uae_driveinfo *udi)
 
 int hdf_open_target (struct hardfiledata *hfd, const TCHAR *pname)
 {
-    bug("[JUAE:HDF] %s(0x%p, '%s')\n", __PRETTY_FUNCTION__, hfd, pname);
+    DebOut("path: %s\n", pname);
+    DebOut("hfd: 0x%p\n", hfd);
 
 #if (0)
 	HANDLE h = INVALID_HANDLE_VALUE;
@@ -783,7 +784,7 @@ static void freehandle (struct hardfilehandle *h)
 
 void hdf_close_target (struct hardfiledata *hfd)
 {
-    bug("[JUAE:HDF] %s(0x%p)\n", __PRETTY_FUNCTION__, hfd);
+    DebOut("hfd: 0x%p\n", hfd);
 
 #if (0)
 	freehandle (hfd->handle);
@@ -806,7 +807,8 @@ void hdf_close_target (struct hardfiledata *hfd)
 
 int hdf_dup_target (struct hardfiledata *dhfd, const struct hardfiledata *shfd)
 {
-    bug("[JUAE:HDF] %s(0x%p -> 0x%p)\n", __PRETTY_FUNCTION__, shfd, dhfd);
+    DebOut("src hfd: 0x%p\n", shfd);
+    DebOut("dest hfd: 0x%p\n", dhfd);
 
 	if (!shfd->handle_valid)
 		return 0;
@@ -839,7 +841,8 @@ int hdf_dup_target (struct hardfiledata *dhfd, const struct hardfiledata *shfd)
 
 static int hdf_seek (struct hardfiledata *hfd, uae_u64 offset)
 {
-    bug("[JUAE:HDF] %s(%d)\n", __PRETTY_FUNCTION__, offset);
+    DebOut("hfd: 0x%p\n", hfd);
+    DebOut("offset: %d\n", offset);
 
 	IPTR ret;
 
@@ -862,7 +865,7 @@ static int hdf_seek (struct hardfiledata *hfd, uae_u64 offset)
             if ((offset & 0xffffffff00000000) != 0)
             {
                 /* 64bit sek... */
-                bug("[JUAE:HDF] %s: 64bit seek\n", __PRETTY_FUNCTION__);
+                DebOut("64bit seek\n");            
             }
             else
                 Seek(hfd->handle->fh, offset, OFFSET_BEGINNING);
@@ -971,7 +974,10 @@ int hdf_read_target (struct hardfiledata *hfd, void *buffer, uae_u64 offset, int
 	int got = 0;
 	uae_u8 *p = (uae_u8*)buffer;
 
-    bug("[JUAE:HDF] %s(0x%p:0x%p, %d, %d)\n", __PRETTY_FUNCTION__, hfd, buffer, offset, len);
+    DebOut("hfd: 0x%p\n", hfd);
+    DebOut("buffer: 0x%p\n", buffer);
+    DebOut("offset: %d\n", offset);
+    DebOut("len: %d\n", len);
 
 	if (hfd->drive_empty)
 		return 0;
@@ -1068,7 +1074,10 @@ int hdf_write_target (struct hardfiledata *hfd, void *buffer, uae_u64 offset, in
 	int got = 0;
 	uae_u8 *p = (uae_u8*)buffer;
 
-    bug("[JUAE:HDF] %s(0x%p:0x%p, %d, %d)\n", __PRETTY_FUNCTION__, hfd, buffer, offset, len);
+    DebOut("hfd: 0x%p\n", hfd);
+    DebOut("buffer: 0x%p\n", buffer);
+    DebOut("offset: %d\n", offset);
+    DebOut("len: %d\n", len);
 
 	if (hfd->drive_empty)
 		return 0;
@@ -1093,14 +1102,14 @@ int hdf_write_target (struct hardfiledata *hfd, void *buffer, uae_u64 offset, in
 		len -= maxlen;
 	}
 
-    bug("[JUAE:HDF] %s: %d bytes written\n", __PRETTY_FUNCTION__, got);
+    DebOut("%d bytes written\n", got);
 
 	return got;
 }
 
 int hdf_resize_target (struct hardfiledata *hfd, uae_u64 newsize)
 {
-    bug("[JUAE:HDF] %s()\n", __PRETTY_FUNCTION__);
+    DebOut("hfd: 0x%p\n", hfd);
 #if (0)
 	LONG highword = 0;
 	DWORD ret, err;
