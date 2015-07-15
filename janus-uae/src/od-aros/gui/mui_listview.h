@@ -4,6 +4,7 @@
 
 int  ListView_GetItemCount(HWND hwnd);
 void ListView_SetItemState(HWND hwnd, int i, UINT state, UINT mask);
+LONG Button_SetElevationRequiredState(HWND hDlg, int nIDDlgItem, BOOL fRequired);
 
 /* Windows Listview defines (commctrl.h) */
 
