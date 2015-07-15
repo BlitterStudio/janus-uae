@@ -5,8 +5,6 @@
 #include <exec/types.h>
 #include <libraries/mui.h>
 
-#include "mui_listview.h"
-
 enum {
   NJET,
   GROUPBOX,
@@ -629,4 +627,7 @@ extern struct MUI_CustomClass *CL_Fixed;
  */
 #define CBS_DROPDOWN          0x0002L
 #define CBS_DROPDOWNLIST      0x0003L
+
+#include "mui_listview.h"
+
 #endif
