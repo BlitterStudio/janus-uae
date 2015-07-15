@@ -5,6 +5,8 @@
 #include <exec/types.h>
 #include <libraries/mui.h>
 
+#include "mui_listview.h"
+
 enum {
   NJET,
   GROUPBOX,
