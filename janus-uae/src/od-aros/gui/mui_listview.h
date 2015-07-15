@@ -1,6 +1,10 @@
 #ifndef __MUI_LISTVIEW_H
 #define __MUI_LISTVIEW_H
 
+
+int  ListView_GetItemCount(HWND hwnd);
+void ListView_SetItemState(HWND hwnd, int i, UINT state, UINT mask);
+
 /* Windows Listview defines (commctrl.h) */
 
 #define LVN_FIRST ((UINT)-100)
