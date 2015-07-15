@@ -145,8 +145,13 @@ BOOL CheckDlgButton(Element *elem, int button, UINT uCheck) {
     i=get_index(elem, button);
   }
 
-  DebOut("elem[i].obj: %lx\n", elem[i].obj);
+  /* still not found !? */
+  if(i<0) {
+    DebOut("ERROR: button %d found nowhere!?\n", button);
+    return FALSE;
+  }
 
+  DebOut("elem[i].obj: %lx\n", elem[i].obj);
 
   DoMethod(elem[i].obj, MUIM_NoNotifySet, MUIA_Selected, uCheck);
   //SET(elem[i].obj, MUIA_Pressed, uCheck);
