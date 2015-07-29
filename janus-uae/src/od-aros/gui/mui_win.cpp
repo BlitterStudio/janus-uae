@@ -17,6 +17,7 @@
 #include <mui/NListtree_mcc.h>
 #include <mui/NListview_mcc.h>
 
+#define OLI_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -181,8 +182,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
     DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", nIDDlgItem);
     return FALSE;
   }
-  DebOut("index: %d\n", i);
-  //DebOut("elem[%d].var: %lx\n", i, elem[i].var);
+  DebOut("elem[%d].var: %lx\n", i, elem[i].var);
 
   switch(Msg) {
 
@@ -533,7 +533,7 @@ BOOL SetDlgItemInt(HWND elem, int item, UINT uValue, BOOL bSigned) {
 
   if(!elem[i].var) {
     /* array for text (only one line, but respect data structure here */
-    elem[i].var=(char **) malloc(16 * sizeof(IPTR)); 
+    elem[i].var=(char **) calloc(16, sizeof(IPTR)); 
     elem[i].var[0]=NULL;
   }
 
