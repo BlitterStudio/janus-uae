@@ -196,4 +196,23 @@ extern struct sound_device *record_devices[MAX_SOUND_DEVICES];
 #define IDC_SOUNDCALIBRATE              1641
 
 
+struct contextcommand
+{
+	TCHAR *shellcommand;
+	TCHAR *command;
+	int icon;
+};
+struct assext {
+    TCHAR *ext;
+    TCHAR *cmd;
+    TCHAR *desc;
+    int icon;
+    struct contextcommand *cc;
+    int enabled;
+};
+extern struct assext *exts_gui;
+
+void associate_file_extensions (void);
+
+
 #endif /* __AROS_H__ */
