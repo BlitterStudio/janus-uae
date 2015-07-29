@@ -137,6 +137,9 @@ sub get_text($) {
   #if($line eq "\"\"") {
     #$line="\" \"";
   #}
+
+  #care for hotkeys: & => _
+  $line=~s/&/_/g;
   return $line;
 }
 
