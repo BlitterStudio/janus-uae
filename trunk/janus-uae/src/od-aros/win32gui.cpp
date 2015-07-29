@@ -123,6 +123,7 @@
 #include "gfx.h"
 #include "string_resource.h"
 #include "gui/mui_data.h"
+#include "gui/mui_listview.h"
 
 #include "tchar.h"
 #define fputws fputs
@@ -139,7 +140,9 @@ void pre_gui_message (const TCHAR *format,...);
 #define MIN_GUI_INTERNAL_HEIGHT 400
 
 #ifndef __AROS__
-#define ARCHIVE_STRING _T("#?.zip|#?.7z|#?.rar|#?.lha|#?.lzh|#?.lzx")
+
+/** Windows patterns **/
+#define ARCHIVE_STRING _T("(#?.zip|#?.7z;*.rar;*.lha;*.lzh;*.lzx)")
 
 #define DISK_FORMAT_STRING _T("(*.adf;*.adz;*.gz;*.dms;*.ipf;*.scp;*.fdi;*.exe)\0*.adf;*.adz;*.gz;*.dms;*.ipf;*.scp;*.fdi;*.exe;*.ima;*.wrp;*.dsq;*.st;*.raw;") ARCHIVE_STRING _T("\0")
 #define ROM_FORMAT_STRING _T("(*.rom;*.roz;*.a500;*.a600;*.a1200;*.a4000)\0*.rom;*.roz;*.a500;*.a600;*.a1200;*.a4000;") ARCHIVE_STRING _T("\0")
@@ -148,18 +151,22 @@ void pre_gui_message (const TCHAR *format,...);
 #define HDF_FORMAT_STRING _T("(*.hdf;*.vhd;*.rdf;*.hdz;*.rdz;*.chd)\0*.hdf;*.vhd;*.rdf;*.hdz;*.rdz;*.chd\0")
 #define INP_FORMAT_STRING _T("(*.inp)\0*.inp\0")
 #define  CD_FORMAT_STRING _T("(*.cue;*.ccd;*.mds;*.iso;*.chd)\0*.cue;*.ccd;*.mds;*.iso;*.chd;") ARCHIVE_STRING _T("\0")
-#else
-#define ARCHIVE_STRING _T("(#?.zip|#?.7z;*.rar;*.lha;*.lzh;*.lzx")
 
+#else
+
+/* Amigaois patterns */
+
+#define ARCHIVE_STRING _T("#?.zip|#?.7z|#?.rar|#?.lha|#?.lzh|#?.lzx")
 #define DISK_FORMAT_STRING _T("(#?.adf|#?.adz|#?.gz|#?.dms|#?.ipf|#?.scp|#?.fdi|#?.exe)\0#?.adf|#?.adz|#?.gz|#?.dms|#?.ipf|#?.scp|#?.fdi|#?.exe|#?.ima|#?.wrp|#?.dsq|#?.st|#?.raw;") ARCHIVE_STRING _T("\0")
 #define ROM_FORMAT_STRING _T("(#?.rom|#?.roz|#?.a500|#?.a600|#?.a1200|#?.a4000)\0#?.rom|#?.roz|#?.a500|#?.a600|#?.a1200|#?.a4000;") ARCHIVE_STRING _T("\0")
 #define USS_FORMAT_STRING_RESTORE _T("(*.uss)\0*.uss;*.gz;") ARCHIVE_STRING _T("\0")
 #define USS_FORMAT_STRING_SAVE _T("(*.uss)\0*.uss\0")
 #define HDF_FORMAT_STRING _T("(*.hdf;*.vhd;*.rdf;*.hdz;*.rdz;*.chd)\0*.hdf;*.vhd;*.rdf;*.hdz;*.rdz;*.chd\0")
 #define INP_FORMAT_STRING _T("(*.inp)\0*.inp\0")
-#define  CD_FORMAT_STRING _T("(*.cue;*.ccd;*.mds;*.iso;*.chd)\0*.cue;*.ccd;*.mds;*.iso;*.chd;") ARCHIVE_STRING _T("\0")
+#define  CD_FORMAT_STRING _T("(#?.cue|#?.ccd|#?.mds|#?.iso|#?.chd)\0") ARCHIVE_STRING _T("\0")
 
-#endif
+#endif /* Windows patterns */
+
 #define CONFIG_HOST _T("Host")
 #define CONFIG_HARDWARE _T("Hardware")
 
@@ -1396,8 +1403,9 @@ static int drag_move (HWND hWnd, LPARAM lParam)
 	return 1;
 }
 
-static HWND cachedlist = NULL;
 #endif
+//static HWND cachedlist = NULL;
+static int cachedlist = NULL;
 
 #define MIN_CHIP_MEM 0
 #define MAX_CHIP_MEM 6
@@ -2446,6 +2454,7 @@ static UINT_PTR CALLBACK ofnhook (HWND hDlg, UINT message, WPARAM wParam, LPARAM
 	SetWindowPos (hWnd, NULL, x, y, width, height, SWP_NOZORDER | SWP_NOACTIVATE);
 	return FALSE;
 }
+#endif
 
 static void eject_cd (void)
 {
@@ -2465,7 +2474,6 @@ static void eject_cd (void)
 		}
 	}
 }
-#endif
 
 static void infofloppy (HWND hDlg, int n)
 {
@@ -2766,7 +2774,7 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 		break;
 	case 6:
 		WIN32GUI_LoadUIString (IDS_SELECTROM, szTitle, MAX_DPATH);
-#if 0
+#ifndef __AROS__
 		WIN32GUI_LoadUIString (IDS_ROM, szFormat, MAX_DPATH);
 		_stprintf (szFilter, _T("%s "), szFormat);
 #endif
@@ -2852,8 +2860,10 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 		break;
 	case 17:
 		WIN32GUI_LoadUIString (IDS_SELECTCD, szTitle, MAX_DPATH);
+#ifndef __AROS__
 		WIN32GUI_LoadUIString (IDS_CD, szFormat, MAX_DPATH);
 		_stprintf (szFilter, _T("%s "), szFormat);
+#endif
 		memcpy (szFilter + _tcslen (szFilter), CD_FORMAT_STRING, sizeof (CD_FORMAT_STRING) + sizeof (TCHAR));
 		defext = _T("cue");
 		break;
@@ -4064,7 +4074,6 @@ static TCHAR *HandleConfiguration (HWND hDlg, int flag, struct ConfigStruct *con
 	setguititle (NULL);
 	return ok ? full_path : NULL;
 }
-#if 0
 
 
 static int disk_in_drive (int entry)
@@ -4080,6 +4089,7 @@ static int disk_in_drive (int entry)
 	return -1;
 }
 
+#if 0
 static int disk_swap (int entry, int mode)
 {
 	int drv, i, drvs[4] = { -1, -1, -1, -1 };
@@ -4396,6 +4406,7 @@ static void update_listview_inputmap (HWND hDlg, int deleteindex)
 
 	inputmap_handle (list, -1, -1, NULL, NULL, 0, inputmap_groupindex, deleteindex);
 }
+#endif
 
 static int clicked_entry = -1;
 
@@ -4434,6 +4445,7 @@ struct miscentry
 	int ival, imask;
 };
 
+#if 0
 static struct miscentry misclist[] = { 
 	{ 0, 1, _T("Untrap = middle button"),  &workprefs.win32_middle_mouse },
 	{ 0, 0, _T("Show GUI on startup"), &workprefs.start_gui },
@@ -4460,6 +4472,7 @@ static struct miscentry misclist[] = {
 	{ 0, NULL }
 };
 
+#endif
 static void harddisktype (TCHAR *s, struct uaedev_config_info *ci)
 {
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
@@ -4480,14 +4493,13 @@ static void harddisktype (TCHAR *s, struct uaedev_config_info *ci)
 		break;
 	}
 }
-#endif
 
 
-#if 0
 void InitializeListView (HWND hDlg)
 {
 	int lv_type;
-	HWND list;
+	//HWND list;
+	int list;
 	LV_ITEM lvstruct;
 	LV_COLUMN lvcolumn;
 	RECT rect;
@@ -4504,7 +4516,7 @@ void InitializeListView (HWND hDlg)
 	int listview_column_width[HARDDISK_COLUMNS];
 	DWORD extraflags = 0;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("hDlg: %lx\n", hDlg);
 
 	if (cachedlist) {
 		if (lv_old_type >= 0) {
@@ -4526,7 +4538,8 @@ void InitializeListView (HWND hDlg)
 		WIN32GUI_LoadUIString (IDS_BLOCKSIZE, column_heading[5], MAX_COLUMN_HEADING_WIDTH);
 		WIN32GUI_LoadUIString (IDS_HFDSIZE, column_heading[6], MAX_COLUMN_HEADING_WIDTH);
 		WIN32GUI_LoadUIString (IDS_BOOTPRI, column_heading[7], MAX_COLUMN_HEADING_WIDTH);
-		list = GetDlgItem (hDlg, IDC_VOLUMELIST);
+		//list = GetDlgItem (hDlg, IDC_VOLUMELIST);
+    list=IDC_VOLUMELIST;
 
 	} else if (hDlg == pages[INPUT_ID]) {
 
@@ -4539,14 +4552,16 @@ void InitializeListView (HWND hDlg)
 		_tcscpy (column_heading[4], _T("Invert"));
 		WIN32GUI_LoadUIString (IDS_INPUTQUALIFIER, column_heading[5], MAX_COLUMN_HEADING_WIDTH);
 		_tcscpy (column_heading[6], _T("#"));
-		list = GetDlgItem (hDlg, IDC_INPUTLIST);
+		//list = GetDlgItem (hDlg, IDC_INPUTLIST);
+		list = IDC_INPUTLIST;
 
 	} else if (hDlg == pages[INPUTMAP_ID]) {
 
 		listview_num_columns = INPUTMAP_COLUMNS;
 		lv_type = LV_INPUTMAP;
 		column_heading[0][0] = 0;
-		list = GetDlgItem (hDlg, IDC_INPUTMAPLIST);
+		//list = GetDlgItem (hDlg, IDC_INPUTMAPLIST);
+		list = IDC_INPUTMAPLIST;
 
 	} else if (hDlg == pages[MISC2_ID]) {
 
@@ -4554,15 +4569,20 @@ void InitializeListView (HWND hDlg)
 		lv_type = LV_MISC2;
 		_tcscpy (column_heading[0], _T("Extension"));
 		_tcscpy (column_heading[1], _T(""));
-		list = GetDlgItem (hDlg, IDC_ASSOCIATELIST);
+		//list = GetDlgItem (hDlg, IDC_ASSOCIATELIST);
+		list = IDC_ASSOCIATELIST;
 
 	} else if (hDlg == pages[MISC1_ID]) {
 
 		listview_num_columns = MISC1_COLUMNS;
 		lv_type = LV_MISC1;
 		column_heading[0][0] = 0;
-		list = GetDlgItem (hDlg, IDC_MISCLIST);
+		//list = GetDlgItem (hDlg, IDC_MISCLIST);
+		list = IDC_MISCLIST;
+#if 0
 		extraflags = LVS_EX_CHECKBOXES;
+#endif
+    TODO();
 
 	} else if (hDlg == pages[DISK_ID]) {
 
@@ -4571,7 +4591,10 @@ void InitializeListView (HWND hDlg)
 		_tcscpy (column_heading[0], _T("#"));
 		WIN32GUI_LoadUIString (IDS_DISK_IMAGENAME, column_heading[1], MAX_COLUMN_HEADING_WIDTH);
 		WIN32GUI_LoadUIString (IDS_DISK_DRIVENAME, column_heading[2], MAX_COLUMN_HEADING_WIDTH);
+#if 0
 		list = GetDlgItem (hDlg, IDC_DISK);
+#endif
+    TODO();
 
 	} else {
 		// CD dialog
@@ -4580,21 +4603,30 @@ void InitializeListView (HWND hDlg)
 		_tcscpy (column_heading[0], _T("*"));
 		WIN32GUI_LoadUIString (IDS_DEVICE, column_heading[1], MAX_COLUMN_HEADING_WIDTH);
 		WIN32GUI_LoadUIString (IDS_PATH, column_heading[2], MAX_COLUMN_HEADING_WIDTH);
-		list = GetDlgItem (hDlg, IDC_CDLIST);
+		//list = GetDlgItem (hDlg, IDC_CDLIST);
+		list = IDC_CDLIST;
 
 	}
 
+  TODO();
+
+#if 0
 	int flags = LVS_EX_DOUBLEBUFFER | extraflags;
 	if (lv_type != LV_MISC1)
 		flags |= LVS_EX_ONECLICKACTIVATE | LVS_EX_UNDERLINEHOT | LVS_EX_FULLROWSELECT;
+#else
+  int flags=0;
+#endif
 	ListView_SetExtendedListViewStyleEx (list, flags , flags);
 	ListView_RemoveAllGroups (list);
 	ListView_DeleteAllItems (list);
 
 	cachedlist = list;
 
+#ifndef __AROS__
 	for(i = 0; i < listview_num_columns; i++)
 		listview_column_width[i] = ListView_GetStringWidth (list, column_heading[i]) + 15;
+#endif
 
 	// If there are no columns, then insert some
 	lvcolumn.mask = LVCF_WIDTH;
@@ -4613,16 +4645,18 @@ void InitializeListView (HWND hDlg)
 
 		listview_column_width[0] = 180;
 		listview_column_width[1] = 10;
-		for (i = 0; exts[i].ext; i++) {
+		for (i = 0; exts_gui[i].ext; i++) {
 			lvstruct.mask     = LVIF_TEXT | LVIF_PARAM;
-			lvstruct.pszText  = exts[i].ext;
+			lvstruct.pszText  = exts_gui[i].ext;
 			lvstruct.lParam   = 0;
 			lvstruct.iItem    = i;
 			lvstruct.iSubItem = 0;
 			result = ListView_InsertItem (list, &lvstruct);
-			ListView_SetItemText (list, result, 1, exts[i].enabled ? _T("*") : _T(""));
+			ListView_SetItemText (list, result, 1, exts_gui[i].enabled ? _T("*") : _T(""));
 		}
 	} else if (lv_type == LV_INPUT) {
+    TODO();
+#if 0
 
 		for (i = 0; input_total_devices && i < inputdevice_get_widget_num (input_selected_device); i++) {
 			TCHAR name[100];
@@ -4645,14 +4679,21 @@ void InitializeListView (HWND hDlg)
 		listview_column_width[5] = 65;
 		listview_column_width[6] = 30;
 		update_listview_input (hDlg);
+#endif
 
 	} else if (lv_type == LV_INPUTMAP) {
 
+    TODO(); /*?*/
+#if 0
 		listview_column_width[0] = 400;
 		update_listview_inputmap (hDlg, -1);
+#endif
 
 	} else if (lv_type == LV_MISC1) {
 
+    TODO();
+
+#if 0
 		int itemids[] = { IDS_MISCLISTITEMS1, IDS_MISCLISTITEMS2, IDS_MISCLISTITEMS3, -1 };
 		int itemoffset = 0;
 		int itemcnt = 0;
@@ -4708,6 +4749,7 @@ void InitializeListView (HWND hDlg)
 				listview_column_width[0] = width;
 			entry++;
 		}
+#endif
 
 	} else if (lv_type == LV_DISK) {
 
@@ -4758,7 +4800,8 @@ void InitializeListView (HWND hDlg)
 				blkdev_get_info (&workprefs, i, &di);
 			_stprintf (tmp, _T("%d"), i);
 			lvstruct.mask     = LVIF_TEXT | LVIF_PARAM;
-			lvstruct.pszText  = cds->inuse ? (di.media_inserted ? _T("*") : _T("E")) : _T("-");
+			lvstruct.pszText  = _T("foo");
+			lvstruct.pszText  = cds->inuse ? (di.media_inserted ? (char *)_T("*") : (char *)_T("E")) : (char *)_T("-");
 			lvstruct.lParam   = 0;
 			lvstruct.iItem    = i;
 			lvstruct.iSubItem = 0;
@@ -4772,6 +4815,7 @@ void InitializeListView (HWND hDlg)
 		}
 
 	} else if (lv_type == LV_HARDDISK) {
+    DebOut("LV_HARDDISK\n");
 #ifdef FILESYS
 		listview_column_width[1] = 60;
 		for (i = 0; i < workprefs.mountitems; i++)
@@ -4860,10 +4904,10 @@ void InitializeListView (HWND hDlg)
 				rootdir = my_strdup (_T("-"));
 				rootdirp = rootdir;
 			}
-			WIN32GUI_LoadUIString (ci->readonly ? IDS_NO : IDS_YES, readwrite_str, sizeof (readwrite_str) / sizeof (TCHAR));
+			WIN32GUI_LoadUIString (ci->readonly ? (char *)IDS_NO : (char *)IDS_YES, readwrite_str, sizeof (readwrite_str) / sizeof (TCHAR));
 
 			lvstruct.mask     = LVIF_TEXT | LVIF_PARAM;
-			lvstruct.pszText  = mi.ismedia == false ? _T("E") : (nosize && mi.size >= 0 ? _T("X") : (mi.ismounted ? _T("*") : _T(" ")));
+			lvstruct.pszText  = mi.ismedia == false ? (char *)_T("E") : (nosize && mi.size >= 0 ? (char *)_T("X") : (mi.ismounted ? (char *)_T("*") : (char *)_T(" ")));
 			if (ci->controller && mi.ismedia)
 				lvstruct.pszText = _T(" ");
 			lvstruct.lParam   = 0;
@@ -4914,6 +4958,7 @@ void InitializeListView (HWND hDlg)
 		}
 #endif
 	}
+#if 0
 	if (result != -1) {
 		if (GetWindowRect (list, &rect)) {
 			ScreenToClient (hDlg, (LPPOINT)&rect);
@@ -4941,9 +4986,9 @@ void InitializeListView (HWND hDlg)
 			ListView_EnsureVisible (list, idx, FALSE);
 	}
 	lv_old_type = lv_type;
+#endif
 
 }
-#endif
 
 #if 0
 static int listview_find_selected (HWND list)
@@ -6409,6 +6454,7 @@ static void init_quickstartdlg (HWND hDlg)
 			*p2++= 0;
       DebOut("add: %s\n", p1);
 			SendDlgItemMessage (hDlg, IDC_QUICKSTART_CONFIGURATION, CB_ADDSTRING, 0, (LPARAM)p1);
+      DebOut("p1: %s\n", p1);
 			p1 = p2;
 			p2 = _tcschr (p1, '\n');
 			if (!p2)
@@ -7465,13 +7511,15 @@ static void init_displays_combo (HWND hDlg, bool rtg)
 	int idx = 0;
 	int id = rtg ? IDC_RTG_DISPLAYSELECT : IDC_DISPLAYSELECT;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("hDlg: %lx, rtg: %d\n", hDlg, rtg);
 
 	displaynum = workprefs.gfx_apmode[rtg ? APMODE_RTG : APMODE_NATIVE].gfx_display - 1;
 	SendDlgItemMessage (hDlg, id, CB_RESETCONTENT, 0, 0);
 	if (displaynum < 0)
 		displaynum = 0;
-	while (md->monitorname) {
+
+  DebOut("md: %lx\n", md);
+	while (md && md->monitorname) {
 		if (md->adapterkey && (_tcscmp (md->adapterkey, adapter) != 0)) {
 			SendDlgItemMessage (hDlg, id, CB_ADDSTRING, 0, (LPARAM)md->adaptername);
 			adapter = md->adapterkey;
@@ -9743,7 +9791,7 @@ static INT_PTR MiscDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			list = nmlistview->hdr.hwndFrom;
 			if (nmlistview->hdr.code == NM_DBLCLK) {
 				entry = listview_entry_from_click (list, &col);
-				exts[entry].enabled = exts[entry].enabled ? 0 : 1;
+				exts[entry].enabled = exts_gui[entry].enabled ? 0 : 1;
 				associate_file_extensions ();
 				InitializeListView (hDlg);
 			}
@@ -9859,13 +9907,13 @@ static INT_PTR MiscDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			gui_size_changed = 2;
 		break;
 		case IDC_ASSOCIATE_ON:
-			for (i = 0; exts[i].ext; i++)
+			for (i = 0; exts_gui[i].ext; i++)
 				exts[i].enabled = 1;
 			associate_file_extensions ();
 			InitializeListView (hDlg);
 			break;
 		case IDC_ASSOCIATE_OFF:
-			for (i = 0; exts[i].ext; i++)
+			for (i = 0; exts_gui[i].ext; i++)
 				exts[i].enabled = 0;
 			associate_file_extensions ();
 			InitializeListView (hDlg);
@@ -11948,6 +11996,8 @@ static ACCEL HarddiskAccel[] = {
 	{ FVIRTKEY, VK_RETURN, IDC_EDIT }, { FVIRTKEY, VK_DELETE, IDC_REMOVE },
 	{ 0, 0, 0 }
 };
+#endif
+#endif
 
 static void hilitehd (HWND hDlg)
 {
@@ -11973,8 +12023,7 @@ static int harddiskdlg_button (HWND hDlg, WPARAM wParam)
 {
 	int button = LOWORD (wParam);
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
-
+  TODO();
 	switch (button) {
 	case IDC_CD_SELECT:
 		DiskSelection (hDlg, wParam, 17, &workprefs, NULL);
@@ -11984,6 +12033,7 @@ static int harddiskdlg_button (HWND hDlg, WPARAM wParam)
 		InitializeListView (hDlg);
 		hilitehd (hDlg);
 		break;
+#if 0
 	case IDC_CD_EJECT:
 		eject_cd ();
 		SetDlgItemText (hDlg, IDC_CD_TEXT, _T(""));
@@ -12084,10 +12134,12 @@ static int harddiskdlg_button (HWND hDlg, WPARAM wParam)
 		workprefs.win32_norecyclebin = ischecked (hDlg, IDC_NORECYCLEBIN);
 		break;
 
+#endif
 	}
 	return 0;
 }
 
+#if 0
 static void harddiskdlg_volume_notify (HWND hDlg, NM_LISTVIEW *nmlistview)
 {
 	HWND list = nmlistview->hdr.hwndFrom;
@@ -12117,18 +12169,20 @@ static void harddiskdlg_volume_notify (HWND hDlg, NM_LISTVIEW *nmlistview)
 		break;
 	}
 }
+#endif
 
 /* harddisk parent view */
-static INT_PTR CALLBACK HarddiskDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK HarddiskDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("hDlg %lx, msg %d\n", hDlg, msg);
 
 	switch (msg) {
 	case WM_INITDIALOG:
 		clicked_entry = 0;
 		pages[HARDDISK_ID] = hDlg;
 		currentpage = HARDDISK_ID;
-		Button_SetElevationRequiredState (GetDlgItem (hDlg, IDC_NEW_HD), TRUE);
+		//Button_SetElevationRequiredState (GetDlgItem (hDlg, IDC_NEW_HD), TRUE);
+		Button_SetElevationRequiredState (hDlg, IDC_NEW_HD, TRUE);
 
 	case WM_USER:
 		CheckDlgButton (hDlg, IDC_MAPDRIVES_AUTO, workprefs.win32_automount_removable);
@@ -12146,6 +12200,7 @@ static INT_PTR CALLBACK HarddiskDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPA
 		hilitehd (hDlg);
 		break;
 
+#if 0
 	case WM_MOUSEMOVE:
 		if (drag_move (hDlg, lParam))
 			return TRUE;
@@ -12162,6 +12217,7 @@ static INT_PTR CALLBACK HarddiskDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPA
 			xfree (draggeditems);
 			break;
 		}
+#endif
 
 	case WM_COMMAND:
 		if (HIWORD (wParam) == CBN_SELCHANGE || HIWORD (wParam) == CBN_KILLFOCUS)  {
@@ -12232,10 +12288,12 @@ static INT_PTR CALLBACK HarddiskDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPA
 		}
 		break;
 
+#if 0
 	case WM_NOTIFY:
 		if (((LPNMHDR) lParam)->idFrom == IDC_VOLUMELIST)
 			harddiskdlg_volume_notify (hDlg, (NM_LISTVIEW *) lParam);
 		return TRUE;
+#endif
 	default:
 		return FALSE;
 	}
@@ -12243,9 +12301,6 @@ static INT_PTR CALLBACK HarddiskDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPA
 	return FALSE;
 }
 
-#endif
-
-#endif
 static void out_floppyspeed (HWND hDlg)
 {
 	TCHAR txt[30];
@@ -18177,7 +18232,7 @@ static int init_page (struct Element *tmpl, int icon, TCHAR *title,
 	}
 #endif
 
-  bug("[JUAE:GUI] %s(%s)\n", __PRETTY_FUNCTION__, title);
+  DebOut("title: %s\n", title);
 
 	ppage[id].dlgproc = func;
 	ppage[id].help = help;
@@ -18352,9 +18407,10 @@ static int GetSettings (int all_options, HWND hwnd)
 		SOUND_ID = init_page (IDD_SOUND, IDI_SOUND, IDS_SOUND, SoundDlgProc, NULL, _T("gui/sound.htm"), 0);
 #if 0
 		DISK_ID = init_page (IDD_DISK, IDI_FLOPPY, IDS_DISK, SwapperDlgProc, SwapperAccel, _T("gui/disk.htm"), IDC_DISKLIST);
-#ifdef FILESYS
-		HARDDISK_ID = init_page (IDD_HARDDISK, IDI_HARDDISK, IDS_HARDDISK, HarddiskDlgProc, HarddiskAccel, _T("gui/hard-drives.htm"), 0);
 #endif
+#ifdef FILESYS
+		//HARDDISK_ID = init_page (IDD_HARDDISK, IDI_HARDDISK, IDS_HARDDISK, HarddiskDlgProc, HarddiskAccel, _T("gui/hard-drives.htm"), 0);
+		HARDDISK_ID = init_page (IDD_HARDDISK, IDI_HARDDISK, IDS_HARDDISK, HarddiskDlgProc, NULL, _T("gui/hard-drives.htm"), 0);
 #endif
 		GAMEPORTS_ID = init_page (IDD_GAMEPORTS, IDI_GAMEPORTS, IDS_GAMEPORTS, GamePortsDlgProc, NULL, _T("gui/gameports.htm"), 0);
 #if 0
