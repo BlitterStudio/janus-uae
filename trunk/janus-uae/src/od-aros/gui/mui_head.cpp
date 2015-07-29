@@ -209,6 +209,7 @@ int *ChipsetDlgProc2 (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *MemoryDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *HarddiskDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
 Object* FixedObj(IPTR src)
 {
@@ -306,8 +307,8 @@ Object* build_gui(void) {
                                   Child, page_obj[7]=FixedProcObj((IPTR)IDD_CHIPSET2,   (IPTR) &ChipsetDlgProc2  ),
                                   Child, page_obj[8]=FixedProcObj((IPTR)IDD_KICKSTART,  (IPTR) &KickstartDlgProc ),
                                   Child, page_obj[9]=FixedProcObj((IPTR)IDD_MEMORY,     (IPTR) &MemoryDlgProc    ),
-                                  Child, page_obj[10]=FixedProcObj((IPTR)IDD_FLOPPY,     (IPTR) &FloppyDlgProc   ),
-                                  Child, page_obj[11]=FixedObj((IPTR)IDD_CDDRIVE),
+                                  Child, page_obj[10]=FixedProcObj((IPTR)IDD_FLOPPY,    (IPTR) &FloppyDlgProc   ),
+                                  Child, page_obj[11]=FixedProcObj((IPTR)IDD_HARDDISK,  (IPTR) &HarddiskDlgProc ),
                                   Child, page_obj[12]=FixedObj((IPTR)IDD_EXPANSION),
                                   //Child, FixedObj((IPTR)IDD_LOADSAVE),
                                   Child, TextObject,  MUIA_Text_Contents, "\33c\33bTODO", End,
