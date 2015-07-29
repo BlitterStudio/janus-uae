@@ -39,6 +39,7 @@ BOOL ListView_GetColumn(int hwnd, int iCol, LPLVCOLUMN pcol);
 int ListView_InsertItem(int nIDDlgItem, const LPLVITEM pitem);
 VOID ListView_SetItemText(int hwnd, int i, int iSubItem, const char *pszText);
 int ListView_GetStringWidth(int nIDDlgItem, const char *psz);
+UINT ListView_GetItemState(int nIDDlgItem, int  nr, UINT mask);
 
 /* Windows Listview defines (commctrl.h) */
 
