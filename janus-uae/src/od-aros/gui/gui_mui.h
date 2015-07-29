@@ -75,6 +75,8 @@ typedef struct Element {
   ULONG   flags;   // windows flags as bitfields (BS_AUTORADIOBUTTON)
   ULONG   flags2;  // more windows flags, which collide with flags above
   LONG    value;   // check/non checked etc.
+  Object *action;  // special child object, which gets calls directly (list in listview for example)
+  IPTR   *var_data;// a lot of stuff can go in here. For Listviews, these are hooks..
 } Element;
 
 typedef Element *HWND;
