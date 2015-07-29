@@ -12,6 +12,8 @@
 
 #define _WIN32_WINNT 0x600
 
+#define JUAE_DEBUG
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -4990,21 +4992,24 @@ void InitializeListView (HWND hDlg)
 
 }
 
-#if 0
-static int listview_find_selected (HWND list)
+//static int listview_find_selected (HWND list, int item)
+static int listview_find_selected (HWND list, int item)
 {
 	int i, items;
 
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
-	items = ListView_GetItemCount (list);
+	//items = ListView_GetItemCount (list);
+	items = ListView_GetItemCount (item);
 	for (i = 0; i < items; i++) {
-		if (ListView_GetItemState (list, i, LVIS_SELECTED) == LVIS_SELECTED)
+		//if (ListView_GetItemState (list, i, LVIS_SELECTED) == LVIS_SELECTED)
+		if (ListView_GetItemState (item, i, LVIS_SELECTED) == LVIS_SELECTED)
 			return i;
 	}
 	return -1;
 }
 
+#if 0
 static int listview_entry_from_click (HWND list, int *column)
 {
 	POINT point;
@@ -11914,10 +11919,13 @@ static void new_harddrive (HWND hDlg, int entry)
 		hardfile_media_change (hfd, &current_hfdlg.ci, true, false);
 	}
 }
+#endif
+#endif
 
 static void harddisk_remove (HWND hDlg)
 {
-	int entry = listview_find_selected (GetDlgItem (hDlg, IDC_VOLUMELIST));
+	//int entry = listview_find_selected (GetDlgItem (hDlg, IDC_VOLUMELIST));
+	int entry = listview_find_selected (hDlg, IDC_VOLUMELIST);
 
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
@@ -11928,7 +11936,8 @@ static void harddisk_remove (HWND hDlg)
 
 static void harddisk_move (HWND hDlg, int up)
 {
-	int entry = listview_find_selected (GetDlgItem (hDlg, IDC_VOLUMELIST));
+	//int entry = listview_find_selected (GetDlgItem (hDlg, IDC_VOLUMELIST));
+	int entry = listview_find_selected (hDlg, IDC_VOLUMELIST);
 
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
@@ -11937,6 +11946,8 @@ static void harddisk_move (HWND hDlg, int up)
 	move_filesys_unitconfig (&workprefs, entry, up ? entry - 1 : entry + 1);
 }
 
+#if 0
+#if 0
 static void harddisk_edit (HWND hDlg)
 {
 	int entry = listview_find_selected (GetDlgItem (hDlg, IDC_VOLUMELIST));
@@ -12087,11 +12098,13 @@ static int harddiskdlg_button (HWND hDlg, WPARAM wParam)
 	case IDC_EDIT:
 		harddisk_edit (hDlg);
 		return 1;
+#endif
 
 	case IDC_REMOVE:
 		harddisk_remove (hDlg);
 		return 1;
 
+#if 0
 	case IDC_UP:
 		harddisk_move (hDlg, 1);
 		clicked_entry--;

@@ -187,6 +187,8 @@ Object *new_listview(struct Element *elem, ULONG i, void *f, struct Data *data, 
 
 /*
  * return number of entries
+ *
+ * see Warning above
  */
 int ListView_GetItemCount(int nIDDlgItem) {
   HWND elem;
@@ -501,4 +503,39 @@ int ListView_GetStringWidth(int nIDDlgItem, const char *psz) {
 
   TODO();
   return 1;
+}
+
+/*
+ * Gets the state of a list-view item. 
+ *
+ * see WARNING above! 
+ */
+UINT ListView_GetItemState(int nIDDlgItem, int  nr, UINT mask) {
+  struct Element *elem;
+  int i;
+  IPTR act;
+
+  DebOut("nIDDlgItem %d, i: %d\n", nIDDlgItem, i);
+
+  /* usual "find ourselves" */
+  elem=get_elem(nIDDlgItem);
+  if(!elem) return 0;
+  i=get_index(elem, nIDDlgItem);
+  if(i<0) return 0;
+  DebOut("elem: %lx, i: %d\n", elem, i);
+
+  if(mask!=LVIS_SELECTED) {
+    DebOut("mask %d not implemented!\n", mask);
+    TODO();
+    return FALSE;
+  }
+
+  act=XGET(elem[i].action, MUIA_List_Active);
+  DebOut("active entry: %d\n", act);
+
+  if((IPTR) nr== act) {
+    return LVIS_SELECTED;
+  }
+
+  return 0;
 }
