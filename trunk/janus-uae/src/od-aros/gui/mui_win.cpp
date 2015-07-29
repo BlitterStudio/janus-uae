@@ -188,7 +188,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
 
     case CB_ADDSTRING:
     {
-      ULONG old_active;
+      IPTR old_active;
       /* add string  */
       DebOut("CB_ADDSTRING (%s)\n", (TCHAR *) lParam);
 
