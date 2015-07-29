@@ -461,8 +461,8 @@ static IPTR mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent
 
       case IDCMP_NEWSIZE: 
       case IDCMP_CHANGEWINDOW: {
-          ULONG wasopen;
-          GetAttr(MUIA_Window_Open, data->obj_popup_win, (IPTR *) &wasopen);
+          IPTR wasopen;
+          GetAttr(MUIA_Window_Open, data->obj_popup_win, &wasopen);
           HidePopupWin(obj,data);
           if(wasopen) {
             ShowPopupWin(obj,data);
