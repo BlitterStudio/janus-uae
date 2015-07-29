@@ -560,25 +560,6 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
             /* Tree gadget! */
             DebOut("SysTreeView32\n");
             Object *nlisttree=NULL;
-#if 0
-            child=HGroup,
-                    MUIA_UserData         , i,
-                    //Child, VSpace(0),
-                    Child, (NListviewObject,
-                      MUIA_UserData         , i,
-                      MUIA_NListview_NList, (NListtreeObject,
-                        MUIA_UserData         , i,
-                        ReadListFrame,
-                        MUIA_CycleChain, TRUE,
-                        //MUIA_NListtree_ConstructHook, (IPTR)&data->MyMUIHook_tree_construct,
-                        //MUIA_NListtree_DestructHook,  (IPTR)&data->MyMUIHook_tree_destruct,
-                        //LISTV_EntryArray, bla,
-                        MUIA_NListtree_DragDropSort,  FALSE,
-                        End),
-                        End),
-                    End;
-#endif
-                    //Child, VSpace(0),
             child=new_tree(i, (void *) func, data, &nlisttree); 
             DebOut("child: %lx\n", child);
             if(child) {
@@ -588,7 +569,21 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
             break;
           }
 
-          if(src[i].windows_class==NULL || !strcmp(src[i].windows_class, "Button") || /* implement those: !!!  */ !strcmp(src[i].windows_class, "SysListView32") || !strcmp(src[i].windows_class, "Static") || !strcmp(src[i].windows_class, "SysTreeView32")) {
+          if(!strcmp(src[i].windows_class, "SysListView32")) {
+            /* Tree gadget! */
+            DebOut("SysListView32\n");
+            Object *list=NULL;
+
+            child=new_listview(src, i, (void *) func, data, &list); 
+            DebOut("child: %lx\n", child);
+            if(child) {
+              src[i].exists=TRUE;
+              src[i].obj=child;
+              src[i].action=list;
+            }
+            break;
+          }
+          if(src[i].windows_class==NULL || !strcmp(src[i].windows_class, "Button") || /* TODO: */ !strcmp(src[i].windows_class, "Static") ) {
             DebOut("Button found\n");
             if(src[i].flags2==BS_AUTORADIOBUTTON) {
               child=HGroup,
@@ -751,13 +746,13 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
             src[i].obj=child;
           }
           src[i].exists=TRUE;
-          src[i].var=(char **) malloc(256 * sizeof(IPTR)); // array for cycle texts
+          src[i].var=(char **) calloc(256, sizeof(IPTR)); // array for cycle texts
           src[i].var[0]=NULL;
         break;
 
 
         case COMBOBOX:
-          src[i].mem=(char **) malloc(256 * sizeof(IPTR)); // array for cycle texts
+          src[i].mem=(char **) calloc(256, sizeof(IPTR)); // array for cycle texts
           src[i].mem[0]=NULL; // always terminate
           if(!flag_editable(src[i].flags)) {
             DebOut("not editable => Cycle Gadget\n");
