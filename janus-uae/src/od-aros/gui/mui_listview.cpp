@@ -191,7 +191,7 @@ Object *new_listview(struct Element *elem, ULONG i, void *f, struct Data *data, 
 int ListView_GetItemCount(int nIDDlgItem) {
   HWND elem;
   int i;
-  ULONG nr=0;
+  int nr=0;
 
   DebOut("nIDDlgItem: %d\n", nIDDlgItem);
 
@@ -201,7 +201,7 @@ int ListView_GetItemCount(int nIDDlgItem) {
   if(i<0) return 0;
 
   DebOut("list obj: %lx\n", elem[i].action);
-  nr=XGET(elem[i].action, MUIA_List_Entries);
+  nr=(int) XGET(elem[i].action, MUIA_List_Entries);
   DebOut("MUIA_List_Entries: %d\n", nr);
  
   return nr;
@@ -430,6 +430,8 @@ int ListView_InsertItem(int nIDDlgItem, const LPLVITEM pitem) {
 
   strcpy(new_line->column[0], pitem->pszText);
   DoMethod(elem[i].action, MUIM_List_InsertSingle, new_line, MUIV_List_Insert_Bottom);
+  FreeVec(new_line);
+  new_line=NULL;
 
   pos=XGET(elem[i].action, MUIA_List_InsertPosition);
   pos--; /* why --? Seems as if Zune always return "one too much"? */
