@@ -2,9 +2,43 @@
 #define __MUI_LISTVIEW_H
 
 
-int  ListView_GetItemCount(HWND hwnd);
-void ListView_SetItemState(HWND hwnd, int i, UINT state, UINT mask);
+Object *new_listview(struct Element *src, ULONG i, void *f, struct Data *data, Object **nlistview);
+
+typedef struct _LV_ITEM {
+  UINT mask;
+  int iItem;
+  int iSubItem;
+  UINT state;
+  UINT stateMask;
+  LPTSTR pszText;
+  int cchTextMax;
+  int iImage; // index of the list view item's icon
+  LPARAM lParam; // 32-bit value to associate with item
+} LV_ITEM, *LPLVITEM; 
+
+typedef struct _LV_COLUMN {
+  UINT mask;
+  int fmt;
+  int cx;
+  LPTSTR pszText;
+  int cchTextMax;
+  int iSubItem;
+} LV_COLUMN, *LPLVCOLUMN;
+
+
+int  ListView_GetItemCount(int hwnd);
+void ListView_SetItemState(int hwnd, int i, UINT state, UINT mask);
 LONG Button_SetElevationRequiredState(HWND hDlg, int nIDDlgItem, BOOL fRequired);
+int ListView_GetTopIndex(int hwnd);
+int ListView_GetCountPerPage(int hwnd);
+void ListView_SetExtendedListViewStyleEx(int hwndLV, DWORD dwExMask, DWORD dwExStyle);
+void ListView_RemoveAllGroups(int hwnd);
+BOOL ListView_DeleteAllItems(int hwnd);
+int ListView_InsertColumn(int hwnd, int iCol, const LPLVCOLUMN pcol);
+BOOL ListView_GetColumn(int hwnd, int iCol, LPLVCOLUMN pcol);
+int ListView_InsertItem(int nIDDlgItem, const LPLVITEM pitem);
+VOID ListView_SetItemText(int hwnd, int i, int iSubItem, const char *pszText);
+int ListView_GetStringWidth(int nIDDlgItem, const char *psz);
 
 /* Windows Listview defines (commctrl.h) */
 
