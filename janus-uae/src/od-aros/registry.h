@@ -1,3 +1,6 @@
+#ifndef _REGISTRY_H_
+#define _REGISTRY_H_
+
 #include <exec/types.h>
 
 #include "SDL_Config/SDL_config_lib.h"
@@ -37,3 +40,6 @@ extern UAEREG *regcreatetree (UAEREG*, const TCHAR *name);
 extern void regclosetree (UAEREG *key);
 
 extern void regflushfile (void);
+
+#endif
+

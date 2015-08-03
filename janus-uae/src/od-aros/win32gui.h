@@ -1,6 +1,8 @@
 #ifndef WIN32GUI_H
 #define WIN32GUI_H
 
+#include "registry.h"
+
 #define CFG_DESCRIPTION_LENGTH 128
 
 #define CONFIG_SAVE   0
@@ -20,16 +22,18 @@ int dragdrop (HWND hDlg, HDROP hd, struct uae_prefs *prefs, int currentpage);
 UAEREG *read_disk_history (int type);
 void write_disk_history (void);
 
+typedef APTR HINSTANCE;
+
+#if 0
 struct newresource
 {
-#if 0
     LPCDLGTEMPLATEW resource;
     HINSTANCE inst;
-#endif
     int size;
     int tmpl;
     int width, height;
 };
+#endif
 
 #define GUI_INTERNAL_WIDTH 800
 #define GUI_INTERNAL_HEIGHT 600
