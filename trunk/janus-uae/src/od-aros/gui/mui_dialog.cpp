@@ -34,9 +34,15 @@ int GetDlgCtrlID(HWND hwndCtl) {
   return 0;
 }
 
+static int return_value;
+
 BOOL EndDialog(HWND hDlg, int nResult) {
-  TODO();
-  return FALSE;
+
+  return_value=nResult;
+
+  Signal(FindTask(NULL), SIGBREAKF_CTRL_C);
+
+  return nResult;
 }
 
 /*
@@ -53,6 +59,9 @@ extern Object *app;
 extern Object *win;
 
 
+void aros_main_loop(void);
+
+/* return 1 on success, 0 for cancel */
 INT_PTR DialogBoxIndirect(HINSTANCE hInstance, LPCDLGTEMPLATE lpTemplate, HWND hWndParent, INT_PTR (CALLBACK FAR *func) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam))  {
 
   Object *mui_win;
@@ -62,7 +71,7 @@ INT_PTR DialogBoxIndirect(HINSTANCE hInstance, LPCDLGTEMPLATE lpTemplate, HWND h
   DebOut("lpTemplate: %lx\n", lpTemplate);
   DebOut("lpDialogFunc: %lx\n", func);
 
-  mui_content=FixedObj((IPTR) lpTemplate);
+  mui_content=FixedProcObj((IPTR) lpTemplate, (IPTR)func);
   DebOut("content: %lx\n", mui_content);
   if(!mui_content) {
     DebOut("ERROR: could create window content!?\n");
@@ -80,13 +89,24 @@ INT_PTR DialogBoxIndirect(HINSTANCE hInstance, LPCDLGTEMPLATE lpTemplate, HWND h
     return 0;
   }
 
-  //SetAttrs(win, MUIA_Window_Sleep, TRUE, TAG_DONE);
+  return_value=0;
+
   DoMethod(app, OM_ADDMEMBER, (IPTR) mui_win);
+  SetAttrs(win, MUIA_Window_Sleep, TRUE, TAG_DONE);
 
   func ((Element *)lpTemplate, WM_INITDIALOG, 0, 0);
+
   SetAttrs(mui_win, MUIA_Window_Open, TRUE, TAG_DONE);
 
-  return 1;
+  aros_main_loop();
+
+  SetAttrs(mui_win, MUIA_Window_Open, FALSE, TAG_DONE);
+  DoMethod(app, OM_REMMEMBER, (IPTR) mui_win);
+  DisposeObject(mui_win);
+  mui_win=NULL;
+  SetAttrs(win, MUIA_Window_Sleep, FALSE, TAG_DONE);
+
+  return return_value;
 }
 
 struct newresource *scaleresource (struct newresource *res, HWND parent, int resize, DWORD exstyle) {
