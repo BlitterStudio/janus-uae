@@ -67,6 +67,7 @@ COMMON_OBJS= \
 	mui_messagebox.o \
 	mui_win.o \
 	mui_listview.o \
+	mui_dialog.o \
 	combo.o \
 	mui_class.o 
 
