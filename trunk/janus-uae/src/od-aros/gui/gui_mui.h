@@ -631,5 +631,6 @@ extern struct MUI_CustomClass *CL_Fixed;
 #define CBS_DROPDOWNLIST      0x0003L
 
 #include "mui_listview.h"
+#include "mui_dialog.h"
 
 #endif
