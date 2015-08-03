@@ -188,6 +188,7 @@ int gui_active;
 
 #ifdef __AROS__
 void check_currentpage(int shouldbe);
+int CustomDialogBox (Element *templ, HWND hDlg, INT_PTR (*proc) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam));
 #endif
 
 #if 0
@@ -309,8 +310,10 @@ static HWND pages[MAX_C_PAGES];
 static HWND guiDlg, panelDlg, ToolTipHWND;
 #if 0
 static HACCEL hAccelTable;
+#endif
 static HWND customDlg;
 static int customDlgType;
+#if 0
 struct ToolTipHWNDS {
 	WNDPROC proc;
 	HWND hwnd;
@@ -1106,6 +1109,7 @@ static int getdeepfavdiskimage (TCHAR *imgpath, struct favitems *fitem, int idx)
 		TCHAR tmp[MAX_DPATH], tmp2[MAX_DPATH];
 		if (!my_readdir (myd, tmp))
 			break;
+TODO();
 		_tcscpy (tmp2, path);
 		_tcscat (tmp2, _T("\\"));
 		_tcscat (tmp2, tmp);
@@ -1150,9 +1154,12 @@ static int getfavdiskimage (TCHAR *imgpath, struct favitems *fitem, int idx)
 	fitem[idx].type = 0;
 	return idx;
 }
+#endif
 
 static TCHAR *favoritepopup (HWND hwnd, int drive)
 {
+  TODO();
+#if 0
 	UAEREG *fkey;
 	int idx, idx2;
 	struct favitems fitem[MAXFAVORITESPACE + 1];
@@ -1266,6 +1273,7 @@ static TCHAR *favoritepopup (HWND hwnd, int drive)
 	if (ret == 0)
 		return NULL;
 	return fitem[ret - 1].path;
+#endif
 }
 static TCHAR *favoritepopup (HWND hwnd)
 {
@@ -1274,6 +1282,7 @@ static TCHAR *favoritepopup (HWND hwnd)
 	return favoritepopup (hwnd, -1);
 }
 
+#if 0
 /* base Drag'n'Drop code borrowed from http://www.codeproject.com/listctrl/jianghong.asp */
 
 static int bDragging = 0;
@@ -10912,7 +10921,6 @@ static INT_PTR CALLBACK SoundDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 	}
 	return FALSE;
 }
-#if 0
 
 #ifdef FILESYS
 
@@ -10945,6 +10953,7 @@ static struct fsvdlg_vals current_fsvdlg;
 static struct hfdlg_vals current_hfdlg;
 static int archivehd;
 
+#if 0
 static void hardfile_testrdb (struct hfdlg_vals *hdf)
 {
 	uae_u8 id[512];
@@ -10982,14 +10991,17 @@ static void hardfile_testrdb (struct hfdlg_vals *hdf)
 		hdf_close (&hfd);
 	}
 }
+#endif
+#endif
 
 static void default_fsvdlg (struct fsvdlg_vals *f)
 {
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	memset (f, 0, sizeof (struct fsvdlg_vals));
 	f->ci.type = UAEDEV_DIR;
 }
+#if 0
 static void default_tapedlg (struct tapedlg_vals *f)
 {
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
@@ -11017,6 +11029,7 @@ static void default_rdb_hfdlg (struct hfdlg_vals *f, const TCHAR *filename)
 	_tcscpy (current_hfdlg.ci.rootdir, filename);
 	hardfile_testrdb (f);
 }
+#endif
 
 static void volumeselectfile (HWND hDlg)
 {
@@ -11048,6 +11061,7 @@ static void volumeselectfile (HWND hDlg)
 }
 static void volumeselectdir (HWND hDlg, int newdir)
 {
+#if 0
 	const GUID volumeguid = { 0x1df05121, 0xcc08, 0x46ea, { 0x80, 0x3f, 0x98, 0x3c, 0x54, 0x88, 0x53, 0x76 } };
 	TCHAR szTitle[MAX_DPATH];
 	TCHAR directory_path[MAX_DPATH];
@@ -11071,6 +11085,7 @@ static void volumeselectdir (HWND hDlg, int newdir)
 		ew (hDlg, IDC_FS_RW, TRUE);
 		archivehd = 0;
 	}
+#endif
 }
 
 static INT_PTR CALLBACK VolumeSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -11174,6 +11189,7 @@ STATIC_INLINE bool is_hdf_rdb (void)
 
 	return current_hfdlg.ci.sectors == 0 && current_hfdlg.ci.surfaces == 0 && current_hfdlg.ci.reserved == 0;
 }
+#if 0
 
 static void sethardfile (HWND hDlg)
 {
@@ -11840,9 +11856,12 @@ static INT_PTR CALLBACK HarddriveSettingsProc (HWND hDlg, UINT msg, WPARAM wPara
 	}
 	return FALSE;
 }
+#endif
 
 static void new_filesys (HWND hDlg, int entry)
 {
+  TODO();
+#if 0
 	struct uaedev_config_data *uci;
 	struct uaedev_config_info ci;
 
@@ -11856,8 +11875,10 @@ static void new_filesys (HWND hDlg, int entry)
 		else if (uci->configoffset >= 0)
 			filesys_eject (uci->configoffset);
 	}
+#endif
 }
 
+#if 0
 static void new_cddrive (HWND hDlg, int entry)
 {
 	struct uaedev_config_info ci = { 0 };
@@ -11919,7 +11940,6 @@ static void new_harddrive (HWND hDlg, int entry)
 		hardfile_media_change (hfd, &current_hfdlg.ci, true, false);
 	}
 }
-#endif
 #endif
 
 static void harddisk_remove (HWND hDlg)
@@ -12034,9 +12054,12 @@ static int harddiskdlg_button (HWND hDlg, WPARAM wParam)
 {
 	int button = LOWORD (wParam);
 
+  DebOut("hDlg: %lx\n", hDlg);
+
   TODO();
 	switch (button) {
 	case IDC_CD_SELECT:
+    DebOut("IDC_CD_SELECT\n");
 		DiskSelection (hDlg, wParam, 17, &workprefs, NULL);
 		quickstart_cdtype = 1;
 		workprefs.cdslots[0].inuse = true;
@@ -12052,12 +12075,15 @@ static int harddiskdlg_button (HWND hDlg, WPARAM wParam)
 		InitializeListView (hDlg);
 		hilitehd (hDlg);
 		break;
+#endif
 	case IDC_NEW_FS:
+    DebOut("IDC_NEW_FS\n");
 		default_fsvdlg (&current_fsvdlg);
 		archivehd = 0;
 		if (CustomDialogBox (IDD_FILESYS, hDlg, VolumeSettingsProc))
 			new_filesys (hDlg, -1);
 		return 1;
+#if 0
 	case IDC_NEW_FSARCH:
 		archivehd = 1;
 		default_fsvdlg (&current_fsvdlg);
@@ -12101,10 +12127,12 @@ static int harddiskdlg_button (HWND hDlg, WPARAM wParam)
 #endif
 
 	case IDC_REMOVE:
+    DebOut("IDC_REMOVE\n");
 		harddisk_remove (hDlg);
 		return 1;
 
 #if 0
+  /* there are no UP/DOWN buttons in  WinUAE..? */
 	case IDC_UP:
 		harddisk_move (hDlg, 1);
 		clicked_entry--;
@@ -12114,6 +12142,7 @@ static int harddiskdlg_button (HWND hDlg, WPARAM wParam)
 		harddisk_move (hDlg, 0);
 		clicked_entry++;
 		return 1;
+#endif
 
 	case IDC_MAPDRIVES_AUTO:
 		workprefs.win32_automount_removable = ischecked (hDlg, IDC_MAPDRIVES_AUTO);
@@ -12147,7 +12176,6 @@ static int harddiskdlg_button (HWND hDlg, WPARAM wParam)
 		workprefs.win32_norecyclebin = ischecked (hDlg, IDC_NORECYCLEBIN);
 		break;
 
-#endif
 	}
 	return 0;
 }
@@ -18135,15 +18163,14 @@ struct newresource *getresource (struct Element *tmpl)
 {
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
-  TODO();
-#if 0
+	struct newresource *nr;
+#ifndef __AROS__
 	TCHAR rid[20];
 	HRSRC hrsrc;
 	HGLOBAL res;
 	HINSTANCE inst = hUIDLL ? hUIDLL : hInst;
 	void *resdata;
 	LPCDLGTEMPLATEW newres;
-	struct newresource *nr;
 	int size;
 
 	_stprintf (rid, _T("#%d"), tmpl);
@@ -18172,24 +18199,29 @@ struct newresource *getresource (struct Element *tmpl)
 	nr->size = size;
 	nr->tmpl = tmpl;
 	nr->inst = inst;
-	return nr;
+#else
+	nr = xcalloc (struct newresource, 1);
+	nr->tmpl = tmpl;
 #endif
-  return NULL;
+	return nr;
 }
 
-#if 0
+#ifndef __AROS__
 INT_PTR CustomDialogBox (int templ, HWND hDlg, DLGPROC proc)
+#else
+int CustomDialogBox (Element *templ, HWND hDlg, INT_PTR (*proc) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam))
+#endif
 {
 	struct newresource *res, *r;
 	INT_PTR h = -1;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
-
+  DebOut("Element *: %lx, HWND: %lx, proc: %lx\n", templ, hDlg, proc);
 	res = getresource (templ);
 	if (!res)
 		return h;
 	r = scaleresource (res, hDlg, -1, 0);
 	if (r) {
+    DebOut("call DialogBoxIndirect..\n");
 		h = DialogBoxIndirect (r->inst, r->resource, hDlg, proc);
 		freescaleresource (r);
 	}
@@ -18199,6 +18231,7 @@ INT_PTR CustomDialogBox (int templ, HWND hDlg, DLGPROC proc)
 	return h;
 }
 
+#if 0
 HWND CustomCreateDialog (int templ, HWND hDlg, DLGPROC proc)
 {
 	struct newresource *res, *r;
