@@ -5251,7 +5251,11 @@ void default_prefs (struct uae_prefs *p, int type)
 	p->catweasel = 0;
 	p->tod_hack = 0;
 	p->maprom = 0;
+#ifndef __AROS__
 	p->filesys_no_uaefsdb = 0;
+#else
+	p->filesys_no_uaefsdb = 1;
+#endif
 	p->filesys_custom_uaefsdb = 1;
 	p->picasso96_nocustom = 1;
 	p->cart_internal = 1;
