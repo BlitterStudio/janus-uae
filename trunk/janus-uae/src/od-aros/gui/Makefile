@@ -69,6 +69,8 @@ COMMON_OBJS= \
 	mui_listview.o \
 	mui_dialog.o \
 	combo.o \
+	fs.o \
+	cursor.o \
 	mui_class.o 
 
 # build dependencies magic
