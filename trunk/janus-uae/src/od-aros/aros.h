@@ -29,11 +29,13 @@
 #define WINUAEREV ""
 #define MAKEBD(x,y,z) ((((x) - 2000) * 10000 + (y)) * 100 + (z))
 
-#define INVALID_FILE_ATTRIBUTES 0
-
 #define MAX_DISPLAYS 10
 
 typedef LONG LRESULT;
+typedef const void* LPCVOID;
+typedef DWORD *LPDWORD;
+typedef TCHAR *LPCTSTR;
+
 
 extern struct MultiDisplay Displays[MAX_DISPLAYS + 1];
 struct MultiDisplay *getdisplay (struct uae_prefs *p);
@@ -144,7 +146,6 @@ typedef struct {
   WORD cmd;
 } ACCEL;
 
-#define INVALID_HANDLE_VALUE NULL
 #define FILETIME mytimeval
 
 typedef struct _WIN32_FIND_DATA {

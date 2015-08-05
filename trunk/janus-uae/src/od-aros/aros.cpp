@@ -90,12 +90,11 @@
 #include "fsdb.h"
 #include "winnt.h"
 
-
-
 //#include "options.h"
 //#include "include/scsidev.h"
 
 #include "od-aros/tchar.h"
+#include "gui/fs.h"
 
 APTR ProcessorBase = NULL;
 
