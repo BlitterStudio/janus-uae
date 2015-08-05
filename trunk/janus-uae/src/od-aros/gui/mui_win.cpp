@@ -522,12 +522,7 @@ BOOL SetDlgItemInt(HWND elem, int item, UINT uValue, BOOL bSigned) {
     return FALSE;
   }
 
-  if(bSigned) {
-    snprintf(tmp, 64, "-%d", uValue);
-  }
-  else {
-    snprintf(tmp, 64, "%d", uValue);
-  }
+  snprintf(tmp, 64, "%d", uValue); /* '-' is printed with %d anyways, no need to care for bSigned (?) */
 
   DebOut("set to: %s\n", tmp);
 
