@@ -126,6 +126,8 @@
 #include "string_resource.h"
 #include "gui/mui_data.h"
 #include "gui/mui_listview.h"
+#include "gui/fs.h"
+#include "gui/cursor.h"
 
 #include "tchar.h"
 #define fputws fputs
@@ -312,7 +314,11 @@ static HWND guiDlg, panelDlg, ToolTipHWND;
 static HACCEL hAccelTable;
 #endif
 static HWND customDlg;
+#ifndef __AROS__
 static int customDlgType;
+#else
+static Element *customDlgType;
+#endif
 #if 0
 struct ToolTipHWNDS {
 	WNDPROC proc;
@@ -3161,6 +3167,7 @@ static int loopmulti (TCHAR *s, TCHAR *out)
 	index += _tcslen (s + index) + 1;
 	return 1;
 }
+#endif
 
 static BOOL CreateHardFile (HWND hDlg, UINT hfsizem, TCHAR *dostype, TCHAR *newpath, TCHAR *outpath)
 {
@@ -3250,7 +3257,6 @@ static BOOL CreateHardFile (HWND hDlg, UINT hfsizem, TCHAR *dostype, TCHAR *newp
 	}
 	return result;
 }
-#endif
 
 static TCHAR *memsize_names[] = {
 	/* 0 */ NULL,
@@ -3309,7 +3315,6 @@ static int msi_z3fast[] = { 0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 17, 12, 18, 13, 19, 
 static int msi_z3chip[] = { 0, 7, 8, 9, 10, 11, 12, 13 };
 static int msi_gfx[] = { 0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 };
 
-#if 0
 static int CalculateHardfileSize (HWND hDlg)
 {
 	BOOL Translated = FALSE;
@@ -3324,7 +3329,6 @@ static int CalculateHardfileSize (HWND hDlg)
 		mbytes = 0;
 	return mbytes;
 }
-#endif
 
 static const TCHAR *nth[] = {
 	_T(""), _T("second "), _T("third "), _T("fourth "), _T("fifth "), _T("sixth "), _T("seventh "), _T("eighth "), _T("ninth "), _T("tenth ")
@@ -11001,7 +11005,6 @@ static void default_fsvdlg (struct fsvdlg_vals *f)
 	memset (f, 0, sizeof (struct fsvdlg_vals));
 	f->ci.type = UAEDEV_DIR;
 }
-#if 0
 static void default_tapedlg (struct tapedlg_vals *f)
 {
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
@@ -11021,6 +11024,7 @@ static void default_hfdlg (struct hfdlg_vals *f, bool rdb)
 	f->ci.type = UAEDEV_HDF;
 	f->ci.controller = ctrl;
 }
+#if 0
 static void default_rdb_hfdlg (struct hfdlg_vals *f, const TCHAR *filename)
 {
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
@@ -11061,8 +11065,11 @@ static void volumeselectfile (HWND hDlg)
 }
 static void volumeselectdir (HWND hDlg, int newdir)
 {
-#if 0
+#ifndef __AROS__
 	const GUID volumeguid = { 0x1df05121, 0xcc08, 0x46ea, { 0x80, 0x3f, 0x98, 0x3c, 0x54, 0x88, 0x53, 0x76 } };
+#else
+  IPTR volumeguid; /* not used */
+#endif
 	TCHAR szTitle[MAX_DPATH];
 	TCHAR directory_path[MAX_DPATH];
 
@@ -11085,7 +11092,6 @@ static void volumeselectdir (HWND hDlg, int newdir)
 		ew (hDlg, IDC_FS_RW, TRUE);
 		archivehd = 0;
 	}
-#endif
 }
 
 static INT_PTR CALLBACK VolumeSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -11144,6 +11150,7 @@ static INT_PTR CALLBACK VolumeSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, 
 			switch (LOWORD (wParam))
 			{
 			case IDC_FS_SELECT_EJECT:
+        DebOut("IDC_FS_SELECT_EJECT\n");
 				SetDlgItemText (hDlg, IDC_PATH_NAME, _T(""));
 				SetDlgItemText (hDlg, IDC_VOLUME_NAME, _T(""));
 				CheckDlgButton (hDlg, IDC_FS_RW, TRUE);
@@ -11151,19 +11158,24 @@ static INT_PTR CALLBACK VolumeSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, 
 				archivehd = -1;
 				break;
 			case IDC_FS_SELECT_FILE:
+        DebOut("IDC_FS_SELECT_FILE\n");
 				volumeselectfile (hDlg);
 				break;
 			case IDC_FS_SELECT_DIR:
+        DebOut("IDC_FS_SELECT_DIR\n");
 				volumeselectdir (hDlg, 0);
 				break;
 			case IDOK:
+        DebOut("IDOK\n");
 				EndDialog (hDlg, 1);
 				break;
 			case IDCANCEL:
+        DebOut("IDCANCEL\n");
 				EndDialog (hDlg, 0);
 				break;
 			}
 		}
+    DebOut("break!\n");
 		GetDlgItemText (hDlg, IDC_PATH_NAME, current_fsvdlg.ci.rootdir, sizeof current_fsvdlg.ci.rootdir / sizeof (TCHAR));
 		GetDlgItemText (hDlg, IDC_VOLUME_NAME, current_fsvdlg.ci.volname, sizeof current_fsvdlg.ci.volname / sizeof (TCHAR));
 		GetDlgItemText (hDlg, IDC_VOLUME_DEVICE, current_fsvdlg.ci.devname, sizeof current_fsvdlg.ci.devname / sizeof (TCHAR));
@@ -11189,7 +11201,6 @@ STATIC_INLINE bool is_hdf_rdb (void)
 
 	return current_hfdlg.ci.sectors == 0 && current_hfdlg.ci.surfaces == 0 && current_hfdlg.ci.reserved == 0;
 }
-#if 0
 
 static void sethardfile (HWND hDlg)
 {
@@ -11384,6 +11395,8 @@ static void updatehdfinfo (HWND hDlg, bool force, bool defaults)
 
 static void hardfileselecthdf (HWND hDlg, TCHAR *newpath)
 {
+  TODO();
+#if 0
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	DiskSelection (hDlg, IDC_PATH_NAME, 2, &workprefs, newpath);
@@ -11395,6 +11408,7 @@ static void hardfileselecthdf (HWND hDlg, TCHAR *newpath)
 	get_hd_geometry (&current_hfdlg.ci);
 	updatehdfinfo (hDlg, false, false);
 	sethardfile (hDlg);
+#endif
 }
 
 static void hardfilecreatehdf (HWND hDlg, TCHAR *newpath)
@@ -11419,6 +11433,7 @@ static void hardfilecreatehdf (HWND hDlg, TCHAR *newpath)
 	sethardfile (hDlg);
 }
 
+#if 0
 static INT_PTR CALLBACK TapeDriveSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static int recursive = 0;
@@ -11546,6 +11561,7 @@ static INT_PTR CALLBACK CDDriveSettingsProc (HWND hDlg, UINT msg, WPARAM wParam,
 	}
 	return FALSE;
 }
+#endif
 
 static INT_PTR CALLBACK HardfileSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -11558,9 +11574,11 @@ static INT_PTR CALLBACK HardfileSettingsProc (HWND hDlg, UINT msg, WPARAM wParam
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
 	switch (msg) {
+#if 0
 	case WM_DROPFILES:
 		dragdrop (hDlg, (HDROP)wParam, &changed_prefs, -1);
 		return FALSE;
+#endif
 
 	case WM_INITDIALOG:
 		recursive++;
@@ -11574,6 +11592,7 @@ static INT_PTR CALLBACK HardfileSettingsProc (HWND hDlg, UINT msg, WPARAM wParam
 		customDlg = hDlg;
 		return TRUE;
 
+#if 0
 	case WM_CONTEXTMENU:
 		if (GetDlgCtrlID ((HWND)wParam) == IDC_SELECTOR) {
 			TCHAR *s = favoritepopup (hDlg);
@@ -11601,6 +11620,7 @@ static INT_PTR CALLBACK HardfileSettingsProc (HWND hDlg, UINT msg, WPARAM wParam
 			}
 		}
 		break;
+#endif
 
 	case WM_COMMAND:
 		if (recursive)
@@ -11609,20 +11629,24 @@ static INT_PTR CALLBACK HardfileSettingsProc (HWND hDlg, UINT msg, WPARAM wParam
 
 		switch (LOWORD (wParam)) {
 		case IDC_HF_SIZE:
+      DebOut("IDC_HF_SIZE\n");
 			ew (hDlg, IDC_HF_CREATE, CalculateHardfileSize (hDlg) > 0);
 			break;
 		case IDC_HF_TYPE:
+      DebOut("IDC_HF_TYPE\n");
 			res = SendDlgItemMessage (hDlg, IDC_HF_TYPE, CB_GETCURSEL, 0, 0);
 			sethfdostype (hDlg, (int)res);
 			ew (hDlg, IDC_HF_DOSTYPE, res >= 4);
 			break;
 		case IDC_HF_CREATE:
+      DebOut("IDC_HF_CREATE\n");
 			_tcscpy (fs, current_hfdlg.ci.filesys);
 			default_hfdlg (&current_hfdlg, false);
 			_tcscpy (current_hfdlg.ci.filesys, fs);
 			hardfilecreatehdf (hDlg, NULL);
 			break;
 		case IDC_SELECTOR:
+      DebOut("IDC_SELECTOR\n");
 			{
 				_tcscpy (fs, current_hfdlg.ci.filesys);
 				_tcscpy (dev, current_hfdlg.ci.devname);
@@ -11639,19 +11663,24 @@ static INT_PTR CALLBACK HardfileSettingsProc (HWND hDlg, UINT msg, WPARAM wParam
 			}
 			break;
 		case IDC_FILESYS_SELECTOR:
+      DebOut("IDC_FILESYS_SELECTOR\n");
 			DiskSelection (hDlg, IDC_PATH_FILESYS, 12, &workprefs, 0);
 			GetDlgItemText (hDlg, IDC_PATH_FILESYS, current_hfdlg.ci.filesys, sizeof current_hfdlg.ci.filesys / sizeof (TCHAR));
 			break;
 		case IDOK:
+      DebOut("IDOK\n");
 			EndDialog (hDlg, 1);
 			break;
 		case IDCANCEL:
+      DebOut("IDCANCEL\n");
 			EndDialog (hDlg, 0);
 			break;
 		case IDC_HDF_RW:
+      DebOut("IDC_HDF_RW\n");
 			current_hfdlg.ci.readonly = !ischecked (hDlg, IDC_HDF_RW);
 			break;
 		case IDC_HDF_AUTOBOOT:
+      DebOut("IDC_HDF_AUTOBOOT\n");
 			if (ischecked (hDlg, IDC_HDF_AUTOBOOT)) {
 				current_hfdlg.ci.bootpri = 0;
 				setchecked (hDlg, IDC_HDF_DONOTMOUNT, false);
@@ -11661,6 +11690,7 @@ static INT_PTR CALLBACK HardfileSettingsProc (HWND hDlg, UINT msg, WPARAM wParam
 			SetDlgItemInt (hDlg, IDC_HARDFILE_BOOTPRI, current_hfdlg.ci.bootpri, TRUE);
 			break;
 		case IDC_HDF_DONOTMOUNT:
+      DebOut("IDC_HDF_DONOTMOUNT\n");
 			if (ischecked (hDlg, IDC_HDF_DONOTMOUNT)) {
 				current_hfdlg.ci.bootpri = BOOTPRI_NOAUTOMOUNT;
 				setchecked (hDlg, IDC_HDF_AUTOBOOT, false);
@@ -11671,6 +11701,7 @@ static INT_PTR CALLBACK HardfileSettingsProc (HWND hDlg, UINT msg, WPARAM wParam
 			SetDlgItemInt (hDlg, IDC_HARDFILE_BOOTPRI, current_hfdlg.ci.bootpri, TRUE);
 			break;
 		case IDC_HDF_RDB:
+      DebOut("IDC_HDF_RDB\n");
 			SetDlgItemInt (hDlg, IDC_SECTORS, 0, FALSE);
 			SetDlgItemInt (hDlg, IDC_RESERVED, 0, FALSE);
 			SetDlgItemInt (hDlg, IDC_HEADS, 0, FALSE);
@@ -11681,6 +11712,7 @@ static INT_PTR CALLBACK HardfileSettingsProc (HWND hDlg, UINT msg, WPARAM wParam
 			sethardfile (hDlg);
 			break;
 		case IDC_SECTORS:
+      DebOut("IDC_SECTORS\n");
 			v = current_hfdlg.ci.sectors;
 			current_hfdlg.ci.sectors = GetDlgItemInt (hDlg, IDC_SECTORS, NULL, FALSE);
 			if (v != current_hfdlg.ci.sectors) {
@@ -11689,6 +11721,7 @@ static INT_PTR CALLBACK HardfileSettingsProc (HWND hDlg, UINT msg, WPARAM wParam
 			}
 			break;
 		case IDC_RESERVED:
+      DebOut("IDC_RESERVED\n");
 			v = current_hfdlg.ci.reserved;
 			current_hfdlg.ci.reserved = GetDlgItemInt (hDlg, IDC_RESERVED, NULL, FALSE);
 			if (v != current_hfdlg.ci.reserved) {
@@ -11697,6 +11730,7 @@ static INT_PTR CALLBACK HardfileSettingsProc (HWND hDlg, UINT msg, WPARAM wParam
 			}
 			break;
 		case IDC_HEADS:
+      DebOut("IDC_HEADS\n");
 			v = current_hfdlg.ci.surfaces;
 			current_hfdlg.ci.surfaces  = GetDlgItemInt (hDlg, IDC_HEADS, NULL, FALSE);
 			if (v != current_hfdlg.ci.surfaces) {
@@ -11748,6 +11782,8 @@ static INT_PTR CALLBACK HardfileSettingsProc (HWND hDlg, UINT msg, WPARAM wParam
 extern int harddrive_to_hdf (HWND, struct uae_prefs*, int);
 static INT_PTR CALLBACK HarddriveSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+  TODO();
+#if 0
 	static int recursive = 0;
 	int i;
 	LRESULT posn;
@@ -11854,14 +11890,12 @@ static INT_PTR CALLBACK HarddriveSettingsProc (HWND hDlg, UINT msg, WPARAM wPara
 		recursive--;
 		break;
 	}
+#endif
 	return FALSE;
 }
-#endif
 
 static void new_filesys (HWND hDlg, int entry)
 {
-  TODO();
-#if 0
 	struct uaedev_config_data *uci;
 	struct uaedev_config_info ci;
 
@@ -11875,7 +11909,6 @@ static void new_filesys (HWND hDlg, int entry)
 		else if (uci->configoffset >= 0)
 			filesys_eject (uci->configoffset);
 	}
-#endif
 }
 
 #if 0
@@ -11911,6 +11944,7 @@ static void new_tapedrive (HWND hDlg, int entry)
 		tape_media_change (uci->unitnum, &ci);
 	}
 }
+#endif
 
 static void new_hardfile (HWND hDlg, int entry)
 {
@@ -11940,7 +11974,6 @@ static void new_harddrive (HWND hDlg, int entry)
 		hardfile_media_change (hfd, &current_hfdlg.ci, true, false);
 	}
 }
-#endif
 
 static void harddisk_remove (HWND hDlg)
 {
@@ -11966,11 +11999,10 @@ static void harddisk_move (HWND hDlg, int up)
 	move_filesys_unitconfig (&workprefs, entry, up ? entry - 1 : entry + 1);
 }
 
-#if 0
-#if 0
 static void harddisk_edit (HWND hDlg)
 {
-	int entry = listview_find_selected (GetDlgItem (hDlg, IDC_VOLUMELIST));
+	//int entry = listview_find_selected (GetDlgItem (hDlg, IDC_VOLUMELIST));
+	int entry = listview_find_selected (hDlg, IDC_VOLUMELIST);
 	int type;
 	struct uaedev_config_data *uci;
 	struct mountedinfo mi;
@@ -11986,15 +12018,21 @@ static void harddisk_edit (HWND hDlg)
 		type = uci->ci.type == UAEDEV_HDF ? FILESYS_HARDFILE : FILESYS_VIRTUAL;
 
 	if (uci->ci.type == UAEDEV_CD) {
+    TODO();
+#if 0
 		memcpy (&current_cddlg.ci, uci, sizeof (struct uaedev_config_info));
 		if (CustomDialogBox (IDD_CDDRIVE, hDlg, CDDriveSettingsProc)) {
 			new_cddrive (hDlg, entry);
 		}
+#endif
 	} else if (uci->ci.type == UAEDEV_TAPE) {
+    TODO();
+#if 0
 		memcpy (&current_tapedlg.ci, uci, sizeof (struct uaedev_config_info));
 		if (CustomDialogBox (IDD_TAPEDRIVE, hDlg, TapeDriveSettingsProc)) {
 			new_tapedrive (hDlg, entry);
 		}
+#endif
 	}
 	else if(type == FILESYS_HARDFILE || type == FILESYS_HARDFILE_RDB)
 	{
@@ -12021,13 +12059,13 @@ static void harddisk_edit (HWND hDlg)
 	}
 }
 
+#if 0
 static ACCEL HarddiskAccel[] = {
 	{ FVIRTKEY, VK_UP, 10001 }, { FVIRTKEY, VK_DOWN, 10002 },
 	{ FVIRTKEY|FSHIFT, VK_UP, IDC_UP }, { FVIRTKEY|FSHIFT, VK_DOWN, IDC_DOWN },
 	{ FVIRTKEY, VK_RETURN, IDC_EDIT }, { FVIRTKEY, VK_DELETE, IDC_REMOVE },
 	{ 0, 0, 0 }
 };
-#endif
 #endif
 
 static void hilitehd (HWND hDlg)
@@ -12090,6 +12128,7 @@ static int harddiskdlg_button (HWND hDlg, WPARAM wParam)
 		if (CustomDialogBox (IDD_FILESYS, hDlg, VolumeSettingsProc))
 			new_filesys (hDlg, -1);
 		return 1;
+#endif
 
 	case IDC_NEW_HF:
 		default_hfdlg (&current_hfdlg, false);
@@ -12097,6 +12136,7 @@ static int harddiskdlg_button (HWND hDlg, WPARAM wParam)
 			new_hardfile (hDlg, -1);
 		return 1;
 
+#if 0
 	case IDC_NEW_CD:
 		if (CustomDialogBox (IDD_CDDRIVE, hDlg, CDDriveSettingsProc))
 			new_cddrive (hDlg, -1);
@@ -12120,11 +12160,11 @@ static int harddiskdlg_button (HWND hDlg, WPARAM wParam)
 				new_harddrive (hDlg, -1);
 		}
 		return 1;
+#endif
 
 	case IDC_EDIT:
 		harddisk_edit (hDlg);
 		return 1;
-#endif
 
 	case IDC_REMOVE:
     DebOut("IDC_REMOVE\n");

@@ -119,4 +119,5 @@
 #define NM_SETCURSOR (NM_FIRST-17)
 #define NM_CHAR (NM_FIRST-18)
 #define NM_TOOLTIPSCREATED (NM_FIRST-19) 
+
 #endif /* __WINNT_H__ */

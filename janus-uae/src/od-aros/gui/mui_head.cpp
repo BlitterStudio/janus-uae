@@ -395,7 +395,6 @@ void aros_main_loop(void) {
 
   DebOut("entered..\n");
 
-
   while (DoMethod(app, MUIM_Application_NewInput, &signals) != MUIV_Application_ReturnID_Quit)
   {
     signals = Wait(signals | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D | SIGBREAKF_CTRL_F);
