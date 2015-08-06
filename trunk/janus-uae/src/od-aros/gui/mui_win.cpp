@@ -518,7 +518,7 @@ BOOL SetDlgItemInt(HWND elem, int item, UINT uValue, BOOL bSigned) {
   }
 
   if(i<0) {
-    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n");
+    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", item);
     return FALSE;
   }
 
@@ -551,6 +551,47 @@ BOOL SetDlgItemInt(HWND elem, int item, UINT uValue, BOOL bSigned) {
   }
 
   return TRUE;
+}
+
+/*
+ * Translates the text of a specified control in a dialog box into an integer value.
+ */
+UINT GetDlgItemInt(HWND elem, int item, BOOL *lpTranslated,  BOOL bSigned) {
+  Object *obj;
+  LONG i;
+  char *content;
+  long long res;
+  char *end;
+
+  DebOut("hDlg %lx, nIDDlgItem %d\n", elem, item);
+
+  i=get_index(elem, item);
+  if(i<0) {
+    elem=get_elem(item);
+    i=get_index(elem, item);
+  }
+
+  if(i<0) {
+    DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", item);
+    return FALSE;
+  }
+
+  content=(char *) XGET(elem[i].obj, MUIA_String_Contents);
+  DebOut("content: %s\n", content);
+
+  res=strtoll(content, &end, 10);
+
+  DebOut("end: >%s<\n", end);
+
+  if(end[0] != '\0') {
+    DebOut("ERROR: %s is not a number\n", content);
+    lpTranslated=FALSE;
+    return 0;
+  }
+
+  DebOut("res: %d\n", res);
+
+  return (UINT) res;
 }
 
 /* Adds a check mark to (checks) a specified radio button in a group and removes 
