@@ -585,12 +585,12 @@ UINT GetDlgItemInt(HWND elem, int item, BOOL *lpTranslated,  BOOL bSigned) {
 
   if(end[0] != '\0') {
     DebOut("ERROR: %s is not a number\n", content);
-    lpTranslated=FALSE;
     return 0;
   }
 
   DebOut("res: %d\n", res);
 
+  lpTranslated=TRUE;
   return (UINT) res;
 }
 
