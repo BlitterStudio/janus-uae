@@ -189,6 +189,35 @@ AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
   AROS_USERFUNC_EXIT
 }
 
+AROS_UFH2(void, MUIHook_entry, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
+
+  AROS_USERFUNC_INIT
+
+  int i;
+  ULONG wParam;
+
+  struct Data *data = (struct Data *) hook->h_Data;
+
+  //DebOut("[%lx] entered\n", obj);
+  //DebOut("[%lx] hook.h_Data: %lx\n", obj, hook->h_Data);
+  //DebOut("[%lx] obj: %lx\n", obj);
+
+  i=get_elem_from_obj(data, (Object *) obj);
+
+  DebOut("[%lx] i: %d\n", obj, i);
+
+  if(data->func) {
+    wParam=MAKELPARAM(data->src[i].idc, 0); /* 0? really? */
+    data->func(data->src, WM_COMMAND, wParam, NULL);
+  }
+  else {
+    DebOut("[%lx] function is zero: %lx\n", obj, data->func);
+  }
+
+  AROS_USERFUNC_EXIT
+}
+
+
 AROS_UFH2(void, MUIHook_slide, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
 
   AROS_USERFUNC_INIT
@@ -749,6 +778,14 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
           src[i].exists=TRUE;
           src[i].var=(char **) calloc(256, sizeof(IPTR)); // array for cycle texts
           src[i].var[0]=NULL;
+#ifdef UAE_ABI_v0
+            data->MyMUIHook_entry.h_Entry=(HOOKFUNC) MUIHook_entry;
+#else
+            data->MyMUIHook_entry.h_Entry=(APTR) MUIHook_entry;
+#endif
+            data->MyMUIHook_entry.h_Data =(APTR) data;
+            DoMethod(src[i].obj, MUIM_Notify,  MUIA_String_Contents , MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_entry, func); 
+
         break;
 
 
