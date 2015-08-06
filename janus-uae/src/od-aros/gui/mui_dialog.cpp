@@ -45,14 +45,6 @@ BOOL EndDialog(HWND hDlg, int nResult) {
   return nResult;
 }
 
-/*
- * Translates the text of a specified control in a dialog box into an integer value.
- */
-UINT GetDlgItemInt(HWND hDlg, int  nIDDlgItem, BOOL *lpTranslated,  BOOL bSigned) {
-  TODO();
-  return 0;
-}
-
 Object* FixedProcObj(IPTR src, IPTR proc);
 Object* FixedObj(IPTR src);
 extern Object *app;
