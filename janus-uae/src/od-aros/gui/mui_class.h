@@ -7,6 +7,7 @@ struct Data {
   struct Hook MyMUIHook_select;
   struct Hook MyMUIHook_slide;
   struct Hook MyMUIHook_combo;
+  struct Hook MyMUIHook_entry;
   struct Hook MyMUIHook_tree_active;
   struct Hook MyMUIHook_tree_double;
 #if 0
