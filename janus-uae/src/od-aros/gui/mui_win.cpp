@@ -555,6 +555,8 @@ BOOL SetDlgItemInt(HWND elem, int item, UINT uValue, BOOL bSigned) {
 
 /*
  * Translates the text of a specified control in a dialog box into an integer value.
+ *
+ * lpTranslated is optional!
  */
 UINT GetDlgItemInt(HWND elem, int item, BOOL *lpTranslated,  BOOL bSigned) {
   Object *obj;
@@ -564,6 +566,10 @@ UINT GetDlgItemInt(HWND elem, int item, BOOL *lpTranslated,  BOOL bSigned) {
   char *end;
 
   DebOut("hDlg %lx, nIDDlgItem %d\n", elem, item);
+
+  if(lpTranslated) {
+    *lpTranslated=FALSE;
+  }
 
   i=get_index(elem, item);
   if(i<0) {
@@ -584,12 +590,13 @@ UINT GetDlgItemInt(HWND elem, int item, BOOL *lpTranslated,  BOOL bSigned) {
   DebOut("end: >%s<\n", end);
 
   if(end && end[0] != '\0') {
-    *lpTranslated=FALSE;
     DebOut("ERROR: %s is not a number\n", content);
     return 0;
   }
 
-  *lpTranslated=TRUE;
+  if(lpTranslated) {
+    *lpTranslated=TRUE;
+  }
   DebOut("res: %d\n", res);
 
   return (UINT) res;
