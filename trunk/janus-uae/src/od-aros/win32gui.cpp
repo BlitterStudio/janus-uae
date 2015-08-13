@@ -3182,7 +3182,7 @@ static BOOL CreateHardFile (HWND hDlg, UINT hfsizem, TCHAR *dostype, TCHAR *newp
 	uae_u8 b;
 	int sparse, dynamic;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("hfsizem %d, dostype %s\n", hfsizem, dostype);
 
 	outpath[0] = 0;
 	sparse = 0;
@@ -3197,6 +3197,7 @@ static BOOL CreateHardFile (HWND hDlg, UINT hfsizem, TCHAR *dostype, TCHAR *newp
 	}
 	if (!DiskSelection (hDlg, IDC_PATH_NAME, 3, &workprefs, newpath))
 		return FALSE;
+
 	GetDlgItemText (hDlg, IDC_PATH_NAME, init_path, MAX_DPATH);
 	if (*init_path && hfsize) {
 		if (dynamic) {
@@ -11418,10 +11419,11 @@ static void hardfilecreatehdf (HWND hDlg, TCHAR *newpath)
 	UINT setting = CalculateHardfileSize (hDlg);
 	TCHAR dostype[16];
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("new path: %s\n", newpath);
 
 	GetDlgItemText (hDlg, IDC_HF_DOSTYPE, dostype, sizeof (dostype) / sizeof (TCHAR));
 	res = SendDlgItemMessage (hDlg, IDC_HF_TYPE, CB_GETCURSEL, 0, 0);
+  DebOut("res: %lx\n", res);
 	if (res == 0)
 		dostype[0] = 0;
 	if (CreateHardFile (hDlg, setting, dostype, newpath, hdfpath)) {
@@ -11433,7 +11435,6 @@ static void hardfilecreatehdf (HWND hDlg, TCHAR *newpath)
 	sethardfile (hDlg);
 }
 
-#if 0
 static INT_PTR CALLBACK TapeDriveSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static int recursive = 0;
@@ -11474,7 +11475,11 @@ static INT_PTR CALLBACK TapeDriveSettingsProc (HWND hDlg, UINT msg, WPARAM wPara
 			break;
 		case IDC_TAPE_SELECT_DIR:
 		{
+#ifndef __AROS__
 			const GUID volumeguid = { 0xb95772a5, 0x8444, 0x48d8, { 0xab, 0x9a, 0xef, 0x3c, 0x62, 0x11, 0x3a, 0x37 } };
+#else
+      const void *volumeguid=NULL;
+#endif
 			TCHAR directory_path[MAX_DPATH];
 			_tcscpy (directory_path, current_tapedlg.ci.rootdir);
 			if (directory_path[0] == 0) {
@@ -11532,11 +11537,14 @@ static INT_PTR CALLBACK CDDriveSettingsProc (HWND hDlg, UINT msg, WPARAM wParam,
 		customDlg = hDlg;
 		return TRUE;
 	case WM_NOTIFY:
+    TODO();
+#if 0
 		if (((LPNMHDR) lParam)->idFrom == IDC_CDLIST) {
 			NM_LISTVIEW *nmlistview = (NM_LISTVIEW *)lParam;
 			if (nmlistview->hdr.code == NM_DBLCLK)
 				EndDialog (hDlg, 1);
 		}
+#endif
 		break;		
 	case WM_COMMAND:
 		if (recursive)
@@ -11561,7 +11569,6 @@ static INT_PTR CALLBACK CDDriveSettingsProc (HWND hDlg, UINT msg, WPARAM wParam,
 	}
 	return FALSE;
 }
-#endif
 
 static INT_PTR CALLBACK HardfileSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -11911,7 +11918,6 @@ static void new_filesys (HWND hDlg, int entry)
 	}
 }
 
-#if 0
 static void new_cddrive (HWND hDlg, int entry)
 {
 	struct uaedev_config_info ci = { 0 };
@@ -11944,7 +11950,6 @@ static void new_tapedrive (HWND hDlg, int entry)
 		tape_media_change (uci->unitnum, &ci);
 	}
 }
-#endif
 
 static void new_hardfile (HWND hDlg, int entry)
 {
@@ -12026,13 +12031,10 @@ static void harddisk_edit (HWND hDlg)
 		}
 #endif
 	} else if (uci->ci.type == UAEDEV_TAPE) {
-    TODO();
-#if 0
 		memcpy (&current_tapedlg.ci, uci, sizeof (struct uaedev_config_info));
 		if (CustomDialogBox (IDD_TAPEDRIVE, hDlg, TapeDriveSettingsProc)) {
 			new_tapedrive (hDlg, entry);
 		}
-#endif
 	}
 	else if(type == FILESYS_HARDFILE || type == FILESYS_HARDFILE_RDB)
 	{
@@ -12136,7 +12138,6 @@ static int harddiskdlg_button (HWND hDlg, WPARAM wParam)
 			new_hardfile (hDlg, -1);
 		return 1;
 
-#if 0
 	case IDC_NEW_CD:
 		if (CustomDialogBox (IDD_CDDRIVE, hDlg, CDDriveSettingsProc))
 			new_cddrive (hDlg, -1);
@@ -12148,6 +12149,7 @@ static int harddiskdlg_button (HWND hDlg, WPARAM wParam)
 			new_tapedrive (hDlg, -1);
 		return 1;
 
+#if 0
 	case IDC_NEW_HD:
 		default_hfdlg (&current_hfdlg, true);
 		current_hfdlg.ci.type = UAEDEV_HDF;

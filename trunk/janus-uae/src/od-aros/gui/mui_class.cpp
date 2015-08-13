@@ -711,6 +711,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
           }
         break;
 
+        case DEFPUSHBUTTON:
         case PUSHBUTTON:
           child=HGroup, MUIA_Background, MUII_ButtonBack,
                               ButtonFrame,

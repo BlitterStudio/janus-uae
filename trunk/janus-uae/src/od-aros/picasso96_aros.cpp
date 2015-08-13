@@ -93,6 +93,8 @@ bool have_done_picasso = 1; /* For the JIT compiler */
 static int p96syncrate;
 int p96hsync_counter, full_refresh;
 
+#define _DEBUG
+
 #ifdef PICASSO96
 #ifdef _DEBUG // Change this to _DEBUG for debugging
 #define P96TRACING_ENABLED 1
