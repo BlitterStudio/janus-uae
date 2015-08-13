@@ -16,6 +16,7 @@ void filesys_addexternals (void) {
 
   struct DosList *dl;
   BPTR lock;
+  STRPTR  taskname = NULL;  
 
   if (!currprefs.win32_automount_cddrives && !currprefs.win32_automount_netdrives
     && !currprefs.win32_automount_drives && !currprefs.win32_automount_removabledrives) {
@@ -47,7 +48,11 @@ void filesys_addexternals (void) {
     UnLock(lock);
 
     sprintf (ci.volname, "host_%s", tdl->dol_Name);
-    sprintf (ci.rootdir, "%s:", tdl->dol_Name);
+    if(tdl->dol_Type == DLT_VOLUME) {
+      taskname=((struct Task *)tdl->dol_Task->mp_SigTask)->tc_Node.ln_Name;
+      DebOut("taskname: %s\n", taskname);
+      sprintf (ci.rootdir, "%s:", taskname);
+    }
     DebOut("ci.volname: %s, ci.rootdir: %s\n", ci.volname, ci.rootdir);
     ci.readonly = 1;
     ci.bootpri = -20;
