@@ -30,7 +30,26 @@
  */
 #define EXEC_DEVICES_H
 #define EXEC_IO_H
+#define DEVICES_TIMER_H
+#include <aros/asmcall.h>
+#include <proto/arossupport.h>
+#include <aros/debug.h>
+
+#include <exec/types.h>
+#include <exec/lists.h>
+#include <exec/memory.h>
+#include <exec/execbase.h>
+
+
+#include <dos/dos.h>
+#include <dos/dosextens.h>
+#include <dos/exall.h>
+
+#include <proto/dos.h>
+
 #endif
+
+#define JUAE_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -836,6 +855,7 @@ static void initialize_mountinfo (void)
 			allocuci (&currprefs, nr, idx);
 		}
 	}
+  DebOut("call filesys_addexternals ..\n");
 	filesys_addexternals ();
 	nr = nr_units ();
 	cd_unit_offset = nr;
@@ -3243,11 +3263,13 @@ static uaecptr make_lock (Unit *unit, uae_u32 uniq, long mode)
 #define NOTIFY_CLASS	0x40000000
 #define NOTIFY_CODE	0x1234
 
+#ifndef __AROS__
 #define NRF_SEND_MESSAGE 1
 #define NRF_SEND_SIGNAL 2
 #define NRF_WAIT_REPLY 8
 #define NRF_NOTIFY_INITIAL 16
 #define NRF_MAGIC (1 << 31)
+#endif
 
 static void notify_send (Unit *unit, Notify *n)
 {
@@ -3773,6 +3795,8 @@ static void move_exkeys (Unit *unit, a_inode *from, a_inode *to)
 static bool get_statinfo(Unit *unit, a_inode *aino, struct mystat *statbuf)
 {
 	bool ok = true;
+
+  DebOut("unit: %lx\n", unit);
 	memset (statbuf, 0, sizeof statbuf);
 	/* No error checks - this had better work. */
 	if (unit->volflags & MYVOLUMEINFO_ARCHIVE)
@@ -4851,6 +4875,7 @@ static void
 static void updatedirtime (a_inode *a1, int now)
 {
 	struct mystat statbuf;
+  DebOut("a1: %lx\n", a1);
 
 	if (!a1->parent)
 		return;
@@ -6621,6 +6646,7 @@ static void filesys_reset2 (void)
 
 void filesys_reset (void)
 {
+  DebOut("entered\n");
 	if (isrestore ())
 		return;
 	filesys_reset2 ();
