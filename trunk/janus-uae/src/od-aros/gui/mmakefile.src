@@ -6,13 +6,17 @@ JUAEHOSTTOOLSDIR := $(GENDIR)/$(CURDIR)/../..
 
 LIBGUIFILES := \
         mui_class \
-        mui_head \
         mui_data \
+        mui_dialog \
         mui_file_request \
+        mui_head \
+        mui_listview \
         mui_messagebox \
         mui_tree \
         mui_win \
-        combo
+        combo \
+        cursor \
+        fs
 
 LIBGUIIMAGES := \
 	35floppy \
