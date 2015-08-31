@@ -1,7 +1,7 @@
 #ifndef _MUI_DIALOG_H_
 #define _MUI_DIALOG_H_
 
-#include "win32gui.h" /* HINSTANCE declaration */
+#include "muigui.h" /* HINSTANCE declaration */
 
 #define INT_PTR int
 #define DLGPROC IPTR

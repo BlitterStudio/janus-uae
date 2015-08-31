@@ -23,7 +23,7 @@
 #include "mui_class.h"
 
 #include "registry.h"
-#include "win32gui.h"
+#include "muigui.h"
 
 #include "mui_dialog.h"
 /*

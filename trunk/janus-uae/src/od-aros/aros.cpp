@@ -57,7 +57,7 @@
 #include "aros.h"
 //#include "arosgfx.h"
 #include "registry.h"
-//#include "win32gui.h"
+//#include "muigui.h"
 #include "autoconf.h"
 #include "gui/gui_mui.h"
 //#include "sys/mman.h"
@@ -145,6 +145,22 @@ int af_path_2005;
 int quickstart = 1, configurationcache = 1, relativepaths = 1; 
 
 static int forceroms;
+
+static struct  contextcommand cc_disk[] = {
+	{ _T("A500"), _T("-0 \"%1\" -s use_gui=no -cfgparam=quickstart=A500,0"), IDI_DISKIMAGE },
+	{ _T("A1200"), _T("-0 \"%1\" -s use_gui=no -cfgparam=quickstart=A1200,0"), IDI_DISKIMAGE },
+	{ NULL }
+};
+struct assext exts_gui[] = {
+	{ _T(".uae"), _T("-f \"%1\""), _T("WinUAE configuration file"), IDI_CONFIGFILE, NULL },
+	{ _T(".adf"), _T("-0 \"%1\" -s use_gui=no"), _T("WinUAE floppy disk image"), IDI_DISKIMAGE, cc_disk },
+	{ _T(".adz"), _T("-0 \"%1\" -s use_gui=no"), _T("WinUAE floppy disk image"), IDI_DISKIMAGE, cc_disk },
+	{ _T(".dms"), _T("-0 \"%1\" -s use_gui=no"), _T("WinUAE floppy disk image"), IDI_DISKIMAGE, cc_disk },
+	{ _T(".fdi"), _T("-0 \"%1\" -s use_gui=no"), _T("WinUAE floppy disk image"), IDI_DISKIMAGE, cc_disk },
+	{ _T(".ipf"), _T("-0 \"%1\" -s use_gui=no"), _T("WinUAE floppy disk image"), IDI_DISKIMAGE, cc_disk },
+	{ _T(".uss"), _T("-s statefile=\"%1\" -s use_gui=no"), _T("WinUAE statefile"), IDI_APPICON, NULL },
+	{ NULL }
+};
 
 static void createdir (const TCHAR *path) {
   CreateDir(path);

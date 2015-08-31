@@ -76,7 +76,7 @@
 #include "gui/gui_mui.h"
 #include "winnt.h"
 #endif
-#include "win32gui.h"
+#include "muigui.h"
 #if 0
 #include "win32gfx.h"
 #endif

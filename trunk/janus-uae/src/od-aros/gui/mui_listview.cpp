@@ -29,7 +29,7 @@
 #include "mui_class.h"
 
 #include "registry.h"
-#include "win32gui.h"
+#include "muigui.h"
 
 struct hook_data{
   struct Element *elem;

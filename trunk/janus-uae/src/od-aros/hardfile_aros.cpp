@@ -17,7 +17,7 @@
 #include "blkdev.h"
 #include "registry.h"
 #if (0)
-#include "win32gui.h"
+#include "muigui.h"
 #endif
 #include "zfile.h"
 

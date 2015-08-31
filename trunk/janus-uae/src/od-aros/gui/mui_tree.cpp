@@ -29,7 +29,7 @@
 #include "mui_class.h"
 
 #include "registry.h"
-#include "win32gui.h"
+#include "muigui.h"
 #if 0
 #include "png2c/misc.h"
 #include "png2c/folder.h"

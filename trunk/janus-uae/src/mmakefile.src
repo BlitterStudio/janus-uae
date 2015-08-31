@@ -30,6 +30,7 @@ PERL:=/usr/bin/perl
 
 JUAEAROSSRCS := \
 	aros \
+	extensions \
 	thread \
 	main_aros \
         hardfile_aros \
@@ -58,7 +59,7 @@ JUAEAROSSRCS := \
 	rp \
 	registry \
 	stubs \
- 	win32gui
+ 	muigui
 
 JUAECOMMONSRCS := \
 	blkdev \
