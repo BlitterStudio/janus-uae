@@ -203,6 +203,7 @@ struct contextcommand
 	TCHAR *command;
 	int icon;
 };
+
 struct assext {
     TCHAR *ext;
     TCHAR *cmd;
@@ -211,7 +212,8 @@ struct assext {
     struct contextcommand *cc;
     int enabled;
 };
-extern struct assext *exts_gui;
+
+extern struct assext exts[];
 
 void associate_file_extensions (void);
 
