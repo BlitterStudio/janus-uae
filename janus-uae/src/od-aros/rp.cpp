@@ -29,7 +29,7 @@
 #include "gfxfilter.h"
 #include "blkdev.h"
 #include "registry.h"
-#include "win32gui.h"
+#include "muigui.h"
 #include "drawing.h"
 #include "resource.h"
 #include "gui.h"
