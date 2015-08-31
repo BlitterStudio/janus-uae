@@ -205,6 +205,7 @@ COMMON_OBJS= \
 	rp.o \
 	registry.o \
 	win32gui.o \
+	win32.o \
 	fsdb_aros.o \
 	nogui_aros.o \
 	hardfile_aros.o \

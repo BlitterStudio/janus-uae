@@ -4661,14 +4661,14 @@ void InitializeListView (HWND hDlg)
 
 		listview_column_width[0] = 180;
 		listview_column_width[1] = 10;
-		for (i = 0; exts_gui[i].ext; i++) {
+		for (i = 0; exts[i].ext; i++) {
 			lvstruct.mask     = LVIF_TEXT | LVIF_PARAM;
-			lvstruct.pszText  = exts_gui[i].ext;
+			lvstruct.pszText  = exts[i].ext;
 			lvstruct.lParam   = 0;
 			lvstruct.iItem    = i;
 			lvstruct.iSubItem = 0;
 			result = ListView_InsertItem (list, &lvstruct);
-			ListView_SetItemText (list, result, 1, exts_gui[i].enabled ? _T("*") : _T(""));
+			ListView_SetItemText (list, result, 1, exts[i].enabled ? _T("*") : _T(""));
 		}
 	} else if (lv_type == LV_INPUT) {
     TODO();
@@ -9810,7 +9810,7 @@ static INT_PTR MiscDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			list = nmlistview->hdr.hwndFrom;
 			if (nmlistview->hdr.code == NM_DBLCLK) {
 				entry = listview_entry_from_click (list, &col);
-				exts[entry].enabled = exts_gui[entry].enabled ? 0 : 1;
+				exts[entry].enabled = exts[entry].enabled ? 0 : 1;
 				associate_file_extensions ();
 				InitializeListView (hDlg);
 			}
@@ -9926,13 +9926,13 @@ static INT_PTR MiscDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			gui_size_changed = 2;
 		break;
 		case IDC_ASSOCIATE_ON:
-			for (i = 0; exts_gui[i].ext; i++)
+			for (i = 0; exts[i].ext; i++)
 				exts[i].enabled = 1;
 			associate_file_extensions ();
 			InitializeListView (hDlg);
 			break;
 		case IDC_ASSOCIATE_OFF:
-			for (i = 0; exts_gui[i].ext; i++)
+			for (i = 0; exts[i].ext; i++)
 				exts[i].enabled = 0;
 			associate_file_extensions ();
 			InitializeListView (hDlg);
