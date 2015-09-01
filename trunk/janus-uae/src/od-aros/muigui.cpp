@@ -10940,7 +10940,6 @@ static struct fsvdlg_vals current_fsvdlg;
 static struct hfdlg_vals current_hfdlg;
 static int archivehd;
 
-#if 0
 static void hardfile_testrdb (struct hfdlg_vals *hdf)
 {
 	uae_u8 id[512];
@@ -10979,7 +10978,6 @@ static void hardfile_testrdb (struct hfdlg_vals *hdf)
 	}
 }
 #endif
-#endif
 
 static void default_fsvdlg (struct fsvdlg_vals *f)
 {
@@ -11007,7 +11005,7 @@ static void default_hfdlg (struct hfdlg_vals *f, bool rdb)
 	f->ci.type = UAEDEV_HDF;
 	f->ci.controller = ctrl;
 }
-#if 0
+
 static void default_rdb_hfdlg (struct hfdlg_vals *f, const TCHAR *filename)
 {
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
@@ -11016,7 +11014,6 @@ static void default_rdb_hfdlg (struct hfdlg_vals *f, const TCHAR *filename)
 	_tcscpy (current_hfdlg.ci.rootdir, filename);
 	hardfile_testrdb (f);
 }
-#endif
 
 static void volumeselectfile (HWND hDlg)
 {
@@ -11385,9 +11382,7 @@ static void hardfileselecthdf (HWND hDlg, TCHAR *newpath)
 	GetDlgItemText (hDlg, IDC_PATH_NAME, current_hfdlg.ci.rootdir, sizeof current_hfdlg.ci.rootdir / sizeof (TCHAR));
 	fullpath (current_hfdlg.ci.rootdir, sizeof current_hfdlg.ci.rootdir / sizeof (TCHAR));
 	inithardfile (hDlg);
-#if 0
 	hardfile_testrdb (&current_hfdlg);
-#endif
 	updatehdfinfo (hDlg, true, true);
 	get_hd_geometry (&current_hfdlg.ci);
 	updatehdfinfo (hDlg, false, false);
