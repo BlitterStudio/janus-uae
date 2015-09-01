@@ -143,8 +143,6 @@ void pre_gui_message (const TCHAR *format,...);
 #define MIN_GUI_INTERNAL_WIDTH 512
 #define MIN_GUI_INTERNAL_HEIGHT 400
 
-#ifndef __AROS__
-
 /** Windows patterns **/
 #define ARCHIVE_STRING _T("(#?.zip|#?.7z;*.rar;*.lha;*.lzh;*.lzx)")
 
@@ -155,22 +153,6 @@ void pre_gui_message (const TCHAR *format,...);
 #define HDF_FORMAT_STRING _T("(*.hdf;*.vhd;*.rdf;*.hdz;*.rdz;*.chd)\0*.hdf;*.vhd;*.rdf;*.hdz;*.rdz;*.chd\0")
 #define INP_FORMAT_STRING _T("(*.inp)\0*.inp\0")
 #define  CD_FORMAT_STRING _T("(*.cue;*.ccd;*.mds;*.iso;*.chd)\0*.cue;*.ccd;*.mds;*.iso;*.chd;") ARCHIVE_STRING _T("\0")
-
-#else
-
-/* Amigaois patterns */
-
-#define ARCHIVE_STRING _T("#?.zip|#?.7z|#?.rar|#?.lha|#?.lzh|#?.lzx")
-#define DISK_FORMAT_STRING _T("(#?.adf|#?.adz|#?.gz|#?.dms|#?.ipf|#?.scp|#?.fdi|#?.exe)\0#?.adf|#?.adz|#?.gz|#?.dms|#?.ipf|#?.scp|#?.fdi|#?.exe|#?.ima|#?.wrp|#?.dsq|#?.st|#?.raw;") ARCHIVE_STRING _T("\0")
-#define ROM_FORMAT_STRING _T("(#?.rom|#?.roz|#?.a500|#?.a600|#?.a1200|#?.a4000)\0#?.rom|#?.roz|#?.a500|#?.a600|#?.a1200|#?.a4000;") ARCHIVE_STRING _T("\0")
-#define USS_FORMAT_STRING_RESTORE _T("(*.uss)\0*.uss;*.gz;") ARCHIVE_STRING _T("\0")
-#define USS_FORMAT_STRING_SAVE _T("(*.uss)\0*.uss\0")
-#define HDF_FORMAT_STRING _T("(*.hdf;*.vhd;*.rdf;*.hdz;*.rdz;*.chd)\0*.hdf;*.vhd;*.rdf;*.hdz;*.rdz;*.chd\0")
-#define INP_FORMAT_STRING _T("(*.inp)\0*.inp\0")
-#define  CD_FORMAT_STRING _T("(#?.cue|#?.ccd|#?.mds|#?.iso|#?.chd)\0") ARCHIVE_STRING _T("\0")
-
-#endif /* Windows patterns */
-
 #define CONFIG_HOST _T("Host")
 #define CONFIG_HARDWARE _T("Hardware")
 
@@ -11396,20 +11378,20 @@ static void updatehdfinfo (HWND hDlg, bool force, bool defaults)
 
 static void hardfileselecthdf (HWND hDlg, TCHAR *newpath)
 {
-  TODO();
-#if 0
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+
+  DebOut("newpath: %s\n", newpath);
 
 	DiskSelection (hDlg, IDC_PATH_NAME, 2, &workprefs, newpath);
 	GetDlgItemText (hDlg, IDC_PATH_NAME, current_hfdlg.ci.rootdir, sizeof current_hfdlg.ci.rootdir / sizeof (TCHAR));
 	fullpath (current_hfdlg.ci.rootdir, sizeof current_hfdlg.ci.rootdir / sizeof (TCHAR));
 	inithardfile (hDlg);
+#if 0
 	hardfile_testrdb (&current_hfdlg);
+#endif
 	updatehdfinfo (hDlg, true, true);
 	get_hd_geometry (&current_hfdlg.ci);
 	updatehdfinfo (hDlg, false, false);
 	sethardfile (hDlg);
-#endif
 }
 
 static void hardfilecreatehdf (HWND hDlg, TCHAR *newpath)
