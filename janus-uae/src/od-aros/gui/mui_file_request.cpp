@@ -1,8 +1,29 @@
+/************************************************************************
+ *
+ * mui_file_request.cpp
+ *
+ * Copyright 2015 Oliver Brunner - aros<at>oliver-brunner.de
+ *
+ * This file is part of Janus-UAE2.
+ *
+ * Janus-UAE is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Janus-UAE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
+ *
+ ************************************************************************/
 #include <exec/types.h>
 #include <libraries/mui.h>
  
 #include <proto/intuition.h>
-#include <proto/utility.h>
 #include <proto/muimaster.h>
 #include <proto/dos.h>
 #include <clib/alib_protos.h>
@@ -13,7 +34,6 @@
 
 #include "aros.h"
 #include "gui.h"
-#include "winnt.h"
 #include "mui_data.h"
 
 /*
@@ -23,18 +43,20 @@
  * lpstrInitialDir (initial directory)
  * lpstrTitle (title bar string)
  */
-
 BOOL mui_get_filename(TCHAR *lpstrTitle, TCHAR *lpstrInitialDir, TCHAR *lpstrFile, 
                       TCHAR *lpstrFilter, TCHAR *lpstrFileTitle, ULONG flags) {
 
   struct FileRequester *req;
   struct Window *win;
   BOOL ret;
+  char filter[256];
+  char *b, *e;
+  unsigned int i=0;
 
-  DebOut("lpstrTitle: %s\n", lpstrTitle);
+  DebOut("lpstrTitle:      %s\n", lpstrTitle);
   DebOut("lpstrInitialDir: %s\n", lpstrInitialDir);
-  DebOut("lpstrFile: %s\n", lpstrFile);
-  DebOut("lpstrFilter: %s\n", lpstrFilter);
+  DebOut("lpstrFile:       %s\n", lpstrFile);
+  DebOut("lpstrFilter:     %s\n", lpstrFilter);
 
   win=(struct Window *) XGET(app, MUIA_Window_Window);
   DebOut("win: %lx\n", win);
@@ -42,17 +64,48 @@ BOOL mui_get_filename(TCHAR *lpstrTitle, TCHAR *lpstrInitialDir, TCHAR *lpstrFil
   DebOut("win: %lx\n", win);
   /* TODO: win is always NULL!? */
 
+  /* convert Windows filter like 
+   *   "Hard disk image files (*.hdf;*.vhd;*.rdf;*.hdz;*.rdz;*.chd)"
+   * to AROS patterns like 
+   *   "#?.hdf|#?.vhd|#?.rdf|#?.hdz|#?.rdz|#?.ch"
+   */
+  if(b=strchr(lpstrFilter, (int) '(')) {
+    /* windows filter */
+    if(e=strchr(lpstrFilter, (int) ')')) {
+      DebOut("found Windows pattern:  %s\n", lpstrFilter);
+      b++;
+      e--;
+      while(b < e) {
+        if(b[0]=='*') {
+          filter[i++]='#';
+          filter[i++]='?';
+        }
+        else if(b[0]==';') {
+          filter[i++]='|';
+        }
+        else {
+          filter[i++]=b[0];
+        }
+        b++;
+      }
+    }
+    filter[i++]=(char) 0;
+    DebOut("converted AROS pattern: %s\n", filter);
+  }
+  else {
+    strncpy(filter, lpstrFilter, 255);
+    filter[255]=(char) 0;
+  }
+
   req=(struct FileRequester *) MUI_AllocAslRequestTags(ASL_FileRequest,
-                ASLFR_Window,win ,
-                ASLFR_TitleText, lpstrTitle,
-                ASLFR_InitialDrawer  , lpstrInitialDir,
-                ASLFR_InitialFile, lpstrFile,
-                ASLFR_InitialPattern , lpstrFilter,
-                ASLFR_DoPatterns,TRUE,
-/*                ASLFR_DoSaveMode     , save,
-                  ASLFR_DoPatterns     , TRUE,*/
+                ASLFR_Window,          win,
+                ASLFR_TitleText,       lpstrTitle,
+                ASLFR_InitialDrawer,   lpstrInitialDir,
+                ASLFR_InitialFile,     lpstrFile,
+                ASLFR_InitialPattern,  filter,
+                ASLFR_DoPatterns,      TRUE,
+/*                ASLFR_DoSaveMode     , save,*/
                 ASLFR_RejectIcons    , TRUE,
-                /*ASLFR_UserData       , widget,*/
                 TAG_DONE);
 
   if(!req) {
