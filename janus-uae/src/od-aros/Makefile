@@ -204,8 +204,8 @@ COMMON_OBJS= \
 	sdlkeys_dik.o \
 	rp.o \
 	registry.o \
-	win32gui.o \
-	win32.o \
+	muigui.o \
+	extensions.o \
 	fsdb_aros.o \
 	nogui_aros.o \
 	hardfile_aros.o \
