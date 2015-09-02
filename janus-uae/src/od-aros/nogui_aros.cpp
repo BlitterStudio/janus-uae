@@ -108,10 +108,6 @@ void notify_user (int msg)
   EasyRequestArgs(NULL, &req, NULL, NULL );
 }
 
-void gui_display(int shortcut) {
-  TODO();
-}
-
 void gui_flicker_led(int led, int unitnum, int status) {
   TODO();
 }
