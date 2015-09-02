@@ -87,6 +87,9 @@ extern char *_tzname[2];
 /* ? */
 void _tzset(void);
 
+extern int mouseactive;
+extern int minimized;
+
 extern TCHAR start_path_exe[MAX_DPATH];
 extern int start_data;
 
@@ -139,6 +142,10 @@ void set_path (const TCHAR *name, TCHAR *path, pathtype mode);
 void set_path (const TCHAR *name, TCHAR *path);
 void setpathmode (pathtype pt);
 void gui_message_id (TCHAR *id);
+
+
+extern bool resumepaused (int priority);
+extern bool setpaused (int priority);
 
 extern int quickstart, configurationcache, relativepaths;
 extern Object *app, *win;
