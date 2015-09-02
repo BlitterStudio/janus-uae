@@ -1383,4 +1383,58 @@ DWORD GetTempPath(DWORD nBufferLength, TCHAR *lpBuffer) {
   return 2;
 }
 
+static int pausemouseactive;
+void resumesoundpaused (void)
+{
+	resume_sound ();
+#ifdef AHI
+	ahi_open_sound ();
+	ahi2_pause_sound (0);
+#endif
+}
+void setsoundpaused (void)
+{
+	pause_sound ();
+#ifdef AHI
+	ahi_close_sound ();
+	ahi2_pause_sound (1);
+#endif
+}
+bool resumepaused (int priority)
+{
+	//write_log (_T("resume %d (%d)\n"), priority, pause_emulation);
+	if (pause_emulation > priority)
+		return false;
+	if (!pause_emulation)
+		return false;
+	resumesoundpaused ();
+	blkdev_exitgui ();
+	if (pausemouseactive)
+		setmouseactive (-1);
+	pausemouseactive = 0;
+	pause_emulation = 0;
+#ifdef RETROPLATFORM
+	rp_pause (pause_emulation);
+#endif
+	setsystime ();
+	return true;
+}
+bool setpaused (int priority)
+{
+	//write_log (_T("pause %d (%d)\n"), priority, pause_emulation);
+	if (pause_emulation > priority)
+		return false;
+	pause_emulation = priority;
+	setsoundpaused ();
+	blkdev_entergui ();
+	pausemouseactive = 1;
+	if (isfullscreen () <= 0) {
+		pausemouseactive = mouseactive;
+		setmouseactive (0);
+	}
+#ifdef RETROPLATFORM
+	rp_pause (pause_emulation);
+#endif
+	return true;
+}
 
