@@ -549,14 +549,3 @@ void aros_gui_exit(void) {
     delete_class();
   }
 }
-
-#ifdef __STANDALONE__
-/* not used in AROS */
-int main(void) {
-  aros_init_gui();
-  //aros_main_loop();
-  aros_gui_exit();
-
-  return 0;
-}
-#endif
