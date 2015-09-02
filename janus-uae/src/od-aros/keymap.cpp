@@ -7,6 +7,8 @@
  *           2010-2011 Mustafa Tufan
  */
 
+#define JUAE_DEBUG
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -361,18 +363,53 @@ void my_kbd_handler (int keyboard, int scancode, int newstate)
 {
   int code = 0;
   int scancode_new;
-  int defaultguikey;
   bool amode = currprefs.input_keyboard_type == 0;
   bool special = false;
   static int swapperdrive = 0;
 
+  DebOut("keyboard %d, scancode %d, newstate %d\n", keyboard, scancode, newstate);
+
+	if (amode && scancode == DIK_F11 && currprefs.win32_ctrl_F11_is_quit && ctrlpressed ())
+		code = AKS_QUIT;
+
+#if 0
+	if (scancode == DIK_F9 && specialpressed ()) {
+		if (newstate)
+			toggle_rtg (-1);
+		return;
+	}
+#endif
+
 	scancode_new = scancode;
 	if (!specialpressed () && inputdevice_iskeymapped (keyboard, scancode))
 		scancode = 0;
+	
+	if (newstate) {
+		int defaultguikey = amode ? DIK_F12 : DIK_NUMLOCK;
+		if (currprefs.win32_guikey >= 0x100) {
+			if (scancode_new == DIK_F12)
+				return;
+		} else if (currprefs.win32_guikey >= 0) {
+			if (scancode_new == defaultguikey && currprefs.win32_guikey != scancode_new) {
+				scancode = 0;
+				/* !? if (specialpressed () && ctrlpressed() && shiftpressed() && altpressed ()) { */
+					inputdevice_add_inputcode (AKS_ENTERGUI, 1);
+        /* } */
+			} else if (scancode_new == currprefs.win32_guikey ) {
+				inputdevice_add_inputcode (AKS_ENTERGUI, 1);
+				scancode = 0;
+			}
+		} else if (!specialpressed () && !ctrlpressed() && !shiftpressed() && !altpressed () && scancode_new == defaultguikey) {
+			inputdevice_add_inputcode (AKS_ENTERGUI, 1);
+			scancode = 0;
+		}
+	}
+	scancode_new = scancode;
 
-	defaultguikey = amode ? DIK_F12 : DIK_NUMLOCK;
-
-  DebOut("keyboard %d, scancode %d, newstate %d\n", keyboard, scancode, newstate);
+	if (!specialpressed () && inputdevice_iskeymapped (keyboard, scancode)) {
+    DebOut("set scancode to 0!\n");
+		scancode = 0;
+  }
 
   if (newstate && code == 0 && amode) {
 
