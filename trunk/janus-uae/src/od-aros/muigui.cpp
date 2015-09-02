@@ -2262,6 +2262,7 @@ static void flipgui (bool opengui)
 	else
 		vblank_reset (-1);
 }
+#endif
 
 static int GetSettings (int all_options, HWND hwnd);
 /* if drive is -1, show the full GUI, otherwise file-requester for DF[drive] */
@@ -2270,22 +2271,23 @@ void gui_display (int shortcut)
 	static int here;
 	int w, h;
 
-    bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
+  DebOut("shortcut: %d\n", shortcut);
 
 	if (here)
 		return;
 	here++;
 	gui_active++;
 	if (setpaused (7)) {
-		screenshot_prepare ();
-		flipgui (true);
-		wait_keyrelease ();
+		//screenshot_prepare ();
+		//flipgui (true);
+		//wait_keyrelease ();
 		inputdevice_unacquire ();
-		clearallkeys ();
+		//clearallkeys ();
 		setmouseactive (0);
 	}
 
 	w = h = -1;
+#if 0
 	if (!WIN32GFX_IsPicassoScreen () && currprefs.gfx_apmode[0].gfx_fullscreen && (currprefs.gfx_size.width < gui_width || currprefs.gfx_size.height < gui_height)) {
 		w = currprefs.gfx_size.width;
 		h = currprefs.gfx_size.height;
@@ -2295,44 +2297,45 @@ void gui_display (int shortcut)
 		h = currprefs.gfx_size.height;
 	}
 	manual_painting_needed++; /* So that WM_PAINT will refresh the display */
+#endif
 
 	flush_log ();
 
 	if (shortcut == -1) {
 		int ret;
-		ret = GetSettings (0, hAmigaWnd);
+		ret = GetSettings (0, NULL);
 		if (!ret) {
 			savestate_state = 0;
 		}
 	} else if (shortcut >= 0 && shortcut < 4) {
-		DiskSelection (hAmigaWnd, IDC_DF0 + shortcut, 0, &changed_prefs, 0);
+		DiskSelection (NULL, IDC_DF0 + shortcut, 0, &changed_prefs, 0);
 	} else if (shortcut == 5) {
-		if (DiskSelection (hAmigaWnd, IDC_DOSAVESTATE, 9, &changed_prefs, 0))
+		if (DiskSelection (NULL, IDC_DOSAVESTATE, 9, &changed_prefs, 0))
 			save_state (savestate_fname, _T("Description!"));
 	} else if (shortcut == 4) {
-		if (DiskSelection (hAmigaWnd, IDC_DOLOADSTATE, 10, &changed_prefs, 0))
+    TODO();
+		if (DiskSelection (NULL, IDC_DOLOADSTATE, 10, &changed_prefs, 0))
 			savestate_state = STATE_DORESTORE;
 	}
-	manual_painting_needed--; /* So that WM_PAINT doesn't need to use custom refreshing */
+	//manual_painting_needed--; /* So that WM_PAINT doesn't need to use custom refreshing */
 	reset_sound ();
 	inputdevice_copyconfig (&changed_prefs, &currprefs);
 	inputdevice_config_change_test ();
-	clearallkeys ();
+	//clearallkeys ();
 	if (resumepaused (7)) {
 		inputdevice_acquire (TRUE);
 		setmouseactive (1);
 #ifdef AVIOUTPUT
 		AVIOutput_Begin ();
 #endif
-		flipgui (false);
+		//flipgui (false);
 	}
 	fpscounter_reset ();
-	screenshot_free ();
+	//screenshot_free ();
 	write_disk_history ();
 	gui_active--;
 	here--;
 }
-#endif
 
 static void prefs_to_gui (struct uae_prefs *p)
 {
@@ -18639,7 +18642,7 @@ int gui_init (void)
         AVIOutput_Begin ();
 #endif
     }
-    bug("[JUAE:GUI] %s: finished\n", __PRETTY_FUNCTION__);
+    DebOut("finished\n");
 
     return ret;
 }
