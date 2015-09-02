@@ -131,6 +131,8 @@ int pause_emulation;
 int sleep_resolution;
 int uaelib_debug;
 
+int mouseactive=0;
+
 TCHAR start_path_data[MAX_DPATH];
 TCHAR start_path_exe[MAX_DPATH];
 TCHAR start_path_plugins[MAX_DPATH];
