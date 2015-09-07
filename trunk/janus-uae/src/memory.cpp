@@ -1239,6 +1239,9 @@ static int read_kickstart (struct zfile *f, uae_u8 *mem, int size, int dochecksu
 	return i;
 }
 
+#ifdef __AROS__
+bool is_dir(const TCHAR *name);
+#endif
 static bool load_extendedkickstart (const TCHAR *romextfile, int type)
 {
 	struct zfile *f;
@@ -1247,6 +1250,15 @@ static bool load_extendedkickstart (const TCHAR *romextfile, int type)
 
 	if (_tcslen (romextfile) == 0)
 		return false;
+
+#ifdef __AROS__
+  /* romextfile is initialized to "" on WinUAE. On AROS "" is the current dir, so romextfile
+   * will never be len 0, but a directory. So we need this little additional check.
+   */
+  if(is_dir(romextfile)) {
+    return false;
+  }
+#endif
 	if (is_arcadia_rom (romextfile) == ARCADIA_BIOS) {
 		extendedkickmem_type = EXTENDED_ROM_ARCADIA;
 		return false;
