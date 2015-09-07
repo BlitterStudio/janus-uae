@@ -1225,10 +1225,10 @@ void WIN32_HandleRegistryStuff (void) {
     TCHAR path2[MAX_DPATH];
     _tcscpy (path2, path);
     createdir (path);
-    _tcscat (path, _T("\\Host"));
+    _tcscat (path, _T("/Host"));
     createdir (path);
     _tcscpy (path, path2);
-    _tcscat (path, _T("\\Hardware"));
+    _tcscat (path, _T("/Hardware"));
     createdir (path);
   }
   fetch_path (_T("StatefilePath"), path, sizeof (path) / sizeof (TCHAR));
