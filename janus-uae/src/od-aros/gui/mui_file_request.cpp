@@ -42,9 +42,10 @@
  * lpstrFileTitle (The file name and extension (without path information) of the selected file.)
  * lpstrInitialDir (initial directory)
  * lpstrTitle (title bar string)
+ * lpstrDefExt (default extension, must be added, if selected file contains no extension)
  */
 BOOL mui_get_filename(TCHAR *lpstrTitle, TCHAR *lpstrInitialDir, TCHAR *lpstrFile, 
-                      TCHAR *lpstrFilter, TCHAR *lpstrFileTitle, ULONG flags) {
+                      TCHAR *lpstrFilter, TCHAR *lpstrFileTitle, ULONG flags, TCHAR *lpstrDefExt) {
 
   struct FileRequester *req;
   struct Window *win;
@@ -57,6 +58,7 @@ BOOL mui_get_filename(TCHAR *lpstrTitle, TCHAR *lpstrInitialDir, TCHAR *lpstrFil
   DebOut("lpstrInitialDir: %s\n", lpstrInitialDir);
   DebOut("lpstrFile:       %s\n", lpstrFile);
   DebOut("lpstrFilter:     %s\n", lpstrFilter);
+  DebOut("lpstrDefExt:     %s\n", lpstrDefExt);
 
   win=(struct Window *) XGET(app, MUIA_Window_Window);
   DebOut("win: %lx\n", win);
@@ -121,6 +123,12 @@ BOOL mui_get_filename(TCHAR *lpstrTitle, TCHAR *lpstrInitialDir, TCHAR *lpstrFil
     DebOut("lpstrFile: %s\n", lpstrFile);
 
     strncpy(lpstrFileTitle, req->fr_File, MAX_DPATH);
+    DebOut("lpstrFileTitle: %s\n", lpstrFile);
+    if(lpstrDefExt && !strchr(lpstrFile, '.')) {
+      /* add .lpstrDefExt */
+      strncat(lpstrFile, ".", MAX_DPATH);
+      strncat(lpstrFile, lpstrDefExt, MAX_DPATH);
+    }
     DebOut("lpstrFileTitle: %s\n", lpstrFile);
   }
   else {

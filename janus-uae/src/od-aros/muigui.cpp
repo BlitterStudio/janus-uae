@@ -2623,7 +2623,7 @@ static void setdpath (const TCHAR *name, const TCHAR *path)
 // flag = 17 for CD image
 // flag = 18 for Tape image
 
-BOOL mui_get_filename(TCHAR *lpstrTitle, TCHAR *lpstrInitialDir, TCHAR *lpstrFile, TCHAR *lpstrFilter, TCHAR *lpstrFileTitle, ULONG flags);
+BOOL mui_get_filename(TCHAR *lpstrTitle, TCHAR *lpstrInitialDir, TCHAR *lpstrFile, TCHAR *lpstrFilter, TCHAR *lpstrFileTitle, ULONG flags, TCHAR *defext);
 int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs, TCHAR *path_out, int *multi)
 {
 	static int previousfilter[20];
@@ -2903,10 +2903,10 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 	openFileName.lpstrTitle = szTitle;
 #endif
   if(initialdir) {
-    result=mui_get_filename(szTitle, initialdir, full_path, szFilter, file_name, 0);
+    result=mui_get_filename(szTitle, initialdir, full_path, szFilter, file_name, 0, defext);
   }
   else {
-    result=mui_get_filename(szTitle, init_path, full_path, szFilter, file_name, 0);
+    result=mui_get_filename(szTitle, init_path, full_path, szFilter, file_name, 0, defext);
   }
 
   DebOut("full_path: %s\n", full_path);
