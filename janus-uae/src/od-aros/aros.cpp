@@ -282,19 +282,19 @@ void fetch_path (const TCHAR *name, TCHAR *out, int size) {
   else if (!_tcscmp (name, _T("CDPath")))
     _tcscat (out, _T("PROGDIR:cd"));
   else if (!_tcscmp (name, _T("TapePath")))
-    _tcscat (out, _T("PROGDIR:tape\\"));
+    _tcscat (out, _T("PROGDIR:tape/"));
   else if (!_tcscmp (name, _T("hdfPath")))
     _tcscat (out, _T("PROGDIR:hdf"));
   else if (!_tcscmp (name, _T("KickstartPath")))
     _tcscat (out, _T("PROGDIR:Roms/"));
   else if (!_tcscmp (name, _T("ConfigurationPath")))
-    _tcscat (out, _T("PROGDIR:Configurations\\"));
+    _tcscat (out, _T("PROGDIR:Configurations/"));
   else if (!_tcscmp (name, _T("LuaPath")))
     _tcscat (out, _T("PROGDIR:lua"));
   else if (!_tcscmp (name, _T("StatefilePath")))
     _tcscat (out, _T("PROGDIR:Savestates"));
   else if (!_tcscmp (name, _T("InputPath")))
-    _tcscat (out, _T("PROGDIR:Inputrecordings\\"));
+    _tcscat (out, _T("PROGDIR:Inputrecordings/"));
   else {
     _tcscpy (out, start_path_data);
     return;
@@ -437,7 +437,7 @@ void fullpath(TCHAR *inpath, int size) {
 
   strcpy(inpath, abs_in);
 
-  DebOut("result: %s\n", inpath);
+  DebOut("result: >%s<\n", inpath);
 }
 
 DWORD GetFullPathName(const TCHAR *lpFileName, DWORD nBufferLength, LPTSTR lpBuffer, LPTSTR *lpFilePart) {
@@ -1220,7 +1220,10 @@ void WIN32_HandleRegistryStuff (void) {
   reopen_console ();
 #endif
   fetch_path (_T("ConfigurationPath"), path, sizeof (path) / sizeof (TCHAR));
+#ifndef __AROS__
+  /* AROS paths have no trailing \\ */
   path[_tcslen (path) - 1] = 0;
+#endif
   if (GetFileAttributes (path) == 0xffffffff) {
     TCHAR path2[MAX_DPATH];
     _tcscpy (path2, path);
