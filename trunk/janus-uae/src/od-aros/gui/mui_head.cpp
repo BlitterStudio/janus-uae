@@ -211,8 +211,11 @@ int *MemoryDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *HarddiskDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
+//#define SHOW_INCLOMPLETE_PAGES 
 Object* FixedObj(IPTR src)
 {
+
+#ifdef SHOW_INCLOMPLETE_PAGES
     struct TagItem fo_tags[] =
     {
         { MA_src, src},
@@ -220,6 +223,9 @@ Object* FixedObj(IPTR src)
     };
 
     return (Object*) NewObjectA(CL_Fixed->mcc_Class, NULL, fo_tags);
+#else
+    return TextObject,  MUIA_Text_Contents, "\33cThis is an \33bAlpha Version\33n!\n\nThere is still some stuff missing, sorry.", End;
+#endif
 }
 
 Object* FixedProcObj(IPTR src, IPTR proc)
@@ -542,6 +548,8 @@ void aros_hide_gui(void) {
 void aros_gui_exit(void) {
 
   DebOut("entered\n");
+
+  // ? Signal(FindTask(NULL), SIGBREAKF_CTRL_C);
 
   if(app) {
     MUI_DisposeObject(app);
