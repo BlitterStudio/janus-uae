@@ -5,7 +5,7 @@
  * (win32 stores stuff like win32_active_priority etc with the help of
  *  those functions). TODO
  *
- * Copyright 2011       Oliver Brunner - aros<at>oliver-brunner.de
+ * Copyright 2015       Oliver Brunner - aros<at>oliver-brunner.de
  *
  * This file is part of Janus-UAE.
  *
@@ -26,15 +26,121 @@
  *
  ************************************************************************/
 
+#include <stdlib.h>
+#include <stdarg.h>
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 
 #include "options.h"
+#include "audio.h"
+#include "uae.h"
+#include "memory.h"
+#include "rommgr.h"
+#include "custom.h"
+#include "events.h"
+#include "newcpu.h"
+#include "traps.h"
+#include "xwin.h"
+#include "keyboard.h"
+#include "inputdevice.h"
+#include "keybuf.h"
+#include "drawing.h"
+#include "picasso96_aros.h"
+#include "bsdsocket.h"
+#include "registry.h"
+#include "autoconf.h"
+#include "gui.h"
+#include "sys/mman.h"
+#include "zfile.h"
+#include "savestate.h"
+#include "scsidev.h"
+#include "disk.h"
+#include "catweasel.h"
+#include "uaeipc.h"
+#include "ar.h"
+#include "akiko.h"
+#include "cdtv.h"
+#include "blkdev.h"
+#include "gfx.h"
+#include "string_resource.h"
 
 void target_fixup_options (struct uae_prefs *p) {
 }
 
 void target_default_options (struct uae_prefs *p, int type) {
+
+	TCHAR buf[MAX_DPATH];
+	if (type == 2 || type == 0 || type == 3) {
+		p->win32_middle_mouse = 1;
+		p->win32_logfile = 0;
+		p->win32_active_nocapture_pause = 0;
+		p->win32_active_nocapture_nosound = 0;
+		p->win32_iconified_nosound = 1;
+		p->win32_iconified_pause = 1;
+		p->win32_inactive_nosound = 0;
+		p->win32_inactive_pause = 0;
+		p->win32_ctrl_F11_is_quit = 0;
+		p->win32_soundcard = 0;
+		p->win32_samplersoundcard = -1;
+		p->win32_minimize_inactive = 0;
+		p->win32_start_minimized = false;
+		p->win32_start_uncaptured = false;
+		p->win32_active_capture_priority = 1;
+		//p->win32_active_nocapture_priority = 1;
+		p->win32_inactive_priority = 2;
+		p->win32_iconified_priority = 3;
+		p->win32_notaskbarbutton = false;
+		p->win32_nonotificationicon = false;
+		p->win32_alwaysontop = false;
+		p->win32_guikey = -1;
+		p->win32_automount_removable = 0;
+		p->win32_automount_drives = 0;
+		p->win32_automount_removabledrives = 0;
+		p->win32_automount_cddrives = 0;
+		p->win32_automount_netdrives = 0;
+		p->win32_kbledmode = 1;
+		p->win32_uaescsimode = UAESCSI_CDEMU;
+		p->win32_borderless = 0;
+		p->win32_blankmonitors = false;
+		p->win32_powersavedisabled = true;
+		p->sana2 = 0;
+		p->win32_rtgmatchdepth = 1;
+		p->gf[APMODE_RTG].gfx_filter_autoscale = RTG_MODE_SCALE;
+		p->win32_rtgallowscaling = 0;
+		p->win32_rtgscaleaspectratio = -1;
+		p->win32_rtgvblankrate = 0;
+		p->rtg_hardwaresprite = true;
+		p->win32_commandpathstart[0] = 0;
+		p->win32_commandpathend[0] = 0;
+		p->win32_statusbar = 1;
+#if 0
+		p->gfx_api = os_vista ? 1 : 0;
+#endif
+		if (p->gf[APMODE_NATIVE].gfx_filter == 0 && p->gfx_api)
+			p->gf[APMODE_NATIVE].gfx_filter = 1;
+		if (p->gf[APMODE_RTG].gfx_filter == 0 && p->gfx_api)
+			p->gf[APMODE_RTG].gfx_filter = 1;
+#if 0
+		WIN32GUI_LoadUIString (IDS_INPUT_CUSTOM, buf, sizeof buf / sizeof (TCHAR));
+		for (int i = 0; i < GAMEPORT_INPUT_SETTINGS; i++)
+			_stprintf (p->input_config_name[i], buf, i + 1);
+#endif
+	}
+	if (type == 1 || type == 0 || type == 3) {
+		p->win32_uaescsimode = UAESCSI_CDEMU;
+		p->win32_midioutdev = -2;
+		p->win32_midiindev = 0;
+		p->win32_midirouter = false;
+		p->win32_automount_removable = 0;
+		p->win32_automount_drives = 0;
+		p->win32_automount_removabledrives = 0;
+		p->win32_automount_cddrives = 0;
+		p->win32_automount_netdrives = 0;
+		p->picasso96_modeflags = RGBFF_CLUT | RGBFF_R5G6B5PC | RGBFF_B8G8R8A8;
+		p->win32_filesystem_mangle_reserved_names = true;
+	}
+
 	/* TODO: we want janus-uae_log.txt */
 	currprefs.win32_logfile=TRUE;
 }

@@ -383,7 +383,7 @@ void my_kbd_handler (int keyboard, int scancode, int newstate)
 	scancode_new = scancode;
 	if (!specialpressed () && inputdevice_iskeymapped (keyboard, scancode))
 		scancode = 0;
-	
+
 	if (newstate) {
 		int defaultguikey = amode ? DIK_F12 : DIK_NUMLOCK;
 		if (currprefs.win32_guikey >= 0x100) {
@@ -392,9 +392,8 @@ void my_kbd_handler (int keyboard, int scancode, int newstate)
 		} else if (currprefs.win32_guikey >= 0) {
 			if (scancode_new == defaultguikey && currprefs.win32_guikey != scancode_new) {
 				scancode = 0;
-				/* !? if (specialpressed () && ctrlpressed() && shiftpressed() && altpressed ()) { */
+				if (specialpressed () && ctrlpressed() && shiftpressed() && altpressed ())
 					inputdevice_add_inputcode (AKS_ENTERGUI, 1);
-        /* } */
 			} else if (scancode_new == currprefs.win32_guikey ) {
 				inputdevice_add_inputcode (AKS_ENTERGUI, 1);
 				scancode = 0;
@@ -404,12 +403,6 @@ void my_kbd_handler (int keyboard, int scancode, int newstate)
 			scancode = 0;
 		}
 	}
-	scancode_new = scancode;
-
-	if (!specialpressed () && inputdevice_iskeymapped (keyboard, scancode)) {
-    DebOut("set scancode to 0!\n");
-		scancode = 0;
-  }
 
   if (newstate && code == 0 && amode) {
 
@@ -470,7 +463,6 @@ void my_kbd_handler (int keyboard, int scancode, int newstate)
       break;
       } /* end switch */
     }
-      
     if (code) {
       DebOut("call inputdevice_add_inputcode(%d, 1)\n", code);
       inputdevice_add_inputcode (code, 1);
@@ -500,6 +492,7 @@ void my_kbd_handler (int keyboard, int scancode, int newstate)
       
 //	write_log ("KBDHANDLER_2: kbd2= %d, scancode= %d (0x%02x), state= %d\n", keyboard, scancode, scancode, newstate);
 
+	DebOut("KBDHANDLER_2: kbd2= %d, scancode= %d (0x%02x), state= %d\n", keyboard, scancode, scancode, newstate);
   DebOut("call inputdevice_translatekeycode..\n");
   inputdevice_translatekeycode (keyboard, scancode, newstate);
 }
