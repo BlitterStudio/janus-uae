@@ -1,3 +1,6 @@
+
+#define JUAE_DEBUG
+
 #include <proto/dos.h>
 #include <proto/timer.h>
 #include <intuition/intuition.h>
@@ -25,6 +28,7 @@
 #include <resources/processor.h>
 
 #include <SDL.h>
+
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -1356,7 +1360,8 @@ void *ShellExecute(HWND hwnd, TCHAR *lpOperation, TCHAR *lpFile, TCHAR *lpParame
 
   DebOut("lpOperation %s, lpFile %s, lpParameters %s, lpDirectory %s, nShowCmd %d\n", lpOperation, lpFile, lpParameters, lpDirectory, nShowCmd);
 
-  if(strcmp(lpOperation, "open")) {
+  /* lpOperation==NULL or "open" should work */
+  if(lpOperation && strcmp(lpOperation, "open")) {
     DebOut("ERROR: unknow command >%s< for ShellExecute!\n", lpOperation);
     return NULL;
   }
