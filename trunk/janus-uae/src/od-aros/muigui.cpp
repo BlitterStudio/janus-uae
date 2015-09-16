@@ -5057,6 +5057,7 @@ static int listview_entry_from_click (HWND list, int *column)
 	return -1;
 }
 
+#endif
 static INT_PTR CALLBACK InfoSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static int recursive = 0;
@@ -5095,7 +5096,6 @@ static INT_PTR CALLBACK InfoSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 	}
 	return FALSE;
 }
-#endif
 
 static HTREEITEM AddConfigNode (HWND hDlg, struct ConfigStruct *config, const TCHAR *name, const TCHAR *desc, const TCHAR *path, int isdir, int expand, HTREEITEM parent)
 {
@@ -5459,15 +5459,16 @@ static void loadsavecommands (HWND hDlg, WPARAM wParam, struct ConfigStruct **co
 				_stprintf (name_buf, _T("%s\\%s"), start_path_data, workprefs.info);
 			else
 				_tcscpy (name_buf, workprefs.info);
-			ShellExecute (NULL, NULL, name_buf, NULL, NULL, SW_SHOWNORMAL);
+
+      TODO();
+			//ShellExecute (NULL, NULL, name_buf, NULL, NULL, SW_SHOWNORMAL);
 		}
 		break;
 	case IDC_SETINFO:
     TODO();
-#if 0
 		if (CustomDialogBox(IDD_SETINFO, hDlg, InfoSettingsProc))
-			EnableWindow( GetDlgItem( hDlg, IDC_VIEWINFO ), workprefs.info[0] );
-#endif
+			//EnableWindow( GetDlgItem( hDlg, IDC_VIEWINFO ), workprefs.info[0] );
+			EnableWindow( hDlg, IDC_VIEWINFO, workprefs.info[0] ); /* TODO! */
 		break;
 	case IDC_CONFIGAUTO:
 		if (configtypepanel > 0) {
