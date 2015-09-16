@@ -5459,16 +5459,14 @@ static void loadsavecommands (HWND hDlg, WPARAM wParam, struct ConfigStruct **co
 				_stprintf (name_buf, _T("%s\\%s"), start_path_data, workprefs.info);
 			else
 				_tcscpy (name_buf, workprefs.info);
-
-      TODO();
-			//ShellExecute (NULL, NULL, name_buf, NULL, NULL, SW_SHOWNORMAL);
+			ShellExecute (NULL, NULL, name_buf, NULL, NULL, SW_SHOWNORMAL);
 		}
 		break;
 	case IDC_SETINFO:
     TODO();
 		if (CustomDialogBox(IDD_SETINFO, hDlg, InfoSettingsProc))
 			//EnableWindow( GetDlgItem( hDlg, IDC_VIEWINFO ), workprefs.info[0] );
-			EnableWindow( hDlg, IDC_VIEWINFO, workprefs.info[0] ); /* TODO! */
+			EnableWindow( hDlg, IDC_VIEWINFO, workprefs.info[0] ); 
 		break;
 	case IDC_CONFIGAUTO:
 		if (configtypepanel > 0) {
