@@ -589,6 +589,7 @@ extern void log_close (FILE *f);
 #else
 extern BPTR log_open (const TCHAR *name, int append, int bootlog);
 extern void log_close (BPTR f);
+extern void logging_deinit (void);
 #endif
 
 
