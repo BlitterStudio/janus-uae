@@ -26,6 +26,7 @@
 #include <exec/execbase.h>
 #include <proto/dos.h>
 
+//#define JUAE_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -326,16 +327,21 @@ static int newstack_main (int argc, TCHAR **argv) {
 #else
 int main (int argc, TCHAR **argv) {
 #endif
-  /* win32:
-  DEVMODE devmode;
-   * The DEVMODE data structure contains information about the initialization 
-   * and environment of a printer or a display device. 
-   */
+  IPTR stacksize=0;
+  struct Process *proc;
+  
+  /* we need a big stack size. so check, if we are safe (well, not totally unsafe at least..) */
+  proc=(struct Process *)FindTask(NULL); 
+  stacksize=(IPTR) proc->pr_Task.tc_SPUpper - (IPTR) proc->pr_Task.tc_SPLower;
+  DebOut("stacksize: %d\n", stacksize);
 
-	//if (doquit)
-	//	return 0;
-
-  bug("main(%d, ..)\n", argc);
+  if(stacksize < 499999) {
+    char text[256]; /* waist some more stack ;-) */
+    snprintf(text, 255, "\nStack size %d is too small. Use at least 500000 bytes.\n", stacksize);
+    printf(text);
+    MessageBox(NULL, text, "Janus-UAE2 - Fatal Error!", 0);
+    exit(1);
+  }
 
   if(SysBase->TDNestCnt>=0) {
     bug("Permit required a1\n");
@@ -344,7 +350,6 @@ int main (int argc, TCHAR **argv) {
     Permit();
   }
 
-
   inipath=getdefaultini();
   reginitializeinit(&inipath);
   getstartpaths ();
@@ -352,6 +357,8 @@ int main (int argc, TCHAR **argv) {
 	DebOut("%s", VersionStr);
 	logging_init();
 	log_scsi=1;
+
+  write_log("Stack size: %d\n", stacksize);
 
   if(SysBase->TDNestCnt>=0) {
     bug("Permit required a2\n");
