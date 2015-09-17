@@ -437,6 +437,9 @@ int main (int argc, TCHAR **argv) {
 
   regflushfile();
 
+  /* every call to a log function will re-init logging. So deinit it as late as possible */
+  logging_deinit(); 
+
 	return 0;
 }
 
