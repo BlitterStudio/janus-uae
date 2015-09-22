@@ -1,6 +1,7 @@
-// Implement mprotect() for Win32
-// Copyright (C) 2000, Brian King
+// Implement mprotect() for AROS
 // GNU Public License
+
+#define JUAE_DEBUG
 
 #ifdef WINDOWS
 #define _WIN32_WINNT 0x0501
@@ -61,38 +62,70 @@
 typedef void * LPVOID;
 typedef size_t SIZE_T;
 
-int uae_shmdt (const void *shmaddr);
-int uae_shmctl (int shmid, int cmd, struct shmid_ds *buf);
-
 typedef struct {
     int dwPageSize;
 } SYSTEM_INFO;
+
+struct valloc_node {
+    struct Node van_Node;
+    APTR        van_Addr;
+    size_t      van_Size;
+};
+
+static struct List valloc_list;
+static APTR valloc_headerpool;
+static APTR valloc_pool;
+
+int uae_shmdt (const void *shmaddr);
+int uae_shmctl (int shmid, int cmd, struct shmid_ds *buf);
 
 void GetSystemInfo(SYSTEM_INFO *si) {
     //si->dwPageSize = sysconf(_SC_PAGESIZE);
     si->dwPageSize = 4096;
 }
 
-static struct List valloc_list;
-static APTR valloc_headerpool;
-struct valloc_node
-{
-    struct Node van_Node;
-    APTR            van_Addr;
-    size_t           van_Size;
-};
-
+/***************************************************************
+ *
+ * valloc_prep/valloc_free are called by AROS on
+ * startup/exit via ADD2INIT/ADD2EXIT
+ *
+ ***************************************************************/
 static int valloc_prep(void)
 {
     bug("[JUAE:MMAN] %s()\n", __PRETTY_FUNCTION__);
     NEWLIST(&valloc_list);
-    valloc_headerpool = CreatePool(MEMF_ANY, 16384,8192);
+    valloc_headerpool = CreatePool(MEMF_ANY,   16384,8192);
+    valloc_pool       = CreatePool(MEMF_CLEAR, 16384,8192);
     bug("[JUAE:MMAN] %s: alloc list @ 0x%p\n", __PRETTY_FUNCTION__, &valloc_list);
     bug("[JUAE:MMAN] %s: alloc header pool @ 0x%p\n", __PRETTY_FUNCTION__, valloc_headerpool);
-}
+    bug("[JUAE:MMAN] %s: alloc memory pool @ 0x%p\n", __PRETTY_FUNCTION__, valloc_pool);
 
-void *VirtualAlloc(void *lpAddress, size_t dwSize, int flAllocationType,
-        int flProtect)
+}
+ADD2INIT(valloc_prep, 0);
+
+static int valloc_free(void) {
+
+  DebOut("valloc_headerpool: %lx\n", valloc_headerpool);
+  if(valloc_headerpool) {
+    NEWLIST(&valloc_list);
+    DeletePool(valloc_headerpool);
+    valloc_headerpool=NULL;
+  }
+  DebOut("valloc_pool: %lx\n", valloc_pool);
+  if(valloc_pool) {
+#warning TODO TODO TODO
+    /* this line crashes at the moment! */
+#if 0
+    DeletePool(valloc_pool);
+    valloc_pool=NULL;
+#endif
+  }
+
+}
+ADD2EXIT(valloc_free, 0);
+
+
+void *VirtualAlloc(void *lpAddress, size_t dwSize, int flAllocationType, int flProtect)
 {
     int prot = 0;
     void *memory = NULL;
@@ -121,6 +154,8 @@ void *VirtualAlloc(void *lpAddress, size_t dwSize, int flAllocationType,
         bug("[JUAE:MMAN] %s: Skipping COMMIT\n", __PRETTY_FUNCTION__);
         memory = lpAddress;
     }
+#if ABS_MEMORY_FOR_AROS_ENABLED
+    /* disabled absolute memory for now */
     else if (lpAddress)
     {
         bug("[JUAE:MMAN] %s: >AllocAbs\n", __PRETTY_FUNCTION__);
@@ -129,17 +164,21 @@ void *VirtualAlloc(void *lpAddress, size_t dwSize, int flAllocationType,
         {
             if ((vallocNode = (struct valloc_node *)AllocPooled(valloc_headerpool, sizeof(struct valloc_node))) != NULL)
             {
+              /* TODO: free absolute allocs */
                 vallocNode->van_Addr = memory;
                 vallocNode->van_Size = dwSize;
                 AddTail(&valloc_list, &vallocNode->van_Node);
             }
         }
     }
+#endif
     else
     {
         bug("[JUAE:MMAN] %s: >AllocMem\n", __PRETTY_FUNCTION__);
-        if ((memory = AllocMem(dwSize, MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
+        //if ((memory = AllocMem(dwSize, MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
+        if ((memory = AllocPooled(valloc_pool, dwSize)) != NULL)
         {
+          DebOut("AllocPooled(pool %lx, size %d) = 0x%lx\n", valloc_pool, dwSize, memory);
             if ((vallocNode = (struct valloc_node *)AllocPooled(valloc_headerpool, sizeof(struct valloc_node))) != NULL)
             {
                 vallocNode->van_Addr = memory;
@@ -417,7 +456,7 @@ bool preinit_shm (void)
     uae_u32 max_allowed_mman;
 
     if (natmem_offset)
-#ifdef WINDOWS
+#if defined(WINDOWS) || defined(__AROS__)
         VirtualFree (natmem_offset, 0, MEM_RELEASE);
 #else
         free (natmem_offset);
@@ -472,8 +511,10 @@ bool preinit_shm (void)
     sysctl(mib, 2, &totalphys64, &len, NULL, 0);
     total64 = (uae_u64) totalphys64;
 #elif defined(__AROS__)
-    totalphys64 = AvailMem(MEMF_ANY);
-    total64 = (uae_u64) AvailMem(MEMF_ANY|MEMF_LARGEST);
+    //totalphys64 = AvailMem(MEMF_ANY);
+    //total64 = (uae_u64) AvailMem(MEMF_ANY|MEMF_LARGEST);
+    total64     = (uae_u64) AvailMem(MEMF_ANY);
+    totalphys64 = (uae_u64) AvailMem(MEMF_ANY|MEMF_PUBLIC); /* MEMF_PUBLIC: never swapped out ? */
 #else
     totalphys64 = sysconf (_SC_PHYS_PAGES) * getpagesize();
     total64 = (uae_u64)sysconf (_SC_PHYS_PAGES) * (uae_u64)getpagesize();
@@ -1295,4 +1336,4 @@ int isinf (double x)
 }
 #endif
 
-ADD2INIT(valloc_prep, 0);
+
