@@ -23,6 +23,7 @@
  *
  ************************************************************************/
 
+//#define JUAE_DEBUG
 #include <stdio.h>
 #include <proto/dos.h>
 #include <dos/dos.h>
@@ -366,9 +367,11 @@ int my_readdir (struct my_opendir_s *mod, TCHAR *name) {
 
 void my_closedir (struct my_opendir_s *mod) {
 
-  if(mod->h) FreeDosObject(DOS_FIB, mod->h);
-  if(mod->lock) UnLock(mod->lock);
-  if(mod) free(mod);
+  if(mod) {
+    if(mod->h) FreeDosObject(DOS_FIB, mod->h);
+    if(mod->lock) UnLock(mod->lock);
+    free(mod);
+  }
 }
 
 struct my_openfile_s *my_open (const TCHAR *name, int flags) {
