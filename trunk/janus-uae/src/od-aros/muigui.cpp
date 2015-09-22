@@ -12,7 +12,7 @@
 
 #define _WIN32_WINNT 0x600
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18503,6 +18503,11 @@ static int GetSettings (int all_options, HWND hwnd)
   bug("[JUAE:GUI] %s: currentpage: %d, QUICKSTART_ID: %d, LOADSAVE_ID: %d\n", __PRETTY_FUNCTION__, currentpage, QUICKSTART_ID, LOADSAVE_ID);
 
   psresult=aros_show_gui();
+  /* WinUAE:
+   * cancel: 0
+   * ok: 1
+   * close: 0
+   */
 
 #if 0
 
@@ -18597,6 +18602,7 @@ static int GetSettings (int all_options, HWND hwnd)
 	}
 
 	hGUIWnd = NULL;
+#endif
 	if (quit_program)
 		psresult = -2;
 	else if (qs_request_reset && quickstart)
@@ -18604,7 +18610,6 @@ static int GetSettings (int all_options, HWND hwnd)
 
 	qs_request_reset = 0;
 	full_property_sheet = 0;
-#endif
 	gui_active--;
 	return psresult;
 }

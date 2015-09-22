@@ -8,6 +8,7 @@
 #include <clib/alib_protos.h>
 #include <utility/hooks.h>
 
+//#define JUAE_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -24,8 +25,6 @@ Object *reset;
 
 /* GUI thread */
 //static uae_thread_id tid;
-
-static int button_ret;
 
 #if 0
 Element IDD_FLOPPY[] = {
@@ -155,6 +154,7 @@ struct Hook MyMuiHook_start;
 
 void gui_to_prefs (void);
 
+/* "Start" button of WinUAE */
 AROS_UFH2(void, MUIHook_start, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
 
   AROS_USERFUNC_INIT
@@ -164,8 +164,12 @@ AROS_UFH2(void, MUIHook_start, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
   /* 0 = normal, 1 = nogui, -1 = disable nogui */
   gui_to_prefs ();
   aros_hide_gui();
+#if 0
   quit_program=0;
   uae_restart (-1, NULL);
+#endif
+  DebOut("send SIGBREAKF_CTRL_F to ourselves..\n");
+  Signal(FindTask(NULL), SIGBREAKF_CTRL_F);
 
   AROS_USERFUNC_EXIT
 }
@@ -190,9 +194,7 @@ AROS_UFH2(void, MUIHook_quit, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR
 
   DebOut("QUIT!\n");
 
-  button_ret=0;
-  uae_quit ();
-  DebOut("send SIGBREAKF_CTRL_C to ourselves.. is this a good idea?\n");
+  DebOut("send SIGBREAKF_CTRL_C to ourselves..\n");
   Signal(FindTask(NULL), SIGBREAKF_CTRL_C);
  
   AROS_USERFUNC_EXIT
@@ -249,18 +251,6 @@ Object* build_gui(void) {
     DebOut("build_gui was already called before, do nothing!\n");
     return app;
   }
-
-#if 0
-  while(IDD_FLOPPY[i].windows_type) {
-    DebOut("i: %d\n", i);
-    DebOut("IDD_FLOPPY[%d].windows_type: %d\n", i, IDD_FLOPPY[i].windows_type);
-    DebOut("IDD_FLOPPY[%d].x: %d\n", i, IDD_FLOPPY[i].x);
-    DebOut("IDD_FLOPPY[%d].text: %s\n", i, IDD_FLOPPY[i].text);
-    i++;
-  }
-
-  DebOut("send: %lx\n", &IDD_FLOPPY);
-#endif
 
   app = MUI_NewObject(MUIC_Application,
                       MUIA_Application_Author, (IPTR) "Oliver Brunner",
@@ -391,11 +381,18 @@ Object* build_gui(void) {
   MyMuiHook_quit.h_Data =NULL;
   DoMethod(quit,  MUIM_Notify, MUIA_Pressed, FALSE, quit , 3, MUIM_CallHook, (IPTR) &MyMuiHook_quit , TRUE);
 
+  /* close button */
+  DoMethod(win, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2,
+     MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
   return app;
 }
 
-void aros_main_loop(void) {
+/*
+ * close/cancel: 0
+ * ok: 1
+ */
+int aros_main_loop(void) {
 
   ULONG signals = 0;
 
@@ -404,14 +401,25 @@ void aros_main_loop(void) {
   while (DoMethod(app, MUIM_Application_NewInput, &signals) != MUIV_Application_ReturnID_Quit)
   {
     signals = Wait(signals | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D | SIGBREAKF_CTRL_F);
-    if (signals & SIGBREAKF_CTRL_C) break;
-    if (signals & SIGBREAKF_CTRL_D) break;
+    if (signals & SIGBREAKF_CTRL_C) {
+      uae_quit();
+      /* cancel/close window */
+      DebOut("SIGBREAKF_CTRL_C: return 0\n");
+      return 0;
+    }
+    if (signals & SIGBREAKF_CTRL_D) {
+      DebOut("SIGBREAKF_CTRL_D: ?\n");
+    }
     if (signals & SIGBREAKF_CTRL_F) {
-      DebOut("SIGBREAKF_CTRL_F received!\n");
+      /* "Start" button pressed! */
+      DebOut("SIGBREAKF_CTRL_F: return 1\n");
+      return 1;
     }
   }
 
-  DebOut("aros_main_loop left\n");
+  uae_quit();
+  DebOut("MUIV_Application_ReturnID_Quit: return 0\n");
+  return 0;
 }
 
 /*
@@ -505,11 +513,25 @@ int aros_init_gui(void) {
     fprintf(stderr, "ERROR: Unable to initialize GUI!\n");
     return 0;
   }
+  else {
+    DebOut("aros_init_gui succeeded\n");
+  }
 
   return 1;
 }
 
+/* 
+ * aros_show_gui
+ *
+ * display the GUI
+ *
+ * return
+ *  0: cancel/close
+ *  1: ok
+ */
+
 int aros_show_gui(void) {
+  int ret;
 
   DebOut("entered\n");
 
@@ -521,7 +543,8 @@ int aros_show_gui(void) {
 
   if(!app) {
     fprintf(stderr, "ERROR: Unable to initialize GUI!\n");
-    return -1;
+    //return -1;
+    abort(); /* WinUAE does exactly this.. good idea!? */
   }
 
   /* activate current page */
@@ -530,14 +553,15 @@ int aros_show_gui(void) {
 
   DoMethod(win, MUIM_Set, MUIA_Window_Open, TRUE);
 
-  aros_main_loop();
+  ret=aros_main_loop();
 
   DoMethod(win, MUIM_Set, MUIA_Window_Open, FALSE);
 
-  DebOut("left\n");
-  return 0;
+  DebOut("ret: %d\n", ret);
+  return ret;
 }
 
+/* not necessary ? */
 void aros_hide_gui(void) {
 
   DebOut("Send hide signal\n");
@@ -557,3 +581,4 @@ void aros_gui_exit(void) {
     delete_class();
   }
 }
+
