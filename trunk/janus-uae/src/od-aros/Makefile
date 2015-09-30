@@ -136,6 +136,7 @@ COMMON_OBJS= \
 	../expansion.o \
 	../fdi2raw.o \
 	../filesys.o \
+	filesys.o \
 	../fpp.o \
 	../fsdb.o \
 	../fsusage.o \

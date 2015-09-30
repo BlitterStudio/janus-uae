@@ -273,13 +273,13 @@ int is_hardfile (int unit_no)
 	}
 	if (mountinfo.ui[unit_no].hf.ci.sectors == 0) {
 		if (mountinfo.ui[unit_no].hf.flags & 1) {
-      DebOut("unit %d (%s): FILESYS_HARDDRIVE\n", unit_no, mountinfo.ui[unit_no].volname);
+      //DebOut("unit %d (%s): FILESYS_HARDDRIVE\n", unit_no, mountinfo.ui[unit_no].volname);
 			return FILESYS_HARDDRIVE;
     }
-    DebOut("unit %d (%s): FILESYS_HARDFILE_RDB\n", unit_no, mountinfo.ui[unit_no].volname);
+    //DebOut("unit %d (%s): FILESYS_HARDFILE_RDB\n", unit_no, mountinfo.ui[unit_no].volname);
 		return FILESYS_HARDFILE_RDB;
 	}
-  DebOut("unit %d (%s): FILESYS_HARDFILE\n", unit_no, mountinfo.ui[unit_no].volname);
+  //DebOut("unit %d (%s): FILESYS_HARDFILE\n", unit_no, mountinfo.ui[unit_no].volname);
 	return FILESYS_HARDFILE;
 }
 
@@ -760,7 +760,7 @@ static int set_filesys_unit (int nr, struct uaedev_config_info *ci)
 	return ret;
 }
 
-static int add_filesys_unit (struct uaedev_config_info *ci)
+int add_filesys_unit (struct uaedev_config_info *ci)
 {
 	int ret;
 
@@ -3044,6 +3044,8 @@ static void
 	uae_u32 dostype;
 	bool fs = false, media = false;
 
+  DebOut("disk_info: %d\n", disk_info);
+
 	blocksize = 512;
 	/* not FFS because it is not understood by WB1.x C:Info */
 	dostype = DISK_TYPE_DOS;
@@ -3072,6 +3074,7 @@ static void
 		media = filesys_isvolume (unit) != 0;
 	}
 	if (ret != 0) {
+    DebOut("DOS_FALSE\n");
 		PUT_PCK_RES1 (packet, DOS_FALSE);
 		PUT_PCK_RES2 (packet, err);
 		return;
@@ -3085,6 +3088,7 @@ static void
 		if (!disk_info) {
 			PUT_PCK_RES1 (packet, DOS_FALSE);
 			PUT_PCK_RES2 (packet, ERROR_NOT_A_DOS_DISK);
+      DebOut("ERROR_NOT_A_DOS_DISK\n");
 			return;
 		}
 		put_long (info + 12, 0);
@@ -3095,6 +3099,7 @@ static void
 		if (!disk_info) {
 			PUT_PCK_RES1 (packet, DOS_FALSE);
 			PUT_PCK_RES2 (packet, ERROR_NO_DISK);
+      DebOut("ERROR_NO_DISK\n");
 			return;
 		}
 		put_long (info + 12, 0);
@@ -3116,6 +3121,7 @@ static void
 		put_long (info + 32, (get_long (unit->volume + 28) || unit->keys) ? -1 : 0); /* inuse */
 	}
 	PUT_PCK_RES1 (packet, DOS_TRUE);
+  DebOut("DOS_TRUE\n");
 }
 
 static void
@@ -3822,6 +3828,7 @@ static void
 	if (!get_statinfo(unit, aino, &statbuf)) {
 		PUT_PCK_RES1 (packet, DOS_FALSE);
 		PUT_PCK_RES2 (packet, ERROR_NOT_A_DOS_DISK);
+    DebOut("ERROR_NOT_A_DOS_DISK\n");
 		return;
 	}
 
@@ -3840,6 +3847,7 @@ static void
 	put_long (info + 120, entrytype);
 
 	TRACE((_T("name=\"%s\"\n"), xs));
+	DebOut("name=\"%s\"\n", xs);
 	x2 = x = ua_fs (xs, -1);
 	n = strlen (x);
 	if (n > 107)
@@ -7947,8 +7955,6 @@ void filesys_install_code (void)
 
 #ifdef _WIN32
 #include "od-win32/win32_filesys.cpp"
-#else
-#include "od-aros/filesys.cpp"
 #endif
 
 static uae_u8 *restore_filesys_hardfile (UnitInfo *ui, uae_u8 *src)
