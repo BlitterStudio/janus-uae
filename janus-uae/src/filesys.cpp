@@ -861,6 +861,7 @@ static void initialize_mountinfo (void)
 	cd_unit_offset = nr;
 	cd_unit_number = 0;
 	if (currprefs.scsi && currprefs.win32_automount_cddrives) {
+    TODO();
 		uae_u32 mask = scsi_get_cd_drive_mask ();
 		for (int i = 0; i < 32; i++) {
 			if (mask & (1 << i)) {
@@ -2185,6 +2186,9 @@ void filesys_flush_cache (void)
 static void update_child_names (Unit *unit, a_inode *a, a_inode *parent)
 {
 	int l0 = _tcslen (parent->nname) + 2;
+#ifdef __AROS__
+  char *colon;
+#endif
 
 	while (a != 0) {
 		TCHAR *name_start;
@@ -2193,11 +2197,18 @@ static void update_child_names (Unit *unit, a_inode *a, a_inode *parent)
 
 		a->parent = parent;
 		name_start = _tcsrchr (a->nname, FSDB_DIR_SEPARATOR);
+#ifdef _AROS__
+    /* AROS has two dir separators, / and : */
+    colon=_tcsrchr (a->nname, ':'):
+    if(colon > name_start) {
+      name_start=colon;
+    }
+#endif
 		if (name_start == 0) {
 			write_log (_T("malformed file name"));
 		}
 		name_start++;
-		new_name = xmalloc (TCHAR, _tcslen (name_start) + l0);
+		new_name = xcalloc (TCHAR, _tcslen (name_start) + l0);
 #ifndef __AROS__
 		_tcscat (new_name, dirsep);
 		_tcscat (new_name, name_start);
@@ -2320,7 +2331,7 @@ static a_inode *aino_from_lock (Unit *unit, uaecptr lock)
 TCHAR *build_nname (const TCHAR *d, const TCHAR *n)
 {
 	TCHAR dsep[2] = { FSDB_DIR_SEPARATOR, 0 };
-	TCHAR *p = xmalloc (TCHAR, _tcslen (d) + 1 + _tcslen (n) + 1);
+	TCHAR *p = xcalloc (TCHAR, _tcslen (d) + 1 + _tcslen (n) + 1);
 #ifndef __AROS__
 	_tcscpy (p, d);
 	_tcscat (p, dsep);
@@ -2334,7 +2345,7 @@ TCHAR *build_nname (const TCHAR *d, const TCHAR *n)
 
 TCHAR *build_aname (const TCHAR *d, const TCHAR *n)
 {
-	TCHAR *p = xmalloc (TCHAR, _tcslen (d) + 1 + _tcslen (n) + 1);
+	TCHAR *p = xcalloc (TCHAR, _tcslen (d) + 1 + _tcslen (n) + 1);
 #ifndef __AROS__
 	_tcscpy (p, d);
 	_tcscat (p, _T("/"));
@@ -2610,7 +2621,11 @@ static a_inode *lookup_child_aino (Unit *unit, a_inode *base, TCHAR *rel, int *e
 		int l1 = _tcslen (c->aname);
     //DebOut("c->aname: %s\n", c->aname);
 		if (l0 <= l1 && same_aname (rel, c->aname + l1 - l0)
-			&& (l0 == l1 || c->aname[l1-l0-1] == '/') && c->mountcount == unit->mountcount)
+			&& (l0 == l1 || c->aname[l1-l0-1] == '/'
+#ifdef __AROS__
+      || c->aname[l1-l0-1] == ':'
+#endif
+      ) && c->mountcount == unit->mountcount)
 			break;
 		c = c->sibling;
 	}
@@ -2635,12 +2650,19 @@ static a_inode *lookup_child_aino_for_exnext (Unit *unit, a_inode *base, TCHAR *
 	aino_test (base);
 	aino_test (c);
 
+  DebOut("rel: %s\n", rel);
+
 	*err = 0;
 	while (c != 0) {
 		int l1 = _tcslen (c->nname);
 		/* Note: using _tcscmp here.  */
+    DebOut("  cmp: nname: %s\n", c->nname + l1 - l0);
 		if (l0 <= l1 && _tcscmp (rel, c->nname + l1 - l0) == 0
-			&& (l0 == l1 || c->nname[l1-l0-1] == FSDB_DIR_SEPARATOR) && c->mountcount == unit->mountcount)
+			&& (l0 == l1 || c->nname[l1-l0-1] == FSDB_DIR_SEPARATOR
+#ifdef __AROS__
+      || c->nname[l1-l0-1] == ':'
+#endif
+      ) && c->mountcount == unit->mountcount)
 			break;
 		c = c->sibling;
 	}
@@ -2687,6 +2709,7 @@ static a_inode *get_aino (Unit *unit, a_inode *base, const TCHAR *rel, int *err)
 
 	*err = 0;
 	//TRACE((_T("get_path(%s,%s)\n"), base->aname, rel));
+  DebOut("rel: %s, base->aname: %s\n", rel, base->aname);
 
 	/* root-relative path? */
 	for (i = 0; rel[i] && rel[i] != '/' && rel[i] != ':'; i++)
@@ -2694,7 +2717,7 @@ static a_inode *get_aino (Unit *unit, a_inode *base, const TCHAR *rel, int *err)
 	if (':' == rel[i])
 		rel += i+1;
 
-  //DebOut("rel: %s\n", rel);
+  DebOut("rel: %s\n", rel);
 
 	tmp = my_strdup (rel);
 	p = tmp;
@@ -2703,7 +2726,13 @@ static a_inode *get_aino (Unit *unit, a_inode *base, const TCHAR *rel, int *err)
 
 	while (*p) {
 		/* start with a slash? go up a level. */
+#ifdef __AROS__
+    /* not sure about this colon check here ..*/
+		if (*p == '/' || *p == ':') {
+#else
 		if (*p == '/') {
+#endif
+      DebOut("p: %s\n", p);
 			if (curr->parent != 0)
 				curr = curr->parent;
 			p++;
@@ -2719,10 +2748,21 @@ static a_inode *get_aino (Unit *unit, a_inode *base, const TCHAR *rel, int *err)
 
 			TCHAR *component_end;
 			component_end = _tcschr (p, '/');
+      DebOut("component_end1: %s\n", component_end);
+#ifdef __AROS__
+      {
+        char *colon=_tcschr (p, ':');
+        if(colon && (colon < component_end)) {
+          component_end=colon;
+          DebOut("component_end2: %s\n", component_end);
+        }
+      }
+#endif
 			if (component_end != 0)
 				*component_end = '\0';
 			next = lookup_child_aino (unit, curr, p, err);
 			if (next == 0) {
+        DebOut("next == 0\n");
 				/* if only last component not found, return parent dir. */
 				if (*err != ERROR_OBJECT_NOT_AROUND || component_end != 0)
 					curr = NULL;
@@ -2738,7 +2778,7 @@ static a_inode *get_aino (Unit *unit, a_inode *base, const TCHAR *rel, int *err)
 		}
 	}
 	xfree (tmp);
-  //DebOut("curr: %lx\n");
+  DebOut("curr: %lx\n", curr);
 	return curr;
 }
 
@@ -3236,7 +3276,7 @@ static a_inode *find_aino (Unit *unit, uaecptr lock, const TCHAR *name, int *err
 {
 	a_inode *a;
 
-  DebOut("name: %s\n", name);
+  DebOut("name: %s (lock %lx)\n", name, lock);
 
 	if (lock) {
     //DebOut("lock!\n");
@@ -7514,7 +7554,11 @@ static int dofakefilesys (UnitInfo *uip, uaecptr parmpacket, struct uaedev_confi
 	} else if ((dostype & 0xffffff00) == 0x444f5300) {
 		_tcscpy (tmp, currprefs.romfile);
 		i = _tcslen (tmp);
+#ifndef __AROS__
 		while (i > 0 && tmp[i - 1] != '/' && tmp[i - 1] != '\\')
+#else
+		while (i > 0 && tmp[i - 1] != '/' && tmp[i - 1] != ':')
+#endif
 			i--;
 		_tcscpy (tmp + i, _T("FastFileSystem"));
 		autofs = true;
@@ -8043,6 +8087,10 @@ static a_inode *restore_filesys_get_base (Unit *u, TCHAR *npath)
 	a_inode *a;
 	int cnt, err, i;
 
+  TODO();
+
+  /* this seems to be missing ':' handling for AROS !? */
+
 	/* no '/' = parent is root */
 	if (!_tcschr (npath, '/'))
 		return &u->rootnode;
@@ -8118,7 +8166,12 @@ static TCHAR *makenativepath (UnitInfo *ui, TCHAR *apath)
 	TCHAR *pn;
 	/* create native path. FIXME: handle 'illegal' characters */
 	pn = xcalloc (TCHAR, _tcslen (apath) + 1 + _tcslen (ui->rootdir) + 1);
+#ifndef __AROS__
 	_stprintf (pn, _T("%s/%s"), ui->rootdir, apath);
+#else
+  AddPart(pn, ui->rootdir, _tcslen (apath) + 1 + _tcslen (ui->rootdir) + 1);
+  AddPart(pn, apath, _tcslen (apath) + 1 + _tcslen (ui->rootdir) + 1);
+#endif
 	if (FSDB_DIR_SEPARATOR != '/') {
 		for (i = 0; i < _tcslen (pn); i++) {
 			if (pn[i] == '/')
@@ -8163,6 +8216,12 @@ static uae_u8 *restore_aino (UnitInfo *ui, Unit *u, uae_u8 *src)
 		return src;
 	}
 	p2 = _tcsrchr(p, '/');
+#ifdef __AROS__
+  char *colon=_tcsrchr(p, ':');
+  if(colon && colon>p2) {
+    p2=colon;
+  }
+#endif
 	if (p2)
 		p2++;
 	else
@@ -8303,7 +8362,8 @@ static uae_u8 *restore_notify (UnitInfo *ui, Unit *u, uae_u8 *src)
 	n->fullname = xmalloc (TCHAR, _tcslen (ui->volname) + 2 + _tcslen (s) + 1);
 	_stprintf (n->fullname, _T("%s:%s"), ui->volname, s);
 	xfree(s);
-	s = _tcsrchr (n->fullname, '/');
+  DebOut("TODO?: n->fullname %s\n", n->fullname);
+	s = _tcsrchr (n->fullname, '/'); /* TODO? : handling..? */
 	if (s)
 		s++;
 	else
@@ -8372,10 +8432,11 @@ static TCHAR *getfullaname (a_inode *a)
 	p = xcalloc (TCHAR, 2000);
 	while (a) {
 		int len = _tcslen (a->aname);
+    DebOut("TODO? a->aname: %s\n", a->aname);
 		memmove (p + len + 1, p, (_tcslen (p) + 1) * sizeof (TCHAR));
 		memcpy (p, a->aname, _tcslen (a->aname) * sizeof (TCHAR));
 		if (!first)
-			p[len] = '/';
+			p[len] = '/'; /* TODO? : handling..? */
 		first = 0;
 		a = a->parent;
 		if (a && a->uniq == 0)
