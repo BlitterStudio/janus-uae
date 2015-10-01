@@ -1415,6 +1415,8 @@ static struct fs_dirhandle *fs_opendir (Unit *u, a_inode *aino)
 			return fsd;
 	}
 	xfree (fsd);
+
+  DebOut("failed!?\n");
 	return NULL;
 }
 static void fs_closedir (struct fs_dirhandle *fsd)
@@ -2196,9 +2198,13 @@ static void update_child_names (Unit *unit, a_inode *a, a_inode *parent)
 		}
 		name_start++;
 		new_name = xmalloc (TCHAR, _tcslen (name_start) + l0);
-		_tcscpy (new_name, parent->nname);
+#ifndef __AROS__
 		_tcscat (new_name, dirsep);
 		_tcscat (new_name, name_start);
+#else
+		AddPart(new_name, parent->nname, _tcslen (name_start) + l0);
+    AddPart(new_name, name_start, _tcslen (name_start) + l0);
+#endif
 		xfree (a->nname);
 		a->nname = new_name;
 		if (a->child)
@@ -2315,18 +2321,28 @@ TCHAR *build_nname (const TCHAR *d, const TCHAR *n)
 {
 	TCHAR dsep[2] = { FSDB_DIR_SEPARATOR, 0 };
 	TCHAR *p = xmalloc (TCHAR, _tcslen (d) + 1 + _tcslen (n) + 1);
+#ifndef __AROS__
 	_tcscpy (p, d);
 	_tcscat (p, dsep);
 	_tcscat (p, n);
+#else
+  AddPart(p, d, _tcslen (d) + 1 + _tcslen (n) + 1);
+  AddPart(p, n, _tcslen (d) + 1 + _tcslen (n) + 1);
+#endif
 	return p;
 }
 
 TCHAR *build_aname (const TCHAR *d, const TCHAR *n)
 {
 	TCHAR *p = xmalloc (TCHAR, _tcslen (d) + 1 + _tcslen (n) + 1);
+#ifndef __AROS__
 	_tcscpy (p, d);
 	_tcscat (p, _T("/"));
 	_tcscat (p, n);
+#else
+  AddPart(p, d, _tcslen (d) + 1 + _tcslen (n) + 1);
+  AddPart(p, n, _tcslen (d) + 1 + _tcslen (n) + 1);
+#endif
 	return p;
 }
 
@@ -3530,9 +3546,14 @@ static void action_make_link (Unit *unit, dpacket packet)
 			a3 = find_aino (u, NULL, link, &err);
 			if (err || !a3)
 				continue;
+#ifndef __AROS__
 			_tcscpy (tmp2, a1->nname);
 			_tcscat (tmp2, FSDB_DIR_SEPARATOR_S);
 			_tcscat (tmp2, tmp);
+#else
+      AddPart(tmp2, a1->nname, MAX_DPATH);
+      AddPart(tmp2, tmp, MAX_DPATH);
+#endif
 			tmp3[0] = 0;
 			action_read_link_add_parent (u, a3, tmp3);
 			if (!my_createshortcut (tmp2, a3->nname, tmp3)) {
@@ -3619,8 +3640,12 @@ static void action_read_link (Unit *unit, dpacket packet)
 	tmp[0] = 0;
 	action_read_link_add_parent (matched_unit, matched_aino, tmp);
 	if (extrapath) {
+#ifndef __AROS__
 		_tcscat (tmp, _T("/"));
 		_tcscat (tmp, extrapath);
+#else
+    AddPart(tmp, extrapath, MAX_DPATH);
+#endif
 	}
 	xfree (extrapath);
 	write_log (_T("got target '%s'\n"), tmp); 
