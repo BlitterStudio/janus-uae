@@ -696,6 +696,9 @@ int my_rename (const TCHAR *oldname, const TCHAR *newname) {
 
 /******************************************************************
  * my_unlink: delete file 
+ *
+ * TODO: care for currprefs.win32_norecyclebin => use Trashcan
+ *       .. how do I enable the Trashcan in AROS linux/hosted!?
  ******************************************************************/
 int my_unlink (const TCHAR *name) {
 
