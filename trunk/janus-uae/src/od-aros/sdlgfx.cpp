@@ -1652,11 +1652,11 @@ bool handle_events (void)
             if (!fullscreen && !mousegrab) {
                 setmousestate (0, 0,rEvent.motion.x, 1);
                 setmousestate (0, 1,rEvent.motion.y, 1);
-                DEBUG_LOG ("Event: mouse motion abs (%d, %d)\n", rEvent.motion.x, rEvent.motion.y);
+                //DEBUG_LOG ("Event: mouse motion abs (%d, %d)\n", rEvent.motion.x, rEvent.motion.y);
             } else {
                 setmousestate (0, 0, rEvent.motion.xrel, 0);
                 setmousestate (0, 1, rEvent.motion.yrel, 0);
-                DEBUG_LOG ("Event: mouse motion rel (%d, %d)\n", rEvent.motion.xrel, rEvent.motion.yrel);
+                //DEBUG_LOG ("Event: mouse motion rel (%d, %d)\n", rEvent.motion.xrel, rEvent.motion.yrel);
             }
             break;
 
