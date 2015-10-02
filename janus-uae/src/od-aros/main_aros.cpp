@@ -283,8 +283,7 @@ static void getstartpaths (void)
 void makeverstr (TCHAR *s) {
 
 	if (_tcslen (WINUAEBETA) > 0) {
-		_stprintf (BetaStr, " (%sBeta %s, %d.%02d.%02d)", WINUAEPUBLICBETA > 0 ? "Public " : "", WINUAEBETA,
-			GETBDY(WINUAEDATE), GETBDM(WINUAEDATE), GETBDD(WINUAEDATE));
+		_stprintf (BetaStr, " (%sBeta %s, %s)", WINUAEPUBLICBETA > 0 ? "Public " : "", WINUAEBETA, __DATE__);
 		_stprintf (s, "Janus-UAE2%s%d.%d.%d%s%s",
 #if (SIZEOF_VOID_P == 8)
                         " 64bit ",
@@ -293,13 +292,13 @@ void makeverstr (TCHAR *s) {
 #endif
 			UAEMAJOR, UAEMINOR, UAESUBREV, WINUAEREV, BetaStr);
 	} else {
-		_stprintf (s, "Janus-UAE2%s%d.%d.%d%s (%d.%02d.%02d)",
+		_stprintf (s, "Janus-UAE2%s%d.%d.%d%s (%s)",
 #if (SIZEOF_VOID_P == 8)
                         " 64bit ",
 #else
                         " ",
 #endif
-			UAEMAJOR, UAEMINOR, UAESUBREV, WINUAEREV, GETBDY(WINUAEDATE), GETBDM(WINUAEDATE), GETBDD(WINUAEDATE));
+			UAEMAJOR, UAEMINOR, UAESUBREV, WINUAEREV, __DATE__);
 	}
 	if (_tcslen (WINUAEEXTRA) > 0) {
 		_tcscat (s, " ");
