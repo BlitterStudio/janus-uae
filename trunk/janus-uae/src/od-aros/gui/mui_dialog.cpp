@@ -10,7 +10,7 @@
 
 #include <graphics/gfxbase.h>
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -51,7 +51,24 @@ extern Object *app;
 extern Object *win;
 
 
-void aros_main_loop(void);
+static void aros_dialog_loop(void) {
+
+  ULONG signals = 0;
+  
+  DebOut("entered..\n");
+  
+  while (DoMethod(app, MUIM_Application_NewInput, &signals) != MUIV_Application_ReturnID_Quit) {
+    signals = Wait(signals | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D | SIGBREAKF_CTRL_F);
+    if (signals & SIGBREAKF_CTRL_C) break;
+    if (signals & SIGBREAKF_CTRL_D) break;
+    if (signals & SIGBREAKF_CTRL_F) {
+      DebOut("SIGBREAKF_CTRL_F received!\n");
+    }
+  }
+  
+  DebOut("left\n");
+}
+
 
 /* return 1 on success, 0 for cancel */
 INT_PTR DialogBoxIndirect(HINSTANCE hInstance, LPCDLGTEMPLATE lpTemplate, HWND hWndParent, INT_PTR (CALLBACK FAR *func) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam))  {
@@ -90,7 +107,7 @@ INT_PTR DialogBoxIndirect(HINSTANCE hInstance, LPCDLGTEMPLATE lpTemplate, HWND h
 
   SetAttrs(mui_win, MUIA_Window_Open, TRUE, TAG_DONE);
 
-  aros_main_loop();
+  aros_dialog_loop();
 
   SetAttrs(mui_win, MUIA_Window_Open, FALSE, TAG_DONE);
   DoMethod(app, OM_REMMEMBER, (IPTR) mui_win);
