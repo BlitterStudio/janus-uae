@@ -1,0 +1,65 @@
+=================
+== Janus-UAE2  ==
+=================
+
+This is a non-feature-complete Alpha-Version (as defined in 
+https://en.wikipedia.org/wiki/Software_release_life_cycle#Pre-alpha).
+
+======================================================================
+This build is for ABI v1/x86_64 *only*!
+
+It will *not* work on Icaros!
+======================================================================
+
+It is a direct port of WinUAE 2.8.1 (which you can download from
+http://www.winuae.net/frames/download.html). It is *not* based
+on e-uae or Janus-UAE 1.4.
+
+So remember:
+
+This is totally different from Janus-UAE 1.x. This is Janus-UAE2.
+
+Why not a new name? Because the goal is, to integrate all the
+functionality of Janus-UAE 1.4 into Janus-UAE2. But this means,
+we first need a stable, after that I'll merge the other features.
+
+What can this version do?
+-------------------------
+
+It offers the core functionality of WinUAE 2.8.1. 
+
+This should work:
+
+- cpu emulation (with mmu)
+- ocs/ecs/aga
+- harddisk support (both hardfiles and host directories)
+- the WinUAE gui, converted to Zune
+
+Parts of the gui are hidden for this release, as they are not
+complete/stable enough, even for an alpha-version ;).
+All other parts like mouse sync, picasso96, sound or whatever 
+are not yet done. Some parts might work, but are completely untested.
+
+Bugs?
+-----
+
+For sure:
+- You need enough memory. 1GB should be enough.
+- On exit you might get a recoverable alert, this seems to be a bug in TLSF..
+
+
+======================================================================
+
+You can contact me via aros@oliver-brunner.de.
+From time to time I post progress reports on http://o1i.blogspot.de/
+
+Janus-UAE2 is distributed under the same license as WinUAE, GPLv2,
+which can be downloaded from:
+http://www.gnu.org/licenses/gpl-2.0.html
+
+This package contains no sources, but they are available at:
+http://sourceforge.net/p/janus-uae/code/HEAD/tree/tags/
+
+Alpha-Version sources can be downloaded at:
+http://sourceforge.net/p/janus-uae/code/HEAD/tree/trunk/
+
