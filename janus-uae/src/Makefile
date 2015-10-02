@@ -129,7 +129,7 @@ toolsclean:
 	rm -f $(GENBLITTER_OBJS) $(BUILD68K_OBJS) $(GENCPU_OBJS) $(GENCOMP_OBJS) genlinetoscr.o cpudefs.cpp blitfunc.cpp blittable.cpp cpuemu_0.cpp cpuemu_11.cpp cpuemu_12.cpp cpuemu_20.cpp cpuemu_21.cpp cpuemu_31.cpp cpustbl.cpp linetoscr.cpp genblitter build68k gencpu gencomp genlinetoscr
 
 # ============== UAE ====================
-# Built with target compiler!
+# Build with target compiler!
 
 uae:
 	cd od-aros;make ABI="$(ABI)"
@@ -138,15 +138,6 @@ uaeclean:
 	cd od-aros;make clean ABI="$(ABI)"
 
 # ============== build package ====================
-#package: clean uae
 package: 
 	cd od-aros;make package ABI="$(ABI)" RELEASEDIR="$(RELEASEDIR)"
-
-
-#COMMAND="/bin/ls"
-#FUNC=$(shell $(COMMAND))
-
-#FUNC:=$(shell $(COMMAND))
-#DATE=$(mydate)
-#@echo $(FUNC)
 
