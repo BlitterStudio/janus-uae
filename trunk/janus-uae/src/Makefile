@@ -48,6 +48,8 @@ CC         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-gc
 AR         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ar
 LD         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ld
 
+RELEASEDIR = $(HOME)/releases
+
 HOST_CC    = gcc
 
 # suppress warning: deprecated conversion from string constant to ‘char*’
@@ -134,4 +136,17 @@ uae:
 
 uaeclean:
 	cd od-aros;make clean ABI="$(ABI)"
+
+# ============== build package ====================
+#package: clean uae
+package: 
+	cd od-aros;make package ABI="$(ABI)" RELEASEDIR="$(RELEASEDIR)"
+
+
+#COMMAND="/bin/ls"
+#FUNC=$(shell $(COMMAND))
+
+#FUNC:=$(shell $(COMMAND))
+#DATE=$(mydate)
+#@echo $(FUNC)
 

@@ -283,6 +283,17 @@ clean:
 	@cd gui;make clean ABI=$(ABI)
 	@cd SDL_Config;make clean ABI=$(ABI)
 
+# ============== build package ====================
+package: clean uae
+	@rm -rf  $(RELEASEDIR)/`date +%Y%m%d`
+	@mkdir -p $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`/ABI_$(ABI)
+	@cp $(EXE) $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`/ABI_$(ABI)/janus-uae2
+	@mkdir -p $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/docs
+	@cp docs/* $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/docs/
+	@cd $(RELEASEDIR)/`date +%Y%m%d`;tar cf Janus-UAE2.tar Janus-UAE2;gzip Janus-UAE2.tar
+	@echo
+	@echo Package built at  $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/Janus-UAE2.tar.gz
+	@echo
 
 # ============== dependencies ====================
 
