@@ -5706,7 +5706,7 @@ static void DisplayContributors (HWND hDlg)
 
     bug("[JUAE:GUI] %s()\n", __PRETTY_FUNCTION__);
 
-  _stprintf (szContributors, _T("%s%s\nOliver Brunner - AROS port"), IDS_CONTRIBUTORS1, IDS_CONTRIBUTORS2);
+  _stprintf (szContributors, _T("%s%s\nNick Andrews - AROS port\nOliver Brunner - AROS port\n"), IDS_CONTRIBUTORS1, IDS_CONTRIBUTORS2);
 
 	MessageBox (hDlg, szContributors, "UAE Authors and Contributors...", 0);
 	//CustomDialogBox (IDD_CONTRIBUTORS, hDlg, ContributorsProc);
