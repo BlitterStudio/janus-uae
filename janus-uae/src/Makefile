@@ -1,7 +1,7 @@
 #
 # simple Makefile to build native tools and generate all necessary files
 #
-# Copyright 2011 Oliver Brunner - aros<at>oliver-brunner.de
+# Copyright 2015 Oliver Brunner - aros<at>oliver-brunner.de
 #
 # This file is part of Janus-UAE.
 #
@@ -19,12 +19,13 @@
 # along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
 #
 #---------------------------------------------------------------------
-# Bug: cpuemu_11.cpp and compstbl.cpp fail to get generated on the first run.
+# Bug: cpuemu_11.cpp and compstbl.cpp might fail to be generated on 
+#      the first run.
 #      => run make again and it will be there. Sorry for that.
 #---------------------------------------------------------------------
 
 # to build for 
-# AROS ABI v0: ABI=v0
+# AROS ABI v0: ABI=v0 (currently not supported)
 # AROS ABI v1: ABI=v1
 ABI        = v1
 
@@ -33,11 +34,11 @@ ifeq ($(BITS),64)
 	# 64 bit
 	CPU      = x86_64
 	# AROS source svn
-	SVN        = /home/oli/tc/svn
+	SVN        = $(HOME)/tc/svn
 else
 	# 32 bit
 	CPU      = i386
-	SVN        = /home/oli/svn
+	SVN        = $(HOME)/svn
 endif
 
 # you have to adjust this of course..
@@ -48,7 +49,7 @@ CC         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-gc
 AR         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ar
 LD         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ld
 
-RELEASEDIR = $(HOME)/releases
+RELEASEDIR = $(HOME)/tc/releases
 
 HOST_CC    = gcc
 
@@ -61,14 +62,10 @@ INCLUDES= -Iinclude -I.
 
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
-#OBJS= bla.o
-
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $*.c
 
-all: incs tools uae
-
-#	$(CC) $(CFLAGS) $(OBJS) -o uae
+all: tools uae
 
 clean: toolsclean uaeclean
 
@@ -90,9 +87,9 @@ LDFLAGS   =
 	$(HOST_CPP) $(HOST_FLAGS) $(INCLUDES) -o $@ -c $*.cpp  
 
 # needing AROS cpu.h for 64-bit detection
-incs: 
-	@rm -f aros
-	ln -s /home/oli/svn/$(ABI)/AROS/bin/linux-$(CPU)/gen/include/aros
+#incs: 
+	#@rm -f aros
+	#ln -s $(HOME)/svn/$(ABI)/AROS/bin/linux-$(CPU)/gen/include/aros
 
 GENBLITTER_OBJS=genblitter.o blitops.o
 genblitter: $(GENBLITTER_OBJS)
