@@ -1,6 +1,8 @@
 #ifndef __GUI_H__
 #define __GUI_H__
 
+#define DONT_USE_URLOPEN 1
+
 #include <stdint.h>
 #include <exec/types.h>
 #include <libraries/mui.h>

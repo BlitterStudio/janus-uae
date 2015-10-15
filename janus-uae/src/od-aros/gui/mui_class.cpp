@@ -16,6 +16,9 @@
 #include <proto/reqtools.h>
 #include <mui/NListtree_mcc.h>
 #include <mui/NListview_mcc.h>
+#ifndef DONT_USE_URLOPEN
+#include <mui/Urltext_mcc.h>
+#endif
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -692,13 +695,27 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
             }
           }
           else if(!strcmp(src[i].windows_class, "RICHEDIT")) {
-            DebOut("RICHEDIT found (text: %s\n", src[i].text);
-            child=TextObject,
+            DebOut("RICHEDIT found (text: %s)\n", src[i].text);
+            child=NULL;
+#ifndef DONT_USE_URLOPEN
+            child=UrltextObject, 
                     MUIA_Font, Topaz8Font,
-                     MUIA_Text_PreParse, "\33c",
+                    MUIA_Text_PreParse, "\33c",
+                    MUIA_Urltext_Text, src[i].text, 
+                    MUIA_Urltext_Url, "http://", 
+                    MUIA_UserData, i,
+                    End;
+#endif
+            if(!child) {
+              DebOut("Urltext.mcc not used/installed, use normal text\n");
+              
+              child=TextObject,
+                    MUIA_Font, Topaz8Font,
+                    MUIA_Text_PreParse, "\33c",
                     MUIA_Text_Contents, src[i].text,
                     MUIA_UserData         , i,
                   End;
+            }
           }
           else {
             fprintf(stderr, "ERROR: Unknown windows class \"%s\" found!\n", src[i].windows_class);
