@@ -16,6 +16,9 @@
 #include <graphics/gfxbase.h>
 #include <mui/NListtree_mcc.h>
 #include <mui/NListview_mcc.h>
+#ifndef DONT_USE_URLOPEN
+#include <mui/Urltext_mcc.h>
+#endif
 
 #define JUAE_DEBUG
 #include "sysconfig.h"
@@ -122,8 +125,23 @@ BOOL SetDlgItemText(Element *elem, int item, TCHAR *lpString) {
     return SendDlgItemMessage(elem, item, CB_ADDSTRING, 0, (LPARAM) lpString);
   }
   else {
-    DebOut("call MUIA_Text_Contents, %s\n", lpString);
-    DoMethod(elem[i].obj, MUIM_Set, MUIA_Text_Contents,   lpString);
+    if(elem[i].windows_class && !strcmp(elem[i].windows_class, "RICHEDIT")) {
+#ifndef DONT_USE_URLOPEN
+      /* Urltext */
+      DebOut("call MUIA_Urltext_Text, %s\n", lpString);
+      SetAttrs(elem[i].obj,
+                //MUIA_Urltext_Text,   lpString,
+                MUIA_Urltext_Text,  lpString,
+                MUIA_Urltext_Url,   "http://TODO/text",
+                TAG_DONE);
+#else
+      DoMethod(elem[i].obj, MUIM_Set, MUIA_Text_Contents,   lpString);
+#endif
+    }
+    else {
+      DebOut("call MUIA_Text_Contents, %s\n", lpString);
+      DoMethod(elem[i].obj, MUIM_Set, MUIA_Text_Contents,   lpString);
+    }
   }
 
   return TRUE;
