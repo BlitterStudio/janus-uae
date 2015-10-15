@@ -73,7 +73,7 @@ int uae_start_thread (const TCHAR *name, void *(*f)(void *), void *arg, uae_thre
     struct TagItem procTags[] =
     {
         { NP_Name,	   (IPTR) NULL},
-        { NP_StackSize,	   (IPTR)(64 * 1024)},
+        { NP_StackSize,	   (IPTR)(128 * 1024)}, /* this is just a guess. hardfile thread needs more than 64k */
         { NP_Entry,	   (IPTR) do_thread},
         //{ NP_Output,		   Output ()},
         //{ NP_Input,		   Input ()},
