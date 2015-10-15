@@ -1,0 +1,2 @@
+Just type 'make'. You need libz.a and libpng.a installed
+properly with their header in the include path.
