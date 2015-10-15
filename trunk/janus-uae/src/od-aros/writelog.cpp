@@ -29,6 +29,8 @@
 #include <proto/timer.h>
 #include <time.h>
 
+//#define JUAE_DEBUG
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -331,6 +333,18 @@ void logging_init (void)
 	//write_log (L"EXE: '%s', DATA: '%s', PLUGIN: '%s'\n", start_path_exe, start_path_data, start_path_plugins);
 	//regstatus ();
 
+}
+
+void logging_deinit(void) {
+
+  DebOut("debugfile: %lx\n", debugfile);
+
+  closetimer();
+
+  if (debugfile) {
+    log_close (debugfile);
+  }
+  debugfile=0;
 }
 
 void activate_console (void)
