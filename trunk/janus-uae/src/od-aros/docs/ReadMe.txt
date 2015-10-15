@@ -2,6 +2,10 @@
 == Janus-UAE2  ==
 =================
 
+======================================================================
+This is totally different from Janus-UAE 1.x. This is Janus-UAE2.
+======================================================================
+
 This is a non-feature-complete Alpha-Version (as defined in 
 https://en.wikipedia.org/wiki/Software_release_life_cycle#Pre-alpha).
 
@@ -17,7 +21,9 @@ on e-uae or Janus-UAE 1.4.
 
 So remember:
 
+======================================================================
 This is totally different from Janus-UAE 1.x. This is Janus-UAE2.
+======================================================================
 
 Why not a new name? Because the goal is, to integrate all the
 functionality of Janus-UAE 1.4 into Janus-UAE2. But this means,
@@ -45,8 +51,8 @@ Bugs?
 
 For sure:
 - You need enough memory. 1GB should be enough.
-- On exit you might get a recoverable alert, this seems to be a bug in TLSF..
-
+- On exit you might get a recoverable alert, this seems to be a bug in TLSF, 
+  more info on http://sourceforge.net/p/aros/bugs/488/
 
 ======================================================================
 
@@ -62,4 +68,11 @@ http://sourceforge.net/p/janus-uae/code/HEAD/tree/tags/
 
 Alpha-Version sources can be downloaded at:
 http://sourceforge.net/p/janus-uae/code/HEAD/tree/trunk/
+
+
+Did I already mention this?
+
+======================================================================
+This is totally different from Janus-UAE 1.x. This is Janus-UAE2.
+======================================================================
 
