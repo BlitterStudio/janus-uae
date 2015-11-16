@@ -1,7 +1,0 @@
-# $Id$
-
-include $(TOP)/config/make.cfg
-
-#MM- local-juae : local-juae-copyfiles
-
-%copy_dir_recursive mmake=local-juae-copyfiles src=$(SRCDIR)/$(CURDIR)/files/. dst=$(AROS_CONTRIB)/Emu/J-UAE/
