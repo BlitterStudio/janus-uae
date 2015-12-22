@@ -1,13 +1,8 @@
-
-
+#include "uae/inline.h"
+#include "uae/likely.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-
-#ifdef __AROS__
-#include "sysconfig.h"
-#include "sysdeps.h"
-#endif
 
 extern void activate_debugger(void);
 
@@ -23,12 +18,11 @@ extern void write_log (const char *, ...);
 #define tostring(s)	#s
 #endif
 
-#ifndef likely
-#if __GNUC__ < 3
-#define __builtin_expect(x, n) (x)
-#endif
-#define likely(x)   __builtin_expect(!!(x), 1)
-#define unlikely(x)   __builtin_expect(!!(x), 0)
+#ifndef __AROS__
+typedef int ssize_t;
+#else
+#include "sysconfig.h"
+#include "sysdeps.h"
 #endif
 
 #ifdef _MSC_VER
@@ -36,7 +30,6 @@ extern void write_log (const char *, ...);
 #define container_of(address, type, field) ((type *)( \
         (PCHAR)(address) - \
         (ULONG_PTR)(&((type *)0)->field)))
-#define STATIC_INLINE static __forceinline
 
 #define snprintf c99_snprintf
 inline int c99_vsnprintf(char* str, size_t size, const char* format, va_list ap)
@@ -69,15 +62,19 @@ inline int c99_snprintf(char* str, size_t size, const char* format, ...)
         const typeof(((type *) 0)->member) *__mptr = (ptr);     \
         (type *) ((char *) __mptr - offsetof(type, member));})
 #endif
-#endif /* _MSC_VER */
+#endif
 
 #ifndef ABS
 #define ABS(x) abs(x)
 #endif
 
+#ifdef USE_GLIB
+#include <glib.h>
+#else
 #define g_free free
 #define g_malloc malloc
 #define g_new(type, num) ((type*)calloc(sizeof(type),num))
+#endif
 
 enum device_endian {
     DEVICE_NATIVE_ENDIAN,
@@ -118,8 +115,30 @@ typedef struct DisplaySurface {
 uint16_t le16_to_cpu(uint16_t v);
 uint32_t le32_to_cpu(uint32_t v);
 
-static inline void cpu_to_32wu(uint32_t *p, uint32_t v)
+#define le_bswap(v, size) (v)
+#define cpu_to_le16(x) (x)
+
+STATIC_INLINE void stl_he_p(void *ptr, uint32_t v)
 {
+	memcpy(ptr, &v, sizeof(v));
+}
+STATIC_INLINE void stl_le_p(void *ptr, uint32_t v)
+{
+	stl_he_p(ptr, le_bswap(v, 32));
+}
+STATIC_INLINE int ldl_he_p(const void *ptr)
+{
+	int32_t r;
+	memcpy(&r, ptr, sizeof(r));
+	return r;
+}
+STATIC_INLINE int ldl_le_p(const void *ptr)
+{
+	return le_bswap(ldl_he_p(ptr), 32);
+}
+STATIC_INLINE void cpu_to_32wu(uint32_t *p, uint32_t v)
+{
+	stl_le_p(p, v);
 }
 
 void graphic_hw_update(QemuConsole *con);
@@ -289,7 +308,7 @@ struct CirrusVGAState {
 
 void cirrus_init_common(CirrusVGAState * s, int device_id, int is_pci,
                                MemoryRegion *system_memory,
-                               MemoryRegion *system_io);
+                               MemoryRegion *system_io, int vramlimit);
 
 struct DeviceState
 {
@@ -297,14 +316,18 @@ struct DeviceState
 };
 
 #define QEMUFile void*
-#define PCIDevice void*
+#define PCIDevice void
 typedef unsigned long dma_addr_t;
-#define PCI_DEVICE(s) (void**)s
+#define PCI_DEVICE(s) ((void*)(s->bus.privdata))
 #define DMA_ADDR_FMT "%08x"
+
+void pci710_set_irq(PCIDevice *pci_dev, int level);
+void lsi710_scsi_init(DeviceState *dev);
+void lsi710_scsi_reset(DeviceState *dev, void*);
 
 void pci_set_irq(PCIDevice *pci_dev, int level);
 void lsi_scsi_init(DeviceState *dev);
-void lsi_scsi_reset(DeviceState *dev);
+void lsi_scsi_reset(DeviceState *dev, void*);
 
 static inline int32_t sextract32(uint32_t value, int start, int length)
 {
@@ -333,18 +356,30 @@ typedef enum {
     DMA_DIRECTION_FROM_DEVICE = 1,
 } DMADirection;
 
+int pci710_dma_rw(PCIDevice *dev, dma_addr_t addr, void *buf, dma_addr_t len, DMADirection dir);
+
+static inline int pci710_dma_read(PCIDevice *dev, dma_addr_t addr,
+                               void *buf, dma_addr_t len)
+{
+    return pci710_dma_rw(dev, addr, buf, len, DMA_DIRECTION_TO_DEVICE);
+}
+static inline int pci710_dma_write(PCIDevice *dev, dma_addr_t addr,
+                                const void *buf, dma_addr_t len)
+{
+    return pci710_dma_rw(dev, addr, (void *) buf, len, DMA_DIRECTION_FROM_DEVICE);
+}
+
 int pci_dma_rw(PCIDevice *dev, dma_addr_t addr, void *buf, dma_addr_t len, DMADirection dir);
 
 static inline int pci_dma_read(PCIDevice *dev, dma_addr_t addr,
-                               void *buf, dma_addr_t len)
+	void *buf, dma_addr_t len)
 {
-    return pci_dma_rw(dev, addr, buf, len, DMA_DIRECTION_TO_DEVICE);
+	return pci_dma_rw(dev, addr, buf, len, DMA_DIRECTION_TO_DEVICE);
 }
-
 static inline int pci_dma_write(PCIDevice *dev, dma_addr_t addr,
-                                const void *buf, dma_addr_t len)
+	const void *buf, dma_addr_t len)
 {
-    return pci_dma_rw(dev, addr, (void *) buf, len, DMA_DIRECTION_FROM_DEVICE);
+	return pci_dma_rw(dev, addr, (void *)buf, len, DMA_DIRECTION_FROM_DEVICE);
 }
 
 struct BusState {
@@ -358,5 +393,14 @@ struct BusState {
 };
 
 
+extern void lsi710_mmio_write(void *opaque, hwaddr addr, uint64_t val, unsigned size);
+extern uint64_t lsi710_mmio_read(void *opaque, hwaddr addr, unsigned size);
+
 extern void lsi_mmio_write(void *opaque, hwaddr addr, uint64_t val, unsigned size);
 extern uint64_t lsi_mmio_read(void *opaque, hwaddr addr, unsigned size);
+
+// ESP
+
+typedef void *qemu_irq;
+typedef void* SysBusDevice;
+
