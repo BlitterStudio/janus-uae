@@ -23,6 +23,9 @@
 ; 2009.01.20 clipboard sharing
 ; 2009.12.27 console hook
 ; 2010.05.27 Z3Chip
+; 2011.12.17 built-in CDFS support
+; 2015.09.27 KS 1.2 boot hack supported
+; 2015.09.28 KS 1.2 boot hack improved, 1.1 and older BCPL-only DOS support.
 
 AllocMem = -198
 FreeMem = -210
@@ -31,9 +34,12 @@ FreeMem = -210
 PP_MAXSIZE = 4 * 96
 PP_FSSIZE = 400
 PP_FSPTR = 404
-PP_FSRES = 408
-PP_EXPLIB = 412
-PP_FSHDSTART = 416
+PP_ADDTOFSRES = 408
+PP_FSRES = 412
+PP_FSRES_CREATED = 416
+PP_DEVICEPROC = 420
+PP_EXPLIB = 424
+PP_FSHDSTART = 428
 PP_TOTAL = (PP_FSHDSTART+140)
 
 NOTIFY_CLASS = $40000000
@@ -44,18 +50,21 @@ NRF_WAIT_REPLY = 8
 NRF_NOTIFY_INITIAL = 16
 NRF_MAGIC = $80000000
 
+; normal filehandler segment entrypoint
 	dc.l 16 								; 4
 our_seglist:
 	dc.l 0 									; 8 /* NextSeg */
 start:
-	dc.l 9						;0 12
+	bra.s startjmp
+	dc.w 9						;0 12
+startjmp:
 	bra.w filesys_mainloop		;1 16
 	dc.l make_dev-start			;2 20
 	dc.l filesys_init-start		;3 24
 	dc.l exter_server-start		;4 28
 	dc.l bootcode-start			;5 32
 	dc.l setup_exter-start		;6 36
-	dc.l mh_e-start				;7 40
+	dc.l bcplwrapper-start ;7 40
 	dc.l clipboard_init-start 	;8 44
 	;52
 
@@ -67,6 +76,25 @@ bootcode:
 	move.l d0,a0
 	jsr (a0)
 	rts
+
+; BCPL filehandler segment entry point
+; for KS 1.1 and older.
+	cnop 0,4
+	dc.l (bcpl_end-bcpl_start)/4+1
+our_bcpl_seglist:
+	dc.l 0
+	dc.l (bcpl_end-bcpl_start)/4+1
+bcpl_start:
+	; d1 = startup packet
+	lsl.l #2,d1
+	move.l d1,d7
+	bra.w filesys_mainloop_bcpl
+	cnop 0,4
+	dc.l 0
+	dc.l 1
+	dc.l 4
+	dc.l 2
+bcpl_end:
 
 residenthack
 	movem.l d0-d2/a0-a2/a6,-(sp)
@@ -142,9 +170,13 @@ residentcodeend:
 filesys_init:
 	movem.l d0-d7/a0-a6,-(sp)
 	move.l 4.w,a6
-	move.w #$FFFC,d0 ; filesys base
+	move.w #$FFEC,d0 ; filesys base
 	bsr getrtbase
 	move.l (a0),a5
+	moveq #0,d5
+	moveq #0,d0
+	cmp.w #33,20(a6) ; 1.1 or older?
+	bcs.s FSIN_explibok
 	lea.l explibname(pc),a1 ; expansion lib name
 	moveq #36,d0
 	moveq #1,d5
@@ -158,87 +190,191 @@ filesys_init:
 FSIN_explibok:
 	move.l d0,a4
 
-	tst.l $10c(a5)                      ; any file systems?
-	beq.s FSIN_none
+	; create fake configdev
+	exg a4,a6
+	move.l a6,d0
+	beq.s .nocd
+	btst #4,$110+3(a5)
+	bne.s .nocd
+	jsr -$030(a6) ;expansion/AllocConfigDev
+	tst.l d0
+	beq.s .nocd
+	move.l d0,a0
+	lea start(pc),a1
+	move.l a1,d0
+	clr.w d0
+	move.l d0,32(a0)
+	move.l #65536,36(a0)
+	move.w #$0104,16(a0) ;type + product
+	move.w #2011,16+4(a0) ;manufacturer
+	moveq #1,d0
+	move.l d0,22(a0) ;serial
+	jsr -$01e(a6) ;expansion/AddConfigDev
+.nocd
+	exg a4,a6
 
-	move.l #PP_TOTAL,d0                 ; alloc memory for param packet to be sent to filesys_dev_storeinfo
+	tst.l $10c(a5)
+	beq.w FSIN_none
+
+	move.l #PP_TOTAL,d0
 	move.l #$10001,d1
 	jsr AllocMem(a6)
 	move.l d0,a3  ; param packet
 	move.l a4,PP_EXPLIB(a3)
-	moveq #0,d6                          ; counter (actual unit)
+
+	moveq #0,d6
 FSIN_init_units:
-	cmp.l $10c(a5),d6                    ; any units left? (stored in 10c by init_filesys_diagentry() )
-	bcc.b FSIN_units_ok                  ; no? => FSIN_units_ok
-	move.l d6,-(sp)                      ; backup counter
+	cmp.w $10e(a5),d6
+	bcc.b FSIN_units_ok
+	move.l d6,-(sp)
 FSIN_nextsub:
-	moveq #1,d7
+	move.l $110(a5),d7
 	tst.w d5
 	beq.s .oldks
 	bset #2,d7
 .oldks	move.l a3,-(sp)
 	move.l a3,a0
-	bsr.w make_dev                        ; call filesys_dev_storeinfo!
+	bsr.w make_dev
 	move.l (sp)+,a3
-	cmp.l #-2,d0                          ; any subunits left ?
-	beq.s FSIN_nomoresub                  ; no => FSIN_nomoresub
-	swap d6                               ; another sub id
-	addq.w #1,d6                          ; count in high word
+	move.l d1,PP_DEVICEPROC(a3)
+	cmp.l #-2,d0
+	beq.s FSIN_nomoresub
 	swap d6
-	bra.s FSIN_nextsub                    ; next sub id
+	addq.w #1,d6
+	swap d6
+	bra.s FSIN_nextsub
 FSIN_nomoresub:	
 	move.l (sp)+,d6
-	addq.w #1,d6                          ; increment unit count
-	bra.b  FSIN_init_units                ; next unit
-FSIN_units_ok:                          ; done!
+	addq.w #1,d6
+	bra.b FSIN_init_units
+FSIN_units_ok:
+
 	move.l 4.w,a6
 	move.l a3,a1
 	move.l #PP_TOTAL,d0
 	jsr FreeMem(a6)
 
-FSIN_none:                              ; done!
+FSIN_none:
 	move.l 4.w,a6
+	move.l a4,d0
+	beq.s .noexpclose
 	move.l a4,a1
 	jsr -414(a6) ; CloseLibrary
+.noexpclose
 
-;	move.w #$FF80,d0
-;	bsr.w getrtbase
-;	jsr (a0)
-;	jsr -$0078(a6) ; Disable
-;	lea 322(a6),a0 ; MemHeader
-;FSIN_scanchip:
-;	move.l (a0),a0	; first MemList
-;	tst.l (a0)
-;	beq.s FSIN_scandone
-;	move.w 14(a0),d1 ; attributes
-;	and #2,d1 ; MEMF_CHIP?
-;	beq.s FSIN_scanchip
-;	sub.l 24(a0),d0 ; did KS detect all chip?
-;	bmi.s FSIN_scandone
-;	beq.s FSIN_scandone
-;	; add the missing piece
-;	add.l d0,24(a0) ; mh_Upper
-;	add.l d0,28(a0) ; mh_Free
-;	add.l d0,62(a6) ; MaxLocMem
-;	; we still need to update last node's free space
-;	move.l 16(a0),a0 ; mh_First
-;FSIN_chiploop2
-;	tst.l (a0)
-;	beq.s FSIN_chiploop
-;	move.l (a0),a0
-;	bra.s FSIN_chiploop2
-;FSIN_chiploop:
-;	add.l d0,4(a0)
-;FSIN_scandone:
-;	jsr -$007e(a6) ; Enable
+	cmp.w #34,20(a6) ; 1.2 or older?
+	bcs.s FSIN_tooold
 
-filesys_dev_storeinfo
+	; add MegaChipRAM
 	moveq #3,d4 ; MEMF_CHIP | MEMF_PUBLIC
 	cmp.w #36,20(a6)
 	bcs.s FSIN_ksold
 	or.w #256,d4 ; MEMF_LOCAL
 FSIN_ksold
+	move.w #$FF80,d0
+	bsr.w getrtbase
+	jsr (a0) ; d1 = size, a1 = start address
+	move.l d0,d5
+	move.l a1,a0
+	move.l d1,d0
+	beq.s FSIN_fchip_done
+	move.l d4,d1
+	moveq #-5,d2
+	lea fchipname(pc),a1
+	jsr -618(a6) ; AddMemList
+FSIN_fchip_done
 
+	; add >2MB-6MB chip RAM to memory list (if not already done)
+	lea $210000,a1
+	; do not add if RAM detected already
+	jsr -$216(a6) ; TypeOfMem
+	tst.l d0
+	bne.s FSIN_chip_done
+	move.l d4,d1
+	moveq #-10,d2
+	move.l #$200000,a0
+	move.l d5,d0
+	sub.l a0,d0
+	bcs.b FSIN_chip_done
+	beq.b FSIN_chip_done
+	sub.l a1,a1
+	jsr -618(a6) ; AddMemList
+FSIN_chip_done
+
+	lea fstaskname(pc),a0
+	lea fsmounttask(pc),a1
+	moveq #10,d0
+	bsr createtask
+	move.l d0,a1
+	moveq #1,d1
+	move.w #$FF48,d0 ; store task pointer
+	bsr.w getrtbase
+	jsr (a0)
+
+FSIN_tooold
+
+	movem.l (sp)+,d0-d7/a0-a6
+general_ret:
+	rts
+
+	REM
+addextrachip:
+	move.w #$FF80,d0
+	bsr.w getrtbase
+	jsr (a0)
+	jsr -$0078(a6) ; Disable
+	lea 322(a6),a0 ; MemHeader
+FSIN_scanchip:
+	move.l (a0),a0	; first MemList
+	tst.l (a0)
+	beq.w FSIN_scannotfound
+	move.l 20(a0),d1 ; mh_Lower
+	clr.w d1
+	tst.l d1
+	bne.s FSIN_scanchip	
+	move.w 14(a0),d1 ; attributes
+	bmi.s FSIN_scanchip
+	and #2,d1 ; MEMF_CHIP?
+	beq.s FSIN_scanchip
+	sub.l 24(a0),d0 ; did KS detect all chip?
+	bmi.s FSIN_scandone
+	beq.s FSIN_scandone
+	; add the missing piece
+	move.l 24(a0),d1
+	add.l d0,24(a0) ; mh_Upper
+	add.l d0,28(a0) ; mh_Free
+	add.l d0,62(a6) ; MaxLocMem
+	; we still need to update last node's free space
+	move.l 16(a0),a0 ; mh_First
+FSIN_chiploop2
+	tst.l (a0)
+	beq.s FSIN_chiploop
+	move.l (a0),a0
+	bra.s FSIN_chiploop2
+FSIN_chiploop:
+	move.l a0,d2
+	add.l 4(a0),d2
+	;Last block goes to end of chip?
+	cmp.l d2,d1
+	beq.s FSIN_chipadd1
+	;It didn't, add new MemChunk
+	move.l d1,(a0)
+	move.l d1,a1
+	clr.l (a1)+
+	move.l d0,(a1)
+	bra.s FSIN_scandone
+FSIN_chipadd1:
+	add.l d0,4(a0)
+FSIN_scandone:
+	jsr -$007e(a6) ; Enable
+	rts
+
+FSIN_scannotfound:
+	moveq #3,d4 ; MEMF_CHIP | MEMF_PUBLIC
+	cmp.w #36,20(a6)
+	bcs.s FSIN_ksold
+	or.w #256,d4 ; MEMF_LOCAL
+FSIN_ksold
 	; add >2MB-6MB chip RAM to memory list
 	lea $210000,a1
 	; do not add if RAM detected already
@@ -257,33 +393,8 @@ FSIN_ksold
 	sub.l a1,a1
 	jsr -618(a6) ; AddMemList
 FSIN_chip_done
-
-	; add MegaChipRAM
-	move.w #$FF80,d0
-	bsr.w getrtbase
-	jsr (a0) ; d1 = size, a1 = start address
-	move.l a1,a0
-	move.l d1,d0
-	beq.s FSIN_fchip_done
-	move.l d4,d1
-	moveq #-5,d2
-	lea fchipname(pc),a1
-	jsr -618(a6) ; AddMemList
-FSIN_fchip_done
-
-	lea fstaskname(pc),a0
-	lea fsmounttask(pc),a1
-	moveq #10,d0
-	bsr createtask
-	move.l d0,a1
-	moveq #1,d1
-	move.w #$FF48,d0 ; store task pointer
-	bsr.w getrtbase
-	jsr (a0)
-
-	movem.l (sp)+,d0-d7/a0-a6
-general_ret:
 	rts
+	EREM
 
 createproc
 	movem.l d2-d4/a2/a6,-(sp)
@@ -403,6 +514,38 @@ exter_server_exit:
 	movem.l (sp)+,a2
 	rts
 
+heartbeatvblank:
+	movem.l d0-d1/a0-a2,-(sp)
+
+	move.w #$FF38,d0
+	moveq #18,d1
+	bsr.w getrtbase
+	jsr (a0)
+	move.l d0,a2
+
+	moveq #22,d0
+	move.l #65536+1,d1
+	jsr AllocMem(a6)
+	move.l d0,a1
+
+	move.b #2,8(a1) ;NT_INTERRUPT
+	move.b #-10,9(a1) ;priority
+	lea kaname(pc),a0
+	move.l a0,10(a1)
+	lea kaint(pc),a0
+	move.l a0,18(a1)
+	move.l a2,14(a1)
+	moveq #5,d0 ;INTB_VERTB
+	jsr -$00a8(a6)
+
+	movem.l (sp)+,d0-d1/a0-a2
+	rts
+
+kaint:
+	addq.l #1,(a1)
+	moveq #0,d0
+	rts
+
 setup_exter:
 	movem.l d0-d1/a0-a1,-(sp)
 	bsr.w residenthack
@@ -419,7 +562,14 @@ setup_exter:
 	move.w #$0214,8(a1)
 	moveq.l #3,d0
 	jsr -168(a6) ; AddIntServer
-	move.w mh_e(pc),d0
+
+	bsr.w heartbeatvblank
+
+	move.w #$FF38,d0
+	moveq #4,d1
+	bsr.w getrtbase
+	jsr (a0)
+	tst.l d0
 	beq.s .nomh
 	bsr.w mousehack_init
 .nomh
@@ -481,11 +631,11 @@ r15	move.l (a2),d2 ; hunk size (header)
 	bset #1,d1
 r2	bset #16,d1
 	lsl.l #2,d2
-	move.l d2,d0
 	bne.s r17
 	clr.l (a2)+ ; empty hunk
 	bra.s r18
-r17	addq.l #8,d0 ; size + pointer to next hunk + hunk size
+r17	addq.l #8,d2 ; size + pointer to next hunk + hunk size
+	move.l d2,d0
 	jsr AllocMem(a6)
 	tst.l d0
 	beq.w ree
@@ -563,11 +713,13 @@ r13
 r0	move.l d7,d0
 	movem.l (sp)+,d1-d7/a1-a6
 	rts
-ree	moveq #0,d7
+ree	sub.l a0,a0
+	moveq #0,d7
 	bra.s r0
 
-fsres
-	movem.l d1/a0-a2/a6,-(sp)
+fsres:
+	movem.l d1/a0-a3/a6,-(sp)
+	move.l a0,a3
 	move.l 4.w,a6
 	lea $150(a6),a0 ;ResourceList
 	move.l (a0),a0 ;lh_Head
@@ -606,9 +758,10 @@ fsres1
 	move.l a2,a1
 	jsr -$f6(a6) ; AddTail
 	move.l a2,a0
+	move.l a0,PP_FSRES_CREATED(a3)
 fsres4
 	move.l a0,d0
-	movem.l (sp)+,d1/a0-a2/a6
+	movem.l (sp)+,d1/a0-a3/a6
 	rts
 
 addvolumenode
@@ -909,14 +1062,16 @@ action_exall
 	tst.l (a0) ; eac_Entries == 0 -> get more
 	rts
 
+	; mount harddrives, virtual or hdf
 
-make_dev: ; IN: A0 param_packet, D6: unit_no, D7: b0=autoboot,b1=onthefly,b2=v36+
+make_dev: ; IN: A0 param_packet, D6: unit_no
+	; D7: b0=autoboot,b1=onthefly,b2=v36+,b3=force manual add,b4=nofakeboard
 	; A4: expansionbase
 
 	bsr.w fsres
 	move.l d0,PP_FSRES(a0) ; pointer to FileSystem.resource
 	move.l a0,-(sp)
-	move.w #$FFFC,d0 ; filesys base
+	move.w #$FFEC,d0 ; filesys base
 	bsr.w getrtbase
 	move.l (a0),a5
 	move.w #$FF28,d0 ; fill in unit-dependent info (filesys_dev_storeinfo)
@@ -942,15 +1097,15 @@ make_dev: ; IN: A0 param_packet, D6: unit_no, D7: b0=autoboot,b1=onthefly,b2=v36
 mountalways
 	; allocate memory for loaded filesystem
 	move.l PP_FSSIZE(a0),d0
-	beq.s nordbfs1
-	bmi.s nordbfs1
+	beq.s .nordbfs1
+	bmi.s .nordbfs1
 	move.l a0,-(sp)
 	moveq #1,d1
 	move.l 4.w,a6
 	jsr  AllocMem(a6)
 	move.l (sp)+,a0
 	move.l d0,PP_FSPTR(a0)
-nordbfs1:
+.nordbfs1:
 
 	tst.l d3
 	bpl.s do_mount
@@ -965,7 +1120,7 @@ nordbfs1:
 do_mount:
 	move.l a4,a6
 	move.l a0,-(sp)
-	jsr -144(a6) ; MakeDosNode()
+	bsr.w makedosnode
 	move.l (sp)+,a0 ; parmpacket
 	move.l a0,a1
 	move.l d0,a3 ; devicenode
@@ -978,9 +1133,12 @@ do_mount:
 	move.l d0,32(a3)         ; dn_SegList
 
 dont_mount:
-	tst.l PP_FSPTR(a1)	; filesystem?
-	beq.s nordbfs2
 	move.l PP_FSPTR(a1),a0
+	tst.l PP_FSSIZE(a1)
+	beq.s nordbfs3
+	; filesystem needs relocation?
+	move.l a0,d0
+	beq.s nordbfs2
 	bsr.w relocate
 	movem.l d0/a0-a1,-(sp)
 	move.l PP_FSSIZE(a1),d0
@@ -988,13 +1146,25 @@ dont_mount:
 	move.l 4.w,a6
 	jsr FreeMem(a6)
 	movem.l (sp)+,d0/a0-a1
+	clr.l PP_FSSIZE(a1)
+	move.l a0,PP_FSPTR(a1)
 	tst.l d0
+	beq.s nordbfs2
+nordbfs3:
+	tst.l PP_ADDTOFSRES(a1)
 	beq.s nordbfs2
 	bsr.w addfs
 nordbfs2:
 
 	tst.l d3
 	bmi.w general_ret
+
+	move.l 4.w,a6
+	move.l a1,-(sp)
+	lea bcplfsname(pc),a1
+	jsr -$126(a6) ; FindTask
+	move.l (sp)+,a1
+	move.l d0,d1
 
 	move.w #$FF18,d0 ; update dn_SegList if needed (filesys_dev_bootfilesys)
 	bsr.w getrtbase
@@ -1003,41 +1173,50 @@ nordbfs2:
 	move.l d3,d0
 	move.b 79(a1),d3 ; bootpri
 	tst.l d0
-	bne.b MKDV_doboot
+	bne.b MKDV_doboot ; not directory harddrive?
 
 MKDV_is_filesys:
 	move.l #6000,20(a3)     ; dn_StackSize
-	lea.l our_seglist(pc),a0
+	lea	our_seglist(pc),a0
+	moveq #-1,d0
+	move.l a4,d1
+	bne.s .expgv
+	lea our_bcpl_seglist(pc),a0
+	moveq #0,d0
+.expgv
+	move.l d0,36(a3)       ; dn_GlobalVec
 	move.l a0,d0
 	lsr.l  #2,d0
 	move.l d0,32(a3)        ; dn_SegList
-	moveq #-1,d0
-	move.l d0,36(a3)       ; dn_GlobalVec
 
 MKDV_doboot:
+	btst #3,d7
+	bne.s MKDV_noboot
 	btst #0,d7
 	beq.b MKDV_noboot
+	cmp.b #-128,d3
+	beq.s MKDV_noboot
 
 	move.l 4.w,a6
-	moveq.l #20,d0
-	moveq.l #0,d1
+	moveq #20,d0
+	move.l #65536+1,d1
 	jsr  AllocMem(a6)
 	move.l d0,a1 ; bootnode
-	moveq #0,d0
-	move.l d0,(a1)
-	move.l d0,4(a1)
-	move.w d0,14(a1)
 	move.w #$1000,d0
 	or.b d3,d0
 	move.w d0,8(a1)
 	move.l $104(a5),10(a1) ; filesys_configdev
-	move.l a3,16(a1)        ; devicenode
+	move.l a3,16(a1) ; devicenode
 	lea.l  74(a4),a0 ; MountList
+	jsr -$0084(a6) ;Forbid
 	jsr  -270(a6) ; Enqueue()
+	jsr -$008a(a6) ;Permit
+	moveq #0,d1
 	moveq #0,d0
 	rts
 
 MKDV_noboot:
+	moveq #0,d3
 	move.l a1,a2 ; bootnode
 	move.l a3,a0 ; parmpacket
 	moveq #0,d1
@@ -1047,9 +1226,10 @@ MKDV_noboot:
 	btst #2,d7
 	beq.s .nob
 	moveq #1,d1 ; ADNF_STARTPROC (v36+)
-.nob	moveq #-20,d0
+.nob
+	moveq #-128,d0
 	move.l a4,a6 ; expansion base
-	jsr  -150(a6) ; AddDosNode
+	bsr.w adddosnode
 	btst #1,d7
 	beq.s .noproc
 	btst #2,d7
@@ -1062,6 +1242,7 @@ MKDV_noboot:
 	tst.b -3(a0,d2.l)
 	bne.s .devpr1
 	move.l 4.w,a6
+	add.l #4100,d2
 	move.l d2,d0
 	moveq #1,d1
 	jsr AllocMem(a6)
@@ -1076,11 +1257,15 @@ MKDV_noboot:
 	clr.b (a1)
 	move.l 4.w,a6
 	lea doslibname(pc),a1
-	moveq #0,d0
-	jsr -$0228(a6) ; OpenLibrary
+	jsr -$0198(a6) ; OldOpenLibrary
 	move.l d0,a6
 	move.l a2,d1
-	jsr -$0AE(a6) ; DeviceProc (start fs handler, ignore return code)
+	move.l sp,d3
+	; deviceproc needs lots of stack
+	lea 4100(a2),sp
+	jsr -$0AE(a6) ; DeviceProc (start fs handler)
+	move.l d3,sp
+	move.l d1,d3
 	move.l a6,a1
 	move.l 4.w,a6
 	jsr -$019e(a6); CloseLibrary
@@ -1088,6 +1273,7 @@ MKDV_noboot:
 	move.l d2,d0
 	jsr FreeMem(a6)
 .noproc
+	move.l d3,d1
 	moveq #0,d0
 	rts
 
@@ -1130,7 +1316,24 @@ addfsonthefly ; d1 = fs index
 	movem.l (sp)+,d2-d7/a2-a6
 	rts
 
+clockreset:
+	move.w #$ff58,d0 ; fsmisc_helper
+	bsr.w getrtbase
+	moveq #3,d0 ; get time
+	jsr (a0)
+	move.l 168(a3),a1
+	move.l d0,32(a1)
+	beq.s .cr
+	moveq #0,d0
+	move.l d0,36(a1)
+	move.w #11,28(a1) ;TR_SETSYSTIME
+	move.b #1,30(a1) ;IOF_QUICK
+	jsr -$01c8(a6) ;DoIO
+.cr	rts
+
 filesys_mainloop:
+	moveq #0,d7
+filesys_mainloop_bcpl:
 	move.l 4.w,a6
 	sub.l a1,a1
 	jsr -294(a6) ; FindTask
@@ -1139,8 +1342,7 @@ filesys_mainloop:
 
 	; Open DOS library
 	lea.l doslibname(pc),a1
-	moveq.l #0,d0
-	jsr -552(a6) ; OpenLibrary
+	jsr -$198(a6) ; OpenLibrary
 	move.l d0,a2
 
 	; Allocate some memory. Usage:
@@ -1155,6 +1357,7 @@ filesys_mainloop:
 	; 164: input.device ioreq (disk inserted/removed input message)
 	; 168: timer.device ioreq
 	; 172: disk change from host
+	; 173: bit 0: clock reset, bit 1: debugger start
 	; 176: my task
 	; 180: device node
 	move.l #12+20+(80+44+1)+(1+3)+4+4+4+(1+3)+4+4,d0
@@ -1186,12 +1389,15 @@ filesys_mainloop:
 	moveq.l #0,d5 ; No commands queued.
 
 	; Fetch our startup packet
+	move.l d7,d3
+	bne.s .got_bcpl
 	move.l a5,a0
 	jsr -384(a6) ; WaitPort
 	move.l a5,a0
 	jsr -372(a6) ; GetMsg
 	move.l d0,a4
-	move.l 10(a4),d3 ; ln_Name
+	move.l 10(a4),d3 ; ln_Name -> startup dos packet
+.got_bcpl
 	move.w #$FF40,d0 ; startup_handler
 	bsr.w getrtbase
 	moveq.l #0,d0
@@ -1231,11 +1437,36 @@ FSML_loop:
 	bset #13,d0 ; SIGBREAK_CTRL_D
 	jsr -$013e(a6) ;Wait
 .msg
-	; disk changed?
+	; SIGBREAK_CTRL_D checks
+	; clock reset
+	btst #0,173(a3)
+	beq.s .noclk
+	bsr.w clockreset
+	bclr #0,173(a3)
+.noclk
+	btst #1,173(a3)
+	beq.s .nodebug
+	bsr.w debuggerstart
+	bclr #1,173(a3)
+.nodebug
+	; disk change notification from native code
 	tst.b 172(a3)
 	beq.s .nodc
+	; call filesys_media_change_reply (pre)
+	move.w #$ff58,d0 ; fsmisc_helper
+	bsr.w getrtbase
+	moveq #1,d0 ; filesys_media_change_reply
+	jsr (a0)
+	tst.l d0
+	beq.s .nodc2
 	bsr.w diskchange
+.nodc2
 	clr.b 172(a3)
+	; call filesys_media_change_reply (post)
+	move.w #$ff58,d0 ; fsmisc_helper
+	bsr.w getrtbase
+	moveq #2,d0 ; filesys_media_change_reply
+	jsr (a0)
 .nodc
 	move.l a4,d0
 	beq.s nonnotif
@@ -1257,7 +1488,7 @@ FSML_loop:
 	move.l a4,a1
 	move.b #8,(a1)
 	jsr -366(a6) ; PutMsg
-	bra.s FSML_loop
+	bra.w FSML_loop
 nonoti
 	move.l a4,a1
 	moveq #38,d0
@@ -1346,8 +1577,9 @@ FSML_ReplyOne2:
 	bsr.w action_exall
 	bne.s FSML_ReplyOne3
 	; Arghh.. we need more entries. (some buggy programs fail if eac_Entries = 0 with continue enabled)
-	move.w #$ff58,d0
+	move.w #$ff58,d0 ; fsmisc_helper
 	bsr.w getrtbase
+	moveq #0,d0 ; exall
 	jsr (a0)
 	bra.s .exaretry
 	
@@ -1410,12 +1642,6 @@ LKCK_TooManyLoop:
 LKCK_ret:
 	move.l d7,(a3)
 	move.l (a7)+,d5
-	rts
-
-getrtbase:
-	lea start-8-4(pc),a0
-	and.l #$FFFF,d0
-	add.l d0,a0
 	rts
 
 ; mouse hack
@@ -1558,32 +1784,30 @@ mhdoio:
 	jsr -$01c8(a6) ;DoIO
 	rts
 
-; these shouldn't be here but it is easier this way..
-
-mh_e: dc.w 0
-mh_cnt: dc.w -1
-mh_maxx: dc.w 0
-mh_maxy: dc.w 0
-mh_maxz: dc.w 0
-mh_x: dc.w 0
-mh_y: dc.w 0
-mh_z: dc.w 0
-mh_resx: dc.w 0
-mh_resy: dc.w 0
-mh_maxax: dc.w 0
-mh_maxay: dc.w 0
-mh_maxaz: dc.w 0
-mh_ax: dc.w 0
-mh_ay: dc.w 0
-mh_az: dc.w 0
-mh_pressure: dc.w 0
-mh_buttonbits: dc.l 0
-mh_inproximity: dc.w 0
-mh_absx: dc.w 0
-mh_absy: dc.w 0
+MH_E = 0
+MH_CNT = 2
+MH_MAXX = 4
+MH_MAXY = 6
+MH_MAXZ = 8
+MH_X = 10
+MH_Y = 12
+MH_Z = 14
+MH_RESX = 16
+MH_RESY = 18
+MH_MAXAX = 20
+MH_MAXAY = 22
+MH_MAXAZ = 24
+MH_AX = 26
+MH_AY = 28
+MH_AZ = 30
+MH_PRESSURE = 32
+MH_BUTTONBITS = 34
+MH_INPROXIMITY = 38
+MH_ABSX = 40
+MH_ABSY = 42
+MH_DATA_SIZE = 44
 
 MH_INT = 0
-
 MH_FOO = (MH_INT+22)
 MH_FOO_CNT = 0
 MH_FOO_BUTTONS = 4
@@ -1612,7 +1836,8 @@ MH_IEPT = (MH_IEH+22) ;IEPointerTable/IENewTablet
 MH_IENTTAGS = (MH_IEPT+32) ;space for ient_TagList
 MH_IO = (MH_IENTTAGS+16*4*2)
 MH_TM = (MH_IO+4)
-MH_END = (MH_TM+4)
+MH_DATA = (MH_TM+4)
+MH_END = (MH_DATA+MH_DATA_SIZE)
 
 MH_MOUSEHACK = 0
 MH_TABLET = 1
@@ -1728,7 +1953,7 @@ getgfxlimits:
 mousehack_task:
 	move.l 4.w,a6
 
-	move.w 20(a6),d7
+	move.w 20(a6),d7 ; KS version
 
 	moveq #-1,d0
 	jsr -$014a(a6) ;AllocSignal
@@ -1755,6 +1980,14 @@ mousehack_task:
 	move.l d6,MH_FOO_MASK(a3)
 	moveq #-1,d0
 	move.w d0,MH_FOO_CNT(a3)
+
+    ; send data structure address
+	move.w #$FF38,d0
+	moveq #5,d1
+	bsr.w getrtbase
+	move.l a5,d0
+	add.l #MH_DATA,d0
+	jsr (a0)
 
 	lea MH_INT(a5),a1
 	move.b #2,8(a1) ;NT_INTERRUPT
@@ -1862,7 +2095,7 @@ mhloop
 	move.l #22,36(a1) ;sizeof(struct InputEvent)
 	move.l a2,40(a1)
 
-	move.b mh_e(pc),d0
+	move.b MH_E+MH_DATA(a5),d0
 	cmp.w #39,d7
 	bcs.w .notablet
 	btst #MH_TABLET,d0
@@ -1877,85 +2110,78 @@ mhloop
 	move.b #3,5(a2) ;ie_SubClass = IESUBCLASS_NEWTABLET
 	clr.l (a0) ;ient_CallBack
 	clr.l 4(a0)
-	clr.w 6(a2) ;ie_Code
 	clr.l 8(a0)
 	clr.w 12(a0)
 
-	;IEQUALIFIER_MIDBUTTON=0x1000/IEQUALIFIER_RBUTTON=0x2000/IEQUALIFIER_LEFTBUTTON=0x4000
-	move.l mh_buttonbits(pc),d1
-	and.w #7,d1
-	moveq #7,d0
-	sub.w d1,d0
-	lsl.w #8,d0
-	lsl.w #4,d0
-	move.w d0,8(a2) ;ie_Qualifier
+	clr.w 6(a2) ;ie_Code
+	bsr.w buttonstoqual
 
-	move.w mh_x(pc),12+2(a0) ;ient_TabletX
+	move.w MH_X+MH_DATA(a5),12+2(a0) ;ient_TabletX
 	clr.w 16(a0)
-	move.w mh_y(pc),16+2(a0) ;ient_TabletY
+	move.w MH_Y++MH_DATA(a5),16+2(a0) ;ient_TabletY
 	clr.w 20(a0)
-	move.w mh_maxx(pc),20+2(a0) ;ient_RangeX
+	move.w MH_MAXX+MH_DATA(a5),20+2(a0) ;ient_RangeX
 	clr.w 24(a0)
-	move.w mh_maxy(pc),24+2(a0) ;ient_RangeY
+	move.w MH_MAXY+MH_DATA(a5),24+2(a0) ;ient_RangeY
 	lea MH_IENTTAGS(a5),a1
 	move.l a1,28(a0) ;ient_TagList
 	move.l #TABLETA_Pressure,(a1)+
-	move.w mh_pressure(pc),d0
+	move.w MH_PRESSURE+MH_DATA(a5),d0
 	ext.l d0
 	asl.l #8,d0
 	move.l d0,(a1)+
 	move.l #TABLETA_ButtonBits,(a1)+
-	move.l mh_buttonbits(pc),(a1)+
+	move.l MH_BUTTONBITS+MH_DATA(a5),(a1)+
 	
 	moveq #0,d0
 
-	move.w mh_resx(pc),d0
+	move.w MH_RESX+MH_DATA(a5),d0
 	bmi.s .noresx
 	move.l #TABLETA_ResolutionX,(a1)+
 	move.l d0,(a1)+
 .noresx
-	move.w mh_resy(pc),d0
+	move.w MH_RESY+MH_DATA(a5),d0
 	bmi.s .noresy
 	move.l #TABLETA_ResolutionY,(a1)+
 	move.l d0,(a1)+
 .noresy
 
-	move.w mh_maxz(pc),d0
+	move.w MH_MAXZ+MH_DATA(a5),d0
 	bmi.s .noz
 	move.l #TABLETA_RangeZ,(a1)+
 	move.l d0,(a1)+
-	move.w mh_z(pc),d0
+	move.w MH_Z+MH_DATA(a5),d0
 	move.l #TABLETA_TabletZ,(a1)+
 	move.l d0,(a1)+
 .noz
 
-	move.w mh_maxax(pc),d0
+	move.w MH_MAXAX+MH_DATA(a5),d0
 	bmi.s .noax
 	move.l #TABLETA_AngleX,(a1)+
-	move.w mh_ax(pc),d0
+	move.w MH_AX+MH_DATA(a5),d0
 	ext.l d0
 	asl.l #8,d0
 	move.l d0,(a1)+
 .noax
-	move.w mh_maxay(pc),d0
+	move.w MH_MAXAY+MH_DATA(a5),d0
 	bmi.s .noay
 	move.l #TABLETA_AngleY,(a1)+
-	move.w mh_ay(pc),d0
+	move.w MH_AY+MH_DATA(a5),d0
 	ext.l d0
 	asl.l #8,d0
 	move.l d0,(a1)+
 .noay
-	move.w mh_maxaz(pc),d0
+	move.w MH_MAXAZ+MH_DATA(a5),d0
 	bmi.s .noaz
 	move.l #TABLETA_AngleZ,(a1)+
-	move.w mh_az(pc),d0
+	move.w MH_AZ+MH_DATA(a5),d0
 	ext.l d0
 	asl.l #8,d0
 	move.l d0,(a1)+
 .noaz
 	
 	moveq #0,d0
-	move.w mh_inproximity(pc),d0
+	move.w MH_INPROXIMITY+MH_DATA(a5),d0
 	bmi.s .noproxi
 	move.l #TABLETA_InProximity,(a1)+
 	move.l d0,(a1)+
@@ -1967,7 +2193,7 @@ mhloop
 	;create mouse button events if button state changed
 	move.w #$68,d3 ;IECODE_LBUTTON->IECODE_RBUTTON->IECODE_MBUTTON
 	moveq #1,d2
-	move.l mh_buttonbits(pc),d4
+	move.l MH_BUTTONBITS+MH_DATA(a5),d4
 .nextbut
 	move.l d4,d0
 	and.l d2,d0
@@ -1998,18 +2224,18 @@ mhloop
 
 .notablet
 
-	move.b mh_e(pc),d0
+	move.b MH_E+MH_DATA(a5),d0
 	btst #MH_MOUSEHACK,d0
 	beq.w mhloop
 
 	clr.l (a2)
 	move.w #$0400,4(a2) ;IECLASS_POINTERPOS
 	clr.w 6(a2) ;ie_Code
-	clr.w 8(a2) ;ie_Qualifier
+	bsr.w buttonstoqual
 
 	move.l MH_FOO_INTBASE(a3),a0
 
-	move.w mh_absx(pc),d0
+	move.w MH_ABSX+MH_DATA(a5),d0
 	move.w 34+14(a0),d1
 	add.w d1,d1
 	sub.w d1,d0
@@ -2018,7 +2244,7 @@ mhloop
 .xn
 	move.w d0,10(a2)
 
-	move.w mh_absy(pc),d0
+	move.w MH_ABSY+MH_DATA(a5),d0
 	move.w 34+12(a0),d1
 	add.w d1,d1
 	sub.w d1,d0
@@ -2034,12 +2260,31 @@ mhloop
 mhend
 	rts
 
+buttonstoqual:
+	;IEQUALIFIER_MIDBUTTON=0x1000/IEQUALIFIER_RBUTTON=0x2000/IEQUALIFIER_LEFTBUTTON=0x4000
+	move.l MH_BUTTONBITS+MH_DATA(a5),d1
+	moveq #0,d0
+	btst #0,d1
+	beq.s .btq1
+	bset #14,d0
+.btq1:
+	btst #1,d1
+	beq.s .btq2
+	bset #13,d0
+.btq2:
+	btst #2,d1
+	beq.s .btq3
+	bset #12,d0
+.btq3:
+	move.w d0,8(a2) ;ie_Qualifier
+	rts
+
 mousehackint:
 	tst.l MH_IO(a1)
 	beq.s .l1
 	tst.l MH_TM(a1)
 	beq.s .l1
-	move.w mh_cnt(pc),d0
+	move.w MH_CNT+MH_DATA(a1),d0
 	cmp.w MH_FOO+MH_FOO_CNT(a1),d0
 	beq.s .l2
 	move.w d0,MH_FOO+MH_FOO_CNT(a1)
@@ -2481,7 +2726,209 @@ chook:
 	movem.l (sp)+,d0-d1/a0
 	rts
 
+debuggerstart
+	move.l 4.w,a6
+	lea debuggerprocname(pc),a0
+	lea debuggerproc(pc),a1
+	moveq #15,d0
+	move.l #8000,d1
+	bsr.w createproc
+	rts
+	cnop 0,4
+	dc.l 16
+debuggerproc
+	dc.l 0
+	move.l 4.w,a6
+	moveq #0,d0
+	lea doslibname(pc),a1
+	jsr -$0228(a6) ; OpenLibrary
+	moveq #2,d1
+	move.w #$FF3C,d0
+	bsr.w getrtbase
+	move.l a0,a2
+	moveq #1,d1
+	jsr (a0) ; debugger init
+	tst.l d1
+	beq.s .dend
+	move.l d1,a3
+	jsr -$1f8(a6) ; RunCommand
+	moveq #2,d1
+	move.l a3,a0
+	jsr (a2) ; debugger end
+.dend
+	move.l a6,a1
+	move.l 4.w,a6
+	jsr -$19e(a6)
+	rts
 
+bootres_code:
+	
+	rts
+
+; KS 1.1 and older don't have expansion.library
+; emulate missing functions
+
+makedosnode:
+	cmp.w #0,a6
+	beq.s makedosnodec
+	jsr -144(a6) ; MakeDosNode()
+	rts
+makedosnodec
+	movem.l d2-d7/a2-a6,-(sp)
+	move.l a0,a2
+	move.l 4.w,a6
+	move.l #44+16+4*17+128,d0
+	move.l #65536+1,d1
+	jsr -$c6(a6)
+	move.l d0,a3 ;devicenode
+	lea 44(a3),a4 ;fssm
+	lea 16(a4),a5 ;environ
+	lea 4*17(a5),a6
+
+	move.l a5,a1
+	lea 4*4(a2),a0
+	moveq #17-1,d0
+.cenv
+	move.l (a0)+,(a1)+
+	dbf d0,.cenv
+
+	move.l a6,a0
+	move.l (a2),a1
+	addq.l #1,a0
+.copy1
+	move.b (a1)+,(a0)+
+	bne.s .copy1
+	move.l a0,d0
+	addq.l #3,d0
+	and.b #~3,d0
+	move.l d0,d6
+	move.l a0,d0
+	subq.l #2,d0
+	sub.l a6,d0
+	move.b d0,(a6)
+
+	move.l d6,a0
+	move.l 1*4(a2),a1
+	addq.l #1,a0
+.copy2
+	move.b (a1)+,(a0)+
+	bne.s .copy2
+	move.l a0,d0
+	subq.l #2,d0
+	sub.l d6,d0
+	move.l d6,a0
+	move.b d0,(a0)
+
+	move.l 2*4(a2),(a4) ;fssm_unit
+	move.l d6,d0
+	lsr.l #2,d0
+	move.l d0,4(a4) ;fssm_device
+	lea 4*4(a2),a0
+	move.l a5,d0
+	lsr.l #2,d0
+	move.l d0,8(a4) ;fssm_Environ
+	move.l 3*4(a2),12(a4) ;fssm_flags
+
+	move.l a4,d0
+	lsr.l #2,d0
+	move.l d0,28(a3) ;dn_startup
+	move.l a6,d0
+	lsr.l #2,d0
+	move.l d0,40(a3) ;dn_name
+	moveq #10,d0
+	move.l d0,24(a3) ;dn_priority
+	move.l #4000,20(a3) ;dn_stack
+	
+	move.l a3,d0
+	
+	movem.l (sp)+,d2-d7/a2-a6
+	rts
+
+adddosnode:
+	;d0 = bootpri
+	;d1 = flags
+	;a0 = devicenode
+	cmp.w #0,a6
+	beq.s adddosnodec
+	jsr  -150(a6) ; AddDosNode
+	rts
+adddosnodec
+	movem.l d2-d4/a2-a6,-(sp)
+	move.l a0,a2
+	move.l 4.w,a6
+	lea doslibname(pc),a1
+	jsr -$0198(a6) ; OldOpenLibrary
+	move.l d0,a5
+
+	move.l 34(a5),a0 ;dl_root
+	move.l 24(a0),d0 ;rn_info
+	lsl.l #2,d0
+	move.l d0,a3 ;dosinfo
+	
+	move.l 4(a3),(a2)
+	move.l a2,d0
+	lsr.l #2,d0
+	move.l d0,4(a3)
+
+	move.l a5,a1
+	move.l 4.w,a6
+	jsr -$019e(a6); CloseLibrary
+	movem.l (sp)+,d2-d4/a2-a6
+	rts
+
+	;wrap BCPL filesystem call to non-BCPL filesystem
+	;d1 = dospacket that BCPL entry point fetched
+	;We need to put dospacket back in the pr_MsgPort.
+
+	cnop 0,4
+	dc.l (bcplwrapper_end-bcplwrapper_start)/4+1
+bcplwrapper:
+	dc.l 0
+	dc.l (bcplwrapper_end-bcplwrapper_start)/4+1
+bcplwrapper_start:
+	move.l d1,d2
+	move.l 4.w,a6
+	sub.l a1,a1
+	jsr -$126(a6) ;FindTask
+	move.l d0,a0
+	lea 92(a0),a0 ;pr_MsgPort
+	lsl.l #2,d2
+	move.l d2,a1
+	move.l (a1),a1 ;dp_Link = Message
+	jsr -$16e(a6) ;PutMsg
+	move.l d2,d1
+	lea wb13ffspatches(pc),a1
+	move.w #$FF2C,d0
+	bsr.w getrtbase
+	jsr (a0)
+	jmp (a0)
+	;CopyMem() patches
+wb13ffspatches:
+	moveq #$30,d0
+	bra.s copymem
+	moveq #$28,d0
+	bra.s copymem
+	move.l d6,d0
+	bra.s copymem
+	move.l d6,d0
+copymem:
+	move.b (a0)+,(a1)+
+	subq.l #1,d0
+	bgt.s copymem
+	rts	
+
+	cnop 0,4
+	dc.l 0
+	dc.l 1
+	dc.l 4
+	dc.l 2
+bcplwrapper_end:
+
+getrtbase:
+	lea start-8-4(pc),a0
+	and.l #$FFFF,d0
+	add.l d0,a0
+	rts
 
 inp_dev: dc.b 'input.device',0
 tim_dev: dc.b 'timer.device',0
@@ -2495,13 +2942,19 @@ clip_dev: dc.b 'clipboard.device',0
 pointer_prefs: dc.b 'RAM:Env/Sys/Pointer.prefs',0
 clname: dc.b 'UAE clipboard sharing',0
 mhname: dc.b 'UAE mouse driver',0
+kaname: dc.b 'UAE heart beat',0
 exter_name: dc.b 'UAE filesystem',0
 fstaskname: dc.b 'UAE fs automounter',0
 fsprocname: dc.b 'UAE fs automount process',0
+debuggerprocname: dc.b 'UAE debugger',0
 doslibname: dc.b 'dos.library',0
 intlibname: dc.b 'intuition.library',0
 gfxlibname: dc.b 'graphics.library',0
 explibname: dc.b 'expansion.library',0
 fsresname: dc.b 'FileSystem.resource',0
 fchipname: dc.b 'megachip memory',0
+bcplfsname: dc.b "File System",0
+	even
+rom_end:
+
 	END

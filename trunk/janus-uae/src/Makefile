@@ -54,7 +54,7 @@ RELEASEDIR = $(HOME)/tc/releases
 HOST_CC    = gcc
 
 # suppress warning: deprecated conversion from string constant to ‘char*’
-FLAGS      = -Wno-write-strings -O2 #-Wall
+FLAGS      = -Wno-write-strings -O2 #-Wall 
 DEBUGFLAGS = -g
 
 CDEFS   =
@@ -77,7 +77,7 @@ tools: genblitter build68k gencpu gencomp genlinetoscr
 HOST_CC   =gcc
 HOST_CPP  =g++
 HOST_INCLUDES=-Iod-aros
-HOST_FLAGS=$(DEBUGFLAGS) $(HOST_INCLUDES) -Wall
+HOST_FLAGS=$(DEBUGFLAGS) $(HOST_INCLUDES) -DCROSS_COMPILE -Wall -Wno-switch  -fpermissive
 LDFLAGS   =
 
 %.o: %.c
@@ -85,11 +85,6 @@ LDFLAGS   =
 
 %.o: %.cpp
 	$(HOST_CPP) $(HOST_FLAGS) $(INCLUDES) -o $@ -c $*.cpp  
-
-# needing AROS cpu.h for 64-bit detection
-#incs: 
-	#@rm -f aros
-	#ln -s $(HOME)/svn/$(ABI)/AROS/bin/linux-$(CPU)/gen/include/aros
 
 GENBLITTER_OBJS=genblitter.o blitops.o
 genblitter: $(GENBLITTER_OBJS)
@@ -100,7 +95,7 @@ build68k: $(BUILD68K_OBJS)
 	$(HOST_CPP) -Wall $(BUILD68K_OBJS) -o build68k
 
 #GENCPU_OBJS=gencpu.o missing.o readcpu.o unix_missing.o cpudefs.o od-aros/unicode.o 
-GENCPU_OBJS=gencpu.o missing.o host_readcpu.o cpudefs.o 
+GENCPU_OBJS=gencpu.o host_readcpu.o cpudefs.o missing.o
 gencpu: $(GENCPU_OBJS)
 	$(HOST_CPP) -Wall $(GENCPU_OBJS) -o gencpu
 
