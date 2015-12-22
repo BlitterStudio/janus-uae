@@ -6,8 +6,11 @@
   * Copyright 1997, 2001 Bernd Schmidt
   */
 
-#ifndef __COMMPIPE_H__
-#define __COMMPIPE_H__
+#ifndef UAE_COMMPIPE_H
+#define UAE_COMMPIPE_H
+
+#include "uae/types.h"
+
 typedef union {
     int i;
     uae_u32 u32;
@@ -66,64 +69,51 @@ STATIC_INLINE void write_comm_pipe_pt (smp_comm_pipe *p, uae_pt data, int no_buf
 {
     int nxwrp = (p->wrp + 1) % p->size;
 
-    //DebOut("write_comm_pipe_pt: entered (smp_comm_pipe %lx, data %lx, no_buffer %d)\n", p, data, no_buffer);
-
     if (p->reader_waiting) {
-      /* No need to do all the locking */
-      p->data[p->wrp] = data;
-      p->wrp = nxwrp;
-      maybe_wake_reader (p, no_buffer);
-      return;
+	/* No need to do all the locking */
+	p->data[p->wrp] = data;
+	p->wrp = nxwrp;
+	maybe_wake_reader (p, no_buffer);
+	return;
     }
-
-    //DebOut("write_comm_pipe_pt: 2..\n");
 
     uae_sem_wait (&p->lock);
     if (nxwrp == p->rdp) {
-      //DebOut("write_comm_pipe_pt: full ..\n");
-      /* Pipe full! */
-      p->writer_waiting = 1;
-      uae_sem_post (&p->lock);
-      /* Note that the reader could get in between here and do a
-        * sem_post on writer_wait before we wait on it. That's harmless.
-        * There's a similar case in read_comm_pipe_int_blocking. */
-      uae_sem_wait (&p->writer_wait);
-      uae_sem_wait (&p->lock);
+	/* Pipe full! */
+	p->writer_waiting = 1;
+	uae_sem_post (&p->lock);
+	/* Note that the reader could get in between here and do a
+	 * sem_post on writer_wait before we wait on it. That's harmless.
+	 * There's a similar case in read_comm_pipe_int_blocking. */
+	uae_sem_wait (&p->writer_wait);
+	uae_sem_wait (&p->lock);
     }
-    //DebOut("write_comm_pipe_pt: 3..\n");
     p->data[p->wrp] = data;
     p->wrp = nxwrp;
     maybe_wake_reader (p, no_buffer);
     uae_sem_post (&p->lock);
-    //DebOut("write_comm_pipe_pt: done\n");
 }
 
 STATIC_INLINE uae_pt read_comm_pipe_pt_blocking (smp_comm_pipe *p)
 {
     uae_pt data;
 
-    //DebOut("entered(p %lx)\n", p);
-
     uae_sem_wait (&p->lock);
-    //DebOut("got semaphore\n");
     if (p->rdp == p->wrp) {
-      p->reader_waiting = 1;
-      uae_sem_post (&p->lock);
-      uae_sem_wait (&p->reader_wait);
-      uae_sem_wait (&p->lock);
+	p->reader_waiting = 1;
+	uae_sem_post (&p->lock);
+	uae_sem_wait (&p->reader_wait);
+	uae_sem_wait (&p->lock);
     }
-    //DebOut("got lock and reader_wait\n");
     data = p->data[p->rdp];
     p->rdp = (p->rdp + 1) % p->size;
 
     /* We ignore chunks here. If this is a problem, make the size bigger in the init call. */
     if (p->writer_waiting) {
-      p->writer_waiting = 0;
-      //DebOut("released writer_wait\n");
-      uae_sem_post (&p->writer_wait);
+	p->writer_waiting = 0;
+	uae_sem_post (&p->writer_wait);
     }
     uae_sem_post (&p->lock);
-    //DebOut("released lock\n");
     return data;
 }
 
@@ -160,7 +150,6 @@ STATIC_INLINE void write_comm_pipe_u32 (smp_comm_pipe *p, int data, int no_buffe
 {
     uae_pt foo;
     foo.u32 = data;
-    //DebOut("write_comm_pipe_u32: entered (smp_comm_pipe %lx, data %d, no_buffer %d)\n", p, data, no_buffer);
     write_comm_pipe_pt (p, foo, no_buffer);
 }
 
@@ -171,5 +160,4 @@ STATIC_INLINE void write_comm_pipe_pvoid (smp_comm_pipe *p, void *data, int no_b
     write_comm_pipe_pt (p, foo, no_buffer);
 }
 
-#endif /* __COMMPIPE_H__ */
-
+#endif /* UAE_COMMPIPE_H */

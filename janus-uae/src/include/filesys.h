@@ -6,8 +6,10 @@
   * Copyright 1997 Bernd Schmidt
   */
 
-#ifndef FILESYS_H
-#define FILESYS_H
+#ifndef UAE_FILESYS_H
+#define UAE_FILESYS_H
+
+#include "uae/types.h"
 
 struct hardfilehandle;
 
@@ -39,7 +41,6 @@ struct hardfiledata {
     TCHAR vendor_id[8 + 1];
     TCHAR product_id[16 + 1];
     TCHAR product_rev[4 + 1];
-    TCHAR device_name[256];
     /* geometry from possible RDSK block */
     int rdbcylinders;
     int rdbsectors;
@@ -71,6 +72,7 @@ struct hardfiledata {
 	struct uaedev_config_info delayedci;
 	int reinsertdelay;
 	bool isreinsert;
+	bool unit_stopped;
 };
 
 #define HFD_FLAGS_REALDRIVE 1
@@ -88,20 +90,26 @@ struct hd_hardfiledata {
     int ansi_version;
 };
 
-#define HD_CONTROLLER_UAE 0
-#define HD_CONTROLLER_IDE0 1
-#define HD_CONTROLLER_IDE1 2
-#define HD_CONTROLLER_IDE2 3
-#define HD_CONTROLLER_IDE3 4
-#define HD_CONTROLLER_SCSI0 5
-#define HD_CONTROLLER_SCSI1 6
-#define HD_CONTROLLER_SCSI2 7
-#define HD_CONTROLLER_SCSI3 8
-#define HD_CONTROLLER_SCSI4 9
-#define HD_CONTROLLER_SCSI5 10
-#define HD_CONTROLLER_SCSI6 11
-#define HD_CONTROLLER_PCMCIA_SRAM 12
-#define HD_CONTROLLER_PCMCIA_IDE 13
+#define HD_CONTROLLER_EXPANSION_MAX 50
+#define HD_CONTROLLER_NEXT_UNIT 200
+
+#define HD_CONTROLLER_TYPE_UAE 0
+#define HD_CONTROLLER_TYPE_IDE_AUTO (HD_CONTROLLER_TYPE_UAE + 1)
+#define HD_CONTROLLER_TYPE_IDE_FIRST (HD_CONTROLLER_TYPE_IDE_AUTO)
+#define HD_CONTROLLER_TYPE_IDE_MB (HD_CONTROLLER_TYPE_IDE_FIRST + 1)
+#define HD_CONTROLLER_TYPE_IDE_EXPANSION_FIRST (HD_CONTROLLER_TYPE_IDE_MB + 1)
+#define HD_CONTROLLER_TYPE_IDE_LAST (HD_CONTROLLER_TYPE_IDE_EXPANSION_FIRST + HD_CONTROLLER_EXPANSION_MAX - 1)
+
+#define HD_CONTROLLER_TYPE_SCSI_AUTO (HD_CONTROLLER_TYPE_IDE_LAST + 1)
+#define HD_CONTROLLER_TYPE_SCSI_FIRST (HD_CONTROLLER_TYPE_SCSI_AUTO)
+#define HD_CONTROLLER_TYPE_SCSI_A3000 (HD_CONTROLLER_TYPE_SCSI_FIRST + 1)
+#define HD_CONTROLLER_TYPE_SCSI_A4000T (HD_CONTROLLER_TYPE_SCSI_A3000 + 1)
+#define HD_CONTROLLER_TYPE_SCSI_CDTV (HD_CONTROLLER_TYPE_SCSI_A4000T + 1)
+#define HD_CONTROLLER_TYPE_SCSI_EXPANSION_FIRST (HD_CONTROLLER_TYPE_SCSI_CDTV + 1)
+#define HD_CONTROLLER_TYPE_SCSI_LAST (HD_CONTROLLER_TYPE_SCSI_EXPANSION_FIRST + HD_CONTROLLER_EXPANSION_MAX - 1)
+
+#define HD_CONTROLLER_TYPE_PCMCIA_SRAM (HD_CONTROLLER_TYPE_SCSI_LAST + 1)
+#define HD_CONTROLLER_TYPE_PCMCIA_IDE (HD_CONTROLLER_TYPE_PCMCIA_SRAM + 1)
 
 #define FILESYS_VIRTUAL 0
 #define FILESYS_HARDFILE 1
@@ -131,6 +139,7 @@ extern int get_native_path(uae_u32 lock, TCHAR *out);
 extern void hardfile_do_disk_change (struct uaedev_config_data *uci, bool insert);
 extern void hardfile_send_disk_change (struct hardfiledata *hfd, bool insert);
 extern int hardfile_media_change (struct hardfiledata *hfd, struct uaedev_config_info *ci, bool inserted, bool timer);
+extern int hardfile_added (struct uaedev_config_info *ci);
 
 void hdf_hd_close(struct hd_hardfiledata *hfd);
 int hdf_hd_open(struct hd_hardfiledata *hfd);
@@ -149,4 +158,6 @@ extern void getchsgeometry (uae_u64 size, int *pcyl, int *phead, int *psectorspe
 extern void getchsgeometry_hdf (struct hardfiledata *hfd, uae_u64 size, int *pcyl, int *phead, int *psectorspertrack);
 extern void getchspgeometry (uae_u64 total, int *pcyl, int *phead, int *psectorspertrack, bool idegeometry);
 
-#endif /* MEMORY_H */
+void add_cpuboard_unit(int unit, struct uaedev_config_info *uci, struct romconfig *rc);
+
+#endif /* UAE_FILESYS_H */

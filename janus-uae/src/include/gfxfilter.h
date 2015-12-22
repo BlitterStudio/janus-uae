@@ -1,3 +1,7 @@
+#ifndef UAE_GFXFILTER_H
+#define UAE_GFXFILTER_H
+
+#include "uae/types.h"
 
 #ifdef GFXFILTER
 
@@ -7,7 +11,7 @@ typedef unsigned long u32;
 
 extern void S2X_refresh (void);
 extern void S2X_render (void);
-extern void S2X_init (int dw, int dh, int aw, int ah, int ad, int dd);
+extern bool S2X_init (int dw, int dh, int dd);
 extern void S2X_reset (void);
 extern void S2X_free (void);
 extern int S2X_getmult (void);
@@ -70,7 +74,7 @@ extern "C"
 struct uae_filter
 {
     int type, yuv, intmul;
-    TCHAR *name, *cfgname;
+    const TCHAR *name, *cfgname;
     int flags;
 };
 
@@ -78,9 +82,17 @@ extern struct uae_filter uaefilters[];
 extern struct uae_filter *usedfilter;
 
 void getfilterrect2 (RECT *sr, RECT *dr, RECT *zr, int dst_width, int dst_height, int aw, int ah, int scale, int temp_width, int temp_height);
-void getfilteroffset (int *dx, int *dy, int *mx, int *my);
-uae_u8 *getfilterbuffer (int *widthp, int *heightp, int *pitch, int *depth);
+void getfilteroffset (float *dx, float *dy, float *mx, float *my);
 uae_u8 *getfilterbuffer3d (int *widthp, int *heightp, int *pitch, int *depth);
 
+uae_u8 *getfilterbuffer (int *widthp, int *heightp, int *pitch, int *depth);
+void freefilterbuffer(uae_u8*);
+
+uae_u8 *getrtgbuffer (int *widthp, int *heightp, int *pitch, int *depth, uae_u8 *palette);
+void freertgbuffer (uae_u8 *dst);
+
 extern void getrtgfilterrect2 (RECT *sr, RECT *dr, RECT *zr, int dst_width, int dst_height);
-#endif
+
+#endif /* GFXFILTER */
+
+#endif /* UAE_GFXFILTER_H */

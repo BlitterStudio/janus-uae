@@ -7,6 +7,11 @@
   * Copyright 2001-2002 Toni Wilen
   */
 
+#ifndef UAE_INPUTDEVICE_H
+#define UAE_INPUTDEVICE_H
+
+#include "uae/types.h"
+
 #define DIR_LEFT_BIT 0
 #define DIR_RIGHT_BIT 1
 #define DIR_UP_BIT 2
@@ -88,23 +93,23 @@ struct inputevent {
 #define ID_FLAG_GAMEPORTSCUSTOM_MASK (ID_FLAG_GAMEPORTSCUSTOM1 | ID_FLAG_GAMEPORTSCUSTOM2)
 #define ID_FLAG_AUTOFIRE_MASK (ID_FLAG_TOGGLE | ID_FLAG_INVERTTOGGLE | ID_FLAG_AUTOFIRE)
 
-#define ID_FLAG_QUALIFIER1          0x000000100000000LL
-#define ID_FLAG_QUALIFIER1_R        0x000000200000000LL
-#define ID_FLAG_QUALIFIER2          0x000000400000000LL
-#define ID_FLAG_QUALIFIER3          0x000001000000000LL
-#define ID_FLAG_QUALIFIER4          0x000004000000000LL
-#define ID_FLAG_QUALIFIER5          0x000010000000000LL
-#define ID_FLAG_QUALIFIER6          0x000040000000000LL
-#define ID_FLAG_QUALIFIER7          0x000100000000000LL
-#define ID_FLAG_QUALIFIER8          0x000400000000000LL
-#define ID_FLAG_QUALIFIER_SPECIAL   0x001000000000000LL
-#define ID_FLAG_QUALIFIER_SPECIAL_R 0x002000000000000LL
-#define ID_FLAG_QUALIFIER_SHIFT     0x004000000000000LL
-#define ID_FLAG_QUALIFIER_CONTROL   0x010000000000000LL
-#define ID_FLAG_QUALIFIER_ALT       0x040000000000000LL
-#define ID_FLAG_QUALIFIER_WIN       0x100000000000000LL
-#define ID_FLAG_QUALIFIER_MASK      0xfffffff00000000LL
-#define ID_FLAG_QUALIFIER_MASK_R    0xaaaaaaa00000000LL
+#define ID_FLAG_QUALIFIER1          0x000000100000000ULL
+#define ID_FLAG_QUALIFIER1_R        0x000000200000000ULL
+#define ID_FLAG_QUALIFIER2          0x000000400000000ULL
+#define ID_FLAG_QUALIFIER3          0x000001000000000ULL
+#define ID_FLAG_QUALIFIER4          0x000004000000000ULL
+#define ID_FLAG_QUALIFIER5          0x000010000000000ULL
+#define ID_FLAG_QUALIFIER6          0x000040000000000ULL
+#define ID_FLAG_QUALIFIER7          0x000100000000000ULL
+#define ID_FLAG_QUALIFIER8          0x000400000000000ULL
+#define ID_FLAG_QUALIFIER_SPECIAL   0x001000000000000ULL
+#define ID_FLAG_QUALIFIER_SPECIAL_R 0x002000000000000ULL
+#define ID_FLAG_QUALIFIER_SHIFT     0x004000000000000ULL
+#define ID_FLAG_QUALIFIER_CONTROL   0x010000000000000ULL
+#define ID_FLAG_QUALIFIER_ALT       0x040000000000000ULL
+#define ID_FLAG_QUALIFIER_WIN       0x100000000000000ULL
+#define ID_FLAG_QUALIFIER_MASK      0xfffffff00000000ULL
+#define ID_FLAG_QUALIFIER_MASK_R    0xaaaaaaa00000000ULL
 
 #define ID_FLAG_SAVE_MASK_CONFIG 0x000001ff
 #define ID_FLAG_SAVE_MASK_QUALIFIERS ID_FLAG_QUALIFIER_MASK
@@ -126,20 +131,20 @@ struct inputevent {
 #define IDEV_MAPPED_SET_ONOFF 128
 #define IDEV_MAPPED_SET_ONOFF_VAL 256
 
-#define IDEV_MAPPED_QUALIFIER1          0x000000100000000LL
-#define IDEV_MAPPED_QUALIFIER2          0x000000400000000LL
-#define IDEV_MAPPED_QUALIFIER3          0x000001000000000LL
-#define IDEV_MAPPED_QUALIFIER4          0x000004000000000LL
-#define IDEV_MAPPED_QUALIFIER5          0x000010000000000LL
-#define IDEV_MAPPED_QUALIFIER6          0x000040000000000LL
-#define IDEV_MAPPED_QUALIFIER7          0x000100000000000LL
-#define IDEV_MAPPED_QUALIFIER8          0x000400000000000LL
-#define IDEV_MAPPED_QUALIFIER_SPECIAL   0x001000000000000LL
-#define IDEV_MAPPED_QUALIFIER_SHIFT     0x004000000000000LL
-#define IDEV_MAPPED_QUALIFIER_CONTROL   0x010000000000000LL
-#define IDEV_MAPPED_QUALIFIER_ALT       0x040000000000000LL
-#define IDEV_MAPPED_QUALIFIER_WIN       0x100000000000000LL
-#define IDEV_MAPPED_QUALIFIER_MASK      0xfffffff00000000LL
+#define IDEV_MAPPED_QUALIFIER1          0x000000100000000ULL
+#define IDEV_MAPPED_QUALIFIER2          0x000000400000000ULL
+#define IDEV_MAPPED_QUALIFIER3          0x000001000000000ULL
+#define IDEV_MAPPED_QUALIFIER4          0x000004000000000ULL
+#define IDEV_MAPPED_QUALIFIER5          0x000010000000000ULL
+#define IDEV_MAPPED_QUALIFIER6          0x000040000000000ULL
+#define IDEV_MAPPED_QUALIFIER7          0x000100000000000ULL
+#define IDEV_MAPPED_QUALIFIER8          0x000400000000000ULL
+#define IDEV_MAPPED_QUALIFIER_SPECIAL   0x001000000000000ULL
+#define IDEV_MAPPED_QUALIFIER_SHIFT     0x004000000000000ULL
+#define IDEV_MAPPED_QUALIFIER_CONTROL   0x010000000000000ULL
+#define IDEV_MAPPED_QUALIFIER_ALT       0x040000000000000ULL
+#define IDEV_MAPPED_QUALIFIER_WIN       0x100000000000000ULL
+#define IDEV_MAPPED_QUALIFIER_MASK      0xfffffff00000000ULL
 
 #define SET_ONOFF_ON_VALUE  0x7fffff01
 #define SET_ONOFF_OFF_VALUE 0x7fffff00
@@ -195,7 +200,7 @@ extern int input_get_default_keyboard (int num);
 #define DEFEVENT(A, B, C, D, E, F) INPUTEVENT_ ## A,
 enum inputevents {
 INPUTEVENT_ZERO,
-#include "inputevents.def"
+#include "../inputevents.def"
 INPUTEVENT_END
 };
 #undef DEFEVENT
@@ -214,6 +219,8 @@ extern int inputdevice_is_tablet (void);
 extern int input_mousehack_status (int mode, uaecptr diminfo, uaecptr dispinfo, uaecptr vp, uae_u32 moffset);
 extern void input_mousehack_mouseoffset (uaecptr pointerprefs);
 extern int mousehack_alive (void);
+extern void mousehack_wakeup(void);
+extern void mousehack_write(int reg, uae_u16 val);
 extern void setmouseactive (int);
 extern bool ismouseactive (void);
 
@@ -278,7 +285,8 @@ extern void inputdevice_close (void);
 extern void inputdevice_default_prefs (struct uae_prefs *p);
 
 extern void inputdevice_acquire (int allmode);
-extern void inputdevice_unacquire (void);
+extern void inputdevice_unacquire(void);
+extern void inputdevice_unacquire(bool emulationactive, int inputmask);
 
 extern void indicator_leds (int num, int state);
 
@@ -334,3 +342,6 @@ extern int inputdevice_istest (void);
 extern void inputdevice_settest (int);
 extern int inputdevice_testread_count (void);
 
+extern bool target_can_autoswitchdevice(void);
+
+#endif /* UAE_INPUTDEVICE_H */

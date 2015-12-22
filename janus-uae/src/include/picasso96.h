@@ -1,11 +1,22 @@
+#ifndef UAE_PICASSO96_H
+#define UAE_PICASSO96_H
+
+#include "uae/types.h"
+#include "traps.h"
+
+void picasso96_alloc (TrapContext* ctx);
+uae_u32 picasso_demux (uae_u32 arg, TrapContext *ctx);
+
+#ifdef __AROS__
+extern void init_hz_p96 (void);
+extern void picasso_reset (void);
+#include "picasso96_aros.h"
+
+#else
 
 #ifdef WIN32
 
 #include "picasso96_win.h"
-
-#elif defined __AROS__
-
-#include "picasso96_aros.h"
 
 #else
 /*
@@ -98,6 +109,7 @@ struct PicassoResolution
 extern struct PicassoResolution DisplayModes[MAX_PICASSO_MODES];
 
 
+#if 0
 /* Types for RGBFormat used */
 typedef enum {
     RGBFB_NONE,		/* no valid RGB format (should not happen) */
@@ -157,6 +169,9 @@ typedef enum {
 #define RGBMASK_15BIT (RGBFF_R5G5B5PC | RGBFF_B5G5R5PC | RGBFF_R5G5B5)
 #define RGBMASK_24BIT (RGBFF_R8G8B8 | RGBFF_B8G8R8)
 #define RGBMASK_32BIT (RGBFF_A8R8G8B8 | RGBFF_A8B8G8R8 | RGBFF_R8G8B8A8 | RGBFF_B8G8R8A8)
+#else
+#include "rtgmodes.h"
+#endif
 
 /************************************************************************/
 
@@ -204,6 +219,7 @@ struct CLUTEntry {
 #define PSSO_BitMap_Planes 8
 #define PSSO_BitMap_sizeof 40
 
+#ifndef __AROS__
 struct BitMap
 {
     uae_u16 BytesPerRow;
@@ -213,6 +229,7 @@ struct BitMap
     uae_u16 pad;
     uae_u8 *Planes[8];
 };
+#endif
 
 /************************************************************************/
 
@@ -484,7 +501,11 @@ struct BoardInfo {
 /************************************************************************/
 struct picasso96_state_struct
 {
+#ifndef __AROS__
     uae_u32		RGBFormat;   /* true-colour, CLUT, hi-colour, etc. */
+#else
+    RGBFTYPE		RGBFormat;   /* true-colour, CLUT, hi-colour, etc. */
+#endif
     struct MyCLUTEntry	CLUT[256];   /* Duh! */
     uaecptr		Address;     /* Active screen address (Amiga-side) */
     uaecptr		Extent;	     /* End address of screen (Amiga-side) */
@@ -500,6 +521,16 @@ struct picasso96_state_struct
     uae_u8		SwitchState; /* From SetSwitch() - 0 is Amiga, 1 is Picasso */
     uae_u8		BytesPerPixel;
     uae_u8		CardFound;
+#ifdef __AROS__
+    uae_u8    BigAssBitmap; /* Set to 1 when our Amiga screen is bigger than the displayable area */
+    unsigned int  Version;
+    uae_u8    *HostAddress; /* Active screen address (PC-side) */
+    // host address is need because Windows
+    // support NO direct access all the time to gfx Card
+    // everytime windows can remove your surface from card so the mainrender place
+    // must be in memory
+    long    XYOffset;
+#endif
 };
 
 extern void InitPicasso96 (void);
@@ -564,6 +595,7 @@ struct picasso_vidbuf_description {
 extern struct picasso_vidbuf_description picasso_vidinfo;
 
 extern void gfx_set_picasso_modeinfo (int w, int h, int d, int rgbfmt);
+extern void gfx_set_picasso_colors (RGBFTYPE rgbfmt);
 extern void gfx_set_picasso_baseaddr (uaecptr);
 extern void gfx_set_picasso_state (int on);
 extern uae_u8 *gfx_lock_picasso (void);
@@ -589,3 +621,7 @@ extern int p96refresh_active;
 #endif
 
 #endif
+
+#endif /* AROS */
+
+#endif /* UAE_PICASSO96_H */

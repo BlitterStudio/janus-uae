@@ -16,6 +16,9 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#ifndef UAE_EPSONPRINTER_H
+#define UAE_EPSONPRINTER_H
+
 #define Bit16u uae_u16
 #define Bit16s uae_s16
 #define Bit8u uae_u8
@@ -23,9 +26,6 @@
 #define Bitu uae_u32
 #define Bits uae_s32
 #define Bit32u uae_u32
-
-#if !defined __PRINTER_H
-#define __PRINTER_H
 
 #ifndef WINFONT
 #include "ft2build.h"
@@ -83,6 +83,4 @@ enum Typeface
 	svjittra = 31
 };
 
-
-
-#endif
+#endif /* UAE_EPSONPRINTER_H */

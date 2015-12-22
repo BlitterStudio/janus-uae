@@ -7,6 +7,11 @@
   * Copyright 1999 Bernd Schmidt
   */
 
+#ifndef UAE_FSDB_H
+#define UAE_FSDB_H
+
+#include "uae/types.h"
+
 #ifndef FSDB_FILE
 #define FSDB_FILE _T("_UAEFSDB.___")
 #endif
@@ -54,6 +59,15 @@
 #define A_FIBF_EXECUTE (1<<1)
 #define A_FIBF_DELETE  (1<<0)
 
+struct virtualfilesysobject
+{
+	int dir;
+	TCHAR *comment;
+	uae_u32 amigaos_mode;
+	uae_u8 *data;
+	int size;
+};
+
 /* AmigaOS "keys" */
 typedef struct a_inode_struct {
 #ifdef AINO_DEBUG
@@ -76,9 +90,9 @@ typedef struct a_inode_struct {
     uae_u32 uniq;
     /* For a directory that is being ExNext()ed, the number of child ainos
        which must be kept locked in core.  */
-    unsigned long locked_children;
+    unsigned int locked_children;
     /* How many ExNext()s are going on in this directory?  */
-    unsigned long exnext_count;
+    unsigned int exnext_count;
     /* AmigaOS locking bits.  */
     int shlock;
     long db_offset;
@@ -99,6 +113,7 @@ typedef struct a_inode_struct {
     /* not equaling unit.mountcount -> not in this volume */
     unsigned int mountcount;
 	uae_u64 uniq_external;
+	struct virtualfilesysobject *vfso;
 #ifdef AINO_DEBUG
     uae_u32 checksum2;
 #endif
@@ -162,8 +177,10 @@ extern bool my_chmod (const TCHAR *name, uae_u32 mode);
 extern bool my_resolveshortcut(TCHAR *linkfile, int size);
 extern bool my_resolvessymboliclink(TCHAR *linkfile, int size);
 extern bool my_resolvesoftlink(TCHAR *linkfile, int size);
+extern const TCHAR *my_getfilepart(const TCHAR *filename);
 extern void my_canonicalize_path(const TCHAR *path, TCHAR *out, int size);
 extern int my_issamevolume(const TCHAR *path1, const TCHAR *path2, TCHAR *path);
+extern bool my_issamepath(const TCHAR *path1, const TCHAR *path2);
 extern bool my_createsoftlink(const TCHAR *path, const TCHAR *target);
 extern bool my_createshortcut(const TCHAR *source, const TCHAR *target, const TCHAR *description);
 
@@ -180,3 +197,6 @@ extern int custom_fsdb_used_as_nname (a_inode *base, const TCHAR *nname);
 #define MYVOLUMEINFO_CDFS 16
 
 extern int my_getvolumeinfo (const TCHAR *root);
+extern bool myAddPart(TCHAR *dirname, const TCHAR *filename, ULONG size );
+
+#endif /* UAE_FSDB_H */

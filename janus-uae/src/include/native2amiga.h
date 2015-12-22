@@ -10,10 +10,12 @@
   * and some of it needs thread support.
   */
 
-#include "native2amiga_api.h"
+#ifndef UAE_NATIVE2AMIGA_H
+#define UAE_NATIVE2AMIGA_H
 
+#include "uae/types.h"
+#include "native2amiga_api.h"
 #include "traps.h"
-#include "commpipe.h"
 
 /*
  * The following functions are shortcuts for calling
@@ -22,8 +24,8 @@
  * function has to be setup with deftrap2() and
  * TRAPFLAG_EXTRA_STACK and stack magic is required.
  */
-uaecptr uae_AllocMem (TrapContext *context, uae_u32 size, uae_u32 flags);
-void uae_FreeMem (TrapContext *context, uaecptr memory, uae_u32 size);
+uaecptr uae_AllocMem (TrapContext *context, uae_u32 size, uae_u32 flags, uaecptr sysbase);
+void uae_FreeMem (TrapContext *context, uaecptr memory, uae_u32 size, uaecptr sysbase);
 
 
 /*
@@ -53,3 +55,5 @@ STATIC_INLINE void do_uae_int_requested (void)
     uae_int_requested |= 1;
     set_uae_int_flag ();
 }
+
+#endif /* UAE_NATIVE2AMIGA_H */

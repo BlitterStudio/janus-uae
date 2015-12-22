@@ -1,6 +1,3 @@
-#ifndef EVENTS_H
-#define EVENTS_H
-
  /*
   * UAE - The Un*x Amiga Emulator
   *
@@ -12,6 +9,11 @@
   * Copyright 1995-1998 Bernd Schmidt
   */
 
+#ifndef UAE_EVENTS_H
+#define UAE_EVENTS_H
+
+#include "uae/types.h"
+
 #undef EVENT_DEBUG
 
 #include "machdep/rpt.h"
@@ -22,6 +24,7 @@ extern void reset_frame_rate_hack (void);
 extern unsigned long int vsync_cycles;
 extern unsigned long start_cycles;
 extern int event2_count;
+extern bool event_wait;
 
 extern void compute_vsynctime (void);
 extern void init_eventtab (void);
@@ -66,7 +69,7 @@ enum {
 };
 
 extern int pissoff_value;
-extern signed long pissoff;
+extern uae_s32 pissoff;
 
 #define countdown pissoff
 #define do_cycles do_cycles_slow
@@ -152,5 +155,4 @@ STATIC_INLINE void event2_remevent (int no)
 	eventtab2[no].active = 0;
 }
 
-
-#endif
+#endif /* UAE_EVENTS_H */

@@ -4,6 +4,11 @@
 * Copyright 1996-1998 Bernd Schmidt
 */
 
+#ifndef UAE_DRAWING_H
+#define UAE_DRAWING_H
+
+#include "uae/types.h"
+
 #define SMART_UPDATE 1
 
 #ifdef SUPPORT_PENGUINS
@@ -43,8 +48,9 @@ before it appears on-screen. (TW: display emulation now does this automatically)
 #define min_diwlastword (0)
 #define max_diwlastword (PIXEL_XPOS(0x1d4 >> 1))
 
-extern int lores_factor, lores_shift, interlace_seen;
+extern int lores_shift, interlace_seen;
 extern bool aga_mode, direct_rgb;
+extern int visible_left_border, visible_right_border;
 
 STATIC_INLINE int coord_hw_to_window_x (int x)
 {
@@ -85,7 +91,7 @@ struct color_entry {
 	xcolnr acolors[256];
 	uae_u32 color_regs_aga[256];
 #endif
-	bool borderblank, bordersprite;
+	bool borderblank, borderntrans, bordersprite;
 };
 
 #ifdef AGA
@@ -285,8 +291,10 @@ extern bool draw_frame (struct vidbuffer*);
 extern int get_custom_limits (int *pw, int *ph, int *pdx, int *pdy, int *prealh);
 extern void store_custom_limits (int w, int h, int dx, int dy);
 extern void set_custom_limits (int w, int h, int dx, int dy);
+extern void check_custom_limits (void);
 extern void get_custom_topedge (int *x, int *y, bool max);
 extern void get_custom_raw_limits (int *pw, int *ph, int *pdx, int *pdy);
+void get_custom_mouse_limits (int *pw, int *ph, int *pdx, int *pdy, int dbl);
 extern void putpixel (uae_u8 *buf, int bpp, int x, xcolnr c8, int opaq);
 extern void allocvidbuffer (struct vidbuffer *buf, int width, int height, int depth);
 extern void freevidbuffer (struct vidbuffer *buf);
@@ -313,3 +321,5 @@ STATIC_INLINE void toggle_inhibit_frame (int bit)
 {
 	inhibit_frame ^= 1 << bit;
 }
+
+#endif /* UAE_DRAWING_H */

@@ -6,9 +6,10 @@
 * (c) 1995 Bernd Schmidt
 */
 
-#ifndef CUSTOM_H
-#define CUSTOM_H
+#ifndef UAE_CUSTOM_H
+#define UAE_CUSTOM_H
 
+#include "uae/types.h"
 #include "machdep/rpt.h"
 
 /* These are the masks that are ORed together in the chipset_mask option.
@@ -40,7 +41,7 @@ extern void do_copper (void);
 extern void notice_new_xcolors (void);
 extern void notice_screen_contents_lost (void);
 extern void init_row_map (void);
-extern void init_hz_full (void);
+extern void init_hz_normal (void);
 extern void init_custom (void);
 
 extern bool picasso_requested_on;
@@ -81,6 +82,7 @@ STATIC_INLINE int dmaen (unsigned int dmamask)
 #ifdef JIT
 #define SPCFLAG_END_COMPILE 16384
 #endif
+#define SPCFLAG_CHECK 32768
 
 extern uae_u16 adkcon;
 
@@ -128,6 +130,7 @@ extern int maxvpos, maxvpos_nom, maxvpos_display;
 extern int hsyncstartpos, hsyncendpos;
 extern int minfirstline, vblank_endline, numscrlines;
 extern double vblank_hz, fake_vblank_hz;
+extern double hblank_hz;
 extern int vblank_skip, doublescan;
 extern bool programmedmode;
 
@@ -231,8 +234,11 @@ uae_u16 customhack_get (struct customhack *ch, int hpos);
 extern void alloc_cycle_ext (int, int);
 extern void alloc_cycle_blitter (int hpos, uaecptr *ptr, int);
 extern bool ispal (void);
+extern bool isvga (void);
 extern int current_maxvpos (void);
 extern struct chipset_refresh *get_chipset_refresh (void);
 extern void compute_framesync (void);
+extern void getsyncregisters(uae_u16 *phsstrt, uae_u16 *phsstop, uae_u16 *pvsstrt, uae_u16 *pvsstop);
+int is_bitplane_dma (int hpos);
 
-#endif /* CUSTOM_H */
+#endif /* UAE_CUSTOM_H */

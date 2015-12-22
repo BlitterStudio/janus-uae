@@ -1,5 +1,7 @@
-#ifndef CPUMMU030_H
-#define CPUMMU030_H
+#ifndef UAE_CPUMMU030_H
+#define UAE_CPUMMU030_H
+
+#include "uae/types.h"
 
 #include "mmu_common.h"
 
@@ -12,6 +14,8 @@ extern uae_u32 mm030_stageb_address;
 extern int mmu030_idx;
 extern bool mmu030_retry;
 extern int mmu030_opcode, mmu030_opcode_stageb;
+extern int mmu030_fake_prefetch;
+extern uaecptr mmu030_fake_prefetch_addr;
 extern uae_u16 mmu030_state[3];
 extern uae_u32 mmu030_data_buffer;
 extern uae_u32 mmu030_disp_store[2];
@@ -33,10 +37,10 @@ extern struct mmu030_access mmu030_ad[MAX_MMU030_ACCESS];
 uae_u32 REGPARAM3 get_disp_ea_020_mmu030 (uae_u32 base, int idx) REGPARAM;
 void mmu030_page_fault(uaecptr addr, bool read, int flags, uae_u32 fc);
 
-void mmu_op30_pmove (uaecptr pc, uae_u32 opcode, uae_u16 next, uaecptr extra);
-void mmu_op30_ptest (uaecptr pc, uae_u32 opcode, uae_u16 next, uaecptr extra);
-void mmu_op30_pload (uaecptr pc, uae_u32 opcode, uae_u16 next, uaecptr extra);
-void mmu_op30_pflush (uaecptr pc, uae_u32 opcode, uae_u16 next, uaecptr extra);
+bool mmu_op30_pmove (uaecptr pc, uae_u32 opcode, uae_u16 next, uaecptr extra);
+bool mmu_op30_ptest (uaecptr pc, uae_u32 opcode, uae_u16 next, uaecptr extra);
+bool mmu_op30_pload (uaecptr pc, uae_u32 opcode, uae_u16 next, uaecptr extra);
+bool mmu_op30_pflush (uaecptr pc, uae_u32 opcode, uae_u16 next, uaecptr extra);
 
 uae_u32 mmu_op30_helper_get_fc(uae_u16 next);
 
@@ -53,8 +57,8 @@ typedef struct {
 } TT_info;
 
 TT_info mmu030_decode_tt(uae_u32 TT);
-void mmu030_decode_tc(uae_u32 TC);
-void mmu030_decode_rp(uae_u64 RP);
+bool mmu030_decode_tc(uae_u32 TC);
+bool mmu030_decode_rp(uae_u64 RP);
 
 int mmu030_logical_is_in_atc(uaecptr addr, uae_u32 fc, bool write);
 void mmu030_atc_handle_history_bit(int entry_num);
@@ -66,16 +70,20 @@ uae_u32 mmu030_get_long_atc(uaecptr addr, int l, uae_u32 fc);
 uae_u16 mmu030_get_word_atc(uaecptr addr, int l, uae_u32 fc);
 uae_u8 mmu030_get_byte_atc(uaecptr addr, int l, uae_u32 fc);
 
+void mmu030_put_atc_generic(uaecptr addr, uae_u32 val, int l, uae_u32 fc, int size, int flags);
+uae_u32 mmu030_get_atc_generic(uaecptr addr, int l, uae_u32 fc, int size, int flags, bool checkwrite);
+
 void mmu030_flush_atc_fc(uae_u32 fc_base, uae_u32 fc_mask);
 void mmu030_flush_atc_page(uaecptr logical_addr);
 void mmu030_flush_atc_page_fc(uaecptr logical_addr, uae_u32 fc_base, uae_u32 fc_mask);
 void mmu030_flush_atc_all(void);
 void mmu030_reset(int hardreset);
+void mmu030_set_funcs(void);
 uaecptr mmu030_translate(uaecptr addr, bool super, bool data, bool write);
 
 int mmu030_match_ttr(uaecptr addr, uae_u32 fc, bool write);
 int mmu030_match_ttr_access(uaecptr addr, uae_u32 fc, bool write);
-int mmu030_match_lrmw_ttr(uaecptr addr, uae_u32 fc);
+int mmu030_match_lrmw_ttr_access(uaecptr addr, uae_u32 fc);
 int mmu030_do_match_ttr(uae_u32 tt, TT_info masks, uaecptr addr, uae_u32 fc, bool write);
 int mmu030_do_match_lrmw_ttr(uae_u32 tt, TT_info masks, uaecptr addr, uae_u32 fc);
 
@@ -85,14 +93,18 @@ void mmu030_put_byte(uaecptr addr, uae_u8  val, uae_u32 fc);
 uae_u32 mmu030_get_long(uaecptr addr, uae_u32 fc);
 uae_u16 mmu030_get_word(uaecptr addr, uae_u32 fc);
 uae_u8  mmu030_get_byte(uaecptr addr, uae_u32 fc);
+uae_u32 mmu030_get_ilong(uaecptr addr, uae_u32 fc);
+uae_u16 mmu030_get_iword(uaecptr addr, uae_u32 fc);
 
 uae_u32 uae_mmu030_get_lrmw(uaecptr addr, int size);
 void uae_mmu030_put_lrmw(uaecptr addr, uae_u32 val, int size);
 
+void mmu030_put_generic(uaecptr addr, uae_u32 val, uae_u32 fc, int size, int accesssize, int flags);
 uae_u32 mmu030_get_generic(uaecptr addr, uae_u32 fc, int size, int accesssize, int flags);
 
 extern uae_u16 REGPARAM3 mmu030_get_word_unaligned(uaecptr addr, uae_u32 fc, int flags) REGPARAM;
 extern uae_u32 REGPARAM3 mmu030_get_long_unaligned(uaecptr addr, uae_u32 fc, int flags) REGPARAM;
+extern uae_u32 REGPARAM3 mmu030_get_ilong_unaligned(uaecptr addr, uae_u32 fc, int flags) REGPARAM;
 extern uae_u16 REGPARAM3 mmu030_get_lrmw_word_unaligned(uaecptr addr, uae_u32 fc, int flags) REGPARAM;
 extern uae_u32 REGPARAM3 mmu030_get_lrmw_long_unaligned(uaecptr addr, uae_u32 fc, int flags) REGPARAM;
 extern void REGPARAM3 mmu030_put_word_unaligned(uaecptr addr, uae_u16 val, uae_u32 fc, int flags) REGPARAM;
@@ -103,16 +115,13 @@ static ALWAYS_INLINE uae_u32 uae_mmu030_get_ilong(uaecptr addr)
     uae_u32 fc = (regs.s ? 4 : 0) | 2;
 
 	if (unlikely(is_unaligned(addr, 4)))
-		return mmu030_get_long_unaligned(addr, fc, 0);
-	return mmu030_get_long(addr, fc);
+		return mmu030_get_ilong_unaligned(addr, fc, 0);
+	return mmu030_get_ilong(addr, fc);
 }
 static ALWAYS_INLINE uae_u16 uae_mmu030_get_iword(uaecptr addr)
 {
     uae_u32 fc = (regs.s ? 4 : 0) | 2;
-
-	if (unlikely(is_unaligned(addr, 2)))
-		return mmu030_get_word_unaligned(addr, fc, 0);
-	return mmu030_get_word(addr, fc);
+	return mmu030_get_iword(addr, fc);
 }
 static ALWAYS_INLINE uae_u16 uae_mmu030_get_ibyte(uaecptr addr)
 {
@@ -463,4 +472,4 @@ extern void m68k_do_rte_mmu030 (uaecptr a7);
 extern void flush_mmu030 (uaecptr, int);
 extern void m68k_do_bsr_mmu030 (uaecptr oldpc, uae_s32 offset);
 
-#endif
+#endif /* UAE_CPUMMU030_H */

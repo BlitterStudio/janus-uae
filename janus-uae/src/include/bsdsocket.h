@@ -7,7 +7,13 @@
   *
   */
 
+#ifndef UAE_BSDSOCKET_H
+#define UAE_BSDSOCKET_H
+
+#include "uae/types.h"
+#ifdef __AROS__
 #include "threaddep/thread.h"
+#endif
 
 #define BSD_TRACING_ENABLED 0
 
@@ -140,7 +146,6 @@ uae_u32 addmem (uae_u32 * dst, const uae_char *src, int len);
 extern void bsdsocklib_seterrno (SB, int);
 extern void bsdsocklib_setherrno (SB, int);
 
-extern void sockmsg (unsigned int, WPARAM, LPARAM);
 extern void sockabort (SB);
 
 extern void addtosigqueue (SB, int);
@@ -149,7 +154,7 @@ extern void sigsockettasks (void);
 extern void locksigqueue (void);
 extern void unlocksigqueue (void);
 
-extern BOOL checksd(TrapContext*, SB, int sd);
+extern bool checksd(TrapContext*, SB, int sd);
 extern void setsd(TrapContext*, SB, int , SOCKET_TYPE);
 extern int getsd (TrapContext*, SB, SOCKET_TYPE);
 extern SOCKET_TYPE getsock (SB, int);
@@ -205,3 +210,9 @@ extern uae_u32 callfdcallback (TrapContext *context, SB, uae_u32 fd, uae_u32 act
 extern uaecptr bsdlib_startup (uaecptr);
 extern void bsdlib_install (void);
 extern void bsdlib_reset (void);
+
+void bsdsock_fake_int_handler(void);
+
+extern int volatile bsd_int_requested;
+
+#endif /* UAE_BSDSOCKET_H */
