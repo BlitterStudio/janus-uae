@@ -151,6 +151,7 @@ typedef struct tagNMTREEVIEW {
 #undef ShowWindow
 BOOL ShowWindow(HWND hWnd, int nCmdShow);
 BOOL ShowWindow(HWND hWnd, DWORD id, int nCmdShow);
+BOOL ShowWindow(struct Window *win, int nCmdShow);
 
 UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount);
 BOOL TreeView_DeleteAllItems(HWND hDlg, int nIDDlgItem);
