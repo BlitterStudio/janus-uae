@@ -1,5 +1,7 @@
-#ifndef READCPU_H
-#define READCPU_H
+#ifndef UAE_READCPU_H
+#define UAE_READCPU_H
+
+#include "uae/types.h"
 
 ENUMDECL {
   Dreg, Areg, Aind, Aipi, Apdi, Ad16, Ad8r,
@@ -96,10 +98,13 @@ extern struct instr {
     unsigned int cc:4;
     unsigned int plev:2;
     unsigned int size:2;
+    //wordsizes size:2;
 	unsigned int unsized:1;
     unsigned int smode:5;
+    //amodes smode:5;
     unsigned int stype:3;
     unsigned int dmode:5;
+    //amodes dmode:5;
     unsigned int suse:1;
     unsigned int duse:1;
     unsigned int unused1:1;
@@ -114,5 +119,4 @@ extern void do_merges (void);
 extern int get_no_mismatches (void);
 extern int nr_cpuop_funcs;
 
-#endif /* READCPU_H */
-
+#endif /* UAE_READCPU_H */

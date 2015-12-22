@@ -8,6 +8,11 @@
   * (c) 2001-2005 Toni Wilen
   */
 
+#ifndef UAE_SCSIDEV_H
+#define UAE_SCSIDEV_H
+
+#include "uae/types.h"
+
 uaecptr scsidev_startup (uaecptr resaddr);
 void scsidev_install (void);
 void scsidev_reset (void);
@@ -20,8 +25,11 @@ int scsi_add_tape (struct uaedev_config_info *uci);
 
 extern int log_scsi;
 
+#if defined(_WIN32) || defined(__AROS__)
 #define UAESCSI_CDEMU 0
 #define UAESCSI_SPTI 1
 #define UAESCSI_SPTISCAN 2
 #define UAESCSI_LAST 2
+#endif
 
+#endif /* UAE_SCSIDEV_H */

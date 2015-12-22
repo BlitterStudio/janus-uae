@@ -6,10 +6,15 @@
   * Copyright 1996 Bernd Schmidt
   */
 
+#ifndef UAE_GUI_H
+#define UAE_GUI_H
+
+#include "uae/types.h"
+
 extern int gui_init (void);
 extern int gui_update (void);
 extern void gui_exit (void);
-extern void gui_led (int, int);
+extern void gui_led (int, int, int);
 extern void gui_handle_events (void);
 extern void gui_filename (int, const TCHAR *);
 extern void gui_fps (int fps, int idle, int color);
@@ -55,7 +60,7 @@ struct gui_info
     uae_s8 hd;					/* harddrive */
     uae_s8 cd;					/* CD */
 	uae_s8 md;					/* CD32 or CDTV internal storage */
-    bool cpu_halted;
+    int cpu_halted;
 	int fps, idle;
 	int fps_color;
     int sndbuf, sndbuf_status;
@@ -73,13 +78,35 @@ extern void gui_update_gfx (void);
 void notify_user (int msg);
 void notify_user_parms (int msg, const TCHAR *parms, ...);
 int translate_message (int msg, TCHAR *out);
+#ifdef __AROS__
+int translate_message (const char *msg, TCHAR *out);
+#endif
+
 typedef enum {
-    NUMSG_NEEDEXT2, NUMSG_NOROM, NUMSG_NOROMKEY,
-    NUMSG_KSROMCRCERROR, NUMSG_KSROMREADERROR, NUMSG_NOEXTROM,
-    NUMSG_MODRIP_NOTFOUND, NUMSG_MODRIP_FINISHED, NUMSG_MODRIP_SAVE,
-    NUMSG_KS68EC020, NUMSG_KS68020, NUMSG_KS68030,
-    NUMSG_ROMNEED, NUMSG_EXPROMNEED, NUMSG_NOZLIB, NUMSG_STATEHD,
-    NUMSG_NOCAPS, NUMSG_OLDCAPS, NUMSG_KICKREP, NUMSG_KICKREPNO,
-	NUMSG_KS68030PLUS
+	NUMSG_NEEDEXT2, // 0
+	NUMSG_NOROM,
+	NUMSG_NOROMKEY,
+	NUMSG_KSROMCRCERROR,
+	NUMSG_KSROMREADERROR,
+	NUMSG_NOEXTROM, // 5
+	NUMSG_MODRIP_NOTFOUND,
+	NUMSG_MODRIP_FINISHED,
+	NUMSG_MODRIP_SAVE,
+	NUMSG_KS68EC020,
+	NUMSG_KS68020, // 10
+	NUMSG_KS68030,
+	NUMSG_ROMNEED,
+	NUMSG_EXPROMNEED,
+	NUMSG_NOZLIB,
+	NUMSG_STATEHD, // 15
+	NUMSG_NOCAPS,
+	NUMSG_OLDCAPS,
+	NUMSG_KICKREP,
+	NUMSG_KICKREPNO,
+	NUMSG_KS68030PLUS, // 20
+	NUMSG_NO_PPC,
+	NUMSG_UAEBOOTROM_PPC,
+	NUMSG_LAST
 } notify_user_msg;
 
+#endif /* UAE_GUI_H */

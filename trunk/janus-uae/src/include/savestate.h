@@ -6,6 +6,10 @@
   * (c) 1999-2001 Toni Wilen
   */
 
+#ifndef UAE_SAVESTATE_H
+#define UAE_SAVESTATE_H
+
+#include "uae/types.h"
 
 /* functions to save byte,word or long word
  * independent of CPU's endianess */
@@ -135,11 +139,11 @@ extern void restore_cdtv_finish (void);
 
 extern uae_u8 *restore_cdtv_dmac (uae_u8 *src);
 extern uae_u8 *save_cdtv_dmac (int *len, uae_u8*);
-extern uae_u8 *restore_scsi_dmac (uae_u8 *src);
-extern uae_u8 *save_scsi_dmac (int *len, uae_u8*);
+extern uae_u8 *restore_scsi_dmac (int wdtype, uae_u8 *src);
+extern uae_u8 *save_scsi_dmac (int wdtype, int *len, uae_u8*);
 
-extern uae_u8 *save_scsi_device (int num, int *len, uae_u8 *dstptr);
-extern uae_u8 *restore_scsi_device (uae_u8 *src);
+extern uae_u8 *save_scsi_device (int wdtype, int num, int *len, uae_u8 *dstptr);
+extern uae_u8 *restore_scsi_device (int wdtype, uae_u8 *src);
 
 extern uae_u8 *save_scsidev (int num, int *len, uae_u8 *dstptr);
 extern uae_u8 *restore_scsidev (uae_u8 *src);
@@ -152,8 +156,8 @@ extern int save_filesys_cando(void);
 
 extern uae_u8 *restore_gayle(uae_u8 *src);
 extern uae_u8 *save_gayle (int *len, uae_u8*);
-extern uae_u8 *restore_ide (uae_u8 *src);
-extern uae_u8 *save_ide (int num, int *len, uae_u8*);
+extern uae_u8 *restore_gayle_ide (uae_u8 *src);
+extern uae_u8 *save_gayle_ide (int num, int *len, uae_u8*);
 
 extern uae_u8 *save_cd (int num, int *len);
 extern uae_u8 *restore_cd (int, uae_u8 *src);
@@ -184,7 +188,7 @@ extern uae_u8 *restore_cycles (uae_u8 *src);
 
 extern void restore_cram (int, size_t);
 extern void restore_bram (int, size_t);
-extern void restore_fram (int, size_t);
+extern void restore_fram (int, size_t, int);
 extern void restore_zram (int, size_t, int);
 extern void restore_bootrom (int, size_t);
 extern void restore_pram (int, size_t);
@@ -195,7 +199,7 @@ extern void restore_ram (size_t, uae_u8*);
 
 extern uae_u8 *save_cram (int *);
 extern uae_u8 *save_bram (int *);
-extern uae_u8 *save_fram (int *);
+extern uae_u8 *save_fram (int *, int);
 extern uae_u8 *save_zram (int *, int);
 extern uae_u8 *save_bootrom (int *);
 extern uae_u8 *save_pram (int *);
@@ -248,3 +252,5 @@ extern int savestate_dorewind (int);
 extern void savestate_listrewind (void);
 extern void statefile_save_recording (const TCHAR*);
 extern void savestate_capture_request (void);
+
+#endif /* UAE_SAVESTATE_H */

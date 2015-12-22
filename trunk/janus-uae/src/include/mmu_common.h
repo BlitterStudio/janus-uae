@@ -1,18 +1,12 @@
+#ifndef UAE_MMU_COMMON_H
+#define UAE_MMU_COMMON_H
 
-#ifndef MMU_COMMON_H
-#define MMU_COMMON_H
+#include "uae/types.h"
+#include "uae/likely.h"
 
 #define MMUDEBUG 0
 #define MMUINSDEBUG 0
 #define MMUDEBUGMISC 0
-
-#ifdef _MSC_VER
-#define unlikely(x) x
-#define likely(x) x
-#else
-#define   likely(expr) __builtin_expect(!!(expr), 1)
-#define unlikely(expr) __builtin_expect(!!(expr), 0)
-#endif
 
 #ifdef __cplusplus
 struct m68k_exception {
@@ -34,9 +28,9 @@ extern jmp_buf __exbuf;
 extern int     __exvalue;
 #define TRY(DUMMY)       __exvalue=setjmp(__exbuf);       \
                   if (__exvalue==0) { __pushtry(&__exbuf);
-#define CATCH(x)  __poptry(); } else { fprintf(stderr,"Gotcha! %d %s in %d\n",__exvalue,__FILE__,__LINE__);
+#define CATCH(x)  __poptry(); } else {m68k_exception x=__exvalue; 
 #define ENDTRY    __poptry();}
-#define THROW(x) if (__is_catched()) {fprintf(stderr,"Longjumping %s in %d\n",__FILE__,__LINE__);longjmp(__exbuf,x);}
+#define THROW(x) if (__is_catched()) {longjmp(__exbuf,x);}
 #define THROW_AGAIN(var) if (__is_catched()) longjmp(*__poptry(),__exvalue)
 #define SAVE_EXCEPTION
 #define RESTORE_EXCEPTION
@@ -150,4 +144,13 @@ static ALWAYS_INLINE uae_u32 phys_get_byte(uaecptr addr)
     return byteget (addr);
 }
 
-#endif
+extern uae_u32(*x_phys_get_iword)(uaecptr);
+extern uae_u32(*x_phys_get_ilong)(uaecptr);
+extern uae_u32(*x_phys_get_byte)(uaecptr);
+extern uae_u32(*x_phys_get_word)(uaecptr);
+extern uae_u32(*x_phys_get_long)(uaecptr);
+extern void(*x_phys_put_byte)(uaecptr, uae_u32);
+extern void(*x_phys_put_word)(uaecptr, uae_u32);
+extern void(*x_phys_put_long)(uaecptr, uae_u32);
+
+#endif /* UAE_MMU_COMMON_H */
