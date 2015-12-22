@@ -224,6 +224,9 @@ void getfilterrect2 (RECT *sr, RECT *dr, RECT *zr, int dst_width, int dst_height
 
 	int scalemode = currprefs.gf[picasso_on].gfx_filter_autoscale;
 	int oscalemode = changed_prefs.gf[picasso_on].gfx_filter_autoscale;
+	if (scalemode == AUTOSCALE_OVERSCAN_BLANK) {
+		oscalemode = scalemode = AUTOSCALE_NONE;
+	}
 
 	if (!specialmode && scalemode == AUTOSCALE_STATIC_AUTO) {
 		if (currprefs.gfx_apmode[0].gfx_fullscreen) {
@@ -251,7 +254,8 @@ void getfilterrect2 (RECT *sr, RECT *dr, RECT *zr, int dst_width, int dst_height
 		filterxmult = scale;
 		filterymult = scale;
 
-		if (scalemode == AUTOSCALE_STATIC_MAX || scalemode == AUTOSCALE_STATIC_NOMINAL || scalemode == AUTOSCALE_INTEGER || scalemode == AUTOSCALE_INTEGER_AUTOSCALE) {
+		if (scalemode == AUTOSCALE_STATIC_MAX || scalemode == AUTOSCALE_STATIC_NOMINAL ||
+			scalemode == AUTOSCALE_INTEGER || scalemode == AUTOSCALE_INTEGER_AUTOSCALE) {
 
 			if (specialmode) {
 				cx = 0;
@@ -278,7 +282,7 @@ void getfilterrect2 (RECT *sr, RECT *dr, RECT *zr, int dst_width, int dst_height
 			if (scalemode == AUTOSCALE_INTEGER || scalemode == AUTOSCALE_INTEGER_AUTOSCALE) {
 				int maxw = currprefs.gfx_size.width;
 				int maxh = currprefs.gfx_size.height;
-				int mult = 1;
+				double mult = 1;
 				bool ok = true;
 
 				if (currprefs.gfx_xcenter_pos >= 0 || currprefs.gfx_ycenter_pos >= 0) {
@@ -311,16 +315,17 @@ void getfilterrect2 (RECT *sr, RECT *dr, RECT *zr, int dst_width, int dst_height
 				filter_horiz_zoom_mult = 1.0;
 				filter_vert_zoom_mult = 1.0;
 
+				double multadd = 1.0 / (1 << currprefs.gf[picasso_on].gfx_filter_integerscalelimit);
 				if (cw2 > maxw || ch2 > maxh) {
 					while (cw2 / mult > maxw || ch2 / mult > maxh)
-						mult *= 2;
+						mult += multadd;
 					maxw = maxw * mult;
 					maxh = maxh * mult;
 				} else {
-					while (cw2 * (mult + 1) <= maxw && ch2 * (mult + 1) <= maxh)
-						mult++;
-					maxw = (maxw + mult - 1) / mult;
-					maxh = (maxh + mult - 1) / mult;
+					while (cw2 * (mult + multadd) <= maxw && ch2 * (mult + multadd) <= maxh)
+						mult += multadd;
+					maxw = (maxw + mult - multadd) / mult;
+					maxh = (maxh + mult - multadd) / mult;
 				}
 				//write_log(_T("(%dx%d) (%dx%d) ww=%d hh=%d w=%d h=%d m=%d\n"), cx, cy, cw, ch, currprefs.gfx_size.width, currprefs.gfx_size.height, maxw, maxh, mult);
 				cx -= (maxw - cw) / 2;
@@ -370,7 +375,8 @@ void getfilterrect2 (RECT *sr, RECT *dr, RECT *zr, int dst_width, int dst_height
 		}
 	
 		autoaspectratio = 0;
-		if (currprefs.gf[picasso_on].gfx_filter_keep_autoscale_aspect && cw > 0 && ch > 0 && crealh > 0 && (scalemode == AUTOSCALE_NORMAL || scalemode == AUTOSCALE_INTEGER_AUTOSCALE || scalemode == AUTOSCALE_MANUAL)) {
+		if (currprefs.gf[picasso_on].gfx_filter_keep_autoscale_aspect && cw > 0 && ch > 0 && crealh > 0 && (scalemode == AUTOSCALE_NORMAL ||
+			scalemode == AUTOSCALE_INTEGER_AUTOSCALE || scalemode == AUTOSCALE_MANUAL)) {
 			float cw2 = cw;
 			float ch2 = ch;
 			int res = currprefs.gfx_resolution - currprefs.gfx_vresolution;
@@ -451,7 +457,7 @@ void getfilterrect2 (RECT *sr, RECT *dr, RECT *zr, int dst_width, int dst_height
 					lastdelay = 0;
 				}
 				float scalex = currprefs.gf[picasso_on].gfx_filter_horiz_zoom_mult > 0 ? currprefs.gf[picasso_on].gfx_filter_horiz_zoom_mult : 1.0f;
-				float scaley = currprefs.gf[picasso_on].gfx_filter_vert_zoom_mult > 0 ? currprefs.gf[picasso_on].gfx_filter_horiz_zoom_mult : 1.0f;
+				float scaley = currprefs.gf[picasso_on].gfx_filter_vert_zoom_mult > 0 ? currprefs.gf[picasso_on].gfx_filter_vert_zoom_mult : 1.0f;
 				SetRect (sr, 0, 0, cw * scale * scalex, ch * scale * scaley);
 				dr->left = (temp_width - aws) /2;
 				dr->top = (temp_height - ahs) / 2;
@@ -504,17 +510,22 @@ void getfilterrect2 (RECT *sr, RECT *dr, RECT *zr, int dst_width, int dst_height
 			if (currprefs.gf[picasso_on].gfx_filter_keep_aspect || currprefs.gf[picasso_on].gfx_filter_aspect != 0) {
 
 				if (currprefs.gf[picasso_on].gfx_filter_keep_aspect) {
-					if (currprefs.ntscmode) {
-						dstratio = dstratio * 1.21f;
-						if (currprefs.gf[picasso_on].gfx_filter_keep_aspect == 2 && ispal ())
+					if (isvga()) {
+						if (currprefs.gf[picasso_on].gfx_filter_keep_aspect == 1)
 							dstratio = dstratio * 0.93f;
-						else if (currprefs.gf[picasso_on].gfx_filter_keep_aspect == 1 && !ispal ())
-							dstratio = dstratio * 0.98f;
 					} else {
-						if (currprefs.gf[picasso_on].gfx_filter_keep_aspect == 2 && ispal ())
-							dstratio = dstratio * 0.95f;
-						else if (currprefs.gf[picasso_on].gfx_filter_keep_aspect == 1 && !ispal ())
-							dstratio = dstratio * 0.95f;
+						if (currprefs.ntscmode) {
+							dstratio = dstratio * 1.21f;
+							if (currprefs.gf[picasso_on].gfx_filter_keep_aspect == 2 && ispal ())
+								dstratio = dstratio * 0.93f;
+							else if (currprefs.gf[picasso_on].gfx_filter_keep_aspect == 1 && !ispal ())
+								dstratio = dstratio * 0.98f;
+						} else {
+							if (currprefs.gf[picasso_on].gfx_filter_keep_aspect == 2 && ispal ())
+								dstratio = dstratio * 0.95f;
+							else if (currprefs.gf[picasso_on].gfx_filter_keep_aspect == 1 && !ispal ())
+								dstratio = dstratio * 0.95f;
+						}
 					}
 				}
 				aspect = true;
@@ -636,6 +647,8 @@ end:
 		OffsetRect (dr, mrsx, mrsy);
 	}
 
+	check_custom_limits();
+
 	fpux_restore (&fpuv);
 
 #if 0
@@ -650,6 +663,15 @@ end:
 
 }
 
+void freefilterbuffer(uae_u8 *buf)
+{
+	struct vidbuffer *vb = gfxvidinfo.outbuffer;
+
+	if (usedfilter == NULL) {
+		unlockscr3d(vb);
+	}
+}
+
 uae_u8 *getfilterbuffer (int *widthp, int *heightp, int *pitch, int *depth)
 {
 	struct vidbuffer *vb = gfxvidinfo.outbuffer;
@@ -657,8 +679,11 @@ uae_u8 *getfilterbuffer (int *widthp, int *heightp, int *pitch, int *depth)
 	*widthp = 0;
 	*heightp = 0;
 	*depth = amiga_depth;
-	if (usedfilter == NULL)
-		return NULL;
+	if (usedfilter == NULL) {
+		if (!lockscr3d(vb)) {
+			return NULL;
+		}
+	}
 	*widthp = vb->outwidth;
 	*heightp = vb->outheight;
 	if (pitch)
@@ -703,6 +728,7 @@ static void statusline (void)
 	SetRect (&dr, slx, sly, slx + lx, sly + TD_TOTAL_HEIGHT);
 	DirectDraw_BlitRect (tempsurf, &sr, NULL, &dr);
 	if (DirectDraw_LockSurface (tempsurf, &desc)) {
+		statusline_render((uae_u8*)desc.lpSurface, dst_depth / 8, desc.lPitch, lx, ly, rc, gc, bc, NULL);
 		for (y = 0; y < TD_TOTAL_HEIGHT; y++) {
 			uae_u8 *buf = (uae_u8*)desc.lpSurface + y * desc.lPitch;
 			draw_status_line_single (buf, dst_depth / 8, y, lx, rc, gc, bc, NULL);
@@ -1006,12 +1032,13 @@ void S2X_render (void)
 	} else { /* null */
 
 		if (amiga_depth == dst_depth) {
+			uae_u8 *d = dptr, *s = sptr;
 			int y;
 			int w = aw * dst_depth / 8;
-			for (y = 0; y < ah && dptr + w <= enddptr; y++) {
-				memcpy (dptr, sptr, w);
-				sptr += vb->rowbytes;
-				dptr += pitch;
+			for (y = 0; y < ah && d + w <= enddptr; y++) {
+				memcpy (d, s, w);
+				s += vb->rowbytes;
+				d += pitch;
 			}
 		}
 		ok = 1;

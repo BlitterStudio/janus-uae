@@ -519,7 +519,7 @@ int my_getvolumeinfo (const TCHAR *root)
 	if (v == INVALID_FILE_ATTRIBUTES)
 		return -1;
 	if (!(v & FILE_ATTRIBUTE_DIRECTORY))
-		return -1;
+		return -2;
 	/*
 	if (v & FILE_ATTRIBUTE_READONLY)
 	ret |= MYVOLUMEINFO_READONLY;
@@ -751,7 +751,7 @@ bool my_utime (const TCHAR *name, struct mytimeval *tv)
 		tv2.tv_usec = tv->tv_usec;
 		tolocal = 1;
 	}
-	timeval_to_amiga (&tv2, &days, &mins, &ticks);
+	timeval_to_amiga (&tv2, &days, &mins, &ticks, 50);
 	if (setfiletime (name, days, mins, ticks, tolocal))
 		return true;
 
@@ -761,6 +761,16 @@ bool my_utime (const TCHAR *name, struct mytimeval *tv)
 bool my_createsoftlink(const TCHAR *path, const TCHAR *target)
 {
 	return CreateSymbolicLink(path, target, my_existsdir (target) ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0) != 0;
+}
+
+bool my_issamepath(const TCHAR *path1, const TCHAR *path2)
+{
+	TCHAR path1o[MAX_DPATH], path2o[MAX_DPATH];
+	my_canonicalize_path(path1, path1o, sizeof path1o / sizeof(TCHAR));
+	my_canonicalize_path(path2, path2o, sizeof path2o / sizeof(TCHAR));
+	if (!_tcsicmp(path1o, path2o))
+		return true;
+	return false;
 }
 
 void my_canonicalize_path(const TCHAR *path, TCHAR *out, int size)
@@ -775,11 +785,13 @@ void my_canonicalize_path(const TCHAR *path, TCHAR *out, int size)
 		return;
 	}
 	v = GetLongPathName (path, tmp, sizeof tmp / sizeof (TCHAR));
-	if (!v || v > sizeof tmp / sizeof (TCHAR)) {
+	if (v > sizeof tmp / sizeof (TCHAR)) {
 		_tcsncpy (out, path, size);
 		out[size - 1] = 0;
 		return;
 	}
+	if (!v)
+		_tcscpy(tmp, path);
 	GetFullPathName(tmp, size, out, NULL);
 }
 
@@ -1007,4 +1019,17 @@ bool my_resolvesoftlink(TCHAR *linkfile, int size)
 		my_canonicalize_path (tmp, linkfile, size);
 	}
 	return false;
+}
+
+const TCHAR *my_getfilepart(const TCHAR *filename)
+{
+	const TCHAR *p;
+
+	p = _tcsrchr(filename, '\\');
+	if (p)
+		return p + 1;
+	p = _tcsrchr(filename, '/');
+	if (p)
+		return p + 1;
+	return filename;
 }

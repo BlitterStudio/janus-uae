@@ -20,8 +20,16 @@ void closeser (void);
 void doserout (void);
 void closeprinter (void);
 void flushprinter (void);
-int checkserwrite (void);
+int checkserwrite (int spaceneeded);
 void serialuartbreak (int);
+
+void hsyncstuff(void);
+
+void shmem_serial_delete(void);
+bool shmem_serial_create(void);
+int shmem_serial_state(void);
+
+#define SERIAL_INTERNAL _T("INTERNAL_SERIAL")
 
 #define TIOCM_CAR 1
 #define TIOCM_DSR 2
@@ -36,8 +44,8 @@ extern int load_ghostscript (void);
 #define MAX_MIDI_PORTS 100
 struct midiportinfo
 {
-    TCHAR *name;
-	UINT devid;
+	TCHAR *name;
+	unsigned int devid;
 };
 extern struct midiportinfo *midiinportinfo[MAX_MIDI_PORTS];
 extern struct midiportinfo *midioutportinfo[MAX_MIDI_PORTS];

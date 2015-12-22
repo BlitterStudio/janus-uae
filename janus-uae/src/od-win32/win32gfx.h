@@ -24,9 +24,10 @@ extern HCURSOR normalcursor;
 extern HWND hStatusWnd;
 extern int default_freq;
 extern int normal_display_change_starting;
-extern int window_led_drives, window_led_drives_end, window_led_joy_start;
+extern int window_led_drives, window_led_drives_end;
 extern int window_led_hd, window_led_hd_end;
-extern int window_led_joys, window_led_joys_end;
+extern int window_led_joys, window_led_joys_end, window_led_joy_start;
+extern int window_led_msg, window_led_msg_end, window_led_msg_start;
 extern int scalepicasso;
 
 extern HDC gethdc (void);
@@ -36,6 +37,9 @@ extern void updatewinfsmode (struct uae_prefs *p);
 extern int is3dmode (void);
 extern void gfx_lock (void);
 extern void gfx_unlock (void);
+
+extern bool lockscr3d(struct vidbuffer *vb);
+extern void unlockscr3d(struct vidbuffer *vb);
 
 void DX_Fill (int dstx, int dsty, int width, int height, uae_u32 color);
 void DX_Blit (int x, int y, int w, int h);

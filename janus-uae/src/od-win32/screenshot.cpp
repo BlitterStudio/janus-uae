@@ -108,6 +108,7 @@ static int screenshot_prepare (int imagemode, struct vidbuffer *vb)
 	if (imagemode) {
 		int spitch, dpitch, x, y;
 		uae_u8 *src, *dst, *mem;
+		bool needfree = false;
 		uae_u8 *palette = NULL;
 		int rgb_bb2, rgb_gb2, rgb_rb2;
 		int rgb_bs2, rgb_gs2, rgb_rs2;
@@ -115,6 +116,7 @@ static int screenshot_prepare (int imagemode, struct vidbuffer *vb)
 		
 		if (WIN32GFX_IsPicassoScreen ()) {
 			src = mem = getrtgbuffer (&width, &height, &spitch, &bits, pal);
+			needfree = true;
 			rgb_bb2 = 8;
 			rgb_gb2 = 8;
 			rgb_rb2 = 8;
@@ -135,6 +137,7 @@ static int screenshot_prepare (int imagemode, struct vidbuffer *vb)
 			rgb_rs2 = rgb_rs;
 		} else {
 			src = mem = getfilterbuffer (&width, &height, &spitch, &bits);
+			needfree = true;
 			rgb_bb2 = rgb_bb;
 			rgb_gb2 = rgb_gb;
 			rgb_rb2 = rgb_rb;
@@ -142,8 +145,17 @@ static int screenshot_prepare (int imagemode, struct vidbuffer *vb)
 			rgb_gs2 = rgb_gs;
 			rgb_rs2 = rgb_rs;
 		}
-		if (src == NULL || width == 0 || height == 0)
+		if (src == NULL)
 			goto donormal;
+		if (width == 0 || height == 0) {
+			if (needfree) {
+				if (WIN32GFX_IsPicassoScreen())
+					freertgbuffer(mem);
+				else
+					freefilterbuffer(mem);
+			}
+			goto donormal;
+		}
 		ZeroMemory (bi, sizeof(bi));
 		bi->bmiHeader.biSize = sizeof (BITMAPINFOHEADER);
 		bi->bmiHeader.biWidth = width;
@@ -164,8 +176,15 @@ static int screenshot_prepare (int imagemode, struct vidbuffer *vb)
 				bi->bmiColors[i].rgbBlue = pal[i * 3  + 2];
 			}
 		}
-		if (!(lpvBits = xmalloc (uae_u8, bi->bmiHeader.biSizeImage)))
+		if (!(lpvBits = xmalloc(uae_u8, bi->bmiHeader.biSizeImage))) {
+			if (needfree) {
+				if (WIN32GFX_IsPicassoScreen())
+					freertgbuffer(mem);
+				else
+					freefilterbuffer(mem);
+			}
 			goto oops;
+		}
 		dst = (uae_u8*)lpvBits + (height - 1) * dpitch;
 		if (bits <=8) {
 			for (y = 0; y < height; y++) {
@@ -211,8 +230,12 @@ static int screenshot_prepare (int imagemode, struct vidbuffer *vb)
 				dst -= dpitch;
 			}
 		}
-		if (WIN32GFX_IsPicassoScreen () && !vb)
-			freertgbuffer (mem);
+		if (needfree) {
+			if (WIN32GFX_IsPicassoScreen())
+				freertgbuffer(mem);
+			else
+				freefilterbuffer(mem);
+		}
 
 	} else {
 donormal:
@@ -289,7 +312,7 @@ int screenshot_prepare (void)
 void Screenshot_RGBinfo (int rb, int gb, int bb, int rs, int gs, int bs)
 {
 	if (!bi)
-		bi = xcalloc (BITMAPINFO, sizeof BITMAPINFO + 256 * sizeof RGBQUAD);
+		bi = xcalloc (BITMAPINFO, sizeof(BITMAPINFO) + 256 * sizeof(RGBQUAD));
 	rgb_rb = rb;
 	rgb_gb = gb;
 	rgb_bb = rb;
@@ -302,12 +325,12 @@ void Screenshot_RGBinfo (int rb, int gb, int bb, int rs, int gs, int bs)
 
 static void _cdecl pngtest_blah (png_structp png_ptr, png_const_charp message)
 {
-#if 0
-	TCHAR *name = au ("unknown");
-	if (png_ptr != NULL && png_ptr->error_ptr != NULL)
-		name = au ((char*)png_ptr->error_ptr);
-	write_log (_T("%s: libpng warning: %s\n"), name, message);
-	xfree (name);
+#if 1
+	if (message) {
+		TCHAR *msg = au(message);
+		write_log (_T("libpng warning: '%s'\n"), msg);
+		xfree (msg);
+	}
 #endif
 }
 
@@ -324,15 +347,15 @@ static int savepng (FILE *fp)
 
 	png_ptr = png_create_write_struct (PNG_LIBPNG_VER_STRING, pngtest_blah, pngtest_blah, pngtest_blah);
 	if (!png_ptr)
-		return 0;
+		return 1;
 	info_ptr = png_create_info_struct (png_ptr);
 	if (!info_ptr) {
 		png_destroy_write_struct (&png_ptr, NULL);
-		return 0;
+		return 2;
 	}
 	if (setjmp(png_jmpbuf (png_ptr))) {
 		png_destroy_write_struct (&png_ptr, &info_ptr);
-		return 0;
+		return 3;
 	}
 
 	png_init_io (png_ptr, fp);
@@ -357,7 +380,7 @@ static int savepng (FILE *fp)
 	png_write_png (png_ptr,info_ptr, PNG_TRANSFORM_BGR, NULL);
 	png_destroy_write_struct (&png_ptr, &info_ptr);
 	xfree (row_pointers);
-	return 1;
+	return 0;
 }
 #endif
 
@@ -366,21 +389,21 @@ static int savebmp (FILE *fp)
 	BITMAPFILEHEADER bfh;
 	// write the file header, bitmap information and pixel data
 	bfh.bfType = 19778;
-	bfh.bfSize = sizeof (BITMAPFILEHEADER) + sizeof (BITMAPINFOHEADER) + (bi->bmiHeader.biClrUsed * sizeof RGBQUAD) + bi->bmiHeader.biSizeImage;
+	bfh.bfSize = sizeof (BITMAPFILEHEADER) + sizeof (BITMAPINFOHEADER) + (bi->bmiHeader.biClrUsed * sizeof(RGBQUAD)) + bi->bmiHeader.biSizeImage;
 	bfh.bfReserved1 = 0;
 	bfh.bfReserved2 = 0;
-	bfh.bfOffBits = sizeof (BITMAPFILEHEADER) + sizeof (BITMAPINFOHEADER) + bi->bmiHeader.biClrUsed * sizeof RGBQUAD;
+	bfh.bfOffBits = sizeof (BITMAPFILEHEADER) + sizeof (BITMAPINFOHEADER) + bi->bmiHeader.biClrUsed * sizeof(RGBQUAD);
 	if (fwrite (&bfh, 1, sizeof (BITMAPFILEHEADER), fp) < sizeof (BITMAPFILEHEADER))
-		return 0; // failed to write bitmap file header
+		return 1; // failed to write bitmap file header
 	if (fwrite (bi, 1, sizeof (BITMAPINFOHEADER), fp) < sizeof (BITMAPINFOHEADER))
-		return 0; // failed to write bitmap infomation header
+		return 2; // failed to write bitmap infomation header
 	if (bi->bmiHeader.biClrUsed) {
-		if (fwrite (bi->bmiColors, 1, bi->bmiHeader.biClrUsed * sizeof RGBQUAD, fp) < bi->bmiHeader.biClrUsed * sizeof RGBQUAD)
-			return 0; // failed to write bitmap file header
+		if (fwrite (bi->bmiColors, 1, bi->bmiHeader.biClrUsed * sizeof(RGBQUAD), fp) < bi->bmiHeader.biClrUsed * sizeof(RGBQUAD))
+			return 3; // failed to write bitmap file header
 	}
 	if (fwrite (lpvBits, 1, bi->bmiHeader.biSizeImage, fp) < bi->bmiHeader.biSizeImage)
-		return 0; // failed to write the bitmap
-	return 1;
+		return 4; // failed to write the bitmap
+	return 0;
 }
 
 /*
@@ -390,7 +413,7 @@ int screenshotf (const TCHAR *spath, int mode, int doprepare, int imagemode, str
 {
 	static int recursive;
 	FILE *fp = NULL;
-	int allok = 0;
+	int failed = 0;
 
 	HBITMAP offscreen_bitmap = NULL; // bitmap that is converted to a DIB
 	HDC offscreen_dc = NULL; // offscreen DC that we can select offscreen bitmap into
@@ -422,10 +445,10 @@ int screenshotf (const TCHAR *spath, int mode, int doprepare, int imagemode, str
 			if (fp) {
 #if PNG_SCREENSHOTS > 0
 				if (screenshotmode)
-					allok = savepng (fp);
+					failed = savepng (fp);
 				else
 #endif
-					allok = savebmp (fp);
+					failed = savebmp (fp);
 				fclose (fp);
 				fp = NULL;
 				goto oops;
@@ -447,21 +470,28 @@ int screenshotf (const TCHAR *spath, int mode, int doprepare, int imagemode, str
 			_stprintf (filename, _T("%s%s%s%03d.%s"), path, name, underline, number, screenshotmode ? _T("png") : _T("bmp"));
 			if ((fp = _tfopen (filename, _T("rb"))) == NULL) // does file not exist?
 			{
-				int ok = 0;
-				if ((fp = _tfopen (filename, _T("wb"))) == NULL)
+				int nok = 0;
+				if ((fp = _tfopen (filename, _T("wb"))) == NULL) {
+					write_log(_T("Screenshot error, can't open \"%s\" err=%d\n"), filename, GetLastError());
 					goto oops; // error
+				}
 #if PNG_SCREENSHOTS > 0
 				if (screenshotmode)
-					ok = savepng (fp);
+					nok = savepng (fp);
 				else
 #endif
-					ok = savebmp (fp);
+					nok = savebmp (fp);
 				fclose(fp);
+				if (nok && fp) {
+					_tunlink(filename);
+				}
 				fp = NULL;
-				if (!ok)
+				if (nok) {
+					write_log(_T("Screenshot error %d ('%s')\n"), nok, filename);
 					goto oops;
+				}
 				write_log (_T("Screenshot saved as \"%s\"\n"), filename);
-				allok = 1;
+				failed = 0;
 				break;
 			}
 			fclose (fp);
@@ -478,7 +508,7 @@ oops:
 
 	recursive--;
 
-	return allok;
+	return failed == 0;
 }
 
 #include "drawing.h"

@@ -52,9 +52,12 @@
 #include "lcd.h"
 #include "sampler.h"
 #include "gfxboard.h"
+#include "cpuboard.h"
+#include "x86.h"
 #ifdef RETROPLATFORM
 #include "rp.h"
 #endif
+#include "statusline.h"
 
 #define DM_DX_FULLSCREEN 1
 #define DM_W_FULLSCREEN 2
@@ -100,6 +103,7 @@ static int display_change_requested;
 int window_led_drives, window_led_drives_end;
 int window_led_hd, window_led_hd_end;
 int window_led_joys, window_led_joys_end, window_led_joy_start;
+int window_led_msg, window_led_msg_end, window_led_msg_start;
 extern int console_logging;
 int window_extra_width, window_extra_height;
 
@@ -199,7 +203,7 @@ static void changevblankthreadmode_fast (int newmode)
 
 int WIN32GFX_IsPicassoScreen (void)
 {
-	return screen_is_picasso;
+	return screen_is_picasso ? 1 : 0;
 }
 
 int isscreen (void)
@@ -290,30 +294,123 @@ void desktop_coords (int *dw, int *dh, int *ax, int *ay, int *aw, int *ah)
 	*ah = amigawin_rect.bottom - *ay;
 }
 
-int target_get_display (const TCHAR *name)
+static int target_get_display2(const TCHAR *name, int mode)
 {
+	int found, found2;
+
+	found = -1;
+	found2 = -1;
 	for (int i = 0; Displays[i].monitorname; i++) {
 		struct MultiDisplay *md = &Displays[i];
-		if (!_tcscmp (md->monitorid, name))
-			return i + 1;
+		if (mode == 1 && md->monitorid[0] == '\\')
+			continue;
+		if (mode == 2 && md->monitorid[0] != '\\')
+			continue;
+		if (!_tcscmp (md->monitorid, name)) {
+			if (found < 0) {
+				found = i + 1;
+			} else {
+				found2 = found;
+				found = -1;
+				break;
+			}
+		}
 	}
+	if (found >= 0)
+		return found;
+
+	found = -1;
 	for (int i = 0; Displays[i].monitorname; i++) {
 		struct MultiDisplay *md = &Displays[i];
-		if (!_tcscmp (md->adapterid, name))
-			return i + 1;
+		if (mode == 1 && md->adapterid[0] == '\\')
+			continue;
+		if (mode == 2 && md->adapterid[0] != '\\')
+			continue;
+		if (!_tcscmp (md->adapterid, name)) {
+			if (found < 0) {
+				found = i + 1;
+			} else {
+				if (found2 < 0)
+					found2 = found;
+				found = -1;
+				break;
+			}
+		}
 	}
+	if (found >= 0)
+		return found;
+
 	for (int i = 0; Displays[i].monitorname; i++) {
 		struct MultiDisplay *md = &Displays[i];
-		if (!_tcscmp (md->adaptername, name))
-			return i + 1;
+		if (mode == 1 && md->adaptername[0] == '\\')
+			continue;
+		if (mode == 2 && md->adaptername[0] != '\\')
+			continue;
+		if (!_tcscmp (md->adaptername, name)) {
+			if (found < 0) {
+				found = i + 1;
+			} else {
+				if (found2 < 0)
+					found2 = found;
+				found = -1;
+				break;
+			}
+		}
 	}
+	if (found >= 0)
+		return found;
+
 	for (int i = 0; Displays[i].monitorname; i++) {
 		struct MultiDisplay *md = &Displays[i];
-		if (!_tcscmp (md->adapterid, name))
-			return i + 1;
+		if (mode == 1 && md->monitorname[0] == '\\')
+			continue;
+		if (mode == 2 && md->monitorname[0] != '\\')
+			continue;
+		if (!_tcscmp (md->monitorname, name)) {
+			if (found < 0) {
+				found = i + 1;
+			} else {
+				if (found2 < 0)
+					found2 = found;
+				found = -1;
+				break;
+			}
+		}
 	}
+	if (found >= 0)
+		return found;
+	if (mode == 3) {
+		if (found2 >= 0)
+			return found2;
+	}
+
 	return -1;
 }
+
+int target_get_display(const TCHAR *name)
+{
+	int disp;
+
+	//write_log(_T("target_get_display '%s'\n"), name);
+	disp = target_get_display2(name, 0);
+	//write_log(_T("Scan 0: %d\n"), disp);
+	if (disp >= 0)
+		return disp;
+	disp = target_get_display2(name, 1);
+	//write_log(_T("Scan 1: %d\n"), disp);
+	if (disp >= 0)
+		return disp;
+	disp = target_get_display2(name, 2);
+	//write_log(_T("Scan 2: %d\n"), disp);
+	if (disp >= 0)
+		return disp;
+	disp = target_get_display2(name, 3);
+	//write_log(_T("Scan 3: %d\n"), disp);
+	if (disp >= 0)
+		return disp;
+	return -1;
+}
+
 const TCHAR *target_get_display_name (int num, bool friendlyname)
 {
 	if (num <= 0)
@@ -1105,6 +1202,27 @@ static uae_u8 *ddraw_dolock (void)
 	return gfxvidinfo.outbuffer->bufmem;
 }
 
+bool lockscr3d(struct vidbuffer *vb)
+{
+	if (currentmode->flags & DM_D3D) {
+		if (!(currentmode->flags & DM_SWSCALE)) {
+			vb->bufmem = D3D_locktexture(&vb->rowbytes, NULL, false);
+			if (vb->bufmem) 
+				return true;
+		}
+	}
+	return false;
+}
+
+void unlockscr3d(struct vidbuffer *vb)
+{
+	if (currentmode->flags & DM_D3D) {
+		if (!(currentmode->flags & DM_SWSCALE)) {
+			D3D_unlocktexture();
+		}
+	}
+}
+
 int lockscr (struct vidbuffer *vb, bool fullupdate)
 {
 	int ret = 0;
@@ -1421,6 +1539,7 @@ static void close_hwnds (void)
 	rp_set_hwnd (NULL);
 #endif
 	closeblankwindows ();
+	deletestatusline();
 	if (hStatusWnd) {
 		ShowWindow (hStatusWnd, SW_HIDE);
 		DestroyWindow (hStatusWnd);
@@ -1646,32 +1765,41 @@ static int open_windows (bool mousecapture)
 	bool startactive = (started && mouseactive) || (!started && !currprefs.win32_start_uncaptured && !currprefs.win32_start_minimized);
 	bool startpaused = !started && ((currprefs.win32_start_minimized && currprefs.win32_iconified_pause) || (currprefs.win32_start_uncaptured && currprefs.win32_inactive_pause && isfullscreen () <= 0));
 	bool startminimized = !started && currprefs.win32_start_minimized && isfullscreen () <= 0;
+	int input = 0;
 
-	if (!rp_isactive () && mousecapture && startactive)
+	if (mousecapture && startactive)
 		setmouseactive (-1);
 
-	bool upd = false;
+	int upd = 0;
 	if (startactive) {
 		setpriority (&priorities[currprefs.win32_active_capture_priority]);
-		upd = true;
+		upd = 2;
 	} else if (startminimized) {
 		setpriority (&priorities[currprefs.win32_iconified_priority]);
 		setminimized ();
+		input = currprefs.win32_inactive_input;
+		upd = 1;
 	} else {
 		setpriority (&priorities[currprefs.win32_inactive_priority]);
-		upd = true;
+		input = currprefs.win32_inactive_input;
+		upd = 2;
 	}
-	if (upd) {
+	if (upd > 1) {
 		for (i = 0; i < NUM_LEDS; i++)
 			gui_flicker_led (i, -1, -1);
-		gui_led (LED_POWER, gui_data.powerled);
+		gui_led (LED_POWER, gui_data.powerled, gui_data.powerled_brightness);
 		gui_fps (0, 0, 0);
+		if (gui_data.md >= 0)
+			gui_led (LED_MD, 0, -1);
 		for (i = 0; i < 4; i++) {
 			if (currprefs.floppyslots[i].dfxtype >= 0)
-				gui_led (LED_DF0 + i, 0);
+				gui_led (LED_DF0 + i, 0, -1);
 		}
-		if (isfocus ())
-			inputdevice_acquire (TRUE);
+	}
+	if (upd > 0) {
+		inputdevice_acquire(TRUE);
+		if (!isfocus())
+			inputdevice_unacquire(true, input);
 	}
 
 	if (startpaused)
@@ -1708,9 +1836,18 @@ static int getstatuswindowheight (void)
 	return wi.rcWindow.bottom - wi.rcWindow.top;
 }
 
-void graphics_reset(void)
+void graphics_reset(bool forced)
 {
-	display_change_requested = 2;
+	if (forced) {
+		display_change_requested = 2;
+	} else {
+		// full reset if display size can't changed.
+		if (currprefs.gfx_api) {
+			display_change_requested = 3;
+		} else {
+			display_change_requested = 2;
+		}
+	}
 }
 
 void WIN32GFX_DisplayChangeRequested (int mode)
@@ -1780,6 +1917,9 @@ int check_prefs_changed_gfx (void)
 		c |= gf->gfx_filter_contrast != gfc->gfx_filter_contrast ? (1) : 0;
 		c |= gf->gfx_filter_saturation != gfc->gfx_filter_saturation ? (1) : 0;
 		c |= gf->gfx_filter_gamma != gfc->gfx_filter_gamma ? (1) : 0;
+		c |= gf->gfx_filter_integerscalelimit != gfc->gfx_filter_integerscalelimit ? (1) : 0;
+		if (j && gf->gfx_filter_autoscale != gfc->gfx_filter_autoscale)
+			c |= 8 | 64;
 		//c |= gf->gfx_filter_ != gfc->gfx_filter_ ? (1|8) : 0;
 	}
 
@@ -1797,6 +1937,9 @@ int check_prefs_changed_gfx (void)
 	c |= currprefs.gfx_iscanlines != changed_prefs.gfx_iscanlines ? (2 | 8) : 0;
 	c |= currprefs.gfx_pscanlines != changed_prefs.gfx_pscanlines ? (2 | 8) : 0;
 	c |= currprefs.monitoremu != changed_prefs.monitoremu ? (2 | 8) : 0;
+	c |= currprefs.genlock_image != changed_prefs.genlock_image ? (2 | 8) : 0;
+	c |= currprefs.genlock != changed_prefs.genlock ? (2 | 8) : 0;
+	c |= currprefs.genlock_mix != changed_prefs.genlock_mix ? (1 | 256) : 0;
 
 	c |= currprefs.gfx_lores_mode != changed_prefs.gfx_lores_mode ? (2 | 8) : 0;
 	c |= currprefs.gfx_scandoubler != changed_prefs.gfx_scandoubler ? (2 | 8) : 0;
@@ -1839,7 +1982,9 @@ int check_prefs_changed_gfx (void)
 		}
 
 		if (display_change_requested) {
-			if (display_change_requested == 2) {
+			if (display_change_requested == 3) {
+				c = 1024;
+			} else if (display_change_requested == 2) {
 				c = 512;
 			} else {
 				c = 2;
@@ -1875,6 +2020,9 @@ int check_prefs_changed_gfx (void)
 		currprefs.gfx_iscanlines = changed_prefs.gfx_iscanlines;
 		currprefs.gfx_pscanlines = changed_prefs.gfx_pscanlines;
 		currprefs.monitoremu = changed_prefs.monitoremu;
+		currprefs.genlock_image = changed_prefs.genlock_image;
+		currprefs.genlock = changed_prefs.genlock;
+		currprefs.genlock_mix = changed_prefs.genlock_mix;
 
 		currprefs.gfx_lores_mode = changed_prefs.gfx_lores_mode;
 		currprefs.gfx_scandoubler = changed_prefs.gfx_scandoubler;
@@ -1918,6 +2066,9 @@ int check_prefs_changed_gfx (void)
 				reset_drawing ();
 				S2X_reset ();
 			}
+		}
+		if (c & 1024) {
+			target_graphics_buffer_update();
 		}
 		if (c & 512) {
 			reopen_gfx ();
@@ -1971,11 +2122,11 @@ int check_prefs_changed_gfx (void)
 		}
 	}
 	if (changed) {
-		init_hz_full ();
+		init_hz_normal();
 	}
 	if (currprefs.chipset_refreshrate != changed_prefs.chipset_refreshrate) {
 		currprefs.chipset_refreshrate = changed_prefs.chipset_refreshrate;
-		init_hz_full ();
+		init_hz_normal();
 		return 1;
 	}
 
@@ -2025,9 +2176,12 @@ int check_prefs_changed_gfx (void)
 		currprefs.win32_active_nocapture_pause != changed_prefs.win32_active_nocapture_pause ||
 		currprefs.win32_inactive_nosound != changed_prefs.win32_inactive_nosound ||
 		currprefs.win32_inactive_pause != changed_prefs.win32_inactive_pause ||
+		currprefs.win32_inactive_input != changed_prefs.win32_inactive_input ||
 		currprefs.win32_iconified_nosound != changed_prefs.win32_iconified_nosound ||
 		currprefs.win32_iconified_pause != changed_prefs.win32_iconified_pause ||
-		currprefs.win32_ctrl_F11_is_quit != changed_prefs.win32_ctrl_F11_is_quit)
+		currprefs.win32_iconified_input != changed_prefs.win32_iconified_input ||
+		currprefs.win32_ctrl_F11_is_quit != changed_prefs.win32_ctrl_F11_is_quit ||
+		currprefs.right_control_is_right_win_key != changed_prefs.right_control_is_right_win_key)
 	{
 		currprefs.win32_minimize_inactive = changed_prefs.win32_minimize_inactive;
 		currprefs.leds_on_screen = changed_prefs.leds_on_screen;
@@ -2042,9 +2196,12 @@ int check_prefs_changed_gfx (void)
 		currprefs.win32_active_nocapture_pause = changed_prefs.win32_active_nocapture_pause;
 		currprefs.win32_inactive_nosound = changed_prefs.win32_inactive_nosound;
 		currprefs.win32_inactive_pause = changed_prefs.win32_inactive_pause;
+		currprefs.win32_inactive_input = changed_prefs.win32_inactive_input;
 		currprefs.win32_iconified_nosound = changed_prefs.win32_iconified_nosound;
 		currprefs.win32_iconified_pause = changed_prefs.win32_iconified_pause;
+		currprefs.win32_iconified_input = changed_prefs.win32_iconified_input;
 		currprefs.win32_ctrl_F11_is_quit = changed_prefs.win32_ctrl_F11_is_quit;
+		currprefs.right_control_is_right_win_key = changed_prefs.right_control_is_right_win_key;
 		inputdevice_unacquire ();
 		currprefs.keyboard_leds_in_use = changed_prefs.keyboard_leds_in_use = (currprefs.keyboard_leds[0] | currprefs.keyboard_leds[1] | currprefs.keyboard_leds[2]) != 0;
 		pause_sound ();
@@ -2431,6 +2588,7 @@ void gfx_set_picasso_state (int on)
 {
 	struct winuae_currentmode wc;
 	struct apmode *newmode, *oldmode;
+	struct gfx_filterdata *newf, *oldf;
 	int mode;
 
 	if (screen_is_picasso == on)
@@ -2442,9 +2600,24 @@ void gfx_set_picasso_state (int on)
 	newmode = &currprefs.gfx_apmode[on ? 1 : 0];
 	oldmode = &currprefs.gfx_apmode[on ? 0 : 1];
 
+	newf = &currprefs.gf[on ? 1 : 0];
+	oldf = &currprefs.gf[on ? 0 : 1];
+
 	updatemodes ();
 	update_gfxparams ();
 	clearscreen ();
+
+	// if filter changes, need to reset
+	mode = 0;
+	if (newf->gfx_filter != oldf->gfx_filter)
+		mode = -1;
+	for (int i = 0; i <= 2 * MAX_FILTERSHADERS; i++) {
+		if (_tcscmp(newf->gfx_filtershader[i], oldf->gfx_filtershader[i]))
+			mode = -1;
+		if (_tcscmp(newf->gfx_filtermask[i], oldf->gfx_filtermask[i]))
+			mode = -1;
+	}
+	// if screen parameter changes, need to reopen window
 	if (newmode->gfx_fullscreen != oldmode->gfx_fullscreen ||
 		(newmode->gfx_fullscreen && (
 			newmode->gfx_backbuffers != oldmode->gfx_backbuffers ||
@@ -2454,8 +2627,13 @@ void gfx_set_picasso_state (int on)
 			newmode->gfx_vflip != oldmode->gfx_vflip ||
 			newmode->gfx_vsync != oldmode->gfx_vsync))) {
 		mode = 1;
-	} else {
-		mode = modeswitchneeded (&wc);
+	}
+	if (mode <= 0) {
+		int m = modeswitchneeded (&wc);
+		if (m > 0)
+			mode = m;
+		if (m < 0 && !mode)
+			mode = m;
 		if (!mode)
 			goto end;
 	}
@@ -2599,7 +2777,7 @@ static void createstatuswindow (void)
 	LPINT lpParts;
 	int drive_width, hd_width, cd_width, power_width, fps_width, idle_width, snd_width, joy_width;
 	int joys = currprefs.win32_statusbar > 1 ? 2 : 0;
-	int num_parts = 11 + joys;
+	int num_parts = 11 + joys + 1;
 	double scaleX, scaleY;
 	WINDOWINFO wi;
 	int extra;
@@ -2634,6 +2812,10 @@ static void createstatuswindow (void)
 	power_width = (int)(42 * scaleX);
 	fps_width = (int)(64 * scaleX);
 	idle_width = (int)(64 * scaleX);
+	if (is_ppc_cpu(&currprefs))
+		idle_width += (int)(68 * scaleX);
+	if (is_x86_cpu(&currprefs))
+		idle_width += (int)(68 * scaleX);
 	snd_width = (int)(72 * scaleX);
 	joy_width = (int)(24 * scaleX);
 	GetClientRect (hMainWnd, &rc);
@@ -2642,6 +2824,10 @@ static void createstatuswindow (void)
 	if (hloc) {
 		int i = 0, i1, j;
 		lpParts = (LPINT)LocalLock (hloc);
+		// left side, msg area
+		lpParts[i] = rc.left + 2;
+		i++;
+		window_led_msg_start = i;
 		/* Calculate the right edge coordinate for each part, and copy the coords to the array.  */
 		int startx = rc.right - (drive_width * 4) - power_width - idle_width - fps_width - cd_width - hd_width - snd_width - joys * joy_width - extra;
 		for (j = 0; j < joys; j++) {
@@ -2650,6 +2836,8 @@ static void createstatuswindow (void)
 			startx += joy_width;
 		}
 		window_led_joy_start = i;
+		if (lpParts[0] >= startx)
+			lpParts[0] = startx - 1;
 		// snd
 		lpParts[i] = startx;
 		i++;
@@ -2684,8 +2872,10 @@ static void createstatuswindow (void)
 		// edge
 		lpParts[i] = lpParts[i - 1] + drive_width;
 
-		window_led_joys = lpParts[0];
-		window_led_joys_end = lpParts[1];
+		window_led_msg = lpParts[window_led_msg_start - 1];
+		window_led_msg_end = lpParts[window_led_msg_start - 1 + 1];
+		window_led_joys = lpParts[window_led_joy_start - joys];
+		window_led_joys_end = lpParts[window_led_joy_start - joys + 1];
 		window_led_hd = lpParts[i1];
 		window_led_hd_end = lpParts[i1 + 1];
 		window_led_drives = lpParts[i1 + 2];
@@ -2696,6 +2886,7 @@ static void createstatuswindow (void)
 		LocalUnlock (hloc);
 		LocalFree (hloc);
 	}
+	registertouch(hStatusWnd);
 }
 
 #if 0
@@ -3804,7 +3995,8 @@ static int create_windows_2 (void)
 			x = nx;
 			y = ny;
 		}
-		createstatuswindow ();
+		createstatuswindow();
+		createstatusline();
 		updatewinrect (false);
 		GetWindowRect (hMainWnd, &mainwin_rect);
 		if (d3dfs || dxfs)
@@ -3898,7 +4090,8 @@ static int create_windows_2 (void)
 			GetWindowRect (hMainWnd, &rc2);
 			window_extra_width = rc2.right - rc2.left - currentmode->current_width;
 			window_extra_height = rc2.bottom - rc2.top - currentmode->current_height;
-			createstatuswindow ();
+			createstatuswindow();
+			createstatusline();
 		} else {
 			x = rc.left;
 			y = rc.top;
@@ -3946,6 +4139,10 @@ static int create_windows_2 (void)
 	}
 	if (hMainWnd == NULL) {
 		hMainWnd = hAmigaWnd;
+		registertouch(hAmigaWnd);
+	} else {
+		registertouch(hMainWnd);
+		registertouch(hAmigaWnd);
 	}
 
 	updatewinrect (true);
@@ -4185,7 +4382,7 @@ static BOOL doInit (void)
 			allocsoftbuffer (_T("draw"), &gfxvidinfo.drawbuffer, currentmode->flags,
 				1600, 1280, currentmode->current_depth);
 		}
-		if (currprefs.monitoremu) {
+		if (currprefs.monitoremu || currprefs.cs_cd32fmv || (currprefs.genlock && currprefs.genlock_image)) {
 			allocsoftbuffer (_T("monemu"), &gfxvidinfo.tempbuffer, currentmode->flags,
 				currentmode->amiga_width > 1024 ? currentmode->amiga_width : 1024,
 				currentmode->amiga_height > 1024 ? currentmode->amiga_height : 1024,
@@ -4216,6 +4413,7 @@ static BOOL doInit (void)
 	}
 
 	screen_is_initialized = 1;
+	createstatusline();
 	picasso_refresh ();
 #ifdef RETROPLATFORM
 	rp_set_hwnd_delayed ();
@@ -4422,3 +4620,6 @@ void releasehdc (HDC hdc)
 #endif
 	DirectDraw_ReleaseDC (hdc);
 }
+
+
+
