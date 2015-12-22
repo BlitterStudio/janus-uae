@@ -26,7 +26,7 @@
 #include <exec/execbase.h>
 #include <proto/dos.h>
 
-//#define JUAE_DEBUG
+#define JUAE_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -48,6 +48,7 @@ TCHAR BetaStr[64];
 int start_data = 0;
 
 void fullpath(TCHAR *linkfile, int size);
+extern void logging_deinit (void);
 
 /*
  * getstartpaths
@@ -353,7 +354,7 @@ int main (int argc, TCHAR **argv) {
   reginitializeinit(&inipath);
   getstartpaths ();
 	makeverstr(VersionStr);
-	DebOut("%s", VersionStr);
+	DebOut("%s\n", VersionStr);
 	logging_init();
 	log_scsi=1;
 
@@ -363,20 +364,33 @@ int main (int argc, TCHAR **argv) {
     bug("Permit required a2\n");
   }
 
-
-#ifdef NATMEM_OFFSET
-  if(preinit_shm() /* && WIN32_RegisterClasses () && WIN32_InitLibraries ()*/ ) {
-    write_log (_T("Enumerating display devices.. \n"));
-#endif
-    enumeratedisplays (FALSE /* multi_display*/);
-#ifdef NATMEM_OFFSET
+#ifndef NATMEM_OFFSET
+  if(!init_memory()) {
+    write_log(_T("init_memory FAILED\n"));
   }
   else {
+    enumeratedisplays (FALSE /* multi_display*/);
+  }
+
+#else
+
+  if(preinit_shm() /* && WIN32_RegisterClasses () && WIN32_InitLibraries ()*/ ) {
+    write_log (_T("Enumerating display devices.. \n"));
+    enumeratedisplays (FALSE /* multi_display*/);
+  }
+  else {
+
     write_log(_T("preinit_shm FAILED\n"));
   }
-#endif
+#endif /* NATMEM_OFFSET */
+
   WIN32_HandleRegistryStuff ();
 
+
+#warning ====================================================================
+  max_z3fastmem=100 * 1024 * 1024;
+#warning  max_z3fastmem=100 * 1024 * 1024; !!!!!!!!!!!!!!!!!!!!!!!!!
+#warning ====================================================================
 
 
   if(SysBase->TDNestCnt>=0) {

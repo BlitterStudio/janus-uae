@@ -1,3 +1,6 @@
+#ifndef __GFX_H__
+#define __GFX_H__
+
 #include <intuition/intuition.h>
 
 #include "sysdeps.h"
@@ -79,4 +82,6 @@ struct PicassoResolution
 	int rawmode;
 	bool lace; // all modes lace
 };
+
+#endif /* __GFX_H__ */
 

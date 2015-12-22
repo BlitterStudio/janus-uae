@@ -20,6 +20,7 @@
 #include "muigui.h"
 #endif
 #include "zfile.h"
+#include "gui/gui_mui.h"
 
 #define hfd_log write_log
 #define hdf_log2
@@ -1433,7 +1434,7 @@ int win32_hardfile_media_change (const TCHAR *drvname, int inserted)
 		extern struct hd_hardfiledata *pcmcia_sram;
 		int reopen = 0;
 		struct uaedev_config_data *uci = &currprefs.mountconfig[i];
-		if (uci->ci.controller == HD_CONTROLLER_PCMCIA_SRAM) {
+		if (uci->ci.controller_type == HD_CONTROLLER_TYPE_PCMCIA_SRAM) {
 			hmc_check (&pcmcia_sram->hfd, uci, &rescanned, &reopen, &gotinsert, drvname, inserted);
 		}
 	}
@@ -1474,10 +1475,14 @@ static INT_PTR CALLBACK ProgressDialogProc (HWND hDlg, UINT msg, WPARAM wParam, 
 
 extern HMODULE hUIDLL;
 extern HINSTANCE hInst;
+#endif
 
 #define COPY_CACHE_SIZE 1024*1024
 int harddrive_to_hdf (HWND hDlg, struct uae_prefs *p, int idx)
 {
+  TODO();
+  return 1;
+#ifndef __AROS__
 	HANDLE h = INVALID_HANDLE_VALUE, hdst = INVALID_HANDLE_VALUE;
 	void *cache = NULL;
 	DWORD ret, got, gotdst, get;
@@ -1619,5 +1624,5 @@ ok:
 		CloseHandle (hdst);
 	return retcode;
         return 0;
-}
 #endif
+}

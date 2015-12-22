@@ -14,7 +14,7 @@
 #include "options.h"
 #include "inputdevice.h"
 #include "keyboard.h"
-#include "hotkeys.h"
+#include "od-aros/hotkeys.h"
 #include "keymap.h"
 
 #include "sdlgfx.h"
@@ -446,10 +446,12 @@ int sdlk2dik (int key)
         amiga_keycode = decode_dik_it (key); break;
       case KBD_LANG_ES:
         amiga_keycode = decode_dik_es (key); break;
+#if 0
       case KBD_LANG_FI:
         amiga_keycode = decode_dik_fi (key); break;
       case KBD_LANG_TR:
         amiga_keycode = decode_dik_tr (key); break;
+#endif
     }
   }
   return amiga_keycode;

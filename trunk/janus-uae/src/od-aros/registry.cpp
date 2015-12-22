@@ -582,3 +582,7 @@ int getregmode (void)
 
     return inimode;
 }
+
+bool switchreginimode(void) {
+  return false;
+}

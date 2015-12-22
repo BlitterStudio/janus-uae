@@ -23,6 +23,8 @@
  *
  ************************************************************************/
 
+#define JUAE_DEBUG
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -160,6 +162,8 @@ fs_mutex *fs_mutex_create() {
 }
 
 void fs_mutex_destroy(fs_mutex *mutex) {
+
+  DebOut("mutex %d\n", mutex);
 #if defined(USE_PTHREADS)
     pthread_mutex_destroy(&mutex->mutex);
 #elif defined(USE_GLIB)
@@ -298,6 +302,12 @@ fs_semaphore *fs_semaphore_create(int value) {
 }
 
 void fs_semaphore_destroy(fs_semaphore *semaphore) {
+
+  DebOut("semaphore: %lx\n", semaphore);
+  if(!semaphore) {
+    DebOut("ERROR: semaphore is NULL!? This would crash WinUAE..\n");
+    return;
+  }
 #if defined(USE_PSEM)
     sem_destroy(&semaphore->semaphore);
 #elif defined(USE_SDL)

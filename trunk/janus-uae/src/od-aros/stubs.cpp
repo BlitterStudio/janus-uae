@@ -23,6 +23,8 @@
  *
  ************************************************************************/
 
+#define JUAE_DEBUG
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -53,12 +55,6 @@ volatile int bsd_int_requested;
 #warning arosrom/arosrom_len never defined in WinUAE !?
 unsigned int arosrom_len;
 unsigned char arosrom[10];
-#if 0
-int debuggable(void) 
-{
-  TODO();
-}
-#endif
 
 int init_sound (void)
 {
@@ -503,14 +499,6 @@ void notify_user_parms (int msg, const TCHAR *parms, ...)
   TODO();
 }
 
-#if 0
-void toggle_fullscreen (int mode)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-#endif
-
 void update_debug_info(void)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));    
@@ -599,12 +587,6 @@ void restore_a2065_finish (void)
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
 }
-
-int target_checkcapslock (int scancode, int *state)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
 #endif
 
 int uaenet_getdatalenght (void)
@@ -640,14 +622,6 @@ int target_get_volume_name (struct uaedev_mount_info *mtinf, const TCHAR *volume
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
 }
-
-#if 0
-int check_prefs_changed_gfx (void) 
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-#endif
 
 void amiga_clipboard_got_data (uaecptr data, uae_u32 size, uae_u32 actual)
 {
@@ -958,13 +932,6 @@ int input_get_default_joystick (struct uae_input_device *uid, int i, int port, i
   return 0;
 }
 
-#if 0
-int input_get_default_mouse (struct uae_input_device *uid, int i, int port, int af, bool gp, bool wheel, bool joymouseswap) {
-  TODO();
-  return 0;
-}
-#endif
-
 void ethernet_enumerate_free (void) {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
@@ -995,6 +962,10 @@ void ethernet_close (struct netdriverdata *ndd, void *vsd) {
 
 void ethernet_trigger (void *vsd) {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
+  TODO();
+}
+
+void ethernet_trigger(netdriverdata *a, void *b) {
   TODO();
 }
 
@@ -1042,4 +1013,96 @@ int enumerate_sound_devices (void) {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
   return 0;
+}
+
+int timeend (void) {
+  TODO();
+}
+int timebegin (void) {
+  TODO();
+}
+
+void driveclick_fdrawcmd_detect(void) {
+  TODO();
+}
+
+void mman_ResetWatch (void *lpBaseAddress, unsigned long dwRegionSize) {
+  TODO();
+}
+
+int mman_GetWriteWatch (uae_u8 *start, LONG size, void **lpAddresses, int *lpdwCount, ULONG *lpdwGranularity) {
+  TODO();
+}
+
+void sndboard_ext_volume(void) {
+  TODO();
+}
+
+void audio_state_sndboard(int ch) {
+  TODO();
+}
+
+void update_sndboard_sound (double clk) {
+  TODO();
+}
+
+#include "qemuvga/qemuaudio.h"
+
+SWVoiceIn *AUD_open_in( QEMUSoundCard *card, SWVoiceIn *sw, const char *name, void *callback_opaque, audio_callback_fn callback_fn, struct audsettings *settings)
+{
+  TODO();
+}
+
+void AUD_close_in(QEMUSoundCard *card, SWVoiceIn *sw) {
+  TODO();
+}
+
+SWVoiceOut *AUD_open_out( QEMUSoundCard *card, SWVoiceOut *sw, const char *name, void *callback_opaque, audio_callback_fn callback_fn, struct audsettings *settings) {
+  TODO();
+}
+
+void AUD_close_out(QEMUSoundCard *card, SWVoiceOut *sw) {
+  TODO();
+}
+
+void AUD_set_active_in(SWVoiceIn *sw, int on) {
+  TODO();
+}
+
+int  AUD_is_active_out(SWVoiceOut *sw) {
+  TODO();
+}
+
+int  AUD_read(SWVoiceIn *sw, void *pcm_buf, int size) {
+  TODO();
+}
+
+int  AUD_write(SWVoiceOut *sw, void *pcm_buf, int size) {
+  TODO();
+}
+
+void AUD_set_active_out(SWVoiceOut *sw, int on) {
+  TODO();
+}
+
+bool ismouseactive (void) {
+  TODO();
+}
+
+void statusline_updated(void) {
+  TODO();
+}
+
+void statusline_render(uae_u8 *buf, int bpp, int pitch, int width, int height, uae_u32 *rc, uae_u32 *gc, uae_u32 *bc, uae_u32 *alpha) {
+  //TODO();
+}
+
+int uaeser_getdatalength(void) {
+  TODO();
+
+  return 1024; /* ?? */
+}
+
+bool target_can_autoswitchdevice(void) {
+  TODO();
 }

@@ -17,6 +17,10 @@
  * OpenGL support by Jochen Becher, Richard Drummond
  */
 
+/* not used anymore */
+
+#define JUAE_DEBUG
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include "keymap.h"
@@ -24,6 +28,7 @@
 #include "sdlkeys_dik.h"
 #include "options.h"
 #include "sdl_aros.h"
+#include "picasso96_aros.h"
 #include "gfx.h"
 
 #include <SDL.h>
@@ -131,7 +136,9 @@ extern void setid_af (struct uae_input_device *uid, int i, int slot, int sub, in
 #endif
 #endif
 
-#define DEBUG_LOG bug
+#ifdef __AROS__
+#define DEBUG_LOG DebOut
+#endif
 
 SDL_Surface *display = NULL;
 SDL_Surface *screen = NULL;
@@ -160,7 +167,7 @@ static int picasso_maxw = 0, picasso_maxh = 0;
 #endif
 
 static int bitdepth, bit_unit;
-static int current_width, current_height;
+//static int current_width, current_height;
 
 #define MAX_MAPPINGS 256
 
@@ -516,15 +523,14 @@ static int find_best_mode (int *width, int *height, int depth, int fullscreen)
     return found;
 }
 
+
 #ifdef PICASSO96
 
 int picasso_palette (void)
 {
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    //SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
-  TODO();
-  return false;
-#if 0
+  DebOut("entered\n");
         int i = 0, changed = 0;
 
         for ( ; i < 256; i++) {
@@ -541,8 +547,8 @@ int picasso_palette (void)
                 }
         }
         return changed;
-#endif
 }
+
 /*
  * Map an SDL pixel format to a P96 pixel format
  */
@@ -612,6 +618,7 @@ static int get_p96_pixel_format (const struct SDL_PixelFormat *fmt)
     return RGBFB_NONE;
 }
 #endif
+
 
 /*
  * Build list of full-screen screen-modes supported by SDL
@@ -831,10 +838,10 @@ void render_gl_buffer (const struct gl_buffer_t *buffer, int first_line, int las
         amiga_real_h = 284;
     }
 
-    if ((current_width >= amiga_real_w ) &&  (current_height >= amiga_real_h )  && (!screen_is_picasso)  ) {
-        right_crop  = (current_width - amiga_real_w);
+    if ((currentmode->current_width >= amiga_real_w ) &&  (currentmode->current_height >= amiga_real_h )  && (!screen_is_picasso)  ) {
+        right_crop  = (currentmode->current_width - amiga_real_w);
         left_crop   = 0;
-        bottom_crop = (current_height - amiga_real_h);
+        bottom_crop = (currentmode->current_height - amiga_real_h);
         top_crop    = 0;
 
         bottom_crop     = bottom_crop - bottomledspace ;
@@ -899,14 +906,14 @@ STATIC_INLINE void sdl_flush_block_nolock (struct vidbuf_description *gfxinfo, s
     SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
     SDLGD(bug("[JUAE:SDL] %s: display 0x%p vidbuf_description @ 0x%p\n", __PRETTY_FUNCTION__, display, gfxinfo));
-    SDLGD(bug("[JUAE:SDL] %s: 0, %d ->  %d, %d\n", __PRETTY_FUNCTION__, first_line, current_width, last_line - first_line + 1));
+    SDLGD(bug("[JUAE:SDL] %s: 0, %d ->  %d, %d\n", __PRETTY_FUNCTION__, first_line, currentmode->current_width, last_line - first_line + 1));
 
     if(first_line >= last_line) {
 #warning first_line >= last_line should not happen at all?
         SDLGD(bug("[JUAE:SDL] WARNING: %d >= %d\n", first_line, last_line));
     }
     else {
-        SDL_UpdateRect (display, 0, first_line, current_width, last_line - first_line + 1);
+        SDL_UpdateRect (display, 0, first_line, currentmode->current_width, last_line - first_line + 1);
     }
 }
 
@@ -952,9 +959,11 @@ static void sdl_unlock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb
 
 static void sdl_flush_block (struct vidbuf_description *gfxinfo, struct vidbuffer *vb, int first_line, int last_line)
 {
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    //SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
-    DEBUG_LOG ("Function: flush_block %d %d\n", first_line, last_line);
+    //DEBUG_LOG ("Function: flush_block %d %d\n", first_line, last_line);
+    
+    TODO();
 
     SDL_UnlockSurface (display);
 
@@ -1002,33 +1011,13 @@ static void sdl_flush_clear_screen (struct vidbuf_description *gfxinfo, struct v
 
 void flush_screen (struct vidbuffer *vb, int first_line, int last_line) {
 
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    //SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
-    SDLGD(bug("[JUAE:SDL] %s: vidbuffer @0x%p (%d -> %d)\n", __PRETTY_FUNCTION__, vb, first_line, last_line));
+  //DebOut("vidbuffer @0x%p (%d -> %d)\n", vb, first_line, last_line);
 
-  SDL_UpdateRect (display, 0, first_line, current_width, last_line - first_line + 1);
+  SDL_UpdateRect (display, 0, first_line, currentmode->current_width, last_line - first_line + 1);
 
-
-#if 0
-	if (dx_islost ())
-		return;
-	flushymin = 0;
-	flushymax = currentmode->amiga_height;
-	if (currentmode->flags & DM_D3D) {
-		D3D_flip ();
-#ifdef GFXFILTER
-	} else if (currentmode->flags & DM_SWSCALE) {
-		S2X_render ();
-		DirectDraw_Flip (1);
-#endif
-	} else if (currentmode->flags & DM_DDRAW) {
-		DirectDraw_Flip (1);
-	}
-#endif
 }
-
-
-
 
 #ifdef USE_GL
 
@@ -1102,7 +1091,7 @@ void fill_DisplayModes(struct MultiDisplay *md) {
   int result = 0;
   unsigned int i;
 
-  SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+  DebOut("md: %lx\n", md);
 
   max_uae_width = 8192;
   max_uae_height = 8192;
@@ -1147,6 +1136,8 @@ void fill_DisplayModes(struct MultiDisplay *md) {
 }
 
 int graphics_setup(void) {
+
+  DebOut("graphics_setup (does nothing)\n");
 
   /* fill_DisplayModes was hopefully called before! */
   return graphics_setup_success;
@@ -1203,8 +1194,8 @@ static int graphics_subinit_gl (void)
     if (fullscreen) {
         uiSDLVidModFlags |= SDL_FULLSCREEN;
     }
-    DEBUG_LOG ("Resolution     : %d x %d \n", current_width, current_height);
-    screen = SDL_SetVideoMode (current_width, current_height, 0, uiSDLVidModFlags);
+    DEBUG_LOG ("Resolution     : %d x %d \n", currentmode->current_width, currentmode->current_height);
+    screen = SDL_SetVideoMode (currentmode->current_width, currentmode->current_height, 0, uiSDLVidModFlags);
 
     if (screen == NULL) {
         gui_message ("Unable to set video mode: %s\n", SDL_GetError ());
@@ -1254,8 +1245,8 @@ static int graphics_subinit_gl (void)
 
     check_gl_extensions ();
 
-    init_gl_display (current_width, current_height);
-    if (!alloc_gl_buffer (&glbuffer, current_width, current_height, want_16bit))
+    init_gl_display (currentmode->current_width, currentmode->current_height);
+    if (!alloc_gl_buffer (&glbuffer, currentmode->current_width, currentmode->current_height, want_16bit))
         return 0;
 
 #ifdef PICASSO96
@@ -1303,7 +1294,7 @@ static int graphics_subinit_gl (void)
 
 static int graphics_subinit (void)
 {
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    DebOut("entered\n");
 
 #ifdef USE_GL
     if (currprefs.use_gl) {
@@ -1328,9 +1319,9 @@ static int graphics_subinit (void)
       DEBUG_LOG ("force bitdepth of 32 instead of 24\n");
       bitdepth=32;
     }
-    DEBUG_LOG ("Resolution     : %d x %d x %d\n", current_width, current_height, bitdepth);
+    DEBUG_LOG ("Resolution     : %d x %d x %d\n", currentmode->current_width, currentmode->current_height, bitdepth);
 
-    screen = SDL_SetVideoMode (current_width, current_height, bitdepth, uiSDLVidModFlags);
+    screen = SDL_SetVideoMode (currentmode->current_width, currentmode->current_height, bitdepth, uiSDLVidModFlags);
 
     if (screen == NULL) {
         gui_message ("Unable to set video mode: %s\n", SDL_GetError ());
@@ -1457,6 +1448,8 @@ static int graphics_subinit (void)
     return 1;
 }
 
+void update_gfxparams(void);
+
 int graphics_init (bool b)
 {
     int success = 0;
@@ -1479,6 +1472,7 @@ int graphics_init (bool b)
 
     fixup_prefs_dimensions (&currprefs);
 
+#if OLD
     //current_width  = currprefs.gfx_size_win.width;
     //current_height = currprefs.gfx_size_win.height;
     current_width  = currprefs.gfx_size_win.width;
@@ -1491,11 +1485,16 @@ int graphics_init (bool b)
     if (find_best_mode (&current_width, &current_height, bitdepth, fullscreen)) {
       currprefs.gfx_size_win.width  = current_width;
       currprefs.gfx_size_win.height = current_height;
+#else
+      update_gfxparams();
+#endif
 
       if (graphics_subinit ()) {
         success = 1;
       }
+#if OLD
     }
+#endif
     return success;
 }
 
@@ -1886,6 +1885,7 @@ void LED (int on)
 
 #ifdef PICASSO96
 /* TODO: x and width */
+
 void DX_Invalidate (int x, int y, int width, int height)
 {
 
@@ -1918,25 +1918,6 @@ void DX_Invalidate (int x, int y, int width, int height)
   picasso_invalid_start = y;
   picasso_invalid_stop = last;
   
-#if 0
-/* was: */
-    if (is_hwsurface)
-        return;
-
-    if (first > last)
-        return;
-
-    picasso_has_invalid_lines = 1;
-    if (first < picasso_invalid_start)
-        picasso_invalid_start = first;
-    if (last > picasso_invalid_stop)
-        picasso_invalid_stop = last;
-
-    while (first <= last) {
-        picasso_invalid_lines[first] = 1;
-        first++;
-    }
-#endif
 }
 
 static int palette_update_start = 256;
@@ -1944,11 +1925,12 @@ static int palette_update_end   = 0;
 
 void DX_SetPalette (int start, int count)
 {
-    DEBUG_LOG ("Function: DX_SetPalette\n");
+    DEBUG_LOG ("Function: DX_SetPalette (start %d, count %d)\n", start, count);
 
-    if (! screen_is_picasso || picasso96_state.RGBFormat != RGBFB_CHUNKY)
+    if (! screen_is_picasso || picasso96_state.RGBFormat != RGBFB_CHUNKY) {
+      DebOut("!screen_is_picasso: %d || picasso96_state.RGBFormat %d != %d\n", screen_is_picasso, picasso96_state.RGBFormat, RGBFB_CHUNKY);
         return;
-#if 0
+    }
 
     if (picasso_vidinfo.pixbytes != 1) {
         /* This is the case when we're emulating a 256 color display. */
@@ -1967,8 +1949,8 @@ void DX_SetPalette (int start, int count)
         }
         SDL_SetColors (screen, &p96Colors[start], start, count);
     }
-#endif
-    TODO();
+
+    DebOut("done\n");
 }
 
 void DX_SetPalette_vsync(void)
@@ -1979,9 +1961,11 @@ void DX_SetPalette_vsync(void)
         palette_update_start = 0;
     }
 }
+#endif
 
 void DX_Fill (int dstx, int dsty, int width, int height, uae_u32 color)
 {
+  DebOut("dstx %d, dsty %d, width %d, height %d, color %lx\n", dstx, dsty, width, height, color);
     SDLGD(bug("entered\n"));
 #ifdef USE_GL /* TODO think about optimization for GL */
     if (!currprefs.use_gl) {
@@ -1999,29 +1983,32 @@ void DX_Fill (int dstx, int dsty, int width, int height, uae_u32 color)
     return;
 }
 
+#if 0
 int DX_Blit (int srcx, int srcy, int dstx, int dsty, int width, int height, BLIT_OPCODE opcode)
 {
     /* not implemented yet */
     return 0;
 }
+#endif
 
 static void set_window_for_picasso (void)
 {
     SDLGD(bug("entered\n"));
     DEBUG_LOG ("Function: set_window_for_picasso\n");
 
-    if (screen_was_picasso && current_width == picasso_vidinfo.width && current_height == picasso_vidinfo.height)
+    if (screen_was_picasso && currentmode->current_width == picasso_vidinfo.width && currentmode->current_height == picasso_vidinfo.height)
         return;
 
     screen_was_picasso = 1;
     graphics_subshutdown();
-    current_width  = picasso_vidinfo.width;
-    current_height = picasso_vidinfo.height;
+    currentmode->current_width  = picasso_vidinfo.width;
+    currentmode->current_height = picasso_vidinfo.height;
     graphics_subinit();
 }
 
 void gfx_set_picasso_modeinfo (uae_u32 w, uae_u32 h, uae_u32 depth, RGBFTYPE rgbfmt)
 {
+  TODO();
     DEBUG_LOG ("Function: gfx_set_picasso_modeinfo w: %i h: %i depth: %i rgbfmt: %i\n", w, h, depth, rgbfmt);
     bug    ("Function: gfx_set_picasso_modeinfo w: %i h: %i depth: %i rgbfmt: %i\n", w, h, depth, rgbfmt);
 
@@ -2037,12 +2024,6 @@ void gfx_set_picasso_modeinfo (uae_u32 w, uae_u32 h, uae_u32 depth, RGBFTYPE rgb
 /* Color management */
 
 //static xcolnr xcol8[4096];
-
-#if 0
-static int red_bits, green_bits, blue_bits, alpha_bits;
-static int red_shift, green_shift, blue_shift, alpha_shift;
-static int alpha;
-#endif
 
 void gfx_set_picasso_colors (RGBFTYPE rgbfmt)
 {
@@ -2070,8 +2051,12 @@ void gfx_set_picasso_state (int on)
     if (on) {
 #endif
         // Set height, width for Picasso gfx
-        current_width  = picasso_vidinfo.width;
-        current_height = picasso_vidinfo.height;
+#if OLD
+        currentmode->current_width  = picasso_vidinfo.width;
+        currentmode->current_height = picasso_vidinfo.height;
+#else
+        update_gfxparams();
+#endif
         graphics_subinit ();
 #if 0
     } else {
@@ -2090,7 +2075,7 @@ void gfx_set_picasso_state (int on)
 
 uae_u8 *gfx_lock_picasso (bool fullupdate, bool doclear)
 {
-    DEBUG_LOG ("Function: gfx_lock_picasso\n");
+    //DEBUG_LOG ("Function: gfx_lock_picasso\n");
 
 #ifdef USE_GL
     if (!currprefs.use_gl) {
@@ -2109,12 +2094,13 @@ uae_u8 *gfx_lock_picasso (bool fullupdate, bool doclear)
 
 /* doclear is not used at all ? */
 uae_u8 *gfx_lock_picasso (bool fullupdate) {
-  return gfx_lock_picasso (fullupdate, false);
+  TODO();
+  //return gfx_lock_picasso (fullupdate, false);
 }
 
 void gfx_unlock_picasso (bool dorender)
 {
-    DEBUG_LOG ("Function: gfx_unlock_picasso\n");
+    //DEBUG_LOG ("Function: gfx_unlock_picasso\n");
 
 #ifdef USE_GL
     if (!currprefs.use_gl) {
@@ -2125,7 +2111,7 @@ void gfx_unlock_picasso (bool dorender)
     }
 #endif /* USE_GL */
 }
-#endif /* PICASSO96 */
+//#endif /* PICASSO96 */
 
 int is_fullscreen (void)
 {
@@ -2180,11 +2166,6 @@ void toggle_mousegrab (void)
             }
         }
     }
-}
-
-void screenshot (int mode, int doprepare)
-{
-    write_log ("Screenshot not supported yet\n");
 }
 
 /*
@@ -2298,21 +2279,6 @@ static int get_mouse_flags (int num)
 
     return 0;
 }
-
-struct inputdevice_functions inputdevicefunc_mouse = {
-    init_mouse,
-    close_mouse,
-    acquire_mouse,
-    unacquire_mouse,
-    read_mouse,
-    get_mouse_num,
-    get_mouse_friendlyname,
-    get_mouse_uniquename,
-    get_mouse_widget_num,
-    get_mouse_widget_type,
-    get_mouse_widget_first,
-    get_mouse_flags
-};
 
 /*
  * Keyboard inputdevice functions
@@ -2469,38 +2435,23 @@ static int get_kb_flags (int num)
     return 0;
 }
 
-struct inputdevice_functions inputdevicefunc_keyboard =
-{
-    init_kb,
-    close_kb,
-    acquire_kb,
-    unacquire_kb,
-    read_kb,
-    get_kb_num,
-    get_kb_friendlyname,
-    get_kb_uniquename,
-    get_kb_widget_num,
-    get_kb_widget_type,
-    get_kb_widget_first,
-    get_kb_flags
-};
-
 //static int capslockstate;
 
 int getcapslockstate (void)
 {
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+  TODO();
+    //SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
-    return SDL_GetModState() & KMOD_CAPS;
+    //return SDL_GetModState() & KMOD_CAPS;
 }
 
 void setcapslockstate (int state)
 {
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+  TODO();
+    //SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
     //TODO:
 }
-
 
 static void setid (struct uae_input_device *uid, int i, int slot, int sub, int port, int evt, bool gp)
 {
@@ -2665,5 +2616,4 @@ void flush_block (struct vidbuffer *vb, int first, int last) {
 
   sdl_flush_block_nolock (&gfxvidinfo, vb, first, last);
 }
-
 

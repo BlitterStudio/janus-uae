@@ -23,7 +23,7 @@
  *
  ************************************************************************/
 
-//#define JUAE_DEBUG
+#define JUAE_DEBUG
 #include <stdio.h>
 #include <proto/dos.h>
 #include <dos/dos.h>
@@ -35,6 +35,7 @@
 #include "options.h"
 #include "fsdb.h"
 #include "winnt.h"
+#include "aros.h"
 
 #define MAXFILESIZE32 (0x7fffffff)
 
@@ -154,7 +155,7 @@ bool my_stat (const TCHAR *name, struct mystat *statbuf) {
   BPTR lock=NULL;
   bool result=FALSE;
 
-  D(bug("[JUAE:A-FSDB] %s('%s')\n", __PRETTY_FUNCTION__, name));
+  DebOut("name: %s\n", name);
 
   lock=Lock(name, SHARED_LOCK);
   if(!lock) {
@@ -175,7 +176,7 @@ bool my_stat (const TCHAR *name, struct mystat *statbuf) {
     statbuf->mode |= FILEFLAG_DIR;
   }
 
-#ifdef DEBUG
+#ifdef JUAE_DEBUG
   {
     char flags[8];
     flags[0] = fib->fib_Protection & FIBF_SCRIPT  ? 's' : '-';
@@ -188,7 +189,7 @@ bool my_stat (const TCHAR *name, struct mystat *statbuf) {
     flags[5] = fib->fib_Protection & FIBF_EXECUTE ? '-' : 'e';
     flags[6] = fib->fib_Protection & FIBF_DELETE  ? '-' : 'd';
     flags[7] = 0x00;
-    bug("[JUAE:A-FSDB] %s: %s protection: %s\n", __PRETTY_FUNCTION__, name, flags);
+    DebOut("%s protection: %s\n", name, flags);
   }
 #endif
 
@@ -606,7 +607,8 @@ bool my_utime (const TCHAR *name, struct mytimeval *tv) {
     tv2.tv_sec = tv->tv_sec;
     tv2.tv_usec = tv->tv_usec;
 
-    timeval_to_amiga (&tv2, &stamp.ds_Days, &stamp.ds_Minute, &stamp.ds_Tick);
+    /* WARNING: tickcount=50 !? */
+    timeval_to_amiga (&tv2, &stamp.ds_Days, &stamp.ds_Minute, &stamp.ds_Tick, 50);
   }
 
   DebOut("stamp.ds_Days: %d\n", stamp.ds_Days);
@@ -889,6 +891,35 @@ int my_issamevolume(const TCHAR *path1, const TCHAR *path2, TCHAR *path) {
   return cnt;
 }
 
+/****************************************************************
+ * my_issamepath
+ *
+ * return FALSE, if paths differ
+ *
+ * WARNING: This has never been tested! See od-win32
+ ****************************************************************/
+bool my_issamepath(const TCHAR *path1, const TCHAR *path2) {
+
+  TCHAR p1[MAX_DPATH];
+  TCHAR p2[MAX_DPATH];
+
+  DebOut("path1: %s\n", path1);
+  DebOut("path2: %s\n", path2);
+
+  strncpy(p1, path1, MAX_DPATH);
+  strncpy(p2, path2, MAX_DPATH);
+  fullpath(p1, MAX_DPATH);
+  fullpath(p2, MAX_DPATH);
+
+  DebOut("p1: %s\n", p1);
+  DebOut("p2: %s\n", p2);
+
+  if (!stricmp(p1, p2)) {
+    return true;
+  }
+  return false;
+}
+
 /******************************************************************
  * my_chmod
  *
@@ -1061,4 +1092,17 @@ int fsdb_set_file_attrs (a_inode *aino) {
   }
 
   return ERROR_OBJECT_NOT_AROUND;
+}
+
+const TCHAR *my_getfilepart(const TCHAR *filename) {
+
+  return FilePart(filename);
+}
+
+bool my_createshortcut(const TCHAR *source, const TCHAR *target, const TCHAR *description) {
+  TODO();
+}
+
+bool myAddPart(TCHAR *dirname, const TCHAR *filename, ULONG size ) {
+  return AddPart(dirname, filename, size);
 }

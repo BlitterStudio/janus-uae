@@ -20,14 +20,11 @@
  * $Id$
  *
  ************************************************************************/
+#ifndef __SYSCONFIG_H__
+#define __SYSCONFIG_H__
 
-
-#ifdef __AROS__
-#include <aros/cpu.h>
-/* not nice, but sysconfig.h is included both from native linux tools and 
- * AROS tools. TODO: move this soemwhere else..
- */
-#include "thread.h"
+#ifndef CROSS_COMPILE
+//#include <proto/dos.h>
 #endif
 
 #define SUPPORT_THREADS
@@ -43,13 +40,15 @@
 #define UAE_FILESYS_THREADS
 #define AUTOCONFIG /* autoconfig support, fast ram, harddrives etc.. */
 #define JIT
-#define NATMEM_OFFSET natmem_offset /* j-uae has it not defined */
+//#define NATMEM_OFFSET natmem_offset /* j-uae has it not defined */
+#define NATMEM_OFFSET natmem_offset
 //#define CATWEASEL /* Catweasel MK2/3 support */
 #define ECS_DENISE /* ECS DENISE new features */
 #define AGA        /* AGA chipset emulation (ECS_DENISE must be enabled) */
 #define CD32
 #define CDTV
 #define SCSIEMU
+#define NCR9X
 #define FPUEMU
 #define FPU_UAE
 #define MMUEMU /* Aranym 68040 MMU */
@@ -67,10 +66,11 @@
 #define CPUEMU_32 /* Previous 68030 MMU */
 #define CPUEMU_33 /* 68060 MMU */
 #define CPUEMU_40 /* generic 680x0 with indirect memory access */
+#define CPUEMU_50 /* generic 680x0 with indirect memory access */
 #define ACTION_REPLAY /* Action Replay 1/2/3 support */
 #define PICASSO96 /* Picasso96 display card emulation */
 #define UAEGFX_INTERNAL /* built-in libs:picasso96/uaegfx.card */
-#define WITH_SLIRP
+//#define WITH_SLIRP
 #define ARCADIA /* Arcadia arcade system */
 #define SAVESTATE /* State file support */
 #define A2091 /* A590/A2091 SCSI */
@@ -78,7 +78,7 @@
 #define GFXBOARD /* Hardware graphics board */
 #define NCR /* A4000T/A4091 SCSI */
 
-//#define PICASSO96_SUPPORTED
+#define PICASSO96_SUPPORTED
 
 #else
 
@@ -430,9 +430,16 @@
 #define SIZEOF_FLOAT 4
 #define SIZEOF_DOUBLE 8
 
+#ifndef UAE
+#define UAE
+#endif
+
 /* The size of `void *', as computed by sizeof. */
 #if (__WORDSIZE == 64)
 #define SIZEOF_VOID_P 8
+#ifndef __x86_64__
+#define __x86_64__
+#endif
 #else
 #define SIZEOF_VOID_P 4
 #endif
@@ -531,3 +538,91 @@
 
 #define FSDB_DIR_SEPARATOR      '/'
 #define FSDB_DIR_SEPARATOR_S _T("/")
+
+/* build68k.c needs it */
+#ifdef __linux__
+#include "od-aros/tchar.h"
+#define strnicmp strncasecmp 
+#endif
+
+
+#ifdef __AROS__
+
+#include <aros/cpu.h>
+/* not nice, but sysconfig.h is included both from native linux tools and 
+ * AROS tools. TODO: move this soemwhere else..
+ */
+//#include "thread.h"
+
+#define _cdecl
+#define __cdecl
+
+/* Exception is used both in AROS and in uae :(.. I don't like that! */
+#undef Exception
+#include <aros/debug.h>
+#include "tchar.h"
+
+#if defined(JUAE_DEBUG)
+#define DebOut(...) do { bug("[%lx]: %s:%d %s(): ",FindTask(NULL),__FILE__,__LINE__,__func__);bug(__VA_ARGS__); } while(0)
+#define TODO() bug("TODO ==> %s:%d: %s\n", __FILE__, __LINE__, __PRETTY_FUNCTION__)
+#else
+#define DebOut(...)
+#define TODO(...)
+#endif
+
+#undef Exception
+#define REGPARAM
+#define REGPARAM3 
+extern void REGPARAM3 Exception (int) REGPARAM;
+#undef REGPARAM
+#undef REGPARAM3 
+
+
+#define _strdup strdup
+#define _stricmp stricmp 
+#define _strnicmp strnicmp 
+#define _strtoui64(x,y,z) strtoull(x,y,z)
+#define _tstol atol
+#define _tstof atof
+#define _tstoi atoi
+#define _tfopen fopen
+#define _fseeki64 fseek
+#define _ftelli64 ftell
+
+/* wide char unlink */
+#define _wunlink unlink
+
+/************** Windows data types ****************************/
+/* DWORD - 32-bit unsigned integer. */
+#define DWORD  uint32_t
+#define UINT  uint32_t
+#define USHORT uint16_t
+
+
+typedef struct _RECT {
+  long left;
+  long top;
+  long right;
+  long bottom;
+} RECT, *PRECT;
+
+#ifdef __AROS__
+/*  According to http://msdn.microsoft.com/de-de/library/htb3tdkc.aspx:
+    Difference in seconds between coordinated universal time and local time. The default value is 28,800.  
+    I somehow doubt, this works. */
+#define _timezone 28.8
+#endif
+
+
+#define FILEFLAG_DIR     0x1
+#define FILEFLAG_ARCHIVE 0x2
+#define FILEFLAG_WRITE   0x4
+#define FILEFLAG_READ    0x8
+#define FILEFLAG_EXECUTE 0x10
+#define FILEFLAG_SCRIPT  0x20
+#define FILEFLAG_PURE    0x40
+
+
+#endif
+
+#endif /* __SYSCONFIG_H__*/

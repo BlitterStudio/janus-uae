@@ -10,6 +10,8 @@
 
 //#define MEMDEBUG
 
+#define JUAE_DEBUG
+
 #include <stdlib.h>
 #include <stdarg.h>
 #include <signal.h>
