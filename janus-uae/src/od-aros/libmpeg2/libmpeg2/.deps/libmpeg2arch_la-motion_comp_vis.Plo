@@ -1,0 +1,6 @@
+libmpeg2arch_la-motion_comp_vis.lo: motion_comp_vis.c \
+ /usr/include/stdc-predef.h ../include/config.h
+
+/usr/include/stdc-predef.h:
+
+../include/config.h:
