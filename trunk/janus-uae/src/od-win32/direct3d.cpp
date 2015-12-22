@@ -90,6 +90,8 @@ struct shaderdata
 	// Masks
 	LPDIRECT3DTEXTURE9 masktexture;
 	int masktexture_w, masktexture_h;
+	// Stuff
+	D3DXHANDLE framecounterHandle;
 };
 static LPDIRECT3DTEXTURE9 lpPostTempTexture;
 
@@ -311,6 +313,7 @@ static D3DXHANDLE postMatrixSource;
 static D3DXHANDLE postMaskMult, postMaskShift;
 static D3DXHANDLE postFilterMode;
 static D3DXHANDLE postTexelSize;
+static D3DXHANDLE postFramecounterHandle;
 
 static float m_scale;
 static LPCSTR m_strName;
@@ -329,11 +332,28 @@ static int postEffect_ParseParameters (LPD3DXEFFECTCOMPILER EffectCompiler, LPD3
 	postMaskShift = effect->GetParameterByName (NULL, "maskshift");
 	postFilterMode = effect->GetParameterByName (NULL, "filtermode");
 	postTexelSize = effect->GetParameterByName (NULL, "texelsize");
+	postFramecounterHandle = effect->GetParameterByName (NULL, "framecounter");
+
 	if (!postMaskShift || !postMaskMult || !postFilterMode || !postMatrixSource || !postTexelSize) {
 		gui_message (_T("Mismatched _winuae.fx! Exiting.."));
 		abort ();
 	}
 	return true;
+}
+
+static void postEffect_freeParameters(void)
+{
+	postSourceTextureHandle = NULL;
+	postMaskTextureHandle = NULL;
+	postTechnique = NULL;
+	postTechniquePlain = NULL;
+	postTechniqueAlpha = NULL;
+	postMatrixSource = NULL;
+	postMaskMult = NULL;
+	postMaskShift = NULL;
+	postFilterMode = NULL;
+	postTexelSize = NULL;
+	postFramecounterHandle = NULL;
 }
 
 static int psEffect_ParseParameters (LPD3DXEFFECTCOMPILER EffectCompiler, LPD3DXEFFECT effect, D3DXEFFECT_DESC EffectDesc, struct shaderdata *s)
@@ -367,6 +387,7 @@ static int psEffect_ParseParameters (LPD3DXEFFECTCOMPILER EffectCompiler, LPD3DX
 			write_log (_T("GetParameterDescParm(%d) failed: %s\n"), D3DHEAD, iParam, D3DX_ErrorString (hr, NULL));
 			return 0;
 		}
+		s->framecounterHandle = effect->GetParameterByName (NULL, "framecounter");
 		hr = S_OK;
 		if(ParamDesc.Semantic != NULL) {
 			if(ParamDesc.Class == D3DXPC_MATRIX_ROWS || ParamDesc.Class == D3DXPC_MATRIX_COLUMNS) {
@@ -1047,6 +1068,8 @@ static int psEffect_SetTextures (LPDIRECT3DTEXTURE9 lpSource, struct shaderdata 
 			return 0;
 		}
 	}
+	if (s->framecounterHandle)
+		s->pEffect->SetFloat(s->framecounterHandle, timeframes);
 
 	return 1;
 }
@@ -1287,7 +1310,11 @@ static void updateleds (void)
 	}
 	for (y = 0; y < TD_TOTAL_HEIGHT; y++) {
 		uae_u8 *buf = (uae_u8*)locked.pBits + y * locked.Pitch;
-		memset (buf, 0, ledwidth * 4);
+		statusline_single_erase(buf, 32 / 8, y, ledwidth);
+	}
+	statusline_render((uae_u8*)locked.pBits, 32 / 8, locked.Pitch, ledwidth, ledheight, rc, gc, bc, a);
+	for (y = 0; y < TD_TOTAL_HEIGHT; y++) {
+		uae_u8 *buf = (uae_u8*)locked.pBits + y * locked.Pitch;
 		draw_status_line_single (buf, 32 / 8, y, ledwidth, rc, gc, bc, a);
 	}
 	ledtexture->UnlockRect (0);
@@ -2017,6 +2044,7 @@ static void invalidatedeviceobjects (void)
 		}
 		memset (&shaders[i], 0, sizeof (struct shaderdata));
 	}
+	postEffect_freeParameters();
 	if (d3ddev)
 		d3ddev->SetStreamSource (0, NULL, 0, 0);
 	if (vertexBuffer) {
@@ -2255,9 +2283,16 @@ static const TCHAR *D3D_init2 (HWND ahwnd, int w_w, int w_h, int depth, int *fre
 
 	d3dx = LoadLibrary (D3DX9DLL);
 	if (d3dx == NULL) {
-		_tcscpy (errmsg, _T("Direct3D: Newer DirectX Runtime required.\n\nhttp://go.microsoft.com/fwlink/?linkid=56513"));
-		if (isfullscreen () <= 0)
-			ShellExecute(NULL, _T("open"), _T("http://go.microsoft.com/fwlink/?linkid=56513"), NULL, NULL, SW_SHOWNORMAL);
+		static bool warned;
+		if (!warned) {
+			if (os_vista)
+				_tcscpy(errmsg, _T("Direct3D: Optional DirectX9 components are not installed.\n")
+					_T("\nhttp://go.microsoft.com/fwlink/?linkid=56513"));
+			else
+				_tcscpy (errmsg, _T("Direct3D: Newer DirectX Runtime required or optional DirectX9 components are not installed.\n")
+					_T("\nhttp://go.microsoft.com/fwlink/?linkid=56513"));
+			warned = true;
+		}
 		return errmsg;
 	}
 	FreeLibrary (d3dx);
@@ -2931,8 +2966,9 @@ static void D3D_render2 (void)
 		texelsize.x = 1.0f / Desc.Width;
 		texelsize.y = 1.0f / Desc.Height;
 		texelsize.z = 1; texelsize.w = 1;
-
 		hr = postEffect->SetVector (postTexelSize, &texelsize);
+		if (postFramecounterHandle)
+			postEffect->SetFloat(postFramecounterHandle, timeframes);
 
 		if (masktexture) {
 			if (FAILED (hr = postEffect->SetTechnique (postTechnique)))
@@ -3211,12 +3247,12 @@ uae_u8 *D3D_locktexture (int *pitch, int *height, bool fullupdate)
 		write_log (_T("%s: LockRect failed: %s\n"), D3DHEAD, D3D_ErrorString (hr));
 		return NULL;
 	}
+	locked = 1;
 	if (lock.pBits == NULL || lock.Pitch == 0) {
 		write_log (_T("%s: LockRect returned NULL texture\n"), D3DHEAD);
 		D3D_unlocktexture ();
 		return NULL;
 	}
-	locked = 1;
 	fulllocked = fullupdate;
 	*pitch = lock.Pitch;
 	if (height)
@@ -3413,10 +3449,12 @@ HDC D3D_getDC (HDC hdc)
 			return hdc;
 		write_log (_T("%s: GetDC() failed: %s\n"), D3DHEAD, D3D_ErrorString (hr));
 	}
-	if (hdc)
-		bb->ReleaseDC (hdc);
-	bb->Release ();
-	bb = NULL;
+	if (bb) {
+		if (hdc)
+			bb->ReleaseDC (hdc);
+		bb->Release ();
+		bb = NULL;
+	}
 	return 0;
 }
 

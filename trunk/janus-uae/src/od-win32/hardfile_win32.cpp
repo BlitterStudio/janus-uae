@@ -132,9 +132,9 @@ static void rdbdump (HANDLE h, uae_u64 offset, uae_u8 *buf, int blocksize)
 	}
 	for (i = 0; i <= blocks; i++) {
 		DWORD outlen;
-		LONG high;
-		high = (DWORD)(offset >> 32);
-		if (SetFilePointer (h, (DWORD)offset, &high, FILE_BEGIN) == INVALID_FILE_SIZE)
+		LARGE_INTEGER fppos;
+		fppos.QuadPart = offset;
+		if (SetFilePointer (h, fppos.LowPart, &fppos.HighPart, FILE_BEGIN) == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR)
 			break;
 		ReadFile (h, buf, blocksize, &outlen, NULL);
 		fwrite (buf, 1, blocksize, f);
@@ -259,11 +259,11 @@ static int safetycheck (HANDLE h, const TCHAR *name, uae_u64 offset, uae_u8 *buf
 	uae_u64 origoffset = offset;
 	int i, j, blocks = 63, empty = 1;
 	DWORD outlen;
-	LONG high;
 
 	for (j = 0; j < blocks; j++) {
-		high = (LONG)(offset >> 32);
-		if (SetFilePointer (h, (DWORD)offset, &high, FILE_BEGIN) == INVALID_FILE_SIZE) {
+		LARGE_INTEGER fppos;
+		fppos.QuadPart = offset;
+		if (SetFilePointer (h, fppos.LowPart, &fppos.HighPart, FILE_BEGIN) == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR) {
 			write_log (_T("hd ignored, SetFilePointer failed, error %d\n"), GetLastError ());
 			return 1;
 		}
@@ -554,6 +554,7 @@ int hdf_open_target (struct hardfiledata *hfd, const TCHAR *pname)
 	int i;
 	struct uae_driveinfo *udi = NULL, tmpudi;
 	TCHAR *name = my_strdup (pname);
+	int ret = 0;
 
 	hfd->flags = 0;
 	hfd->drive_empty = 0;
@@ -636,8 +637,14 @@ int hdf_open_target (struct hardfiledata *hfd, const TCHAR *pname)
 				}
 			}
 
-			if (h == INVALID_HANDLE_VALUE)
+			if (h == INVALID_HANDLE_VALUE) {
+				DWORD err = GetLastError ();
+				if (err == ERROR_WRITE_PROTECT)
+					ret = -2;
+				if (err == ERROR_SHARING_VIOLATION)
+					ret = -1;
 				goto end;
+			}
 			if (!DeviceIoControl (h, FSCTL_ALLOW_EXTENDED_DASD_IO, NULL, 0, NULL, 0, &r, NULL))
 				write_log (_T("WARNING: '%s' FSCTL_ALLOW_EXTENDED_DASD_IO returned %d\n"), name, GetLastError ());
 
@@ -736,10 +743,10 @@ emptyreal:
 			LONG high = 0;
 			DWORD high2;
 			ret = SetFilePointer (h, 0, &high, FILE_END);
-			if (ret == INVALID_FILE_SIZE && GetLastError () != NO_ERROR)
+			if (ret == INVALID_SET_FILE_POINTER && GetLastError () != NO_ERROR)
 				goto end;
 			low = GetFileSize (h, &high2);
-			if (low == INVALID_FILE_SIZE && GetLastError () != NO_ERROR)
+			if (low == INVALID_SET_FILE_POINTER && GetLastError () != NO_ERROR)
 				goto end;
 			low &= ~(hfd->ci.blocksize - 1);
 			hfd->physsize = hfd->virtsize = ((uae_u64)high2 << 32) | low;
@@ -762,7 +769,12 @@ emptyreal:
 				hfd->handle_valid = HDF_HANDLE_ZFILE;
 			}
 		} else {
-			write_log (_T("HDF '%s' failed to open. error = %d\n"), name, GetLastError ());
+			DWORD err = GetLastError ();
+			if (err == ERROR_WRITE_PROTECT)
+				ret = -2;
+			if (err == ERROR_SHARING_VIOLATION)
+				ret = -1;
+			write_log (_T("HDF '%s' failed to open. error = %d\n"), name, ret);
 		}
 	}
 	if (hfd->handle_valid || hfd->drive_empty) {
@@ -773,7 +785,7 @@ emptyreal:
 end:
 	hdf_close (hfd);
 	xfree (name);
-	return 0;
+	return ret;
 }
 
 static void freehandle (struct hardfilehandle *h)
@@ -856,9 +868,10 @@ static int hdf_seek (struct hardfiledata *hfd, uae_u64 offset)
 		abort ();
 	}
 	if (hfd->handle_valid == HDF_HANDLE_WIN32) {
-		LONG high = (LONG)(offset >> 32);
-		ret = SetFilePointer (hfd->handle->h, (DWORD)offset, &high, FILE_BEGIN);
-		if (ret == INVALID_FILE_SIZE && GetLastError() != NO_ERROR)
+		LARGE_INTEGER fppos;
+		fppos.QuadPart = offset;
+		ret = SetFilePointer (hfd->handle->h, fppos.LowPart, &fppos.HighPart, FILE_BEGIN);
+		if (ret == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR)
 			return -1;
 	} else if (hfd->handle_valid == HDF_HANDLE_ZFILE) {
 		zfile_fseek (hfd->handle->zf, (long)offset, SEEK_SET);
@@ -868,18 +881,21 @@ static int hdf_seek (struct hardfiledata *hfd, uae_u64 offset)
 
 static void poscheck (struct hardfiledata *hfd, int len)
 {
-	DWORD ret, err;
-	uae_u64 pos;
+	DWORD err;
+	uae_s64 pos;
 
 	if (hfd->handle_valid == HDF_HANDLE_WIN32) {
-		LONG high = 0;
-		ret = SetFilePointer (hfd->handle->h, 0, &high, FILE_CURRENT);
-		err = GetLastError ();
-		if (ret == INVALID_FILE_SIZE && err != NO_ERROR) {
-			gui_message (_T("hd: poscheck failed. seek failure, error %d"), err);
-			abort ();
+		LARGE_INTEGER fppos;
+		fppos.QuadPart = 0;
+		fppos.LowPart = SetFilePointer (hfd->handle->h, 0, &fppos.HighPart, FILE_CURRENT);
+		if (fppos.LowPart == INVALID_SET_FILE_POINTER) {
+			err = GetLastError ();
+			if (err != NO_ERROR) {
+				gui_message (_T("hd: poscheck failed. seek failure, error %d"), err);
+				abort ();
+			}
 		}
-		pos = ((uae_u64)high) << 32 | ret;
+		pos = fppos.QuadPart;
 	} else if (hfd->handle_valid == HDF_HANDLE_ZFILE) {
 		pos = zfile_ftell (hfd->handle->zf);
 	}
@@ -1111,7 +1127,7 @@ static int hdf_write_2 (struct hardfiledata *hfd, void *buffer, uae_u64 offset, 
 		if (offset == 0) {
 			if (!hfd->handle->firstwrite && (hfd->flags & HFD_FLAGS_REALDRIVE) && !(hfd->flags & HFD_FLAGS_REALDRIVEPARTITION)) {
 				hfd->handle->firstwrite = true;
-				if (ismounted (hfd->device_name, hfd->handle->h)) {
+				if (ismounted (hfd->ci.devname, hfd->handle->h)) {
 					gui_message (_T("\"%s\"\n\nBlock zero write attempt but drive has one or more mounted PC partitions or WinUAE does not have Administrator privileges. Erase the drive or unmount all PC partitions first."), name);
 					hfd->ci.readonly = true;
 					return 0;
@@ -1801,7 +1817,7 @@ TCHAR *hdf_getnameharddrive (int index, int flags, int *sectorsize, int *dangero
 				if (size >= 1024 * 1024 * 1024)
 					_stprintf (tmp, _T("%.1fG"), ((double)(uae_u32)(size / (1024 * 1024))) / 1024.0);
 				else if (size < 10 * 1024 * 1024)
-					_stprintf (tmp, _T("%dK"), size / 1024);
+					_stprintf (tmp, _T("%lldK"), size / 1024);
 				else
 					_stprintf (tmp, _T("%.1fM"), ((double)(uae_u32)(size / (1024))) / 1024.0);
 			}
@@ -1899,7 +1915,7 @@ static void hmc_check (struct hardfiledata *hfd, struct uaedev_config_data *uci,
 		//write_log (_T("trying to open '%s' de=%d hv=%d\n"), hfd->emptyname, hfd->drive_empty, hfd->handle_valid);
 		r = hdf_open (hfd, hfd->emptyname);
 		//write_log (_T("=%d\n"), r);
-		if (!r)
+		if (r <= 0)
 			return;
 		*reopen = 1;
 		if (hfd->drive_empty < 0)
@@ -1942,7 +1958,7 @@ int win32_hardfile_media_change (const TCHAR *drvname, int inserted)
 		extern struct hd_hardfiledata *pcmcia_sram;
 		int reopen = 0;
 		struct uaedev_config_data *uci = &currprefs.mountconfig[i];
-		if (uci->ci.controller == HD_CONTROLLER_PCMCIA_SRAM) {
+		if (uci->ci.controller_type == HD_CONTROLLER_TYPE_PCMCIA_SRAM) {
 			hmc_check (&pcmcia_sram->hfd, uci, &rescanned, &reopen, &gotinsert, drvname, inserted);
 		}
 	}
@@ -2016,7 +2032,7 @@ int harddrive_to_hdf (HWND hDlg, struct uae_prefs *p, int idx)
 		goto err;
 	li.QuadPart = size;
 	ret = SetFilePointer (hdst, li.LowPart, &li.HighPart, FILE_BEGIN);
-	if (ret == INVALID_FILE_SIZE && GetLastError () != NO_ERROR)
+	if (ret == INVALID_SET_FILE_POINTER && GetLastError () != NO_ERROR)
 		goto err;
 	if (!SetEndOfFile (hdst))
 		goto err;

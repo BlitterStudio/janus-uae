@@ -843,6 +843,7 @@ static void set_screenmode (struct RPScreenMode *sm, struct uae_prefs *p)
 		} else if (integerscale) {
 			hmult = vmult = 1;
 			p->gf[0].gfx_filter_autoscale = AUTOSCALE_INTEGER;
+			p->gf[0].gfx_filter_integerscalelimit = 0;
 			if (sm->dwClipFlags & RP_CLIPFLAGS_AUTOCLIP) {
 				p->gfx_xcenter_pos = -1;
 				p->gfx_ycenter_pos = -1;
@@ -990,9 +991,9 @@ static LRESULT CALLBACK RPHostMsgFunction2 (UINT uMessage, WPARAM wParam, LPARAM
 		}
 		return 1;
 	case RP_IPC_TO_GUEST_VOLUME:
-		currprefs.sound_volume = changed_prefs.sound_volume = 100 - wParam;
+		currprefs.sound_volume_master = changed_prefs.sound_volume_master = 100 - wParam;
 		currprefs.sound_volume_cd = changed_prefs.sound_volume_cd = 100 - wParam;
-		set_volume (currprefs.sound_volume, 0);
+		set_volume (currprefs.sound_volume_master, 0);
 		return TRUE;
 	case RP_IPC_TO_GUEST_ESCAPEKEY:
 		rp_rpescapekey = wParam;
@@ -1322,12 +1323,12 @@ static int gethdnum (int n)
 {
 	struct uaedev_config_data *uci = &currprefs.mountconfig[n];
 	int num = -1;
-	if (uci->ci.controller == HD_CONTROLLER_UAE) {
+	if (uci->ci.controller_type == HD_CONTROLLER_TYPE_UAE) {
 		num = n;
-	} else if (uci->ci.controller <= HD_CONTROLLER_IDE3 ) {
-		num = uci->ci.controller - HD_CONTROLLER_IDE0;
-	} else if (uci->ci.controller <= HD_CONTROLLER_SCSI6) {
-		num = uci->ci.controller - HD_CONTROLLER_SCSI0;
+	} else if (uci->ci.controller_type >= HD_CONTROLLER_TYPE_IDE_FIRST && uci->ci.controller_type <= HD_CONTROLLER_TYPE_IDE_LAST) {
+		num = uci->ci.controller_unit;
+	} else if (uci->ci.controller_type >= HD_CONTROLLER_TYPE_SCSI_FIRST && uci->ci.controller_type <= HD_CONTROLLER_TYPE_SCSI_LAST) {
+		num = uci->ci.controller_unit;
 	}
 	return num;
 }
@@ -1419,7 +1420,7 @@ void rp_fixup_options (struct uae_prefs *p)
 	rp_turbo_cpu (currprefs.turbo_emulation);
 	rp_turbo_floppy (currprefs.floppy_speed == 0);
 	for (i = 0; i <= 4; i++)
-		rp_update_leds (i, 0, 0);
+		rp_update_leds (i, 0, -1, 0);
 	set_config_changed ();
 }
 
@@ -1542,7 +1543,7 @@ void rp_floppy_track (int floppy, int track)
 	RPPostMessagex (RP_IPC_TO_HOST_DEVICESEEK, MAKEWORD (RP_DEVICECATEGORY_FLOPPY, floppy), track, &guestinfo);
 }
 
-void rp_update_leds (int led, int onoff, int write)
+void rp_update_leds (int led, int onoff, int brightness, int write)
 {
 	static int oldled[5];
 	int ledstate;
@@ -1553,10 +1554,12 @@ void rp_update_leds (int led, int onoff, int write)
 		return;
 	if (onoff < 0)
 		return;
+	if (brightness < 0)
+		brightness = onoff ? 250 : 0;
 	switch (led)
 	{
 	case LED_POWER:
-		ledstate = onoff >= 250 ? 100 : onoff * 5 / 26 + 49;
+		ledstate = brightness >= 250 ? 100 : brightness * 5 / 26 + 49;
 		if (ledstate == oldled[led])
 			return;
 		oldled[led] = ledstate;
@@ -1636,7 +1639,7 @@ void rp_update_volume (struct uae_prefs *p)
 {
 	if (!cando ())
 		return;
-	RPSendMessagex (RP_IPC_TO_HOST_VOLUME, (WPARAM)(100 - p->sound_volume), 0, NULL, 0, &guestinfo, NULL);
+	RPSendMessagex (RP_IPC_TO_HOST_VOLUME, (WPARAM)(100 - p->sound_volume_master), 0, NULL, 0, &guestinfo, NULL);
 }
 
 void rp_pause (int paused)

@@ -124,13 +124,6 @@ rm -rf fullrelease
 rm -rf test
 cd ..
 
-cd winuae_msvc
-rm -rf debug
-rm -rf release
-rm -rf fullrelease
-rm -rf test
-cd ..
-
 cd winuae_msvc10
 rm -rf debug
 rm -rf release
@@ -141,6 +134,14 @@ rm -rf x64
 cd ..
 
 cd winuae_msvc11
+rm -rf debug
+rm -rf release
+rm -rf fullrelease
+rm -rf test
+rm -rf x64
+cd ..
+
+cd winuae_msvc14
 rm -rf debug
 rm -rf release
 rm -rf fullrelease
@@ -194,10 +195,10 @@ cd ..
 
 zip -9 -r winuaesrc *
 
-copy winuaesrc.zip d:\amiga\winuaepackets\winuaesrc%1.zip
-move winuaesrc.zip d:\amiga
+copy winuaesrc.zip e:\amiga\winuaepackets\winuaesrc%1.zip
+move winuaesrc.zip e:\amiga
 cd c:\projects\winuae\src\od-win32
-zip -9 winuaedebug%1 winuae_msvc11\fullrelease\winuae.pdb winuae_msvc11\x64\fullrelease\winuae.pdb
-move winuaedebug%1.zip d:\amiga\winuaepackets\debug\
-copy winuae_msvc11\fullrelease\winuae.pdb winuae_msvc11\x64\fullrelease\winuae.pdb d:\amiga\dump
+zip -9 winuaedebug%1 winuae_msvc14\fullrelease\winuae.pdb winuae_msvc14\x64\fullrelease\winuae.pdb
+move winuaedebug%1.zip e:\amiga\winuaepackets\debug\
+copy winuae_msvc14\fullrelease\winuae.pdb winuae_msvc14\x64\fullrelease\winuae.pdb d:\amiga\dump
 copy d:\amiga\winuae.exe d:\amiga\dump

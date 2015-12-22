@@ -15,6 +15,7 @@
 
 #include "options.h"
 #include "dxwrap.h"
+#include "audio.h"
 
 #include <dsound.h>
 #include <mmreg.h>
@@ -52,15 +53,16 @@ cda_audio::~cda_audio()
 	}
 }
 
-cda_audio::cda_audio(int num_sectors)
+cda_audio::cda_audio(int num_sectors, int sectorsize, int samplerate)
 {
 	active = false;
 	playing = false;
 	volume[0] = volume[1] = 0;
 
-	bufsize = num_sectors * 2352;
+	bufsize = num_sectors * sectorsize;
+	this->sectorsize = sectorsize;
 	for (int i = 0; i < 2; i++) {
-		buffers[i] = xcalloc (uae_u8, num_sectors * 4096);
+		buffers[i] = xcalloc (uae_u8, num_sectors * ((bufsize + 4095) & ~4095));
 	}
 
 	WAVEFORMATEX wav;
@@ -68,7 +70,7 @@ cda_audio::cda_audio(int num_sectors)
 
 	wav.cbSize = 0;
 	wav.nChannels = 2;
-	wav.nSamplesPerSec = 44100;
+	wav.nSamplesPerSec = samplerate;
 	wav.wBitsPerSample = 16;
 	wav.nBlockAlign = wav.wBitsPerSample / 8 * wav.nChannels;
 	wav.nAvgBytesPerSec = wav.nBlockAlign * wav.nSamplesPerSec;
@@ -151,8 +153,8 @@ cda_audio::cda_audio(int num_sectors)
 	}
 	this->num_sectors = num_sectors;
 	for (int i = 0; i < 2; i++) {
-		memset (&whdr[i], 0, sizeof WAVEHDR);
-		whdr[i].dwBufferLength = 2352 * num_sectors;
+		memset (&whdr[i], 0, sizeof(WAVEHDR));
+		whdr[i].dwBufferLength = sectorsize * num_sectors;
 		whdr[i].lpData = (LPSTR)buffers[i];
 		mmr = waveOutPrepareHeader (wavehandle, &whdr[i], sizeof (WAVEHDR));
 		if (mmr != MMSYSERR_NOERROR) {
@@ -166,13 +168,14 @@ cda_audio::cda_audio(int num_sectors)
 #endif
 }
 
-void cda_audio::setvolume(int master, int left, int right)
+void cda_audio::setvolume(int left, int right)
 {
 	for (int j = 0; j < 2; j++) {
 		volume[j] = j == 0 ? left : right;
-		volume[j] = (100 - master) * volume[j] / 100;
+		volume[j] = sound_cd_volume[j] * volume[j] / 32768;
 		if (volume[j])
 			volume[j]++;
+		volume[j] = volume[j] * (100 - currprefs.sound_volume_master) / 100;
 		if (volume[j] >= 32768)
 			volume[j] = 32768;
 	}
@@ -215,9 +218,11 @@ bool cda_audio::play(int bufnum)
 	return true;
 #else
 	uae_s16 *p = (uae_s16*)(buffers[bufnum]);
-	for (int i = 0; i < num_sectors * 2352 / 4; i++) {
-		p[i * 2 + 0] = p[i * 2 + 0] * volume[0] / 32768;
-		p[i * 2 + 1] = p[i * 2 + 1] * volume[1] / 32768;
+	if (volume[0] != 32768 || volume[1] != 32768) {
+		for (int i = 0; i < num_sectors * sectorsize / 4; i++) {
+			p[i * 2 + 0] = p[i * 2 + 0] * volume[0] / 32768;
+			p[i * 2 + 1] = p[i * 2 + 1] * volume[1] / 32768;
+		}
 	}
 	MMRESULT mmr = waveOutWrite (wavehandle, &whdr[bufnum], sizeof (WAVEHDR));
 	if (mmr != MMSYSERR_NOERROR) {
@@ -238,4 +243,11 @@ void cda_audio::wait(int bufnum)
 	while (!(whdr[bufnum].dwFlags & WHDR_DONE))
 		Sleep (10);
 #endif
+}
+
+bool cda_audio::isplaying(int bufnum)
+{
+	if (!active || !playing)
+		return false;
+	return (whdr[bufnum].dwFlags & WHDR_DONE) == 0;
 }

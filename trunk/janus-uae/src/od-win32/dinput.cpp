@@ -13,6 +13,10 @@ int rawinput_enabled_hid = -1;
 int rawinput_log = 0;
 int tablet_log = 0;
 
+int no_rawinput = 0;
+int no_directinput = 0;
+int no_windowsmouse = 0;
+
 #define _WIN32_WINNT 0x501 /* enable RAWINPUT support */
 
 #define DI_DEBUG 1
@@ -41,6 +45,7 @@ int tablet_log = 0;
 #include "akiko.h"
 #include "clipboard.h"
 #include "tabletlibrary.h"
+#include "gui.h"
 
 #include <winioctl.h>
 #include <ntddkbd.h>
@@ -77,6 +82,8 @@ extern "C"
 #define AXISTYPE_SLIDER 3
 #define AXISTYPE_DIAL 4
 
+#define MAX_ACQUIRE_ATTEMPTS 10
+
 struct didata {
 	int type;
 	int acquired;
@@ -91,6 +98,7 @@ struct didata {
 	int vid, pid, mi;
 
 	int connection;
+	int acquireattempts;
 	LPDIRECTINPUTDEVICE8 lpdi;
 	HANDLE rawinput;
 	HIDP_CAPS hidcaps;
@@ -146,11 +154,10 @@ static int rawhid;
 static bool rawinput_enabled_mouse, rawinput_enabled_keyboard;
 static bool rawinput_decided;
 static bool rawhid_found;
+static int rawinput_enabled_hid_reset;
 
 static uae_s16 axisold[MAX_INPUT_DEVICES][256], buttonold[MAX_INPUT_DEVICES][256];
 
-int no_rawinput = 0;
-int no_directinput = 0;
 static int dinput_enum_all;
 
 int dinput_winmouse (void)
@@ -312,8 +319,14 @@ void indicator_leds (int num, int state)
 				disabledleds |= 1 << i;
 			} else {
 				newleds &= ~(1 << i);
-				if ((1 << (l - 1)) & ledstate)
-					newleds |= 1 << i;
+				if (l - 1 > LED_CD) {
+					// all floppies
+					if (ledstate & ((1 << LED_DF0) | (1 << LED_DF1) | (1 << LED_DF2) | (1 << LED_DF3)))
+						newleds |= 1 << i;
+				} else {
+					if ((1 << (l - 1)) & ledstate)
+						newleds |= 1 << i;
+				}
 			}
 		}
 	}
@@ -389,12 +402,12 @@ static bool test_rawinput (int usage)
 
 	rid.usUsagePage = 1;
 	rid.usUsage = usage;
-	if (RegisterRawInputDevices (&rid, 1, sizeof RAWINPUTDEVICE) == FALSE) {
+	if (RegisterRawInputDevices (&rid, 1, sizeof(RAWINPUTDEVICE)) == FALSE) {
 		write_log (_T("RAWINPUT test failed, usage=%d ERR=%d\n"), usage, GetLastError ());
 		return false;
 	}
 	rid.dwFlags |= RIDEV_REMOVE;
-	if (RegisterRawInputDevices (&rid, 1, sizeof RAWINPUTDEVICE) == FALSE) {
+	if (RegisterRawInputDevices (&rid, 1, sizeof(RAWINPUTDEVICE)) == FALSE) {
 		write_log (_T("RAWINPUT test failed (release), usage=%d, ERR=%d\n"), usage, GetLastError ());
 		return false;
 	}
@@ -406,7 +419,7 @@ static int doregister_rawinput (void)
 {
 	int num;
 	bool add;
-	RAWINPUTDEVICE rid[2 + MAX_INPUT_DEVICES];
+	RAWINPUTDEVICE rid[2 + MAX_INPUT_DEVICES] = { 0 };
 	int activate;
 
 	if (!rawinput_available)
@@ -488,7 +501,7 @@ static int doregister_rawinput (void)
 	if (!add)
 		rawinput_reg = -rawinput_reg;
 	//write_log (_T("+++++++++++++++++++++++++++%x\n"), hMainWnd);
-	if (RegisterRawInputDevices (rid, num, sizeof RAWINPUTDEVICE) == FALSE) {
+	if (RegisterRawInputDevices (rid, num, sizeof(RAWINPUTDEVICE)) == FALSE) {
 		write_log (_T("RAWINPUT %sregistration failed %d\n"),
 			add ? _T("") : _T("un"), GetLastError ());
 		return 0;
@@ -711,12 +724,14 @@ static int gettabletres (AXIS *a)
 void *open_tablet (HWND hwnd)
 {
 	static int initialized;
-	LOGCONTEXT lc;
+	LOGCONTEXT lc = { 0 };
 	AXIS tx = { 0 }, ty = { 0 }, tz = { 0 };
 	AXIS pres = { 0 };
 	int xm, ym, zm;
 
 	if (!tablet)
+		return 0;
+	if (inputdevice_is_tablet () <= 0)
 		return 0;
 	xmax = -1;
 	ymax = -1;
@@ -819,7 +834,18 @@ static int initialize_tablet (void)
 		return 0;
 	}
 	name[0] = 0;
-	pWTInfoW (WTI_DEVICES, DVC_NAME, name);
+	if (!pWTInfoW (WTI_DEVICES, DVC_NAME, name)) {
+		write_log(_T("Tablet: WTInfo(DVC_NAME) returned failure\n"));
+		FreeModule(wintab);
+		wintab = NULL;
+		return 0;
+	}
+	if (name[0] == 0) {
+		write_log(_T("Tablet: WTInfo(DVC_NAME) returned NULL name\n"));
+		FreeModule(wintab);
+		wintab = NULL;
+		return 0;
+	}
 	axmax = aymax = azmax = -1;
 	tilt = pWTInfoW (WTI_DEVICES, DVC_ORIENTATION, ori);
 	if (tilt) {
@@ -1092,7 +1118,7 @@ static void rawinputfriendlynames (void)
 			for (i = 0; SetupDiEnumDeviceInfo (di, i, &dd); i++) {
 				TCHAR devpath[MAX_DPATH];
 				DWORD size = 0;
-				if (SetupDiGetDeviceInstanceId (di, &dd, devpath, sizeof devpath / sizeof TCHAR , &size)) {
+				if (SetupDiGetDeviceInstanceId (di, &dd, devpath, sizeof devpath / sizeof(TCHAR), &size)) {
 					DEVINST devinst = dd.DevInst;
 
 					TCHAR *cg = outGUID (&guid[ii]);
@@ -1101,15 +1127,15 @@ static void rawinputfriendlynames (void)
 						ULONG size2;
 						TCHAR bufguid[MAX_DPATH];
 	
-						size2 = sizeof bufguid / sizeof TCHAR;
+						size2 = sizeof bufguid / sizeof(TCHAR);
 						if (CM_Get_DevNode_Registry_Property (devinst, CM_DRP_CLASSGUID, NULL, bufguid, &size2, 0) != CR_SUCCESS)
 							break;
 						if (_tcsicmp (cg, bufguid))
 							break;
 
-						size2 = sizeof devname / sizeof TCHAR;
+						size2 = sizeof devname / sizeof(TCHAR);
 						if (CM_Get_DevNode_Registry_Property (devinst, CM_DRP_FRIENDLYNAME, NULL, devname, &size2, 0) != CR_SUCCESS) {
-							ULONG size2 = sizeof devname / sizeof TCHAR;
+							ULONG size2 = sizeof devname / sizeof(TCHAR);
 							if (CM_Get_DevNode_Registry_Property (devinst, CM_DRP_DEVICEDESC, NULL, devname, &size2, 0) != CR_SUCCESS)
 								devname[0] = 0;
 						}
@@ -1586,7 +1612,7 @@ static bool initialize_rawinput (void)
 			if (type == RIM_TYPEMOUSE) {
 				if (rdpdevice (buf1))
 					continue;
-				if (num_mouse >= MAX_INPUT_DEVICES - 1)  {/* leave space for Windows mouse */
+				if (num_mouse >= MAX_INPUT_DEVICES - (no_windowsmouse ? 0 : 1))  {/* leave space for Windows mouse */
 					write_log (_T("Too many mice\n"));
 					continue;
 				}
@@ -1792,7 +1818,7 @@ static bool initialize_rawinput (void)
 															did->axisname[axiscnt] = my_strdup (tmp);
 															did->axissort[axiscnt] = hidtable[ht].priority * 2 + l;
 															did->axismappings[axiscnt] = acnt;
-															memcpy (&did->hidvcaps[axiscnt], &vcaps[i], sizeof HIDP_VALUE_CAPS);
+															memcpy (&did->hidvcaps[axiscnt], &vcaps[i], sizeof(HIDP_VALUE_CAPS));
 															did->axistype[axiscnt] = l + 1;
 															axiscnt++;
 														}
@@ -1801,7 +1827,7 @@ static bool initialize_rawinput (void)
 													did->axissort[axiscnt] = hidtable[ht].priority * 2;
 													did->axisname[axiscnt] = my_strdup (hidtable[ht].name);
 													did->axismappings[axiscnt] = acnt;
-													memcpy (&did->hidvcaps[axiscnt], &vcaps[i], sizeof HIDP_VALUE_CAPS);
+													memcpy (&did->hidvcaps[axiscnt], &vcaps[i], sizeof(HIDP_VALUE_CAPS));
 													fixhidvcaps (&rdi->hid, &did->hidvcaps[axiscnt]);
 													did->axistype[axiscnt] = hidtable[ht].type;
 													axiscnt++;
@@ -2024,7 +2050,7 @@ static void handle_rawinput_2 (RAWINPUT *raw)
 		if (isfocus () && !istest) {
 			if (did->buttons >= 3 && (rm->usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN)) {
 				if (currprefs.win32_middle_mouse) {
-					if (isfullscreen () > 0)
+					if ((isfullscreen() < 0 && currprefs.win32_minimize_inactive) || isfullscreen() > 0)
 						minimizewindow ();
 					if (mouseactive)
 						setmouseactive (0);
@@ -2094,8 +2120,8 @@ static void handle_rawinput_2 (RAWINPUT *raw)
 							}
 						}
 					}
-					memcpy (did->prevusagelist, did->usagelist, usagelength * sizeof USAGE_AND_PAGE);
-					memset (did->prevusagelist + usagelength, 0, (did->maxusagelistlength - usagelength) * sizeof USAGE_AND_PAGE);
+					memcpy (did->prevusagelist, did->usagelist, usagelength * sizeof(USAGE_AND_PAGE));
+					memset (did->prevusagelist + usagelength, 0, (did->maxusagelistlength - usagelength) * sizeof(USAGE_AND_PAGE));
 					for (int axisnum = 0; axisnum < did->axles; axisnum++) {
 						ULONG val;
 						int usage = did->axismappings[axisnum];
@@ -2235,6 +2261,9 @@ static void handle_rawinput_2 (RAWINPUT *raw)
 		if (scancode == 0xaa || scancode == 0)
 			return;
 
+		if (currprefs.right_control_is_right_win_key && scancode == DIK_RCONTROL) {
+			scancode = DIK_RWIN;
+		}
 
 		if (!istest) {
 			if (scancode == DIK_SYSRQ)
@@ -2719,6 +2748,11 @@ static int di_do_init (void)
 		di_dev_free (&di_keyboard[i]);
 	}
 
+	if (rawinput_enabled_hid_reset) {
+		rawinput_enabled_hid = rawinput_enabled_hid_reset;
+		rawinput_enabled_hid_reset = 0;
+	}
+
 	if (!os_vista && rawinput_enabled_hid < 0)
 		rawinput_enabled_hid = 0;
 
@@ -2739,8 +2773,11 @@ static int di_do_init (void)
 		rawinput_enabled_mouse = num_mouse > 0;
 		rawinput_decided = true;
 	}
-	if (!rawhid_found)
+	if (!rawhid_found) {
+		// didn't find anything but was enabled? Try again next time.
+		rawinput_enabled_hid_reset = rawinput_enabled_hid;
 		rawinput_enabled_hid = 0;
+	}
 
 	if (!no_directinput || !rawinput_enabled_keyboard || !rawinput_enabled_mouse) {
 		hr = DirectInput8Create (hInst, DIRECTINPUT_VERSION, IID_IDirectInput8, (LPVOID *)&g_lpdi, NULL);
@@ -2767,8 +2804,10 @@ static int di_do_init (void)
 		}
 	}
 
-	write_log (_T("Windowsmouse initialization..\n"));
-	initialize_windowsmouse ();
+	if (!no_windowsmouse) {
+		write_log (_T("Windowsmouse initialization..\n"));
+		initialize_windowsmouse ();
+	}
 	write_log (_T("Catweasel joymouse initialization..\n"));
 	initialize_catweasel ();
 //	write_log (_T("Parallel joystick port initialization..\n"));
@@ -2924,6 +2963,7 @@ static int acquire_mouse (int num, int flags)
 	}
 
 	unacquire (lpdi, _T("mouse"));
+	did->acquireattempts = MAX_ACQUIRE_ATTEMPTS;
 	if (did->connection == DIDC_DX && lpdi) {
 		setcoop (&di_mouse[num], flags ? (DISCL_FOREGROUND | DISCL_EXCLUSIVE) : (DISCL_BACKGROUND | DISCL_NONEXCLUSIVE), _T("mouse"));
 		dipdw.diph.dwSize = sizeof (DIPROPDWORD);
@@ -3007,6 +3047,8 @@ static void read_mouse (void)
 		}
 		if (!lpdi || did->connection != DIDC_DX)
 			continue;
+		if (did->acquireattempts <= 0)
+			continue;
 		elements = DI_BUFFER;
 		hr = IDirectInputDevice8_GetDeviceData (lpdi, sizeof (DIDEVICEOBJECTDATA), didod, &elements, 0);
 		if (SUCCEEDED (hr) || hr == DI_BUFFEROVERFLOW) {
@@ -3057,16 +3099,18 @@ static void read_mouse (void)
 					}
 				}
 				if (!istest && isfocus () && currprefs.win32_middle_mouse && dimofs == DIMOFS_BUTTON2 && state) {
-					if (isfullscreen () > 0)
+					if ((isfullscreen() < 0 && currprefs.win32_minimize_inactive) || isfullscreen() > 0)
 						minimizewindow ();
 					if (mouseactive)
 						setmouseactive (0);
 				}
 			}
 		} else if (hr == DIERR_INPUTLOST) {
-			acquire (lpdi, _T("mouse"));
+			if (!acquire (lpdi, _T("mouse")))
+				did->acquireattempts--;
 		} else if (did->acquired &&  hr == DIERR_NOTACQUIRED) {
-			acquire (lpdi, _T("mouse"));
+			if (!acquire (lpdi, _T("mouse")))
+				did->acquireattempts--;
 		}
 		IDirectInputDevice8_Poll (lpdi);
 	}
@@ -3208,6 +3252,7 @@ static void release_keys (void)
 		for (i = 0; i < MAX_KEYCODES; i++) {
 			if (di_keycodes[j][i]) {
 				my_kbd_handler (j, i, 0);
+				//write_log(_T("release %d:%02x\n"), j, i);
 				di_keycodes[j][i] = 0;
 			}
 		}
@@ -3258,6 +3303,7 @@ static int acquire_kb (int num, int flags)
 
 	lpdi = di_keyboard[num].lpdi;
 	unacquire (lpdi, _T("keyboard"));
+	di_keyboard[num].acquireattempts = MAX_ACQUIRE_ATTEMPTS;
 
 	//lock_kb ();
 	setcoop (&di_keyboard[num], DISCL_NOWINKEY | DISCL_FOREGROUND | DISCL_EXCLUSIVE, _T("keyboard"));
@@ -3371,6 +3417,8 @@ static void read_kb (void)
 				continue;
 			kb_do_refresh &= ~(1 << i);
 		}
+		if (did->acquireattempts <= 0)
+			continue;
 		elements = DI_KBBUFFER;
 		hr = IDirectInputDevice8_GetDeviceData (lpdi, sizeof (DIDEVICEOBJECTDATA), didod, &elements, 0);
 		if ((SUCCEEDED (hr) || hr == DI_BUFFEROVERFLOW) && (isfocus () || istest)) {
@@ -3379,6 +3427,8 @@ static void read_kb (void)
 				int pressed = (didod[j].dwData & 0x80) ? 1 : 0;
 
 				//write_log (_T("%d: %02X %d\n"), j, scancode, pressed);
+				if (currprefs.right_control_is_right_win_key && scancode == DIK_RCONTROL)
+					scancode = DIK_RWIN;
 				if (!istest)
 					scancode = keyhack (scancode, pressed, i);
 				if (scancode < 0)
@@ -3399,10 +3449,12 @@ static void read_kb (void)
 				}
 			}
 		} else if (hr == DIERR_INPUTLOST) {
-			acquire_kb (i, 0);
+			if (!acquire_kb (i, 0))
+				did->acquireattempts--;
 			kb_do_refresh |= 1 << i;
 		} else if (did->acquired && hr == DIERR_NOTACQUIRED) {
-			acquire_kb (i, 0);
+			if (!acquire_kb (i, 0))
+				did->acquireattempts--;
 		}
 		IDirectInputDevice8_Poll (lpdi);
 	}
@@ -3618,8 +3670,8 @@ static void read_joystick (void)
 								write_log (_T("%d/%d OFF\n"), did->prevusagelist[j].UsagePage, did->prevusagelist[j].Usage);
 							}
 						}
-						memcpy (did->prevusagelist, did->usagelist, usagelength * sizeof USAGE_AND_PAGE);
-						memset (did->prevusagelist + usagelength, 0, (did->maxusagelistlength - usagelength) * sizeof USAGE_AND_PAGE);
+						memcpy (did->prevusagelist, did->usagelist, usagelength * sizeof(USAGE_AND_PAGE));
+						memset (did->prevusagelist + usagelength, 0, (did->maxusagelistlength - usagelength) * sizeof(USAGE_AND_PAGE));
 					}
 				}
 			}
@@ -3629,9 +3681,11 @@ static void read_joystick (void)
 		lpdi = did->lpdi;
 		if (!lpdi || did->connection != DIDC_DX)
 			continue;
+		if (did->acquireattempts <= 0)
+			continue;
 		elements = DI_BUFFER;
 		hr = IDirectInputDevice8_GetDeviceData (lpdi, sizeof (DIDEVICEOBJECTDATA), didod, &elements, 0);
-		if ((SUCCEEDED (hr) || hr == DI_BUFFEROVERFLOW) && (isfocus () || istest)) {
+		if ((SUCCEEDED (hr) || hr == DI_BUFFEROVERFLOW) && (isfocus () || istest || (currprefs.win32_inactive_input & 4))) {
 			for (j = 0; j < elements; j++) {
 				int dimofs = didod[j].dwOfs;
 				int data = didod[j].dwData;
@@ -3713,9 +3767,11 @@ static void read_joystick (void)
 			}
 
 		} else if (hr == DIERR_INPUTLOST) {
-			acquire (lpdi, _T("joystick"));
+			if (!acquire (lpdi, _T("joystick")))
+				did->acquireattempts--;
 		} else if (did->acquired &&  hr == DIERR_NOTACQUIRED) {
-			acquire (lpdi, _T("joystick"));
+			if (!acquire (lpdi, _T("joystick")))
+				did->acquireattempts--;
 		}
 		IDirectInputDevice8_Poll (lpdi);
 	}
@@ -3789,6 +3845,7 @@ static int acquire_joystick (int num, int flags)
 	}
 	lpdi = di_joystick[num].lpdi;
 	unacquire (lpdi, _T("joystick"));
+	di_joystick[num].acquireattempts = MAX_ACQUIRE_ATTEMPTS;
 	if (di_joystick[num].connection == DIDC_DX && lpdi) {
 		setcoop (&di_joystick[num], flags ? (DISCL_FOREGROUND | DISCL_EXCLUSIVE) : (DISCL_BACKGROUND | DISCL_NONEXCLUSIVE), _T("joystick"));
 		memset (&dipdw, 0, sizeof (dipdw));

@@ -6,7 +6,11 @@
 * Copyright 2007 Toni Wilen
 */
 
-#include "slirp/slirp.h"
+#include "sysconfig.h"
+
+#ifdef WITH_SLIRP
+#include "../slirp/slirp.h"
+#endif
 
 #include <stdio.h>
 
@@ -21,6 +25,7 @@
 
 #include "sysdeps.h"
 #include "options.h"
+#include "sana2.h"
 
 #include "threaddep/thread.h"
 #include "win32_uaenet.h"
@@ -280,17 +285,17 @@ void uaenet_enumerate_free (void)
 	int i;
 
 	for (i = 0; i < MAX_TOTAL_NET_DEVICES; i++) {
-		xfree (tds[i].name);
-		xfree (tds[i].desc);
-		tds[i].name = NULL;
-		tds[i].desc = NULL;
 		tds[i].active = 0;
 	}
+	enumerated = 0;
 }
 
 static struct netdriverdata *enumit (const TCHAR *name)
 {
 	int cnt;
+	
+	if (name == NULL)
+		return tds;
 	for (cnt = 0; cnt < MAX_TOTAL_NET_DEVICES; cnt++) {
 		TCHAR mac[20];
 		struct netdriverdata *tc = tds + cnt;
@@ -399,12 +404,13 @@ struct netdriverdata *uaenet_enumerate (const TCHAR *name)
 				if (!done)
 					write_log (_T("- MAC %02X:%02X:%02X:%02X:%02X:%02X (%d)\n"),
 					tc->mac[0], tc->mac[1], tc->mac[2],
-					tc->mac[3], tc->mac[4], tc->mac[5], cnt++);
+					tc->mac[3], tc->mac[4], tc->mac[5], cnt);
 				tc->type = UAENET_PCAP;
 				tc->active = 1;
 				tc->mtu = 1522;
 				tc->name = au (d->name);
 				tc->desc = au (d->description);
+				cnt++;
 			} else {
 				write_log (_T(" - failed to get MAC\n"));
 			}
@@ -413,7 +419,7 @@ struct netdriverdata *uaenet_enumerate (const TCHAR *name)
 		PacketCloseAdapter (lpAdapter);
 	}
 	if (!done)
-		write_log (_T("uaenet: end of detection\n"));
+		write_log (_T("uaenet: end of detection, %d devices found.\n"), cnt);
 	done = 1;
 	pcap_freealldevs (alldevs);
 	enumerated = 1;
@@ -429,67 +435,4 @@ void uaenet_close_driver (struct netdriverdata *tc)
 	for (i = 0; i < MAX_TOTAL_NET_DEVICES; i++) {
 		tc[i].active = 0;
 	}
-}
-
-
-static volatile int slirp_thread_active;
-static HANDLE slirp_thread;
-static uae_thread_id slirp_tid;
-extern uae_sem_t slirp_sem2;
-
-static void *slirp_receive_func(void *arg)
-{
-	slirp_thread_active = 1;
-	while (slirp_thread_active) {
-		// Wait for packets to arrive
-		fd_set rfds, wfds, xfds;
-		SOCKET nfds;
-		int ret, timeout;
-
-		// ... in the output queue
-		nfds = -1;
-		FD_ZERO(&rfds);
-		FD_ZERO(&wfds);
-		FD_ZERO(&xfds);
-		uae_sem_wait (&slirp_sem2);
-		timeout = slirp_select_fill(&nfds, &rfds, &wfds, &xfds);
-		uae_sem_post (&slirp_sem2);
-		if (nfds < 0) {
-			/* Windows does not honour the timeout if there is not
-			   descriptor to wait for */
-			sleep_millis (timeout / 1000);
-			ret = 0;
-		}
-		else {
-			struct timeval tv;
-			tv.tv_sec = 0;
-			tv.tv_usec = timeout;
-			ret = select(0, &rfds, &wfds, &xfds, &tv);
-		}
-		if (ret >= 0) {
-			uae_sem_wait (&slirp_sem2);
-			slirp_select_poll(&rfds, &wfds, &xfds);
-			uae_sem_post (&slirp_sem2);
-		}
-	}
-	slirp_thread_active = -1;
-	return 0;
-}
-
-bool slirp_start (void)
-{
-	slirp_end ();
-	uae_start_thread_fast (slirp_receive_func, NULL, &slirp_tid);
-	return true;
-}
-void slirp_end (void)
-{
-	if (slirp_thread_active > 0) {
-		slirp_thread_active = 0;
-		while (slirp_thread_active == 0) {
-			sleep_millis (10);
-		}
-		uae_end_thread (&slirp_tid);
-	}
-	slirp_thread_active = 0;
 }

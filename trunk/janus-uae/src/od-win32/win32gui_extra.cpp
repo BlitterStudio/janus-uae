@@ -1,21 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <windows.h>
-#include <Wingdi.h>
-#include <winspool.h>
-#include <winuser.h>
-#include <mmsystem.h>
 #include <commctrl.h>
-#include <commdlg.h>
-#include <dlgs.h>
-#include <process.h>
-#include <prsht.h>
-#include <richedit.h>
-#include <shellapi.h>
-#include <Shlobj.h>
-#include <shlwapi.h>
-#include <ddraw.h>
-#include <shobjidl.h>
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -30,6 +16,7 @@
 #define DEFAULT_FONTSIZE  8
 
 static double multx, multy;
+static int scaleresource_width, scaleresource_height;
 
 static TCHAR fontname_gui[32], fontname_list[32];
 static int fontsize_gui = DEFAULT_FONTSIZE;
@@ -143,10 +130,15 @@ static BYTE *todword (BYTE *p)
 	return p;
 }
 
-static void modifytemplate (DLGTEMPLATEEX *d, DLGTEMPLATEEX_END *d2, int id)
+static void modifytemplate (DLGTEMPLATEEX *d, DLGTEMPLATEEX_END *d2, int id, int fullscreen)
 {
-	d->cx = mmx (d->cx);
-	d->cy = mmy (d->cy);
+	if (fullscreen) {
+		d->cx = scaleresource_width;
+		d->cy = scaleresource_height;
+	} else {
+		d->cx = mmx (d->cx);
+		d->cy = mmy (d->cy);
+	}
 }
 
 static void modifytemplatefont (DLGTEMPLATEEX *d, DLGTEMPLATEEX_END *d2)
@@ -210,7 +202,7 @@ static INT_PTR CALLBACK DummyProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lP
 
 extern int full_property_sheet;
 
-struct newresource *scaleresource (struct newresource *res, HWND parent, int resize, DWORD exstyle)
+static struct newresource *scaleresource2 (struct newresource *res, HWND parent, int resize, int fullscreen, DWORD exstyle)
 {
 	DLGTEMPLATEEX *d, *s;
 	DLGTEMPLATEEX_END *d2, *s2;
@@ -239,6 +231,9 @@ struct newresource *scaleresource (struct newresource *res, HWND parent, int res
 	d = (DLGTEMPLATEEX*)ns->resource;
 	s = (DLGTEMPLATEEX*)res->resource;
 
+	int width = d->cx;
+	int height = d->cy;
+
 	if (resize > 0) {
 		d->style &= ~DS_MODALFRAME;
 		d->style |= WS_THICKFRAME;
@@ -246,8 +241,12 @@ struct newresource *scaleresource (struct newresource *res, HWND parent, int res
 		d->style |= DS_MODALFRAME;
 		d->style &= ~WS_THICKFRAME;
 	}
-	if (full_property_sheet)
+	if (fullscreen > 0) {
+		//d->style |= SW_MAXIMIZE;
+		d->style |= WS_THICKFRAME;
+	} else {
 		d->style |= WS_MINIMIZEBOX;
+	}
 	d->exStyle |= exstyle;
 
 	d2 = (DLGTEMPLATEEX_END*)ns->resource;
@@ -282,7 +281,7 @@ struct newresource *scaleresource (struct newresource *res, HWND parent, int res
 
 	memcpy (p, ps2, ns->size - (ps2 - (BYTE*)res->resource));
 
-	modifytemplate(d, d2, ns->tmpl);
+	modifytemplate(d, d2, ns->tmpl, fullscreen);
 
 	for (i = 0; i < d->cDlgItems; i++) {
 		dt = (DLGITEMTEMPLATEEX*)p;
@@ -295,9 +294,14 @@ struct newresource *scaleresource (struct newresource *res, HWND parent, int res
 		p = todword (p);
 	}
 
-	ns->width = d->cx;
-	ns->height = d->cy;
+	ns->width = width;
+	ns->height = height;
 	return ns;
+}
+
+struct newresource *scaleresource (struct newresource *res, HWND parent, int resize, int fullscreen, DWORD exstyle)
+{
+	return scaleresource2(res, parent, resize, fullscreen, exstyle);
 }
 
 void freescaleresource (struct newresource *ns)
@@ -440,18 +444,17 @@ static INT_PTR CALLBACK TestProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPa
 }
 
 // horrible or what?
-static void getbaseunits (void)
+static void getbaseunits (int fullscreen)
 {
+	multx = multy = 100;
 	struct newresource *nr, *nr2;
 	HWND hwnd;
-	
 	nr = getresource (IDD_PANEL);
 	if (!nr) {
 		write_log (_T("getbaseunits fail!\n"));
 		abort();
 	}
-	multx = multy = 100;
-	nr2 = scaleresource (nr, NULL, -1, 0);
+	nr2 = scaleresource2(nr, NULL, -1, 0, 0);
 	hwnd = CreateDialogIndirect (nr2->inst, nr2->resource, NULL, TestProc);
 	if (hwnd) {
 		DestroyWindow (hwnd);
@@ -475,7 +478,7 @@ static void getbaseunits (void)
 	write_log (_T("GUIBase %dx%d (%dx%d)\n"), basewidth, baseheight, baseunitx, baseunity);
 }
 
-void scaleresource_init (const TCHAR *prefix)
+void scaleresource_init (const TCHAR *prefix, int fullscreen)
 {
 	if (os_vista)
 		font_vista_ok = 1;
@@ -490,7 +493,7 @@ void scaleresource_init (const TCHAR *prefix)
 	//write_log (_T("GUI font %s:%d:%d:%d\n"), fontname_gui, fontsize_gui, fontstyle_gui, fontweight_gui);
 	//write_log (_T("List font %s:%d:%d:%d\n"), fontname_list, fontsize_list, fontstyle_list, fontweight_list);
 
-	getbaseunits ();
+	getbaseunits (fullscreen);
 
 	openfont (true);
 }
@@ -522,18 +525,45 @@ static void sizefont (HWND hDlg, const TCHAR *name, int size, int style, int wei
 }
 #endif
 
-double scaleresource_getdpimult (void)
+
+typedef enum MONITOR_DPI_TYPE {
+	MDT_EFFECTIVE_DPI = 0,
+	MDT_ANGULAR_DPI = 1,
+	MDT_RAW_DPI = 2,
+	MDT_DEFAULT = MDT_EFFECTIVE_DPI
+} MONITOR_DPI_TYPE;
+typedef HRESULT(CALLBACK* GETDPIFORMONITOR)(HMONITOR, MONITOR_DPI_TYPE, UINT*, UINT*);
+
+void scaleresource_getdpimult (double *dpixp, double *dpiyp)
 {
-	return (double)baseheight / GUI_INTERNAL_HEIGHT;
+	GETDPIFORMONITOR pGetDpiForMonitor;
+	POINT pt = { 32000, 32000 };
+	HMONITOR mon = MonitorFromPoint(pt, MONITOR_DEFAULTTOPRIMARY);
+
+	*dpixp = 1.0;
+	*dpiyp = 1.0;
+	pGetDpiForMonitor = (GETDPIFORMONITOR)GetProcAddress(GetModuleHandle(_T("Shcore.dll")), "GetDpiForMonitor");
+	if (pGetDpiForMonitor) {
+		UINT dpix, dpiy;
+		if (SUCCEEDED(pGetDpiForMonitor(mon, MDT_EFFECTIVE_DPI, &dpix, &dpiy))) {
+			if (dpix > 96)
+				*dpixp = (double)dpix / 96.0;
+			if (dpiy > 96)
+				*dpiyp = (double)dpiy / 96.0;
+		}
+	}
 }
 
-void scaleresource_setmult (HWND hDlg, int w, int h)
+void scaleresource_setmult (HWND hDlg, int w, int h, int fullscreen)
 {
 	if (w < 0) {
 		multx = -w;
 		multy = -h;
 		return;
 	}
+
+	scaleresource_width = w;
+	scaleresource_height = h;
 
 	multx = w * 100.0 / basewidth;
 	multy = h * 100.0 / baseheight;

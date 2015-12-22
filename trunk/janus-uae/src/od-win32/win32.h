@@ -15,17 +15,17 @@
 #define GETBDM(x) (((x) - ((x / 10000) * 10000)) / 100)
 #define GETBDD(x) ((x) % 100)
 
-#define WINUAEPUBLICBETA 0
+#define WINUAEPUBLICBETA 1
 #define LANG_DLL 1
-#define LANG_DLL_FULL_VERSION_MATCH 0
+#define LANG_DLL_FULL_VERSION_MATCH 1
 
 #if WINUAEPUBLICBETA
-#define WINUAEBETA _T("8")
+#define WINUAEBETA _T("16")
 #else
 #define WINUAEBETA _T("")
 #endif
 
-#define WINUAEDATE MAKEBD(2014, 6, 18)
+#define WINUAEDATE MAKEBD(2015, 10, 14)
 
 //#define WINUAEEXTRA _T("AmiKit Preview")
 //#define WINUAEEXTRA _T("Amiga Forever Edition")
@@ -69,6 +69,8 @@ extern void disablecapture (void);
 extern void fullscreentoggle (void);
 extern int isfocus (void);
 extern void gui_restart (void);
+int timebegin (void);
+int timeend (void);
 
 extern void setmouseactive (int active);
 extern void minimizewindow (void);
@@ -89,11 +91,11 @@ extern int sound_available;
 extern int framecnt;
 extern TCHAR VersionStr[256];
 extern TCHAR BetaStr[64];
-extern int os_winnt_admin, os_64bit, os_vista, os_winxp, os_win7, cpu_number;
+extern int os_admin, os_64bit, os_vista, os_win7, cpu_number, os_touch;
 extern OSVERSIONINFO osVersion;
 extern int paraport_mask;
 extern int gui_active;
-extern int quickstart, configurationcache, relativepaths;
+extern int quickstart, configurationcache, saveimageoriginalpath, relativepaths, recursiveromscan;
 
 extern HKEY hWinUAEKey;
 extern int screen_is_picasso;
@@ -110,7 +112,7 @@ void setpathmode (pathtype pt);
 
 extern void sleep_millis (int ms);
 extern void sleep_millis_main (int ms);
-extern void sleep_millis_busy (int ms);
+extern void sleep_millis_amiga (int ms);
 extern void wait_keyrelease (void);
 extern void keyboard_settrans (void);
 
@@ -137,6 +139,7 @@ extern void send_tablet (int x, int y, int z, int pres, uae_u32 buttons, int fla
 extern void send_tablet_proximity (int);
 
 void addnotifications (HWND hwnd, int remove, int isgui);
+void registertouch(HWND hwnd);
 int win32_hardfile_media_change (const TCHAR *drvname, int inserted);
 extern int CheckRM (const TCHAR *DriveName);
 void systray (HWND hwnd, int remove);
