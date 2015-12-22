@@ -1,0 +1,39 @@
+slice.lo: slice.c /usr/include/stdc-predef.h ../include/config.h \
+ /usr/include/inttypes.h /usr/include/features.h \
+ /usr/include/x86_64-linux-gnu/sys/cdefs.h \
+ /usr/include/x86_64-linux-gnu/bits/wordsize.h \
+ /usr/include/x86_64-linux-gnu/gnu/stubs.h \
+ /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
+ /usr/lib/gcc/x86_64-linux-gnu/4.9/include/stdint.h /usr/include/stdint.h \
+ /usr/include/x86_64-linux-gnu/bits/wchar.h ../include/mpeg2.h \
+ ../include/attributes.h mpeg2_internal.h vlc.h
+
+/usr/include/stdc-predef.h:
+
+../include/config.h:
+
+/usr/include/inttypes.h:
+
+/usr/include/features.h:
+
+/usr/include/x86_64-linux-gnu/sys/cdefs.h:
+
+/usr/include/x86_64-linux-gnu/bits/wordsize.h:
+
+/usr/include/x86_64-linux-gnu/gnu/stubs.h:
+
+/usr/include/x86_64-linux-gnu/gnu/stubs-64.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/4.9/include/stdint.h:
+
+/usr/include/stdint.h:
+
+/usr/include/x86_64-linux-gnu/bits/wchar.h:
+
+../include/mpeg2.h:
+
+../include/attributes.h:
+
+mpeg2_internal.h:
+
+vlc.h:
