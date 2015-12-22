@@ -50,6 +50,9 @@ typedef DWORD *LPDWORD;
 typedef TCHAR *LPCTSTR;
 
 
+extern int os_admin, os_64bit, os_win7, os_vista, cpu_number, os_touch;
+extern int max_uae_width, max_uae_height;
+
 extern struct MultiDisplay Displays[MAX_DISPLAYS + 1];
 struct MultiDisplay *getdisplay (struct uae_prefs *p);
 
@@ -81,7 +84,7 @@ extern pathtype path_type;
  */
 extern int _daylight; 
 extern int _dstbias; 
-extern long _timezone; 
+//extern long _timezone; 
 extern char *_tzname[2];
 
 /* ? */
@@ -119,12 +122,14 @@ int my_rmdir (const TCHAR *name);
 extern void *hInst;
 extern void *hUIDLL;
 int LoadString(APTR hInstance, TCHAR *uID, TCHAR * lpBuffer, int nBufferMax);
-BOOL SetDlgItemText(struct Element *elem, int nIDDlgItem, TCHAR *lpString);
+BOOL SetDlgItemText(struct Element *elem, int nIDDlgItem, const TCHAR *lpString);
 LONG SendDlgItemMessage(struct Element *hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam);
 BOOL CheckDlgButton(Element *elem, int button, UINT uCheck);
 BOOL SetDlgItemInt(HWND hDlg, int nIDDlgItem, UINT uValue, BOOL bSigned);
 BOOL SetWindowText(HWND hWnd, TCHAR *lpString);
+BOOL SetWindowText(HWND hWnd, DWORD id, TCHAR *lpString);
 int GetWindowText(HWND   hWnd, LPTSTR lpString, int nMaxCount);
+int GetWindowText(HWND   hWnd, DWORD id, LPTSTR lpString, int nMaxCount);
 BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDCheckButton);
 int MessageBox(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType);
 int MessageBox_fixed(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType);
@@ -132,6 +137,7 @@ UINT IsDlgButtonChecked(HWND elem, int item);
 BOOL EnableWindow(HWND hWnd, DWORD id, BOOL bEnable);
 UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount);
 LRESULT SendMessage(int hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
+LRESULT SendMessage(struct Element *hWnd, DWORD id, UINT Msg, WPARAM wParam, LPARAM lParam);
 
 void *ShellExecute(HWND hwnd, TCHAR *lpOperation, TCHAR *lpFile, TCHAR *lpParameters, TCHAR *lpDirectory, int nShowCmd);
 DWORD GetTempPath(DWORD nBufferLength, TCHAR *lpBuffer);
@@ -144,11 +150,16 @@ void setpathmode (pathtype pt);
 void gui_message_id (TCHAR *id);
 
 
+/* this function is defined in uaeunp.cpp, uses one parameter less that
+ * the amiga_to_timeval from filesys.cpp ..
+ */
+void amiga_to_timeval (struct mytimeval *tv, int days, int mins, int ticks);
 extern bool resumepaused (int priority);
 extern bool setpaused (int priority);
 
-extern int quickstart, configurationcache, relativepaths;
+extern int quickstart, configurationcache, saveimageoriginalpath, relativepaths, recursiveromscan;
 extern Object *app, *win;
+int aros_init_gui(void);
 
 /* gfx */
 void updatewinfsmode (struct uae_prefs *p);
@@ -156,9 +167,12 @@ void sortdisplays (void);
 
 void create_afnewdir (int remove);
 
+extern int isfocus (void);
+
 #define CALLBACK
 #define FAR
 #define INT_PTR int 
+#define ULONG_PTR int
 
 typedef struct {
   BYTE fVirt;
@@ -208,6 +222,7 @@ extern struct sound_device *sound_devices[MAX_SOUND_DEVICES];
 extern struct sound_device *record_devices[MAX_SOUND_DEVICES];
 
 /* better autogenerate those from resource? */
+#if 0
 #define IDC_FREQUENCY                   1237
 #define IDC_SOUNDADJUST                 1575
 #define IDC_SOUNDADJUSTNUM              1578
@@ -215,6 +230,7 @@ extern struct sound_device *record_devices[MAX_SOUND_DEVICES];
 #define IDC_AUDIOSYNC                   1590
 #define IDC_AUDIOSYNC                   1590
 #define IDC_SOUNDCALIBRATE              1641
+#endif
 
 
 struct contextcommand
@@ -237,5 +253,17 @@ extern struct assext exts[];
 
 void associate_file_extensions (void);
 
+struct winuae_currentmode {
+	unsigned int flags;
+	int native_width, native_height, native_depth, pitch;
+	int current_width, current_height, current_depth;
+	int amiga_width, amiga_height;
+	int initdone;
+	int fullfill;
+	int vsync;
+	int freq;
+};
+
+extern struct winuae_currentmode *currentmode;
 
 #endif /* __AROS_H__ */

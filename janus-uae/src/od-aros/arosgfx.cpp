@@ -23,6 +23,8 @@
  *
  ************************************************************************/
 
+#define JUAE_DEBUG
+
 #include "sysconfig.h"
 
 #include <stdlib.h>
@@ -39,6 +41,7 @@
 #include "picasso96_aros.h"
 #include "aros.h"
 #include "thread.h"
+#include "rtgmodes.h"
 
 
 #define DM_DX_FULLSCREEN 1
@@ -64,17 +67,6 @@
 struct uae_filter *usedfilter;
 int scalepicasso;
 
-struct winuae_currentmode {
-	unsigned int flags;
-	int native_width, native_height, native_depth, pitch;
-	int current_width, current_height, current_depth;
-	int amiga_width, amiga_height;
-	int initdone;
-	int fullfill;
-	int vsync;
-	int freq;
-};
-
 struct MultiDisplay Displays[MAX_DISPLAYS+1];
 
 static struct winuae_currentmode currentmodestruct;
@@ -86,7 +78,7 @@ int window_led_joys, window_led_joys_end, window_led_joy_start;
 extern int console_logging;
 int window_extra_width, window_extra_height;
 
-static struct winuae_currentmode *currentmode = &currentmodestruct;
+struct winuae_currentmode *currentmode = &currentmodestruct;
 static int wasfullwindow_a, wasfullwindow_p;
 
 static int vblankbasewait1, vblankbasewait2, vblankbasewait3, vblankbasefull, vblankbaseadjust;
@@ -149,12 +141,160 @@ static void vsync_sleep (bool preferbusy)
 		sleep_millis_main (1);
 }
 
+static int isfullscreen_2 (struct uae_prefs *p)
+{
+	int idx = screen_is_picasso ? 1 : 0;
+	return p->gfx_apmode[idx].gfx_fullscreen == GFX_FULLSCREEN ? 1 : (p->gfx_apmode[idx].gfx_fullscreen == GFX_FULLWINDOW ? -1 : 0);
+}
+int isfullscreen (void)
+{
+	return isfullscreen_2 (&currprefs);
+}
+
+void update_gfxparams (void)
+{
+	updatewinfsmode (&currprefs);
+#ifdef PICASSO96
+	currentmode->vsync = 0;
+	if (screen_is_picasso) {
+    DebOut("screen_is_picasso!\n");
+    DebOut("currentmode->current_width: %d\n", currentmode->current_width);
+		currentmode->current_width = (int)(picasso96_state.Width * currprefs.rtg_horiz_zoom_mult);
+    DebOut("currentmode->current_width: %d\n", currentmode->current_width);
+		currentmode->current_height = (int)(picasso96_state.Height * currprefs.rtg_vert_zoom_mult);
+		currprefs.gfx_apmode[1].gfx_interlaced = false;
+		if (currprefs.win32_rtgvblankrate == 0) {
+			currprefs.gfx_apmode[1].gfx_refreshrate = currprefs.gfx_apmode[0].gfx_refreshrate;
+			if (currprefs.gfx_apmode[0].gfx_interlaced) {
+				currprefs.gfx_apmode[1].gfx_refreshrate *= 2;
+			}
+		} else if (currprefs.win32_rtgvblankrate < 0) {
+			currprefs.gfx_apmode[1].gfx_refreshrate = 0;
+		} else {
+			currprefs.gfx_apmode[1].gfx_refreshrate = currprefs.win32_rtgvblankrate;
+		}
+		if (currprefs.gfx_apmode[1].gfx_vsync)
+			currentmode->vsync = 1 + currprefs.gfx_apmode[1].gfx_vsyncmode;
+	} else {
+#endif
+		currentmode->current_width = currprefs.gfx_size.width;
+    DebOut("currentmode->current_width: %d\n", currentmode->current_width);
+		currentmode->current_height = currprefs.gfx_size.height;
+		if (currprefs.gfx_apmode[0].gfx_vsync)
+			currentmode->vsync = 1 + currprefs.gfx_apmode[0].gfx_vsyncmode;
+#ifdef PICASSO96
+	}
+#endif
+	currentmode->current_depth = currprefs.color_mode < 5 ? 16 : 32;
+	if (screen_is_picasso && currprefs.win32_rtgmatchdepth && isfullscreen () > 0) {
+		int pbits = picasso96_state.BytesPerPixel * 8;
+		if (pbits <= 8) {
+			if (currentmode->current_depth == 32)
+				pbits = 32;
+			else
+				pbits = 16;
+		}
+		if (pbits == 24)
+			pbits = 32;
+		currentmode->current_depth = pbits;
+	}
+	currentmode->amiga_width = currentmode->current_width;
+	currentmode->amiga_height = currentmode->current_height;
+
+	scalepicasso = 0;
+	if (screen_is_picasso) {
+		if (isfullscreen () < 0) {
+      DebOut("1..\n");
+			if ((currprefs.gf[1].gfx_filter_autoscale == RTG_MODE_CENTER || currprefs.gf[1].gfx_filter_autoscale == RTG_MODE_SCALE || currprefs.win32_rtgallowscaling) && (picasso96_state.Width != currentmode->native_width || picasso96_state.Height != currentmode->native_height))
+				scalepicasso = 1;
+			if (currprefs.gf[1].gfx_filter_autoscale == RTG_MODE_CENTER)
+				scalepicasso = currprefs.gf[1].gfx_filter_autoscale;
+			if (!scalepicasso && currprefs.win32_rtgscaleaspectratio)
+				scalepicasso = -1;
+		} else if (isfullscreen () > 0) {
+			if (!currprefs.win32_rtgmatchdepth) { // can't scale to different color depth
+				if (currentmode->native_width > picasso96_state.Width && currentmode->native_height > picasso96_state.Height) {
+					if (currprefs.gf[1].gfx_filter_autoscale)
+						scalepicasso = 1;
+				}
+				if (currprefs.gf[1].gfx_filter_autoscale == RTG_MODE_CENTER)
+					scalepicasso = currprefs.gf[1].gfx_filter_autoscale;
+				if (!scalepicasso && currprefs.win32_rtgscaleaspectratio)
+					scalepicasso = -1;
+			}
+		} else if (isfullscreen () == 0) {
+      DebOut("2..\n");
+			if (currprefs.gf[1].gfx_filter_autoscale == RTG_MODE_INTEGER_SCALE) {
+				scalepicasso = RTG_MODE_INTEGER_SCALE;
+				currentmode->current_width = currprefs.gfx_size.width;
+				currentmode->current_height = currprefs.gfx_size.height;
+			} else if (currprefs.gf[1].gfx_filter_autoscale == RTG_MODE_CENTER) {
+				if (currprefs.gfx_size.width < picasso96_state.Width || currprefs.gfx_size.height < picasso96_state.Height) {
+					if (!currprefs.win32_rtgallowscaling) {
+						;
+					} else if (currprefs.win32_rtgscaleaspectratio) {
+						scalepicasso = -1;
+						currentmode->current_width = currprefs.gfx_size.width;
+						currentmode->current_height = currprefs.gfx_size.height;
+					}
+				} else {
+          DebOut("x\n");
+					scalepicasso = 2;
+					currentmode->current_width = currprefs.gfx_size.width;
+					currentmode->current_height = currprefs.gfx_size.height;
+				}
+			} else if (currprefs.gf[1].gfx_filter_autoscale == RTG_MODE_SCALE) {
+				if (currprefs.gfx_size.width > picasso96_state.Width || currprefs.gfx_size.height > picasso96_state.Height)
+          DebOut("y\n");
+					scalepicasso = 1;
+				if ((currprefs.gfx_size.width != picasso96_state.Width || currprefs.gfx_size.height != picasso96_state.Height) && currprefs.win32_rtgallowscaling) {
+          DebOut("z\n");
+					scalepicasso = 1;
+				} else if (currprefs.gfx_size.width < picasso96_state.Width || currprefs.gfx_size.height < picasso96_state.Height) {
+					// no always scaling and smaller? Back to normal size
+					currentmode->current_width = changed_prefs.gfx_size_win.width = picasso96_state.Width;
+					currentmode->current_height = changed_prefs.gfx_size_win.height = picasso96_state.Height;
+				} else if (currprefs.gfx_size.width == picasso96_state.Width || currprefs.gfx_size.height == picasso96_state.Height) {
+					;
+				} else if (!scalepicasso && currprefs.win32_rtgscaleaspectratio) {
+					scalepicasso = -1;
+				}
+			} else {
+          DebOut("0\n");
+				if ((currprefs.gfx_size.width != picasso96_state.Width || currprefs.gfx_size.height != picasso96_state.Height) && currprefs.win32_rtgallowscaling)
+					scalepicasso = 1;
+				if (!scalepicasso && currprefs.win32_rtgscaleaspectratio)
+					scalepicasso = -1;
+			}
+		}
+    DebOut("currentmode->current_width: %d\n", currentmode->current_width);
+
+/* hack! */
+	scalepicasso = 0;
+		if (scalepicasso > 0 && (currprefs.gfx_size.width != picasso96_state.Width || currprefs.gfx_size.height != picasso96_state.Height)) {
+      DebOut("scalepicasso: %d\n", scalepicasso);
+			currentmode->current_width = currprefs.gfx_size.width;
+			currentmode->current_height = currprefs.gfx_size.height;
+		}
+	}
+    DebOut("currentmode->current_width: %d\n", currentmode->current_width);
+
+}
 
 void graphics_reset(void) {
 
 	display_change_requested = 2;
 }
 
+void graphics_reset(bool foo) {
+  TODO();
+}
+
+
+int target_get_display(const TCHAR *name) {
+  TODO();
+  return 0;
+}
 
 const TCHAR *target_get_display_name (int num, bool friendlyname)
 {
@@ -173,18 +313,6 @@ const TCHAR *target_get_display_name (int num, bool friendlyname)
 }
 
 /* merged til here .. */
-static int isfullscreen_2 (struct uae_prefs *p)
-{
-	int idx = screen_is_picasso ? 1 : 0;
-
-	return p->gfx_apmode[idx].gfx_fullscreen == GFX_FULLSCREEN ? 1 : (p->gfx_apmode[idx].gfx_fullscreen == GFX_FULLWINDOW ? -1 : 0);
-}
-
-int isfullscreen (void)
-{
-	return isfullscreen_2 (&currprefs);
-}
-
 
 
 static int flushymin, flushymax;
@@ -250,6 +378,7 @@ bool toggle_rtg (int mode) {
 			picasso_requested_on = false;
 			return true;
 		}
+#ifdef PICASSO96
 		if (picasso_on)
 			return false;
 		// can only switch from custom to RTG if there is some mode active
@@ -257,6 +386,7 @@ bool toggle_rtg (int mode) {
 			picasso_requested_on = true;
 			return true;
 		}
+#endif
 	}
 	return false;
 }
@@ -285,24 +415,7 @@ bool render_screen (bool immediate)
 			return render_ok;
 	}
 
-  /* This forced Permits get uae running on i386-32bit/v1 without lockups.
-   * Still unclear, why this only happens on i386-32bit/v1. 
-   * i386-32bit/v0 and 64bit/v1 don't have this bug..
-   *
-   * There are 3 Permits required to get multitasking going again.
-   * 
-   */
-
-#if 0
-  if(SysBase->TDNestCnt>=0) {
-    bug("ERROR: Should not be in Forbid here!!\n");
-    while(SysBase->TDNestCnt>=0) {
-      bug("ERROR:   => call Permit.\n");
-      Permit();
-    }
-  }
-#endif
-  TODO();
+#warning TODO!?
 #if 0
 	flushymin = 0;
 	flushymax = currentmode->amiga_height;
@@ -608,4 +721,26 @@ void fill_DisplayModes(struct MultiDisplay *md);
 void sortdisplays (void) {
 
   fill_DisplayModes(Displays);
+}
+
+double getcurrentvblankrate (void) {
+  TODO();
+
+  return 0;
+}
+
+int vsync_busywait_do (int *freetime, bool lace, bool oddeven) {
+  TODO();
+}
+
+double vblank_calibrate (double approx_vblank, bool waitonly) {
+  TODO();
+}
+
+frame_time_t vsync_busywait_end (int *flipdelay) {
+  TODO();
+}
+
+bool show_screen_maybe (bool show) {
+  TODO();
 }

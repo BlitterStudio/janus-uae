@@ -39,7 +39,7 @@ struct newresource
 #define GUI_INTERNAL_HEIGHT 600
 #define GUI_INTERNAL_FONT 8
 
-extern struct newresource *scaleresource (struct newresource *res, HWND, int, DWORD);
+struct newresource *scaleresource (struct newresource *res, HWND parent, int resize, int fullscreen, DWORD exstyle);
 extern void freescaleresource (struct newresource*);
 extern void scaleresource_setmult (HWND hDlg, int w, int h);
 extern void scaleresource_getmult (int *mx, int *my);
@@ -55,4 +55,6 @@ extern void scaleresource_setdefaults (void);
 extern void scaleresource_setfont (HWND hDlg);
 extern double scaleresource_getdpimult (void);
 
+#define GetDlgItem(a,b) a,b
+BOOL mui_get_filename(TCHAR *lpstrTitle, TCHAR *lpstrInitialDir, TCHAR *lpstrFile, TCHAR *lpstrFilter, TCHAR *lpstrFileTitle, ULONG flags, TCHAR *defext);
 #endif

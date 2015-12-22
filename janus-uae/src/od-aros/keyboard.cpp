@@ -23,6 +23,8 @@
  *
  ************************************************************************/
 
+#define JUAE_DEBUG
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -69,7 +71,12 @@ static int get_kb_widget_first (int kb, int type)
 static int get_kb_widget_type (int kb, int num, TCHAR *name, uae_u32 *code)
 {
     // fix me
-    *code = num;
+    if(!code) {
+      DebOut("ERROR: code is NULL!!\n");
+    }
+    else {
+      *code = num;
+    }
     return IDEV_WIDGET_KEY;
 }
 
@@ -128,7 +135,6 @@ static int get_kb_flags (int num)
 	return 0;
 }
 
-#if 0
 struct inputdevice_functions inputdevicefunc_keyboard =
 {
     init_kb,
@@ -144,7 +150,6 @@ struct inputdevice_functions inputdevicefunc_keyboard =
     get_kb_widget_first,
 		get_kb_flags
 };
-#endif
 
 #if 0
 static struct uae_input_device_kbr_default keytrans_amiga[] = {
@@ -211,8 +216,11 @@ static int *kbmaps[] = {
 	kb_xa1, kb_xa2, kb_arcadia, kb_arcadiaxa, kb_cdtv
 };
 
+#if 0
 void keyboard_settrans (void)
 {
 	inputdevice_setkeytranslation (keytrans, kbmaps);
 }
+#endif
+
 

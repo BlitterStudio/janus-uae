@@ -90,6 +90,7 @@
 #endif
 #include "gfx.h"
 #include "sys/mman.h"
+#include "rtgmodes.h"
 
 #include "fsdb.h"
 #include "winnt.h"
@@ -112,7 +113,7 @@ HMODULE hInst = NULL;
 
 int _daylight=0; 
 int _dstbias=0 ;
-long _timezone=0; 
+//long _timezone=0; 
 char tzname[2][4]={"PST", "PDT"};
 
 /* win32.cpp stuff */
@@ -121,6 +122,8 @@ int pissoff_value = 25000;
 int log_scsi;
 int log_net;
 
+int os_admin, os_64bit, os_win7, os_vista, cpu_number, os_touch;
+
 /* missing symbols from various od-win32 sources */
 int tablet_log=0;
 int seriallog =0;
@@ -128,7 +131,8 @@ int max_uae_width;
 int max_uae_height;
 int log_vsync, debug_vsync_min_delay, debug_vsync_forced_delay;
 int extraframewait;
-
+int recursiveromscan = 0;
+int saveimageoriginalpath = 0;
 /* end */
 
 int pause_emulation;
@@ -366,8 +370,19 @@ void fetch_path (const TCHAR *name, TCHAR *out, int size) {
  */
 int translate_message (int msg, TCHAR *out) {
 
+  DebOut("WARNING: change the call to translate_message from int to TCHAR !!\n");
+
   out[0] = (TCHAR) 0;
   return 0;
+}
+/* overload for AROS */
+int translate_message (const char *msg, TCHAR *out) {
+  if(!msg) {
+    out[0] = (TCHAR) 0;
+    return 0;
+  }
+  strcpy(out, msg);
+  return 1;
 }
 
 /* resides in win32.cpp normally
@@ -444,11 +459,77 @@ void fullpath(TCHAR *inpath, int size) {
   DebOut("result: >%s<\n", inpath);
 }
 
+/***************************************************************************************************
+ * GetFullPathName
+ *
+ * see https://msdn.microsoft.com/en-us/library/windows/desktop/aa364963%28v=vs.85%29.aspx
+ *
+ *  lpFileName: input file name
+ *  nBufferLength: size of the buffer to receive the null-terminated string for the drive and path
+ *  lpBuffer: A pointer to a buffer that receives the null-terminated string for the drive and path.
+ *  lpFilePart: A pointer to a buffer that receives the address (within lpBuffer) 
+ *              of the final file name component in the path.
+ *              This parameter can be NULL.
+ *              if lpBuffer refers to a directory and not a file, lpFilePart receives zero.
+ *
+ * If the function succeeds, the return value is the length, in TCHARs, of the string copied to 
+ * lpBuffer, not including the terminating null character.
+ * If the lpBuffer buffer is too small to contain the path, the return value is the size, 
+ *  in TCHARs, of the buffer that is required to hold the path and the terminating null character.
+ *
+ * If the function fails for any other reason, the return value is zero.
+ ********************************************************************************************************/
+
 DWORD GetFullPathName(const TCHAR *lpFileName, DWORD nBufferLength, LPTSTR lpBuffer, LPTSTR *lpFilePart) {
 
-  DebOut("lpFileName:%s\n", lpFileName);
-  TODO();
+  TCHAR tmp_path[MAX_DPATH];
+  TCHAR abs[MAX_DPATH];
+  BPTR  lock;
+  BOOL r;
 
+  DebOut("lpFileName:%s\n", lpFileName);
+
+  abs[0]=(char) 0;
+
+  /* is input path relative? */
+  if(!strchr(lpFileName, ':')) {
+    strcpy(abs, "PROGDIR:");
+  }
+  strcat(abs, lpFileName);
+  DebOut("abs: %s\n", abs);
+
+  lock=Lock(abs, SHARED_LOCK);
+  if(!lock) {
+    DebOut("Lock('%s') failed!\n", abs);
+    return 0;
+  }
+
+  r=NameFromLock(lock, tmp_path, MAX_DPATH);
+  UnLock(lock);
+  if(!r) {
+    DebOut("NameFromLock('%s') failed!\n", abs);
+    return 0;
+  }
+  DebOut("NameFromLock(%s): %s\n", lpFileName, abs);
+  /* now we have an absolute path!  */
+
+  if(lpBuffer==NULL || strlen(tmp_path)+1>nBufferLength) {
+    DebOut("WARNING: lpBuffer is too small!?\n");
+    return strlen(tmp_path)+1; /* add terminating null byte */
+  }
+
+  strcpy(lpBuffer, tmp_path);
+
+  if(is_dir(lpBuffer)) {
+    lpFilePart=NULL;
+  }
+  else {
+    lpFilePart=(LPTSTR *) FilePart(lpBuffer);
+  }
+
+  DebOut("return: %s\n", lpBuffer);
+
+  return strlen(lpFileName)+1;
 }
 
 /* taken from puae/misc.c */
@@ -617,7 +698,7 @@ void unprotect_maprom (void) {
  */
 int LoadString(APTR hInstance, TCHAR *uID, TCHAR * lpBuffer, int nBufferMax) {
     int len = 0;
-    bug("[JUAE:AROS] %s(0x%p)\n", __PRETTY_FUNCTION__, uID);
+    bug("[JUAE:AROS] %s(uId 0x%p)\n", __PRETTY_FUNCTION__, uID);
     if((uID) && (uID != (TCHAR *)-1))
     {
     bug("[JUAE] %s: copying '%s' to buffer @ 0x%p\n", __PRETTY_FUNCTION__, uID);
@@ -695,6 +776,32 @@ typedef struct {
   struct FileInfoBlock fib_ptr;
   char wildcard_tokens[1024];
 } INTERNAL_HANDLE;
+
+/* convert time_t to/from AmigaDOS time */
+static const uae_s64 msecs_per_day = 24 * 60 * 60 * 1000;
+static const uae_s64 diff = ((8 * 365 + 2) * (24 * 60 * 60)) * (uae_u64)1000;
+
+void amiga_to_timeval (struct mytimeval *tv, int days, int mins, int ticks)
+{
+	uae_s64 t;
+
+	if (days < 0)
+		days = 0;
+	if (days > 9900 * 365)
+		days = 9900 * 365; // in future far enough?
+	if (mins < 0 || mins >= 24 * 60)
+		mins = 0;
+	if (ticks < 0 || ticks >= 60 * 50)
+		ticks = 0;
+
+	t = ticks * 20;
+	t += mins * (60 * 1000);
+	t += ((uae_u64)days) * msecs_per_day;
+	t += diff;
+
+	tv->tv_sec = t / 1000;
+	tv->tv_usec = (t % 1000) * 1000;
+}
 
 BOOL FindNextFile(HANDLE hFindFile, LPWIN32_FIND_DATA lpFindFileData) {
 
@@ -927,15 +1034,17 @@ static void romlist_add2 (const TCHAR *path, struct romdata *rd)
     TCHAR tmp[MAX_DPATH];
     if (path[0] == '/' || path[0] == '\\')
       ok = 1;
-    if (_tcslen (path) > 1 && path[1] == ':')
+    if (_tcslen (path) > 1 && path[_tcslen (path)] == ':') // "foo:", but not just ":"
       ok = 1;
     if (!ok) {
       _tcscpy (tmp, start_path_exe);
-      _tcscat (tmp, path);
+      myAddPart(tmp, path, MAX_DPATH);
+      DebOut("tmp: %s\n", tmp);
       romlist_add (tmp, rd);
       return;
     }
   }
+  DebOut("path: %s\n", path);
   romlist_add (path, rd);
 }
 
@@ -1283,6 +1392,7 @@ static void figure_processor_speed_rdtsc (void)
   clockrate=clockrate*64;
 
 	write_log (_T("CLOCKFREQ: RDTSC %.2fMHz\n"), clockrate / 1000000.0);
+  DebOut("CLOCKFREQ: RDTSC %6.2f MHz\n", clockrate / 1000000.0);
 	syncbase = clockrate >> 6;
 }
 
@@ -1327,7 +1437,7 @@ frame_time_t read_processor_time (void) {
 
   unsigned long tsc_hi, tsc_lo=0;
 
-#if defined(i386) || defined(x86_64)
+//#if defined(i386) || defined(x86_64)
   asm volatile ("cpuid\n"
                 "rdtsc" : "=a" (tsc_lo), "=d" (tsc_hi));
 
@@ -1335,7 +1445,7 @@ frame_time_t read_processor_time (void) {
 
 	tsc_lo >>= 6;            /* create space in 6 highest bits and       */
 	tsc_lo |= tsc_hi << 26;  /* copy the 6 lower bits from tsc_hi there */
-#endif
+//#endif
 
 	if (!tsc_lo)             /* never return 0 */
 		tsc_lo++;
@@ -1448,3 +1558,39 @@ bool setpaused (int priority)
 	return true;
 }
 
+
+static int focus;
+
+int mouseinside;
+
+int isfocus (void)
+{
+	if (isfullscreen () > 0)
+		return 2;
+	if (currprefs.input_tablet >= TABLET_MOUSEHACK && currprefs.input_magic_mouse) {
+		if (mouseinside)
+			return 2;
+		if (focus)
+			return 1;
+		return 0;
+	}
+	if (focus && mouseactive > 0)
+		return 2;
+	if (focus)
+		return -1;
+	return 0;
+}
+
+bool get_plugin_path (TCHAR *out, int len, const TCHAR *path) {
+  TODO();
+
+  if(path != NULL) {
+    strncpy(out, path, len);
+  }
+  else {
+    strncpy(out, "::TODO::", len);
+  }
+
+  return false;
+
+}

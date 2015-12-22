@@ -29,7 +29,7 @@
 #include <proto/timer.h>
 #include <time.h>
 
-//#define JUAE_DEBUG
+#define JUAE_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -313,12 +313,12 @@ void logging_init (void)
 	write_log(_T("\n%s"), VersionStr);
 
 	write_log (_T("\n(c) 1995-2001 Bernd Schmidt   - Core UAE concept and implementation.")
-		_T("\n(c) 1998-2014 Toni Wilen      - Win32 port, core code updates.")
+		_T("\n(c) 1998-2015 Toni Wilen      - Win32 port, core code updates.")
 		_T("\n(c) 1996-2001 Brian King      - Win32 port, Picasso96 RTG, and GUI.")
 		_T("\n(c) 1996-1999 Mathias Ortmann - Win32 port and bsdsocket support.")
 		_T("\n(c) 2000-2001 Bernd Meyer     - JIT engine.")
 		_T("\n(c) 2000-2005 Bernd Roesch    - MIDI input, many fixes.")
-		_T("\n(c) 2011-2014 Oliver Brunner  - AROS port")
+		_T("\n(c) 2011-2015 Oliver Brunner  - AROS port")
 		_T("\n"));
 	GetCurrentDirName(tmp , sizeof tmp  / sizeof (TCHAR));
 	GetProgramName   (tmp2, sizeof tmp2 / sizeof (TCHAR));

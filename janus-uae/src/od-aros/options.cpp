@@ -46,6 +46,9 @@
 #include "inputdevice.h"
 #include "keybuf.h"
 #include "drawing.h"
+#ifdef __AROS__
+#include "od-aros/thread.h"
+#endif
 #include "picasso96_aros.h"
 #include "bsdsocket.h"
 #include "registry.h"
@@ -137,7 +140,9 @@ void target_default_options (struct uae_prefs *p, int type) {
 		p->win32_automount_removabledrives = 0;
 		p->win32_automount_cddrives = 0;
 		p->win32_automount_netdrives = 0;
+#ifdef PICASSO96
 		p->picasso96_modeflags = RGBFF_CLUT | RGBFF_R5G6B5PC | RGBFF_B8G8R8A8;
+#endif
 		p->win32_filesystem_mangle_reserved_names = true;
 	}
 
@@ -149,6 +154,7 @@ void target_save_options (struct zfile *f, struct uae_prefs *p) {
 }
 
 /* don't load any config for now */
+#if 0
 int target_cfgfile_load (struct uae_prefs *p, const TCHAR *filename, int type, int isdefault)
 {
 
@@ -226,6 +232,7 @@ int target_cfgfile_load (struct uae_prefs *p, const TCHAR *filename, int type, i
 	return v;
 #endif
 }
+#endif
 
 int target_parse_option (struct uae_prefs *p, const TCHAR *option, const TCHAR *value) 
 //int target_parse_option (struct uae_prefs *p, char *option, char *value)

@@ -43,12 +43,14 @@
 #include <ctype.h> /* toupper, isdigit etc. */
 #endif
 
+typedef char * wstring;
 /*
  * NOTE: This tests _UNICODE, which is different from the UNICODE define
  *       used to differentiate Win32 API calls.
  */
 #ifdef	_UNICODE
 
+/* *** NOT AROS *** */
 
 /*
  * Use TCHAR instead of char or wchar_t. It will be appropriately translated
@@ -148,6 +150,7 @@ ii
 #ifndef _TCHAR_DEFINED
 #ifndef RC_INVOKED
 typedef char	TCHAR;
+#define wchar_t TCHAR
 #endif
 #define _TCHAR_DEFINED
 #endif
@@ -169,7 +172,8 @@ typedef char	TCHAR;
 #define	_vtprintf	vprintf
 #define	_vftprintf	vfprintf
 #define _vstprintf	vsprintf
-#define	_vsntprintf	_vsnprintf
+#define	_vsntprintf	vsnprintf
+#define _vsnprintf vsnprintf
 #define	_tscanf		scanf
 #define	_ftscanf	fscanf
 #define	_stscanf	sscanf
@@ -230,11 +234,14 @@ typedef char	TCHAR;
 #define _tcsftime	strftime
 
 
+#define fgetws fgets
 #define _tstoi64 atoi
 
 #endif	/* Not _UNICODE */
 
+#ifdef __AROS__
 #define fputws fputs
+#endif
 
 #endif	/* Not _TCHAR_H_ */
 

@@ -56,7 +56,7 @@ FLAGS      = -Wno-write-strings -O2 #-Wall
 DEBUGFLAGS = -g
 
 CDEFS   = -DUAE_ABI_$(ABI)
-INCLUDES= -I. -I../include -I../md-i386-gcc -I.. -I$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/$(SUB)/include/SDL 
+INCLUDES= -I. -I../include -I../md-i386-gcc -I.. -I../archivers/zip -I$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/$(SUB)/include/SDL -Ilibmpeg2/include
 
 #-I/home/oli/svn/$(ABI)/AROS/bin/linux-$(CPU)/AROS/Development/include/SDL
 
@@ -69,7 +69,7 @@ ifeq ($(ABI), v0)
 V0_LIBS=-lGL
 endif
 
-LINK_LIBS=-Lgui -lgui -limagedata -larossupport -lz -lGL -lmui -lSDL -LSDL_Config -lSDL_Config $(V0_LIBS)
+LINK_LIBS=-Lgui -lgui -limagedata -larossupport -lz -lGL -lmui -lSDL -LSDL_Config -lSDL_Config -lpng -Llibmpeg2/libmpeg2/.libs -lmpeg2 -Llibmpeg2/libmpeg2/convert/.libs -lmpeg2convert $(V0_LIBS)
 # ============== common ====================
 
 AROS_OBJS= 
@@ -87,7 +87,6 @@ AROS_OBJS=
 COMMON_OBJS= \
 	aros.o \
 	thread.o \
-	../blkdev.o \
 	../a2065.o \
 	../a2091.o \
 	../akiko.o \
@@ -99,12 +98,17 @@ COMMON_OBJS= \
 	../blitfunc.o \
 	../blittable.o \
 	../blitter.o \
+	../blkdev.o \
+	../blkdev_cdimage.o \
 	../bsdsocket.o \
 	../calc.o \
 	../catweasel.o \
 	../cd32_fmv.o \
+	../cd32_fmv_genlock.o \
+	cda_play.o \
 	../cdrom.o \
 	../cdtv.o \
+	../cdtvcr.o \
 	../cfgfile.o \
 	../cia.o \
 	../consolehook.o \
@@ -115,15 +119,23 @@ COMMON_OBJS= \
 	../cpuemu_20.o \
 	../cpuemu_21.o \
 	../cpuemu_22.o \
+	../cpuemu_23.o \
+	../cpuemu_24.o \
 	../cpuemu_31.o \
 	../cpuemu_32.o \
 	../cpuemu_33.o \
+	../cpuemu_40.o \
+	../cpuemu_50.o \
 	../cpummu.o \
 	../cpummu30.o \
 	../cpustbl.o \
+	../cpuboard.o \
+	../x86.o \
 	../crc32.o \
 	../custom.o \
 	../debug.o \
+	../def_icons.o \
+	../devices.o \
 	../disk.o \
 	../diskutil.o \
 	../dongle.o \
@@ -134,29 +146,40 @@ COMMON_OBJS= \
 	../ethernet.o \
 	../events.o \
 	../expansion.o \
+	../fake86_cpu.o \
 	../fdi2raw.o \
 	../filesys.o \
+	../flashrom.o \
 	filesys.o \
 	../fpp.o \
 	../fsdb.o \
 	../fsusage.o \
 	../gayle.o \
 	../gfxboard.o \
+	../ide.o \
 	../qemuvga/cirrus_vga.o \
 	../qemuvga/qemuuaeglue.o \
 	../qemuvga/vga.o \
 	../qemuvga/lsi53c895a.o \
+	../qemuvga/lsi53c710.o \
+	../qemuvga/es1370.o \
+	../qemuvga/ne2000.o \
+	../qemuvga/esp.o \
 	../gfxutil.o \
 	../hardfile.o \
 	../hrtmon.rom.o \
 	../identify.o \
+	../idecontrollers.o \
 	../inputdevice.o \
 	../inputrecord.o \
 	../keybuf.o \
 	../main.o \
+	../mame/a2410.o \
+	../mame/tm34010/tms34010.o \
 	../memory.o \
 	../native2amiga.o \
 	../ncr_scsi.o \
+	../ncr9x_scsi.o \
 	../newcpu.o \
 	../newcpu_common.o \
 	../rommgr.o \
@@ -168,20 +191,39 @@ COMMON_OBJS= \
 	../scsiemul.o \
 	../specialmonitors.o \
 	../statusline.o \
+	../test_card.o \
 	../traps.o \
 	../uaeexe.o \
 	../uaeipc.o \
 	../uaelib.o \
 	../uaeresource.o \
 	../uaeserial.o \
+	../isofs.o \
 	../jit/compemu.o \
 	../jit/compemu_fpp.o \
 	../jit/compemu_support.o \
 	../jit/compstbl.o \
-	../nogui.o \
-	../isofs.o \
+	../pci.o \
 	../zfile.o \
 	../zfile_archive.o \
+	../archivers/zip/zip.o \
+	../archivers/zip/ioapi.o \
+	../archivers/mp2/kjmp2.o \
+	../dosbox/cmos.o \
+	../dosbox/core_full.o \
+	../dosbox/core_normal.o \
+	../dosbox/core_simple.o \
+	../dosbox/cpu.o \
+	../dosbox/db_memory.o \
+	../dosbox/flags.o \
+	../dosbox/fpu.o \
+	../dosbox/keyboard.o \
+	../dosbox/modrm.o \
+	../dosbox/paging.o \
+	../dosbox/pic.o \
+	../dosbox/timer.o \
+	../ppc/ppc.o \
+	../ppc/ppcd.o \
 	main_aros.o \
 	avioutput.o \
 	unicode.o \
@@ -197,6 +239,7 @@ COMMON_OBJS= \
 	options.o \
 	gfx.o \
 	mman.o \
+	memory_aros.o \
 	writelog.o \
 	keymap.o \
 	shm.o \
@@ -205,16 +248,19 @@ COMMON_OBJS= \
 	sdlkeys_dik.o \
 	rp.o \
 	registry.o \
+	muigui_helper.o \
 	muigui.o \
 	extensions.o \
 	fsdb_aros.o \
 	nogui_aros.o \
 	hardfile_aros.o \
+	screenshot.o \
+	vm.o \
+	keyboard.o \
 	stubs.o
 
 	#../picasso96.o \
 	#../ersatz.o \
-	#keyboard.o \
 #gui.o \
 
 # build dependencies magic
@@ -233,7 +279,7 @@ DEP_OBJS=$(COMMON_OBJS)
 
 all: uae
 
-uae: string_resource.h sdl_config gui common aros
+uae: string_resource.h sdl_config libmpeg2 gui common aros
 	$(CPP) $(CFLAGS) $(COMMON_OBJS) $(AROS_OBJS) -o $(EXE) $(LINK_LIBS) 
 
 sdl_config:
@@ -251,6 +297,12 @@ gui:
 	@echo building gui library ..
 	@cd gui;make ABI="$(ABI)"
 	
+libmpeg2: libmpeg2/libmpeg2/.libs/libmpeg2.a libmpeg2/libmpeg2/convert/.libs/libmpeg2convert.a
+
+libmpeg2/libmpeg2/.libs/libmpeg2.a:
+	@echo building mpeg2 libraries ..
+	@cd libmpeg2;make distclean;./configure --host=$(CPU)-aros;make
+
 # ============== autogenerate some .c files ====================
 
 ../blit.h:	../genblitter
@@ -275,7 +327,7 @@ gui:
 		cd ..;./gencpu
 
 string_resource.h: ../od-win32/resources/winuae.rc
-		./parse_res.pl ../od-win32/resources/winuae.rc string_resource.h
+		./parse_res.pl ../od-win32/resources/winuae.rc ../od-win32/resources/resource.h string_resource.h 
 
 # ============== clean ====================
 clean: 
