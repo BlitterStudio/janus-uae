@@ -6,22 +6,27 @@
  * Copyright 1995,1996 Bernd Schmidt
  */
 
+#include "sysconfig.h"
+#include "sysdeps.h"
+#ifndef CROSS_COMPILE
+/* sysdeps uses traget defines (AROS) for building a linux tool 
+ * cross compiling works only without sysdeps 
+ */
+#define ENUMDECL enum
+#define ENUMNAME(name) ; typedef int name
+#define strnicmp strncasecmp
+#endif
+
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include <tchar.h>
 #include <assert.h>
 #include <ctype.h>
 
-#ifdef __linux__
-#define strnicmp strncasecmp 
-#endif
-
-#define TCHAR char
-
-#include "sysconfig.h"
-#include "sysdeps.h"
-
-
 #include "readcpu.h"
+
+//#define TCHAR char
 
 static FILE *tablef;
 static int nextch = 0;
@@ -83,7 +88,6 @@ int main(int argc, char **argv)
 		int cpulevel, uncpulevel, plevel, sduse;
 		int i;
 
-		char patbits[16];
 		char opcstr[256];
 		int bitpos[16];
 		int flagset[5], flaguse[5];
@@ -132,7 +136,6 @@ int main(int argc, char **argv)
 			bitmask |= 1;
 			if (nextch == '1')
 			bitpattern |= 1;
-			patbits[i] = nextch;
 			getnextch();
 		}
 
@@ -231,7 +234,9 @@ int main(int argc, char **argv)
 		if (nextch != ':')
 			abort();
 
-		fgets(opcstr, 250, tablef);
+		if (fgets(opcstr, 250, tablef) != opcstr) {
+			abort();
+		}
 		getnextch();
 
 		if (nextch == '-') {
@@ -272,7 +277,9 @@ int main(int argc, char **argv)
 				nextch = fgetc (tablef);
 			}
 			if (nextch == ' ') {
-				fgets(fm, sizeof fm, tablef);
+				if (fgets(fm, sizeof fm, tablef) != fm) {
+					abort();
+				}
 				if (!strnicmp(fm, "fea", 3))
 					fetchmode = 1;
 				if (!strnicmp(fm, "cea", 3))
@@ -323,7 +330,7 @@ int main(int argc, char **argv)
 		for(i = 0; i < 5; i++) {
 			printf("{%d,%d}%s", flaguse[i], flagset[i], i == 4 ? "" : ",");
 		}
-		printf("},%2d,_T(\"%s\"),%2d,%2d,%2d,%2d}", sduse, opstrp, head, tail, clocks, fetchmode);
+		printf("},0x%02x,_T(\"%s\"),%2d,%2d,%2d,%2d}", sduse, opstrp, head, tail, clocks, fetchmode);
     }
     printf("};\nint n_defs68k = %d;\n", no_insns);
     return 0;

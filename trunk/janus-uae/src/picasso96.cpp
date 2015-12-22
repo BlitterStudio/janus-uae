@@ -33,15 +33,14 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
-//#include "config.h"
+#include "config.h"
 #include "options.h"
 #include "threaddep/thread.h"
 #include "uae.h"
-#include "custom.h"
-//#include "newcpu.h"
-#include "xwin.h"
-
 #include "memory.h"
+#include "custom.h"
+#include "newcpu.h"
+#include "xwin.h"
 #include "picasso96.h"
 
 #ifdef JIT
@@ -50,8 +49,16 @@ int picasso_is_special = PIC_WRITE; /* ditto */
 int picasso_is_special_read = PIC_READ; /* ditto */
 #endif
 
+#ifdef PICASSO96
+
 int p96hack_vpos, p96hack_vpos2, p96refresh_active;
-struct picasso96_state_struct picasso96_state;
+
+#define P96TRACING_ENABLED 0
+#if P96TRACING_ENABLED
+#define P96TRACE(x)	do { write_log ("P96: "); write_log x; } while(0)
+#else
+#define P96TRACE(x)     do { } while(0)
+#endif
 
 static uae_u32 gfxmem_lget (uaecptr) REGPARAM;
 static uae_u32 gfxmem_wget (uaecptr) REGPARAM;
@@ -62,28 +69,13 @@ static void gfxmem_bput (uaecptr, uae_u32) REGPARAM;
 static int gfxmem_check (uaecptr addr, uae_u32 size) REGPARAM;
 static uae_u8 *gfxmem_xlate (uaecptr addr) REGPARAM;
 
-addrbank gfxmem_bank = {
-    gfxmem_lget, gfxmem_wget, gfxmem_bget,
-    gfxmem_lput, gfxmem_wput, gfxmem_bput,
-    gfxmem_xlate, gfxmem_check, NULL
-};
-
-
-#ifdef PICASSO96
-
-#define P96TRACING_ENABLED 0
-#if P96TRACING_ENABLED
-#define P96TRACE(x)	do { write_log ("P96: "); write_log x; } while(0)
-#else
-#define P96TRACE(x)     do { } while(0)
-#endif
-
 static void write_gfx_long (uaecptr addr, uae_u32 value);
 static void write_gfx_word (uaecptr addr, uae_u16 value);
 static void write_gfx_byte (uaecptr addr, uae_u8 value);
 
 static uae_u8 all_ones_bitmap, all_zeros_bitmap;
 
+struct picasso96_state_struct picasso96_state;
 struct picasso_vidbuf_description picasso_vidinfo;
 
 /* These are the maximum resolutions. They are filled in by GetSupportedResolutions() */
@@ -968,7 +960,7 @@ STATIC_INLINE void do_blitrect_frame_buffer (struct RenderInfo *ri,
 	return;
     }
     // (mask != 0xFF && Bpp <= 1)
-    tmp3 = tmp2 = tmp = malloc (linewidth * height); /* allocate enough memory for the src-rect */
+    tmp3 = tmp2 = tmp = xmalloc (linewidth * height); /* allocate enough memory for the src-rect */
     if (!tmp)
 	return;
 
@@ -2720,13 +2712,10 @@ static void write_gfx_byte (uaecptr addr, uae_u8 value)
     wgfx_min = oldaddr;
     wgfx_max = oldaddr + 1;
 }
-#endif
 
 static uae_u32 REGPARAM2 gfxmem_lget (uaecptr addr)
 {
     uae_u32 *m;
-		TODO();
-#if 0
 
 #ifdef JIT
     special_mem |= picasso_is_special_read;
@@ -2735,15 +2724,12 @@ static uae_u32 REGPARAM2 gfxmem_lget (uaecptr addr)
     addr &= gfxmem_mask;
     m = (uae_u32 *) (gfxmemory + addr);
     return do_get_mem_long (m);
-#endif
 }
 
 static uae_u32 REGPARAM2 gfxmem_wget (uaecptr addr)
 {
     uae_u16 *m;
-		TODO();
 
-#if 0
 #ifdef JIT
     special_mem |= picasso_is_special_read;
 #endif
@@ -2751,28 +2737,22 @@ static uae_u32 REGPARAM2 gfxmem_wget (uaecptr addr)
     addr &= gfxmem_mask;
     m = (uae_u16 *) (gfxmemory + addr);
     return do_get_mem_word (m);
-#endif
 }
 
 static uae_u32 REGPARAM2 gfxmem_bget (uaecptr addr)
 {
-	TODO();
-#if 0
 #ifdef JIT
     special_mem |= picasso_is_special_read;
 #endif
     addr -= gfxmem_start;
     addr &= gfxmem_mask;
     return gfxmemory[addr];
-#endif
 }
 
 static void REGPARAM2 gfxmem_lput (uaecptr addr, uae_u32 l)
 {
     uae_u32 *m;
 
-TODO();
-#if 0
 #ifdef JIT
     special_mem |= picasso_is_special;
 #endif
@@ -2783,14 +2763,11 @@ TODO();
 
     /* write the long-word to our displayable memory */
     write_gfx_long (addr, l);
-#endif
 }
 
 static void REGPARAM2 gfxmem_wput (uaecptr addr, uae_u32 w)
 {
     uae_u16 *m;
-		TODO();
-#if 0
 #ifdef JIT
     special_mem |= picasso_is_special;
 #endif
@@ -2801,13 +2778,10 @@ static void REGPARAM2 gfxmem_wput (uaecptr addr, uae_u32 w)
 
     /* write the word to our displayable memory */
     write_gfx_word (addr, (uae_u16) w);
-#endif
 }
 
 static void REGPARAM2 gfxmem_bput (uaecptr addr, uae_u32 b)
 {
-	TODO();
-#if 0
 #ifdef JIT
     special_mem |= picasso_is_special;
 #endif
@@ -2817,7 +2791,6 @@ static void REGPARAM2 gfxmem_bput (uaecptr addr, uae_u32 b)
 
     /* write the byte to our displayable memory */
     write_gfx_byte (addr, (uae_u8) b);
-#endif
 }
 
 static int REGPARAM2 gfxmem_check (uaecptr addr, uae_u32 size)
@@ -2834,7 +2807,12 @@ static uae_u8 REGPARAM2 *gfxmem_xlate (uaecptr addr)
     return gfxmemory + addr;
 }
 
-#ifndef __AROS__
+addrbank gfxmem_bank = {
+    gfxmem_lget, gfxmem_wget, gfxmem_bget,
+    gfxmem_lput, gfxmem_wput, gfxmem_bput,
+    gfxmem_xlate, gfxmem_check, NULL
+};
+
 int picasso_display_mode_index (uae_u32 x, uae_u32 y, uae_u32 d)
 {
     int i;

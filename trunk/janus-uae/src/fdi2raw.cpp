@@ -70,18 +70,18 @@ static TCHAR *datalog (uae_u8 *src, int len)
 	return buf + offset2;
 }
 #else
-static TCHAR *datalog (uae_u8 *src, int len) { return _T(""); }
+static const TCHAR *datalog (uae_u8 *src, int len) { return _T(""); }
 #endif
 
 #ifdef DEBUG
 #define debuglog write_log
 #else
-#define debuglog
+#define debuglog(fmt, ...)
 #endif
 #ifdef VERBOSE
 #define outlog write_log
 #else
-#define outlog
+#define outlog(fmt, ...)
 #endif
 
 static int fdi_allocated;
@@ -1320,13 +1320,13 @@ static int handle_sectors_described_track (FDI *fdi)
 
 	do {
 		fdi->track_type = *fdi->track_src++;
-		outlog (_T("%06X %06X %02X:"),fdi->track_src - start_src + 0x200, fdi->out/8, fdi->track_type);
+		outlog (_T("%06X %06X %02X:"), (int) (fdi->track_src - start_src + 0x200), fdi->out/8, fdi->track_type);
 		oldout = fdi->out;
 		decode_sectors_described_track[fdi->track_type](fdi);
 		outlog (_T(" %d\n"), fdi->out - oldout);
 		oldout = fdi->out;
 		if (fdi->out < 0 || fdi->err) {
-			outlog (_T("\nin %d bytes, out %d bits\n"), fdi->track_src - fdi->track_src_buffer, fdi->out);
+			outlog (_T("\nin %d bytes, out %d bits\n"), (int) (fdi->track_src - fdi->track_src_buffer), fdi->out);
 			return -1;
 		}
 		if (fdi->track_src - fdi->track_src_buffer >= fdi->track_src_len) {
@@ -1557,7 +1557,7 @@ static void fdi2_decode (FDI *fdi, unsigned long totalavg, uae_u32 *avgp, uae_u3
 	uae_u8 *d = fdi->track_dst_buffer;
 	uae_u16 *pt = fdi->track_dst_buffer_timing;
 	uae_u32 ref_pulse, pulse;
-	long jitter;
+	int jitter;
 
 	/* detects a long-enough stable pulse coming just after another stable pulse */
 	i = 1;
@@ -1626,7 +1626,7 @@ static void fdi2_decode (FDI *fdi, unsigned long totalavg, uae_u32 *avgp, uae_u3
 				randval = uaerand();
 				if (randval < (UAE_RAND_MAX / 2)) {
 					if (randval > (UAE_RAND_MAX / 4)) {
-						if (randval <= (3 * UAE_RAND_MAX / 8))
+						if (randval <= (3 * (UAE_RAND_MAX / 8)))
 							randval = (2 * randval) - (UAE_RAND_MAX  /4);
 						else
 							randval = (4 * randval) - UAE_RAND_MAX;
@@ -1635,7 +1635,7 @@ static void fdi2_decode (FDI *fdi, unsigned long totalavg, uae_u32 *avgp, uae_u3
 				} else {
 					randval -= UAE_RAND_MAX / 2;
 					if (randval > (UAE_RAND_MAX / 4)) {
-						if (randval <= (3 * UAE_RAND_MAX / 8))
+						if (randval <= (3 * (UAE_RAND_MAX / 8)))
 							randval = (2 * randval) - (UAE_RAND_MAX /4);
 						else
 							randval = (4 * randval) - UAE_RAND_MAX;
@@ -1661,7 +1661,7 @@ static void fdi2_decode (FDI *fdi, unsigned long totalavg, uae_u32 *avgp, uae_u3
 				randval = uaerand();
 				if (randval < (UAE_RAND_MAX / 2)) {
 					if (randval > (UAE_RAND_MAX / 4)) {
-						if (randval <= (3 * UAE_RAND_MAX / 8))
+						if (randval <= (3 * (UAE_RAND_MAX / 8)))
 							randval = (2 * randval) - (UAE_RAND_MAX /4);
 						else
 							randval = (4 * randval) - UAE_RAND_MAX;
@@ -1670,7 +1670,7 @@ static void fdi2_decode (FDI *fdi, unsigned long totalavg, uae_u32 *avgp, uae_u3
 				} else {
 					randval -= UAE_RAND_MAX / 2;
 					if (randval > (UAE_RAND_MAX / 4)) {
-						if (randval <= (3 * UAE_RAND_MAX / 8))
+						if (randval <= (3 * (UAE_RAND_MAX / 8)))
 							randval = (2 * randval) - (UAE_RAND_MAX /4);
 						else
 							randval = (4 * randval) - UAE_RAND_MAX;

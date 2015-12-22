@@ -27,7 +27,7 @@
 #include "uae.h"
 #include "custom.h"
 #include "newcpu.h"
-#include "commpipe.h"
+#include "flashrom.h"
 
 #define AKIKO_DEBUG_NVRAM 0
 #define AKIKO_DEBUG_IO 0
@@ -55,208 +55,57 @@ static void irq (void)
 * 0xb80030: bit 7 = SCL (clock), 6 = SDA (data)
 * 0xb80032: 0xb80030 data direction register (0 = input, 1 = output)
 *
-* Because I don't have any experience on I2C, following code may be
-* unnecessarily complex and not 100% correct..
 */
 
-enum i2c { I2C_WAIT, I2C_START, I2C_DEVICEADDR,	I2C_WORDADDR, I2C_DATA };
-
-/* size of EEPROM, don't try to change,
-* (hardcoded in Kickstart)
-*/
-#define NVRAM_SIZE 1024
-/* max size of one write request */
-#define NVRAM_PAGE_SIZE 16
-
-static uae_u8 cd32_nvram[NVRAM_SIZE], nvram_writetmp[NVRAM_PAGE_SIZE];
-static int nvram_address, nvram_writeaddr;
-static int nvram_rw;
-static int bitcounter = -1, direction = -1;
-static uae_u8 nvram_byte;
-static int scl_out, scl_in, scl_dir, oscl, sda_out, sda_in, sda_dir, osda;
-static int sda_dir_nvram;
-static int state = I2C_WAIT;
-
-static void nvram_write (int offset, int len)
-{
-	struct zfile *f;
-
-	if (!currprefs.cs_cd32nvram)
-		return;
-	f = zfile_fopen (currprefs.flashfile, _T("rb+"), ZFD_NORMAL);
-	if (!f) {
-		f = zfile_fopen (currprefs.flashfile, _T("wb"), 0);
-		if (!f) return;
-		zfile_fwrite (cd32_nvram, NVRAM_SIZE, 1, f);
-	}
-	zfile_fseek (f, offset, SEEK_SET);
-	zfile_fwrite (cd32_nvram + offset, len, 1, f);
-	zfile_fclose (f);
-}
+static uae_u8 *cd32_nvram;
+static void *cd32_eeprom;
+static uae_u8 cd32_i2c_direction;
+static bool cd32_i2c_data_scl, cd32_i2c_data_sda;
+static struct zfile *flashfile;
 
 static void nvram_read (void)
 {
-	struct zfile *f;
-
+	zfile_fclose(flashfile);
+	flashfile = NULL;
+	eeprom_free(cd32_eeprom);
+	cd32_eeprom = NULL;
+	cd32_i2c_data_scl = cd32_i2c_data_sda = true;
+	cd32_i2c_direction = 0;
 	if (!currprefs.cs_cd32nvram)
 		return;
-	f = zfile_fopen (currprefs.flashfile, _T("rb"), ZFD_NORMAL);
-	memset (cd32_nvram, 0, NVRAM_SIZE);
-	if (!f) return;
-	zfile_fread (cd32_nvram, NVRAM_SIZE, 1, f);
-	zfile_fclose (f);
-}
-
-static void i2c_do (void)
-{
-#if AKIKO_DEBUG_NVRAM
-	int i;
-#endif
-	sda_in = 1;
-	if (!sda_dir_nvram && scl_out && oscl) {
-		if (!sda_out && osda) { /* START-condition? */
-			state = I2C_DEVICEADDR;
-			bitcounter = 0;
-			direction = -1;
-#if AKIKO_DEBUG_NVRAM
-			write_log (_T("START\n"));
-#endif
-			return;
-		} else if(sda_out && !osda) { /* STOP-condition? */
-			state = I2C_WAIT;
-			bitcounter = -1;
-#if AKIKO_DEBUG_NVRAM
-			write_log (_T("STOP\n"));
-#endif
-			if (direction > 0) {
-				memcpy (cd32_nvram + (nvram_address & ~(NVRAM_PAGE_SIZE - 1)), nvram_writetmp, NVRAM_PAGE_SIZE);
-				nvram_write (nvram_address & ~(NVRAM_PAGE_SIZE - 1), NVRAM_PAGE_SIZE);
-				direction = -1;
-				gui_flicker_led (LED_MD, 0, 2);
-#if AKIKO_DEBUG_NVRAM
-				write_log (_T("NVRAM write address %04X:"), nvram_address & ~(NVRAM_PAGE_SIZE - 1));
-				for (i = 0; i < NVRAM_PAGE_SIZE; i++)
-					write_log (_T("%02X"), nvram_writetmp[i]);
-				write_log (_T("\n"));
-
-#endif
-			}
-			return;
-		}
+	if (!cd32_nvram)
+		cd32_nvram = xmalloc(uae_u8, currprefs.cs_cd32nvram_size);
+	memset(cd32_nvram, 0, currprefs.cs_cd32nvram_size);
+	flashfile = zfile_fopen (currprefs.flashfile, _T("rb+"), ZFD_NORMAL);
+	if (!flashfile)
+		flashfile = zfile_fopen (currprefs.flashfile, _T("wb"), 0);
+	if (flashfile) {
+		int size = zfile_fread(cd32_nvram, 1, currprefs.cs_cd32nvram_size, flashfile);
+		if (size < currprefs.cs_cd32nvram_size)
+			zfile_fwrite(cd32_nvram + size, 1, currprefs.cs_cd32nvram_size - size, flashfile);
 	}
-	if (bitcounter >= 0) {
-		if (direction) {
-			/* Amiga -> NVRAM */
-			if (scl_out && !oscl) {
-				if (bitcounter == 8) {
-#if AKIKO_DEBUG_NVRAM
-					write_log (_T("RB %02X "), nvram_byte, M68K_GETPC);
-#endif
-					sda_in = 0; /* ACK */
-					if (direction > 0) {
-						nvram_writetmp[nvram_writeaddr++] = nvram_byte;
-						nvram_writeaddr &= 15;
-						bitcounter = 0;
-					} else {
-						bitcounter = -1;
-					}
-				} else {
-					//write_log (_T("NVRAM received bit %d, offset %d\n"), sda_out, bitcounter);
-					nvram_byte <<= 1;
-					nvram_byte |= sda_out;
-					bitcounter++;
-				}
-			}
-		} else {
-			/* NVRAM -> Amiga */
-			if (scl_out && !oscl && bitcounter < 8) {
-				if (bitcounter == 0)
-					nvram_byte = cd32_nvram[nvram_address];
-				sda_dir_nvram = 1;
-				sda_in = (nvram_byte & 0x80) ? 1 : 0;
-				//write_log (_T("NVRAM sent bit %d, offset %d\n"), sda_in, bitcounter);
-				nvram_byte <<= 1;
-				bitcounter++;
-				if (bitcounter == 8) {
-#if AKIKO_DEBUG_NVRAM
-					write_log (_T("NVRAM sent byte %02X address %04X PC=%08X\n"), cd32_nvram[nvram_address], nvram_address, M68K_GETPC);
-#endif
-					nvram_address++;
-					nvram_address &= NVRAM_SIZE - 1;
-					sda_dir_nvram = 0;
-				}
-			}
-			if(!sda_out && sda_dir && !scl_out) /* ACK from Amiga */
-				bitcounter = 0;
-		}
-		if (bitcounter >= 0) return;
-	}
-	switch (state)
-	{
-	case I2C_DEVICEADDR:
-		if ((nvram_byte & 0xf0) != 0xa0) {
-			write_log (_T("WARNING: I2C_DEVICEADDR: device address != 0xA0\n"));
-			state = I2C_WAIT;
-			return;
-		}
-		nvram_rw = (nvram_byte & 1) ? 0 : 1;
-		if (nvram_rw) {
-			/* 2 high address bits, only fetched if WRITE = 1 */
-			nvram_address &= 0xff;
-			nvram_address |= ((nvram_byte >> 1) & 3) << 8;
-			state = I2C_WORDADDR;
-			direction = -1;
-		} else {
-			state = I2C_DATA;
-			direction = 0;
-			sda_dir_nvram = 1;
-		}
-		bitcounter = 0;
-#if AKIKO_DEBUG_NVRAM
-		write_log (_T("I2C_DEVICEADDR: rw %d, address %02Xxx PC=%08X\n"), nvram_rw, nvram_address >> 8, M68K_GETPC);
-#endif
-		break;
-	case I2C_WORDADDR:
-		nvram_address &= 0x300;
-		nvram_address |= nvram_byte;
-#if AKIKO_DEBUG_NVRAM
-		write_log (_T("I2C_WORDADDR: address %04X PC=%08X\n"), nvram_address, M68K_GETPC);
-#endif
-		if (direction < 0) {
-			memcpy (nvram_writetmp, cd32_nvram + (nvram_address & ~(NVRAM_PAGE_SIZE - 1)), NVRAM_PAGE_SIZE);
-			nvram_writeaddr = nvram_address & (NVRAM_PAGE_SIZE - 1);
-			gui_flicker_led (LED_MD, 0, 1);
-		}
-		state = I2C_DATA;
-		bitcounter = 0;
-		direction = 1;
-		break;
-	}
+	cd32_eeprom = eeprom_new(cd32_nvram, currprefs.cs_cd32nvram_size, flashfile);
 }
 
 static void akiko_nvram_write (int offset, uae_u32 v)
 {
-	int sda;
 	switch (offset)
 	{
 	case 0:
-		oscl = scl_out;
-		scl_out = (v & 0x80) ? 1 : 0;
-		osda = sda_out;
-		sda_out = (v & 0x40) ? 1 : 0;
+		if (cd32_i2c_direction & 0x80)
+			cd32_i2c_data_scl = (v & 0x80) != 0;
+		else
+			cd32_i2c_data_scl = true;
+		eeprom_i2c_set(cd32_eeprom, BITBANG_I2C_SCL, cd32_i2c_data_scl);
+		if (cd32_i2c_direction & 0x40)
+			cd32_i2c_data_sda = (v & 0x40) != 0;
+		else
+			cd32_i2c_data_sda = true;
+		eeprom_i2c_set(cd32_eeprom, BITBANG_I2C_SDA, cd32_i2c_data_sda);
 		break;
 	case 2:
-		scl_dir = (v & 0x80) ? 1 : 0;
-		sda_dir = (v & 0x40) ? 1 : 0;
+		cd32_i2c_direction = v;
 		break;
-	default:
-		return;
-	}
-	sda = sda_out;
-	if (oscl != scl_out || osda != sda) {
-		i2c_do ();
-		oscl = scl_out;
-		osda = sda;
 	}
 }
 
@@ -266,18 +115,11 @@ static uae_u32 akiko_nvram_read (int offset)
 	switch (offset)
 	{
 	case 0:
-		if (!scl_dir)
-			v |= scl_in ? 0x80 : 0x00;
-		else
-			v |= scl_out ? 0x80 : 0x00;
-		if (!sda_dir)
-			v |= sda_in ? 0x40 : 0x00;
-		else
-			v |= sda_out ? 0x40 : 0x00;
+		v |= eeprom_i2c_set(cd32_eeprom, BITBANG_I2C_SCL, cd32_i2c_data_scl) ? 0x80 : 0x00;
+		v |= eeprom_i2c_set(cd32_eeprom, BITBANG_I2C_SDA, cd32_i2c_data_sda) ? 0x40 : 0x00;
 		break;
 	case 2:
-		v |= scl_dir ? 0x80 : 0x00;
-		v |= sda_dir ? 0x40 : 0x00;
+		v = cd32_i2c_direction;
 		break;
 	}
 	return v;
@@ -463,7 +305,6 @@ static int cdrom_command_length;
 static int cdrom_checksum_error, cdrom_unknown_command;
 static int cdrom_data_offset, cdrom_speed, cdrom_sector_counter;
 static int cdrom_current_sector, cdrom_seek_delay;
-static int cdrom_data_end;
 static int cdrom_audiotimeout;
 static int cdrom_led;
 static int cdrom_receive_length, cdrom_receive_offset;
@@ -723,7 +564,6 @@ static int get_cdrom_toc (void)
 	if (!sys_command_cd_toc (unitnum, &cdrom_toc_cd_buffer))
 		return 1;
 	memset (cdrom_toc_buffer, 0, MAX_TOC_ENTRIES * 13);
-	cdrom_data_end = -1;
 	for (j = 0; j < cdrom_toc_cd_buffer.points; j++) {
 		struct cd_toc *s = &cdrom_toc_cd_buffer.toc[j];
 		uae_u8 *d = &cdrom_toc_buffer[j * 13];
@@ -738,18 +578,26 @@ static int get_cdrom_toc (void)
 		d[10] = tobcd ((msf >> 0) & 0xff);
 		if (s->point == 1 && (s->control & 0x0c) == 0x04)
 			datatrack = 1;
-		if (s->point == 2)
+		if (s->point >= 2 && s->point < 100 && (s->control & 0x0c) != 0x04 && !secondtrack)
 			secondtrack = addr;
 	}
 	cdrom_toc_crc = get_crc32 (cdrom_toc_buffer, cdrom_toc_cd_buffer.points * 13);
-	if (datatrack) {
-		if (secondtrack)
-			cdrom_data_end = secondtrack;
-		else
-			cdrom_data_end = cdrom_toc_cd_buffer.lastaddress;
-	}
 	return 0;
 }
+static bool is_valid_data_sector(int sector)
+{
+	for (int i = 0; i < cdrom_toc_cd_buffer.points; i++) {
+		struct cd_toc *s = &cdrom_toc_cd_buffer.toc[i];
+		if (s->point < 1 || s->point > 99)
+			continue;
+		if ((s->control & 0x0c) != 4)
+			continue;
+		if (sector >= s->paddress && (sector < s[1].paddress || s[1].point >= 0xa1))
+			return true;
+	}
+	return false;
+}
+
 
 /* open device */
 static int sys_cddev_open (void)
@@ -992,7 +840,7 @@ static int cdrom_command_multi (void)
 #endif
 		cdrom_data_offset = seekpos;
 		cdrom_seek_delay = abs (cdrom_current_sector - cdrom_data_offset);
-		if (cdrom_seek_delay < 100) {
+		if (cdrom_seek_delay < 100 || currprefs.cd_speed == 0) {
 			cdrom_seek_delay = 1;
 		} else {
 			cdrom_seek_delay /= 1000;
@@ -1329,6 +1177,8 @@ void AKIKO_hsync_handler (void)
 			cdrom_seek_delay--;
 		}
 		framecounter += (float)maxvpos * vblank_hz / (75.0 * cdrom_speed);
+		if (currprefs.cd_speed == 0)
+			framecounter = 1;
 		framesync = true;
 	}
 
@@ -1371,11 +1221,7 @@ void AKIKO_hsync_handler (void)
 }
 
 /* cdrom data buffering thread */
-#ifndef __AROS__
 static void *akiko_thread (void *null)
-#else
-static void *akiko_thread (void *nix)
-#endif
 {
 	int i;
 	uae_u8 *tmp1;
@@ -1444,24 +1290,29 @@ static void *akiko_thread (void *nix)
 			if (sector_buffer_info_1[i] == 0xff)
 				break;
 		}
-		if (cdrom_data_end > 0 && sector >= 0 &&
+		if (sector >= 0 && is_valid_data_sector(sector) &&
 			(sector_buffer_sector_1 < 0 || sector < sector_buffer_sector_1 || sector >= sector_buffer_sector_1 + SECTOR_BUFFER_SIZE * 2 / 3 || i != SECTOR_BUFFER_SIZE)) {
 				int blocks;
 				memset (sector_buffer_info_2, 0, SECTOR_BUFFER_SIZE);
 #if AKIKO_DEBUG_IO_CMD
-				write_log (_T("filling buffer sector=%d (max=%d)\n"), sector, cdrom_data_end);
+				write_log (_T("filling buffer sector=%d\n"), sector);
 #endif
 				sector_buffer_sector_2 = sector;
-				if (sector + SECTOR_BUFFER_SIZE >= cdrom_data_end)
-					blocks = cdrom_data_end - sector;
-				else
+				if (!is_valid_data_sector(sector + SECTOR_BUFFER_SIZE)) {
+					for (blocks = SECTOR_BUFFER_SIZE; blocks > 0; blocks--) {
+						if (is_valid_data_sector(sector + blocks))
+							break;
+					}
+				} else {
 					blocks = SECTOR_BUFFER_SIZE;
+				}
+				if (blocks) {
 				int ok = sys_command_cd_rawread (unitnum, sector_buffer_2, sector, blocks, 2352);
 				if (!ok) {
 					int offset = 0;
 					while (offset < SECTOR_BUFFER_SIZE) {
 						int ok = 0;
-						if (sector < cdrom_data_end)
+							if (is_valid_data_sector(sector))
 							ok = sys_command_cd_rawread (unitnum, sector_buffer_2 + offset * 2352, sector, 1, 2352);
 						sector_buffer_info_2[offset] = ok ? 3 : 0;
 						offset++;
@@ -1480,6 +1331,7 @@ static void *akiko_thread (void *nix)
 				tmp3 = sector_buffer_sector_1;
 				sector_buffer_sector_1 = sector_buffer_sector_2;
 				sector_buffer_sector_2 = tmp3;
+			}
 		}
 		uae_sem_post (&akiko_sem);
 		sleep_millis (10);
@@ -1611,18 +1463,12 @@ static uae_u32 akiko_bget2 (uaecptr addr, int msg)
 
 static uae_u32 REGPARAM2 akiko_bget (uaecptr addr)
 {
-#ifdef JIT
-	special_mem |= S_READ;
-#endif
 	return akiko_bget2 (addr, 1);
 }
 
 static uae_u32 REGPARAM2 akiko_wget (uaecptr addr)
 {
 	uae_u16 v;
-#ifdef JIT
-	special_mem |= S_READ;
-#endif
 	addr &= 0xffff;
 	v = akiko_bget2 (addr + 1, 0);
 	v |= akiko_bget2 (addr + 0, 0) << 8;
@@ -1635,9 +1481,6 @@ static uae_u32 REGPARAM2 akiko_lget (uaecptr addr)
 {
 	uae_u32 v;
 
-#ifdef JIT
-	special_mem |= S_READ;
-#endif
 	addr &= 0xffff;
 	v = akiko_bget2 (addr + 3, 0);
 	v |= akiko_bget2 (addr + 2, 0) << 8;
@@ -1763,17 +1606,11 @@ static void akiko_bput2 (uaecptr addr, uae_u32 v, int msg)
 
 static void REGPARAM2 akiko_bput (uaecptr addr, uae_u32 v)
 {
-#ifdef JIT
-	special_mem |= S_WRITE;
-#endif
 	akiko_bput2 (addr, v, 1);
 }
 
 static void REGPARAM2 akiko_wput (uaecptr addr, uae_u32 v)
 {
-#ifdef JIT
-	special_mem |= S_WRITE;
-#endif
 	addr &= 0xfff;
 	if((addr < 0x30 && AKIKO_DEBUG_IO))
 		write_log (_T("akiko_wput %08X: %08X=%04X\n"), M68K_GETPC, addr, v & 0xffff);
@@ -1783,9 +1620,6 @@ static void REGPARAM2 akiko_wput (uaecptr addr, uae_u32 v)
 
 static void REGPARAM2 akiko_lput (uaecptr addr, uae_u32 v)
 {
-#ifdef JIT
-	special_mem |= S_WRITE;
-#endif
 	addr &= 0xffff;
 	if(addr < 0x30 && AKIKO_DEBUG_IO)
 		write_log (_T("akiko_lput %08X: %08X=%08X\n"), M68K_GETPC, addr, v);
@@ -1798,8 +1632,9 @@ static void REGPARAM2 akiko_lput (uaecptr addr, uae_u32 v)
 addrbank akiko_bank = {
 	akiko_lget, akiko_wget, akiko_bget,
 	akiko_lput, akiko_wput, akiko_bput,
-	default_xlate, default_check, NULL, _T("Akiko"),
-	dummy_lgeti, dummy_wgeti, ABFLAG_IO
+	default_xlate, default_check, NULL, NULL, _T("Akiko"),
+	dummy_lgeti, dummy_wgeti,
+	ABFLAG_IO, S_READ, S_WRITE
 };
 
 static const uae_u8 patchdata[]={0x0c,0x82,0x00,0x00,0x03,0xe8,0x64,0x00,0x00,0x46};
@@ -1816,7 +1651,7 @@ static void patchrom (void)
 				p[i + 8] = 0x4e;
 				p[i + 9] = 0x71;
 				protect_roms (true);
-				write_log (_T("extended rom delay loop patched at 0x%p\n"), i + 6 + 0xe00000);
+				write_log (_T("extended rom delay loop patched at 0x%08x\n"), i + 6 + 0xe00000);
 				return;
 			}
 		}
@@ -1841,9 +1676,7 @@ void akiko_reset (void)
 {
 	cdaudiostop_do ();
 	nvram_read ();
-	state = I2C_WAIT;
-	bitcounter = -1;
-	direction = -1;
+	eeprom_reset(cd32_eeprom);
 
 	cdrom_speed = 1;
 	cdrom_current_sector = -1;
@@ -1941,7 +1774,7 @@ uae_u8 *save_akiko (int *len, uae_u8 *dstptr)
 	save_u32 (cdrom_flags);
 	save_u32 (0);
 	save_u32 (0);
-	save_u32 ((scl_dir ? 0x8000 : 0) | (sda_dir ? 0x4000 : 0));
+	save_u32 (cd32_i2c_direction << 8);
 	save_u32 (0);
 	save_u32 (0);
 
@@ -2004,8 +1837,7 @@ uae_u8 *restore_akiko (uae_u8 *src)
 	restore_u32 ();
 	restore_u32 ();
 	v = restore_u32 ();
-	scl_dir = (v & 0x8000) ? 1 : 0;
-	sda_dir = (v & 0x4000) ? 1 : 0;
+	cd32_i2c_direction = v >> 8;
 	restore_u32 ();
 	restore_u32 ();
 

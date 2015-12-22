@@ -356,4 +356,3 @@ const TCHAR *get_sha1_txt (void *vinput, int len)
 	*p = 0;
 	return outtxt;
 }
-

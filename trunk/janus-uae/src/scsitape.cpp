@@ -16,6 +16,8 @@
 #include "blkdev.h"
 #include "zfile.h"
 #include "memory.h"
+#include "scsi.h"
+#include "threaddep/thread.h"
 #include "a2091.h"
 #include "fsdb.h"
 
@@ -270,6 +272,9 @@ int scsi_tape_emulate (struct scsi_data_tape *tape, uae_u8 *cmdbuf, int scsi_cmd
 	int lun;
 	bool eof;
 
+	if (cmdbuf == NULL)
+		return 0;
+
 	if (log_tapeemu)
 		write_log (_T("TAPEEMU: %02X.%02X.%02X.%02X.%02X.%02X\n"),
 		cmdbuf[0], cmdbuf[1], cmdbuf[2], cmdbuf[3], cmdbuf[4], cmdbuf[5]);
@@ -296,7 +301,7 @@ int scsi_tape_emulate (struct scsi_data_tape *tape, uae_u8 *cmdbuf, int scsi_cmd
 		s[2] = 5; /* ILLEGAL REQUEST */
 		s[12] = 0x25; /* INVALID LUN */
 		ls = 0x12;
-		goto err;
+		goto end;
 	}
 
 	switch (cmdbuf[0])
@@ -380,7 +385,7 @@ int scsi_tape_emulate (struct scsi_data_tape *tape, uae_u8 *cmdbuf, int scsi_cmd
 	case 0x10: /* WRITE FILEMARK */
 		len = rl (cmdbuf + 1) & 0xffffff;
 		if (log_tapeemu)
-			write_log (_T("TAPEEMU WRITE FILEMARK %d\n"), len);
+			write_log (_T("TAPEEMU WRITE FILEMARK %lld\n"), len);
 		if (notape (tape))
 			goto notape;
 		if (tape->unloaded)
@@ -399,7 +404,7 @@ int scsi_tape_emulate (struct scsi_data_tape *tape, uae_u8 *cmdbuf, int scsi_cmd
 		if (cmdbuf[1] & 1)
 			len *= tape->blocksize;
 		if (log_tapeemu)
-			write_log (_T("TAPEEMU WRITE %d (%d, %d)\n"), len, rl (cmdbuf + 1) & 0xffffff, cmdbuf[1] & 1);
+			write_log (_T("TAPEEMU WRITE %lld (%d, %d)\n"), len, rl (cmdbuf + 1) & 0xffffff, cmdbuf[1] & 1);
 		if (notape (tape))
 			goto notape;
 		if (tape->unloaded)
@@ -418,7 +423,7 @@ int scsi_tape_emulate (struct scsi_data_tape *tape, uae_u8 *cmdbuf, int scsi_cmd
 		if (cmdbuf[1] & 1)
 			len *= tape->blocksize;
 		if (log_tapeemu)
-			write_log (_T("TAPEEMU READ %d (%d, %d)\n"), len, rl (cmdbuf + 1) & 0xffffff, cmdbuf[1] & 1);
+			write_log (_T("TAPEEMU READ %lld (%d, %d)\n"), len, rl (cmdbuf + 1) & 0xffffff, cmdbuf[1] & 1);
 		if (notape (tape))
 			goto notape;
 		if (tape->unloaded)
@@ -459,7 +464,7 @@ int scsi_tape_emulate (struct scsi_data_tape *tape, uae_u8 *cmdbuf, int scsi_cmd
 			s[13] = 1; /* File Mark detected */
 			ls = 0x12;
 			if (log_tapeemu)
-				write_log (_T("TAPEEMU READ FILE END, %d remaining\n"), len - scsi_len);
+				write_log (_T("TAPEEMU READ FILE END, %lld remaining\n"), len - scsi_len);
 		}
 	break;
 
@@ -468,7 +473,6 @@ int scsi_tape_emulate (struct scsi_data_tape *tape, uae_u8 *cmdbuf, int scsi_cmd
 	{
 		uae_u8 *p;
 		int maxlen;
-		bool pcodeloop = false;
 		bool sense10 = cmdbuf[0] == 0x5a;
 		int totalsize, bdsize;
 		int pc = cmdbuf[2] >> 6;
@@ -656,9 +660,18 @@ notape:
 		ls = 0x12;
 		break;
 	}
+end:
 	*data_len = scsi_len;
 	*reply_len = lr;
 	*sense_len = ls;
+	if (lr > 0) {
+		if (log_tapeemu) {
+			write_log (_T("TAPEEMU REPLY: "));
+			for (int i = 0; i < lr && i < 40; i++)
+				write_log (_T("%02X."), r[i]);
+			write_log (_T("\n"));
+		}
+	}
 	if (ls > 0) {
 		if (tape->beom == 1)
 			s[2] |= 0x40;
@@ -673,4 +686,3 @@ notape:
 	}
 	return status;
 }
-

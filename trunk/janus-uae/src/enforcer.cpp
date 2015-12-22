@@ -18,12 +18,13 @@
 #include "uae.h"
 #include "xwin.h"
 #include "enforcer.h"
+#include "debug.h"
 
-#if defined(AHI)
+int enforcermode = 0;
+
+#ifdef AHI
 
 #if defined(JIT)
-#define special_mem_r special_mem |= S_READ
-#define special_mem_w special_mem |= S_WRITE
 #define NMEM_OFFSET NATMEM_OFFSET
 #else
 #define special_mem_r
@@ -45,7 +46,6 @@
 extern uae_u8 *natmem_offset;
 
 static int enforcer_installed = 0;
-int enforcermode = 0;
 static int enforcer_hit = 0; /* set to 1 if displaying the hit */
 
 #define ENFORCER_BUF_SIZE 8192
@@ -169,7 +169,7 @@ static int enforcer_decode_hunk_and_offset (TCHAR *buf, uae_u32 pc)
 					} else {
 						native_name = my_strdup (_T("Unknown"));
 					}
-					_stprintf (buf, _T("----> %08lx - \"%s\" Hunk %04lx Offset %08lx\n"), pc, native_name, hunk, offset);
+					_stprintf (buf, _T("----> %08x - \"%s\" Hunk %04x Offset %08x\n"), pc, native_name, hunk, offset);
 					xfree (native_name);
 					return 1;
 				}
@@ -207,7 +207,7 @@ static int enforcer_decode_hunk_and_offset (TCHAR *buf, uae_u32 pc)
 				uae_u32 offset = pc - (get_long (node + 8) << 2);
 				uaecptr mod = get_long (node + 20);
 				native_name = au ((char*)amiga2native (mod + 24, 100));
-				_stprintf (buf, _T("----> %08lx - \"%s\" Hunk %04lx Offset %08lx\n"), pc, native_name, hunk, offset);
+				_stprintf (buf, _T("----> %08x - \"%s\" Hunk %04x Offset %08x\n"), pc, native_name, hunk, offset);
 				xfree (native_name);
 				return 1;
 			}
@@ -259,18 +259,18 @@ static void enforcer_display_hit (const TCHAR *addressmode, uae_u32 pc, uaecptr 
 	_tcscpy (enforcer_buf_ptr, _T("Enforcer Hit! Bad program\n"));
 	enforcer_buf_ptr += _tcslen (enforcer_buf_ptr);
 
-	_stprintf (buf, _T("Illegal %s: %08lx"), addressmode, addr);
-	_stprintf (enforcer_buf_ptr, _T("%-48sPC: %0lx\n"), buf, pc);
+	_stprintf (buf, _T("Illegal %s: %08x"), addressmode, addr);
+	_stprintf (enforcer_buf_ptr, _T("%-48sPC: %08x\n"), buf, pc);
 	enforcer_buf_ptr += _tcslen (enforcer_buf_ptr);
 
 	/* Data registers */
-	_stprintf (enforcer_buf_ptr, _T("Data: %08lx %08lx %08lx %08lx %08lx %08lx %08lx %08lx\n"),
+	_stprintf (enforcer_buf_ptr, _T("Data: %08x %08x %08x %08x %08x %08x %08x %08x\n"),
 		m68k_dreg (regs, 0), m68k_dreg (regs, 1), m68k_dreg (regs, 2), m68k_dreg (regs, 3),
 		m68k_dreg (regs, 4), m68k_dreg (regs, 5), m68k_dreg (regs, 6), m68k_dreg (regs, 7));
 	enforcer_buf_ptr += _tcslen (enforcer_buf_ptr);
 
 	/* Address registers */
-	_stprintf (enforcer_buf_ptr, _T("Addr: %08lx %08lx %08lx %08lx %08lx %08lx %08lx %08lx\n"),
+	_stprintf (enforcer_buf_ptr, _T("Addr: %08x %08x %08x %08x %08x %08x %08x %08x\n"),
 		m68k_areg (regs, 0), m68k_areg (regs, 1), m68k_areg (regs, 2), m68k_areg (regs, 3),
 		m68k_areg (regs, 4), m68k_areg (regs, 5), m68k_areg (regs, 6), m68k_areg (regs, 7));
 	enforcer_buf_ptr += _tcslen (enforcer_buf_ptr);
@@ -283,7 +283,7 @@ static void enforcer_display_hit (const TCHAR *addressmode, uae_u32 pc, uaecptr 
 			_tcscpy (enforcer_buf_ptr, _T("Stck:"));
 			enforcer_buf_ptr += _tcslen (enforcer_buf_ptr);
 		}
-		_stprintf (enforcer_buf_ptr, _T(" %08lx"),get_long (a7));
+		_stprintf (enforcer_buf_ptr, _T(" %08x"),get_long (a7));
 		enforcer_buf_ptr += _tcslen (enforcer_buf_ptr);
 
 		if (i%8 == 7)
@@ -384,7 +384,7 @@ static void enforcer_display_hit (const TCHAR *addressmode, uae_u32 pc, uaecptr 
 		}
 
 		sm68k_disasm (buf, instrcode, bestpc, NULL);
-		_stprintf (lines[i], _T("%08lx :   %-20s %s\n"), bestpc, instrcode, buf);
+		_stprintf (lines[i], _T("%08x :   %-20s %s\n"), bestpc, instrcode, buf);
 		temppc = bestpc;
 	}
 
@@ -398,28 +398,30 @@ static void enforcer_display_hit (const TCHAR *addressmode, uae_u32 pc, uaecptr 
 	temppc = pc;
 	for (i = 0; i < (INSTRUCTIONLINES + 1) / 2; i++) {
 		sm68k_disasm (buf, instrcode, temppc, &nextpc);
-		_stprintf (enforcer_buf_ptr, _T("%08lx : %s %-20s %s\n"), temppc,
+		_stprintf (enforcer_buf_ptr, _T("%08x : %s %-20s %s\n"), temppc,
 			(i == 0 ? _T("*") : _T(" ")), instrcode, buf);
 		enforcer_buf_ptr += _tcslen (enforcer_buf_ptr);
 		temppc = nextpc;
 	}
 
 	if (!native_task_name)
-		native_task_name = _T("Unknown");
+		native_task_name = my_strdup(_T("Unknown"));
 	_stprintf (enforcer_buf_ptr, _T("Name: \"%s\"\n\n"), native_task_name);
 	enforcer_buf_ptr += _tcslen (enforcer_buf_ptr);
 
 	console_out (enforcer_buf);
-	write_log (enforcer_buf);
-	sleep_millis (5);
-	doflashscreen ();
+	write_log (_T("%s"), enforcer_buf);
+	if (!debug_enforcer()) {
+		sleep_millis (5);
+		doflashscreen ();
+	}
 
 end:
 	xfree (native_task_name);
 	enforcer_hit = 0;
 }
 
-uae_u32 REGPARAM2 chipmem_lget2 (uaecptr addr)
+static uae_u32 REGPARAM2 chipmem_lget2 (uaecptr addr)
 {
 	uae_u32 *m;
 
@@ -436,7 +438,7 @@ uae_u32 REGPARAM2 chipmem_lget2 (uaecptr addr)
 	return do_get_mem_long (m);
 }
 
-uae_u32 REGPARAM2 chipmem_wget2(uaecptr addr)
+static uae_u32 REGPARAM2 chipmem_wget2(uaecptr addr)
 {
 	uae_u16 *m;
 
@@ -453,7 +455,7 @@ uae_u32 REGPARAM2 chipmem_wget2(uaecptr addr)
 	return do_get_mem_word (m);
 }
 
-uae_u32 REGPARAM2 chipmem_bget2 (uaecptr addr)
+static uae_u32 REGPARAM2 chipmem_bget2 (uaecptr addr)
 {
 	addr -= chipmem_start_addr & chipmem_bank.mask;
 	addr &= chipmem_bank.mask;
@@ -468,7 +470,7 @@ uae_u32 REGPARAM2 chipmem_bget2 (uaecptr addr)
 	return chipmem_bank.baseaddr[addr];
 }
 
-void REGPARAM2 chipmem_lput2 (uaecptr addr, uae_u32 l)
+static void REGPARAM2 chipmem_lput2 (uaecptr addr, uae_u32 l)
 {
 	uae_u32 *m;
 
@@ -488,7 +490,7 @@ void REGPARAM2 chipmem_lput2 (uaecptr addr, uae_u32 l)
 	do_put_mem_long (m, l);
 }
 
-void REGPARAM2 chipmem_wput2 (uaecptr addr, uae_u32 w)
+static void REGPARAM2 chipmem_wput2 (uaecptr addr, uae_u32 w)
 {
 	uae_u16 *m;
 
@@ -507,7 +509,7 @@ void REGPARAM2 chipmem_wput2 (uaecptr addr, uae_u32 w)
 	do_put_mem_word (m, w);
 }
 
-void REGPARAM2 chipmem_bput2 (uaecptr addr, uae_u32 b)
+static void REGPARAM2 chipmem_bput2 (uaecptr addr, uae_u32 b)
 {
 	addr -= chipmem_start_addr & chipmem_bank.mask;
 	addr &= chipmem_bank.mask;
@@ -523,23 +525,22 @@ void REGPARAM2 chipmem_bput2 (uaecptr addr, uae_u32 b)
 	chipmem_bank.baseaddr[addr] = b;
 }
 
-int REGPARAM2 chipmem_check2 (uaecptr addr, uae_u32 size)
+static int REGPARAM2 chipmem_check2 (uaecptr addr, uae_u32 size)
 {
 	addr -= chipmem_start_addr & chipmem_bank.mask;
 	addr &= chipmem_bank.mask;
 	return (addr + size) <= chipmem_bank.allocated;
 }
 
-uae_u8 * REGPARAM2 chipmem_xlate2 (uaecptr addr)
+static uae_u8 * REGPARAM2 chipmem_xlate2 (uaecptr addr)
 {
 	addr -= chipmem_start_addr & chipmem_bank.mask;
 	addr &= chipmem_bank.mask;
 	return chipmem_bank.baseaddr + addr;
 }
 
-uae_u32 REGPARAM2 dummy_lget2 (uaecptr addr)
+static uae_u32 REGPARAM2 dummy_lget2 (uaecptr addr)
 {
-	special_mem_r;
 	enforcer_display_hit (_T("LONG READ from"), m68k_getpc (), addr);
 	if (enforcermode & 1) {
 		set_special (SPCFLAG_TRAP);
@@ -552,10 +553,8 @@ uae_u32 REGPARAM2 dummy_lget2 (uaecptr addr)
 static int warned_JIT_0xF10000 = 0;
 #endif
 
-uae_u32 REGPARAM2 dummy_wget2 (uaecptr addr)
+static uae_u32 REGPARAM2 dummy_wget2 (uaecptr addr)
 {
-	special_mem_r;
-
 #ifdef JIT
 	if (addr >= 0x00F10000 && addr <= 0x00F7FFFF) {
 		if (!warned_JIT_0xF10000) {
@@ -573,9 +572,8 @@ uae_u32 REGPARAM2 dummy_wget2 (uaecptr addr)
 	return 0xbadf;
 }
 
-uae_u32	REGPARAM2 dummy_bget2 (uaecptr addr)
+static uae_u32	REGPARAM2 dummy_bget2 (uaecptr addr)
 {
-	special_mem_r;
 	enforcer_display_hit (_T("BYTE READ from"), m68k_getpc (), addr);
 	if (enforcermode & 1) {
 		set_special (SPCFLAG_TRAP);
@@ -584,9 +582,8 @@ uae_u32	REGPARAM2 dummy_bget2 (uaecptr addr)
 	return 0xbadedeef;
 }
 
-void REGPARAM2 dummy_lput2 (uaecptr addr, uae_u32 l)
+static void REGPARAM2 dummy_lput2 (uaecptr addr, uae_u32 l)
 {
-	special_mem_w;
 	enforcer_display_hit (_T("LONG WRITE to"), m68k_getpc (), addr);
 	if (enforcermode & 1) {
 		set_special (SPCFLAG_TRAP);
@@ -594,9 +591,8 @@ void REGPARAM2 dummy_lput2 (uaecptr addr, uae_u32 l)
 	}
 }
 
-void REGPARAM2 dummy_wput2 (uaecptr addr, uae_u32 w)
+static void REGPARAM2 dummy_wput2 (uaecptr addr, uae_u32 w)
 {
-	special_mem_w;
 	enforcer_display_hit (_T("WORD WRITE to"), m68k_getpc (), addr);
 	if (enforcermode & 1) {
 		set_special (SPCFLAG_TRAP);
@@ -604,9 +600,8 @@ void REGPARAM2 dummy_wput2 (uaecptr addr, uae_u32 w)
 	}
 }
 
-void REGPARAM2 dummy_bput2 (uaecptr addr, uae_u32 b)
+static void REGPARAM2 dummy_bput2 (uaecptr addr, uae_u32 b)
 {
-	special_mem_w;
 	enforcer_display_hit (_T("BYTE WRITE to"), m68k_getpc (), addr);
 	if (enforcermode & 1) {
 		set_special (SPCFLAG_TRAP);
@@ -614,9 +609,8 @@ void REGPARAM2 dummy_bput2 (uaecptr addr, uae_u32 b)
 	}
 }
 
-int REGPARAM2 dummy_check2 (uaecptr addr, uae_u32 size)
+static int REGPARAM2 dummy_check2 (uaecptr addr, uae_u32 size)
 {
-	special_mem_r;
 	enforcer_display_hit (_T("CHECK from "), m68k_getpc (), addr);
 	return 0;
 }
@@ -693,4 +687,4 @@ int enforcer_disable (void)
 	return 1;
 }
 
-#endif
+#endif // AHI

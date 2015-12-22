@@ -40,7 +40,7 @@ struct uaeipc
 static void parsemessage(TCHAR *in, struct uae_prefs *p, TCHAR *out, int outsize)
 {
   TODO();
-#if 0
+#ifndef __AROS__
 	int mode;
 
 	out[0] = 0;
@@ -114,9 +114,11 @@ static void parsemessage(TCHAR *in, struct uae_prefs *p, TCHAR *out, int outsize
 #endif
 }
 
-#if 0
 static int listenIPC (void *vipc)
 {
+    TODO();
+#ifndef __AROS__
+
 	struct uaeipc *ipc = (struct uaeipc*)vipc;
 	DWORD err;
 
@@ -139,11 +141,15 @@ static int listenIPC (void *vipc)
 		closeIPC(ipc);
 		return 0;
 	}
+#endif
 	return 1;
 }
 
 static void disconnectIPC (void *vipc)
 {
+  TODO();
+#ifndef __AROS__
+
 	struct uaeipc *ipc = (struct uaeipc*)vipc;
 	ipc->readpending = ipc->writepending = FALSE;
 	if (ipc->connected) {
@@ -151,20 +157,25 @@ static void disconnectIPC (void *vipc)
 			write_log (_T("IPC: DisconnectNamedPipe failed, err=%d\n"), GetLastError());
 		ipc->connected = FALSE;
 	}
+#endif
 }
 
 static void resetIPC (void *vipc)
 {
+    TODO();
+#ifndef __AROS__
+
 	struct uaeipc *ipc = (struct uaeipc*)vipc;
 	disconnectIPC (ipc);
 	listenIPC (ipc);
-}
 #endif
+}
 
 void closeIPC (void *vipc)
 {
-  TODO();
-#if 0
+    TODO();
+#ifndef __AROS__
+
 	struct uaeipc *ipc = (struct uaeipc*)vipc;
 	if (!ipc)
 		return;
@@ -182,8 +193,9 @@ void closeIPC (void *vipc)
 
 void *createIPC (const TCHAR *name, int binary)
 {
-  TODO();
-#if 0
+    TODO();
+#ifndef __AROS__
+
 	TCHAR tmpname[100];
 	int cnt = 0;
 	struct uaeipc *ipc;
@@ -220,27 +232,29 @@ void *createIPC (const TCHAR *name, int binary)
 	if (listenIPC(ipc))
 		return ipc;
 	closeIPC(ipc);
-	return NULL;
 #endif
 	return NULL;
 }
 
 void *geteventhandleIPC (void *vipc)
 {
-  TODO();
-#if 0
+    TODO();
+#ifndef __AROS__
+
 	struct uaeipc *ipc = (struct uaeipc*)vipc;
 	if (!ipc)
 		return INVALID_HANDLE_VALUE;
 	return ipc->olevent;
+#else
+  return NULL;
 #endif
-return NULL;
 }
 
 int sendIPC (void *vipc, TCHAR *msg)
 {
-  TODO();
-#if 0
+    TODO();
+#ifndef __AROS__
+
 	struct uaeipc *ipc = (struct uaeipc*)vipc;
 	if (ipc->hipc == INVALID_HANDLE_VALUE)
 		return 0;
@@ -249,14 +263,14 @@ int sendIPC (void *vipc, TCHAR *msg)
 	ipc->outmsg[ipc->outmessages++] = my_strdup (msg);
 	if (!ipc->readpending && !ipc->writepending)
 		SetEvent (ipc->olevent);
-	return 1;
 #endif
-  return 0;
+	return 1;
 }
 int sendBinIPC (void *vipc, uae_u8 *msg, int len)
 {
-  TODO();
-#if 0
+    TODO();
+#ifndef __AROS__
+
 	struct uaeipc *ipc = (struct uaeipc*)vipc;
 	if (ipc->hipc == INVALID_HANDLE_VALUE)
 		return 0;
@@ -266,15 +280,15 @@ int sendBinIPC (void *vipc, uae_u8 *msg, int len)
 	memcpy (&ipc->outbin[ipc->outmessages++][0], msg, len);
 	if (!ipc->readpending && !ipc->writepending)
 		SetEvent (ipc->olevent);
-	return 1;
 #endif
-  return 0;
+	return 1;
 }
 
 int checkIPC (void *vipc, struct uae_prefs *p)
 {
   TODO();
-#if 0
+#ifndef __AROS__
+
 	struct uaeipc *ipc = (struct uaeipc*)vipc;
 	BOOL ok;
 	DWORD ret, err;
@@ -390,15 +404,15 @@ int checkIPC (void *vipc, struct uae_prefs *p)
 		}
 		ipc->writepending = TRUE;
 	}
-	return 1;
 #endif
-  return 0;
+	return 1;
 }
 
 int isIPC (const TCHAR *pipename)
 {
-  TODO();
-#if 0
+    TODO();
+#ifndef __AROS__
+
 	HANDLE p;
 
 	p = CreateFile(
@@ -410,9 +424,10 @@ int isIPC (const TCHAR *pipename)
 		0,
 		NULL);
 	if (p == INVALID_HANDLE_VALUE)
+#endif
 		return 0;
+#ifndef __AROS__
 	CloseHandle (p);
 	return 1;
 #endif
-  return 0;
 }
