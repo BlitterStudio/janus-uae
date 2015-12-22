@@ -329,6 +329,8 @@ libmpeg2/libmpeg2/.libs/libmpeg2.a:
 string_resource.h: ../od-win32/resources/winuae.rc
 		./parse_res.pl ../od-win32/resources/winuae.rc ../od-win32/resources/resource.h string_resource.h 
 
+../rommgr.o: string_resource.h
+
 # ============== clean ====================
 clean: 
 	rm -f $(COMMON_OBJS) $(EXE)
