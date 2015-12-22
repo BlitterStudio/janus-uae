@@ -13,6 +13,12 @@
 
 #include "options.h"
 #include "events.h"
+#include "memory.h"
+#include "newcpu.h"
+#include "uae/ppc.h"
+#include "x86.h"
+
+static const int pissoff_nojit_value = 256 * CYCLE_UNIT;
 
 unsigned long int event_cycles, nextevent, currcycle;
 int is_syncline, is_syncline_end;
@@ -20,6 +26,7 @@ long cycles_to_next_event;
 long max_cycles_to_next_event;
 long cycles_to_hsync_event;
 unsigned long start_cycles;
+bool event_wait;
 
 frame_time_t vsyncmintime, vsyncmaxtime, vsyncwaittime;
 int vsynctimebase;
@@ -42,6 +49,12 @@ void events_schedule (void)
 
 void do_cycles_slow (unsigned long cycles_to_add)
 {
+#ifdef WITH_X86
+	if (x86_turbo_on) {
+		execute_other_cpu_single();
+	}
+#endif
+
 	if ((pissoff -= cycles_to_add) >= 0)
 		return;
 
@@ -61,15 +74,37 @@ void do_cycles_slow (unsigned long cycles_to_add)
 					if (v > vsynctimebase || v < -vsynctimebase) {
 						v = 0;
 					}
-					if (v < 0 && v2 < 0) {
-						pissoff = pissoff_value;
+					if (v < 0 && v2 < 0 && event_wait) {
+
+#ifdef WITH_PPC
+						if (ppc_state) {
+							if (is_syncline == 1) {
+								uae_ppc_execute_check();
+							} else {
+								uae_ppc_execute_quick();
+							}
+						}
+#endif
+						if (currprefs.cachesize)
+							pissoff = pissoff_value;
+						else
+							pissoff = pissoff_nojit_value;
 						return;
 					}
 				} else if (is_syncline < 0) {
 					int rpt = read_processor_time ();
 					int v = rpt - is_syncline_end;
-					if (v < 0) {
-						pissoff = pissoff_value;
+					if (v < 0 && event_wait) {
+
+#ifdef WITH_PPC
+						if (ppc_state) {
+							uae_ppc_execute_check();
+						}
+#endif
+						if (currprefs.cachesize)
+							pissoff = pissoff_value;
+						else
+							pissoff = pissoff_nojit_value;
 						return;
 					}
 				}
@@ -134,7 +169,7 @@ void MISC_handler (void)
 			}
 		}
 	}
-	if (mintime != ~0L) {
+	if (mintime != ~0UL) {
 		eventtab[ev_misc].active = true;
 		eventtab[ev_misc].oldcycles = ct;
 		eventtab[ev_misc].evtime = ct + mintime;

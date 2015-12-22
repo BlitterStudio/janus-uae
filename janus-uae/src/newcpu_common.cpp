@@ -575,6 +575,42 @@ uae_u32 REGPARAM2 x_get_disp_ea_ce020 (uae_u32 base, int idx)
 	return v;
 }
 
+uae_u32 REGPARAM2 x_get_disp_ea_040(uae_u32 base, int idx)
+{
+	uae_u16 dp = next_iword_cache040();
+	int reg = (dp >> 12) & 15;
+	uae_s32 regd = regs.regs[reg];
+	if ((dp & 0x800) == 0)
+		regd = (uae_s32)(uae_s16)regd;
+	regd <<= (dp >> 9) & 3;
+	if (dp & 0x100) {
+		uae_s32 outer = 0;
+		if (dp & 0x80) base = 0;
+		if (dp & 0x40) regd = 0;
+
+		if ((dp & 0x30) == 0x20)
+			base += (uae_s32)(uae_s16)next_iword_cache040();
+		if ((dp & 0x30) == 0x30)
+			base += next_ilong_cache040();
+
+		if ((dp & 0x3) == 0x2)
+			outer = (uae_s32)(uae_s16)next_iword_cache040();
+		if ((dp & 0x3) == 0x3)
+			outer = next_ilong_cache040();
+
+		if ((dp & 0x4) == 0)
+			base += regd;
+		if (dp & 0x3)
+			base = x_get_long(base);
+		if (dp & 0x4)
+			base += regd;
+
+		return base + outer;
+	}
+	else {
+		return base + (uae_s32)((uae_s8)dp) + regd;
+	}
+}
 
 /*
 * Compute exact number of CPU cycles taken
@@ -782,7 +818,7 @@ bool m68k_divl (uae_u32 opcode, uae_u32 src, uae_u16 extra)
 			a |= (uae_s64)m68k_dreg (regs, extra & 7) << 32;
 		}
 
-		if (a == 0x8000000000000000LL && src == -1) {
+		if (a == 0x8000000000000000 && src == ~0u) {
 			SET_VFLG (1);
 			SET_NFLG (1);
 			SET_CFLG (0);

@@ -12,18 +12,46 @@
 #include "drawing.h"
 #include "statusline.h"
 
+#define STATUSLINE_MS 3000
+
 /*
 * Some code to put status information on the screen.
 */
 
-static const char *numbers = { /* ugly  0123456789CHD%+- */
-	"+++++++--++++-+++++++++++++++++-++++++++++++++++++++++++++++++++++++++++++++-++++++-++++----++---+--------------"
-	"+xxxxx+--+xx+-+xxxxx++xxxxx++x+-+x++xxxxx++xxxxx++xxxxx++xxxxx++xxxxx++xxxx+-+x++x+-+xxx++-+xx+-+x---+----------"
-	"+x+++x+--++x+-+++++x++++++x++x+++x++x++++++x++++++++++x++x+++x++x+++x++x++++-+x++x+-+x++x+--+x++x+--+x+----+++--"
-	"+x+-+x+---+x+-+xxxxx++xxxxx++xxxxx++xxxxx++xxxxx+--++x+-+xxxxx++xxxxx++x+----+xxxx+-+x++x+----+x+--+xxx+--+xxx+-"
-	"+x+++x+---+x+-+x++++++++++x++++++x++++++x++x+++x+--+x+--+x+++x++++++x++x++++-+x++x+-+x++x+---+x+x+--+x+----+++--"
-	"+xxxxx+---+x+-+xxxxx++xxxxx+----+x++xxxxx++xxxxx+--+x+--+xxxxx++xxxxx++xxxx+-+x++x+-+xxx+---+x++xx--------------"
-	"+++++++---+++-++++++++++++++----+++++++++++++++++--+++--++++++++++++++++++++-++++++-++++------------------------"
+void statusline_getpos (int *x, int *y, int width, int height)
+{
+	if (currprefs.osd_pos.x >= 20000) {
+		if (currprefs.osd_pos.x >= 30000)
+			*y = width * (currprefs.osd_pos.x - 30000) / 1000;
+		else
+			*y = width - (width * (30000 - currprefs.osd_pos.y) / 1000);
+	} else {
+		if (currprefs.osd_pos.x >= 0)
+			*x = currprefs.osd_pos.x;
+		else
+			*x = -currprefs.osd_pos.x + 1;
+	}
+	if (currprefs.osd_pos.y >= 20000) {
+		if (currprefs.osd_pos.y >= 30000)
+			*y = (height - TD_TOTAL_HEIGHT) * (currprefs.osd_pos.y - 30000) / 1000;
+		else
+			*y = (height - TD_TOTAL_HEIGHT) - ((height - TD_TOTAL_HEIGHT) * (30000 - currprefs.osd_pos.y) / 1000);
+	} else {
+		if (currprefs.osd_pos.y >= 0)
+			*y = height - TD_TOTAL_HEIGHT - currprefs.osd_pos.y;
+		else
+			*y = -currprefs.osd_pos.y + 1;
+	}
+}
+
+static const char *numbers = { /* ugly  0123456789CHD%+-P */
+	"+++++++--++++-+++++++++++++++++-++++++++++++++++++++++++++++++++++++++++++++-++++++-++++----++---+--------------+++++++"
+	"+xxxxx+--+xx+-+xxxxx++xxxxx++x+-+x++xxxxx++xxxxx++xxxxx++xxxxx++xxxxx++xxxx+-+x++x+-+xxx++-+xx+-+x---+----------+xxxxx+"
+	"+x+++x+--++x+-+++++x++++++x++x+++x++x++++++x++++++++++x++x+++x++x+++x++x++++-+x++x+-+x++x+--+x++x+--+x+----+++--+x---x+"
+	"+x+-+x+---+x+-+xxxxx++xxxxx++xxxxx++xxxxx++xxxxx+--++x+-+xxxxx++xxxxx++x+----+xxxx+-+x++x+----+x+--+xxx+--+xxx+-+xxxxx+"
+	"+x+++x+---+x+-+x++++++++++x++++++x++++++x++x+++x+--+x+--+x+++x++++++x++x++++-+x++x+-+x++x+---+x+x+--+x+----+++--+x+++++"
+	"+xxxxx+---+x+-+xxxxx++xxxxx+----+x++xxxxx++xxxxx+--+x+--+xxxxx++xxxxx++xxxx+-+x++x+-+xxx+---+x++xx--------------+x+----"
+	"+++++++---+++-++++++++++++++----+++++++++++++++++--+++--++++++++++++++++++++-++++++-++++------------------------+++----"
 };
 
 STATIC_INLINE uae_u32 ledcolor (uae_u32 c, uae_u32 *rc, uae_u32 *gc, uae_u32 *bc, uae_u32 *a)
@@ -66,8 +94,11 @@ void draw_status_line_single (uae_u8 *buf, int bpp, int y, int totalwidth, uae_u
 	for (led = 0; led < LED_MAX; led++) {
 		int side, pos, num1 = -1, num2 = -1, num3 = -1, num4 = -1;
 		int x, c, on = 0, am = 2;
-		xcolnr on_rgb, on_rgb2, off_rgb, pen_rgb;
+		xcolnr on_rgb = 0, on_rgb2 = 0, off_rgb = 0, pen_rgb = 0;
 		int half = 0;
+
+		if (!(currprefs.leds_on_screen_mask[picasso_on ? 1 : 0] & (1 << led)))
+			continue;
 
 		pen_rgb = c1;
 		if (led >= LED_DF0 && led <= LED_DF3) {
@@ -98,29 +129,33 @@ void draw_status_line_single (uae_u8 *buf, int bpp, int y, int totalwidth, uae_u
 			off_rgb = 0x330000;
 		} else if (led == LED_CD) {
 			pos = 5;
-			on = gui_data.cd & (LED_CD_AUDIO | LED_CD_ACTIVE);
-			on_rgb = (on & LED_CD_AUDIO) ? 0x00cc00 : 0x0000cc;
-			if ((gui_data.cd & LED_CD_ACTIVE2) && !(gui_data.cd & LED_CD_AUDIO)) {
-				on_rgb &= 0xfefefe;
-				on_rgb >>= 1;
+			if (gui_data.cd >= 0) {
+				on = gui_data.cd & (LED_CD_AUDIO | LED_CD_ACTIVE);
+				on_rgb = (on & LED_CD_AUDIO) ? 0x00cc00 : 0x0000cc;
+				if ((gui_data.cd & LED_CD_ACTIVE2) && !(gui_data.cd & LED_CD_AUDIO)) {
+					on_rgb &= 0xfefefe;
+					on_rgb >>= 1;
+				}
+				off_rgb = 0x000033;
+				num1 = -1;
+				num2 = 10;
+				num3 = 12;
 			}
-			off_rgb = 0x000033;
-			num1 = -1;
-			num2 = 10;
-			num3 = 12;
 		} else if (led == LED_HD) {
 			pos = 4;
-			on = gui_data.hd;
-			on_rgb = on == 2 ? 0xcc0000 : 0x0000cc;
-			off_rgb = 0x000033;
-			num1 = -1;
-			num2 = 11;
-			num3 = 12;
+			if (gui_data.hd >= 0) {
+				on = gui_data.hd;
+				on_rgb = on == 2 ? 0xcc0000 : 0x0000cc;
+				off_rgb = 0x000033;
+				num1 = -1;
+				num2 = 11;
+				num3 = 12;
+			}
 		} else if (led == LED_FPS) {
 			int fps = (gui_data.fps + 5) / 10;
 			pos = 2;
 			on_rgb = 0x000000;
-			off_rgb = 0x000000;
+			off_rgb = gui_data.fps_color ? 0xcccc00 : 0x000000;
 			if (fps > 999)
 				fps = 999;
 			num1 = fps / 100;
@@ -132,14 +167,31 @@ void draw_status_line_single (uae_u8 *buf, int bpp, int y, int totalwidth, uae_u
 		} else if (led == LED_CPU) {
 			int idle = (gui_data.idle + 5) / 10;
 			pos = 1;
-			on = framecnt && !picasso_on;
 			on_rgb = 0xcc0000;
 			off_rgb = 0x000000;
-			num1 = idle / 100;
-			num2 = (idle - num1 * 100) / 10;
-			num3 = idle % 10;
-			num4 = num1 == 0 ? 13 : -1;
-			am = 3;
+			if (gui_data.cpu_halted) {
+				idle = 0;
+				on = 1;
+				if (gui_data.cpu_halted < 0) {
+					on_rgb = 0x000000;
+					num1 = 16; // PPC
+					num2 = 16;
+					num3 = 10;
+					am = 3;
+				} else {
+					on_rgb = 0xcccc00;
+					num1 = -1;
+					num2 = 11;
+					num3 = gui_data.cpu_halted;
+					am = 2;
+				}
+			} else {
+				num1 = idle / 100;
+				num2 = (idle - num1 * 100) / 10;
+				num3 = idle % 10;
+				num4 = num1 == 0 ? 13 : -1;
+				am = 3;
+			}
 		} else if (led == LED_SND) {
 			int snd = abs(gui_data.sndbuf + 5) / 10;
 			if (snd > 99)
@@ -163,9 +215,11 @@ void draw_status_line_single (uae_u8 *buf, int bpp, int y, int totalwidth, uae_u
 		} else if (led == LED_MD && gui_data.drive_disabled[3]) {
 			// DF3 reused as internal non-volatile ram led (cd32/cdtv)
 			pos = 6 + 3;
-			on = gui_data.md;
-			on_rgb = on == 2 ? 0xcc0000 : 0x00cc00;
-			off_rgb = 0x003300;
+			if (gui_data.md >= 0) {
+				on = gui_data.md;
+				on_rgb = on == 2 ? 0xcc0000 : 0x00cc00;
+				off_rgb = 0x003300;
+			}
 			num1 = -1;
 			num2 = -1;
 			num3 = -1;
@@ -201,8 +255,10 @@ void draw_status_line_single (uae_u8 *buf, int bpp, int y, int totalwidth, uae_u
 					write_tdnumber (buf, bpp, x, y - TD_PADY, num1, pen_rgb, c2);
 					x += TD_NUM_WIDTH;
 				}
-				write_tdnumber (buf, bpp, x, y - TD_PADY, num2, pen_rgb, c2);
-				x += TD_NUM_WIDTH;
+				if (num2 >= 0) {
+					write_tdnumber (buf, bpp, x, y - TD_PADY, num2, pen_rgb, c2);
+					x += TD_NUM_WIDTH;
+				}
 				write_tdnumber (buf, bpp, x, y - TD_PADY, num3, pen_rgb, c2);
 				x += TD_NUM_WIDTH;
 				if (num4 > 0)
@@ -210,4 +266,117 @@ void draw_status_line_single (uae_u8 *buf, int bpp, int y, int totalwidth, uae_u
 			}
 		}
 	}
+}
+
+#define MAX_STATUSLINE_QUEUE 8
+static TCHAR *statusline_text[MAX_STATUSLINE_QUEUE];
+static TCHAR *statusline_text_active;
+static int statusline_delay;
+static bool statusline_had_changed;
+
+bool has_statusline_updated(void)
+{
+	bool v = statusline_had_changed;
+	statusline_had_changed = false;
+	return v;
+}
+
+static void statusline_update_notification(void)
+{
+	statusline_had_changed = true;
+	statusline_updated();
+}
+
+void statusline_clear(void)
+{
+	statusline_text_active = NULL;
+	statusline_delay = 0;
+	for (int i = 0; i < MAX_STATUSLINE_QUEUE; i++) {
+		xfree(statusline_text[i]);
+		statusline_text[i] = NULL;
+	}
+	statusline_update_notification();
+}
+
+const TCHAR *statusline_fetch(void)
+{
+	return statusline_text_active;
+}
+
+void statusline_add_message(const TCHAR *format, ...)
+{
+	va_list parms;
+	TCHAR buffer[256];
+
+	if (isguiactive())
+		return;
+
+	va_start(parms, format);
+	buffer[0] = ' ';
+	_vsntprintf(buffer + 1, 256 - 2, format, parms);
+	_tcscat(buffer, _T(" "));
+
+	if (statusline_text[1]) {
+		for (int i = 0; i < MAX_STATUSLINE_QUEUE; i++) {
+			if (statusline_text[i] && !_tcscmp(statusline_text[i], buffer)) {
+				xfree(statusline_text[i]);
+				for (int j = i + 1; j < MAX_STATUSLINE_QUEUE; j++) {
+					statusline_text[j - 1] = statusline_text[j];
+				}
+				statusline_text[MAX_STATUSLINE_QUEUE - 1] = NULL;
+				i = 0;
+			}
+		}
+	} else if (statusline_text[0]) {
+		if (!_tcscmp(statusline_text[0], buffer))
+			return;
+	}
+
+	for (int i = 0; i < MAX_STATUSLINE_QUEUE; i++) {
+		if (statusline_text[i] == NULL) {
+			statusline_text[i] = my_strdup(buffer);
+			if (i == 0)
+				statusline_delay = STATUSLINE_MS * vblank_hz / (1000 * 1);
+			statusline_text_active = statusline_text[0];
+			statusline_update_notification();
+			return;
+		}
+	}
+	statusline_text_active = NULL;
+	xfree(statusline_text[0]);
+	for (int i = 1; i < MAX_STATUSLINE_QUEUE; i++) {
+		statusline_text[i - 1] = statusline_text[i];
+	}
+	statusline_text[MAX_STATUSLINE_QUEUE - 1] = my_strdup(buffer);
+	statusline_text_active = statusline_text[0];
+	statusline_update_notification();
+	va_end(parms);
+}
+
+void statusline_vsync(void)
+{
+	if (!statusline_text[0])
+		return;
+	if (statusline_delay == 0)
+		statusline_delay = STATUSLINE_MS * vblank_hz / (1000 * 1);
+	if (statusline_delay > STATUSLINE_MS * vblank_hz / (1000 * 1))
+		statusline_delay = STATUSLINE_MS * vblank_hz / (1000 * 1);
+	if (statusline_delay > STATUSLINE_MS * vblank_hz / (1000 * 3) && statusline_text[1])
+		statusline_delay = STATUSLINE_MS * vblank_hz / (1000 * 3);
+	statusline_delay--;
+	if (statusline_delay)
+		return;
+	statusline_text_active = NULL;
+	xfree(statusline_text[0]);
+	for (int i = 1; i < MAX_STATUSLINE_QUEUE; i++) {
+		statusline_text[i - 1] = statusline_text[i];
+	}
+	statusline_text[MAX_STATUSLINE_QUEUE - 1] = NULL;
+	statusline_text_active = statusline_text[0];
+	statusline_update_notification();
+}
+
+void statusline_single_erase(uae_u8 *buf, int bpp, int y, int totalwidth)
+{
+	memset(buf, 0, bpp * totalwidth);
 }

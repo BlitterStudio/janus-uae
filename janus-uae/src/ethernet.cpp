@@ -3,21 +3,31 @@
 
 #ifndef __AROS__
 
-#include "slirp/slirp.h"
-#include "slirp/libslirp.h"
-
+#include "ethernet.h"
 #ifdef _WIN32
 #include "win32_uaenet.h"
-#else
-#include "ethernet.h"
 #endif
 #include "threaddep/thread.h"
 #include "options.h"
+#include "sana2.h"
+#include "uae/slirp.h"
+
+#ifndef HAVE_INET_ATON
+static int inet_aton(const char *cp, struct in_addr *ia)
+{
+	uint32_t addr = inet_addr(cp);
+	if (addr == 0xffffffff)
+		return 0;
+	ia->s_addr = addr;
+	return 1;
+}
+#endif
 
 struct ethernet_data
 {
 	ethernet_gotfunc *gotfunc;
 	ethernet_getfunc *getfunc;
+	void *userdata;
 };
 
 #define SLIRP_PORT_OFFSET 0
@@ -34,7 +44,7 @@ static struct netdriverdata slirpd =
 	UAENET_SLIRP,
 	_T("slirp"), _T("SLIRP User Mode NAT"),
 	1500,
-	{ 0x00,0x80,0x10,50,51,52 },
+	{ 0x00,0x00,0x00,50,51,52 },
 	1
 };
 static struct netdriverdata slirpd2 =
@@ -42,27 +52,24 @@ static struct netdriverdata slirpd2 =
 	UAENET_SLIRP_INBOUND,
 	_T("slirp_inbound"), _T("SLIRP + Open ports (21-23,80)"),
 	1500,
-	{ 0x00,0x80,0x10,50,51,52 },
+	{ 0x00,0x00,0x00,50,51,52 },
 	1
 };
 
-int slirp_can_output(void)
-{
-	return 1;
-}
-
-void slirp_output (const uint8 *pkt, int pkt_len)
+void slirp_output (const uint8_t *pkt, int pkt_len)
 {
 	if (!slirp_data)
 		return;
 	uae_sem_wait (&slirp_sem1);
-	slirp_data->gotfunc (NULL, pkt, pkt_len);
+	slirp_data->gotfunc (slirp_data->userdata, pkt, pkt_len);
 	uae_sem_post (&slirp_sem1);
 }
 
-void ethernet_trigger (void *vsd)
+void ethernet_trigger (struct netdriverdata *ndd, void *vsd)
 {
-	switch (netmode)
+	if (!ndd)
+		return;
+	switch (ndd->type)
 	{
 		case UAENET_SLIRP:
 		case UAENET_SLIRP_INBOUND:
@@ -73,19 +80,21 @@ void ethernet_trigger (void *vsd)
 				int len = sizeof pkt;
 				int v;
 				uae_sem_wait (&slirp_sem1);
-				v = slirp_data->getfunc(NULL, pkt, &len);
+				v = slirp_data->getfunc(ed->userdata, pkt, &len);
 				uae_sem_post (&slirp_sem1);
 				if (v) {
 					uae_sem_wait (&slirp_sem2);
-					slirp_input(pkt, len);
+					uae_slirp_input(pkt, len);
 					uae_sem_post (&slirp_sem2);
 				}
 			}
 		}
 		return;
+#ifdef WITH_UAENET_PCAP
 		case UAENET_PCAP:
 		uaenet_trigger (vsd);
 		return;
+#endif
 	}
 }
 
@@ -99,20 +108,25 @@ int ethernet_open (struct netdriverdata *ndd, void *vsd, void *user, ethernet_go
 			struct ethernet_data *ed = (struct ethernet_data*)vsd;
 			ed->gotfunc = gotfunc;
 			ed->getfunc = getfunc;
+			ed->userdata = user;
 			slirp_data = ed;
 			uae_sem_init (&slirp_sem1, 0, 1);
 			uae_sem_init (&slirp_sem2, 0, 1);
-			slirp_init ();
+			uae_slirp_init();
 			for (int i = 0; i < MAX_SLIRP_REDIRS; i++) {
 				struct slirp_redir *sr = &currprefs.slirp_redirs[i];
 				if (sr->proto) {
 					struct in_addr a;
 					if (sr->srcport == 0) {
 					    inet_aton("10.0.2.15", &a);
-						slirp_redir (0, sr->dstport, a, sr->dstport);
+						uae_slirp_redir (0, sr->dstport, a, sr->dstport);
 					} else {
+#ifdef HAVE_STRUCT_IN_ADDR_S_UN
 						a.S_un.S_addr = sr->addr;
-						slirp_redir (sr->proto == 1 ? 0 : 1, sr->dstport, a, sr->srcport);
+#else
+						a.s_addr = sr->addr;
+#endif
+						uae_slirp_redir (sr->proto == 1 ? 0 : 1, sr->dstport, a, sr->srcport);
 					}
 				}
 			}
@@ -128,14 +142,21 @@ int ethernet_open (struct netdriverdata *ndd, void *vsd, void *user, ethernet_go
 							break;
 					}
 					if (j == MAX_SLIRP_REDIRS)
-						slirp_redir (0, port + SLIRP_PORT_OFFSET, a, port);
+						uae_slirp_redir (0, port + SLIRP_PORT_OFFSET, a, port);
 				}
 			}
-			slirp_start ();
+			netmode = ndd->type;
+			uae_slirp_start ();
 		}
 		return 1;
+#ifdef WITH_UAENET_PCAP
 		case UAENET_PCAP:
-		return uaenet_open (vsd, ndd, user, gotfunc, getfunc, promiscuous);
+		if (uaenet_open (vsd, ndd, user, gotfunc, getfunc, promiscuous)) {
+			netmode = ndd->type;
+			return 1;
+		}
+		return 0;
+#endif
 	}
 	return 0;
 }
@@ -150,20 +171,24 @@ void ethernet_close (struct netdriverdata *ndd, void *vsd)
 		case UAENET_SLIRP_INBOUND:
 		if (slirp_data) {
 			slirp_data = NULL;
-			slirp_end ();
-			slirp_cleanup ();
+			uae_slirp_end ();
+			uae_slirp_cleanup ();
 			uae_sem_destroy (&slirp_sem1);
 			uae_sem_destroy (&slirp_sem2);
 		}
 		return;
+#ifdef WITH_UAENET_PCAP
 		case UAENET_PCAP:
 		return uaenet_close (vsd);
+#endif
 	}
 }
 
 void ethernet_enumerate_free (void)
 {
+#ifdef WITH_UAENET_PCAP
 	uaenet_enumerate_free ();
+#endif
 }
 
 bool ethernet_enumerate (struct netdriverdata **nddp, const TCHAR *name)
@@ -177,8 +202,10 @@ bool ethernet_enumerate (struct netdriverdata **nddp, const TCHAR *name)
 			*nddp = &slirpd;
 		if (!_tcsicmp (slirpd2.name, name))
 			*nddp = &slirpd2;
+#ifdef WITH_UAENET_PCAP
 		if (*nddp == NULL)
 			*nddp = uaenet_enumerate (name);
+#endif
 		if (*nddp) {
 			netmode = (*nddp)->type;
 			return true;
@@ -188,12 +215,15 @@ bool ethernet_enumerate (struct netdriverdata **nddp, const TCHAR *name)
 	j = 0;
 	nddp[j++] = &slirpd;
 	nddp[j++] = &slirpd2;
+#ifdef WITH_UAENET_PCAP
 	nd = uaenet_enumerate (NULL);
 	if (nd) {
-		for (int i = 0; i < nd[i].active; i++) {
-			nddp[j++] = nd;
+		for (int i = 0; i < MAX_TOTAL_NET_DEVICES; i++) {
+			if (nd[i].active)
+				nddp[j++] = &nd[i];
 		}
 	}
+#endif
 	nddp[j] = NULL;
 	return true;
 }
@@ -205,8 +235,10 @@ void ethernet_close_driver (struct netdriverdata *ndd)
 		case UAENET_SLIRP:
 		case UAENET_SLIRP_INBOUND:
 		return;
+#ifdef WITH_UAENET_PCAP
 		case UAENET_PCAP:
 		return uaenet_close_driver (ndd);
+#endif
 	}
 	netmode = 0;
 }
@@ -218,10 +250,12 @@ int ethernet_getdatalenght (struct netdriverdata *ndd)
 		case UAENET_SLIRP:
 		case UAENET_SLIRP_INBOUND:
 		return sizeof (struct ethernet_data);
+#ifdef WITH_UAENET_PCAP
 		case UAENET_PCAP:
 		return uaenet_getdatalenght ();
+#endif
 	}
 	return 0;
 }
 
-#endif
+#endif /* __AROS__ */

@@ -405,7 +405,6 @@ static int catweasel4_configure (void)
 #define PCI_CW_MK4 _T("PCI\\VEN_E159&DEV_0001&SUBSYS_00035213")
 #define PCI_CW_MK4_BUG _T("PCI\\VEN_E159&DEV_0001&SUBSYS_00025213")
 
-extern int os_winnt;
 int force_direct_catweasel;
 static int direct_detect(void)
 {
@@ -415,8 +414,6 @@ static int direct_detect(void)
 	int devIndex;
 	int cw = 0;
 
-	if (!os_winnt)
-		return 0;
 	devs = SetupDiGetClassDevsEx(NULL, NULL, NULL, DIGCF_ALLCLASSES | DIGCF_PRESENT, NULL, NULL, NULL);
 	if (devs == INVALID_HANDLE_VALUE)
 		return 0;
@@ -545,14 +542,15 @@ int catweasel_init(void)
 	} else {
 
 		for (i = 0; i < 4; i++) {
+			int j = i;
 			if (currprefs.catweasel > 0)
-				i = currprefs.catweasel;
+				j = currprefs.catweasel + i;
 			if (currprefs.catweasel < 0)
-				i = -currprefs.catweasel + 1;
-			_stprintf (name, _T("\\\\.\\CAT%d_F0"), i);
+				j = -currprefs.catweasel + 1 + i;
+			_stprintf (name, _T("\\\\.\\CAT%d_F0"), j);
 			handle = CreateFile (name, GENERIC_READ|GENERIC_WRITE, FILE_SHARE_WRITE|FILE_SHARE_READ, 0,
 				OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-			if (handle != INVALID_HANDLE_VALUE || currprefs.catweasel > 0)
+			if (handle != INVALID_HANDLE_VALUE || currprefs.catweasel)
 				break;
 		}
 		if (handle == INVALID_HANDLE_VALUE)
@@ -717,4 +715,3 @@ int catweasel_detect (void)
 }
 
 #endif
-

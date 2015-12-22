@@ -7,10 +7,7 @@
 * Copyright 1995, 1996, 1997 Bernd Schmidt
 */
 
-#ifdef __AROS__
-#include <exec/execbase.h>
-#include <proto/dos.h>
-#endif
+#define JUAE_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -21,7 +18,6 @@
 #include "uae.h"
 #include "gensound.h"
 #include "audio.h"
-#include "sounddep/sound.h"
 #include "events.h"
 #include "memory.h"
 #include "custom.h"
@@ -35,35 +31,21 @@
 #include "gui.h"
 #include "zfile.h"
 #include "autoconf.h"
-#include "traps.h"
-#include "osemu.h"
 #include "picasso96.h"
-#include "bsdsocket.h"
-#include "uaeexe.h"
 #include "native2amiga.h"
-#include "scsidev.h"
-#include "uaeserial.h"
-#include "akiko.h"
-#include "cdtv.h"
 #include "savestate.h"
 #include "filesys.h"
-#include "parallel.h"
-#include "a2091.h"
-#include "a2065.h"
-#include "ncr_scsi.h"
-#include "scsi.h"
-#include "sana2.h"
 #include "blkdev.h"
-#include "gfxfilter.h"
-#include "uaeresource.h"
-#include "dongle.h"
-#include "sampler.h"
 #include "consolehook.h"
-#include "gayle.h"
 #include "gfxboard.h"
 #include "luascript.h"
 #include "uaenative.h"
 #include "tabletlibrary.h"
+#include "cpuboard.h"
+#include "uae/ppc.h"
+#include "devices.h"
+#include "fsdb.h"
+#include "jit/compemu.h"
 #ifdef RETROPLATFORM
 #include "rp.h"
 #endif
@@ -149,6 +131,8 @@ void discard_prefs (struct uae_prefs *p, int type)
 		xfree (s->option);
 		xfree (s);
 	}
+	p->all_lines = NULL;
+	currprefs.all_lines = changed_prefs.all_lines = NULL;
 #ifdef FILESYS
 	filesys_cleanup ();
 #endif
@@ -159,7 +143,7 @@ static void fixup_prefs_dim2 (struct wh *wh)
 	if (wh->special)
 		return;
 	if (wh->width < 160) {
-		error_log (_T("Width (%d) must be at least 128."), wh->width);
+		error_log (_T("Width (%d) must be at least 160."), wh->width);
 		wh->width = 160;
 	}
 	if (wh->height < 128) {
@@ -211,9 +195,19 @@ void fixup_prefs_dimensions (struct uae_prefs *prefs)
 		if (prefs->gf[i].gfx_filter == 0 && ((prefs->gf[i].gfx_filter_autoscale && !prefs->gfx_api) || (prefs->gfx_apmode[APMODE_NATIVE].gfx_vsyncmode))) {
 			prefs->gf[i].gfx_filter = 1;
 		}
-		if (i == 0 && prefs->gf[i].gfx_filter == 0 && prefs->monitoremu) {
-			error_log (_T("A2024 and Graffiti require at least null filter enabled."));
-			prefs->gf[i].gfx_filter = 1;
+		if (i == 0) {
+			if (prefs->gf[i].gfx_filter == 0 && prefs->monitoremu) {
+				error_log(_T("Display port adapter emulation require at least null filter enabled."));
+				prefs->gf[i].gfx_filter = 1;
+			}
+			if (prefs->gf[i].gfx_filter == 0 && prefs->cs_cd32fmv) {
+				error_log(_T("CD32 MPEG module overlay support require at least null filter enabled."));
+				prefs->gf[i].gfx_filter = 1;
+			}
+			if (prefs->gf[i].gfx_filter == 0 && (prefs->genlock && prefs->genlock_image)) {
+				error_log(_T("Genlock emulation require at least null filter enabled."));
+				prefs->gf[i].gfx_filter = 1;
+			}
 		}
 	}
 }
@@ -223,22 +217,24 @@ void fixup_cpu (struct uae_prefs *p)
 	if (p->cpu_frequency == 1000000)
 		p->cpu_frequency = 0;
 
-	if (p->cpu_model >= 68030 && p->address_space_24) {
-		error_log (_T("24-bit address space is not supported in 68030/040/060 configurations."));
+	if (p->cpu_model >= 68020 && p->cpuboard_type && p->address_space_24 && cpuboard_32bit(p)) {
+		error_log (_T("24-bit address space is not supported with selected accelerator board configuration."));
+		p->address_space_24 = 0;
+	}
+	if (p->cpu_model >= 68040 && p->address_space_24) {
+		error_log (_T("24-bit address space is not supported with 68040/060 configurations."));
 		p->address_space_24 = 0;
 	}
 	if (p->cpu_model < 68020 && p->fpu_model && (p->cpu_compatible || p->cpu_cycle_exact)) {
-		error_log (_T("FPU is not supported in 68000/010 configurations."));
+		error_log (_T("FPU is not supported with 68000/010 configurations."));
 		p->fpu_model = 0;
 	}
 
 	switch (p->cpu_model)
 	{
 	case 68000:
-		p->address_space_24 = 1;
 		break;
 	case 68010:
-		p->address_space_24 = 1;
 		break;
 	case 68020:
 		break;
@@ -254,25 +250,42 @@ void fixup_cpu (struct uae_prefs *p)
 		break;
 	}
 
+	if (p->cpu_thread && (p->cpu_compatible || p->ppc_mode || p->cpu_cycle_exact || p->cpu_memory_cycle_exact || p->cpu_model < 68020)) {
+		p->cpu_thread = false;
+		error_log(_T("Threaded CPU mode is not compatible with PPC emulation, More compatible or Cycle Exact modes. CPU type must be 68020 or higher."));
+	}
+
+	// 1 = "automatic" PPC config
+	if (p->ppc_mode == 1) {
+		cpuboard_setboard(p,  BOARD_CYBERSTORM, BOARD_CYBERSTORM_SUB_PPC);
+		if (p->cs_compatible == CP_A1200) {
+			cpuboard_setboard(p,  BOARD_BLIZZARD, BOARD_BLIZZARD_SUB_PPC);
+		} else if (p->cs_compatible != CP_A4000 && p->cs_compatible != CP_A4000T && p->cs_compatible != CP_A3000 && p->cs_compatible != CP_A3000T) {
+			if ((p->cs_ide == IDE_A600A1200 || p->cs_pcmcia) && p->cs_mbdmac <= 0) {
+				cpuboard_setboard(p,  BOARD_BLIZZARD, BOARD_BLIZZARD_SUB_PPC);
+			}
+		}
+		if (p->cpuboardmem1_size < 8 * 1024 * 1024)
+			p->cpuboardmem1_size = 8 * 1024 * 1024;
+	}
+
 	if (p->cpu_model < 68020 && p->cachesize) {
 		p->cachesize = 0;
 		error_log (_T("JIT requires 68020 or better CPU."));
 	}
 
+	if (!p->cpu_memory_cycle_exact && p->cpu_cycle_exact)
+		p->cpu_memory_cycle_exact = true;
+
 	if (p->cpu_model >= 68040 && p->cachesize && p->cpu_compatible)
 		p->cpu_compatible = false;
-
-	if (p->cpu_model >= 68040 && p->cpu_cycle_exact) {
-		p->cpu_cycle_exact = 0;
-		error_log (_T("68040/060 cycle-exact is not supported."));
-	}
 
 	if ((p->cpu_model < 68030 || p->cachesize) && p->mmu_model) {
 		error_log (_T("MMU emulation requires 68030/040/060 and it is not JIT compatible."));
 		p->mmu_model = 0;
 	}
 
-	if (p->cachesize && p->cpu_cycle_exact) {
+	if (p->cachesize && (p->cpu_cycle_exact || p->cpu_memory_cycle_exact)) {
 		error_log (_T("JIT and cycle-exact can't be enabled simultaneously."));
 		p->cachesize = 0;
 	}
@@ -281,19 +294,36 @@ void fixup_cpu (struct uae_prefs *p)
 		p->fpu_no_unimplemented = p->int_no_unimplemented = false;
 	}
 
-	if (p->cpu_cycle_exact && p->m68k_speed < 0)
+#if 0
+	if (p->cpu_cycle_exact && p->m68k_speed < 0 && currprefs.cpu_model <= 68020)
 		p->m68k_speed = 0;
+#endif
 
+#if 0
 	if (p->immediate_blits && p->blitter_cycle_exact) {
 		error_log (_T("Cycle-exact and immediate blitter can't be enabled simultaneously.\n"));
 		p->immediate_blits = false;
 	}
+#endif
 	if (p->immediate_blits && p->waiting_blits) {
 		error_log (_T("Immediate blitter and waiting blits can't be enabled simultaneously.\n"));
 		p->waiting_blits = 0;
 	}
-	if (p->cpu_cycle_exact)
+	if (p->cpu_cycle_exact || p->cpu_memory_cycle_exact)
 		p->cpu_compatible = true;
+
+	if ((p->cpu_cycle_exact || p->cpu_memory_cycle_exact) && p->produce_sound == 0) {
+		p->produce_sound = 1;
+		error_log(_T("Cycle-exact mode requires at least Disabled but emulated sound setting."));
+	}
+
+	if (p->cachesize && p->cpuboard_type && !cpuboard_jitdirectompatible(p) && !p->comptrustbyte) {
+		error_log(_T("JIT direct is not compatible with emulated Blizzard accelerator boards."));
+		p->comptrustbyte = 1;
+		p->comptrustlong = 1;
+		p->comptrustlong = 1;
+		p->comptrustnaddr = 1;
+	}
 }
 
 void fixup_prefs (struct uae_prefs *p)
@@ -303,6 +333,34 @@ void fixup_prefs (struct uae_prefs *p)
 	built_in_chipset_prefs (p);
 	fixup_cpu (p);
 
+  DebOut("entered (rtgmem_size..)\n");
+
+
+	if (p->cpuboard_type && p->cpuboardmem1_size > cpuboard_maxmemory(p)) {
+		error_log(_T("Unsupported accelerator board memory size %d (0x%x).\n"), p->cpuboardmem1_size, p->cpuboardmem1_size);
+		p->cpuboardmem1_size = cpuboard_maxmemory(p);
+	}
+	if (cpuboard_memorytype(p) == BOARD_MEMORY_HIGHMEM) {
+		p->mbresmem_high_size = p->cpuboardmem1_size;
+	} else if (cpuboard_memorytype(p) == BOARD_MEMORY_Z2) {
+		p->fastmem2_size = p->cpuboardmem1_size;
+	} else if (cpuboard_memorytype(p) == BOARD_MEMORY_25BITMEM) {
+		p->mem25bit_size = p->cpuboardmem1_size;
+	} else if (cpuboard_memorytype(p) == BOARD_MEMORY_EMATRIX) {
+		int size = p->cpuboardmem1_size / (1024 * 1024);
+		if (size == 32 || size == 8 || size == 2) {
+			p->custom_memory_sizes[0] = p->cpuboardmem1_size / 2;
+			p->custom_memory_sizes[1] = p->cpuboardmem1_size / 2;
+			p->custom_memory_addrs[0] = 0x18000000 - p->custom_memory_sizes[0];
+			p->custom_memory_addrs[1] = 0x18000000;
+		} else {
+			p->custom_memory_sizes[0] = p->cpuboardmem1_size;
+			p->custom_memory_sizes[1] = 0;
+			p->custom_memory_addrs[0] = 0x18000000 - p->custom_memory_sizes[0];
+			p->custom_memory_addrs[1] = 0;
+		}
+	}
+
 	if (((p->chipmem_size & (p->chipmem_size - 1)) != 0 && p->chipmem_size != 0x180000)
 		|| p->chipmem_size < 0x20000
 		|| p->chipmem_size > 0x800000)
@@ -311,18 +369,41 @@ void fixup_prefs (struct uae_prefs *p)
 		p->chipmem_size = 0x200000;
 		err = 1;
 	}
+
 	if ((p->fastmem_size & (p->fastmem_size - 1)) != 0
-		|| (p->fastmem_size != 0 && (p->fastmem_size < 0x100000 || p->fastmem_size > 0x800000)))
-{
+		|| (p->fastmem_size != 0 && (p->fastmem_size < 0x10000 || p->fastmem_size > 0x800000)))
+	{
 		error_log (_T("Unsupported fastmem size %d (0x%x)."), p->fastmem_size, p->fastmem_size);
 		p->fastmem_size = 0;
 		err = 1;
 	}
+	if ((p->fastmem2_size & (p->fastmem2_size - 1)) != 0 || (p->fastmem2_size != 0 && (p->fastmem2_size < 0x10000 || p->fastmem2_size > 0x800000)))
+	{
+		error_log (_T("Unsupported fastmem2 size %d (0x%x)."), p->fastmem2_size, p->fastmem2_size);
+		p->fastmem2_size = 0;
+		err = 1;
+	}
+	if (p->cachesize) {
+		if (p->fastmem_size + p->fastmem2_size > 0x800000) {
+			error_log (_T("Unsupported fastmem2 size %d (0x%x)."), p->fastmem2_size, p->fastmem2_size);
+			err = 1;
+		}
+		if (p->fastmem2_size > p->fastmem_size && p->fastmem_size > 0) {
+			error_log (_T("Fastmem2 size can't be larger than fastmem1 if JIT is enabled."));
+			p->fastmem2_size = 0;
+			err = 1;
+		}
+	}
+
+  DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
 	if (p->rtgmem_size > max_z3fastmem && p->rtgmem_type == GFXBOARD_UAE_Z3) {
 		error_log (_T("Graphics card memory size %d (0x%x) larger than maximum reserved %d (0x%x)."), p->rtgmem_size, p->rtgmem_size, max_z3fastmem, max_z3fastmem);
 		p->rtgmem_size = max_z3fastmem;
+    DebOut("p->rtgmem_size := max_z3fastmem %d\n", max_z3fastmem);
 		err = 1;
 	}
+
+  DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
 	if ((p->rtgmem_size & (p->rtgmem_size - 1)) != 0 || (p->rtgmem_size != 0 && (p->rtgmem_size < 0x100000))) {
 		error_log (_T("Unsupported graphics card memory size %d (0x%x)."), p->rtgmem_size, p->rtgmem_size);
 		if (p->rtgmem_size > max_z3fastmem)
@@ -332,6 +413,7 @@ void fixup_prefs (struct uae_prefs *p)
 		err = 1;
 	}
 	
+  DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
 	if (p->z3fastmem_size > max_z3fastmem) {
 		error_log (_T("Zorro III fastmem size %d (0x%x) larger than max reserved %d (0x%x)."), p->z3fastmem_size, p->z3fastmem_size, max_z3fastmem, max_z3fastmem);
 		p->z3fastmem_size = max_z3fastmem;
@@ -343,6 +425,7 @@ void fixup_prefs (struct uae_prefs *p)
 		p->z3fastmem_size = 0;
 		err = 1;
 	}
+  DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
 
 	if (p->z3fastmem2_size > max_z3fastmem) {
 		error_log (_T("Zorro III fastmem2 size %d (0x%x) larger than max reserved %d (0x%x)."), p->z3fastmem2_size, p->z3fastmem2_size, max_z3fastmem, max_z3fastmem);
@@ -355,22 +438,24 @@ void fixup_prefs (struct uae_prefs *p)
 		p->z3fastmem2_size = 0;
 		err = 1;
 	}
+  DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
 
-	p->z3fastmem_start &= ~0xffff;
-	if (p->z3fastmem_start < 0x1000000)
-		p->z3fastmem_start = 0x1000000;
+	p->z3autoconfig_start &= ~0xffff;
+	if (p->z3autoconfig_start < 0x1000000)
+		p->z3autoconfig_start = 0x1000000;
 
 	if (p->z3chipmem_size > max_z3fastmem) {
 		error_log (_T("Zorro III fake chipmem size %d (0x%x) larger than max reserved %d (0x%x)."), p->z3chipmem_size, p->z3chipmem_size, max_z3fastmem, max_z3fastmem);
 		p->z3chipmem_size = max_z3fastmem;
 		err = 1;
 	}
-	if ((p->z3chipmem_size & (p->z3chipmem_size - 1)) != 0 || (p->z3chipmem_size != 0 && p->z3chipmem_size < 0x100000))
+	if (((p->z3chipmem_size & (p->z3chipmem_size - 1)) != 0 &&  p->z3chipmem_size != 0x18000000 && p->z3chipmem_size != 0x30000000) || (p->z3chipmem_size != 0 && p->z3chipmem_size < 0x100000))
 	{
-		error_log (_T("Unsupported Zorro III fake chipmem size %d (0x%x)."), p->z3chipmem_size, p->z3chipmem_size);
+		error_log (_T("Unsupported 32-bit chipmem size %d (0x%x)."), p->z3chipmem_size, p->z3chipmem_size);
 		p->z3chipmem_size = 0;
 		err = 1;
 	}
+  DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
 
 	if (p->address_space_24 && (p->z3fastmem_size != 0 || p->z3fastmem2_size != 0 || p->z3chipmem_size != 0)) {
 		p->z3fastmem_size = p->z3fastmem2_size = p->z3chipmem_size = 0;
@@ -382,34 +467,57 @@ void fixup_prefs (struct uae_prefs *p)
 		p->bogomem_size = 0;
 		err = 1;
 	}
+  DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
 
 	if (p->bogomem_size > 0x180000 && (p->cs_fatgaryrev >= 0 || p->cs_ide || p->cs_ramseyrev >= 0)) {
 		p->bogomem_size = 0x180000;
 		error_log (_T("Possible Gayle bogomem conflict fixed."));
 	}
-	if (p->chipmem_size > 0x200000 && p->fastmem_size != 0) {
-		error_log (_T("You can't use fastmem and more than 2MB chip at the same time."));
-		p->fastmem_size = 0;
+	if (p->chipmem_size > 0x200000 && p->fastmem_size > 262144) {
+		error_log(_T("You can't use fastmem and more than 2MB chip at the same time."));
+		p->chipmem_size = 0x200000;
 		err = 1;
+	}
+	if (p->chipmem_size > 0x200000 && p->rtgmem_size && gfxboard_get_configtype(p->rtgmem_type) == 2) {
+		error_log(_T("You can't use Zorro II RTG and more than 2MB chip at the same time."));
+		p->chipmem_size = 0x200000;
+		err = 1;
+	}
+	if (p->mem25bit_size > 128 * 1024 * 1024 || (p->mem25bit_size & 0xfffff)) {
+		p->mem25bit_size = 0;
+		error_log(_T("Unsupported 25bit RAM size"));
 	}
 	if (p->mbresmem_low_size > 0x04000000 || (p->mbresmem_low_size & 0xfffff)) {
 		p->mbresmem_low_size = 0;
-		error_log (_T("Unsupported A3000 MB RAM size"));
+		error_log (_T("Unsupported Mainboard RAM size"));
 	}
 	if (p->mbresmem_high_size > 0x08000000 || (p->mbresmem_high_size & 0xfffff)) {
 		p->mbresmem_high_size = 0;
-		error_log (_T("Unsupported Motherboard RAM size."));
+		error_log (_T("Unsupported CPU Board RAM size."));
 	}
+  DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
 
 	if (p->rtgmem_type >= GFXBOARD_HARDWARE) {
-		if (p->rtgmem_size < gfxboard_get_vram_min (p->rtgmem_type))
+		if (gfxboard_get_vram_min(p->rtgmem_type) > 0 && p->rtgmem_size < gfxboard_get_vram_min (p->rtgmem_type)) {
+			error_log(_T("Graphics card memory size %d (0x%x) smaller than minimum hardware supported %d (0x%x)."),
+				p->rtgmem_size, p->rtgmem_size, gfxboard_get_vram_min(p->rtgmem_type), gfxboard_get_vram_min(p->rtgmem_type));
 			p->rtgmem_size = gfxboard_get_vram_min (p->rtgmem_type);
-		if (p->address_space_24 && gfxboard_is_z3 (p->rtgmem_type)) {
+		}
+    DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
+		if (p->address_space_24 && gfxboard_get_configtype(p->rtgmem_type) == 3) {
 			p->rtgmem_type = GFXBOARD_UAE_Z2;
 			p->rtgmem_size = 0;
 			error_log (_T("Z3 RTG and 24-bit address space are not compatible."));
 		}
+    DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
+		if (gfxboard_get_vram_max(p->rtgmem_type) > 0 && p->rtgmem_size > gfxboard_get_vram_max(p->rtgmem_type)) {
+			error_log(_T("Graphics card memory size %d (0x%x) larger than maximum hardware supported %d (0x%x)."),
+				p->rtgmem_size, p->rtgmem_size, gfxboard_get_vram_max(p->rtgmem_type), gfxboard_get_vram_max(p->rtgmem_type));
+			p->rtgmem_size = gfxboard_get_vram_max(p->rtgmem_type);
+		}
+    DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
 	}
+  DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
 	if (p->address_space_24 && p->rtgmem_size && p->rtgmem_type == GFXBOARD_UAE_Z3) {
 		error_log (_T("Z3 RTG and 24bit address space are not compatible."));
 		p->rtgmem_type = GFXBOARD_UAE_Z2;
@@ -417,6 +525,13 @@ void fixup_prefs (struct uae_prefs *p)
 	if (p->rtgmem_type == GFXBOARD_UAE_Z2 && (p->chipmem_size > 2 * 1024 * 1024 || getz2size (p) > 8 * 1024 * 1024 || getz2size (p) < 0)) {
 		p->rtgmem_size = 0;
 		error_log (_T("Too large Z2 RTG memory size."));
+    DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
+	}
+  DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
+
+	if (p->cs_z3autoconfig && p->address_space_24) {
+		p->cs_z3autoconfig = false;
+		error_log (_T("Z3 autoconfig and 24bit address space are not compatible."));
 	}
 
 #if 0
@@ -437,6 +552,7 @@ void fixup_prefs (struct uae_prefs *p)
 		p->comptrustbyte = 1;
 		err = 1;
 	}
+  DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
 	if (p->comptrustword < 0 || p->comptrustword > 3) {
 		error_log (_T("Bad value for comptrustword parameter: value must be within 0..2."));
 		p->comptrustword = 1;
@@ -457,19 +573,20 @@ void fixup_prefs (struct uae_prefs *p)
 		p->cachesize = 0;
 		err = 1;
 	}
-	if ((p->z3fastmem_size || p->z3fastmem2_size || p->z3chipmem_size) && (p->address_space_24 || p->cpu_model < 68020)) {
-		error_log (_T("Z3 fast memory can't be used with a 68000/68010 emulation. Turning off Z3 fast memory."));
+	if ((p->z3fastmem_size || p->z3fastmem2_size || p->z3chipmem_size) && p->address_space_24) {
+		error_log (_T("Z3 fast memory can't be used if address space is 24-bit."));
 		p->z3fastmem_size = 0;
 		p->z3fastmem2_size = 0;
 		p->z3chipmem_size = 0;
 		err = 1;
 	}
-	if (p->rtgmem_size > 0 && p->rtgmem_type == GFXBOARD_UAE_Z3 && (p->cpu_model < 68020 || p->address_space_24)) {
-		error_log (_T("UAEGFX RTG can't be used with a 68000/68010 or 68EC020 emulation. Turning off RTG."));
+	if ((p->rtgmem_size > 0 && p->rtgmem_type == GFXBOARD_UAE_Z3) && p->address_space_24) {
+		error_log (_T("UAEGFX RTG can't be used if address space is 24-bit."));
 		p->rtgmem_size = 0;
 		err = 1;
 	}
 
+  DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
 #if !defined (BSDSOCKET)
 	if (p->socket_emu) {
 		write_log (_T("Compile-time option of BSDSOCKET_SUPPORTED was not enabled.  You can't use bsd-socket emulation.\n"));
@@ -519,12 +636,19 @@ void fixup_prefs (struct uae_prefs *p)
 				p->cs_ramseyrev = 0x0f;
 		}
 	}
+	if (p->chipmem_size >= 0x100000)
+		p->cs_1mchipjumper = true;
+  DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
+
 	/* Can't fit genlock and A2024 or Graffiti at the same time,
 	 * also Graffiti uses genlock audio bit as an enable signal
 	 */
 	if (p->genlock && p->monitoremu) {
 		error_log (_T("Genlock and A2024 or Graffiti can't be active simultaneously."));
 		p->genlock = false;
+	}
+	if (p->cs_hacks) {
+		error_log (_T("chipset_hacks is nonzero (0x%04x)."), p->cs_hacks);
 	}
 
 	fixup_prefs_dimensions (p);
@@ -580,23 +704,43 @@ void fixup_prefs (struct uae_prefs *p)
 			error_log (_T("Cycle-exact and JIT can't be active simultaneously."));
 			p->cachesize = 0;
 		}
+#if 0
 		if (p->m68k_speed) {
 			error_log (_T("Adjustable CPU speed is not available in cycle-exact mode."));
 			p->m68k_speed = 0;
 		}
+#endif
 	}
 #endif
-	if (p->maprom && !p->address_space_24)
+  DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
+	if (p->maprom && !p->address_space_24) {
 		p->maprom = 0x0f000000;
-	if (((p->maprom & 0xff000000) && p->address_space_24) || p->mbresmem_high_size == 0x08000000) {
+	}
+	if (((p->maprom & 0xff000000) && p->address_space_24) || (p->maprom && p->mbresmem_high_size >= 0x08000000)) {
 		p->maprom = 0x00e00000;
 	}
 	if (p->tod_hack && p->cs_ciaatod == 0)
 		p->cs_ciaatod = p->ntscmode ? 2 : 1;
 
+	if (p->sound_toccata + p->sound_es1370 + p->sound_fm801 > 1) {
+		error_log(_T("Only one sound card can be enabled at the same time."));
+		if (p->sound_toccata) {
+			p->sound_es1370 = 0;
+			p->sound_fm801 = 0;
+		} else if (p->sound_es1370) {
+			p->sound_toccata = 0;
+			p->sound_fm801 = 0;
+		} else {
+			p->sound_toccata = 0;
+			p->sound_es1370 = 0;
+		}
+	}
+  DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
+
 	built_in_chipset_prefs (p);
 	blkdev_fix_prefs (p);
 	target_fixup_options (p);
+  DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
 }
 
 int quit_program = 0;
@@ -606,8 +750,6 @@ static int default_config;
 
 void uae_reset (int hardreset, int keyboardreset)
 {
-  bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
-  bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
 	if (debug_dma) {
 		record_dma_reset ();
 		record_dma_reset ();
@@ -622,44 +764,25 @@ void uae_reset (int hardreset, int keyboardreset)
 			quit_program = -UAE_RESET_HARD;
 	}
 
-  bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
-
 }
 
-void aros_gui_exit(void);
 void uae_quit (void)
 {
-  bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
-  bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
 	deactivate_debugger ();
 	if (quit_program != -UAE_QUIT)
 		quit_program = -UAE_QUIT;
-  bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
 	target_quit ();
-  aros_gui_exit();
 }
 
 /* 0 = normal, 1 = nogui, -1 = disable nogui */
 void uae_restart (int opengui, const TCHAR *cfgfile)
 {
-  bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
-  bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
-	//uae_quit ();
-  deactivate_debugger ();
-  bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
-  /* warning: WinUAE did not have quit_program=0 here! */
-  //quit_program=0;
-  bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
-  bug("[JUAE] %s: opengui: %d\n", __PRETTY_FUNCTION__, opengui);
-  printf("uae_restart(%d, %s)\n", opengui, cfgfile);
-  kprintf("uae_restart(%d, %s)\n", opengui, cfgfile);
+	uae_quit ();
 	restart_program = opengui > 0 ? 1 : (opengui == 0 ? 2 : 3);
 	restart_config[0] = 0;
 	default_config = 0;
-	if (cfgfile) {
-    DebOut("restart_config: %s\n", restart_config);
+	if (cfgfile)
 		_tcscpy (restart_config, cfgfile);
-  }
 	target_restart ();
 }
 
@@ -700,7 +823,7 @@ static int diskswapper_cb (struct zfile *f, void *vrsd)
 static void parse_diskswapper (const TCHAR *s)
 {
 	TCHAR *tmp = my_strdup (s);
-	TCHAR *delim = _T(",");
+	const TCHAR *delim = _T(",");
 	TCHAR *p1, *p2;
 	int num = 0;
 
@@ -749,6 +872,7 @@ static TCHAR *parsetextpath (const TCHAR *s)
 static void parse_cmdline (int argc, TCHAR **argv)
 {
 	int i;
+	bool firstconfig = true;
 
 	for (i = 1; i < argc; i++) {
 		if (!_tcsncmp (argv[i], _T("-diskswapper="), 13)) {
@@ -763,8 +887,9 @@ static void parse_cmdline (int argc, TCHAR **argv)
 		} else if (_tcsncmp (argv[i], _T("-config="), 8) == 0) {
 			TCHAR *txt = parsetextpath (argv[i] + 8);
 			currprefs.mountitems = 0;
-			target_cfgfile_load (&currprefs, txt, -1, 0);
+			target_cfgfile_load (&currprefs, txt, firstconfig ? CONFIG_TYPE_ALL : CONFIG_TYPE_HARDWARE | CONFIG_TYPE_HOST | CONFIG_TYPE_NORESET, 0);
 			xfree (txt);
+			firstconfig = false;
 		} else if (_tcsncmp (argv[i], _T("-statefile="), 11) == 0) {
 			TCHAR *txt = parsetextpath (argv[i] + 11);
 			savestate_state = STATE_DORESTORE;
@@ -777,8 +902,9 @@ static void parse_cmdline (int argc, TCHAR **argv)
 			} else {
 				TCHAR *txt = parsetextpath (argv[++i]);
 				currprefs.mountitems = 0;
-				target_cfgfile_load (&currprefs, txt, -1, 0);
+				target_cfgfile_load (&currprefs, txt, firstconfig ? CONFIG_TYPE_ALL : CONFIG_TYPE_HARDWARE | CONFIG_TYPE_HOST | CONFIG_TYPE_NORESET, 0);
 				xfree (txt);
+				firstconfig = false;
 			}
 		} else if (_tcscmp (argv[i], _T("-s")) == 0) {
 			if (i + 1 == argc)
@@ -813,6 +939,7 @@ static void parse_cmdline (int argc, TCHAR **argv)
 
 static void parse_cmdline_and_init_file (int argc, TCHAR **argv)
 {
+  DebOut("rtgmem_size: parse_cmdline_and_init_file..\n");
 
 	_tcscpy (optionsfile, _T(""));
 
@@ -827,68 +954,26 @@ static void parse_cmdline_and_init_file (int argc, TCHAR **argv)
 	}
 #endif
 
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
+
 	parse_cmdline_2 (argc, argv);
 
 	_tcscat (optionsfile, restart_config);
-  DebOut("optionsfile: %s\n", optionsfile);
 
-	if (! target_cfgfile_load (&currprefs, optionsfile, 0, default_config)) {
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
+	if (! target_cfgfile_load (&currprefs, optionsfile, CONFIG_TYPE_DEFAULT, default_config)) {
 		write_log (_T("failed to load config '%s'\n"), optionsfile);
 #ifdef OPTIONS_IN_HOME
 		/* sam: if not found in $HOME then look in current directory */
 		_tcscpy (optionsfile, restart_config);
-		target_cfgfile_load (&currprefs, optionsfile, 0, default_config);
+		target_cfgfile_load (&currprefs, optionsfile, CONFIG_TYPE_DEFAULT, default_config);
 #endif
 	}
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
 	fixup_prefs (&currprefs);
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
 
 	parse_cmdline (argc, argv);
-}
-
-void reset_all_systems (void)
-{
-	init_eventtab ();
-
-#ifdef PICASSO96
-	picasso_reset ();
-#endif
-#ifdef SCSIEMU
-	scsi_reset ();
-	scsidev_reset ();
-	scsidev_start_threads ();
-#endif
-#ifdef A2065
-	a2065_reset ();
-#endif
-#ifdef SANA2
-	netdev_reset ();
-	netdev_start_threads ();
-#endif
-#ifdef FILESYS
-	filesys_prepare_reset ();
-	filesys_reset ();
-#endif
-#ifdef NATMEM_OFFSET
-	init_shm ();
-#endif
-	memory_reset ();
-#if defined (BSDSOCKET)
-	bsdlib_reset ();
-#endif
-#ifdef FILESYS
-	filesys_start_threads ();
-	hardfile_reset ();
-#endif
-#ifdef UAESERIAL
-	uaeserialdev_reset ();
-	uaeserialdev_start_threads ();
-#endif
-#if defined (PARALLEL_PORT)
-	initparallel ();
-#endif
-	native2amiga_reset ();
-	dongle_reset ();
-	sampler_init ();
 }
 
 /* Okay, this stuff looks strange, but it is here to encourage people who
@@ -912,41 +997,28 @@ extern int DummyException (LPEXCEPTION_POINTERS blah, int n_except)
 
 void do_start_program (void)
 {
-  bug("[JUAE] %s(quit_program: %d)\n", __PRETTY_FUNCTION__, quit_program);
-  if(SysBase->TDNestCnt>=0) {
-    bug("Permit required a\n");
-  }
 
-
+  DebOut("quit_program: %d\n", quit_program);
 
 	if (quit_program == -UAE_QUIT) /* UAE_QUIT is 1 */
 		return;
-	if (!canbang && candirect < 0)
-		candirect = 0;
-	if (canbang && candirect < 0)
-		candirect = 1;
 	/* Do a reset on startup. Whether this is elegant is debatable. */
-  bug("[JUAE] %s: canbang:   %d\n", __PRETTY_FUNCTION__, canbang);
-  bug("[JUAE] %s: candirect: %d\n", __PRETTY_FUNCTION__, candirect);
 	inputdevice_updateconfig (&changed_prefs, &currprefs);
-  bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
 	if (quit_program >= 0)
 		quit_program = UAE_RESET;
-  bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
 #ifdef WITH_LUA
 	uae_lua_loadall ();
 #endif
-
-#if (defined (_WIN32) || defined (_WIN64)) && !defined (NO_WIN32_EXCEPTION_HANDLER)
-	extern int EvalException (LPEXCEPTION_POINTERS blah, int n_except);
+#ifdef USE_STRUCTURED_EXCEPTION_HANDLING
 	__try
 #endif
 	{
+    DebOut("call m68k_go..\n");
 		m68k_go (1);
 	}
-#if (defined (_WIN32) || defined (_WIN64)) && !defined (NO_WIN32_EXCEPTION_HANDLER)
+#ifdef USE_STRUCTURED_EXCEPTION_HANDLING
 #ifdef JIT
-	__except (EvalException (GetExceptionInformation (), GetExceptionCode ()))
+	__except (EvalException(GetExceptionInformation()))
 #else
 	__except (DummyException (GetExceptionInformation (), GetExceptionCode ()))
 #endif
@@ -956,72 +1028,8 @@ void do_start_program (void)
 #endif
 }
 
-void do_leave_program (void)
-{
-  bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
-	sampler_free ();
-	graphics_leave ();
-	inputdevice_close ();
-	DISK_free ();
-	close_sound ();
-	dump_counts ();
-#ifdef SERIAL_PORT
-	serial_exit ();
-#endif
-#ifdef CDTV
-	cdtv_free ();
-#endif
-#ifdef A2091
-	a2091_free ();
-	a3000scsi_free ();
-#endif
-#ifdef NCR
-	ncr_free ();
-#endif
-#ifdef CD32
-	akiko_free ();
-#endif
-	if (! no_gui)
-		gui_exit ();
-  bug("[JUAE] %s: 1..\n", __PRETTY_FUNCTION__);
-#ifdef USE_SDL
-	SDL_Quit ();
-#endif
-  bug("[JUAE] %s: 1a..\n", __PRETTY_FUNCTION__);
-#ifdef AUTOCONFIG
-	expansion_cleanup ();
-#endif
-  bug("[JUAE] %s: 1b..\n", __PRETTY_FUNCTION__);
-#ifdef FILESYS
-	filesys_cleanup ();
-#endif
-  bug("[JUAE] %s: 1c..\n", __PRETTY_FUNCTION__);
-#ifdef BSDSOCKET
-	bsdlib_reset ();
-#endif
-  bug("[JUAE] %s: 2..vvvvvvv\n", __PRETTY_FUNCTION__);
-	gayle_free ();
-  bug("[JUAE] %s: 2a..^^^^^^\n", __PRETTY_FUNCTION__);
-	device_func_reset ();
-  bug("[JUAE] %s: 2b..\n", __PRETTY_FUNCTION__);
-#ifdef WITH_LUA
-	uae_lua_free ();
-#endif
-  bug("[JUAE] %s: 2c..\n", __PRETTY_FUNCTION__);
-	savestate_free ();
-  bug("[JUAE] %s: 3..\n", __PRETTY_FUNCTION__);
-	memory_cleanup ();
-#ifdef NATMEM_OFFSET
-	free_shm ();
-#endif
-	cfgfile_addcfgparam (0);
-	machdep_free ();
-  bug("[JUAE] %s: done!\n", __PRETTY_FUNCTION__);
-}
-
 void start_program (void)
 {
-  bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
 	do_start_program ();
 }
 
@@ -1030,58 +1038,9 @@ void leave_program (void)
 	do_leave_program ();
 }
 
-
-void virtualdevice_init (void)
-{
-  bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
-#ifdef AUTOCONFIG
-  bug("[JUAE] %s: call rtarea_setup..\n", __PRETTY_FUNCTION__);
-	rtarea_setup ();
-#endif
-#ifdef FILESYS
-  bug("[JUAE] %s: call rtarea_init..\n", __PRETTY_FUNCTION__);
-	rtarea_init ();
-	uaeres_install ();
-	hardfile_install ();
-#endif
-#ifdef SCSIEMU
-	scsi_reset ();
-	scsidev_install ();
-#endif
-#ifdef SANA2
-	netdev_install ();
-#endif
-#ifdef UAESERIAL
-	uaeserialdev_install ();
-#endif
-#ifdef AUTOCONFIG
-	expansion_init ();
-	emulib_install ();
-	uaeexe_install ();
-#endif
-#ifdef FILESYS
-	filesys_install ();
-#endif
-#if defined (BSDSOCKET)
-	bsdlib_install ();
-#endif
-#ifdef WITH_UAENATIVE
-	uaenative_install ();
-#endif
-#ifdef WITH_TABLETLIBRARY
-	tabletlib_install ();
-#endif
-}
-
 static int real_main2 (int argc, TCHAR **argv)
 {
-
-  bug("[JUAE] %s()\n", __PRETTY_FUNCTION__);
-
-  if(SysBase->TDNestCnt>=0) {
-    bug("Permit required aa\n");
-  }
-
+  DebOut("entered\n");
 
 #ifdef USE_SDL
 	SDL_Init (SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_NOPARACHUTE);
@@ -1092,49 +1051,64 @@ static int real_main2 (int argc, TCHAR **argv)
 		fixup_prefs (&currprefs);
 	}
 
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
+
+  DebOut("calling graphics_setup..\n");
+
 	if (! graphics_setup ()) {
 		exit (1);
 	}
 
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
 #ifdef NATMEM_OFFSET
 	//preinit_shm ();
 #endif
 
-	if (restart_config[0])
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
+  DebOut("2 ..\n");
+	if (restart_config[0]) {
 		parse_cmdline_and_init_file (argc, argv);
-	else
+    DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
+  }
+	else {
 		currprefs = changed_prefs;
+    DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
+  }
 
+  DebOut("calling machdep_init ..\n");
 	if (!machdep_init ()) {
 		restart_program = 0;
 		return -1;
 	}
 
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
 	if (console_emulation) {
 		consolehook_config (&currprefs);
 		fixup_prefs (&currprefs);
 	}
 
+  DebOut("calling setup_sound ..\n");
 	if (! setup_sound ()) {
 		write_log (_T("Sound driver unavailable: Sound output disabled\n"));
 		currprefs.produce_sound = 0;
 	}
+  DebOut("calling inputdevice_init ..\n");
 	inputdevice_init ();
 
 	changed_prefs = currprefs;
-  bug("[JUAE] %s: no_gui: %d\n", __PRETTY_FUNCTION__, no_gui);
 	no_gui = ! currprefs.start_gui;
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
 	if (restart_program == 2)
 		no_gui = 1;
 	else if (restart_program == 3)
 		no_gui = 0;
-  bug("[JUAE] %s: no_gui: %d\n", __PRETTY_FUNCTION__, no_gui);
 	restart_program = 0;
-#warning REMOVE no_gui=0;
-  //no_gui=0;
-  bug("[JUAE] %s: no_gui: %d\n", __PRETTY_FUNCTION__, no_gui);
+  DebOut("gui?\n");
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
 	if (! no_gui) {
+    DebOut("GUI !!\n");
 		int err = gui_init ();
+    DebOut("gui_init returned (negative values are errors): %d\n", err);
 		currprefs = changed_prefs;
 		set_config_changed ();
 		if (err == -1) {
@@ -1145,36 +1119,37 @@ static int real_main2 (int argc, TCHAR **argv)
 		}
 	}
 
-  bug("[JUAE] %s: gui_init survived\n", __PRETTY_FUNCTION__);
-
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
 	memset (&gui_data, 0, sizeof gui_data);
 	gui_data.cd = -1;
 	gui_data.hd = -1;
-	gui_data.md = -1;
+	gui_data.md = (currprefs.cs_cd32nvram || currprefs.cs_cdtvram) ? 0 : -1;
 	logging_init (); /* Yes, we call this twice - the first case handles when the user has loaded
 						 a config using the cmd-line.  This case handles loads through the GUI. */
 
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
 #ifdef NATMEM_OFFSET
 	init_shm ();
 #endif
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
 #ifdef WITH_LUA
 	uae_lua_init ();
 #endif
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
 #ifdef PICASSO96
 	picasso_reset ();
 #endif
 
-  if(SysBase->TDNestCnt>=0) {
-    bug("Permit required a\n");
-  }
-
-
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
+#if 0
 #ifdef JIT
 	if (!(currprefs.cpu_model >= 68020 && currprefs.address_space_24 == 0 && currprefs.cachesize))
 		canbang = 0;
 #endif
+#endif
 
 	fixup_prefs (&currprefs);
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
 #ifdef RETROPLATFORM
 	rp_fixup_options (&currprefs);
 #endif
@@ -1183,45 +1158,42 @@ static int real_main2 (int argc, TCHAR **argv)
 	/* force sound settings change */
 	currprefs.produce_sound = 0;
 
-  if(SysBase->TDNestCnt>=0) {
-    bug("Permit required b\n");
-  }
-
-
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
 	savestate_init ();
 	keybuf_init (); /* Must come after init_joystick */
 
 	memory_hardreset (2);
 	memory_reset ();
 
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
+  DebOut("alive..\n");
+
 #ifdef AUTOCONFIG
 	native2amiga_install ();
 #endif
-
-  if(SysBase->TDNestCnt>=0) {
-    bug("Permit required c\n");
-  }
-
 	custom_init (); /* Must come after memory_init */
 #ifdef SERIAL_PORT
 	serial_init ();
 #endif
 	DISK_init ();
+#ifdef WITH_PPC
+	uae_ppc_reset(true);
+#endif
 
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
+  DebOut("alive..\n");
 	reset_frame_rate_hack ();
 	init_m68k (); /* must come after reset_frame_rate_hack (); */
 
-  if(SysBase->TDNestCnt>=0) {
-    bug("Permit required d\n");
-  }
-
-
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
+  DebOut("alive..\n");
 	gui_update ();
 
-  bug("[JUAE] %s: calling graphics_init\n", __PRETTY_FUNCTION__);
+  DebOut("alive..\n");
+  DebOut("currprefs.rtgmem_size: %d\n", currprefs.rtgmem_size);
 	if (graphics_init (true)) {
-    bug("[JUAE] %s: graphics_init survived\n", __PRETTY_FUNCTION__);
 		setup_brkhandler ();
+    DebOut("alive..\n");
 		if (currprefs.start_debugger && debuggable ())
 			activate_debugger ();
 
@@ -1231,11 +1203,10 @@ static int real_main2 (int argc, TCHAR **argv)
 			}
 			currprefs.produce_sound = 0;
 		}
-    bug("[JUAE] %s: calling start_program\n", __PRETTY_FUNCTION__);
+    DebOut("alive..\n");
 		start_program ();
-    bug("[JUAE] %s: start_program returned\n", __PRETTY_FUNCTION__);
 	}
-  bug("[JUAE] %s: return 0\n", __PRETTY_FUNCTION__);
+  DebOut("return..\n");
 	return 0;
 }
 
@@ -1243,32 +1214,21 @@ void real_main (int argc, TCHAR **argv)
 {
 	restart_program = 1;
 
-  if(SysBase->TDNestCnt>=0) {
-    bug("Permit required ba\n");
-  }
-
-
 	fetch_configurationpath (restart_config, sizeof (restart_config) / sizeof (TCHAR));
-#ifndef __AROS__
-	_tcscat (restart_config, OPTIONSFILENAME);
-#else
-  AddPart(restart_config, OPTIONSFILENAME, MAX_DPATH-1);
-#endif
-  DebOut("restart_config: %s\n", restart_config);
+	//_tcscat (restart_config, OPTIONSFILENAME);
+  myAddPart(restart_config, OPTIONSFILENAME, MAX_DPATH-1);
 	default_config = 1;
 
-  bug("[JUAE] %s: restart_program: %d\n", __PRETTY_FUNCTION__, restart_program);
 
 	while (restart_program) {
+    DebOut("restart_program: %d\n", restart_program);
 		int ret;
 		changed_prefs = currprefs;
 		ret = real_main2 (argc, argv);
 		if (ret == 0 && quit_to_gui)
 			restart_program = 1;
 		leave_program ();
-    bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
 		quit_program = 0;
-    bug("[JUAE] %s: quit_program: %d\n", __PRETTY_FUNCTION__, quit_program);
 	}
 	zfile_exit ();
 }

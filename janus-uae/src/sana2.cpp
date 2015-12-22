@@ -25,13 +25,21 @@
 #include "blkdev.h"
 #include "uae.h"
 #include "sana2.h"
-#ifndef __AROS__
+#if defined(_WIN32) && defined(WITH_UAENET_PCAP)
 #include "win32_uaenet.h"
 #else
-#include "aros_uaenet.h"
-#include <utility/tagitem.h>
+#include "ethernet.h"
 #endif
 #include "execio.h"
+
+/* These variables are referenced by custom.cpp and newcpu.cpp */
+volatile int uaenet_int_requested = 0;
+volatile int uaenet_vsync_requested = 0;
+
+#ifdef SANA2
+
+static void uaenet_gotdata (void *dev, const uae_u8 *data, int len);
+static int uaenet_getdata (void *dev, uae_u8 *d, int *len);
 
 #define SANA2NAME _T("uaenet.device")
 
@@ -144,8 +152,6 @@ struct s2packet {
 	int len;
 };
 
-volatile int uaenet_int_requested;
-volatile int uaenet_vsync_requested;
 static int uaenet_int_late;
 
 static uaecptr timerdevname;
@@ -154,7 +160,7 @@ static uaecptr ROM_netdev_resname = 0,
 	ROM_netdev_resid = 0,
 	ROM_netdev_init = 0;
 
-static TCHAR *getdevname (void)
+static const TCHAR *getdevname (void)
 {
 	return _T("uaenet.device");
 }
@@ -799,11 +805,12 @@ static int handleread (TrapContext *ctx, struct priv_s2devstruct *pdev, uaecptr 
 	return 1;
 }
 
-void uaenet_gotdata (struct s2devstruct *dev, const uae_u8 *d, int len)
+static void uaenet_gotdata (void *devv, const uae_u8 *d, int len)
 {
 	uae_u16 type;
 	struct mcast *mc;
 	struct s2packet *s2p;
+	struct s2devstruct *dev = (struct s2devstruct*)devv;
 
 	if (!dev->online)
 		return;
@@ -886,10 +893,11 @@ static struct s2packet *createwritepacket (TrapContext *ctx, uaecptr request)
 	return s2p;
 }
 
-int uaenet_getdata (struct s2devstruct *dev, uae_u8 *d, int *len)
+static int uaenet_getdata (void *devv, uae_u8 *d, int *len)
 {
 	int gotit;
 	struct asyncreq *ar;
+	struct s2devstruct *dev = (struct s2devstruct*)devv;
 
 	uae_sem_wait (&async_sem);
 	ar = dev->ar;
@@ -926,7 +934,7 @@ int uaenet_getdata (struct s2devstruct *dev, uae_u8 *d, int *len)
 	return gotit;
 }
 
-void checkevents (struct s2devstruct *dev, int mask, int sem)
+static void checkevents (struct s2devstruct *dev, int mask, int sem)
 {
 	struct asyncreq *ar;
 
@@ -1361,8 +1369,9 @@ static void *dev_thread (void *devs)
 			uae_ReplyMsg (request);
 			rem_async_packet (dev, request);
 		} else {
+			struct priv_s2devstruct *pdev = getps2devstruct (request);
 			add_async_request (dev, request);
-			ethernet_trigger (dev->sysdata);
+			ethernet_trigger (pdev->td, dev->sysdata);
 		}
 		uae_sem_post (&change_sem);
 	}
@@ -1568,6 +1577,11 @@ static void dev_reset (void)
 
 	write_log (_T("%s reset\n"), getdevname());
 	for (i = 0; i < MAX_TOTAL_NET_DEVICES; i++) {
+		if (td[i] && td[i]->active) {
+			write_log(_T("- %d: '%s'\n"), i, td[i]->name);
+		}
+	}
+	for (i = 0; i < MAX_TOTAL_NET_DEVICES; i++) {
 		dev = &devst[i];
 		if (dev->opencnt) {
 			struct asyncreq *ar = dev->ar;
@@ -1736,3 +1750,5 @@ void netdev_reset (void)
 		return;
 	dev_reset ();
 }
+
+#endif /* SANA2 */

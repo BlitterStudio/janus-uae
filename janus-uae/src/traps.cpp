@@ -13,6 +13,13 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
+#ifdef __AROS__
+/* why is this necessary? is defined in sysconfig.h !? */
+#if (__WORDSIZE == 64)
+#define SIZEOF_VOID_P 8
+#endif
+#endif
+
 #include "options.h"
 #include "memory.h"
 #include "custom.h"

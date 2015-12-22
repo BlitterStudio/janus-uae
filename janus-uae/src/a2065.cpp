@@ -10,13 +10,14 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
+#ifdef A2065
+
 #include "options.h"
 #include "memory.h"
 #include "custom.h"
 #include "newcpu.h"
 #include "a2065.h"
 #include "ethernet.h"
-
 #include "crc32.h"
 #include "savestate.h"
 #include "autoconf.h"
@@ -56,8 +57,6 @@ static int tdr_offset, rdr_offset;
 static int dbyteswap, prom, fakeprom;
 static uae_u8 fakemac[6], realmac[6];
 static uae_u8 broadcast[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
-
-void rethink_a2065 (void);
 
 #define CSR0_ERR 0x8000
 #define CSR0_BABL 0x4000
@@ -114,6 +113,8 @@ void rethink_a2065 (void);
 #define RX_STP 0x0200
 #define RX_ENP 0x0100
 
+DECLARE_MEMORY_FUNCTIONS(a2065);
+
 static uae_u16 gword2 (uae_u8 *p)
 {
 	return (p[0] << 8) | p[1];
@@ -164,7 +165,7 @@ static void dumppacket (const TCHAR *n, uae_u8 *packet, int len)
 		_stprintf (buf + i * 3, _T(".%02X"), packet[i]);
 	}
 	write_log (_T("%s %d: "), n, len);
-	write_log (buf);
+	write_log (_T("%s"), buf);
 	write_log (_T("\n\n"));
 }
 #endif
@@ -265,7 +266,7 @@ static int mcfilter (const uae_u8 *data)
 	return 1; // just allow everything
 }
 
-static void gotfunc (struct s2devstruct *dev, const uae_u8 *databuf, int len)
+static void gotfunc (void *devv, const uae_u8 *databuf, int len)
 {
 	int i;
 	int size, insize, first;
@@ -275,6 +276,7 @@ static void gotfunc (struct s2devstruct *dev, const uae_u8 *databuf, int len)
 	uae_u32 crc32;
 	uae_u8 tmp[MAX_PACKET_SIZE], *data;
 	const uae_u8 *dstmac, *srcmac;
+	struct s2devstruct *dev = (struct s2devstruct*)devv;
 
 	if (log_a2065 > 1 && log_receive) {
 		dstmac = databuf;
@@ -423,8 +425,10 @@ static void gotfunc (struct s2devstruct *dev, const uae_u8 *databuf, int len)
 	rethink_a2065 ();
 }
 
-static int getfunc (struct s2devstruct *dev, uae_u8 *d, int *len)
+static int getfunc (void *devv, uae_u8 *d, int *len)
 {
+	struct s2devstruct *dev = (struct s2devstruct*)devv;
+
 	if (transmitlen <= 0)
 		return 0;
 	if (transmitlen > *len) {
@@ -524,7 +528,7 @@ static void do_transmit (void)
 					(d[12] << 8) | d[13], outsize);
 			}
 		}
-		ethernet_trigger (sysdata);
+		ethernet_trigger (td, sysdata);
 	}
 	csr[0] |= CSR0_TINT;
 	rethink_a2065 ();
@@ -553,14 +557,21 @@ void a2065_hsync_handler (void)
 
 void rethink_a2065 (void)
 {
+	bool was = (uae_int_requested & 4) != 0;
 	uae_int_requested &= ~4;
 	if (!configured)
 		return;
 	csr[0] &= ~CSR0_INTR;
 	if (csr[0] & (CSR0_BABL | CSR0_MISS | CSR0_MERR | CSR0_RINT | CSR0_TINT | CSR0_IDON))
 		csr[0] |= CSR0_INTR;
-	if ((csr[0] & (CSR0_INTR | CSR0_INEA)) == (CSR0_INTR | CSR0_INEA))
+	if ((csr[0] & (CSR0_INTR | CSR0_INEA)) == (CSR0_INTR | CSR0_INEA)) {
 		uae_int_requested |= 4;
+		if (!was && log_a2065 > 2)
+			write_log(_T("A2065 +IRQ\n"));
+	}
+	if (log_a2065 && was && !(uae_int_requested & 4)) {
+		write_log(_T("A2065 -IRQ\n"));
+	}
 }
 
 static void chip_init (void)
@@ -729,26 +740,6 @@ static void chip_wput (uaecptr addr, uae_u16 v)
 }
 
 
-static uae_u32 a2065_lget (uaecptr) REGPARAM;
-static uae_u32 a2065_wget (uaecptr) REGPARAM;
-static uae_u32 a2065_bget (uaecptr) REGPARAM;
-static void a2065_lput (uaecptr, uae_u32) REGPARAM;
-static void a2065_wput (uaecptr, uae_u32) REGPARAM;
-static void a2065_bput (uaecptr, uae_u32) REGPARAM;
-#if (0)
-static int gfxmem_check (uaecptr addr, uae_u32 size) REGPARAM;
-static uae_u8 *gfxmem_xlate (uaecptr addr) REGPARAM;
-#endif
-static uae_u32 a2065_lgeti (uaecptr) REGPARAM;
-static uae_u32 a2065_wgeti (uaecptr) REGPARAM;
-
-static addrbank a2065_bank = {
-	a2065_lget, a2065_wget, a2065_bget,
-	a2065_lput, a2065_wput, a2065_bput,
-	default_xlate, default_check, NULL, _T("A2065 Z2 Ethernet"),
-	a2065_lgeti, a2065_wgeti, ABFLAG_IO
-};
-
 static uae_u32 a2065_bget2 (uaecptr addr)
 {
 	uae_u32 v = 0;
@@ -769,9 +760,6 @@ static void a2065_bput2 (uaecptr addr, uae_u32 v)
 static uae_u32 REGPARAM2 a2065_wget (uaecptr addr)
 {
 	uae_u32 v;
-#ifdef JIT
-	special_mem |= S_READ;
-#endif
 	addr &= 65535;
 	if (addr == CHIP_OFFSET || addr == CHIP_OFFSET + 2) {
 		v = chip_wget (addr);
@@ -792,9 +780,6 @@ static uae_u32 REGPARAM2 a2065_wget (uaecptr addr)
 static uae_u32 REGPARAM2 a2065_lget (uaecptr addr)
 {
 	uae_u32 v;
-#ifdef JIT
-	special_mem |= S_READ;
-#endif
 	addr &= 65535;
 	v = a2065_wget (addr) << 16;
 	v |= a2065_wget (addr + 2);
@@ -804,9 +789,6 @@ static uae_u32 REGPARAM2 a2065_lget (uaecptr addr)
 static uae_u32 REGPARAM2 a2065_bget (uaecptr addr)
 {
 	uae_u32 v;
-#ifdef JIT
-	special_mem |= S_READ;
-#endif
 	addr &= 65535;
 	if (addr < 0x40) {
 		v = config[addr];
@@ -822,9 +804,6 @@ static uae_u32 REGPARAM2 a2065_bget (uaecptr addr)
 
 static void REGPARAM2 a2065_wput (uaecptr addr, uae_u32 w)
 {
-#ifdef JIT
-	special_mem |= S_WRITE;
-#endif
 	addr &= 65535;
 	if (addr == CHIP_OFFSET || addr == CHIP_OFFSET + 2) {
 		chip_wput (addr, w);
@@ -843,32 +822,45 @@ static void REGPARAM2 a2065_wput (uaecptr addr, uae_u32 w)
 
 static void REGPARAM2 a2065_lput (uaecptr addr, uae_u32 l)
 {
-#ifdef JIT
-	special_mem |= S_WRITE;
-#endif
 	addr &= 65535;
 	a2065_wput (addr, l >> 16);
 	a2065_wput (addr + 2, l);
 }
 
+uae_u8 *REGPARAM2 a2065_xlate(uaecptr addr)
+{
+	if ((addr & 65535) >= RAM_OFFSET)
+		return &boardram[addr & RAM_MASK];
+	return default_xlate(addr);
+}
+
+int REGPARAM2 a2065_check(uaecptr a, uae_u32 b)
+{
+	a &= 65535;
+	return a >= RAM_OFFSET && a + b < 65536;
+}
+
+static addrbank a2065_bank = {
+	a2065_lget, a2065_wget, a2065_bget,
+	a2065_lput, a2065_wput, a2065_bput,
+	a2065_xlate, a2065_check, NULL, NULL, _T("A2065 Z2 Ethernet"),
+	a2065_lgeti, a2065_wgeti,
+	ABFLAG_IO, S_READ, S_WRITE
+};
+
 static void REGPARAM2 a2065_bput (uaecptr addr, uae_u32 b)
 {
-#ifdef JIT
-	special_mem |= S_WRITE;
-#endif
 	b &= 0xff;
 	addr &= 65535;
 	if (addr == 0x48 && !configured) {
-		map_banks (&a2065_bank, b, 0x10000 >> 16, 0x10000);
-		write_log (_T("A2065 Z2 autoconfigured at %02X0000\n"), b);
+		map_banks_z2 (&a2065_bank, b, 0x10000 >> 16);
 		configured = b;
-		expamem_next ();
+		expamem_next(&a2065_bank, NULL);
 		return;
 	}
 	if (addr == 0x4c && !configured) {
-		write_log (_T("A2065 DMAC AUTOCONFIG SHUT-UP!\n"));
 		configured = 0xff;
-		expamem_next ();
+		expamem_shutup(&a2065_bank);
 		return;
 	}
 	if (!configured)
@@ -881,24 +873,18 @@ static void REGPARAM2 a2065_bput (uaecptr addr, uae_u32 b)
 static uae_u32 REGPARAM2 a2065_wgeti (uaecptr addr)
 {
 	uae_u32 v = 0xffff;
-#ifdef JIT
-	special_mem |= S_READ;
-#endif
 	addr &= 65535;
 	return v;
 }
 static uae_u32 REGPARAM2 a2065_lgeti (uaecptr addr)
 {
 	uae_u32 v = 0xffff;
-#ifdef JIT
-	special_mem |= S_READ;
-#endif
 	addr &= 65535;
 	v = (a2065_wgeti (addr) << 16) | a2065_wgeti (addr + 2);
 	return v;
 }
 
-static void a2065_config (void)
+static addrbank *a2065_config (void)
 {
 	memset (config, 0xff, sizeof config);
 	ew (0x00, 0xc0 | 0x01);
@@ -911,6 +897,11 @@ static void a2065_config (void)
 	td = NULL;
 	if (ethernet_enumerate (&td, currprefs.a2065name)) {
 		memcpy (realmac, td->mac, sizeof realmac);
+		if (!td->mac[0] && !td->mac[1] && !td->mac[2]) {
+			realmac[0] = 0x00;
+			realmac[1] = 0x80;
+			realmac[2] = 0x10;
+		}
 		write_log (_T("A2065: '%s' %02X:%02X:%02X:%02X:%02X:%02X\n"),
 			td->name, td->mac[0], td->mac[1], td->mac[2], td->mac[3], td->mac[4], td->mac[5]);
 	} else {
@@ -938,11 +929,12 @@ static void a2065_config (void)
 
 	if (configured) {
 		if (configured != 0xff)
-			map_banks (&a2065_bank, configured, 0x10000 >> 16, 0x10000);
+			map_banks_z2 (&a2065_bank, configured, 0x10000 >> 16);
 	} else {
 		/* KS autoconfig handles the rest */
-		map_banks (&a2065_bank, 0xe80000 >> 16, 0x10000 >> 16, 0x10000);
+		return &a2065_bank;
 	}
+	return NULL;
 }
 
 uae_u8 *save_a2065 (int *len, uae_u8 *dstptr)
@@ -977,8 +969,10 @@ void restore_a2065_finish (void)
 		a2065_config ();
 }
 
-void a2065_init (void)
+addrbank *a2065_init (int devnum)
 {
 	configured = 0;
-	a2065_config ();
+	return a2065_config ();
 }
+
+#endif /* A2065 */

@@ -63,6 +63,9 @@
 #include "filesys.h"
 #include "inputrecord.h"
 #include "disk.h"
+#include "threaddep/thread.h"
+#include "a2091.h"
+#include "devices.h"
 
 int savestate_state = 0;
 static int savestate_first_capture;
@@ -254,7 +257,6 @@ TCHAR *restore_path_func (uae_u8 **dstp, int type)
 {
 	TCHAR *newpath;
 	TCHAR *s;
-	TCHAR *out = NULL;
 	TCHAR tmp[MAX_DPATH], tmp2[MAX_DPATH];
 
 	s = restore_string_func (dstp);
@@ -299,13 +301,13 @@ TCHAR *restore_path_func (uae_u8 **dstp, int type)
 
 /* read and write IFF-style hunks */
 
-static void save_chunk (struct zfile *f, uae_u8 *chunk, size_t len, TCHAR *name, int compress)
+static void save_chunk (struct zfile *f, uae_u8 *chunk, unsigned int len, const TCHAR *name, int compress)
 {
 	uae_u8 tmp[8], *dst;
 	uae_u8 zero[4]= { 0, 0, 0, 0 };
 	uae_u32 flags;
-	size_t pos;
-	size_t chunklen, len2;
+	unsigned int pos;
+	unsigned int chunklen, len2;
 	char *s;
 
 	if (!chunk)
@@ -362,10 +364,10 @@ static void save_chunk (struct zfile *f, uae_u8 *chunk, size_t len, TCHAR *name,
 	if (len2)
 		zfile_fwrite (zero, 1, len2, f);
 
-	write_log (_T("Chunk '%s' chunk size %d (%d)\n"), name, chunklen, len);
+	write_log (_T("Chunk '%s' chunk size %u (%u)\n"), name, chunklen, len);
 }
 
-static uae_u8 *restore_chunk (struct zfile *f, TCHAR *name, size_t *len, size_t *totallen, size_t *filepos)
+static uae_u8 *restore_chunk (struct zfile *f, TCHAR *name, unsigned int *len, unsigned int *totallen, size_t *filepos)
 {
 	uae_u8 tmp[6], dummy[4], *mem, *src;
 	uae_u32 flags;
@@ -494,7 +496,7 @@ void restore_state (const TCHAR *filename)
 	struct zfile *f;
 	uae_u8 *chunk,*end;
 	TCHAR name[5];
-	size_t len, totallen;
+	unsigned int len, totallen;
 	size_t filepos, filesize;
 	int z3num;
 
@@ -518,19 +520,12 @@ void restore_state (const TCHAR *filename)
 	savestate_file = f;
 	restore_header (chunk);
 	xfree (chunk);
-	restore_cia_start ();
-	changed_prefs.bogomem_size = 0;
-	changed_prefs.chipmem_size = 0;
-	changed_prefs.fastmem_size = 0;
-	changed_prefs.z3fastmem_size = 0;
-	changed_prefs.z3fastmem2_size = 0;
-	changed_prefs.mbresmem_low_size = 0;
-	changed_prefs.mbresmem_high_size = 0;
+	devices_restore_start();
 	z3num = 0;
 	for (;;) {
 		name[0] = 0;
 		chunk = end = restore_chunk (f, name, &len, &totallen, &filepos);
-		write_log (_T("Chunk '%s' size %d (%d)\n"), name, len, totallen);
+		write_log (_T("Chunk '%s' size %u (%u)\n"), name, len, totallen);
 		if (!_tcscmp (name, _T("END "))) {
 #ifdef _DEBUG
 			if (filesize > filepos + 8)
@@ -552,7 +547,10 @@ void restore_state (const TCHAR *filename)
 			continue;
 #ifdef AUTOCONFIG
 		} else if (!_tcscmp (name, _T("FRAM"))) {
-			restore_fram (totallen, filepos);
+			restore_fram (totallen, filepos, 0);
+			continue;
+		} else if (!_tcscmp (name, _T("FRA2"))) {
+			restore_fram (totallen, filepos, 1);
 			continue;
 		} else if (!_tcscmp (name, _T("ZRAM"))) {
 			restore_zram (totallen, filepos, z3num++);
@@ -676,19 +674,31 @@ void restore_state (const TCHAR *filename)
 #ifdef CDTV
 		else if (!_tcscmp (name, _T("CDTV")))
 			end = restore_cdtv (chunk);
+#if 0
 		else if (!_tcscmp (name, _T("DMAC")))
 			end = restore_cdtv_dmac (chunk);
 #endif
+#endif
+#if 0
 		else if (!_tcscmp (name, _T("DMC2")))
-			end = restore_scsi_dmac (chunk);
-		else if (!_tcscmp (name, _T("SCSI")))
-			end = restore_scsi_device (chunk);
+			end = restore_scsi_dmac (WDTYPE_A3000, chunk);
+		else if (!_tcscmp (name, _T("DMC3")))
+			end = restore_scsi_dmac (WDTYPE_A2091, chunk);
+		else if (!_tcscmp (name, _T("DMC3")))
+			end = restore_scsi_dmac (WDTYPE_A2091_2, chunk);
+		else if (!_tcscmp (name, _T("SCS2")))
+			end = restore_scsi_device (WDTYPE_A3000, chunk);
+		else if (!_tcscmp (name, _T("SCS3")))
+			end = restore_scsi_device (WDTYPE_A2091, chunk);
+		else if (!_tcscmp (name, _T("SCS4")))
+			end = restore_scsi_device (WDTYPE_A2091_2, chunk);
+#endif
 		else if (!_tcscmp (name, _T("SCSD")))
 			end = restore_scsidev (chunk);
 		else if (!_tcscmp (name, _T("GAYL")))
 			end = restore_gayle (chunk);
 		else if (!_tcscmp (name, _T("IDE ")))
-			end = restore_ide (chunk);
+			end = restore_gayle_ide (chunk);
 		else if (!_tcsncmp (name, _T("CDU"), 3))
 			end = restore_cd (name[3] - '0', chunk);
 #ifdef A2065
@@ -710,7 +720,7 @@ void restore_state (const TCHAR *filename)
 			write_log (_T("Chunk '%s', size %d bytes was not accepted!\n"),
 			name, len);
 		else if (totallen != end - chunk)
-			write_log (_T("Chunk '%s' total size %d bytes but read %d bytes!\n"),
+			write_log (_T("Chunk '%s' total size %d bytes but read %ld bytes!\n"),
 			name, totallen, end - chunk);
 		xfree (chunk);
 	}
@@ -749,8 +759,8 @@ void savestate_restore_finish (void)
 	restore_cia_finish ();
 	restore_debug_memwatch_finish ();
 	savestate_state = 0;
-	init_hz_full ();
-	audio_activate ();
+	init_hz_normal();
+	audio_activate();
 }
 
 /* 1=compressed,2=not compressed,3=ram dump,4=audio dump */
@@ -788,8 +798,10 @@ static void save_rams (struct zfile *f, int comp)
 	dst = save_a3000hram (&len);
 	save_chunk (f, dst, len, _T("A3K2"), comp);
 #ifdef AUTOCONFIG
-	dst = save_fram (&len);
+	dst = save_fram (&len, 0);
 	save_chunk (f, dst, len, _T("FRAM"), comp);
+	dst = save_fram (&len, 1);
+	save_chunk (f, dst, len, _T("FRA2"), comp);
 	dst = save_zram (&len, 0);
 	save_chunk (f, dst, len, _T("ZRAM"), comp);
 	dst = save_zram (&len, 1);
@@ -965,18 +977,32 @@ static int save_state_internal (struct zfile *f, const TCHAR *description, int c
 	dst = save_cdtv (&len, NULL);
 	save_chunk (f, dst, len, _T("CDTV"), 0);
 	xfree (dst);
+#if 0
 	dst = save_cdtv_dmac (&len, NULL);
 	save_chunk (f, dst, len, _T("DMAC"), 0);
 	xfree (dst);
 #endif
-	dst = save_scsi_dmac (&len, NULL);
+#endif
+#if 0
+	dst = save_scsi_dmac (WDTYPE_A3000, &len, NULL);
 	save_chunk (f, dst, len, _T("DMC2"), 0);
 	xfree (dst);
 	for (i = 0; i < 8; i++) {
-		dst = save_scsi_device (i, &len, NULL);
-		save_chunk (f, dst, len, _T("SCSI"), 0);
+		dst = save_scsi_device (WDTYPE_A3000, i, &len, NULL);
+		save_chunk (f, dst, len, _T("SCS2"), 0);
 		xfree (dst);
 	}
+	for (int ii = 0; ii < 2; ii++) {
+		dst = save_scsi_dmac (ii == 0 ? WDTYPE_A2091 : WDTYPE_A2091_2, &len, NULL);
+		save_chunk (f, dst, len, ii == 0 ? _T("DMC3") : _T("DMC4"), 0);
+		xfree (dst);
+		for (i = 0; i < 8; i++) {
+			dst = save_scsi_device (ii == 0 ? WDTYPE_A2091 : WDTYPE_A2091_2, i, &len, NULL);
+			save_chunk (f, dst, len, ii == 0 ? _T("SCS3") : _T("SCS4"), 0);
+			xfree (dst);
+		}
+	}
+#endif
 	for (i = 0; i < MAX_TOTAL_SCSI_DEVICES; i++) {
 		dst = save_scsidev (i, &len, NULL);
 		save_chunk (f, dst, len, _T("SCSD"), 0);
@@ -1007,7 +1033,7 @@ static int save_state_internal (struct zfile *f, const TCHAR *description, int c
 		xfree(dst);
 	}
 	for (i = 0; i < 4; i++) {
-		dst = save_ide (i, &len, NULL);
+		dst = save_gayle_ide (i, &len, NULL);
 		if (dst) {
 			save_chunk (f, dst, len, _T("IDE "), 0);
 			xfree (dst);
@@ -1171,7 +1197,7 @@ int savestate_dorewind (int pos)
 		pos = replaycounter - 1;
 	if (canrewind (pos)) {
 		savestate_state = STATE_DOREWIND;
-		write_log (_T("dorewind %d (%010d/%03d) -> %d\n"), replaycounter - 1, hsync_counter, vsync_counter, pos);
+		write_log (_T("dorewind %d (%010ld/%03ld) -> %d\n"), replaycounter - 1, hsync_counter, vsync_counter, pos);
 		return 1;
 	}
 	return 0;
@@ -1274,7 +1300,7 @@ void savestate_rewind (void)
 	p += len;
 #ifdef AUTOCONFIG
 	len = restore_u32_func (&p);
-	memcpy (save_fram (&dummy), p, currprefs.fastmem_size > len ? len : currprefs.fastmem_size);
+	memcpy (save_fram (&dummy, 0), p, currprefs.fastmem_size > len ? len : currprefs.fastmem_size);
 	p += len;
 	len = restore_u32_func (&p);
 	memcpy (save_zram (&dummy, 0), p, currprefs.z3fastmem_size > len ? len : currprefs.z3fastmem_size);
@@ -1296,13 +1322,17 @@ void savestate_rewind (void)
 	if (restore_u32_func (&p))
 		p = restore_cdtv_dmac (p);
 #endif
+#if 0
 	if (restore_u32_func (&p))
-		p = restore_scsi_dmac (p);
+		p = restore_scsi_dmac (WDTYPE_A2091, p);
+	if (restore_u32_func (&p))
+		p = restore_scsi_dmac (WDTYPE_A3000, p);
+#endif
 	if (restore_u32_func (&p))
 		p = restore_gayle (p);
 	for (i = 0; i < 4; i++) {
 		if (restore_u32_func (&p))
-			p = restore_ide (p);
+			p = restore_gayle_ide (p);
 	}
 	p += 4;
 	if (p != p2) {
@@ -1311,7 +1341,7 @@ void savestate_rewind (void)
 		return;
 	}
 	inprec_setposition (st->inprecoffset, pos);
-	write_log (_T("state %d restored.  (%010d/%03d)\n"), pos, hsync_counter, vsync_counter);
+	write_log (_T("state %d restored.  (%010ld/%03ld)\n"), pos, hsync_counter, vsync_counter);
 	if (rewind) {
 		replaycounter--;
 		if (replaycounter < 0)
@@ -1569,7 +1599,7 @@ retry2:
 	tlen += len + 4;
 	p += len;
 #ifdef AUTOCONFIG
-	dst = save_fram (&len);
+	dst = save_fram (&len, 0);
 	if (bufcheck (st, p, len))
 		goto retry;
 	save_u32_func (&p, len);
@@ -1640,16 +1670,28 @@ retry2:
 		p += len;
 	}
 #endif
+#if 0
 	if (bufcheck (st, p, 0))
 		goto retry;
 	p3 = p;
 	save_u32_func (&p, 0);
 	tlen += 4;
-	if (save_scsi_dmac (&len, p)) {
+	if (save_scsi_dmac (WDTYPE_A2091, &len, p)) {
 		save_u32_func (&p3, 1);
 		tlen += len;
 		p += len;
 	}
+	if (bufcheck (st, p, 0))
+		goto retry;
+	p3 = p;
+	save_u32_func (&p, 0);
+	tlen += 4;
+	if (save_scsi_dmac (WDTYPE_A3000, &len, p)) {
+		save_u32_func (&p3, 1);
+		tlen += len;
+		p += len;
+	}
+#endif
 	if (bufcheck (st, p, 0))
 		goto retry;
 	p3 = p;
@@ -1666,7 +1708,7 @@ retry2:
 		p3 = p;
 		save_u32_func (&p, 0);
 		tlen += 4;
-		if (save_ide (i, &len, p)) {
+		if (save_gayle_ide (i, &len, p)) {
 			save_u32_func (&p3, 1);
 			tlen += len;
 			p += len;
@@ -1686,7 +1728,7 @@ retry2:
 			staterecords_first -= staterecords_max;
 	}
 
-	write_log (_T("state capture %d (%010d/%03d,%d/%d) (%d bytes, alloc %d)\n"),
+	write_log (_T("state capture %d (%010ld/%03ld,%ld/%d) (%ld bytes, alloc %d)\n"),
 		replaycounter, hsync_counter, vsync_counter,
 		hsync_counter % current_maxvpos (), current_maxvpos (),
 		st->end - st->data, statefile_alloc);
