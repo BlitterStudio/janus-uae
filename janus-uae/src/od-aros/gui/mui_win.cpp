@@ -20,7 +20,7 @@
 #include <mui/Urltext_mcc.h>
 #endif
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -95,9 +95,15 @@ LRESULT SendMessage____untested____(int item, UINT Msg, WPARAM wParam, LPARAM lP
   return FALSE;
 }
 
-BOOL SetDlgItemText(Element *elem, int item, TCHAR *lpString) {
+BOOL SetDlgItemText(Element *elem, int item, const TCHAR *lpString) {
   Object *obj;
   LONG i;
+  TCHAR empty[1];
+
+  if(!lpString) {
+    empty[0]=(char) 0;
+    lpString=empty;
+  }
 
   DebOut("elem: %lx\n", elem);
   DebOut("item: %d\n", item);
@@ -481,6 +487,12 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
   return TRUE;
 }
 
+/* WARNING: not same API call as in Windows */
+LRESULT SendMessage(HWND hWnd, DWORD id, UINT Msg, WPARAM wParam, LPARAM lParam) {
+
+  return (LRESULT) SendDlgItemMessage((struct Element *)hWnd, (int) id, Msg, wParam, lParam);
+}
+
 UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount) {
   int i;
   UINT ret;
@@ -792,6 +804,12 @@ BOOL SetWindowText(HWND hWnd, TCHAR *lpString) {
   SetAttrs(win, MUIA_Window_Title, lpString, TAG_DONE);
 }
 
+/* WARNING: not same API call as in Windows */
+BOOL SetWindowText(HWND hWnd, DWORD id, TCHAR *lpString) {
+
+  return SetWindowText(hWnd, lpString);
+}
+
 int GetWindowText(HWND   hWnd, LPTSTR lpString, int nMaxCount) {
   DebOut("hWnd: %lx\n", hWnd);
 
@@ -808,10 +826,19 @@ int GetWindowText(HWND   hWnd, LPTSTR lpString, int nMaxCount) {
 
 }
 
+
+/* WARNING: not same API call as in Windows */
+int GetWindowText(HWND   hWnd, DWORD id, LPTSTR lpString, int nMaxCount) {
+  return GetWindowText(hWnd, lpString, nMaxCount);
+}
+
 BOOL ShowWindow(HWND hWnd, int nCmdShow) {
   TODO();
 }; 
 
+BOOL ShowWindow(struct Window *win, int nCmdShow) {
+  TODO();
+}
 /* WARNING: not same API call as in Windows */
 BOOL ShowWindow(HWND hWnd, DWORD id, int nCmdShow) {
   int i;

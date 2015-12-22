@@ -118,16 +118,26 @@ INT_PTR DialogBoxIndirect(HINSTANCE hInstance, LPCDLGTEMPLATE lpTemplate, HWND h
   return return_value;
 }
 
-struct newresource *scaleresource (struct newresource *res, HWND parent, int resize, DWORD exstyle) {
+struct newresource *scaleresource (struct newresource *res, HWND parent, int resize, int fullscreen, DWORD exstyle) {
 
   DebOut("res: %lx\n", res);
 
-  res->resource=(LPCDLGTEMPLATEW) res->tmpl;
+  struct newresource *ns;
+  ns = xcalloc (struct newresource, 1);
+  ns->inst = res->inst;
+  ns->size = res->size;
+  ns->tmpl = res->tmpl;
+  ns->resource = (LPCDLGTEMPLATEW)xmalloc (uae_u8, ns->size + 32);
+  memcpy ((void*)ns->resource, res->resource, ns->size);
 
-  return res;
+  return ns;
 }
 
 void freescaleresource (struct newresource *ns) {
-  TODO();
+
+  DebOut("ns: %lx\n", ns);
+
+  xfree ((void*)ns->resource);
+  xfree (ns);
 }
 

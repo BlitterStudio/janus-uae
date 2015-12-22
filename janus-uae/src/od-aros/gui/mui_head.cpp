@@ -8,7 +8,7 @@
 #include <clib/alib_protos.h>
 #include <utility/hooks.h>
 
-//#define JUAE_DEBUG
+#define JUAE_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -59,6 +59,7 @@ Element IDD_FLOPPY[] = {
 #define IDS_CHIPSET2            "Adv. Chipset"
 #define IDS_GAMEPORTS           "Game ports"
 #define IDS_EXPANSION           "Expansions"
+#define IDS_EXPANSION2          "RTG board"
 #define IDS_CDROM               "CD-ROM"
 #define IDS_SOUND               "Sound"
 
@@ -77,6 +78,7 @@ static const char *listelements[] = {
   IDS_FLOPPY,
   IDS_HARDDISK,
   IDS_EXPANSION,
+  IDS_EXPANSION2,
   IDS_LOADSAVE2,
   IDS_DISPLAY,
   IDS_SOUND,
@@ -91,7 +93,7 @@ static const char *listelements[] = {
   NULL
 };
 
-static Object *page_obj[39];
+static Object *page_obj[50];
 
 extern int currentpage;
 
@@ -213,10 +215,11 @@ int *MemoryDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *HarddiskDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
-//#define SHOW_INCLOMPLETE_PAGES 
+#define SHOW_INCLOMPLETE_PAGES 
 Object* FixedObj(IPTR src)
 {
 
+  DebOut("==========================================================================\n");
 #ifdef SHOW_INCLOMPLETE_PAGES
     struct TagItem fo_tags[] =
     {
@@ -232,6 +235,8 @@ Object* FixedObj(IPTR src)
 
 Object* FixedProcObj(IPTR src, IPTR proc)
 {
+
+  DebOut("==========================================================================\n");
     struct TagItem fo_tags[] =
     {
         { MA_src, src}, 
@@ -305,19 +310,20 @@ Object* build_gui(void) {
                                   Child, page_obj[9]=FixedProcObj((IPTR)IDD_MEMORY,     (IPTR) &MemoryDlgProc    ),
                                   Child, page_obj[10]=FixedProcObj((IPTR)IDD_FLOPPY,    (IPTR) &FloppyDlgProc   ),
                                   Child, page_obj[11]=FixedProcObj((IPTR)IDD_HARDDISK,  (IPTR) &HarddiskDlgProc ),
-                                  Child, page_obj[12]=FixedObj((IPTR)IDD_EXPANSION),
+                                  Child, page_obj[12]=FixedObj((IPTR)IDD_EXPANSION2),
+                                  Child, page_obj[13]=FixedObj((IPTR)IDD_EXPANSION),
                                   //Child, FixedObj((IPTR)IDD_LOADSAVE),
                                   Child, TextObject,  MUIA_Text_Contents, "\33c\33bTODO", End,
-                                  Child, page_obj[14]=FixedObj((IPTR)IDD_DISPLAY),
-                                  Child, page_obj[15]=FixedObj((IPTR)IDD_SOUND),
-                                  Child, page_obj[16]=FixedObj((IPTR)IDD_GAMEPORTS),
-                                  Child, page_obj[17]=FixedObj((IPTR)IDD_IOPORTS),
-                                  Child, page_obj[18]=FixedObj((IPTR)IDD_INPUT),
-                                  Child, page_obj[19]=FixedObj((IPTR)IDD_AVIOUTPUT),
-                                  Child, page_obj[20]=FixedObj((IPTR)IDD_FILTER),
-                                  Child, page_obj[21]=FixedObj((IPTR)IDD_DISK),
-                                  Child, page_obj[22]=FixedObj((IPTR)IDD_MISC1),
-                                  Child, page_obj[23]=FixedObj((IPTR)IDD_MISC2),
+                                  Child, page_obj[15]=FixedObj((IPTR)IDD_DISPLAY),
+                                  Child, page_obj[16]=FixedObj((IPTR)IDD_SOUND),
+                                  Child, page_obj[17]=FixedObj((IPTR)IDD_GAMEPORTS),
+                                  Child, page_obj[18]=FixedObj((IPTR)IDD_IOPORTS),
+                                  Child, page_obj[19]=FixedObj((IPTR)IDD_INPUT),
+                                  Child, page_obj[20]=FixedObj((IPTR)IDD_AVIOUTPUT),
+                                  Child, page_obj[21]=FixedObj((IPTR)IDD_FILTER),
+                                  Child, page_obj[22]=FixedObj((IPTR)IDD_DISK),
+                                  Child, page_obj[23]=FixedObj((IPTR)IDD_MISC1),
+                                  Child, page_obj[24]=FixedObj((IPTR)IDD_MISC2),
                                 End,
                               MUIA_Group_Child,
                                 MUI_NewObject(MUIC_Group,
@@ -569,7 +575,7 @@ void aros_hide_gui(void) {
   Signal(FindTask(NULL), SIGBREAKF_CTRL_D);
 }
 
-void aros_gui_exit(void) {
+void gui_exit(void) {
 
   DebOut("entered\n");
 

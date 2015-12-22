@@ -1,3 +1,5 @@
+#include "sysconfig.h"
+#include "sysdeps.h"
 
 #include <exec/types.h>
 #include <libraries/mui.h>
@@ -16,9 +18,6 @@
 #include <mui/NListview_mcc.h>
 #include <mui/NFloattext_mcc.h>
 #include <mui/NBitmap_mcc.h>
-
-#include "sysconfig.h"
-#include "sysdeps.h"
 
 #include "aros.h"
 #include "gui.h"

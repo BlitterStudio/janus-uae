@@ -1,4 +1,4 @@
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #include <exec/types.h>
 #include <libraries/mui.h>
