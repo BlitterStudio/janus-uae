@@ -1,6 +1,0 @@
-libmpeg2arch_la-idct_altivec.lo: idct_altivec.c \
- /usr/include/stdc-predef.h ../include/config.h
-
-/usr/include/stdc-predef.h:
-
-../include/config.h:

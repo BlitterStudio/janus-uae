@@ -1,6 +1,0 @@
-video_out_dx.o: video_out_dx.c /usr/include/stdc-predef.h \
- ../include/config.h
-
-/usr/include/stdc-predef.h:
-
-../include/config.h:

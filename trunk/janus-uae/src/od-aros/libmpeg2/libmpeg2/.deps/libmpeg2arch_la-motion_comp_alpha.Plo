@@ -1,6 +1,0 @@
-libmpeg2arch_la-motion_comp_alpha.lo: motion_comp_alpha.c \
- /usr/include/stdc-predef.h ../include/config.h
-
-/usr/include/stdc-predef.h:
-
-../include/config.h:

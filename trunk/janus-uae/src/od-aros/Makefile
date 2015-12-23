@@ -301,7 +301,9 @@ libmpeg2: libmpeg2/libmpeg2/.libs/libmpeg2.a libmpeg2/libmpeg2/convert/.libs/lib
 
 libmpeg2/libmpeg2/.libs/libmpeg2.a:
 	@echo building mpeg2 libraries ..
-	@cd libmpeg2;make distclean;./configure --host=$(CPU)-aros;make
+	@cd libmpeg2;./configure --host=$(CPU)-aros
+	@cd libmpeg2;make
+
 
 # ============== autogenerate some .c files ====================
 
@@ -333,9 +335,10 @@ string_resource.h: ../od-win32/resources/winuae.rc
 
 # ============== clean ====================
 clean: 
-	rm -f $(COMMON_OBJS) $(EXE)
+	rm -f string_resource.h $(COMMON_OBJS) $(EXE)
 	@cd gui;make clean ABI=$(ABI)
 	@cd SDL_Config;make clean ABI=$(ABI)
+	@cd libmpeg2;make distclean
 
 # ============== build package ====================
 package: clean uae
