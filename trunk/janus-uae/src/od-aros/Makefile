@@ -340,16 +340,24 @@ clean:
 	rm -f ../blit.h ../blitfunc.cpp ../blitfunc.h ../blittable.cpp ../linetoscr.cpp ../jit/compemu.cpp ../cpuemu_0.cpp string_resource.h
 	@cd gui;make clean ABI=$(ABI)
 	@cd SDL_Config;make clean ABI=$(ABI)
-	@cd libmpeg2;make distclean
+	# without configure, there might be no Makefile to call
+	@cd libmpeg2;./configure --host=$(CPU)-aros
+	@cd libmpeg2;make clean
 
 # ============== build package ====================
-package: clean uae
+#package: clean uae
+package: uae
 	@rm -rf  $(RELEASEDIR)/`date +%Y%m%d`
 	@mkdir -p $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`/ABI_$(ABI)
 	@cp $(EXE) $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`/ABI_$(ABI)/janus-uae2
 	@mkdir -p $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/docs
 	@cp docs/* $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/docs/
-	@cd $(RELEASEDIR)/`date +%Y%m%d`;tar cf Janus-UAE2.tar Janus-UAE2;gzip Janus-UAE2.tar
+	@$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2.info
+	@$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/docs.info
+	@$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`.info
+	@$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`/ABI_$(ABI).info
+	@$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/ilbmtoicon --png icons/j-uae.info.src icons/j-uae.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`/ABI_$(ABI)/janus-uae2.info
+	@cd $(RELEASEDIR)/`date +%Y%m%d`;tar cf Janus-UAE2.tar Janus-UAE2 Janus-UAE2.info;gzip Janus-UAE2.tar
 	@echo
 	@echo Package built at  $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/Janus-UAE2.tar.gz
 	@echo
