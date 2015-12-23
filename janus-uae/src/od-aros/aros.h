@@ -36,7 +36,7 @@
   : 12)
 #define __YEAR__ ((__DATE__[7] - '0') * 1000 +  (__DATE__[8] - '0') * 100 + (__DATE__[9] - '0') * 10 + __DATE__[10] - '0')
 
-#define WINUAEBETA "01"
+#define WINUAEBETA "02"
 #define WINUAEDATE MAKEBD(__YEAR__, __MONTH__, __DAY__)
 #define WINUAEEXTRA ""
 #define WINUAEREV ""
