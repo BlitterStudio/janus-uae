@@ -101,7 +101,7 @@ aros: $(AROS_OBJS)
 
 tools:
 	@echo builing tools ..
-	cd png2c;export CC=gcc;make
+	cd png2c;export CC=gcc;make ABI="$(ABI)"
 
 	
 # ============== autogenerate some .cpp files ====================
