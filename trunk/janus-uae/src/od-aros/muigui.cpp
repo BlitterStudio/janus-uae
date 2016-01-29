@@ -7244,7 +7244,7 @@ static void values_to_displaydlg (HWND hDlg)
 				_stprintf (buffer, _T(":%d"), i);
 			SendDlgItemMessage(hDlg, IDC_RATE2BOX, CB_ADDSTRING, 0, (LPARAM)buffer);
 			d = workprefs.chipset_refreshrate;
-			if (abs (d) < 1)
+			if (abs ((int) d) < 1)
 				d = currprefs.ntscmode ? 60.0 : 50.0;
 			if (selectcr && selectcr->index == cr->index)
 				workprefs.cr_selected = i;
