@@ -23,13 +23,7 @@
 */
 
 #ifdef __AROS__
-/* AROS includes define their own "struct Unit" in devices.h and use it in io.h,
-   so avoid including those defines here. Take care, not to call AROS functions with
-   struct Unit parameters in this file!
- */
-#define EXEC_DEVICES_H
-#define EXEC_IO_H
-#define DEVICES_TIMER_H
+/* here Unit defines are ok */
 #include <aros/asmcall.h>
 #include <proto/arossupport.h>
 #include <aros/debug.h>
@@ -46,7 +40,13 @@
 
 #include <proto/dos.h>
 
+/* AROS includes have their own "struct Unit" in devices.h and use it in io.h,
+   so avoid using those defines here. Take care, not to call AROS functions with
+   struct Unit parameters in this file!
+ */
+#define Unit WinUAE_Unit
 #endif
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 
