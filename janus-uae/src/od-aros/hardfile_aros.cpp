@@ -863,7 +863,7 @@ static int hdf_seek (struct hardfiledata *hfd, uae_u64 offset)
 	}
 	if (hfd->handle_valid == HDF_HANDLE_WIN32) {
 #if defined(__AROS__)
-            if ((offset & 0xffffffff00000000) != 0)
+            if ((offset & UVAL64(0xffffffff00000000)) != 0)
             {
                 /* 64bit sek... */
                 DebOut("64bit seek\n");            
