@@ -498,7 +498,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
   }
 
   /* place vertically */
-  DoMethod(obj, MUIM_Set, MUIA_Group_Horiz, FALSE);
+  DoMethod((Object *) obj, MUIM_Set, MUIA_Group_Horiz, FALSE);
 
   src=(struct Element *) s;
 
@@ -879,7 +879,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
      *            otherwise we get recursions!
      */
   
-    DoMethod(obj, MUIM_Set, MUIA_Group_LayoutHook, &data->LayoutHook);
+    DoMethod((Object *) obj, MUIM_Set, MUIA_Group_LayoutHook, &data->LayoutHook);
     i=0;
     while(src[i].exists) {
       DebOut("i: %d (add %lx to %lx)\n", i, src[i].obj, obj);
@@ -888,7 +888,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
     }
 
     mSet(data, obj, (struct opSet *) msg, 1);
-    DoMethod(obj, MUIM_Set, MUIA_Frame, MUIV_Frame_Group);
+    DoMethod((Object *) obj, MUIM_Set, MUIA_Frame, MUIV_Frame_Group);
   }
   return (IPTR)obj;
 }

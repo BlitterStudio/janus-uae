@@ -200,7 +200,11 @@ static BOOL MakePopupWin(Object *obj, struct Data *data) {
 
     DoMethod(_app(data->obj_entry), OM_ADDMEMBER, data->obj_popup_win);
 
+#ifndef UAE_ABI_v0
     data->MyMuiHook_list.h_Entry=(APTR) MUIHook_list;
+#else
+    data->MyMuiHook_list.h_Entry=(HOOKFUNC) MUIHook_list;
+#endif
     data->MyMuiHook_list.h_Data =data;
     DoMethod(data->obj_list, MUIM_Notify,
                   MUIA_List_Active, MUIV_EveryTime, 
@@ -332,7 +336,7 @@ static ULONG mGoInactive (struct IClass *cl, APTR obj, Msg msg) {
 static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
   struct TagItem *tstate, *tag;
 
-  obj = (APTR)DoSuperMethodA(cl, obj, msg);
+  obj = (APTR)DoSuperMethodA(cl, (Object *) obj, msg);
 
   if(!obj) {
     DebOut("ERROR: DoSuperMethodA failed!\n");
@@ -345,16 +349,27 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
 
   SetAttrs(obj, MUIA_Frame, MUIV_Frame_String, MUIA_CycleChain, 1, TAG_DONE);
 
+#ifndef UAE_ABI_v0
   data->MyMuiHook_ack.h_Entry=(APTR) MUIHook_ack;
+#else
+  data->MyMuiHook_ack.h_Entry=(HOOKFUNC) MUIHook_ack;
+#endif
   data->MyMuiHook_ack.h_Data =NULL;
-  DoMethod(obj, MUIM_Notify,
+  DoMethod((Object *)obj, 
+                MUIM_Notify,
                 MUIA_String_Acknowledge, MUIV_EveryTime, 
                 (IPTR) obj, 2,
                 MUIM_CallHook, (IPTR) &data->MyMuiHook_ack);
 
+
+#ifndef UAE_ABI_v0
   data->MyMuiHook_content.h_Entry=(APTR) MUIHook_content;
+#else
+  data->MyMuiHook_content.h_Entry=(HOOKFUNC) MUIHook_content;
+#endif
   data->MyMuiHook_content.h_Data =data;
-  DoMethod(obj, MUIM_Notify,
+  DoMethod((Object *) obj, 
+                MUIM_Notify,
                 MUIA_String_Contents, MUIV_EveryTime, 
                 (IPTR) obj, 2,
                 MUIM_CallHook, (IPTR) &data->MyMuiHook_content);
@@ -376,7 +391,7 @@ static IPTR mSet(struct IClass *cl, APTR obj, struct opSet *msg) {
   DebOut("mSet(%lx,entry %lx,%lx)\n",data,obj,msg);
 
   tstate = msg->ops_AttrList;
-  while ((tag = (struct TagItem *) NextTagItem(&tstate))) {
+  while ((tag = (struct TagItem *) NextTagItem((const TagItem**) &tstate))) {
 
     switch (tag->ti_Tag) {
       case MUIA_List_Active:
@@ -388,7 +403,7 @@ static IPTR mSet(struct IClass *cl, APTR obj, struct opSet *msg) {
         //break;
     }
   }
-  return DoSuperMethodA(cl, obj, (Msg) msg);
+  return DoSuperMethodA(cl, (Object *) obj, (Msg) msg);
 }
 
 static IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg) {

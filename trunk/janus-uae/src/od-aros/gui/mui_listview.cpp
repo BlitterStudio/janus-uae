@@ -376,15 +376,27 @@ int ListView_InsertColumn(int nIDDlgItem, int iCol, const LPLVCOLUMN pcol) {
     h_data->item=i;
 
     display_hook         =(struct Hook *) elem[i].var_data[1];
+#ifdef UAE_ABI_v0
+    display_hook->h_Entry=(HOOKFUNC) display_func;
+#else
     display_hook->h_Entry=(APTR) display_func;
+#endif
     display_hook->h_Data =(APTR) h_data;
 
     construct_hook         =(struct Hook *) elem[i].var_data[2];
+#ifdef UAE_ABI_v0
+    construct_hook->h_Entry=(HOOKFUNC) construct_func;
+#else
     construct_hook->h_Entry=(APTR) construct_func;
+#endif
     construct_hook->h_Data =(APTR) h_data;
 
     destruct_hook         =(struct Hook *) elem[i].var_data[3];
+#ifdef UAE_ABI_v0
+    destruct_hook->h_Entry=(HOOKFUNC) destruct_func;
+#else
     destruct_hook->h_Entry=(APTR) destruct_func;
+#endif
     destruct_hook->h_Data =(APTR) h_data;
 
 
