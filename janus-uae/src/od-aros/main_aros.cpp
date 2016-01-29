@@ -320,6 +320,9 @@ static TCHAR *getdefaultini (void) {
  * This is the equivalent to WinMain2 in win32.cpp (hopefully)
  ************************************************************************/
 void WIN32_HandleRegistryStuff (void);
+void vm_prep(void);
+void vm_free(void);
+
 int graphics_setup (void);
 
 #if 0
@@ -349,6 +352,10 @@ int main (int argc, TCHAR **argv) {
     Permit();
     Permit();
   }
+
+#ifdef UAE_ABI_v0
+  vm_prep();
+#endif
 
   inipath=getdefaultini();
   reginitializeinit(&inipath);
@@ -456,6 +463,10 @@ int main (int argc, TCHAR **argv) {
 	real_main (argc, argv);
 
   regflushfile();
+
+#ifdef UAE_ABI_v0
+  vm_free();
+#endif
 
   /* every call to a log function will re-init logging. So deinit it as late as possible */
   logging_deinit(); 

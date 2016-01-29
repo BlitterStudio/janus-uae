@@ -39,7 +39,9 @@
 #define FILESYS    /* filesys emulation */
 #define UAE_FILESYS_THREADS
 #define AUTOCONFIG /* autoconfig support, fast ram, harddrives etc.. */
-#define JIT
+#ifndef UAE_ABI_v0
+#define JIT /* 64 bit jit at least builds.. */
+#endif
 //#define NATMEM_OFFSET natmem_offset /* j-uae has it not defined */
 #define NATMEM_OFFSET natmem_offset
 //#define CATWEASEL /* Catweasel MK2/3 support */

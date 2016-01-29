@@ -36,6 +36,10 @@ extern bool jit_direct_compatible_memory;
 #define MEMORY_RANGE_MASK (~0)
 #endif
 
+#ifdef UAE_ABI_v0
+#define REGPARAM
+#define REGPARAM3
+#endif
 typedef uae_u32 (REGPARAM3 *mem_get_func)(uaecptr) REGPARAM;
 typedef void (REGPARAM3 *mem_put_func)(uaecptr, uae_u32) REGPARAM;
 typedef uae_u8 *(REGPARAM3 *xlate_func)(uaecptr) REGPARAM;

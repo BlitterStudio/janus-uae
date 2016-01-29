@@ -27,18 +27,19 @@
 # to build for 
 # AROS ABI v0: ABI=v0 (currently not supported)
 # AROS ABI v1: ABI=v1
-ABI        = v1
 
 BITS := $(shell getconf LONG_BIT)
 ifeq ($(BITS),64)
-	# 64 bit
-	CPU      = x86_64
-	# AROS source svn
-	SVN        = $(HOME)/tc/svn
+# 64 bit
+CPU      = x86_64
+# AROS source svn
+SVN        = $(HOME)/tc/svn
+ABI        = v1
 else
-	# 32 bit
-	CPU      = i386
-	SVN        = $(HOME)/svn
+# 32 bit
+CPU      = i386
+SVN        = $(HOME)/svn
+ABI        = v0
 endif
 
 # you have to adjust this of course..
