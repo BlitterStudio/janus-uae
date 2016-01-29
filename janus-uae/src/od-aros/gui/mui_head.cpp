@@ -1,3 +1,6 @@
+#include "sysdeps.h"
+#include "sysconfig.h"
+
 #include <exec/types.h>
 #include <libraries/mui.h>
  
@@ -9,9 +12,6 @@
 #include <utility/hooks.h>
 
 #define JUAE_DEBUG
-#include "sysconfig.h"
-#include "sysdeps.h"
-
 #include "uae.h"
 #include "thread.h"
 #include "aros.h"
