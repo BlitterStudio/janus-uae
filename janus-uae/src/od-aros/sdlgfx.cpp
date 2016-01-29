@@ -34,7 +34,9 @@
 #include <SDL.h>
 #include <SDL_endian.h>
 
-#define SDLGD(x) 
+#include <GL/glut.h>
+
+#define SDLGD(x) x
 
 void inputdevice_release_all_keys (void);
 
@@ -51,36 +53,10 @@ int is_vsync (void);
 uae_u8 *gfx_lock_picasso (bool fullupdate, bool doclear);
 void gfx_unlock_picasso (bool dorender);
 
-#ifdef USE_GL
-#define NO_SDL_GLEXT
-# include <SDL_opengl.h>
-/* These are not defined in the current version of SDL_opengl.h. */
-# ifndef GL_TEXTURE_STORAGE_HINT_APPLE
-#  define GL_TEXTURE_STORAGE_HINT_APPLE 0x85BC
-#  endif
-# ifndef GL_STORAGE_SHARED_APPLE
-#  define GL_STORAGE_SHARED_APPLE 0x85BF
-# endif
+//#define DEBUG_LOG bug
+#define DEBUG_LOG DebOut
 
-#ifdef GL_SHADER
-#ifdef __APPLE__
-  #include <OpenGL/glu.h>
-  #include <OpenGL/glext.h>
-  void setupExtensions(void)
-  { shading_enabled = 1; } // OS X already has these extensions
-#elifdef __X11__
-  #include <GL/glx.h>
-  #include <GL/glxext.h>
-  #define uglGetProcAddress(x) (*glXGetProcAddressARB)((const GLubyte*)(x))
-  #define X11_GL
-#else
-  void setupExtensions(void)
-  { shading_enabled = 0; } // just fail otherwise?
-#endif
-#endif
-
-#define DEBUG_LOG bug
-
+#if 0
 struct gl_buffer_t
 {
     GLuint   texture;
@@ -270,99 +246,6 @@ unsigned int mouse_capture;
 
 extern TCHAR config_filename[256];
 
-#if defined(X11_GL)
-PFNGLCREATEPROGRAMOBJECTARBPROC     glCreateProgramObjectARB = NULL;
-PFNGLDELETEOBJECTARBPROC            glDeleteObjectARB = NULL;
-PFNGLCREATESHADEROBJECTARBPROC      glCreateShaderObjectARB = NULL;
-PFNGLSHADERSOURCEARBPROC            glShaderSourceARB = NULL;
-PFNGLCOMPILESHADERARBPROC           glCompileShaderARB = NULL;
-PFNGLGETOBJECTPARAMETERIVARBPROC    glGetObjectParameterivARB = NULL;
-PFNGLATTACHOBJECTARBPROC            glAttachObjectARB = NULL;
-PFNGLGETINFOLOGARBPROC              glGetInfoLogARB = NULL;
-PFNGLLINKPROGRAMARBPROC             glLinkProgramARB = NULL;
-PFNGLUSEPROGRAMOBJECTARBPROC        glUseProgramObjectARB = NULL;
-PFNGLGETUNIFORMLOCATIONARBPROC      glGetUniformLocationARB = NULL;
-PFNGLUNIFORM1FARBPROC               glUniform1fARB = NULL;
-PFNGLUNIFORM1IARBPROC               glUniform1iARB = NULL;
-
-unsigned int findString(char* in, char* list)
-{
-  int thisLength = strlen(in);
-  while (*list != 0)
-  {
-    int length = strcspn(list," ");
-    
-    if( thisLength == length )
-      if (!strncmp(in,list,length))
-        return 1;
-        
-    list += length + 1;
-  }
-  return 0;
-}
-
-void setupExtensions(void)
-{
-  char* extensionList = (char*)glGetString(GL_EXTENSIONS);
-
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
-
-  if( findString("GL_ARB_shader_objects",extensionList) &&
-      findString("GL_ARB_shading_language_100",extensionList) &&
-      findString("GL_ARB_vertex_shader",extensionList) &&
-      findString("GL_ARB_fragment_shader",extensionList) )
-  {
-    glCreateProgramObjectARB = (PFNGLCREATEPROGRAMOBJECTARBPROC)
-      uglGetProcAddress("glCreateProgramObjectARB");
-    glDeleteObjectARB = (PFNGLDELETEOBJECTARBPROC)
-      uglGetProcAddress("glDeleteObjectARB");
-    glCreateShaderObjectARB = (PFNGLCREATESHADEROBJECTARBPROC)
-     uglGetProcAddress("glCreateShaderObjectARB");
-    glShaderSourceARB = (PFNGLSHADERSOURCEARBPROC)
-      uglGetProcAddress("glShaderSourceARB");
-    glCompileShaderARB = (PFNGLCOMPILESHADERARBPROC)
-      uglGetProcAddress("glCompileShaderARB");
-    glGetObjectParameterivARB = (PFNGLGETOBJECTPARAMETERIVARBPROC)
-      uglGetProcAddress("glGetObjectParameterivARB");
-    glAttachObjectARB = (PFNGLATTACHOBJECTARBPROC)
-      uglGetProcAddress("glAttachObjectARB");
-    glGetInfoLogARB = (PFNGLGETINFOLOGARBPROC)
-      uglGetProcAddress("glGetInfoLogARB");
-    glLinkProgramARB = (PFNGLLINKPROGRAMARBPROC)
-      uglGetProcAddress("glLinkProgramARB");
-    glUseProgramObjectARB = (PFNGLUSEPROGRAMOBJECTARBPROC)
-      uglGetProcAddress("glUseProgramObjectARB");
-    glGetUniformLocationARB = (PFNGLGETUNIFORMLOCATIONARBPROC)
-      uglGetProcAddress("glGetUniformLocationARB");
-    glUniform1fARB = (PFNGLUNIFORM1FARBPROC)
-      uglGetProcAddress("glUniform1fARB");
-    glUniform1iARB = (PFNGLUNIFORM1IARBPROC)
-      uglGetProcAddress("glUniform1iARB");
-
-    if( 0
-     || glActiveTextureARB == NULL
-     || glMultiTexCoord2fARB == NULL
-     || glCreateProgramObjectARB == NULL
-     || glDeleteObjectARB == NULL
-     || glCreateShaderObjectARB == NULL
-     || glShaderSourceARB == NULL
-     || glCompileShaderARB == NULL
-     || glGetObjectParameterivARB == NULL
-     || glAttachObjectARB == NULL
-     || glGetInfoLogARB == NULL
-     || glLinkProgramARB == NULL
-     || glUseProgramObjectARB == NULL
-     || glGetUniformLocationARB == NULL
-     || glUniform1fARB == NULL
-     || glUniform1iARB == NULL
-      )
-      shading_enabled = 1;
-    else shading_enabled = 1;
-  } else
-    shading_enabled = 0;
-}
-#endif /* defined(X11_GL) */
-
 /*
  * What graphics platform are we running on . . .?
  *
@@ -371,6 +254,8 @@ void setupExtensions(void)
  * and to work around any platform-specific quirks . . .
  *
  * On AROS SDL_VideoDriverName seems not to return a reasonable name .. 
+ *
+ * not used at the moment
  */
 int get_sdlgfx_type (void)
 {
@@ -655,225 +540,6 @@ static long find_screen_modes (struct SDL_PixelFormat *vfmt, SDL_Rect *mode_list
     return count;
 }
 
-#ifdef USE_GL
-
-/**
- ** Support routines for using an OpenGL texture as the display buffer.
- **
- ** TODO: Make this independent of the window system and factor it out
- **       to a new module shareable by all graphics drivers.
- **/
-
-struct gl_buffer_t glbuffer;
-static int have_texture_rectangles;
-static int have_apple_client_storage;
-static int have_apple_texture_range;
-
-static int round_up_to_power_of_2 (int value)
-{
-    int result = 1;
-
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
-
-    while (result < value)
-        result *= 2;
-
-    return result;
-}
-
-static void check_gl_extensions (void)
-{
-    static int done = 0;
-
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
-
-    if (!done) {
-        const char *extensions = (const char *) glGetString(GL_EXTENSIONS);
-
-        have_texture_rectangles   = strstr (extensions, "ARB_texture_rectangle") ? 1 : 0;
-        have_apple_client_storage = strstr (extensions, "APPLE_client_storage")  ? 1 : 0;
-        have_apple_texture_range  = strstr (extensions, "APPLE_texture_range")   ? 1 : 0;
-    }
-}
-
-static void init_gl_display (GLsizei width, GLsizei height)
-{
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
-
-    glViewport (0, 0, width, height);
-
-    glColor3f (1.0f, 1.0f, 1.0f);
-    glClearColor (0.0, 0.0, 0.0, 0.0);
-    glShadeModel (GL_FLAT);
-    glDisable (GL_DEPTH_TEST);
-    glDisable (GL_ALPHA_TEST);
-    glDisable (GL_LIGHTING);
-
-    if (have_texture_rectangles)
-        glEnable (GL_TEXTURE_RECTANGLE_ARB);
-    else
-        glEnable (GL_TEXTURE_2D);
-
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity ();
-    glOrtho (0, width, height, 0, -1.0, 1.0);
-    glMatrixMode (GL_MODELVIEW);
-    glLoadIdentity ();
-
-    return;
-}
-
-static void free_gl_buffer (struct gl_buffer_t *buffer)
-{
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
-
-    glBindTexture (buffer->target, 0);
-    glDeleteTextures (1, &buffer->texture);
-
-    SDL_FreeSurface (display);
-    display = 0;
-}
-
-static int alloc_gl_buffer (struct gl_buffer_t *buffer, int width, int height, int want_16bit)
-{
-    GLenum tex_intformat;
-
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
-
-    buffer->width          = width;
-    if (have_texture_rectangles) {
-        buffer->texture_width  = width;
-        buffer->texture_height = height;
-        buffer->target         = GL_TEXTURE_RECTANGLE_ARB;
-    } else {
-        buffer->texture_width  = round_up_to_power_of_2 (width);
-        buffer->texture_height = round_up_to_power_of_2 (height);
-        buffer->target         = GL_TEXTURE_2D;
-    }
-
-    /* TODO: Should allocate buffer after we've successfully created the texture */
-    if (want_16bit) {
-#if defined (__APPLE__)
-        display = SDL_CreateRGBSurface (SDL_SWSURFACE, buffer->texture_width, buffer->texture_height, 16, 0x00007c00, 0x000003e0, 0x0000001f, 0x00000000);
-#else
-        display = SDL_CreateRGBSurface (SDL_SWSURFACE, buffer->texture_width, buffer->texture_height, 16, 0x0000f800, 0x000007e0, 0x0000001f, 0x00000000);
-#endif
-    } else {
-        display = SDL_CreateRGBSurface (SDL_SWSURFACE, buffer->texture_width, buffer->texture_height, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000);
-    }
-
-    if (!display)
-        return 0;
-
-    buffer->pixels = display->pixels;
-    buffer->pitch  = display->pitch;
-
-    glGenTextures   (1, &buffer->texture);
-    glBindTexture   (buffer->target, buffer->texture);
-    if (have_apple_client_storage)
-        glPixelStorei (GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
-    if (have_apple_texture_range)
-        glTexParameteri (buffer->target, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
-
-    glTexParameteri (buffer->target, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameteri (buffer->target, GL_TEXTURE_WRAP_T, GL_CLAMP);
-
-    /* TODO: Better method of deciding on the best texture format to use is needed. */
-    if (want_16bit) {
-#if defined (__APPLE__)
-        tex_intformat     = GL_RGB5;
-        buffer->format    = GL_BGRA;
-        buffer->type      = GL_UNSIGNED_SHORT_1_5_5_5_REV;
-#else
-        tex_intformat     = GL_RGB;
-        buffer->format    = GL_RGB;
-        buffer->type      = GL_UNSIGNED_SHORT_5_6_5;
-#endif
-    } else {
-        tex_intformat     = GL_RGBA8;
-        buffer->format    = GL_BGRA;
-        buffer->type      = GL_UNSIGNED_INT_8_8_8_8_REV;
-    }
-
-    glTexImage2D (buffer->target, 0, tex_intformat, buffer->texture_width, buffer->texture_height, 0, buffer->format, buffer->type, buffer->pixels);
-
-    if (glGetError () != GL_NO_ERROR) {
-        write_log ("SDLGFX: Failed to allocate texture.\n");
-        free_gl_buffer (buffer);
-        return 0;
-    }
-    else
-        return 1;
-}
-
-void flush_gl_buffer (const struct gl_buffer_t *buffer, int first_line, int last_line)
-{
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
-
-    glTexSubImage2D (buffer->target, 0, 0, first_line, buffer->texture_width, last_line - first_line + 1, buffer->format, buffer->type, buffer->pixels + buffer->pitch * first_line);
-}
-
-void render_gl_buffer (const struct gl_buffer_t *buffer, int first_line, int last_line)
-{
-    float tx0, ty0, tx1, ty1; //source buffer coords
-    float wx0, wy0, wx1, wy1; //destination text coords
-    float left_crop, right_crop, top_crop, bottom_crop;  //buffer cropping
-    float amiga_real_w,amiga_real_h ; //used to calulate cropping
-    float bottomledspace = 0;
-
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
-
-    last_line++;
-
-    if (currprefs.leds_on_screen) bottomledspace=14; //reserve some space for drawing leds
-
-    if (currprefs.gfx_lores_mode) {
-        amiga_real_w = 362;
-    } else {
-        amiga_real_w = 724;
-    }
-    if (currprefs.gfx_vresolution) {
-        amiga_real_h = 568;
-    } else {
-        amiga_real_h = 284;
-    }
-
-    if ((currentmode->current_width >= amiga_real_w ) &&  (currentmode->current_height >= amiga_real_h )  && (!screen_is_picasso)  ) {
-        right_crop  = (currentmode->current_width - amiga_real_w);
-        left_crop   = 0;
-        bottom_crop = (currentmode->current_height - amiga_real_h);
-        top_crop    = 0;
-
-        bottom_crop     = bottom_crop - bottomledspace ;
-    } else {
-        right_crop = 0;
-        left_crop = 0;
-        bottom_crop = 0;
-        top_crop = 0;
-    }
-
-    if (have_texture_rectangles) {
-        tx0 =                 left_crop;
-        tx1 = (float) buffer->width - right_crop;
-        ty0 = (float) first_line + top_crop;
-        ty1 = (float) last_line - bottom_crop;
-    } else {
-        tx0 = 0.0f;
-        ty0 = (float) first_line    / (float) buffer->texture_height;
-        tx1 = (float) buffer->width / (float) buffer->texture_width;
-        ty1 = (float) last_line     / (float) buffer->texture_height;
-    }
-
-    glBegin (GL_QUADS);
-    glTexCoord2f (tx0, ty0); glVertex2f (0.0f,                  (float) first_line);
-    glTexCoord2f (tx1, ty0); glVertex2f ((float) buffer->width, (float) first_line);
-    glTexCoord2f (tx1, ty1); glVertex2f ((float) buffer->width, (float) last_line);
-    glTexCoord2f (tx0, ty1); glVertex2f (0.0f,                  (float) last_line);
-    glEnd ();
-}
-
-#endif /* USE_GL */
-
 /**
  ** Buffer methods not implemented for this driver.
  **/
@@ -1013,77 +679,15 @@ void flush_screen (struct vidbuffer *vb, int first_line, int last_line) {
 
     //SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
-  //DebOut("vidbuffer @0x%p (%d -> %d)\n", vb, first_line, last_line);
+  DebOut("%d -> %d\n", first_line, last_line);
 
+#ifndef USE_GL
   SDL_UpdateRect (display, 0, first_line, currentmode->current_width, last_line - first_line + 1);
+#else
+  render_gl_buffer (&glbuffer, first_line, last_line);
+#endif
 
 }
-
-#ifdef USE_GL
-
-/**
- ** Buffer methods for SDL GL surfaces
- **/
-
-static int sdl_gl_lock (struct vidbuf_description *gfxinfo)
-{
-    return 1;
-}
-
-static void sdl_gl_unlock (struct vidbuf_description *gfxinfo)
-{
-}
-
-static void sdl_gl_flush_block (struct vidbuf_description *gfxinfo, int first_line, int last_line)
-{
-    DEBUG_LOG ("Function: sdl_gl_flush_block %d %d\n", first_line, last_line);
-
-    flush_gl_buffer (&glbuffer, first_line, last_line);
-}
-
-/* Single-buffered flush-screen method */
-static void sdl_gl_flush_screen (struct vidbuf_description *gfxinfo, int first_line, int last_line)
-{
-    render_gl_buffer (&glbuffer, first_line, last_line);
-    glFlush ();
-}
-
-/* Double-buffered flush-screen method */
-static void sdl_gl_flush_screen_dbl (struct vidbuf_description *gfxinfo, int first_line, int last_line)
-{
-    render_gl_buffer (&glbuffer, 0, display->h - 1);
-    SDL_GL_SwapBuffers ();
-}
-
-/* Double-buffered, vsynced flush-screen method */
-static void sdl_gl_flush_screen_vsync (struct vidbuf_description *gfxinfo, int first_line, int last_line)
-{
-    frame_time_t start_time;
-    frame_time_t sleep_time;
-
-    render_gl_buffer (&glbuffer, 0, display->h - 1);
-
-    start_time = read_processor_time ();
-
-    SDL_GL_SwapBuffers ();
-
-    sleep_time = read_processor_time () - start_time;
-    idletime += sleep_time;
-}
-
-static void sdl_gl_flush_clear_screen (struct vidbuf_description *gfxinfo)
-{
-    DEBUG_LOG ("Function: sdl_gl_flush_clear_screen\n");
-
-    if (display) {
-        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        SDL_GL_SwapBuffers ();
-        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        SDL_GL_SwapBuffers ();
-    }
-}
-
-#endif /* USE_GL */
 
 static int graphics_setup_success=0;
 
@@ -1104,6 +708,9 @@ void fill_DisplayModes(struct MultiDisplay *md) {
 
       write_log ("SDLGFX: Initialized.\n");
       write_log ("SDLGFX: Using SDL version %d.%d.%d.\n", version->major, version->minor, version->patch);
+#ifdef USE_GL
+      write_log ("SDLGFX: Using GL version %s\n", glGetString(GL_VERSION));
+#endif
 
       /* Find default display depth */
       bitdepth = info->vfmt->BitsPerPixel;
@@ -1138,168 +745,27 @@ void fill_DisplayModes(struct MultiDisplay *md) {
 int graphics_setup(void) {
 
   DebOut("graphics_setup (does nothing)\n");
+#ifdef USE_GL
+  currprefs.use_gl=false;
+#endif
 
   /* fill_DisplayModes was hopefully called before! */
   return graphics_setup_success;
 }
-
-#ifdef USE_GL
-
-/*
- * Mergin this function into graphics_subinit_gl is possible but gives us a lot of
- * ifdefs.
- */
-static int graphics_subinit_gl (void)
-{
-    Uint32 uiSDLVidModFlags = 0;
-    int dblbuff = 0;
-    int want_16bit;
-
-    vsync = 0;
-
-    DEBUG_LOG ("Function: graphics_subinit_gl\n");
-
-    /* Request double-buffered mode only when vsyncing
-     * is requested and we can determine whether vsyncing
-     * is supported.
-     */
-#if SDL_VERSION_ATLEAST(1, 2, 10)
-    if (!screen_is_picasso) {
-        DEBUG_LOG ("Want double-buffering.\n");
-        SDL_GL_SetAttribute (SDL_GL_DOUBLEBUFFER, 1);
-        SDL_GL_SetAttribute (SDL_GL_SWAP_CONTROL, 1);
-    } else {
-        SDL_GL_SetAttribute (SDL_GL_DOUBLEBUFFER, 0);
-        SDL_GL_SetAttribute (SDL_GL_SWAP_CONTROL, 0);
-    }
-#else
-    SDL_GL_SetAttribute (SDL_GL_DOUBLEBUFFER, 0);
-#endif
-
-    if (bitdepth <= 16 || (!screen_is_picasso && !(currprefs.chipset_mask & CSMASK_AGA))) {
-        DEBUG_LOG ("Want 16-bit framebuffer.\n");
-        SDL_GL_SetAttribute (SDL_GL_RED_SIZE,   5);
-        SDL_GL_SetAttribute (SDL_GL_GREEN_SIZE, 5);
-        SDL_GL_SetAttribute (SDL_GL_BLUE_SIZE,  5);
-        want_16bit = 1;
-    } else {
-        SDL_GL_SetAttribute (SDL_GL_RED_SIZE,   8);
-        SDL_GL_SetAttribute (SDL_GL_GREEN_SIZE, 8);
-        SDL_GL_SetAttribute (SDL_GL_BLUE_SIZE,  8);
-        want_16bit = 0;
-    }
-
-    // TODO: introduce a virtual resolution with scaling
-    uiSDLVidModFlags = SDL_OPENGL;
-    if (fullscreen) {
-        uiSDLVidModFlags |= SDL_FULLSCREEN;
-    }
-    DEBUG_LOG ("Resolution     : %d x %d \n", currentmode->current_width, currentmode->current_height);
-    screen = SDL_SetVideoMode (currentmode->current_width, currentmode->current_height, 0, uiSDLVidModFlags);
-
-    if (screen == NULL) {
-        gui_message ("Unable to set video mode: %s\n", SDL_GetError ());
-        return 0;
-    } else {
-    /* Just in case we didn't get exactly what we asked for . . . */
-    fullscreen   = ((screen->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN);
-    is_hwsurface = 0;
-
-    /* Are these values what we expected? */
-#ifdef PICASSO96
-    DEBUG_LOG ("P96 screen?    : %d\n", screen_is_picasso);
-#endif
-    DEBUG_LOG ("Fullscreen?    : %d\n", fullscreen);
-    DEBUG_LOG ("Mouse grabbed? : %d\n", mousegrab);
-    DEBUG_LOG ("HW surface?    : %d\n", is_hwsurface);
-    DEBUG_LOG ("Must lock?     : %d\n", SDL_MUSTLOCK (screen));
-    DEBUG_LOG ("Bytes per Pixel: %d\n", screen->format->BytesPerPixel);
-    DEBUG_LOG ("Bytes per Line : %d\n", screen->pitch);
-
-    SDL_GL_GetAttribute (SDL_GL_DOUBLEBUFFER, &dblbuff);
-#if SDL_VERSION_ATLEAST(1, 2, 10)
-    if (dblbuff)
-        SDL_GL_GetAttribute (SDL_GL_SWAP_CONTROL, &vsync);
-#endif
-
-    if (!vsync)
-        write_log ("SDLGFX: vsynced output not supported.\n");
-
-    gfxvidinfo.lockscr = sdl_gl_lock;
-    gfxvidinfo.unlockscr = sdl_gl_unlock;
-    gfxvidinfo.flush_block = sdl_gl_flush_block;
-    gfxvidinfo.flush_clear_screen = sdl_gl_flush_clear_screen;
-
-    if (dblbuff) {
-        if (vsync) {
-            write_log ("SDLGFX: Using double-buffered, vsynced output.\n");
-            gfxvidinfo.flush_screen = sdl_gl_flush_screen_vsync;
-        } else {
-            write_log ("SDLGFX: Using double-buffered, unsynced output.\n");
-            gfxvidinfo.flush_screen = sdl_gl_flush_screen_dbl;
-        }
-    } else {
-        write_log ("SDLGFX: Using single-buffered output.\n");
-        gfxvidinfo.flush_screen = sdl_gl_flush_screen;
-    }
-
-    check_gl_extensions ();
-
-    init_gl_display (currentmode->current_width, currentmode->current_height);
-    if (!alloc_gl_buffer (&glbuffer, currentmode->current_width, currentmode->current_height, want_16bit))
-        return 0;
-
-#ifdef PICASSO96
-    if (!screen_is_picasso) {
-#endif
-        gfxvidinfo.bufmem = display->pixels;
-        gfxvidinfo.emergmem = 0;
-        gfxvidinfo.maxblocklines = MAXBLOCKLINES_MAX;
-        gfxvidinfo.linemem = 0;
-        gfxvidinfo.pixbytes = display->format->BytesPerPixel;
-        SDLGD(bug("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.pixbytes);
-        gfxvidinfo.rowbytes = display->pitch;
-        SDL_SetColors (display, arSDLColors, 0, 256);
-        reset_drawing ();
-        old_pixels = (void *) -1;
-#ifdef PICASSO96
-    } else {
-        /* Initialize structure for Picasso96 video modes */
-        picasso_vidinfo.rowbytes    = display->pitch;
-        picasso_vidinfo.extra_mem   = 1;
-        picasso_vidinfo.depth   = bitdepth;
-        picasso_has_invalid_lines   = 0;
-        picasso_invalid_start   = picasso_vidinfo.height + 1;
-        picasso_invalid_stop    = -1;
-        memset (picasso_invalid_lines, 0, sizeof picasso_invalid_lines);
-        refresh_necessary           = 1;
-    }
-#endif
-    }
-
-    SDLGD(bug("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.pixbytes);
-
-    gfxvidinfo.emergmem = scrlinebuf; // memcpy from system-memory to video-memory
-
-    //xfree (gfxvidinfo.realbufmem);
-    gfxvidinfo.realbufmem = NULL;
-//  gfxvidinfo.bufmem = NULL;
-    gfxvidinfo.bufmem_allocated = NULL;
-    gfxvidinfo.bufmem_lockable = false;
-
-    return 1;
-}
-
-#endif /* USE_GL */
 
 static int graphics_subinit (void)
 {
     DebOut("entered\n");
 
 #ifdef USE_GL
+
+    currprefs.use_gl=true;
+
     if (currprefs.use_gl) {
-        if (graphics_subinit_gl () == 0)
+        if (graphics_subinit_gl () == 0) {
+          DebOut("graphics_subinit_gl failed!\n");
             return 0;
+        }
     } else {
 #endif /* USE_GL */
 
@@ -1372,6 +838,9 @@ static int graphics_subinit (void)
     gfxvidinfo.drawbuffer.height_allocated=screen->h;
     DEBUG_LOG ("Window width   : %d\n", gfxvidinfo.drawbuffer.width_allocated);
     DEBUG_LOG ("Window height  : %d\n", gfxvidinfo.drawbuffer.height_allocated);
+#ifdef USE_GL
+    DEBUG_LOG ("use_gl         : %d\n", currprefs.use_gl);
+#endif
 
 #ifdef PICASSO96
     if (!screen_is_picasso) {
@@ -1422,8 +891,8 @@ static int graphics_subinit (void)
     }
 #endif /* USE_GL */
 
-    //bug("force gfxvidinfo.pixbytes %d to 4\n", gfxvidinfo.pixbytes);
-    //gfxvidinfo.pixbytes=4;
+    //bug("force gfxvidinfo.drawbuffer.pixbytes %d to 4\n", gfxvidinfo.drawbuffer.pixbytes);
+    //gfxvidinfo.drawbuffer.pixbytes=4;
     /* Set UAE window title and icon name */
     setmaintitle ();
 
@@ -1927,11 +1396,18 @@ void DX_SetPalette (int start, int count)
 {
     DEBUG_LOG ("Function: DX_SetPalette (start %d, count %d)\n", start, count);
 
+#if 0
     if (! screen_is_picasso || picasso96_state.RGBFormat != RGBFB_CHUNKY) {
       DebOut("!screen_is_picasso: %d || picasso96_state.RGBFormat %d != %d\n", screen_is_picasso, picasso96_state.RGBFormat, RGBFB_CHUNKY);
         return;
     }
+#endif
+    if (!screen_is_picasso) {
+      DebOut("nothing to do, !screen_is_picasso\n");
+      return;
+    }
 
+    DebOut("picasso_vidinfo.pixbytes: %d\n", picasso_vidinfo.pixbytes);
     if (picasso_vidinfo.pixbytes != 1) {
         /* This is the case when we're emulating a 256 color display. */
         while (count-- > 0) {
@@ -2006,8 +1482,39 @@ static void set_window_for_picasso (void)
     graphics_subinit();
 }
 
+static void clearscreen (void) {
+  TODO();
+}
+
+static void updatemodes (void) {
+  DebOut("currentmode->native_width:   %d\n", currentmode->native_width);
+  DebOut("currentmode->native_height:  %d\n", currentmode->native_height);
+  DebOut("currentmode->current_width:  %d\n", currentmode->current_width);
+  DebOut("currentmode->current_height: %d\n", currentmode->current_height);
+
+  /* native_width/height => screen/window dimensions of host display */
+  /* current_width/height => screen/window dimensions of emulated display */
+
+  currentmode->native_width = currentmode->current_width;
+  currentmode->native_height = currentmode->current_height;
+}
+
+
+
 void gfx_set_picasso_modeinfo (uae_u32 w, uae_u32 h, uae_u32 depth, RGBFTYPE rgbfmt)
 {
+
+#if 0
+  if(!screen_is_picasso) {
+    DebOut("not screen_is_picasso\n");
+    return;
+  }
+#endif
+
+  clearscreen();
+  gfx_set_picasso_colors(rgbfmt);
+  updatemodes();
+
   TODO();
     DEBUG_LOG ("Function: gfx_set_picasso_modeinfo w: %i h: %i depth: %i rgbfmt: %i\n", w, h, depth, rgbfmt);
     bug    ("Function: gfx_set_picasso_modeinfo w: %i h: %i depth: %i rgbfmt: %i\n", w, h, depth, rgbfmt);
@@ -2044,7 +1551,9 @@ void gfx_set_picasso_state (int on)
 
     graphics_subshutdown ();
     screen_was_picasso = screen_is_picasso;
+    DebOut("screen_is_picasso: %d\n", screen_is_picasso);
     screen_is_picasso = on;
+    DebOut("screen_is_picasso: %d\n", screen_is_picasso);
 
 #warning Set height, width for Amiga gfx
 #if 0
@@ -2087,7 +1596,7 @@ uae_u8 *gfx_lock_picasso (bool fullupdate, bool doclear)
 #ifdef USE_GL
     } else {
         picasso_vidinfo.rowbytes = display->pitch;
-        return display->pixels;
+        return (uint8_t *) display->pixels;
     }
 #endif /* USE_GL */
 }
@@ -2516,9 +2025,9 @@ void gfx_default_options (struct uae_prefs *p)
 {
     SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
+#if 0
     int type = get_sdlgfx_type ();
 
-#if 0
 //fixme
     if (type == SDLGFX_DRIVER_AMIGAOS4 || type == SDLGFX_DRIVER_CYBERGFX || type == SDLGFX_DRIVER_BWINDOW  || type == SDLGFX_DRIVER_QUARTZ)
         p->map_raw_keys = 1;
@@ -2614,6 +2123,10 @@ void flush_block (struct vidbuffer *vb, int first, int last) {
     SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
     SDLGD(bug("[JUAE:SDL] %s: vidbuffer @ 0x%p [%d -> %d]\n", __PRETTY_FUNCTION__, vb,  first, last));
 
+#ifndef USE_GL
   sdl_flush_block_nolock (&gfxvidinfo, vb, first, last);
+#else
+  flush_gl_buffer (&glbuffer, first, last);
+#endif
 }
 
