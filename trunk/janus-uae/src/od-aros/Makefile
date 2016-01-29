@@ -279,10 +279,10 @@ DEP_OBJS=$(COMMON_OBJS)
 
 all: uae
 
-uae: string_resource.h sdl_config libmpeg2 gui common aros
+uae: string_resource.h sdl_config_lib libmpeg2 gui common aros
 	$(CPP) $(CFLAGS) $(COMMON_OBJS) $(AROS_OBJS) -o $(EXE) $(LINK_LIBS) 
 
-sdl_config:
+sdl_config_lib:
 	@echo building SDL_Config library ..
 	@cd SDL_Config;make ABI="$(ABI)"
 
@@ -301,7 +301,7 @@ libmpeg2: libmpeg2/libmpeg2/.libs/libmpeg2.a libmpeg2/libmpeg2/convert/.libs/lib
 
 libmpeg2/libmpeg2/.libs/libmpeg2.a:
 	@echo building mpeg2 libraries ..
-	@cd libmpeg2;./configure --host=$(CPU)-aros
+	@cd libmpeg2;export SDLCONFIG="$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/AROS/Development/bin/sdl-config";./configure --host=$(CPU)-aros
 	@cd libmpeg2;make
 
 
