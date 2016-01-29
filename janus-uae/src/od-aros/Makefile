@@ -299,10 +299,14 @@ gui:
 	
 libmpeg2: libmpeg2/libmpeg2/.libs/libmpeg2.a libmpeg2/libmpeg2/convert/.libs/libmpeg2convert.a
 
+# generate libmpeg2.a and libmpeg2convert.a
+# this is still some magic here, works on some machines, on others build will break here.
+# the libraries are not difficult to build, it is harder to inegrate them into the build system ;-)
 libmpeg2/libmpeg2/.libs/libmpeg2.a:
 	@echo building mpeg2 libraries ..
 	@cd libmpeg2;export SDLCONFIG="$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/AROS/Development/bin/sdl-config";./configure --host=$(CPU)-aros
-	@cd libmpeg2;make
+	@cd libmpeg2/libmpeg2/convert;make
+	@cd libmpeg2/libmpeg2;make
 
 
 # ============== autogenerate some .c files ====================
