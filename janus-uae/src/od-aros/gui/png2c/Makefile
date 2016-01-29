@@ -16,7 +16,7 @@ ifeq ($(BITS),64)
 else
 	# 32 bit
 	CPU      = i386
-	SVN        = /home/oli
+	SVN        = /home/oli/svn
 endif
 
 CC         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-gcc
