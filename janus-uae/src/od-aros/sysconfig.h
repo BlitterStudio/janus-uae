@@ -560,7 +560,11 @@
 /* Exception is used both in AROS and in uae :(.. I don't like that! */
 #undef Exception
 #include <aros/debug.h>
+
+#ifndef UAE_ABI_v0
+/* do we need that or not? On ABIV 0 i386 this breaks the build because of c++ redifinitons.. */
 #include "tchar.h"
+#endif
 
 #if defined(JUAE_DEBUG)
 #define DebOut(...) do { bug("[%lx]: %s:%d %s(): ",FindTask(NULL),__FILE__,__LINE__,__func__);bug(__VA_ARGS__); } while(0)
