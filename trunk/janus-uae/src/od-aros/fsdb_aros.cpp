@@ -561,6 +561,7 @@ uae_s64 int my_fsize (struct my_openfile_s *mos) {
     goto EXIT;
   }
 
+#ifndef UAE_ABI_v0
   /* test for 64 bit filesize */
   if(fib->fib_Size >= 0x7FFFFFFF) {
 
@@ -575,6 +576,7 @@ uae_s64 int my_fsize (struct my_openfile_s *mos) {
     }
     goto EXIT;
   }
+#endif
 
   /* extend 32-bit */
   size=(uae_s64) fib->fib_Size;
@@ -1022,7 +1024,7 @@ int fsdb_fill_file_attrs (a_inode *base, a_inode *aino) {
 
   if(fib->fib_Comment) {
     //DebOut("comment: >%s<\n", fib->fib_Comment);
-    aino->comment=(TCHAR *) strndup((const char *)fib->fib_Comment, 79); /* maximum length is 79 chars,
+    aino->comment=(TCHAR *) strdup((const char *)fib->fib_Comment); /* maximum length is 79 chars,
                                                                             0 will be added automatically */
   }
 
