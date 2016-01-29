@@ -40,6 +40,7 @@
  * SLD logs errors even for noncritical, intended actions, like creating new groups.
  * (You tried to select group DiskImageMRUList that doesn't exist - new group was created)
  */
+#if 0
 #undef SDL_SetError 
 void write_log (const char *format, ...);
 
@@ -54,6 +55,7 @@ void SDL_SetError(const char *format, ...) {
   strcat(tmp, "\n");
   write_log(tmp);
 }
+#endif
 
 /* ------------------------------------------------------- start globals */
 

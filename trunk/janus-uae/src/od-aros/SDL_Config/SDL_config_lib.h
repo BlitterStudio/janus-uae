@@ -222,7 +222,11 @@ const SDL_version * CFG_LinkedVersion( void );
  ie. file wasn't opened properly or group wasn't found.
 */
 
+#if 0
 #define CFG_SetError	SDL_SetError
+#else
+#define CFG_SetError 
+#endif
 #define CFG_GetError	SDL_GetError
 
 /* ------------------------------------------------------- */
