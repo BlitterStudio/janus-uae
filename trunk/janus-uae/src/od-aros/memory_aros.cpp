@@ -42,7 +42,11 @@ static int os_64bit = 0;
 
 static void GetSystemInfo(SYSTEM_INFO *si)
 {
+#ifndef UAE_ABI_v0
 	si->dwPageSize = sysconf(_SC_PAGESIZE);
+#else
+	si->dwPageSize = 4096;
+#endif
 }
 
 #define USE_MMAP

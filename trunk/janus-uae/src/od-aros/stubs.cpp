@@ -1026,6 +1026,9 @@ void driveclick_fdrawcmd_detect(void) {
   TODO();
 }
 
+void mman_ResetWatch (void *lpBaseAddress, unsigned int dwRegionSize) {
+  TODO();
+}
 void mman_ResetWatch (void *lpBaseAddress, unsigned long dwRegionSize) {
   TODO();
 }

@@ -76,8 +76,14 @@ using namespace std;
 #define JITCALL
 #endif
 #define REGPARAM
+#ifndef UAE_ABI_v0
 #define REGPARAM2 JITCALL
 #define REGPARAM3 JITCALL
+#else
+#define REGPARAM2
+#define REGPARAM3
+#endif
+
 
 #include <tchar.h>
 

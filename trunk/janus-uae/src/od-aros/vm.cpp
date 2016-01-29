@@ -93,15 +93,17 @@ bool uae_vm_decommit(void *address, uae_u32 size)
  * startup/exit via ADD2INIT/ADD2EXIT
  *
  ***************************************************************/
-static int vm_prep(void) {
+void vm_prep(void) {
 
   vm_pool=CreatePool(MEMF_CLEAR, 16384, 8192);
   DebOut("vm_pool=%lx\n", vm_pool);
 
 }
+#ifndef UAE_ABI_v0
 ADD2INIT(vm_prep, 0);
+#endif
 
-static int vm_free(void) {
+void vm_free(void) {
 
   DebOut("valloc_pool: %lx\n", vm_pool);
   if(vm_pool) {
@@ -110,6 +112,8 @@ static int vm_free(void) {
   }
 
 }
+#ifndef UAE_ABI_v0
 ADD2EXIT(vm_free, 0);
+#endif
 
 
