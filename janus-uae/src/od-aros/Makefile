@@ -40,7 +40,7 @@ else
 	# 32 bit
 	CPU      = i386
 	SVN        = /home/oli/svn
-	SUB        = gen
+	SUB        = AROS/Development
 endif
 
 EXE        = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/AROS/wuae

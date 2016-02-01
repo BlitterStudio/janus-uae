@@ -20,7 +20,7 @@
 #include <mui/Urltext_mcc.h>
 #endif
 
-//#define JUAE_DEBUG
+#define JUAE_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -259,6 +259,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
         l++;
       }
       if(!flag_editable(elem[i].flags)) {
+        DebOut("MUIA_Cycle_Active: old_active %d\n", old_active);
         DoMethod(elem[i].obj, MUIM_NoNotifySet, MUIA_Cycle_Active, old_active);
       }
     }
@@ -407,6 +408,7 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       }
       else {
         DoMethod(elem[i].obj, MUIM_Set,         MUIA_Cycle_Entries, (IPTR) elem[i].mem);
+        DebOut("MUIA_Cycle_Active\n");
         DoMethod(elem[i].obj, MUIM_NoNotifySet, MUIA_Cycle_Active, 0);
       }
  
@@ -444,7 +446,9 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       }
       else {
         /* cycle gadget */
+        DebOut("cycle gadget muiobj: %lx\n", elem[i].obj);
         if(wParam >= 0) {
+          DebOut("MUIM_NoNotifySet, MUIA_Cycle_Active, %d\n", wParam);
           DoMethod(elem[i].obj, MUIM_NoNotifySet, MUIA_Cycle_Active, wParam);
         }
         else {
@@ -454,8 +458,8 @@ LONG SendDlgItemMessage(struct Element *elem, int nIDDlgItem, UINT Msg, WPARAM w
       }
 
       return wParam;
-      } /* case block */
-      break;
+    } /* case block */
+    break;
 
     case TBM_SETRANGE:
       /* lParam: The LOWORD specifies the minimum position for the slider, 

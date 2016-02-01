@@ -1,4 +1,4 @@
-//#define JUAE_DEBUG
+#define JUAE_DEBUG
 
 #include <exec/types.h>
 #include <libraries/mui.h>
@@ -453,7 +453,8 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
 }
 
 #ifdef UAE_ABI_v0
-#define ABI_CONST const
+//#define ABI_CONST const
+#define ABI_CONST 
 #else
 #define ABI_CONST 
 #endif
@@ -576,11 +577,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
             if(child) {
               src[i].exists=TRUE;
               src[i].obj=child;
-#ifdef UAE_ABI_v0
-              data->MyMUIHook_slide.h_Entry=(HOOKFUNC) MUIHook_slide;
-#else
               data->MyMUIHook_slide.h_Entry=(APTR) MUIHook_slide;
-#endif
               data->MyMUIHook_slide.h_Data =(APTR) data;
 
               DebOut("DoMethod(%lx, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime..)\n", src[i].obj);
@@ -638,11 +635,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
 
                   End;
 
-#ifdef UAE_ABI_v0
-              data->MyMUIHook_select.h_Entry=(HOOKFUNC) MUIHook_select;
-#else
               data->MyMUIHook_select.h_Entry=(APTR) MUIHook_select;
-#endif
               data->MyMUIHook_select.h_Data =(APTR) data;
 
               DoMethod(src[i].obj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_select, func); 
@@ -683,11 +676,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                   End,
                 End;
               }
-#ifdef UAE_ABI_v0
-              data->MyMUIHook_select.h_Entry=(HOOKFUNC) MUIHook_select;
-#else
               data->MyMUIHook_select.h_Entry=(APTR) MUIHook_select;
-#endif
               data->MyMUIHook_select.h_Data =(APTR) data;
 
               DebOut("DoMethod(%lx, MUIM_Notify, MUIA_Selected, MUIV_EveryTime..)\n", src[i].obj);
@@ -744,11 +733,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
           src[i].exists=TRUE;
           src[i].obj=child;
           /* Add hook */
-#ifdef UAE_ABI_v0
-          data->MyMUIHook_pushbutton.h_Entry=(HOOKFUNC) MUIHook_pushbutton;
-#else
           data->MyMUIHook_pushbutton.h_Entry=(APTR) MUIHook_pushbutton;
-#endif
           data->MyMUIHook_pushbutton.h_Data =(APTR) data;
           DoMethod(src[i].obj, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_pushbutton, func); 
         break;
@@ -796,11 +781,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
           src[i].exists=TRUE;
           src[i].var=(char **) calloc(256, sizeof(IPTR)); // array for cycle texts
           src[i].var[0]=NULL;
-#ifdef UAE_ABI_v0
-            data->MyMUIHook_entry.h_Entry=(HOOKFUNC) MUIHook_entry;
-#else
             data->MyMUIHook_entry.h_Entry=(APTR) MUIHook_entry;
-#endif
             data->MyMUIHook_entry.h_Data =(APTR) data;
             DoMethod(src[i].obj, MUIM_Notify,  MUIA_String_Contents , MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_entry, func); 
 
@@ -818,11 +799,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                        End;
             src[i].exists=TRUE;
             src[i].obj=child;
-#ifdef UAE_ABI_v0
-            data->MyMUIHook_combo.h_Entry=(HOOKFUNC) MUIHook_combo;
-#else
             data->MyMUIHook_combo.h_Entry=(APTR) MUIHook_combo;
-#endif
             data->MyMUIHook_combo.h_Data =(APTR) data;
             DoMethod(src[i].obj, MUIM_Notify, MUIA_Cycle_Active , MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_combo, func); 
           }
@@ -867,11 +844,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
     }
 
     //SETUPHOOK(&data->LayoutHook, LayoutHook, data);
-#ifdef UAE_ABI_v0
-    data->LayoutHook.h_Entry=(HOOKFUNC) LayoutHook;
-#else
     data->LayoutHook.h_Entry=(APTR) LayoutHook;
-#endif
     data->LayoutHook.h_Data=data;
 
     /*
