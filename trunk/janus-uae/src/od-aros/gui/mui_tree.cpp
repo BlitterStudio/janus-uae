@@ -413,20 +413,12 @@ Object *new_tree(ULONG i, void *f, struct Data *data, Object **nlisttree) {
   DebOut("new listtree: %lx\n", *nlisttree);
 
   /* setup hooks */
-#ifdef UAE_ABI_v0
-  data->MyMUIHook_tree_active.h_Entry=(HOOKFUNC) tree_active;
-#else
   data->MyMUIHook_tree_active.h_Entry=(APTR) tree_active;
-#endif
   data->MyMUIHook_tree_active.h_Data =(APTR) data;
 
   DoMethod(tree, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR) tree, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_tree_active, func); 
 
-#ifdef UAE_ABI_v0
-  data->MyMUIHook_tree_double.h_Entry=(HOOKFUNC) tree_double;
-#else
   data->MyMUIHook_tree_double.h_Entry=(APTR) tree_double;
-#endif
   data->MyMUIHook_tree_double.h_Data =(APTR) data;
 
   DoMethod(tree, MUIM_Notify, MUIA_NList_DoubleClick, MUIV_EveryTime, (IPTR) tree, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_tree_double, func); 

@@ -6365,6 +6365,7 @@ static void init_quickstartdlg (HWND hDlg)
 	WIN32GUI_LoadUIString (IDS_QS_MODELS, tmp1, sizeof (tmp1) / sizeof (TCHAR));
 	_tcscat (tmp1, _T("\n"));
 	p1 = tmp1;
+  DebOut("IDC_QUICKSTART_MODEL reset\n");
 	SendDlgItemMessage (hDlg, IDC_QUICKSTART_MODEL, CB_RESETCONTENT, 0, 0L);
 	idx = idx2 = 0;
 	i = 0;
@@ -6373,6 +6374,7 @@ static void init_quickstartdlg (HWND hDlg)
 			p2 = _tcschr (p1, '\n');
 			if (p2 && _tcslen (p2) > 0) {
 				*p2++ = 0;
+        DebOut("p1: %s\n", p1);
 				SendDlgItemMessage (hDlg, IDC_QUICKSTART_MODEL, CB_ADDSTRING, 0, (LPARAM)p1);
 				p1 = p2;
 			}
@@ -6382,6 +6384,7 @@ static void init_quickstartdlg (HWND hDlg)
 		}
 		i++;
 	}
+  DebOut("CB_SETCURSEL: idx2: %d\n", idx2);
 	SendDlgItemMessage (hDlg, IDC_QUICKSTART_MODEL, CB_SETCURSEL, idx2, 0);
 
 	total = 0;
@@ -6560,7 +6563,9 @@ GUI_STATIC INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wPara
 			setfloppytexts (hDlg, true);
 			setmultiautocomplete (hDlg, ids);
 			doinit = 1;
+#ifndef __AROS__
 			break;
+#endif
 		}
 	case WM_NULL:
 		if (recursive > 0)
@@ -6661,12 +6666,18 @@ GUI_STATIC INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wPara
 			switch (LOWORD (wParam))
 			{
 			case IDC_NTSC:
+#warning DEBUG REMOVE ME
+      DebOut("FOOOOOOOOOOOOO\n");
+      SendDlgItemMessage (hDlg, IDC_QUICKSTART_MODEL, CB_SETCURSEL, 1, 0);
+#if 0
+      olioli
 				quickstart_ntsc = ischecked (hDlg, IDC_NTSC);
 				regsetint (NULL, _T("QuickStartNTSC"), quickstart_ntsc);
 				if (quickstart) {
 					init_quickstartdlg (hDlg);
 					load_quickstart (hDlg, 0);
 				}
+#endif
 				break;
 			case IDC_QUICKSTARTMODE:
 				quickstart = ischecked (hDlg, IDC_QUICKSTARTMODE);
