@@ -16,7 +16,7 @@
 #include <mui/NFloattext_mcc.h>
 #include <mui/NBitmap_mcc.h>
 
-//#define JUAE_DEBUG
+#define JUAE_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -99,18 +99,22 @@ AROS_UFH3S(APTR, construct_func, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(A
   struct view_line *new_line;
   ULONG i;
 
-  DebOut("entered\n");
+  DebOut("entered (pool: %lx\n", pool);
 
   if((new_line = (struct view_line *) AllocPooled(pool, sizeof(struct view_line)))) {
     for(i=0; i<MAX_COL; i++) {
-      strcpy(new_line->column[i], entry->column[i]);
+      if(entry->column[i][0]) {
+        DebOut("copy %s\n", entry->column[i]);
+        strcpy(new_line->column[i], entry->column[i]);
+      }
+      else {
+        new_line->column[i][0]=(char) 0;
+      }
     }
   }
 
   return new_line;
 
-EXIT:
-  ;
   AROS_USERFUNC_EXIT
 }
 
@@ -365,6 +369,7 @@ int ListView_InsertColumn(int nIDDlgItem, int iCol, const LPLVCOLUMN pcol) {
   /* if this is our first column, we need to setup the display hook */
   if(!elem[i].var_data) {
     /* store hooks in var_data*/
+    DebOut("init hooks..\n");
     elem[i].var_data   =(IPTR *) calloc(16, sizeof(IPTR));
     elem[i].var_data[0]=(IPTR)   calloc( 1, sizeof(struct hook_data));
     elem[i].var_data[1]=(IPTR)   calloc( 1, sizeof(struct Hook)); /* display hook */
@@ -386,8 +391,6 @@ int ListView_InsertColumn(int nIDDlgItem, int iCol, const LPLVCOLUMN pcol) {
     destruct_hook         =(struct Hook *) elem[i].var_data[3];
     destruct_hook->h_Entry=(APTR) destruct_func;
     destruct_hook->h_Data =(APTR) h_data;
-
-
 
     //SetAttrs(elem[i].action, MUIA_List_Title, FALSE, TAG_DONE);
 
@@ -431,6 +434,7 @@ int ListView_InsertItem(int nIDDlgItem, const LPLVITEM pitem) {
   if(!new_line) return -1;
 
   strcpy(new_line->column[0], pitem->pszText);
+  DebOut("elem[%d].action: %lx\n", i, elem[i].action);
   DoMethod(elem[i].action, MUIM_List_InsertSingle, new_line, MUIV_List_Insert_Bottom);
   FreeVec(new_line);
   new_line=NULL;
