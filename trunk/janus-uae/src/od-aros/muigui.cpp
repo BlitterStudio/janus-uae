@@ -11906,6 +11906,8 @@ static INT_PTR CALLBACK VolumeSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, 
 {
 	static int recursive = 0;
 
+  DebOut("VolumeSettingsProc entered\n");
+
 	switch (msg) {
 	case WM_INITDIALOG:
 		{
@@ -19120,11 +19122,18 @@ int CustomDialogBox (Element *templ, HWND hDlg, INT_PTR (*proc) (HWND hDlg, UINT
 	INT_PTR h = -1;
 
 	res = getresource (templ);
+  /* res->tmpl is now templ */
 	if (!res)
 		return h;
 	r = scaleresource (res, hDlg, -1, 0, 0);
 	if (r) {
+    /* r->tmpl is now templ */
+#ifndef __AROS__
 		h = DialogBoxIndirect (r->inst, r->resource, hDlg, proc);
+#else
+    /* DialogBoxIndirect should get a template here, r->resource seems to be one on windows? */
+		h = DialogBoxIndirect (r->inst, (LPCDLGTEMPLATE) templ, hDlg, proc);
+#endif
 		freescaleresource (r);
 	}
 	customDlgType = 0;
