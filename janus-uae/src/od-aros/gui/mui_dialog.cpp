@@ -71,6 +71,7 @@ static void aros_dialog_loop(void) {
 
 
 /* return 1 on success, 0 for cancel */
+/* WARNING: contrary to Windows, we expect a real template in lpTemplate, not a struct LPCDLGTEMPLATE !! */
 INT_PTR DialogBoxIndirect(HINSTANCE hInstance, LPCDLGTEMPLATE lpTemplate, HWND hWndParent, INT_PTR (CALLBACK FAR *func) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam))  {
 
   Object *mui_win;
