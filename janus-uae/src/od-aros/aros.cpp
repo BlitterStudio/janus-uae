@@ -103,7 +103,7 @@
 
 APTR ProcessorBase = NULL;
 
-extern struct Window *hAmigaWnd;
+struct Window *hAmigaWnd;
 /* not really used: */
 HWND hHiddenWnd;
 HMODULE hUIDLL = NULL;

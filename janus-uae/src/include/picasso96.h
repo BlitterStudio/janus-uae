@@ -7,14 +7,13 @@
 void picasso96_alloc (TrapContext* ctx);
 uae_u32 picasso_demux (uae_u32 arg, TrapContext *ctx);
 
-#ifdef __AROS__
+#if defined(__AROS__)
 extern void init_hz_p96 (void);
 extern void picasso_reset (void);
+
 #include "picasso96_aros.h"
 
-#else
-
-#ifdef WIN32
+#elif defined(WIN32)
 
 #include "picasso96_win.h"
 
@@ -618,9 +617,8 @@ extern int picasso_is_special_read;
 
 extern int p96hack_vpos2;
 extern int p96refresh_active;
-#endif
 
-#endif
+#endif /* PICASSO96_SUPPORTED */
 
 #endif /* AROS */
 

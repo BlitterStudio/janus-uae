@@ -22,7 +22,7 @@
 #include "filesys.h"
 
 #ifdef __AROS__
-#include "od-aros/string_resource.h"
+#include "string_resource.h"
 #include <proto/dos.h>
 #endif
 

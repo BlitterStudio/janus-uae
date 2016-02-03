@@ -5,6 +5,8 @@ include $(TOP)/config/make.cfg
 #MM- local-juae : local-juae-emulator
 
 #MM local-juae-emulator : local-juae-gui
+#MM local-juae-emulator : local-juae-mpeg2
+#MM local-juae-emulator : local-juae-mpeg2convert
 #MM local-juae-emulator : local-juae-sdlconfig
 #MM local-juae-emulator : local-juae-genblitter
 #MM local-juae-emulator : local-juae-build68k
@@ -15,14 +17,19 @@ include $(TOP)/config/make.cfg
 #MM local-juae-emulator : local-juae-linetoscr
 #MM local-juae-emulator : local-juae-blitter
 #MM local-juae-emulator : local-juae-cpu
-##MM local-juae-emulator : local-juae-compemu
+#MM local-juae-emulator : local-juae-compemu
 #MM local-juae-emulator : local-juae-icons-emulator
 
 JUAEDIR := $(AROS_CONTRIB)/Emu/J-UAE
 JUAEHOSTTOOLSDIR := $(GENDIR)/$(CURDIR)
-HOSTINCLUDEDIR := $(GENDIR)/$(CURDIR)/host-include
-HOST_INCLUDES := -I$(HOSTINCLUDEDIR) -I$(SRCDIR)/$(CURDIR)/include
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/od-aros -I$(SRCDIR)/$(CURDIR)/od-aros/gui -I$(SRCDIR)/$(CURDIR)/include -I$(GENDIR)/$(CURDIR) -I$(GENDIR)/$(CURDIR)/od-aros -I$(AROS_INCLUDES)/SDL
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/od-aros
+USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/od-aros/gui
+USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/include
+USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/archivers/zip
+USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/od-aros/libmpeg2/include
+USER_INCLUDES += -I$(GENDIR)/$(CURDIR)
+USER_INCLUDES += -I$(GENDIR)/$(CURDIR)/od-aros
+USER_INCLUDES += -I$(AROS_INCLUDES)/SDL
 USER_CFLAGS := -fexceptions
 ##USER_CFLAGS += -DJUAE_DEBUG=1 -DDEBUG=1
 
@@ -30,10 +37,10 @@ PERL:=/usr/bin/perl
 
 JUAEAROSSRCS := \
 	aros \
-	extensions \
 	thread \
+	cda_play \
+	aros_filesys \
 	main_aros \
-        hardfile_aros \
 	avioutput \
 	unicode \
 	sounddep/sound \
@@ -47,9 +54,8 @@ JUAEAROSSRCS := \
 	picasso96_aros \
 	options \
 	gfx \
-	nogui_aros \
-	fsdb_aros \
 	mman \
+	memory_aros \
 	writelog \
 	keymap \
 	shm \
@@ -58,11 +64,18 @@ JUAEAROSSRCS := \
 	sdlkeys_dik \
 	rp \
 	registry \
-	stubs \
- 	muigui
+	muigui_helper \
+	muigui \
+	extensions \
+	fsdb_aros \
+	nogui_aros \
+	hardfile_aros \
+	screenshot \
+	vm \
+	keyboard_aros \
+	stubs
 
 JUAECOMMONSRCS := \
-	blkdev \
 	a2065 \
 	a2091 \
 	akiko \
@@ -72,20 +85,28 @@ JUAECOMMONSRCS := \
 	audio \
 	autoconf \
 	blitter \
+	blkdev \
+	blkdev_cdimage \
 	bsdsocket \
 	calc \
 	catweasel \
 	cd32_fmv \
+	cd32_fmv_genlock \
 	cdrom \
 	cdtv \
+	cdtvcr \
 	cfgfile \
 	cia \
 	consolehook \
 	cpummu \
 	cpummu30 \
+	cpuboard \
+	x86 \
 	crc32 \
 	custom \
 	debug \
+	def_icons \
+	devices \
 	disk \
 	diskutil \
 	dongle \
@@ -93,23 +114,24 @@ JUAECOMMONSRCS := \
 	driveclick \
 	enforcer \
 	epsonprinter \
+	ethernet \
 	events \
 	expansion \
+	fake86_cpu \
 	fdi2raw \
 	filesys \
+	flashrom \
 	fpp \
 	fsdb \
 	fsusage \
 	gayle \
-	qemuvga/cirrus_vga \
-	qemuvga/qemuuaeglue \
-	qemuvga/vga \
-        qemuvga/lsi53c895a \
-	gfxutil \
 	gfxboard \
+	ide \
+	gfxutil \
 	hardfile \
 	hrtmon.rom \
 	identify \
+	idecontrollers \
 	inputdevice \
 	inputrecord \
 	keybuf \
@@ -117,6 +139,7 @@ JUAECOMMONSRCS := \
 	memory \
 	native2amiga \
 	ncr_scsi \
+	ncr9x_scsi \
 	newcpu \
 	newcpu_common \
 	rommgr \
@@ -128,24 +151,63 @@ JUAECOMMONSRCS := \
 	scsiemul \
 	specialmonitors \
 	statusline \
+	test_card \
 	traps \
 	uaeexe \
 	uaeipc \
 	uaelib \
 	uaeresource \
 	uaeserial \
-	nogui \
 	isofs \
+	pci \
 	zfile \
 	zfile_archive
 
 ##	ethernet
+
+JUAEARCHIVESRCS := \
+	archivers/zip/zip \
+	archivers/zip/ioapi \
+	archivers/mp2/kjmp2
+
+JUAEQEMUSRCS := \
+	qemuvga/cirrus_vga \
+	qemuvga/qemuuaeglue \
+	qemuvga/vga \
+	qemuvga/lsi53c895a \
+	qemuvga/lsi53c710 \
+	qemuvga/es1370 \
+	qemuvga/ne2000 \
+	qemuvga/esp
+
+JUAEMAMESRCS := \
+	mame/a2410 \
+	mame/tm34010/tms34010 \
+
+JUAEDOSBOXSRCS := \
+	dosbox/cmos \
+	dosbox/core_full \
+	dosbox/core_normal \
+	dosbox/core_simple \
+	dosbox/cpu \
+	dosbox/db_memory \
+	dosbox/flags \
+	dosbox/fpu \
+	dosbox/keyboard \
+	dosbox/modrm \
+	dosbox/paging \
+	dosbox/pic \
+	dosbox/timer
 
 JUAEJITSRCS := \
 	jit/compemu \
 	jit/compemu_fpp \
 	jit/compemu_support \
 	jit/compstbl
+
+JUAEPPCSRCS := \
+	ppc/ppc \
+	ppc/ppcd
 
 JUAEGENSRCS := \
 	blitfunc \
@@ -157,19 +219,29 @@ JUAEGENSRCS := \
 	cpuemu_20 \
 	cpuemu_21 \
 	cpuemu_22 \
+	cpuemu_23 \
+	cpuemu_24 \
 	cpuemu_31 \
 	cpuemu_32 \
 	cpuemu_33 \
+	cpuemu_40 \
+	cpuemu_50 \
 	cpustbl
 
 JUAESRCS := \
 	$(addprefix od-aros/, $(JUAEAROSSRCS)) \
+        $(addprefix $(GENDIR)/$(CURDIR)/, $(JUAEGENSRCS)) \
+        $(JUAEJITSRCS) \
+        $(JUAEPPCSRCS) \
 	$(JUAECOMMONSRCS) \
-        $(addprefix $(GENDIR)/$(CURDIR)/, $(JUAEGENSRCS))
+        $(JUAEARCHIVESRCS) \
+        $(JUAEQEMUSRCS) \
+        $(JUAEDOSBOXSRCS) \
+        $(JUAEMAMESRCS)
 
 %build_prog mmake=local-juae-emulator \
     progname=J-UAE targetdir=$(JUAEDIR) files="" cxxfiles="$(JUAESRCS)" \
-    uselibs="SDL arossupport z GL mui lowlevel" ldflags="-static-libstdc++ -L$(GENDIR)/$(CURDIR) -lgui -lSDL_Config"
+    uselibs="png SDL arossupport z GL mui lowlevel" ldflags="-static-libstdc++ -L$(GENDIR)/$(CURDIR)/lib -lgui -lmpeg2 -lmpeg2convert -lSDL_Config"
 
 %build_icons mmake=local-juae-icons-emulator icons="J-UAE" \
              dir=$(AROS_CONTRIB)/Emu/J-UAE
@@ -178,40 +250,46 @@ JUAESRCS := \
 ## Build the host tools needed to generate UAE
 ##
 
+HOSTGENDIR := $(GENDIR)/$(CURDIR)/host
+HOST_INCLUDES := -I$(HOSTGENDIR) -I$(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/$(CURDIR)
+HOST_CXXFLAGS := -DCROSS_COMPILE -Wall -Wno-switch  -fpermissive $(HOST_INCLUDES)
+
 #MM local-juae-genblitter : local-juae-hostconfig
 
-local-juae-genblitter: $(JUAEHOSTTOOLSDIR)/genblitter
-
-$(JUAEHOSTTOOLSDIR)/genblitter: genblitter.cpp blitops.cpp
-	@$(HOST_CXX) $(HOST_CXXFLAGS) $(HOST_INCLUDES) $? -o $@
+%build_prog mmake=local-juae-genblitter progname=genblitter \
+    files="" cxxfiles="genblitter blitops"  \
+    targetdir=$(JUAEHOSTTOOLSDIR)  objdir=$(HOSTGENDIR) \
+    cflags="$(HOST_CXXFLAGS)" compiler=host
 
 #MM  local-juae-build68k : local-juae-hostconfig local-juae-hosttchar local-juae-hosttarget
 
- local-juae-build68k: $(JUAEHOSTTOOLSDIR)/build68k
-
-$(JUAEHOSTTOOLSDIR)/build68k: build68k.cpp blitops.cpp
-	@$(HOST_CXX) $(HOST_CXXFLAGS) $(HOST_INCLUDES) $? -o $@
+%build_prog mmake=local-juae-build68k progname=build68k \
+    files="" cxxfiles="build68k unix_missing"  \
+    targetdir=$(JUAEHOSTTOOLSDIR)  objdir=$(HOSTGENDIR) \
+    cflags="$(HOST_CXXFLAGS)" compiler=host
 
 #MM local-juae-gencomp : local-juae-hostcpudefs
 
-local-juae-gencomp: $(JUAEHOSTTOOLSDIR)/gencomp
-
-$(JUAEHOSTTOOLSDIR)/gencomp: jit/gencomp.cpp readcpu.cpp $(GENDIR)/$(CURDIR)/cpudefs.cpp unix_missing2.cpp
-	@$(HOST_CXX) $(HOST_CXXFLAGS) $(HOST_INCLUDES) $? -o $@
+%build_prog mmake=local-juae-gencomp progname=gencomp \
+    files="" cxxfiles="jit/gencomp readcpu $(GENDIR)/$(CURDIR)/cpudefs unix_missing2"  \
+    targetdir=$(JUAEHOSTTOOLSDIR)  objdir=$(HOSTGENDIR) \
+    cflags="$(HOST_CXXFLAGS)" compiler=host
 
 #MM local-juae-gencpu : local-juae-hostconfig
 
-local-juae-gencpu: $(JUAEHOSTTOOLSDIR)/gencpu
-
-$(JUAEHOSTTOOLSDIR)/gencpu: gencpu.cpp missing.cpp readcpu.cpp $(GENDIR)/$(CURDIR)/cpudefs.cpp
-	@$(HOST_CXX) $(HOST_CXXFLAGS) $(HOST_INCLUDES) $? -o $@
+%build_prog mmake=local-juae-gencpu progname=gencpu \
+    files="" cxxfiles="gencpu missing readcpu $(GENDIR)/$(CURDIR)/cpudefs"  \
+    targetdir=$(JUAEHOSTTOOLSDIR)  objdir=$(HOSTGENDIR) \
+    cflags="$(HOST_CXXFLAGS)" compiler=host
 
 #MM local-juae-genlinetoscr : local-juae-hostconfig
 
 local-juae-genlinetoscr: $(JUAEHOSTTOOLSDIR)/genlinetoscr
 
-$(JUAEHOSTTOOLSDIR)/genlinetoscr: genlinetoscr.cpp
-	@$(HOST_CXX) $(HOST_CXXFLAGS) $(HOST_INCLUDES) $? -o $@
+%build_prog mmake=local-juae-genlinetoscr progname=genlinetoscr \
+    files="" cxxfiles="genlinetoscr"  \
+    targetdir=$(JUAEHOSTTOOLSDIR)  objdir=$(HOSTGENDIR) \
+    cflags="$(HOST_CXXFLAGS)" compiler=host
 
 ##
 ## Generate cpudefs.cpp
@@ -231,9 +309,9 @@ $(GENDIR)/$(CURDIR)/cpudefs.cpp: $(JUAEHOSTTOOLSDIR)/build68k table68k
 
 #MM local-juae-hostconfig : local-juae-dirs
 
-local-juae-hostconfig: $(HOSTINCLUDEDIR)/sysconfig.h
+local-juae-hostconfig: $(HOSTGENDIR)/sysconfig.h
 
-$(HOSTINCLUDEDIR)/sysconfig.h: $(SRCDIR)/$(CURDIR)/od-aros/sysconfig.h
+$(HOSTGENDIR)/sysconfig.h: $(SRCDIR)/$(CURDIR)/od-aros/sysconfig.h
 	@$(CP) $< $@
 
 ##
@@ -242,9 +320,9 @@ $(HOSTINCLUDEDIR)/sysconfig.h: $(SRCDIR)/$(CURDIR)/od-aros/sysconfig.h
 
 #MM local-juae-hosttchar : local-juae-dirs
 
-local-juae-hosttchar: $(HOSTINCLUDEDIR)/tchar.h
+local-juae-hosttchar: $(HOSTGENDIR)/tchar.h
 
-$(HOSTINCLUDEDIR)/tchar.h: $(SRCDIR)/$(CURDIR)/od-aros/tchar.h
+$(HOSTGENDIR)/tchar.h: $(SRCDIR)/$(CURDIR)/od-aros/tchar.h
 	@$(CP) $< $@
 
 ##
@@ -253,9 +331,9 @@ $(HOSTINCLUDEDIR)/tchar.h: $(SRCDIR)/$(CURDIR)/od-aros/tchar.h
 
 #MM local-juae-hosttarget : local-juae-dirs
 
-local-juae-hosttarget: $(HOSTINCLUDEDIR)/target.h
+local-juae-hosttarget: $(HOSTGENDIR)/target.h
 
-$(HOSTINCLUDEDIR)/target.h: $(SRCDIR)/$(CURDIR)/od-aros/target.h
+$(HOSTGENDIR)/target.h: $(SRCDIR)/$(CURDIR)/od-aros/target.h
 	@$(CP) $< $@
 
 ##
@@ -266,9 +344,9 @@ $(HOSTINCLUDEDIR)/target.h: $(SRCDIR)/$(CURDIR)/od-aros/target.h
 
 local-juae-genstrings: $(GENDIR)/$(CURDIR)/string_resource.h
 
-$(GENDIR)/$(CURDIR)/string_resource.h: $(SRCDIR)/$(CURDIR)/od-win32/resources/winuae.rc $(SRCDIR)/$(CURDIR)/od-aros/parse_res.pl
+$(GENDIR)/$(CURDIR)/string_resource.h: $(SRCDIR)/$(CURDIR)/od-win32/resources/winuae.rc $(SRCDIR)/$(CURDIR)/od-win32/resources/resource.h
 	@$(ECHO) "Generating $(notdir $@)"
-	@$(PERL) $(SRCDIR)/$(CURDIR)/od-aros/parse_res.pl $< $@
+	@$(PERL) $(SRCDIR)/$(CURDIR)/od-aros/parse_res.pl $^ $@
 
 ##
 ## Generate Misc. source files
@@ -306,7 +384,7 @@ $(GENDIR)/$(CURDIR)/blittable.cpp:	$(JUAEHOSTTOOLSDIR)/genblitter $(GENDIR)/$(CU
 
 local-juae-cpu: $(GENDIR)/$(CURDIR)/cpuemu_0.cpp
 
-$(GENDIR)/$(CURDIR)/cpuemu_0.cpp: $(JUAEHOSTTOOLSDIR)/gencpu
+$(GENDIR)/$(CURDIR)/cpuemu_%.cpp: $(JUAEHOSTTOOLSDIR)/gencpu
 	@$(ECHO) "Generating CPU emulation sources"
 	@$(eval TMP_DIR := $(shell pwd))
 	@cd $(JUAEHOSTTOOLSDIR); ./gencpu; cd $(TMP_DIR)
@@ -326,7 +404,7 @@ $(GENDIR)/$(CURDIR)/compemu.cpp: $(JUAEHOSTTOOLSDIR)/gencomp
 
 #MM
 local-juae-dirs :
-	%mkdirs_q $(HOSTINCLUDEDIR) $(JUAEHOSTTOOLSDIR) $(GENDIR)/$(CURDIR)/gui
-	ln -sfn $(AROS_INCLUDES)/aros $(HOSTINCLUDEDIR)/aros
+	%mkdirs_q $(HOSTGENDIR) $(JUAEHOSTTOOLSDIR) $(GENDIR)/$(CURDIR)/gui
+	ln -sfn $(AROS_INCLUDES)/aros $(HOSTGENDIR)/aros
 
 %common

@@ -11,7 +11,7 @@
 #include <clib/alib_protos.h>
 #include <utility/hooks.h>
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 #include "uae.h"
 #include "thread.h"
 #include "aros.h"

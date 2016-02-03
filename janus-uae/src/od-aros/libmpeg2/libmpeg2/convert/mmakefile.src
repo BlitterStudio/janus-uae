@@ -1,0 +1,17 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+JUAEHOSTTOOLSDIR := $(GENDIR)/$(CURDIR)/../../../..
+
+LIBMPEG2CONVFILES := \
+        rgb \
+        uyvy
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)/../../aros -I$(SRCDIR)/$(CURDIR)/../../include
+
+%build_linklib mmake=local-juae-mpeg2convert \
+  libname=mpeg2convert \
+  files="$(LIBMPEG2CONVFILES)" \
+  includedir="$(JUAEHOSTTOOLSDIR)/include" \
+  libdir="$(JUAEHOSTTOOLSDIR)/lib"

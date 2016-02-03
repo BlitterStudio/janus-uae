@@ -64,10 +64,10 @@ $(GENDIR)/$(CURDIR)/%.o: $(GENDIR)/$(CURDIR)/%.c
 $(GENDIR)/$(CURDIR)/%.c: images/%.png
 	@$(JUAEHOSTTOOLSDIR)/png2c  $< $@
 
-#MM local-juae-gui : local-juae-gui-obj 
+#MM local-juae-gui : local-juae-sdlconfig local-juae-gui-obj 
 
 local-juae-gui:
-%mklib_q to=$(GENDIR)/$(CURDIR)/../../libgui.a from="$(LIBGUIOBJS)"
+%mklib_q to=$(GENDIR)/$(CURDIR)/../../lib/libgui.a from="$(LIBGUIOBJS)"
 
 ##
 ## Generate MUI files
@@ -77,9 +77,9 @@ local-juae-gui:
 
 local-juae-gui-genmui: $(GENDIR)/$(CURDIR)/mui_data.cpp
 
-$(GENDIR)/$(CURDIR)/mui_data.cpp: ../../od-win32/resources/winuae.rc parse_fixed.pl
-	$(PERL) $(SRCDIR)/$(CURDIR)/parse_fixed.pl $< $@
+$(GENDIR)/$(CURDIR)/mui_data.cpp: $(SRCDIR)/$(CURDIR)/../../od-win32/resources/winuae.rc  $(SRCDIR)/$(CURDIR)/../../od-win32/resources/resource.h
+	$(PERL) $(SRCDIR)/$(CURDIR)/parse_fixed.pl $^ $@
 
 #MM
 local-juae-gui-dirs :
-	%mkdirs_q $(GENDIR)/$(CURDIR)
+	%mkdirs_q $(GENDIR)/$(CURDIR) $(GENDIR)/$(CURDIR)/../../lib
