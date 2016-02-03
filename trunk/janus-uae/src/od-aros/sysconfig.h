@@ -24,7 +24,8 @@
 #define __SYSCONFIG_H__
 
 #ifndef CROSS_COMPILE
-//#include <proto/dos.h>
+// This needs to be included here for the __WORDSIZE definition!!!
+#include <aros/cpu.h>
 #endif
 
 #define SUPPORT_THREADS
@@ -39,9 +40,8 @@
 #define FILESYS    /* filesys emulation */
 #define UAE_FILESYS_THREADS
 #define AUTOCONFIG /* autoconfig support, fast ram, harddrives etc.. */
-#ifndef UAE_ABI_v0
 #define JIT /* 64 bit jit at least builds.. */
-#endif
+#define USE_JIT_FPU
 //#define NATMEM_OFFSET natmem_offset /* j-uae has it not defined */
 #define NATMEM_OFFSET natmem_offset
 //#define CATWEASEL /* Catweasel MK2/3 support */
@@ -50,7 +50,6 @@
 #define CD32
 #define CDTV
 #define SCSIEMU
-#define NCR9X
 #define FPUEMU
 #define FPU_UAE
 #define MMUEMU /* Aranym 68040 MMU */
@@ -69,16 +68,21 @@
 #define CPUEMU_33 /* 68060 MMU */
 #define CPUEMU_40 /* generic 680x0 with indirect memory access */
 #define CPUEMU_50 /* generic 680x0 with indirect memory access */
-#define ACTION_REPLAY /* Action Replay 1/2/3 support */
 #define PICASSO96 /* Picasso96 display card emulation */
 #define UAEGFX_INTERNAL /* built-in libs:picasso96/uaegfx.card */
 //#define WITH_SLIRP
+#define ACTION_REPLAY /* Action Replay 1/2/3 support */
 #define ARCADIA /* Arcadia arcade system */
+#define AMAX /* A-Max ROM adapater emulation */
+//#define RETROPLATFORM /* Cloanto RetroPlayer support */
 #define SAVESTATE /* State file support */
 #define A2091 /* A590/A2091 SCSI */
 #define A2065 /* A2065 Ethernet card */
 #define GFXBOARD /* Hardware graphics board */
-#define NCR /* A4000T/A4091 SCSI */
+#define NCR /* A4000T/A4091, 53C710/53C770 SCSI */
+#define NCR9X /* 53C9X SCSI */
+#define WITH_PCI
+#define WITH_X86
 
 #define PICASSO96_SUPPORTED
 
@@ -97,10 +101,6 @@
 #define CPUEMU_13
 #define CPUEMU_11
 
-#endif
-
-#if (__WORDSIZE == 64)
-#undef JIT
 #endif
 
 /* oli defines */
@@ -439,9 +439,6 @@
 /* The size of `void *', as computed by sizeof. */
 #if (__WORDSIZE == 64)
 #define SIZEOF_VOID_P 8
-#ifndef __x86_64__
-#define __x86_64__
-#endif
 #else
 #define SIZEOF_VOID_P 4
 #endif
@@ -549,12 +546,6 @@
 
 
 #ifdef __AROS__
-
-#include <aros/cpu.h>
-/* not nice, but sysconfig.h is included both from native linux tools and 
- * AROS tools. TODO: move this soemwhere else..
- */
-//#include "thread.h"
 
 #define _cdecl
 #define __cdecl

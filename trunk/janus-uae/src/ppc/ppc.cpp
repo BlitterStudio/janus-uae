@@ -269,6 +269,7 @@ static void uae_patch_library_ppc(UAE_DLHANDLE handle)
 {
 	void *ptr;
 
+#if !defined(__AROS__)
 	ptr = uae_dlsym(handle, "uae_ppc_io_mem_read");
 	if (ptr) *((uae_ppc_io_mem_read_function *) ptr) = &uae_ppc_io_mem_read;
 	else write_log(_T("WARNING: uae_ppc_io_mem_read not set\n"));
@@ -284,6 +285,7 @@ static void uae_patch_library_ppc(UAE_DLHANDLE handle)
 	ptr = uae_dlsym(handle, "uae_ppc_io_mem_write64");
 	if (ptr) *((uae_ppc_io_mem_write64_function *) ptr) = &uae_ppc_io_mem_write64;
 	else write_log(_T("WARNING: uae_ppc_io_mem_write64 not set\n"));
+#endif
 }
 
 static bool load_qemu_implementation(void)

@@ -1,0 +1,36 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+JUAEHOSTTOOLSDIR := $(GENDIR)/$(CURDIR)/../../..
+
+LIBMPEG2FILES := \
+        alloc \
+        header \
+        decode \
+        cpu_accel \
+        cpu_state \
+        slice \
+        motion_comp \
+        idct
+
+ifneq (,$(findstring $(AROS_TARGET_CPU),arm))
+LIBMPEG2CPUFILES := motion_comp_arm
+endif
+ifneq (,$(findstring $(AROS_TARGET_CPU),ppc))
+LIBMPEG2CPUFILES := motion_comp_altivec
+endif
+ifneq (,$(findstring $(AROS_TARGET_CPU),x86_64))
+LIBMPEG2CPUFILES := motion_comp_mmx
+endif
+ifneq (,$(findstring $(AROS_TARGET_CPU),i386))
+LIBMPEG2CPUFILES := motion_comp_mmx
+endif
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)/../aros -I$(SRCDIR)/$(CURDIR)/../include
+
+%build_linklib mmake=local-juae-mpeg2 \
+  libname=mpeg2 \
+  files="$(LIBMPEG2FILES) $(LIBMPEG2CPUFILES)" \
+  includedir="$(JUAEHOSTTOOLSDIR)/include" \
+  libdir="$(JUAEHOSTTOOLSDIR)/lib"

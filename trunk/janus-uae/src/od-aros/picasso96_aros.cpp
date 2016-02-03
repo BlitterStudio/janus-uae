@@ -96,10 +96,10 @@ int mman_GetWriteWatch (uae_u8 *start, LONG size, void **lpAddresses, int *lpdwC
 #endif
 void mman_ResetWatch (PVOID lpBaseAddress, SIZE_T dwRegionSize);
 
-int p96refresh_active;
+int p96refresh_active = 0;
 bool have_done_picasso = 1; /* For the JIT compiler */
-static int p96syncrate;
-int p96hsync_counter, full_refresh;
+static int p96syncrate = 0;
+int p96hsync_counter = 0, full_refresh = 0;
 #if defined(X86_MSVC_ASSEMBLY)
 #define SWAPSPEEDUP
 #endif
@@ -124,9 +124,9 @@ static uae_u8 all_ones_bitmap, all_zeros_bitmap; /* yuk */
 
 struct picasso96_state_struct picasso96_state;
 struct picasso_vidbuf_description picasso_vidinfo;
-static struct PicassoResolution *newmodes;
+static struct PicassoResolution *newmodes = NULL;
 
-static int picasso_convert, host_mode;
+static int picasso_convert = 0, host_mode = 0;
 
 /* These are the maximum resolutions... They are filled in by GetSupportedResolutions() */
 /* have to fill this in, otherwise problems occur on the Amiga side P96 s/w which expects */
@@ -140,28 +140,28 @@ static struct ScreenResolution alphacolour = { 640, 480 };
 uae_u32 p96_rgbx16[65536];
 uae_u32 p96rc[256], p96gc[256], p96bc[256];
 
-static int cursorwidth, cursorheight, cursorok;
-static uae_u8 *cursordata;
+static int cursorwidth = 0, cursorheight = 0, cursorok = 0;
+static uae_u8 *cursordata = NULL;
 static uae_u32 cursorrgb[4], cursorrgbn[4];
-static int cursordeactivate, setupcursor_needed;
-static bool cursorvisible;
+static int cursordeactivate = 0, setupcursor_needed = 0;
+static bool cursorvisible = 0;
 #ifndef __AROS__
 static HCURSOR wincursor;
 #endif
-static int wincursor_shown;
+static int wincursor_shown = 0;
 static uaecptr boardinfo, ABI_interrupt;
-static int interrupt_enabled;
+static int interrupt_enabled = 0;
 double p96vblank;
-static int rtg_clear_flag;
-static bool picasso_active;
+static int rtg_clear_flag = 0;
+static bool picasso_active = 0;
 
-static int uaegfx_old, uaegfx_active;
-static uae_u32 reserved_gfxmem;
-static uaecptr uaegfx_resname,
-	uaegfx_resid,
-	uaegfx_init,
-	uaegfx_base,
-	uaegfx_rom;
+static int uaegfx_old = 0, uaegfx_active = 0;
+static uae_u32 reserved_gfxmem = 0;
+static uaecptr uaegfx_resname = NULL,
+	uaegfx_resid = NULL,
+	uaegfx_init = NULL,
+	uaegfx_base = NULL,
+	uaegfx_rom = NULL;
 
 typedef enum {
 	BLIT_FALSE,
@@ -715,7 +715,7 @@ static bool rtg_render (void)
 #ifdef NATMEM_OFFSET
 			flushed = picasso_flushpixels (gfxmem_bank.start + natmem_offset, picasso96_state.XYOffset - gfxmem_bank.start);
 #else
-      TODO();
+                        flushed = picasso_flushpixels (gfxmem_bank.start, picasso96_state.XYOffset - gfxmem_bank.start);
 #endif
 		} else {
 			gfxboard_vsync_handler ();
@@ -1536,7 +1536,8 @@ extern uae_u32 sprite_0_colors[4];
 int createwindowscursor (uaecptr src, int w, int h, int hiressprite, int doubledsprite, int chipset)
 {
   TODO();
-  return 0;
+  wincursor_shown = 1;
+  return 1;
 #if 0
 	HBITMAP andBM, xorBM;
 	HBITMAP andoBM, xoroBM;
@@ -1715,7 +1716,7 @@ int picasso_setwincursor (void)
 	}
 #endif
   TODO();
-	return 0;
+	return 1;
 }
 
 static uae_u32 setspriteimage (uaecptr bi)
@@ -1885,8 +1886,11 @@ static uae_u32 REGPARAM2 picasso_FindCard (TrapContext *ctx)
 {
 	uaecptr AmigaBoardInfo = m68k_areg (regs, 0);
 
-  DebOut("gfxmem_bank.start: %lx\n", gfxmem_bank.start);
+  DebOut("gfxmem_bank.start: %p\n", gfxmem_bank.start);
+  DebOut("gfxmem_bank.allocated: %d\n", gfxmem_bank.allocated);
   DebOut("uaegfx_active: %d\n", uaegfx_active);
+  DebOut("uaegfx_base: %p\n", uaegfx_base);
+  DebOut("uaegfx_old: %d\n", uaegfx_old);
 
 	/* NOTES: See BoardInfo struct definition in Picasso96 dev info */
 	if (!uaegfx_active || !gfxmem_bank.start)
@@ -1898,6 +1902,8 @@ static uae_u32 REGPARAM2 picasso_FindCard (TrapContext *ctx)
 	}
 	boardinfo = AmigaBoardInfo;
 	if (gfxmem_bank.allocated && !picasso96_state.CardFound) {
+                DebOut("uaegfx_active: storing config @ 0x%p\n", boardinfo);
+
 		/* Fill in MemoryBase, MemorySize */
 		put_long (AmigaBoardInfo + PSSO_BoardInfo_MemoryBase, gfxmem_bank.start);
 		put_long (AmigaBoardInfo + PSSO_BoardInfo_MemorySize, gfxmem_bank.allocated - reserved_gfxmem);
@@ -2211,7 +2217,7 @@ static void picasso96_alloc2 (TrapContext *ctx)
 	newmodes = xmalloc (struct PicassoResolution, MAX_PICASSO_MODES);
 	size = 0;
 
-  DebOut("1..\n");
+  DebOut("mode array : %lx\n", newmodes);
 
 	depths = 0;
 	if (p96depth (8))
@@ -2224,6 +2230,8 @@ static void picasso96_alloc2 (TrapContext *ctx)
 		depths++;
 	if (p96depth (32))
 		depths++;
+
+        DebOut("depths: %d\n", depths);
 
 	for (int mon = 0; Displays[mon].monitorname; mon++) {
 		struct PicassoResolution *DisplayModes = Displays[mon].DisplayModes;
@@ -2241,13 +2249,19 @@ static void picasso96_alloc2 (TrapContext *ctx)
 
 	cnt = 0;
 	for (int mon = 0; Displays[mon].monitorname; mon++) {
+                DebOut("mon: %d\n", mon);
 		struct PicassoResolution *DisplayModes = Displays[mon].DisplayModes;
 		i = 0;
 		while (DisplayModes[i].depth >= 0) {
+                        DebOut("  mode: %d\n", i);
+#if (0)
 			if (DisplayModes[i].rawmode) {
 				i++;
 				continue;
 			}
+#endif
+                        DebOut("  ...\n");
+                        
 			j = i;
 			size += PSSO_LibResolution_sizeof;
 			while (missmodes[misscnt * 2] == 0)
@@ -2261,6 +2275,7 @@ static void picasso96_alloc2 (TrapContext *ctx)
 					pr->res.width = missmodes[misscnt * 2 + 0];
 					pr->res.height = missmodes[misscnt * 2 + 1];
 					_stprintf (pr->name, _T("%dx%d FAKE"), pr->res.width, pr->res.height);
+                                        DebOut("  name: '%s'\n", pr->name);
 					size += PSSO_ModeInfo_sizeof * depths;
 					cnt++;
 					misscnt++;
@@ -2284,6 +2299,7 @@ static void picasso96_alloc2 (TrapContext *ctx)
 	}
 	qsort (newmodes, cnt, sizeof (struct PicassoResolution), resolution_compare);
 
+        DebOut("cnt: %d\n", cnt);
 
 #if MULTIDISPLAY
 	for (i = 0; Displays[i].name; i++) {
@@ -2326,9 +2342,9 @@ static void picasso96_alloc2 (TrapContext *ctx)
 			}
 		}
 	}
-#if 0
+
 	ShowSupportedResolutions ();
-#endif
+
 	uaegfx_card_install (ctx, size);
 	init_alloc (ctx, size);
 }

@@ -36,7 +36,7 @@
 
 #include <GL/glut.h>
 
-#define SDLGD(x) x
+#define SDLGD(x)
 
 void inputdevice_release_all_keys (void);
 
@@ -263,7 +263,7 @@ int get_sdlgfx_type (void)
     static int driver = SDLGFX_DRIVER_UNKNOWN;
     static int search_done = 0;
 
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);)
 
     if (!search_done) {
     if (SDL_VideoDriverName (name, sizeof name)) {
@@ -318,7 +318,7 @@ STATIC_INLINE unsigned long maskShift (unsigned long mask)
 
 static int get_color (int r, int g, int b, xcolnr *cnp)
 {
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);)
 
     DEBUG_LOG ("Function: get_color\n");
 
@@ -333,7 +333,7 @@ static void init_colors (void)
 {
     int i;
 
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);)
 
     DEBUG_LOG ("Function: init_colors\n");
 
@@ -374,7 +374,7 @@ static int find_best_mode (int *width, int *height, int depth, int fullscreen)
 {
     int found = 0;
 
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);)
 
     DEBUG_LOG ("Function: find_best_mode(%d,%d,%d)\n", *width, *height, depth);
 
@@ -413,7 +413,7 @@ static int find_best_mode (int *width, int *height, int depth, int fullscreen)
 
 int picasso_palette (void)
 {
-    //SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    //SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);)
 
   DebOut("entered\n");
         int i = 0, changed = 0;
@@ -439,7 +439,7 @@ int picasso_palette (void)
  */
 static int get_p96_pixel_format (const struct SDL_PixelFormat *fmt)
 {
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);)
 
     if (fmt->BitsPerPixel == 8)
         return RGBFB_CLUT;
@@ -517,7 +517,7 @@ static long find_screen_modes (struct SDL_PixelFormat *vfmt, SDL_Rect *mode_list
     long count = 0;
     SDL_Rect **modes = SDL_ListModes (vfmt, SDL_FULLSCREEN | SDL_HWSURFACE);
 
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);)
 
     if (modes != 0 && modes != (SDL_Rect**)-1) {
         unsigned int i;
@@ -546,7 +546,7 @@ static long find_screen_modes (struct SDL_PixelFormat *vfmt, SDL_Rect *mode_list
 
 static void sdl_flush_line (struct vidbuf_description *gfxinfo, int line_no)
 {
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);)
 
 }
 
@@ -557,26 +557,27 @@ static void sdl_flush_line (struct vidbuf_description *gfxinfo, int line_no)
 
 static int sdl_lock_nolock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 {
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);)
 
     return 1;
 }
 
 static void sdl_unlock_nolock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 {
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);)
 
 }
 
 STATIC_INLINE void sdl_flush_block_nolock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb, int first_line, int last_line) {
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
-
-    SDLGD(bug("[JUAE:SDL] %s: display 0x%p vidbuf_description @ 0x%p\n", __PRETTY_FUNCTION__, display, gfxinfo));
-    SDLGD(bug("[JUAE:SDL] %s: 0, %d ->  %d, %d\n", __PRETTY_FUNCTION__, first_line, currentmode->current_width, last_line - first_line + 1));
+    SDLGD(
+        bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);
+        bug("[JUAE:SDL] %s: display 0x%p vidbuf_description @ 0x%p\n", __PRETTY_FUNCTION__, display, gfxinfo);
+        bug("[JUAE:SDL] %s: 0, %d ->  %d, %d\n", __PRETTY_FUNCTION__, first_line, currentmode->current_width, last_line - first_line + 1);
+    )
 
     if(first_line >= last_line) {
 #warning first_line >= last_line should not happen at all?
-        SDLGD(bug("[JUAE:SDL] WARNING: %d >= %d\n", first_line, last_line));
+        SDLGD(bug("[JUAE:SDL] WARNING: %d >= %d\n", first_line, last_line);)
     }
     else {
         SDL_UpdateRect (display, 0, first_line, currentmode->current_width, last_line - first_line + 1);
@@ -591,7 +592,7 @@ static int sdl_lock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 {
     int success = 0;
 
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);)
 
     DEBUG_LOG ("Function: lock\n");
 
@@ -616,7 +617,7 @@ static int sdl_lock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 
 static void sdl_unlock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 {
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);)
 
     DEBUG_LOG ("Function: unlock\n");
 
@@ -625,7 +626,7 @@ static void sdl_unlock (struct vidbuf_description *gfxinfo, struct vidbuffer *vb
 
 static void sdl_flush_block (struct vidbuf_description *gfxinfo, struct vidbuffer *vb, int first_line, int last_line)
 {
-    //SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    //SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);)
 
     //DEBUG_LOG ("Function: flush_block %d %d\n", first_line, last_line);
     
@@ -640,7 +641,7 @@ static void sdl_flush_block (struct vidbuf_description *gfxinfo, struct vidbuffe
 
 static void sdl_flush_screen_dummy (struct vidbuf_description *gfxinfo, struct vidbuffer *vb, int first_line, int last_line)
 {
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);)
 }
 
 //#include "hrtimer.h"
@@ -650,7 +651,7 @@ static void sdl_flush_screen_flip (struct vidbuf_description *gfxinfo, struct vi
     frame_time_t start_time;
     frame_time_t sleep_time;
 
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);)
 
     SDL_BlitSurface (display, 0, screen,0);
 
@@ -664,7 +665,7 @@ static void sdl_flush_screen_flip (struct vidbuf_description *gfxinfo, struct vi
 
 static void sdl_flush_clear_screen (struct vidbuf_description *gfxinfo, struct vidbuffer *vb)
 {
-    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+    SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);)
 
     DEBUG_LOG ("Function: flush_clear_screen\n");
 
@@ -714,7 +715,7 @@ void fill_DisplayModes(struct MultiDisplay *md) {
 
       /* Find default display depth */
       bitdepth = info->vfmt->BitsPerPixel;
-      SDLGD(bug("[JUAE:SDL] %s: bitdepth: %d\n", __PRETTY_FUNCTION__, bitdepth));
+      SDLGD(bug("[JUAE:SDL] %s: bitdepth: %d\n", __PRETTY_FUNCTION__, bitdepth);)
       bit_unit = info->vfmt->BytesPerPixel * 8;
 
       write_log ("SDLGFX: Display is %d bits deep.\n", bitdepth);
@@ -747,6 +748,10 @@ int graphics_setup(void) {
   DebOut("graphics_setup (does nothing)\n");
 #ifdef USE_GL
   currprefs.use_gl=false;
+#endif
+
+#ifdef PICASSO96
+	InitPicasso96 ();
 #endif
 
   /* fill_DisplayModes was hopefully called before! */

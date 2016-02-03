@@ -23,10 +23,10 @@ $(GENDIR)/$(CURDIR)/%.o: %.c
 #MM local-juae-sdlconfig : local-juae-sdlconfig-obj
 
 local-juae-sdlconfig:
-%mklib_q to=$(GENDIR)/$(CURDIR)/../../libSDL_Config.a from="$(LIBSDLCONFOBJS)"
+%mklib_q to=$(GENDIR)/$(CURDIR)/../../lib/libSDL_Config.a from="$(LIBSDLCONFOBJS)"
 
 #MM
 local-juae-sdlconfig-dirs :
-	%mkdirs_q $(GENDIR)/$(CURDIR)
+	%mkdirs_q $(GENDIR)/$(CURDIR) $(GENDIR)/$(CURDIR)/../../lib
 
 %common
