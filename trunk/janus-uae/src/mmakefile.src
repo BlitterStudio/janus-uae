@@ -259,28 +259,28 @@ HOST_CXXFLAGS := -DCROSS_COMPILE -Wall -Wno-switch  -fpermissive $(HOST_INCLUDES
 %build_prog mmake=local-juae-genblitter progname=genblitter \
     files="" cxxfiles="genblitter blitops"  \
     targetdir=$(JUAEHOSTTOOLSDIR)  objdir=$(HOSTGENDIR) \
-    cflags="$(HOST_CXXFLAGS)" compiler=host
+    cxxflags="$(HOST_CXXFLAGS)" compiler=host
 
 #MM  local-juae-build68k : local-juae-hostconfig local-juae-hosttchar local-juae-hosttarget
 
 %build_prog mmake=local-juae-build68k progname=build68k \
     files="" cxxfiles="build68k unix_missing"  \
     targetdir=$(JUAEHOSTTOOLSDIR)  objdir=$(HOSTGENDIR) \
-    cflags="$(HOST_CXXFLAGS)" compiler=host
+    cxxflags="$(HOST_CXXFLAGS)" compiler=host
 
 #MM local-juae-gencomp : local-juae-hostcpudefs
 
 %build_prog mmake=local-juae-gencomp progname=gencomp \
     files="" cxxfiles="jit/gencomp readcpu $(GENDIR)/$(CURDIR)/cpudefs unix_missing2"  \
     targetdir=$(JUAEHOSTTOOLSDIR)  objdir=$(HOSTGENDIR) \
-    cflags="$(HOST_CXXFLAGS)" compiler=host
+    cxxflags="$(HOST_CXXFLAGS)" compiler=host
 
 #MM local-juae-gencpu : local-juae-hostconfig
 
 %build_prog mmake=local-juae-gencpu progname=gencpu \
     files="" cxxfiles="gencpu missing readcpu $(GENDIR)/$(CURDIR)/cpudefs"  \
     targetdir=$(JUAEHOSTTOOLSDIR)  objdir=$(HOSTGENDIR) \
-    cflags="$(HOST_CXXFLAGS)" compiler=host
+    cxxflags="$(HOST_CXXFLAGS)" compiler=host
 
 #MM local-juae-genlinetoscr : local-juae-hostconfig
 
@@ -289,7 +289,7 @@ local-juae-genlinetoscr: $(JUAEHOSTTOOLSDIR)/genlinetoscr
 %build_prog mmake=local-juae-genlinetoscr progname=genlinetoscr \
     files="" cxxfiles="genlinetoscr"  \
     targetdir=$(JUAEHOSTTOOLSDIR)  objdir=$(HOSTGENDIR) \
-    cflags="$(HOST_CXXFLAGS)" compiler=host
+    cxxflags="$(HOST_CXXFLAGS)" compiler=host
 
 ##
 ## Generate cpudefs.cpp
