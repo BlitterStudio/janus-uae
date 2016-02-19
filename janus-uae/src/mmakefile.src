@@ -30,7 +30,7 @@ USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/od-aros/libmpeg2/include
 USER_INCLUDES += -I$(GENDIR)/$(CURDIR)
 USER_INCLUDES += -I$(GENDIR)/$(CURDIR)/od-aros
 USER_INCLUDES += -I$(AROS_INCLUDES)/SDL
-USER_CFLAGS := -fexceptions
+USER_CXXFLAGS := -fexceptions
 ##USER_CFLAGS += -DJUAE_DEBUG=1 -DDEBUG=1
 
 PERL:=/usr/bin/perl
