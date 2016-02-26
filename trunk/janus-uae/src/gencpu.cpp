@@ -19,7 +19,7 @@
 */
 
 #include "sysconfig.h"
-#ifndef CROSS_COMPILE
+#if defined(__AROS__)
 #include "sysdeps.h"
 #else
 /* sysdeps uses target defines (AROS) for building a linux tool 
