@@ -218,6 +218,7 @@ int *HarddiskDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 #define SHOW_INCLOMPLETE_PAGES 
 Object* FixedObj(IPTR src)
 {
+ Object *_fObj = NULL;
 
   DebOut("==========================================================================\n");
 #ifdef SHOW_INCLOMPLETE_PAGES
@@ -227,10 +228,19 @@ Object* FixedObj(IPTR src)
         { TAG_DONE, 0}
     };
 
-    return (Object*) NewObjectA(CL_Fixed->mcc_Class, NULL, fo_tags);
+    bug("CL_Fixed @ 0x%p\n", CL_Fixed);
+    if (CL_Fixed)
+    {
+        bug("mcc_Class @ 0x%p\n", CL_Fixed->mcc_Class);
+
+        _fObj = (Object*) NewObjectA(CL_Fixed->mcc_Class, NULL, fo_tags);
+    }
 #else
-    return TextObject,  MUIA_Text_Contents, "\33cThis is an \33bAlpha Version\33n!\n\nThere is still some stuff missing, sorry.", End;
+    _fObj = TextObject,
+            MUIA_Text_Contents, "\33cThis is an \33bAlpha Version\33n!\n\nThere is still some stuff missing, sorry.",
+        End;
 #endif
+    return _fObj;
 }
 
 Object* FixedProcObj(IPTR src, IPTR proc)
@@ -495,7 +505,10 @@ int aros_init_gui(void) {
 
   if(!app) {
     DebOut("aros_init_gui called for the first time!\n");
-    init_class();
+    if (!init_class()) {
+        fprintf(stderr, "ERROR: Unable to initalize custom class!\n");
+        return 0;
+    }
     app = build_gui();
   }
 
