@@ -1,0 +1,8 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM- local-juae : local-juae-icons-app
+
+%build_icons mmake=local-juae-icons-app icons="J-UAE" \
+             dir=$(AROS_CONTRIB)/Emu/J-UAE
