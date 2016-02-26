@@ -3444,7 +3444,9 @@ int main(int argc, char *argv[])
      * cputbl.h that way), but cpuopti can't cope.  That could be fixed, but
      * I don't dare to touch the 68k version.  */
 
-	headerfile = fopen (GEN_PATH "comptbl.h", "wb");
+	if ((headerfile = fopen (GEN_PATH "comptbl.h", "wb")) == NULL) {
+		abort();
+	}
 
 	fprintf (headerfile, "" \
 		"#ifdef NOFLAGS_SUPPORT\n" \
