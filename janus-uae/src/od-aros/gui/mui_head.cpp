@@ -228,11 +228,8 @@ Object* FixedObj(IPTR src)
         { TAG_DONE, 0}
     };
 
-    bug("CL_Fixed @ 0x%p\n", CL_Fixed);
     if (CL_Fixed)
     {
-        bug("mcc_Class @ 0x%p\n", CL_Fixed->mcc_Class);
-
         _fObj = (Object*) NewObjectA(CL_Fixed->mcc_Class, NULL, fo_tags);
     }
 #else
@@ -245,6 +242,7 @@ Object* FixedObj(IPTR src)
 
 Object* FixedProcObj(IPTR src, IPTR proc)
 {
+ Object *_fpObj = NULL;
 
   DebOut("==========================================================================\n");
     struct TagItem fo_tags[] =
@@ -254,7 +252,13 @@ Object* FixedProcObj(IPTR src, IPTR proc)
         { TAG_DONE, 0}
     };
 
-    return (Object*) NewObjectA(CL_Fixed->mcc_Class, NULL, fo_tags);
+    if (CL_Fixed)
+    {
+        _fpObj = (Object*) NewObjectA(CL_Fixed->mcc_Class, NULL, fo_tags);
+    }
+
+    return _fpObj;
+
 }
 
 Object* build_gui(void) {
@@ -506,7 +510,7 @@ int aros_init_gui(void) {
   if(!app) {
     DebOut("aros_init_gui called for the first time!\n");
     if (!init_class()) {
-        fprintf(stderr, "ERROR: Unable to initalize custom class!\n");
+        fprintf(stderr, "ERROR: Unable to initalize custom class(es)!\n");
         return 0;
     }
     app = build_gui();
@@ -540,7 +544,10 @@ int aros_show_gui(void) {
 
   if(!app) {
     DebOut("aros_show_gui called for the first time!\n");
-    init_class();
+    if (!init_class()) {
+        fprintf(stderr, "ERROR: Unable to initialize custom class(es)!\n");
+        abort();
+    }
     app = build_gui();
   }
 
@@ -556,7 +563,7 @@ int aros_show_gui(void) {
 
   DoMethod(win, MUIM_Set, MUIA_Window_Open, TRUE);
 
-  ret=aros_main_loop();
+  ret = aros_main_loop();
 
   DoMethod(win, MUIM_Set, MUIA_Window_Open, FALSE);
 
