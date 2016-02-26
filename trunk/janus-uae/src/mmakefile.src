@@ -4,43 +4,31 @@ include $(TOP)/config/make.cfg
 
 #MM- local-juae : local-juae-emulator
 
+ifeq (x86_64,$(AROS_TARGET_CPU))
+COMMON_FLAGS := -D__WORDSIZE=64
+DOJIT := yes
+endif
+ifeq (i386,$(AROS_TARGET_CPU))
+DOJIT := yes
+endif
+##COMMON_FLAGS += -DJUAE_DEBUG=1 -DDEBUG=1
+
 #MM local-juae-emulator : local-juae-gui
 #MM local-juae-emulator : local-juae-mpeg2
 #MM local-juae-emulator : local-juae-mpeg2convert
 #MM local-juae-emulator : local-juae-sdlconfig
-#MM local-juae-emulator : local-juae-genblitter
-#MM local-juae-emulator : local-juae-build68k
-#MM local-juae-emulator : local-juae-gencomp
-#MM local-juae-emulator : local-juae-gencpu
-#MM local-juae-emulator : local-juae-genlinetoscr
-#MM local-juae-emulator : local-juae-genstrings
+#MM local-juae-emulator : local-juae-hosttools
 #MM local-juae-emulator : local-juae-linetoscr
 #MM local-juae-emulator : local-juae-blitter
 #MM local-juae-emulator : local-juae-cpu
-#MM local-juae-emulator : local-juae-compemu
+#MM local-juae-emulator : local-juae-jit-$(AROS_TARGET_CPU)
 #MM local-juae-emulator : local-juae-icons-emulator
 
-ifneq (,$(findstring $(AROS_TARGET_CPU),86_64))
-COMMON_FLAGS := -D__WORDSIZE=64 -DJIT
-endif
-##COMMON_FLAGS += -DJUAE_DEBUG=1 -DDEBUG=1
+#MM- local-juae-jit-i386 : local-juae-compemu
+#MM- local-juae-jit-x86_64 : local-juae-compemu
 
 JUAEDIR := $(AROS_CONTRIB)/Emu/J-UAE
 JUAEHOSTTOOLSDIR := $(GENDIR)/$(CURDIR)
-
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/od-aros
-USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/od-aros/gui
-USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/include
-USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/archivers/zip
-USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/od-aros/libmpeg2/include
-USER_INCLUDES += -I$(GENDIR)/$(CURDIR)
-USER_INCLUDES += -I$(GENDIR)/$(CURDIR)/od-aros
-USER_INCLUDES += -I$(AROS_INCLUDES)/SDL
-
-USER_CXXFLAGS := -fexceptions
-ifneq (,$(COMMON_FLAGS))
-USER_CXXFLAGS := $(COMMON_FLAGS) $(USER_CXXFLAGS)
-endif
 
 PERL:=/usr/bin/perl
 
@@ -172,8 +160,6 @@ JUAECOMMONSRCS := \
 	zfile \
 	zfile_archive
 
-##	ethernet
-
 JUAEARCHIVESRCS := \
 	archivers/zip/zip \
 	archivers/zip/ioapi \
@@ -208,12 +194,6 @@ JUAEDOSBOXSRCS := \
 	dosbox/pic \
 	dosbox/timer
 
-JUAEJITSRCS := \
-	jit/compemu \
-	jit/compemu_fpp \
-	jit/compemu_support \
-	jit/compstbl
-
 JUAEPPCSRCS := \
 	ppc/ppc \
 	ppc/ppcd
@@ -237,16 +217,44 @@ JUAEGENSRCS := \
 	cpuemu_50 \
 	cpustbl
 
+
 JUAESRCS := \
 	$(addprefix od-aros/, $(JUAEAROSSRCS)) \
-        $(addprefix $(GENDIR)/$(CURDIR)/, $(JUAEGENSRCS)) \
-        $(JUAEJITSRCS) \
         $(JUAEPPCSRCS) \
 	$(JUAECOMMONSRCS) \
         $(JUAEARCHIVESRCS) \
         $(JUAEQEMUSRCS) \
         $(JUAEDOSBOXSRCS) \
         $(JUAEMAMESRCS)
+
+USER_INCLUDES := -I$(GENDIR)/$(CURDIR)/od-aros
+USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/od-aros
+USER_INCLUDES += -I$(GENDIR)/$(CURDIR)
+USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/od-aros/gui
+USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/include
+USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/archivers/zip
+USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/od-aros/libmpeg2/include
+USER_INCLUDES += -I$(AROS_INCLUDES)/SDL
+
+ifneq (,$(DOJIT))
+COMMON_FLAGS += -DJIT
+JUAEGENJITDIR := $(GENDIR)/$(CURDIR)/jit
+USER_INCLUDES += -I$(JUAEGENJITDIR)
+JUAEGENSRCS +=  \
+	jit/compemu \
+	jit/compstbl
+JUAESRCS +=  \
+	jit/compemu_fpp \
+	jit/compemu_support
+endif
+
+JUAESRCS += \
+        $(addprefix $(GENDIR)/$(CURDIR)/, $(JUAEGENSRCS))
+
+USER_CXXFLAGS := -fexceptions
+ifneq (,$(COMMON_FLAGS))
+USER_CXXFLAGS := $(COMMON_FLAGS) $(USER_CXXFLAGS)
+endif
 
 JUAE_LDFLAGS := -static-libstdc++ -L$(GENDIR)/$(CURDIR)/lib -lgui -lmpeg2 -lmpeg2convert -lSDL_Config
 
@@ -260,6 +268,12 @@ JUAE_LDFLAGS := -static-libstdc++ -L$(GENDIR)/$(CURDIR)/lib -lgui -lmpeg2 -lmpeg
 ##
 ## Build the host tools needed to generate UAE
 ##
+
+#MM- local-juae-hosttools : local-juae-genblitter
+#MM- local-juae-hosttools : local-juae-build68k
+#MM- local-juae-hosttools : local-juae-gencpu
+#MM- local-juae-hosttools : local-juae-genlinetoscr
+#MM- local-juae-hosttools : local-juae-genstrings
 
 HOSTGENDIR := $(GENDIR)/$(CURDIR)/host
 HOST_INCLUDES := -I$(HOSTGENDIR) -I$(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/$(CURDIR)
@@ -282,14 +296,14 @@ endif
     targetdir=$(JUAEHOSTTOOLSDIR)  objdir=$(HOSTGENDIR) \
     cxxflags="$(HOST_CXXFLAGS)" compiler=host
 
-#MM local-juae-gencomp : local-juae-hostcpudefs
+#MM local-juae-gencomp : local-juae-hostconfig local-juae-hostcpudefs
 
 %build_prog mmake=local-juae-gencomp progname=gencomp \
     files="" cxxfiles="jit/gencomp readcpu $(GENDIR)/$(CURDIR)/cpudefs unix_missing2"  \
     targetdir=$(JUAEHOSTTOOLSDIR)  objdir=$(HOSTGENDIR) \
     cxxflags="$(HOST_CXXFLAGS)" compiler=host
 
-#MM local-juae-gencpu : local-juae-hostconfig
+#MM local-juae-gencpu : local-juae-hostconfig local-juae-hostcpudefs
 
 %build_prog mmake=local-juae-gencpu progname=gencpu \
     files="" cxxfiles="gencpu missing readcpu $(GENDIR)/$(CURDIR)/cpudefs"  \
@@ -405,9 +419,9 @@ $(GENDIR)/$(CURDIR)/cpuemu_%.cpp: $(JUAEHOSTTOOLSDIR)/gencpu
 
 #MM local-juae-compemu : local-juae-gencomp
 
-local-juae-compemu: $(GENDIR)/$(CURDIR)/compemu.cpp
+local-juae-compemu: $(GENDIR)/$(CURDIR)/jit/compemu.cpp
 
-$(GENDIR)/$(CURDIR)/compemu.cpp: $(JUAEHOSTTOOLSDIR)/gencomp
+$(GENDIR)/$(CURDIR)/jit/compemu.cpp: $(JUAEHOSTTOOLSDIR)/gencomp
 	@$(ECHO) "Generating CPU JIT sources"
 	@$(eval TMP_DIR := $(shell pwd))
 	@cd $(JUAEHOSTTOOLSDIR); ./gencomp; cd $(TMP_DIR)
@@ -418,7 +432,7 @@ $(GENDIR)/$(CURDIR)/compemu.cpp: $(JUAEHOSTTOOLSDIR)/gencomp
 
 #MM
 local-juae-dirs :
-	%mkdirs_q $(HOSTGENDIR) $(JUAEHOSTTOOLSDIR) $(GENDIR)/$(CURDIR)/gui
+	%mkdirs_q $(HOSTGENDIR) $(JUAEHOSTTOOLSDIR) $(GENDIR)/$(CURDIR)/gui $(JUAEGENJITDIR)
 	ln -sfn $(AROS_INCLUDES)/aros $(HOSTGENDIR)/aros
 
 %common
