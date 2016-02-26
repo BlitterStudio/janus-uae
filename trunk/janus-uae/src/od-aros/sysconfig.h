@@ -23,11 +23,6 @@
 #ifndef __SYSCONFIG_H__
 #define __SYSCONFIG_H__
 
-#ifndef CROSS_COMPILE
-// This needs to be included here for the __WORDSIZE definition!!!
-#include <aros/cpu.h>
-#endif
-
 #define SUPPORT_THREADS
 #define MAX_DPATH 1000
 #define MAX_PATH 256
@@ -40,8 +35,10 @@
 #define FILESYS    /* filesys emulation */
 #define UAE_FILESYS_THREADS
 #define AUTOCONFIG /* autoconfig support, fast ram, harddrives etc.. */
-#define JIT /* 64 bit jit at least builds.. */
+// NB: (AROS) JIT is passed in from the makefile
+#if defined(JIT)
 #define USE_JIT_FPU
+#endif
 //#define NATMEM_OFFSET natmem_offset /* j-uae has it not defined */
 #define NATMEM_OFFSET natmem_offset
 //#define CATWEASEL /* Catweasel MK2/3 support */
@@ -436,7 +433,11 @@
 #define UAE
 #endif
 
-/* The size of `void *', as computed by sizeof. */
+/*
+ * The size of `void *', as computed by sizeof.
+ * NB: (AROS) __WORDSIZE needs to be passed in from
+ * the makefile, so that both target and host know.
+ */
 #if (__WORDSIZE == 64)
 #define SIZEOF_VOID_P 8
 #else
