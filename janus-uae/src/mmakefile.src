@@ -20,8 +20,14 @@ include $(TOP)/config/make.cfg
 #MM local-juae-emulator : local-juae-compemu
 #MM local-juae-emulator : local-juae-icons-emulator
 
+ifneq (,$(findstring $(AROS_TARGET_CPU),86_64))
+COMMON_FLAGS := -D__WORDSIZE=64 -DJIT
+endif
+##COMMON_FLAGS += -DJUAE_DEBUG=1 -DDEBUG=1
+
 JUAEDIR := $(AROS_CONTRIB)/Emu/J-UAE
 JUAEHOSTTOOLSDIR := $(GENDIR)/$(CURDIR)
+
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/od-aros
 USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/od-aros/gui
 USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/include
@@ -30,8 +36,11 @@ USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/od-aros/libmpeg2/include
 USER_INCLUDES += -I$(GENDIR)/$(CURDIR)
 USER_INCLUDES += -I$(GENDIR)/$(CURDIR)/od-aros
 USER_INCLUDES += -I$(AROS_INCLUDES)/SDL
+
 USER_CXXFLAGS := -fexceptions
-##USER_CFLAGS += -DJUAE_DEBUG=1 -DDEBUG=1
+ifneq (,$(COMMON_FLAGS))
+USER_CXXFLAGS := $(COMMON_FLAGS) $(USER_CXXFLAGS)
+endif
 
 PERL:=/usr/bin/perl
 
@@ -239,9 +248,11 @@ JUAESRCS := \
         $(JUAEDOSBOXSRCS) \
         $(JUAEMAMESRCS)
 
+JUAE_LDFLAGS := -static-libstdc++ -L$(GENDIR)/$(CURDIR)/lib -lgui -lmpeg2 -lmpeg2convert -lSDL_Config
+
 %build_prog mmake=local-juae-emulator \
     progname=J-UAE targetdir=$(JUAEDIR) files="" cxxfiles="$(JUAESRCS)" \
-    uselibs="png SDL arossupport z GL mui lowlevel" ldflags="-static-libstdc++ -L$(GENDIR)/$(CURDIR)/lib -lgui -lmpeg2 -lmpeg2convert -lSDL_Config"
+    uselibs="png SDL arossupport z GL mui lowlevel" ldflags="$(JUAE_LDFLAGS)"
 
 %build_icons mmake=local-juae-icons-emulator icons="J-UAE" \
              dir=$(AROS_CONTRIB)/Emu/J-UAE
@@ -252,7 +263,10 @@ JUAESRCS := \
 
 HOSTGENDIR := $(GENDIR)/$(CURDIR)/host
 HOST_INCLUDES := -I$(HOSTGENDIR) -I$(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/$(CURDIR)
-HOST_CXXFLAGS := -DCROSS_COMPILE -Wall -Wno-switch  -fpermissive $(HOST_INCLUDES)
+HOST_CXXFLAGS := -DCROSS_COMPILE -Wall -Wno-switch  -fpermissive -g $(HOST_INCLUDES)
+ifneq (,$(COMMON_FLAGS))
+HOST_CXXFLAGS := $(COMMON_FLAGS) $(HOST_CXXFLAGS)
+endif
 
 #MM local-juae-genblitter : local-juae-hostconfig
 
