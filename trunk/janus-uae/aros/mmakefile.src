@@ -4,6 +4,8 @@ include $(TOP)/config/make.cfg
 
 #MM- local-juae : local-juae-amirun
 
+USER_CFLAGS := -Wno-unused-but-set-variable
+
 %build_prog mmake=local-juae-amirun \
     progname=amirun targetdir=$(AROS_CONTRIB)/Emu/J-UAE/C files=amirun \
     detach=yes
