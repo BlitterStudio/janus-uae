@@ -501,6 +501,7 @@ UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount) {
   int i;
   UINT ret;
   char *buffer; 
+  IPTR t;
 
   i=get_index(elem, nIDDlgItem);
   /* might be in a different element..*/
@@ -515,13 +516,25 @@ UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount) {
     return 0;
   }
   DebOut("elem[%d].obj: %lx\n", i, elem[i].obj);
+  DebOut("elem[%d].windows_type: %d\n", i, elem[i].windows_type);
 
-  if(elem[i].windows_type==EDITTEXT) {
+  if(elem[i].windows_type==EDITTEXT || elem[i].windows_type==COMBOBOX) {
+    if(!flag_editable(src[i].flags)) {
+      TODO(); /* or not to do? */
+    }
     GetAttr(MUIA_String_Contents, elem[i].obj, (IPTR *) &buffer);
     DebOut("buffer: %s\n", buffer);
-    strncpy(lpString, buffer, nMaxCount);
+    /* getting a NULL here is ok, for example a combo box might contain no entries */ 
+    if(!buffer) {
+      /* we must not return a NULL, but an empty string */
+      strncpy(lpString, "", nMaxCount);
+    }
+    else {
+      strncpy(lpString, buffer, nMaxCount);
+    }
   }
   else {
+    bug("Warning: elem[i].windows_type=%d, GetText..?\n", elem[i].windows_type);
     DebOut("Warning: elem[i].windows_type=%d, GetText..?\n", elem[i].windows_type);
     DebOut("return elem[i].text: %s\n", elem[i].text);
     strncpy(lpString, elem[i].text, nMaxCount);
