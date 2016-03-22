@@ -1,6 +1,7 @@
 # $Id$
 
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 LIBSDLCONFFILES := \
         SDL_config
@@ -10,6 +11,9 @@ LIBSDLCONFFILES := \
 ##        SDL_config_saving \
 ##        SDL_config_utils
 
+NOWARN_FLAGS := $(NOWARN_OVERFLOW) $(NOWARN_UNUSED_VALUE) \
+    $(NOWARN_MISLEADING_INDENTATION) $(NOWARN_SIGN_COMPARE) \
+    $(NOWARN_COMMENT)
 LIBSDLCONFOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/,$(LIBSDLCONFFILES)))
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)
 
@@ -18,7 +22,7 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)
 local-juae-sdlconfig-obj: $(LIBSDLCONFOBJS)
 
 $(GENDIR)/$(CURDIR)/%.o: %.c
-	@$(AROS_CXX) $(TARGET_CFLAGS) $(USER_INCLUDES) -o $@ -c $<
+	@$(AROS_CXX) $(CXXFLAGS) $(NOWARN_FLAGS) $(USER_INCLUDES) -o $@ -c $<
 
 #MM local-juae-sdlconfig : local-juae-sdlconfig-obj
 

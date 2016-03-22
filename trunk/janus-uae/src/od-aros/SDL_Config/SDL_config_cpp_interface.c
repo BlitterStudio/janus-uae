@@ -485,7 +485,7 @@ int ConfigFile :: SelectMultiValueEntry( CFG_String_Arg entry, int index )
 CFG_String_Arg ConfigFile :: GetEntryPreComment(CFG_String_Arg entry_name, int entry_type)
   {
   if (!is_open)
-    return false;
+    return (CFG_String_Arg)false;
 
   CFG_SelectFile(&config);
   return CFG_GetEntryComment(entry_name, entry_type, CFG_COMMENT_PRE);
@@ -494,7 +494,7 @@ CFG_String_Arg ConfigFile :: GetEntryPreComment(CFG_String_Arg entry_name, int e
 CFG_String_Arg ConfigFile :: GetEntryPostComment(CFG_String_Arg entry_name, int entry_type)
   {
   if (!is_open)
-    return false;
+    return (CFG_String_Arg)false;
 
   CFG_SelectFile(&config);
   return CFG_GetEntryComment(entry_name, entry_type, CFG_COMMENT_POST);
