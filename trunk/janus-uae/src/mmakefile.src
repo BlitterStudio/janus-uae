@@ -1,6 +1,7 @@
 #   $Id$
 
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 #MM- local-juae : local-juae-emulator
 
@@ -251,9 +252,10 @@ endif
 JUAESRCS += \
         $(addprefix $(GENDIR)/$(CURDIR)/, $(JUAEGENSRCS))
 
+NOWARN_FLAGS := $(NOWARN_NARROWING) $(NOWARN_UNUSED_VARIABLE) $(NOWARN_UNUSED_BUT_SET_VARIABLE) $(NOWARN_SIGN_COMPARE) $(NOWARN_UNUSED_FUNCTION) $(NOWARN_MISLEADING_INDENTATION)
 USER_CXXFLAGS := -fexceptions
 ifneq (,$(COMMON_FLAGS))
-USER_CXXFLAGS := $(COMMON_FLAGS) $(USER_CXXFLAGS)
+USER_CXXFLAGS := $(USER_CXXFLAGS) $(NOWARN_FLAGS) $(COMMON_FLAGS)
 endif
 
 JUAE_LDFLAGS := -static-libstdc++ -L$(GENDIR)/$(CURDIR)/lib -lgui -lmpeg2 -lmpeg2convert -lSDL_Config
