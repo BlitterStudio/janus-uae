@@ -36,7 +36,9 @@
 #endif
 
 #define DUNUSED(x)
+#ifndef D
 #define D
+#endif
 #if DEBUG
 # define bug write_log
 #else
