@@ -519,7 +519,7 @@ UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount) {
   DebOut("elem[%d].windows_type: %d\n", i, elem[i].windows_type);
 
   if(elem[i].windows_type==EDITTEXT || elem[i].windows_type==COMBOBOX) {
-    if(!flag_editable(src[i].flags)) {
+    if(!flag_editable(elem[i].flags)) {
       TODO(); /* or not to do? */
     }
     GetAttr(MUIA_String_Contents, elem[i].obj, (IPTR *) &buffer);
