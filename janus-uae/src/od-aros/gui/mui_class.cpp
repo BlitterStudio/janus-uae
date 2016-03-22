@@ -43,7 +43,7 @@
 static const char *Cycle_Dummy[] = { NULL };
 
 struct ReqToolsBase *ReqToolsBase=NULL;
-struct MUI_CustomClass *CL_Fixed;
+struct MUI_CustomClass *CL_Fixed=NULL;
 
 static VOID mSet(struct Data *data, APTR obj, struct opSet *msg, ULONG is_new);
 
@@ -182,7 +182,7 @@ AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
       }
       wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
       DebOut("[%lx] call function: %lx(IDC %d, CBN_SELCHANGE)\n", obj, data->func, data->src[i].idc);
-      data->func(data->src, WM_COMMAND, wParam, NULL);
+      data->func(data->src, WM_COMMAND, wParam, 0);
     }
   }
   else {
@@ -211,7 +211,7 @@ AROS_UFH2(void, MUIHook_entry, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
 
   if(data->func) {
     wParam=MAKELPARAM(data->src[i].idc, 0); /* 0? really? */
-    data->func(data->src, WM_COMMAND, wParam, NULL);
+    data->func(data->src, WM_COMMAND, wParam, 0);
   }
   else {
     DebOut("[%lx] function is zero: %lx\n", obj, data->func);
@@ -237,16 +237,16 @@ AROS_UFH2(void, MUIHook_slide, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
 #if 0
     wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
     DebOut("call function: %lx (IDC %d, wParam: %lx)\n", data->func, data->src[i].idc, wParam);
-    data->func(data->src, WM_COMMAND, wParam, NULL);
+    data->func(data->src, WM_COMMAND, wParam, 0);
 #endif
 
     /* warning: should we call BN_CLICKED here, too?
      * open console in Paths won't work without .. 
      */
     wParam=MAKELPARAM(data->src[i].idc, BN_CLICKED);
-    data->func(data->src, WM_COMMAND, wParam, NULL);
+    data->func(data->src, WM_COMMAND, wParam, 0);
 
-    data->func(data->src, WM_HSCROLL, NULL, NULL);
+    data->func(data->src, WM_HSCROLL, NULL, 0);
 
   }
   else {
@@ -327,7 +327,7 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
     if(data->func) {
       wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
       DebOut("call function: %lx (IDC %d, wParam: %lx)\n", data->func, data->src[i].idc, wParam);
-      data->func(data->src, WM_COMMAND, wParam, NULL);
+      data->func(data->src, WM_COMMAND, wParam, 0);
     }
     goto DONE;
   }
@@ -340,7 +340,7 @@ DONE:
      * open console in Paths won't work without .. 
      */
     wParam=MAKELPARAM(data->src[i].idc, BN_CLICKED);
-    data->func(data->src, WM_COMMAND, wParam, NULL);
+    data->func(data->src, WM_COMMAND, wParam, 0);
   }
   else {
     DebOut("WARNING: function is zero: %lx\n", data->func);
@@ -370,7 +370,7 @@ AROS_UFH2(void, MUIHook_pushbutton, AROS_UFHA(struct Hook *, hook, A0), AROS_UFH
     DebOut("WM_COMMAND: %d\n", WM_COMMAND);
 
     wParam=MAKELPARAM(data->src[i].idc, BN_CLICKED);
-    data->func(data->src, WM_COMMAND, wParam, NULL);
+    data->func(data->src, WM_COMMAND, wParam, 0);
   }
   else {
     DebOut("function is zero: %lx\n", data->func);
