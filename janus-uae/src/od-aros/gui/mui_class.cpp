@@ -246,7 +246,7 @@ AROS_UFH2(void, MUIHook_slide, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
     wParam=MAKELPARAM(data->src[i].idc, BN_CLICKED);
     data->func(data->src, WM_COMMAND, wParam, 0);
 
-    data->func(data->src, WM_HSCROLL, NULL, 0);
+    data->func(data->src, WM_HSCROLL, 0, 0);
 
   }
   else {
@@ -517,7 +517,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
 
     DebOut("YYYYYYYYYYYYYYYYYY\n");
 
-    struct TextAttr ta = { "Vera Sans", 12, 0, 0 };
+    struct TextAttr ta = { (STRPTR)"Vera Sans", 12, 0, 0 };
     TextFont *Topaz8Font = OpenDiskFont(&ta);
     DebOut("Topaz8Font: %lx\n", Topaz8Font);
 #if 0
