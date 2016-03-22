@@ -151,7 +151,7 @@ typedef struct CFG_Internal_Entry
 
   Uint8 reserved;*/
 
- };
+ } CFG_Internal_Entry;
 
 /* ------------------------------------------------------- CFG_Internal_Group */
 
@@ -244,7 +244,7 @@ typedef struct CFG_Internal_Group
   Uint8 reserved2;
   Uint8 reserved3;
 
- };
+ } CFG_Internal_Group;
 
 
 /* ------------------------------------------------------- CFG_Internal_File */
@@ -387,5 +387,5 @@ typedef struct CFG_Internal_File
   /*CFG_Internal_BoolSyntax bool_keyword;*/
 
 
- };
+ } CFG_Internal_File;
 
