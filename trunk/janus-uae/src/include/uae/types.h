@@ -62,7 +62,7 @@ typedef uae_u32 uaecptr;
 
 typedef char uae_char;
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__AROS__)
 #include <tchar.h>
 #ifdef UNICODE
 #define SIZEOF_TCHAR 2
