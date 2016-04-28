@@ -237,11 +237,12 @@ int target_cfgfile_load (struct uae_prefs *p, const TCHAR *filename, int type, i
 int target_parse_option (struct uae_prefs *p, const TCHAR *option, const TCHAR *value) 
 //int target_parse_option (struct uae_prefs *p, char *option, char *value)
 {
-  TODO();
+    TODO();
+    return 1;
 }
 
 TCHAR *target_expand_environment (const TCHAR *path)
 {
-	return my_strdup(path);
+    return my_strdup(path);
 }
 
