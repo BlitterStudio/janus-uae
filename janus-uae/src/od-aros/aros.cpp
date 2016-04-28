@@ -852,7 +852,7 @@ HANDLE FindFirstFile(const TCHAR *lpFileName, WIN32_FIND_DATA *lpFindFileData) {
   char path[256];
   INTERNAL_HANDLE *h=NULL;
 
-  memset(lpFindFileData, 0, sizeof(lpFindFileData));
+  memset(lpFindFileData, 0, sizeof(WIN32_FIND_DATA));
 
   DebOut("lpFileName: %s\n", lpFileName);
   wildcard[0]=(char) 0;
