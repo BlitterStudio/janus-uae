@@ -68,7 +68,8 @@ char *au_fs_copy (char *dst, int maxlen, const char *src)
 
 /* we only have ASCII bytes, so.. */
 char *ua_fs_copy (char *dst, int maxlen, const TCHAR *src, int defchar) {
-  strncpy(dst, src, maxlen);
+	strncpy(dst, src, maxlen);
+	return dst;
 }
 
 /* ua_fs
