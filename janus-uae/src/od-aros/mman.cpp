@@ -416,9 +416,9 @@ static int doinit_shm (void)
 
 	set_expamem_z3_hack_override(false);
 	z3offset = 0;
-#warning ======================================================
-#warning forced changed_prefs.z3_mapping_mode:=Z3MAPPING_UAE
-#warning ======================================================
+// warning ======================================================
+// warning forced changed_prefs.z3_mapping_mode:=Z3MAPPING_UAE
+// warning ======================================================
 DebOut("changed_prefs.z3_mapping_mode: %d\n", changed_prefs.z3_mapping_mode);
 changed_prefs.z3_mapping_mode=Z3MAPPING_UAE;
 DebOut("changed_prefs.z3_mapping_mode: %d\n", changed_prefs.z3_mapping_mode);
