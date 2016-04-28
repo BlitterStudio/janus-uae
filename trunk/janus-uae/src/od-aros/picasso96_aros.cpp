@@ -104,10 +104,14 @@ int p96hsync_counter = 0, full_refresh = 0;
 #define SWAPSPEEDUP
 #endif
 #ifdef PICASSO96
+
 //#ifdef DEBUG // Change this to _DEBUG for debugging
+#ifndef P96TRACING_ENABLED
 #define P96TRACING_ENABLED 1
 #define P96TRACING_LEVEL 1
+#endif /* !P96TRACING_ENABLED */
 //#endif
+
 #if P96TRACING_ENABLED
 #define P96TRACE(x) do { write_log x; } while(0)
 #else
@@ -157,11 +161,11 @@ static bool picasso_active = 0;
 
 static int uaegfx_old = 0, uaegfx_active = 0;
 static uae_u32 reserved_gfxmem = 0;
-static uaecptr uaegfx_resname = NULL,
-	uaegfx_resid = NULL,
-	uaegfx_init = NULL,
-	uaegfx_base = NULL,
-	uaegfx_rom = NULL;
+static uaecptr uaegfx_resname = (uaecptr)NULL,
+	uaegfx_resid = (uaecptr)NULL,
+	uaegfx_init = (uaecptr)NULL,
+	uaegfx_base = (uaecptr)NULL,
+	uaegfx_rom = (uaecptr)NULL;
 
 typedef enum {
 	BLIT_FALSE,
@@ -1171,7 +1175,7 @@ void picasso_refresh (void)
 #define BLT_FUNC(s,d) *d = (*s) | (*d)
 #include "../p96_blit.cpp"
 #define BLT_NAME BLIT_TRUE_24
-#define BLT_FUNC(s,d) *d = 0xffffffff
+#define BLT_FUNC(s,d) *(uae_u32 *)d = 0xffffffff
 #include "../p96_blit.cpp"
 #define BLT_NAME BLIT_SWAP_24
 #define BLT_FUNC(s,d) tmp = *d ; *d = *s; *s = tmp;
@@ -1222,7 +1226,7 @@ void picasso_refresh (void)
 #define BLT_FUNC(s,d) *d = (*s) | (*d)
 #include "../p96_blit.cpp"
 #define BLT_NAME BLIT_TRUE_16
-#define BLT_FUNC(s,d) *d = 0xffffffff
+#define BLT_FUNC(s,d) *(uae_u32 *)d = 0xffffffff
 #include "../p96_blit.cpp"
 #define BLT_NAME BLIT_SWAP_16
 #define BLT_FUNC(s,d) tmp = *d ; *d = *s; *s = tmp;
@@ -1273,7 +1277,7 @@ void picasso_refresh (void)
 #define BLT_FUNC(s,d) *d = (*s) | (*d)
 #include "../p96_blit.cpp"
 #define BLT_NAME BLIT_TRUE_8
-#define BLT_FUNC(s,d) *d = 0xffffffff
+#define BLT_FUNC(s,d) *(uae_u32 *)d = 0xffffffff
 #include "../p96_blit.cpp"
 #define BLT_NAME BLIT_SWAP_8
 #define BLT_FUNC(s,d) tmp = *d ; *d = *s; *s = tmp;
@@ -1803,7 +1807,9 @@ static uae_u32 setspriteimage (uaecptr bi)
 	ret = 1;
 	cursorok = TRUE;
 	P96TRACE_SPR ((_T("hardware sprite created\n")));
+#ifndef __AROS__
 end:
+#endif
 	return ret;
 }
 
@@ -2249,18 +2255,13 @@ static void picasso96_alloc2 (TrapContext *ctx)
 
 	cnt = 0;
 	for (int mon = 0; Displays[mon].monitorname; mon++) {
-                DebOut("mon: %d\n", mon);
 		struct PicassoResolution *DisplayModes = Displays[mon].DisplayModes;
 		i = 0;
 		while (DisplayModes[i].depth >= 0) {
-                        DebOut("  mode: %d\n", i);
-#if (0)
 			if (DisplayModes[i].rawmode) {
 				i++;
 				continue;
 			}
-#endif
-                        DebOut("  ...\n");
                         
 			j = i;
 			size += PSSO_LibResolution_sizeof;
@@ -2275,7 +2276,6 @@ static void picasso96_alloc2 (TrapContext *ctx)
 					pr->res.width = missmodes[misscnt * 2 + 0];
 					pr->res.height = missmodes[misscnt * 2 + 1];
 					_stprintf (pr->name, _T("%dx%d FAKE"), pr->res.width, pr->res.height);
-                                        DebOut("  name: '%s'\n", pr->name);
 					size += PSSO_ModeInfo_sizeof * depths;
 					cnt++;
 					misscnt++;
@@ -2343,7 +2343,9 @@ static void picasso96_alloc2 (TrapContext *ctx)
 		}
 	}
 
+#if P96TRACING_ENABLED
 	ShowSupportedResolutions ();
+#endif
 
 	uaegfx_card_install (ctx, size);
 	init_alloc (ctx, size);
