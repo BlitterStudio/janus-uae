@@ -57,10 +57,14 @@
 
 /* Setup for C function definitions, even when using C++ */
 #ifdef __cplusplus
-    
-    #include <string> /* for CFG_String in CFG_Settings::keyword_bool */
-    extern "C" {
 
+#if !defined(__AROS__)
+    #include <string> /* for CFG_String in CFG_Settings::keyword_bool */
+#endif
+    extern "C" {
+#if defined(__AROS__)
+    #include <string.h>
+#endif
 #endif
 
 #ifndef __cplusplus
