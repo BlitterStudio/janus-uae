@@ -576,7 +576,7 @@ STATIC_INLINE void sdl_flush_block_nolock (struct vidbuf_description *gfxinfo, s
     )
 
     if(first_line >= last_line) {
-#warning first_line >= last_line should not happen at all?
+// warning first_line >= last_line should not happen at all?
         SDLGD(bug("[JUAE:SDL] WARNING: %d >= %d\n", first_line, last_line);)
     }
     else {
@@ -915,7 +915,7 @@ static int graphics_subinit (void)
     mousehack = !fullscreen && !mousegrab;
 
     inputdevice_release_all_keys ();
-#warning reset_hotkeys disabled
+// warning reset_hotkeys disabled
     //reset_hotkeys ();
     init_colors ();
 
@@ -1137,7 +1137,7 @@ bool handle_events (void)
             if (rEvent.active.state & SDL_APPINPUTFOCUS && !rEvent.active.gain) {
                 DEBUG_LOG ("Lost input focus\n");
                 inputdevice_release_all_keys ();
-#warning reset_hotkeys disabled
+// warning reset_hotkeys disabled
                 //reset_hotkeys ();
             }
             break;
@@ -1560,7 +1560,7 @@ void gfx_set_picasso_state (int on)
     screen_is_picasso = on;
     DebOut("screen_is_picasso: %d\n", screen_is_picasso);
 
-#warning Set height, width for Amiga gfx
+// warning Set height, width for Amiga gfx
 #if 0
     if (on) {
 #endif
@@ -1609,7 +1609,7 @@ uae_u8 *gfx_lock_picasso (bool fullupdate, bool doclear)
 /* doclear is not used at all ? */
 uae_u8 *gfx_lock_picasso (bool fullupdate) {
   TODO();
-  //return gfx_lock_picasso (fullupdate, false);
+  return gfx_lock_picasso (fullupdate, false);
 }
 
 void gfx_unlock_picasso (bool dorender)
@@ -1953,10 +1953,11 @@ static int get_kb_flags (int num)
 
 int getcapslockstate (void)
 {
-  TODO();
+    TODO();
     //SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
     //return SDL_GetModState() & KMOD_CAPS;
+    return 0;
 }
 
 void setcapslockstate (int state)
@@ -2058,15 +2059,18 @@ void gfx_save_options (struct zfile *f, const struct uae_prefs *p)
 
 int gfx_parse_option (struct uae_prefs *p, const char *option, const char *value)
 {
+    int result = 0;
+
     SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
 #if 0
-    int result = (cfgfile_yesno (option, value, "map_raw_keys", &(p->map_raw_keys)));
+    result = (cfgfile_yesno (option, value, "map_raw_keys", &(p->map_raw_keys)));
 #endif
-    int result;
+
 #ifdef USE_GL
     result = result || (cfgfile_yesno (option, value, "use_gl", &(p->use_gl)));
 #endif /* USE_GL */
+
     return result;
 }
 
