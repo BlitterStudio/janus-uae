@@ -330,12 +330,12 @@ static int newstack_main (int argc, TCHAR **argv) {
 #else
 int main (int argc, TCHAR **argv) {
 #endif
-  IPTR stacksize=0;
+  ULONG stacksize=0;
   struct Process *proc;
   
   /* we need a big stack size. so check, if we are safe (well, not totally unsafe at least..) */
   proc=(struct Process *)FindTask(NULL); 
-  stacksize=(IPTR) proc->pr_Task.tc_SPUpper - (IPTR) proc->pr_Task.tc_SPLower;
+  stacksize=(ULONG)((IPTR) proc->pr_Task.tc_SPUpper - (IPTR) proc->pr_Task.tc_SPLower);
   DebOut("stacksize: %d\n", stacksize);
 
   if(stacksize < 499999) {
@@ -394,10 +394,10 @@ int main (int argc, TCHAR **argv) {
   WIN32_HandleRegistryStuff ();
 
 
-#warning ====================================================================
+// warning ====================================================================
   max_z3fastmem=100 * 1024 * 1024;
-#warning  max_z3fastmem=100 * 1024 * 1024; !!!!!!!!!!!!!!!!!!!!!!!!!
-#warning ====================================================================
+// warning  max_z3fastmem=100 * 1024 * 1024; !!!!!!!!!!!!!!!!!!!!!!!!!
+// warning ====================================================================
 
 
   if(SysBase->TDNestCnt>=0) {
