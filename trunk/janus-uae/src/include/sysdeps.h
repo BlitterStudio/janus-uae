@@ -25,8 +25,8 @@
 
 #ifdef __cplusplus
 using namespace std;
-#ifndef CROSS_COMPILE
-#include <string>
+#if defined(__AROS__)
+#include <string.h>
 #endif
 #else
 #include <string.h>
