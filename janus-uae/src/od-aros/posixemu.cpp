@@ -82,7 +82,7 @@ int uae_start_thread (const TCHAR *name, void *(*f)(void *), void *arg, uae_thre
         { TAG_DONE, 0}
     };
 
-#warning Do we need to care for priorities here? WinUAE does..
+// warning Do we need to care for priorities here? WinUAE does..
     if(!name)
         procTags[0].ti_Data = (IPTR)default_name;
     else
@@ -121,5 +121,5 @@ int uae_start_thread (const TCHAR *name, void *(*f)(void *), void *arg, uae_thre
 int uae_start_thread_fast (void *(*f)(void *), void *arg, uae_thread_id *tid) {
     bug("[JUAE:PX] %s(%lx, %lx, %lx)\n", __PRETTY_FUNCTION__, f, arg, tid);
 
-    uae_start_thread(NULL, f, arg, tid);
+    return uae_start_thread(NULL, f, arg, tid);
 }
