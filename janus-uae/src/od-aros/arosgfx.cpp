@@ -415,7 +415,8 @@ bool render_screen (bool immediate)
 			return render_ok;
 	}
 
-#warning TODO!?
+// Is this needed for AROS? It looks like it just dumps the "display" 
+// using the chosen (windows) display method
 #if 0
 	flushymin = 0;
 	flushymax = currentmode->amiga_height;
@@ -724,23 +725,26 @@ void sortdisplays (void) {
 }
 
 double getcurrentvblankrate (void) {
-  TODO();
-
-  return 0;
+    TODO();
+    return 60;
 }
 
 int vsync_busywait_do (int *freetime, bool lace, bool oddeven) {
-  TODO();
+    TODO();
+    return 0;
 }
 
 double vblank_calibrate (double approx_vblank, bool waitonly) {
-  TODO();
+    TODO();
+    return approx_vblank;
 }
 
 frame_time_t vsync_busywait_end (int *flipdelay) {
-  TODO();
+    TODO();
+    return 0;
 }
 
 bool show_screen_maybe (bool show) {
-  TODO();
+    TODO();
+    return false;
 }
