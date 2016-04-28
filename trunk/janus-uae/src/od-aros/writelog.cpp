@@ -196,10 +196,9 @@ static TCHAR *writets (void)
 
 	//DebOut("got sys time..\n");
 
-	snprintf(secs, 20, "%lu", acttime.tv_secs);
+	snprintf(secs, 20, "%u", acttime.tv_secs);
 
-	snprintf(out, 99, "%s-%lu: ", secs+strlen(secs)-3, acttime.tv_micro/1000);
-
+	snprintf(out, 99, "%s-%u: ", secs+strlen(secs)-3, acttime.tv_micro/1000);
 
 #if 0
 	if (vsync_counter != 0xffffffff)
