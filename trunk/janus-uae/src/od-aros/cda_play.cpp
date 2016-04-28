@@ -232,7 +232,6 @@ bool cda_audio::play(int bufnum)
 		memcpy (ptr, buffers[bufnum], bufsize);
 		dsbuf->Unlock(ptr, len, NULL, NULL);
 	}
-	return true;
 #else
 	uae_s16 *p = (uae_s16*)(buffers[bufnum]);
 	if (volume[0] != 32768 || volume[1] != 32768) {
@@ -246,12 +245,12 @@ bool cda_audio::play(int bufnum)
 		write_log (_T("IMAGE CDDA: waveOutWrite %d\n"), mmr);
 		return false;
 	}
-	return true;
 #endif
 
 #else
   TODO();
 #endif
+	return true;
 }
 void cda_audio::wait(int bufnum)
 {
@@ -273,12 +272,12 @@ void cda_audio::wait(int bufnum)
 
 bool cda_audio::isplaying(int bufnum)
 {
+#ifndef __AROS__
 	if (!active || !playing)
 		return false;
-#ifndef __AROS__
 	return (whdr[bufnum].dwFlags & WHDR_DONE) == 0;
 #else
     TODO();
+    return false;
 #endif
-
 }
