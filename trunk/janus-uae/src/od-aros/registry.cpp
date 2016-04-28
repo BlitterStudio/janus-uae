@@ -142,7 +142,7 @@ int regsetlonglong (UAEREG *root, const TCHAR *name, ULONGLONG val)
     }
 
     /* no 64bit support in SDL_config..*/
-    _stprintf (str, _T("%I64d"), val);
+    _stprintf (str, _T("%lld"), val);
 
     /* see regsetint */
     CFG_ReadText(name, str);
@@ -544,7 +544,7 @@ FAIL1:
 FAIL2:
     if (CFG_OK == !CFG_OpenFile(NULL, &ini )) {
         bug("[JUAE:Reg] %s: FAILED TO CREATE ANY INI FILE!?\n", __PRETTY_FUNCTION__);
-        write_log("Failed to create any ini file..!?\n", __PRETTY_FUNCTION__);
+        write_log("Failed to create any ini file..!?\n");
         return 0;
     }
     D(bug("[JUAE:Reg] %s: %s initialized\n", __PRETTY_FUNCTION__, INI_FILE));
