@@ -216,7 +216,7 @@ struct LibResolution {
 
 struct RenderInfo {
     uae_u8 *Memory;
-    uae_s16 BytesPerRow;
+    uae_u16 BytesPerRow;
     uae_s16 pad;
     RGBFTYPE RGBFormat;
     uaecptr AMemory;
