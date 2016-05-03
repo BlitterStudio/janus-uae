@@ -4,8 +4,8 @@ static void NOINLINE BLT_NAME (unsigned int w, unsigned int h, uae_u8 *src, uae_
 {
 	uae_u8 *src2 = src;
 	uae_u8 *dst2 = dst;
-	uae_u32 *src2_32 = (uae_u32*)src;
-	uae_u32 *dst2_32 = (uae_u32*)dst;
+	//uae_u32 *src2_32 = (uae_u32*)src;
+	//uae_u32 *dst2_32 = (uae_u32*)dst;
 	unsigned int y, x, ww, xxd;
 #ifdef BLT_TEMP
 	uae_u32 tmp;
@@ -38,8 +38,8 @@ static void NOINLINE BLT_NAME (unsigned int w, unsigned int h, uae_u8 *src, uae_
 {
 	uae_u8 *src2 = src;
 	uae_u8 *dst2 = dst;
-	uae_u32 *src2_32 = (uae_u32*)src;
-	uae_u32 *dst2_32 = (uae_u32*)dst;
+	//uae_u32 *src2_32 = (uae_u32*)src;
+	//uae_u32 *dst2_32 = (uae_u32*)dst;
 	unsigned int y, x, ww, xxd;
 #ifdef BLT_TEMP
 #if BLT_SIZE == 4
@@ -62,7 +62,7 @@ static void NOINLINE BLT_NAME (unsigned int w, unsigned int h, uae_u8 *src, uae_
 			}
 #if BLT_SIZE == 2
 			if (w & 1) {
-				uae_u16 *src_16 = (uae_u16*)src_32;
+				__attribute__((unused)) uae_u16 *src_16 = (uae_u16*)src_32;
 				uae_u16 *dst_16 = (uae_u16*)dst_32;
 				BLT_FUNC (src_16, dst_16);
 			}
@@ -113,7 +113,7 @@ static void NOINLINE BLT_NAME (unsigned int w, unsigned int h, uae_u8 *src, uae_
 		}
 #if BLT_SIZE == 2
 		if (w & 1) {
-			uae_u16 *src_16 = (uae_u16*)src_32;
+			__attribute__((unused)) uae_u16 *src_16 = (uae_u16*)src_32;
 			uae_u16 *dst_16 = (uae_u16*)dst_32;
 			BLT_FUNC (src_16, dst_16);
 		}
