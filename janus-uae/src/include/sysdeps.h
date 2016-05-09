@@ -552,7 +552,12 @@ extern void log_close (FILE *f);
 
 #ifndef __cplusplus
 
+#ifndef __AROS__
 #define xmalloc(T, N) malloc(sizeof (T) * (N))
+#else
+/* always clear memory */
+#define xmalloc(T, N) calloc(sizeof (T) * (N))
+#endif
 #define xcalloc(T, N) calloc(sizeof (T), N)
 #define xfree(T) free(T)
 #define xrealloc(T, TP, N) realloc(TP, sizeof (T) * (N))
