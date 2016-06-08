@@ -55,7 +55,6 @@ int always_flush_log = 0;
 static int logging_started;
 static int realconsole;
 static int bootlogmode;
-static int nodatestamps = 0;
 static int lfdetected = 1;
 static BOOL got_timer=FALSE;
 
@@ -278,11 +277,9 @@ void write_log (const TCHAR *format, ...)
 
 void logging_init (void)
 {
-	static int started;
 	static int first;
 	TCHAR tmp[MAX_DPATH];
 	TCHAR tmp2[MAX_DPATH];
-	BPTR lock;
 	TCHAR sep[2];
 
 	//DebOut("entered (first=%d)\n", first);
@@ -317,7 +314,7 @@ void logging_init (void)
 		_T("\n(c) 1996-1999 Mathias Ortmann - Win32 port and bsdsocket support.")
 		_T("\n(c) 2000-2001 Bernd Meyer     - JIT engine.")
 		_T("\n(c) 2000-2005 Bernd Roesch    - MIDI input, many fixes.")
-		_T("\n(c) 2011-2015 Oliver Brunner  - AROS port")
+		_T("\n(c) 2011-2016 Oliver Brunner  - AROS port")
 		_T("\n"));
 	GetCurrentDirName(tmp , sizeof tmp  / sizeof (TCHAR));
 	GetProgramName   (tmp2, sizeof tmp2 / sizeof (TCHAR));
@@ -348,55 +345,53 @@ void logging_deinit(void) {
 
 void activate_console (void)
 {
-  if (!consoleopen) return;
-  TODO();
+}
+
+void close_console (void)
+{
 }
 
 
 TCHAR console_getch (void) {
-  TODO();
-  return 'X';
+  return getc (stdin);;
 }
 
 bool console_isch (void) {
-  TODO();
+
+#if 0
+  /* WinUAE code: */
+	if (console_buffer) {
+		return 0;
+	} else if (realconsole) {
+		return false;
+	} else if (consoleopen < 0) {
+		DWORD events = 0;
+		GetNumberOfConsoleInputEvents (stdinput, &events);
+		return events > 0;
+	}
+#endif
+  /* we have a real console! */
   return FALSE;
 }
 
 
 int console_get (TCHAR *out, int maxlen)
 {
-  TODO();
+  if(fgets(out, maxlen, stdin)) {
+    return strlen(out);
+  }
+  return 0;
 }
 
 void console_out (const TCHAR *txt)
 {
-  TODO();
+  DebOut("txt: %s\n", txt);
+  printf("%s", txt);
 }
 
 void console_flush (void)
 {
-  TODO();
-}
-
-void close_console (void)
-{
-  TODO();
-}
-
-
-static void console_put (const TCHAR *buffer)
-{
-#if 0
-	if (console_buffer) {
-		if (_tcslen (console_buffer) + _tcslen (buffer) < console_buffer_size)
-			_tcscat (console_buffer, buffer);
-	} else {
-		openconsole ();
-		writeconsole (buffer);
-	}
-#endif
-  TODO();
+  fflush(stdout);
 }
 
 void console_out_f (const TCHAR *format,...)
@@ -407,5 +402,5 @@ void console_out_f (const TCHAR *format,...)
 	va_start (parms, format);
 	_vsntprintf (buffer, WRITE_LOG_BUF_SIZE - 1, format, parms);
 	va_end (parms);
-	console_put (buffer);
+	console_out (buffer);
 }
