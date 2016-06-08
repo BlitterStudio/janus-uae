@@ -6,7 +6,7 @@
 * (c) 1995 Bernd Schmidt
 */
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #define MMUOP_DEBUG 2
 #define DEBUG_CD32CDTVIO 0
@@ -3497,7 +3497,6 @@ void cpu_sleep_millis(int ms)
 
 static bool haltloop(void)
 {
-#ifdef WITH_PPC
 	if (regs.halted < 0) {
 		int rpt_end = 0;
 		int ovpos = vpos;
@@ -3508,12 +3507,14 @@ static bool haltloop(void)
 			int rpt_scanline = read_processor_time();
 			int rpt_end = rpt_scanline + vsynctimeline;
 
+#ifdef WITH_PPC
 			// See expansion handling.
 			// Dialog must be opened from main thread.
 			if (regs.halted == -2) {
 				regs.halted = -1;
 				notify_user (NUMSG_UAEBOOTROM_PPC);
 			}
+#endif /* PPC */
 
 			if (currprefs.ppc_cpu_idle) {
 
@@ -3553,7 +3554,9 @@ static bool haltloop(void)
 				ovpos = vpos;
 				while (ovpos == vpos) {
 					x_do_cycles(8 * CYCLE_UNIT);
+#ifdef WITH_PPC
 					uae_ppc_execute_check();
+#endif /* PPC */
 					if (regs.spcflags & SPCFLAG_COPPER)
 						do_copper();
 					if (regs.spcflags & (SPCFLAG_BRK | SPCFLAG_MODE_CHANGE)) {
@@ -3582,10 +3585,9 @@ static bool haltloop(void)
 			}
 
 
-		}
 
+		}
 	} else  {
-#endif
 		while (regs.halted) {
 			static int prevvpos;
 			if (vpos == 0 && prevvpos) {
@@ -3604,9 +3606,7 @@ static bool haltloop(void)
 					return true;
 			}
 		}
-#ifdef WITH_PPC
 	}
-#endif
 
 	return false;
 }
