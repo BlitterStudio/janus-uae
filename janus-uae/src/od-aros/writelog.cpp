@@ -351,3 +351,61 @@ void activate_console (void)
   if (!consoleopen) return;
   TODO();
 }
+
+
+TCHAR console_getch (void) {
+  TODO();
+  return 'X';
+}
+
+bool console_isch (void) {
+  TODO();
+  return FALSE;
+}
+
+
+int console_get (TCHAR *out, int maxlen)
+{
+  TODO();
+}
+
+void console_out (const TCHAR *txt)
+{
+  TODO();
+}
+
+void console_flush (void)
+{
+  TODO();
+}
+
+void close_console (void)
+{
+  TODO();
+}
+
+
+static void console_put (const TCHAR *buffer)
+{
+#if 0
+	if (console_buffer) {
+		if (_tcslen (console_buffer) + _tcslen (buffer) < console_buffer_size)
+			_tcscat (console_buffer, buffer);
+	} else {
+		openconsole ();
+		writeconsole (buffer);
+	}
+#endif
+  TODO();
+}
+
+void console_out_f (const TCHAR *format,...)
+{
+	va_list parms;
+	TCHAR buffer[WRITE_LOG_BUF_SIZE];
+
+	va_start (parms, format);
+	_vsntprintf (buffer, WRITE_LOG_BUF_SIZE - 1, format, parms);
+	va_end (parms);
+	console_put (buffer);
+}
