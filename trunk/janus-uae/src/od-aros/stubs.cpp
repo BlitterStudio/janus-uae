@@ -23,7 +23,7 @@
  *
  ************************************************************************/
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -90,18 +90,6 @@ void write_dlog (const TCHAR *format, ...)
 }
 
 void close_sound (void)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
-int console_get (TCHAR *out, int maxlen)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
-void console_out (const TCHAR *txt)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
@@ -254,24 +242,6 @@ int uaeser_write (void *vsd, uae_u8 *data, uae_u32 len)
 }
 
 void update_sound (int freq, int longframe, int linetoggle)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
-void close_console (void)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
-void console_flush (void)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-
-void console_out_f (const TCHAR *format,...)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
@@ -974,12 +944,6 @@ void vsync_busywait_start (void) {
   TODO();
 }
 
-TCHAR console_getch (void) {
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-  return 'X';
-}
-
 uae_u32 getlocaltime (void) {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
@@ -989,12 +953,6 @@ uae_u32 getlocaltime (void) {
 void getgfxoffset (float *dxp, float *dyp, float *mxp, float *myp) {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
-}
-
-bool console_isch (void) {
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-  return FALSE;
 }
 
 #if (0)
