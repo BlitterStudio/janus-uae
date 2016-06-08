@@ -3247,7 +3247,6 @@ static int handle_input_event (int nr, int state, int max, int autofire, bool ca
 #ifdef __AROS__
     if(nr == INPUTEVENT_SPC_ENTERGUI) {
       DebOut("INPUTEVENT_SPC_ENTERGUI detected!\n");
-      return 0;
     }
 #endif
 
