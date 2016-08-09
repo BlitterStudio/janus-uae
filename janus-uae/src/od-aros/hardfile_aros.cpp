@@ -964,7 +964,7 @@ static int hdf_read_2 (struct hardfiledata *hfd, void *buffer, uae_u64 offset, i
 		memcpy (buffer, hfd->cache + coffset, len);
 		return len;
 	}
-	write_log (_T("hdf_read: cache bug! offset=%I64d len=%d\n"), offset, len);
+	write_log (_T("hdf_read: cache bug! offset=%lld len=%d\n"), offset, len);
 	hfd->cache_valid = 0;
 
 	return 0;
@@ -1289,7 +1289,7 @@ TCHAR *hdf_getnameharddrive (int index, int flags, int *sectorsize, int *dangero
 				if (size >= 1024 * 1024 * 1024)
 					_stprintf (tmp, _T("%.1fG"), ((double)(uae_u32)(size / (1024 * 1024))) / 1024.0);
 				else if (size < 10 * 1024 * 1024)
-					_stprintf (tmp, _T("%dK"), size / 1024);
+					_stprintf (tmp, _T("%dK"), ((int)(size / 1024)));
 				else
 					_stprintf (tmp, _T("%.1fM"), ((double)(uae_u32)(size / (1024))) / 1024.0);
 			}
