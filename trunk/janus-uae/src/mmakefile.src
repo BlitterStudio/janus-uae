@@ -1,7 +1,6 @@
 #   $Id$
 
-include $(TOP)/config/make.cfg
--include $(GENDIR)/config/compiler.cfg
+include $(SRCDIR)/config/aros.cfg
 
 #MM- local-juae : local-juae-emulator
 
@@ -9,9 +8,9 @@ ifeq (x86_64,$(AROS_TARGET_CPU))
 COMMON_FLAGS := -D__WORDSIZE=64
 DOJIT := yes
 endif
-ifeq (i386,$(AROS_TARGET_CPU))
-DOJIT := yes
-endif
+##ifeq (i386,$(AROS_TARGET_CPU))
+##DOJIT := yes
+##endif
 ##COMMON_FLAGS += -DJUAE_DEBUG=1 -DDEBUG=1
 
 #MM local-juae-emulator : local-juae-gui
@@ -255,10 +254,10 @@ JUAESRCS += \
 NOWARN_FLAGS := $(NOWARN_NARROWING) $(NOWARN_UNUSED_VARIABLE) \
         $(NOWARN_UNUSED_BUT_SET_VARIABLE) $(NOWARN_SIGN_COMPARE) \
         $(NOWARN_UNUSED_FUNCTION) $(NOWARN_MISLEADING_INDENTATION) \
-        $(NOWARN_WRITE_STRINGS) $(NOWARN_SWITCH)
-USER_CXXFLAGS := -fexceptions
+        $(NOWARN_WRITE_STRINGS) $(NOWARN_SWITCH) $(NOWARN_CPP)
+USER_CXXFLAGS := -fexceptions $(NOWARN_FLAGS)
 ifneq (,$(COMMON_FLAGS))
-USER_CXXFLAGS := $(USER_CXXFLAGS) $(NOWARN_FLAGS) $(COMMON_FLAGS)
+USER_CXXFLAGS := $(USER_CXXFLAGS) $(COMMON_FLAGS)
 endif
 
 JUAE_LDFLAGS := -static-libstdc++ -L$(GENDIR)/$(CURDIR)/lib -lgui -lmpeg2 -lmpeg2convert -lSDL_Config
