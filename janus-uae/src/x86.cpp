@@ -1177,7 +1177,7 @@ static void floppy_do_cmd(struct x86_bridge *xb)
 		{
 			write_log(_T("Floppy%d write MT=%d MF=%d C=%d:H=%d:R=%d:N=%d:EOT=%d:GPL=%d:DTL=%d\n"),
 					  (floppy_cmd[0] & 0x80) ? 1 : 0, (floppy_cmd[0] & 0x40) ? 1 : 0,
-					  floppy_cmd[2], floppy_cmd[3], floppy_cmd[4], floppy_cmd[5],
+					  floppy_cmd[1], floppy_cmd[2], floppy_cmd[3], floppy_cmd[4], floppy_cmd[5],
 					  floppy_cmd[6], floppy_cmd[7], floppy_cmd[8]);
 			write_log(_T("DMA addr %08x len %04x\n"), dmachan[2].page | dmachan[2].addr, dmachan[2].reload);
 			floppy_delay_hsync = 50;
