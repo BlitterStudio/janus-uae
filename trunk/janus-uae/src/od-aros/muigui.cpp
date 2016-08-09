@@ -72,8 +72,8 @@
 #ifndef __AROS__
 #include "picasso96_win.h"
 #else
-#include "picasso96_aros.h"
 #include "gui/gui_mui.h"
+#include "picasso96_aros.h"
 #include "winnt.h"
 #include "muigui.h"
 #include "rtgmodes.h"
@@ -1398,11 +1398,9 @@ static int drag_move (HWND hWnd, LPARAM lParam)
 	ImageList_DragMove(p.x, p.y);
 	return 1;
 }
+#endif /* AROS */
 
 static HWND cachedlist = NULL;
-#else
-static int cachedlist = NULL;
-#endif /* AROS */
 
 static const TCHAR *memsize_names[] = {
 #ifndef __AROS__
@@ -3274,7 +3272,7 @@ static BOOL CreateHardFile (HWND hDlg, UINT hfsizem, const TCHAR *dostype, TCHAR
 					ret = SetFilePointer (hf, (DWORD)hfsize, NULL, FILE_BEGIN);
 				}
 				if (ret == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR)
-					write_log (_T("SetFilePointer() failure for %s to posn %ud\n"), init_path, hfsize);
+					write_log (_T("SetFilePointer() failure for %s to posn %lld\n"), init_path, hfsize);
 				else
 					result = SetEndOfFile (hf);
 				SetFilePointer (hf, 0, NULL, FILE_BEGIN);
@@ -3683,7 +3681,7 @@ static void writeconfigcacheentry (FILE *zcache, const TCHAR *relpath, struct Co
 	fwrite (&lf, 1, sizeof (TCHAR), zcache);
 
 	memcpy (&li, &cs->t, sizeof (ULARGE_INTEGER));
-	_stprintf (path2, _T("%I64u"), li.QuadPart);
+	_stprintf (path2, _T("%llu"), li.QuadPart);
 	fwrite (path2, _tcslen (path2), sizeof (TCHAR), zcache);
 	fwrite (&lf, 1, sizeof (TCHAR), zcache);
 
@@ -3752,7 +3750,7 @@ static void writeconfigcache (const TCHAR *path)
 	ul.HighPart = t.dwHighDateTime;
 	ul.LowPart = t.dwLowDateTime;
 #endif
-	_stprintf (path2, _T("3\n4\n7\n%I64u\n;\n"), ul.QuadPart);
+	_stprintf (path2, _T("3\n4\n7\n%llu\n;\n"), ul.QuadPart);
 	fwrite (path2, _tcslen (path2), sizeof (TCHAR), zcache);
 	GetFullPathName (path, sizeof path2 / sizeof (TCHAR), path2, NULL);
 	for (i = 0; i < configstoresize; i++) {
@@ -4396,7 +4394,7 @@ static struct miscentry misclist[] = {
 	{ 0, 0, _T("Master floppy write protection"), &workprefs.floppy_read_only },
 	{ 0, 0, _T("Hide all UAE autoconfig boards"), &workprefs.uae_hide_autoconfig },
 	{ 0, 1, _T("Right Control = Right Windows key"), &workprefs.right_control_is_right_win_key },
-	{ 0, NULL }
+	{ 0, 0, NULL, NULL }
 };
 
 static void harddisktype (TCHAR *s, struct uaedev_config_info *ci)
@@ -4422,11 +4420,8 @@ static void harddisktype (TCHAR *s, struct uaedev_config_info *ci)
 void InitializeListView (HWND hDlg)
 {
 	int lv_type;
-#ifndef __AROS__
 	HWND list;
-#else
-  int list;
-#endif
+
 	LV_ITEM lvstruct;
 	LV_COLUMN lvcolumn;
 	RECT rect;
@@ -4466,7 +4461,7 @@ void InitializeListView (HWND hDlg)
 #ifndef __AROS__
 		list = GetDlgItem (hDlg, IDC_VOLUMELIST);
 #else
-    list=IDC_VOLUMELIST;
+    list=(HWND)IDC_VOLUMELIST;
 #endif
 
 	} else if (hDlg == pages[INPUT_ID]) {
@@ -4483,7 +4478,7 @@ void InitializeListView (HWND hDlg)
 #ifndef __AROS__
 		list = GetDlgItem (hDlg, IDC_INPUTLIST);
 #else
-    list = IDC_INPUTLIST;
+    list = (HWND)IDC_INPUTLIST;
 #endif
 
 	} else if (hDlg == pages[INPUTMAP_ID]) {
@@ -4494,7 +4489,7 @@ void InitializeListView (HWND hDlg)
 #ifndef __AROS__
 		list = GetDlgItem (hDlg, IDC_INPUTMAPLIST);
 #else
-    list = IDC_INPUTLIST;
+    list = (HWND)IDC_INPUTLIST;
 #endif
 
 	} else if (hDlg == pages[MISC2_ID]) {
@@ -4506,7 +4501,7 @@ void InitializeListView (HWND hDlg)
 #ifndef __AROS__
 		list = GetDlgItem (hDlg, IDC_ASSOCIATELIST);
 #else
-    list = IDC_ASSOCIATELIST;
+    list = (HWND)IDC_ASSOCIATELIST;
 #endif
 
 	} else if (hDlg == pages[MISC1_ID]) {
@@ -4518,7 +4513,7 @@ void InitializeListView (HWND hDlg)
 		list = GetDlgItem (hDlg, IDC_MISCLIST);
 		extraflags = LVS_EX_CHECKBOXES;
 #else
-		list = IDC_MISCLIST;
+		list = (HWND)IDC_MISCLIST;
 #endif
 
 	} else if (hDlg == pages[DISK_ID]) {
@@ -4543,7 +4538,7 @@ void InitializeListView (HWND hDlg)
 #ifndef __AROS__
 		list = GetDlgItem (hDlg, IDC_CDLIST);
 #else
-    list = IDC_CDLIST;
+    list = (HWND)IDC_CDLIST;
 #endif
 	}
 
@@ -4959,11 +4954,7 @@ void InitializeListView (HWND hDlg)
 	lv_old_type = lv_type;
 }
 
-#ifndef __AROS__
 static int listview_find_selected (HWND list)
-#else
-static int listview_find_selected (HWND notused, int list)
-#endif
 {
 	int i, items;
 	items = ListView_GetItemCount (list);
@@ -5275,7 +5266,9 @@ static struct ConfigStruct *fixloadconfig (HWND hDlg, struct ConfigStruct *confi
 
 	if (config && configtypepanel == 0 && (config->host || config->hardware))
 		return NULL;
-	if ((!config && configtypepanel) || (config && (configtypepanel == 2 && !config->host) || (configtypepanel == 1 && !config->hardware))) {
+	if ((!config && configtypepanel) ||
+            ((config) &&
+             (((configtypepanel == 2) && !(config->host)) || ((configtypepanel == 1) && !(config->hardware))))) {
 		for (i = 0; i < configstoresize; i++) {
 			struct ConfigStruct *cs = configstore[i];
 			if (cs->Directory && ((configtypepanel == 1 && cs->hardware) || (configtypepanel == 2 && cs->host))) {
@@ -5994,7 +5987,7 @@ GUI_STATIC INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 		CheckDlgButton(hDlg, IDC_PATHS_CONFIGCACHE, configurationcache);
 		CheckDlgButton(hDlg, IDC_PATHS_SAVEIMAGEORIGINALPATH, saveimageoriginalpath);
 		CheckDlgButton(hDlg, IDC_PATHS_RELATIVE, relativepaths);
-		CheckDlgButton(hDlg, IDC_REGISTRYMODE, getregmode() != NULL);
+		CheckDlgButton(hDlg, IDC_REGISTRYMODE, getregmode() != 0);
 		currentpage = PATHS_ID;
 		ShowWindow (GetDlgItem (hDlg, IDC_RESETREGISTRY), FALSE);
 		numtypes = 0;
@@ -6072,7 +6065,7 @@ GUI_STATIC INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 			case IDC_REGISTRYMODE:
 				bool switchreginimode(void);
 				switchreginimode();
-				CheckDlgButton(hDlg, IDC_REGISTRYMODE, getregmode() != NULL);
+				CheckDlgButton(hDlg, IDC_REGISTRYMODE, getregmode() != 0);
 				break;
 			case IDC_LOGSAVE:
 				savelog (hDlg, 1);
@@ -6251,11 +6244,13 @@ struct amigamodels {
 	int compalevels;
 	int id;
 };
+#define modelarcadia IDS_QS_MODEL_ARCADIA
 #else
 struct amigamodels {
 	int compalevels;
 	TCHAR *id;
 };
+static TCHAR*modelarcadia = IDS_QS_MODEL_ARCADIA;
 #endif
 
 static struct amigamodels amodels[] = {
@@ -6266,10 +6261,10 @@ static struct amigamodels amodels[] = {
 	{ 4, IDS_QS_MODEL_A1200 }, // "Amiga 1200"
 	{ 2, IDS_QS_MODEL_A3000 }, // "Amiga 3000"
 	{ 1, IDS_QS_MODEL_A4000 }, // "Amiga 4000"
-	{ 0, }, //{ 1, IDS_QS_MODEL_A4000T }, // "Amiga 4000T"
+	{ 1, IDS_QS_MODEL_A4000T }, // "Amiga 4000T"
 	{ 3, IDS_QS_MODEL_CD32 }, // "CD32"
 	{ 4, IDS_QS_MODEL_CDTV }, // "CDTV"
-	{ 4, IDS_QS_MODEL_ARCADIA }, // "Arcadia"
+	{ 4, modelarcadia }, // "Arcadia"
 	{ 1, IDS_QS_MODEL_UAE }, // "Expanded UAE example configuration"
 	{ -1 }
 };
@@ -6389,7 +6384,7 @@ static void init_quickstartdlg (HWND hDlg)
 
 	total = 0;
 	SendDlgItemMessage (hDlg, IDC_QUICKSTART_CONFIGURATION, CB_RESETCONTENT, 0, 0L);
-	if (amodels[quickstart_model].id == IDS_QS_MODEL_ARCADIA) {
+	if (amodels[quickstart_model].id == modelarcadia) {
 		struct romlist **rl = getarcadiaroms ();
 		for (i = 0; rl[i]; i++) {
 			SendDlgItemMessage (hDlg, IDC_QUICKSTART_CONFIGURATION, CB_ADDSTRING, 0, (LPARAM)rl[i]->rd->name);
@@ -6666,8 +6661,7 @@ GUI_STATIC INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wPara
 			switch (LOWORD (wParam))
 			{
 			case IDC_NTSC:
-#warning DEBUG REMOVE ME
-      DebOut("FOOOOOOOOOOOOO\n");
+      DebOut("IDC_NTSC\n");
       SendDlgItemMessage (hDlg, IDC_QUICKSTART_MODEL, CB_SETCURSEL, 1, 0);
 #if 0
       olioli
@@ -6714,23 +6708,25 @@ GUI_STATIC INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wPara
 		}
 		recursive--;
 	case WM_HSCROLL:
-		if (recursive > 0)
-			break;
-		recursive++;
-		if ((HWND)lParam == GetDlgItem (hDlg, IDC_QUICKSTART_COMPATIBILITY)) {
+                {
+                    if (recursive > 0)
+                            break;
+                    recursive++;
+                    if ((HWND)lParam == GetDlgItem(hDlg, IDC_QUICKSTART_COMPATIBILITY)) {
 #ifndef __AROS__
-			val = SendMessage ((HWND)lParam, TBM_GETPOS, 0, 0);
+                            val = SendMessage((HWND)lParam, TBM_GETPOS, 0, 0);
 #else
-      val = SendDlgItemMessage (hDlg, IDC_QUICKSTART_COMPATIBILITY, TBM_GETPOS, 0, 0);
+          val = SendDlgItemMessage (hDlg, IDC_QUICKSTART_COMPATIBILITY, TBM_GETPOS, 0, 0);
 #endif
-			if (val >= 0 && val != quickstart_compa) {
-				quickstart_compa = val;
-				init_quickstartdlg (hDlg);
-				if (quickstart)
-					load_quickstart (hDlg, 0);
-			}
-		}
-		recursive--;
+                            if (val >= 0 && val != quickstart_compa) {
+                                    quickstart_compa = val;
+                                    init_quickstartdlg (hDlg);
+                                    if (quickstart)
+                                            load_quickstart (hDlg, 0);
+                            }
+                    }
+                    recursive--;
+                }
 		break;
 	}
 	if (recursive == 0 && quickstart) {
@@ -8076,14 +8072,14 @@ static void values_to_chipsetdlg2 (HWND hDlg)
 	txt[0] = 0;
 	if (workprefs.cs_deniserev >= 0) {
 		rev = workprefs.cs_deniserev;
-		_stprintf (txt, _T("%01.1X"), rev);
+		_stprintf (txt, _T("%1.1X"), rev);
 	} else if (workprefs.cs_compatible) {
 		rev = 0xf;
 		if (workprefs.chipset_mask & CSMASK_ECS_DENISE)
 			rev = 0xc;
 		if (workprefs.chipset_mask & CSMASK_AGA)
 			rev = 0x8;
-		_stprintf (txt, _T("%01.1X"), rev);
+		_stprintf (txt, _T("%1.1X"), rev);
 	}
 	SetDlgItemText(hDlg, IDC_CS_DENISEREV, txt);
 }
@@ -8681,7 +8677,7 @@ static struct expansionrom_gui accelerator_gui_item;
 
 static void reset_expansionrom_gui(HWND hDlg, struct expansionrom_gui *eg, DWORD itemselector, DWORD selector, DWORD checkbox)
 {
-	eg->expansionrom_gui_settings = NULL;
+	eg->expansionrom_gui_settings = 0;
 	eg->expansionrom_gui_item = 0;
 	eg->expansionrom_gui_ebs = NULL;
 	hide(hDlg, itemselector, 1);
@@ -8836,7 +8832,7 @@ static void expansion_net (HWND hDlg)
 		notset = false;
 	}
 	cnt = 1;
-	for (i = 0; ndd && i < MAX_TOTAL_NET_DEVICES; i++) {
+	for (i = 0; i < MAX_TOTAL_NET_DEVICES; i++) {
 		if (ndd[i]) {
 			TCHAR mac[20];
 			if (ndd[i]->type == UAENET_SLIRP || ndd[i]->type == UAENET_SLIRP_INBOUND) {
@@ -9574,7 +9570,7 @@ static INT_PTR CALLBACK Expansion2DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LP
 						if (v == 0) {
 							s = _T("none");
 						}
-						else if (ndd) {
+						else if (ndd[v]) {
 							v--;
 							s = ndd[v]->name;
 						}
@@ -10102,13 +10098,13 @@ static void values_to_kickstartdlg (HWND hDlg)
 
 	load_keyring(&workprefs, NULL);
 
-      DebOut("VVVVVVVVVVVVVVV\n");
+      DebOut("keyring loaded\n");
 	addromfiles (fkey, hDlg, IDC_ROMFILE, workprefs.romfile,
 		ROMTYPE_KICK | ROMTYPE_KICKCD32, 0);
-      DebOut("VVVVVVVVVVVVVVV\n");
+      DebOut("kickroms added\n");
 	addromfiles (fkey, hDlg, IDC_ROMFILE2, workprefs.romextfile,
 		ROMTYPE_EXTCD32 | ROMTYPE_EXTCDTV | ROMTYPE_ARCADIABIOS, 0);
-      DebOut("VVVVVVVVVVVVVVV\n");
+      DebOut("extroms added\n");
 	addromfiles (fkey, hDlg, IDC_CARTFILE, workprefs.cartfile,
 		ROMTYPE_FREEZER | ROMTYPE_ARCADIAGAME | ROMTYPE_CD32CART, 0);
 
@@ -10312,7 +10308,7 @@ static void enable_for_miscdlg (HWND hDlg)
 			workprefs.win32_inactive_input = 0;
 	} else {
 		workprefs.win32_inactive_pause = workprefs.win32_inactive_nosound = true;
-		workprefs.win32_inactive_input = workprefs.win32_inactive_input = 0;
+		workprefs.win32_inactive_input = workprefs.win32_inactive_priority = 0;
 		nosound = true;
 		nojoy = true;
 	}
@@ -10333,7 +10329,7 @@ static void enable_for_miscdlg (HWND hDlg)
 			workprefs.win32_iconified_nosound = true;
 	} else {
 		workprefs.win32_iconified_pause = workprefs.win32_iconified_nosound = true;
-		workprefs.win32_iconified_input = workprefs.win32_iconified_input = 0;
+		workprefs.win32_iconified_input = workprefs.win32_iconified_priority = 0;
 		nosound = true;
 		nojoy = true;
 	}
@@ -13424,7 +13420,7 @@ static void addhistorymenu(HWND hDlg, const TCHAR *text, int f_text, int type, b
 		return;
 	curidx = -1;
 	i = 0;
-	while (s = DISK_history_get (i, type)) {
+	while ((s = DISK_history_get (i, type)) != (TCHAR *)NULL) {
 		TCHAR tmpname[MAX_DPATH];
 		if (_tcslen (s) == 0)
 			break;
@@ -19178,7 +19174,11 @@ static int init_page (struct Element *tmpl, int icon, const TCHAR *title,
 
 	res = getresource (tmpl);
 	if (!res) {
+#ifndef __AROS__
 		write_log (_T("init_page(%d) failed\n"), tmpl);
+#else
+		write_log (_T("init_page(%p) failed\n"), tmpl);
+#endif
 		return -1;
 	}
 #ifndef __AROS__
@@ -19923,7 +19923,7 @@ void gui_led (int led, int on, int brightness)
 			PostMessage (hStatusWnd, SB_SETTIPTEXT, (WPARAM)(pos + 1), (LPARAM)tt);
 	}
 #else
-#warning enable gui_led (TODO)
+// warning enable gui_led (TODO)
 #endif
 }
 
