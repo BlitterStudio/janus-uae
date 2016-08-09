@@ -6,6 +6,9 @@
 #include <list>
 #endif
 
+#ifdef __AROS__
+#define wchar_t const char
+#endif
 #ifndef CH_STRING
 #define CH_STRING
 #include <string>
