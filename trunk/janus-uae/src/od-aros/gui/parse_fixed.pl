@@ -420,7 +420,7 @@ while(<RESFILE>) {
         $idd_active=0;
         $debug && print ("=== END OF $idd_name ==\n");
         # finish!
-        print CPPFILE "  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }\n";
+        print CPPFILE "  { 0, 0, 0, NULL, 0,            0,   0,   0,   0,  0, 0 }\n";
         print CPPFILE "};\n\n";
       }
       else {
