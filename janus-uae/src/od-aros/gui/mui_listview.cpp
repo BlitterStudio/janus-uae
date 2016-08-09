@@ -11,12 +11,12 @@
 #include <clib/alib_protos.h>
 
 #include <graphics/gfxbase.h>
-#include <mui/NList_mcc.h>
-#include <mui/NListview_mcc.h>
+//#include <mui/NList_mcc.h>
+//#include <mui/NListview_mcc.h>
 #include <mui/NFloattext_mcc.h>
 #include <mui/NBitmap_mcc.h>
 
-//#define JUAE_DEBUG
+#define JUAE_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -99,9 +99,10 @@ AROS_UFH3S(APTR, construct_func, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(A
   struct view_line *new_line;
   ULONG i;
 
-  DebOut("entered (pool: %lx\n", pool);
+  DebOut("Construct hook entered (pool: %p)\n", pool);
 
   if((new_line = (struct view_line *) AllocPooled(pool, sizeof(struct view_line)))) {
+    DebOut("AllocPooled(pool %p)=%p\n", pool, entry);
     for(i=0; i<MAX_COL; i++) {
       if(entry->column[i][0]) {
         DebOut("copy %s\n", entry->column[i]);
@@ -121,7 +122,8 @@ AROS_UFH3S(APTR, construct_func, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(A
 AROS_UFH3S(void, destruct_func, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, pool, A2), AROS_UFHA(struct view_line *, entry, A1)) {
   AROS_USERFUNC_INIT
 
-  DebOut("entered\n");
+  DebOut("Destruct hook entered (pool: %p)\n", pool);
+  DebOut("FreePooled(pool %p, entry %p)\n", pool, entry);
 
   FreePooled(pool, entry, sizeof(struct view_line));
 
@@ -136,22 +138,30 @@ AROS_UFH3S(void, destruct_func, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
 Object *new_listview(struct Element *elem, ULONG i, void *f, struct Data *data, Object **list) {
 
   Object *listview=NULL;
+  Object *nlist;
   int *(*func) (Element *hDlg, UINT msg, ULONG wParam, IPTR lParam);
   func=(int* (*)(Element*, uint32_t, ULONG, IPTR)) f;
   ULONG t=0;
-  DebOut("i: %d\n", i);
+  DebOut("i (not used): %d\n", i);
 
-  *list=ListObject,
+  nlist=ListObject,
         InputListFrame,
         MUIA_List_Title, TRUE, /* title can't be switched on/off in Zune !? */
        End;
 
+  DebOut("new ListObject: %lx\n", nlist);
+
+
+  DoMethod(nlist, MUIM_List_Clear, TRUE);
+  DebOut("ListObject %lx cleared\n", nlist);
+
   listview=ListviewObject,
-            MUIA_Listview_List, *list,
-            MUIA_Listview_MultiSelect, MUIV_Listview_MultiSelect_None,
-            MUIA_Listview_ScrollerPos, MUIV_Listview_ScrollerPos_None,
+            MUIA_Listview_List, nlist,
+            //MUIA_List_MultiSelect, MUIV_List_MultiSelect_None,
+            //MUIA_Listview_ScrollerPos, MUIV_Listview_ScrollerPos_None,
            End;
 
+  DebOut("new ListViewObject: %lx\n", listview);
   //char *str = "New entry";
   //DoMethod(*list,MUIM_List_Insert,&str,1,MUIV_List_Insert_Bottom);
 
@@ -160,9 +170,7 @@ Object *new_listview(struct Element *elem, ULONG i, void *f, struct Data *data, 
     return NULL;
   }
 
-  DebOut("new list:     %lx\n", *list);
-  DebOut("new listview: %lx\n", listview);
-
+  *list=nlist;
 
 
 #if 0
@@ -183,7 +191,7 @@ Object *new_listview(struct Element *elem, ULONG i, void *f, struct Data *data, 
 #endif
   data->MyMUIHook_tree_double.h_Data =(APTR) data;
 
-  DoMethod(tree, MUIM_Notify, MUIA_NList_DoubleClick, MUIV_EveryTime, (IPTR) tree, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_tree_double, func); 
+  DoMethod(tree, MUIM_Notify, MUIA_List_DoubleClick, MUIV_EveryTime, (IPTR) tree, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_tree_double, func); 
 #endif
 
   return listview;
@@ -276,7 +284,7 @@ BOOL ListView_DeleteAllItems(int nIDDlgItem) {
   if(!elem) return FALSE;
   i=get_index(elem, nIDDlgItem);
   if(i<0) return FALSE;
-  DebOut("elem: %lx, i: %d\n", elem, i);
+  DebOut("elem: %lx, i: %d elem[i].action: %lx\n", elem, i, elem[i].action);
 
   DoMethod(elem[i].action, MUIM_List_Clear);
 
@@ -394,6 +402,7 @@ int ListView_InsertColumn(int nIDDlgItem, int iCol, const LPLVCOLUMN pcol) {
 
     //SetAttrs(elem[i].action, MUIA_List_Title, FALSE, TAG_DONE);
 
+    DebOut("set MUIA_List_ConstructHook for object %lx\n", elem[i].action);
     SetAttrs(elem[i].action, MUIA_List_DisplayHook,   display_hook,
                              MUIA_List_ConstructHook, construct_hook,
                              MUIA_List_DestructHook,  destruct_hook,
@@ -423,6 +432,11 @@ int ListView_InsertItem(int nIDDlgItem, const LPLVITEM pitem) {
   ULONG pos;
 
   DebOut("pszText: %s\n", pitem->pszText);
+#if 0
+  if (pitem->iItem) DebOut("iItem (ignored!!): %s\n", pitem->iItem);
+  if (pitem->iSubItem) DebOut("iSubItem (ignored!!): %s\n", pitem->iSubItem);
+  if (pitem->iImage) DebOut("iImage (ignored!!): %s\n", pitem->iImage);
+#endif
 
   elem=get_elem(nIDDlgItem);
   if(!elem) return -1;
@@ -433,14 +447,17 @@ int ListView_InsertItem(int nIDDlgItem, const LPLVITEM pitem) {
   new_line=(struct view_line *) AllocVec(sizeof(struct view_line), MEMF_CLEAR);
   if(!new_line) return -1;
 
+  DebOut("sizeof(struct view_line): %d\n", sizeof(struct view_line));
+
   strcpy(new_line->column[0], pitem->pszText);
   DebOut("elem[%d].action: %lx\n", i, elem[i].action);
   DoMethod(elem[i].action, MUIM_List_InsertSingle, new_line, MUIV_List_Insert_Bottom);
   FreeVec(new_line);
   new_line=NULL;
 
+  DebOut("..\n");
   pos=XGET(elem[i].action, MUIA_List_InsertPosition);
-  pos--; /* why --? Seems as if Zune always return "one too much"? */
+  //pos--; /* why --? Seems as if Zune always return "one too much"? */
   DebOut("pos: %d\n", pos);
 
   return pos;
@@ -475,32 +492,45 @@ VOID ListView_SetItemText(int nIDDlgItem, int line, int iSubItem, const char *ps
   if(i<0) return;
   DebOut("elem: %lx, i: %d\n", elem, i);
 
-  /* fetch current content */
-  DoMethod(elem[i].action, MUIM_List_GetEntry, line, &old_line);
-  if(!old_line) {
-    DebOut("old line not found  !?\n");
-    return;
-  }
-
   /* build new line. not on the stack, as it is "big" */
   new_line=(struct view_line *) AllocVec(sizeof(struct view_line), MEMF_CLEAR);
   if(!new_line) return;
 
-  /* copy/replace content */
-  for(pos=0; pos<MAX_COL; pos++) {
-    if(pos==iSubItem) {
-      /* replace column! */
-      DebOut("repl column %d: %s\n", pos, pszText);
-      strcpy(new_line->column[pos], pszText);
-    }
-    else {
-      DebOut("copy column %d: %s\n", pos, old_line->column[pos]);
-      strcpy(new_line->column[pos], old_line->column[pos]);
+  /* fetch current content */
+  DoMethod(elem[i].action, MUIM_List_GetEntry, line, &old_line);
+  if(!old_line) {
+    DebOut("old line not found !? so maybe we are the first line!?\n");
+    for(pos=0; pos<MAX_COL; pos++) {
+      if(pos==iSubItem) {
+        /* out new  column! */
+        DebOut("repl column %d: %s\n", pos, pszText);
+        strcpy(new_line->column[pos], pszText);
+      }
+      else {
+        DebOut("just empty strings at %d\n", pos);
+        strcpy(new_line->column[pos], " ");
+      }
     }
   }
-  /* replace old line with new one */
-  DoMethod(elem[i].action, MUIM_List_Remove, line);
+  else {
+    /* copy/replace content */
+    for(pos=0; pos<MAX_COL; pos++) {
+      if(pos==iSubItem) {
+        /* replace column! */
+        DebOut("repl column %d: %s\n", pos, pszText);
+        strcpy(new_line->column[pos], pszText);
+      }
+      else {
+        DebOut("copy column %d: %s\n", pos, old_line->column[pos]);
+        strcpy(new_line->column[pos], old_line->column[pos]);
+      }
+    }
+    /* replace old line with new one */
+    DoMethod(elem[i].action, MUIM_List_Remove, line);
+  }
+  DebOut("MUIM_List_InsertSingle %d\n", line);
   DoMethod(elem[i].action, MUIM_List_InsertSingle, new_line, line);
+  /* TODO (?): FreeVec */
 }
 
 int ListView_GetStringWidth(int nIDDlgItem, const char *psz) {
