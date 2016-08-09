@@ -15,6 +15,27 @@
 
 #define NOSIGNAL 0xFFFFFFFF
 
+typedef enum {
+    BLIT_FALSE,
+    BLIT_NOR,
+    BLIT_ONLYDST,
+    BLIT_NOTSRC,
+    BLIT_ONLYSRC,
+    BLIT_NOTDST,
+    BLIT_EOR,
+    BLIT_NAND,
+    BLIT_AND,
+    BLIT_NEOR,
+    BLIT_DST,
+    BLIT_NOTONLYSRC,
+    BLIT_SRC,
+    BLIT_NOTONLYDST,
+    BLIT_OR,
+    BLIT_TRUE,
+    BLIT_SWAP = 30,
+    BLIT_LAST
+} BLIT_OPCODE;
+
 /************************************************************************/
 /* Types for BoardType Identification
  */
@@ -548,6 +569,7 @@ extern int uaegfx_card_found;
 extern struct picasso96_state_struct picasso96_state;
 extern uae_u16 picasso96_pixel_format;
 
+extern int DX_Blit (int srcx, int srcy, int dstx, int dsty, int width, int height, BLIT_OPCODE opcode);
 extern void picasso_enablescreen (int on);
 extern void picasso_refresh (void);
 extern void init_hz_p96 (void);
