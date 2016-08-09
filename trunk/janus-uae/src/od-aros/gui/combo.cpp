@@ -41,6 +41,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define JUAE_DEBUG
+
 #include <aros/debug.h>
 #include <exec/types.h>
 #include <libraries/mui.h>
@@ -398,8 +400,9 @@ static IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg) {
 
   struct TagItem *tstate, *tag;
   GETDATA;
+  IPTR t;
 
-  //DebOut("mGet(%lx,entry %lx,%lx)\n",data,obj,msg);
+  DebOut("mGet(%lx,entry %lx,%lx)\n",data,obj,msg);
 
   switch (msg->opg_AttrID) {
       case MUIA_List_Active:
@@ -413,6 +416,12 @@ static IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg) {
         break;
       case MUIA_List_InsertPosition:
         GetAttr(MUIA_List_InsertPosition , data->obj_list, msg->opg_Storage);
+        break;
+      case MUIA_String_Contents:
+        t=XGET(data->obj_list, MUIA_List_Active);
+        DebOut("result: %d\n", t);
+        DebOut("result: %s\n", data->entries[t]);
+        *msg->opg_Storage=(IPTR) data->entries[t];
         break;
       default:
         return DoSuperMethodA(cl, obj, (Msg) msg);
