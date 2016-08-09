@@ -983,7 +983,7 @@ static void setciatod(unsigned long *tod, uae_u32 v)
 
 static uae_u8 ReadCIAA (unsigned int addr)
 {
-	unsigned int tmp;
+	unsigned int tmp = 0;
 	int reg = addr & 15;
 
 	compute_passed_time ();
