@@ -60,6 +60,7 @@ int init_sound (void)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 #if 0
@@ -99,6 +100,7 @@ int fsdb_exists (TCHAR *nname)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 void getfilepart (TCHAR *out, int size, const TCHAR *path)
@@ -143,18 +145,21 @@ int uaenet_open (void *vsd, struct netdriverdata *tc, void *user, uaenet_gotfunc
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 int uaeser_open (void *vsd, void *user, int unit)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 int uaeser_read (void *vsd, uae_u8 *data, uae_u32 len)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 void fpux_restore (int *v)
@@ -179,6 +184,7 @@ uae_u8 *restore_dmac (uae_u8 *src)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return NULL;
 }
 
 void resume_sound (void)
@@ -197,6 +203,7 @@ int sampler_init (void)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 void sound_volume (int dir) 
@@ -221,6 +228,7 @@ int uaeser_break (void *vsd, int brklen)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 void uaeser_close (void *vsd)
@@ -233,12 +241,14 @@ int uaeser_query (void *vsd, uae_u16 *status, uae_u32 *pending)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 int uaeser_write (void *vsd, uae_u8 *data, uae_u32 len)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 void update_sound (int freq, int longframe, int linetoggle)
@@ -257,12 +267,14 @@ uae_u32 get_byte_ce030 (uaecptr addr)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 uae_u32 get_long_ce030_prefetch (int o)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 #if 0
@@ -319,6 +331,7 @@ TCHAR *setconsolemode (TCHAR *buffer, int maxlen)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return NULL;
 }
 
 void setmouseactive (int active) 
@@ -349,6 +362,7 @@ int get_guid_target (uae_u8 *out)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 #if 0
@@ -377,6 +391,7 @@ USHORT DMS_Process_File(struct zfile *fi, struct zfile *fo, USHORT cmd, USHORT o
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));    
   TODO();
+    return 0;
 }
 
 #if 0
@@ -397,12 +412,14 @@ uae_u32 next_ilong_030ce (void)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 uae_u32 next_iword_030ce (void)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 void serial_check_irq (void)
@@ -441,18 +458,21 @@ struct netdriverdata *uaenet_enumerate (struct netdriverdata **out, const TCHAR 
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return NULL;
 }
 
 int uaeser_setparams (void *vsd, int baud, int rbuffer, int bits, int sbits, int rtscts, int parity, uae_u32 xonxoff)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 bool vsync_switchmode (int hz, int oldhz)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return TRUE;
 }
 
 #if (0)
@@ -479,6 +499,7 @@ struct zfile *archive_access_lzx (struct znode *zn)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return NULL;
 }
 
 /* adds name to "recently used" windows menu .. */
@@ -543,6 +564,7 @@ struct zvolume *archive_directory_7z (struct zfile *z)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return NULL;
 }
 
 void restart_sound_buffer (void)
@@ -563,12 +585,14 @@ int uaenet_getdatalenght (void)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 int uaeser_getdatalenght (void)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 
@@ -591,6 +615,7 @@ int target_get_volume_name (struct uaedev_mount_info *mtinf, const TCHAR *volume
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 void amiga_clipboard_got_data (uaecptr data, uae_u32 size, uae_u32 actual)
@@ -610,12 +635,14 @@ uae_u32 emulib_target_getcpurate (uae_u32 v, uae_u32 *low)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 TCHAR *fsdb_create_unique_nname (a_inode *base, const TCHAR *suggestion)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return NULL;
 }
 
 
@@ -623,12 +650,14 @@ int amiga_clipboard_want_data (void)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 int custom_fsdb_used_as_nname (a_inode *base, const TCHAR *nname)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));    
   TODO();
+    return 0;
 }
 
 int fsdb_mode_representable_p (const a_inode *aino) 
@@ -636,48 +665,56 @@ int fsdb_mode_representable_p (const a_inode *aino)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 uae_u32 amiga_clipboard_proc_start (void)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 void amiga_clipboard_task_start (uaecptr data)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 int input_get_default_joystick (struct uae_input_device *uid, int i, int port, int af, int mode) 
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 int input_get_default_lightpen (struct uae_input_device *uid, int i, int port, int af)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 a_inode *custom_fsdb_lookup_aino_aname (a_inode *base, const TCHAR *aname)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return NULL;
 }
 
 a_inode *custom_fsdb_lookup_aino_nname (a_inode *base, const TCHAR *nname)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return NULL;
 }
 
 int input_get_default_joystick_analog (struct uae_input_device *uid, int i, int port, int af)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 void f_out (void *f, const TCHAR *format, ...)
@@ -702,24 +739,28 @@ struct zfile *unwarp(struct zfile *zf)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return NULL;
 }
 
 uae_u16 SERDATR (void)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 TCHAR* buf_out (TCHAR *buffer, int *bufsize, const TCHAR *format, ...)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));    
   TODO();
+    return NULL;
 }
 
 uae_u8 *save_log (int bootlog, int *len)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return NULL;
 }
 
 void to_lower (TCHAR *s, int len)
@@ -745,6 +786,7 @@ int is_tablet (void)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return 0;
 }
 
 void jit_abort (const TCHAR *format,...)
@@ -757,6 +799,7 @@ uae_u8 *save_dmac (int *len, uae_u8 *dstptr)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
+    return NULL;
 }
 
 void unlockscr (void) 
@@ -778,17 +821,20 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
 	TODO();
+    return 0;
 }
 
 SRes XzUnpacker_Create(CXzUnpacker *p, ISzAlloc *alloc) 
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
 	TODO();
+    return 0;
 }
 void XzUnpacker_Free(CXzUnpacker *p) 
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
 	TODO();
+    return 0;
 }
 
 char *ua (const TCHAR *s) {
@@ -975,9 +1021,11 @@ int enumerate_sound_devices (void) {
 
 int timeend (void) {
   TODO();
+    return 0;
 }
 int timebegin (void) {
   TODO();
+    return 0;
 }
 
 void driveclick_fdrawcmd_detect(void) {
@@ -993,6 +1041,7 @@ void mman_ResetWatch (void *lpBaseAddress, unsigned long dwRegionSize) {
 
 int mman_GetWriteWatch (uae_u8 *start, LONG size, void **lpAddresses, int *lpdwCount, ULONG *lpdwGranularity) {
   TODO();
+    return 0;
 }
 
 void sndboard_ext_volume(void) {
@@ -1012,6 +1061,7 @@ void update_sndboard_sound (double clk) {
 SWVoiceIn *AUD_open_in( QEMUSoundCard *card, SWVoiceIn *sw, const char *name, void *callback_opaque, audio_callback_fn callback_fn, struct audsettings *settings)
 {
   TODO();
+    return NULL;
 }
 
 void AUD_close_in(QEMUSoundCard *card, SWVoiceIn *sw) {
@@ -1020,6 +1070,7 @@ void AUD_close_in(QEMUSoundCard *card, SWVoiceIn *sw) {
 
 SWVoiceOut *AUD_open_out( QEMUSoundCard *card, SWVoiceOut *sw, const char *name, void *callback_opaque, audio_callback_fn callback_fn, struct audsettings *settings) {
   TODO();
+    return NULL;
 }
 
 void AUD_close_out(QEMUSoundCard *card, SWVoiceOut *sw) {
@@ -1032,14 +1083,17 @@ void AUD_set_active_in(SWVoiceIn *sw, int on) {
 
 int  AUD_is_active_out(SWVoiceOut *sw) {
   TODO();
+    return 0;
 }
 
 int  AUD_read(SWVoiceIn *sw, void *pcm_buf, int size) {
   TODO();
+    return 0;
 }
 
 int  AUD_write(SWVoiceOut *sw, void *pcm_buf, int size) {
   TODO();
+    return 0;
 }
 
 void AUD_set_active_out(SWVoiceOut *sw, int on) {
@@ -1048,6 +1102,7 @@ void AUD_set_active_out(SWVoiceOut *sw, int on) {
 
 bool ismouseactive (void) {
   TODO();
+    return TRUE;
 }
 
 void statusline_updated(void) {
@@ -1066,4 +1121,5 @@ int uaeser_getdatalength(void) {
 
 bool target_can_autoswitchdevice(void) {
   TODO();
+    return FALSE;
 }
