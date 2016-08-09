@@ -170,6 +170,7 @@ static uaecptr uaegfx_resname = (uaecptr)NULL,
 	uaegfx_base = (uaecptr)NULL,
 	uaegfx_rom = (uaecptr)NULL;
 
+#if 0
 typedef enum {
 	BLIT_FALSE,
 	BLIT_NOR,
@@ -189,6 +190,7 @@ typedef enum {
 	BLIT_TRUE,
 	BLIT_SWAP = 30
 } BLIT_OPCODE;
+#endif
 
 #ifndef __AROS__
 #include "win32gui.h"
@@ -1036,6 +1038,105 @@ bool picasso_is_active (void)
 	return picasso_active;
 }
 
+
+void do_blit96(struct RenderInfo *ri, int Bpp, int srcx, int srcy, int dstx, int dsty, int width, int height);
+
+/*
+ * This routine modifies the real screen buffer after a blit has been
+ * performed in the save area. If can_do_blit is nonzero, the blit can
+ * be performed within the real screen buffer; otherwise, this routine
+ * must do it by hand using the data in the save area, pointed to by
+ * srcp.
+ */
+void do_blit (struct RenderInfo *ri, int Bpp, int srcx, int srcy,
+		     int dstx, int dsty, int width, int height)
+{
+  //SDL_Surface source;
+
+    int xoff = picasso96_state.XOffset;
+    int yoff = picasso96_state.YOffset;
+    uae_u8 *srcp, *dstp;
+
+    /* Clipping.  */
+    dstx -= xoff;
+    dsty -= yoff;
+
+    if (dstx < 0) {
+        srcx -= dstx;
+        width += dstx;
+        dstx = 0;
+    }
+    if (dsty < 0) {
+        srcy -= dsty;
+        height += dsty;
+        dsty = 0;
+    }
+    if (dstx + width > picasso96_state.Width)
+        width = picasso96_state.Width - dstx;
+    if (dsty + height > picasso96_state.Height)
+        height = picasso96_state.Height - dsty;
+    if (width <= 0 || height <= 0)
+        return;
+
+    /* If no OS blit available, we do a copy from the P96 framebuffer in Amiga
+       memory to the host's frame buffer.  */
+
+    DX_Invalidate (-1, dsty, -1, dsty + height - 1); /* -1 means max */
+    if (!picasso_vidinfo.extra_mem)
+        return;
+
+    dstp = gfx_lock_picasso (false, false);
+    if (dstp == 0)
+        goto out;
+    dstp += dsty * picasso_vidinfo.rowbytes + dstx * picasso_vidinfo.pixbytes;
+    P96TRACE(("do_blit with srcp 0x%x, dstp 0x%x, dst_rowbytes %d, srcx %d, srcy %d, dstx %d, dsty %d, w %d, h %d, dst_pixbytes %d\n",
+	srcp, dstp, picasso_vidinfo.rowbytes, srcx, srcy, dstx, dsty, width, height, picasso_vidinfo.pixbytes));
+    P96TRACE(("gfxmem is at 0x%x\n",gfxmemory));
+
+    srcp = ri->Memory + srcx * Bpp + srcy * ri->BytesPerRow;
+    DX_Invalidate (-1, dsty, -1, dsty + height - 1);
+    DebOut("bla..\n");
+
+    if (picasso_vidinfo.rgbformat == picasso96_state.RGBFormat) {
+        width *= Bpp;
+        while (height-- > 0) {
+            memcpy (dstp, srcp, width);
+            srcp += ri->BytesPerRow;
+            dstp += picasso_vidinfo.rowbytes;
+        }
+    } else {
+        int psiz = GetBytesPerPixel (picasso_vidinfo.rgbformat);
+        DebOut("GetBytesPerPixel: %d\n", psiz);
+        DebOut("picasso96_state.RGBFormat %d != RGBFB_CHUNKY %d\n", picasso96_state.RGBFormat, RGBFB_CHUNKY);
+        if (picasso96_state.RGBFormat != RGBFB_CHUNKY) {
+            write_log("Aborted (picasso96_state.RGBFormat != RGBFB_CHUNKY)\n");
+            abort ();
+        }
+
+        DebOut("bla..\n");
+        while (height-- > 0) {
+            int i;
+            switch (psiz) {
+                case 2:
+                    for (i = 0; i < width; i++)
+                        *((uae_u16 *) dstp + i) = picasso_vidinfo.clut[srcp[i]];
+                break;
+                case 4:
+                    for (i = 0; i < width; i++)
+                        *((uae_u32 *) dstp + i) = picasso_vidinfo.clut[srcp[i]];
+                break;
+                default:
+                    write_log("Aborted (invalid psiz %d)\n", psiz);
+                    abort ();
+            }
+            srcp += ri->BytesPerRow;
+            dstp += picasso_vidinfo.rowbytes;
+        }
+    }
+out:
+    gfx_unlock_picasso (false);
+}
+
 /* Clear our screen, since we've got a new Picasso screen-mode, and refresh with the proper contents
 * This is called on several occasions:
 * 1. Amiga-->Picasso transition, via SetSwitch()
@@ -1090,7 +1191,7 @@ void picasso_refresh (void)
 		}
 #warning XXXXXXXXXXXXXXXXXXXXXXXXXXXYYYYYYYYYYYYYYYYYYYYYYYYYYYYXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     //J-UAE calls
-    //do_blit (&ri, picasso96_state.BytesPerPixel, 0, 0, 0, 0, width, height, BLIT_SRC, 0);
+    do_blit (&ri, picasso96_state.BytesPerPixel, 0, 0, 0, 0, width, height);
     //here!!
 #warning XXXXXXXXXXXXXXXXXXXXXXXXXXXYYYYYYYYYYYYYYYYYYYYYYYYYYYYXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
@@ -1568,7 +1669,7 @@ extern uae_u32 sprite_0_colors[4];
 
 int createwindowscursor (uaecptr src, int w, int h, int hiressprite, int doubledsprite, int chipset)
 {
-  TODO();
+  /* TODO();*/
   wincursor_shown = 1;
   return 1;
 #if 0
@@ -2113,8 +2214,8 @@ static void CopyLibResolutionStructureU2A (struct LibResolution *libres, uaecptr
 
 void picasso_allocatewritewatch (int gfxmemsize)
 {
-  DebOut("gfxmemsize: %lx\n", gfxmemsize);
 #ifndef __AROS__
+  DebOut("gfxmemsize: %lx\n", gfxmemsize);
 	SYSTEM_INFO si;
 #endif
 
@@ -2129,8 +2230,8 @@ void picasso_allocatewritewatch (int gfxmemsize)
 	gwwpagemask = gwwpagesize - 1;
 	gwwbuf = xmalloc (void*, gwwbufsize);
   DebOut("gwwbufsize: %d\n", gwwbufsize);
-  DebOut("gwwpagemask: %lx\n", gwwpagemask);
-  DebOut("gwwbuf: %lx\n", gwwbuf);
+  DebOut("gwwpagemask: 0x%lx\n", gwwpagemask);
+  DebOut("gwwbuf: %p\n", gwwbuf);
 
 }
 
@@ -2185,7 +2286,9 @@ bool picasso_is_vram_dirty (uaecptr addr, int size)
 
 static void init_alloc (TrapContext *ctx, int size)
 {
+  DebOut("entered\n");
 	picasso96_amem = picasso96_amemend = 0;
+  DebOut("uaegfx_base: %lx\n", uaegfx_base);
 	if (uaegfx_base) {
 		size = get_long (uaegfx_base + CARD_RESLISTSIZE);
 		picasso96_amem = get_long (uaegfx_base + CARD_RESLIST);
@@ -2193,9 +2296,11 @@ static void init_alloc (TrapContext *ctx, int size)
 		reserved_gfxmem = size;
 		picasso96_amem = gfxmem_bank.start + gfxmem_bank.allocated - size;
 	}
+  DebOut("set picasso96_amemend to %lx\n", picasso96_amem + size);
 	picasso96_amemend = picasso96_amem + size;
 	write_log (_T("P96 RESINFO: %08X-%08X (%d,%d)\n"), picasso96_amem, picasso96_amemend, size / PSSO_ModeInfo_sizeof, size);
 	picasso_allocatewritewatch (gfxmem_bank.allocated);
+  DebOut("left\n");
 }
 
 static int p96depth (int depth)
@@ -2213,6 +2318,15 @@ static int p96depth (int depth)
 		ok = 3;
 	if (depth == 32 && (f & (RGBFF_A8R8G8B8 | RGBFF_A8B8G8R8 | RGBFF_R8G8B8A8 | RGBFF_B8G8R8A8)))
 		ok = 4;
+
+#if 0
+  if(ok) {
+    DebOut("depth %d is ok (%d)\n", depth, ok);
+  }
+  else {
+    DebOut("depth %d is *not* ok\n", depth);
+  }
+#endif
 	return ok;
 }
 
@@ -2289,6 +2403,7 @@ static void picasso96_alloc2 (TrapContext *ctx)
 		i = 0;
 		while (DisplayModes[i].depth >= 0) {
 			if (DisplayModes[i].rawmode) {
+        DebOut("DisplayModes[%d].rawmode!\n", i);
 				i++;
 				continue;
 			}
@@ -2327,9 +2442,9 @@ static void picasso96_alloc2 (TrapContext *ctx)
 			i++;
 		}
 	}
+  DebOut("cnt (final): %d\n", cnt);
 	qsort (newmodes, cnt, sizeof (struct PicassoResolution), resolution_compare);
 
-        DebOut("cnt: %d\n", cnt);
 
 #if MULTIDISPLAY
 	for (i = 0; Displays[i].name; i++) {
@@ -2341,10 +2456,14 @@ static void picasso96_alloc2 (TrapContext *ctx)
 
 	for (i = 0; i < cnt; i++) {
 		int depth;
-		for (depth = 8; depth <= 32; depth++) {
-			if (!p96depth (depth))
-				continue;
+		int d;
+    DebOut("newmode[%d] width %d height %d\n", i, newmodes[i].res.width, newmodes[i].res.height);
+    /* WinUAE does not do this. There the case never matches, as the depth=p96depth(d); is missing */
+		for (d = 8; d <= 32; d++) {
+      depth=p96depth(d);
 			switch (depth) {
+      case 0:
+        break;
 			case 1:
 				if (newmodes[i].res.width > chunky.width)
 					chunky.width = newmodes[i].res.width;
@@ -2539,6 +2658,7 @@ static uae_u32 REGPARAM2 picasso_InitCard (TrapContext *ctx)
 
 	i = 0;
 	unkcnt = cnt = 0;
+  /* TODO: BUG fill newmodes!! */
 	while (newmodes[i].depth >= 0) {
 		struct LibResolution res = {{ 0 }};
 		TCHAR *s;
@@ -2560,28 +2680,6 @@ static uae_u32 REGPARAM2 picasso_InitCard (TrapContext *ctx)
 		AmigaListAddTail (AmigaBoardInfo + PSSO_BoardInfo_ResolutionsList, amem);
 		amem += PSSO_LibResolution_sizeof;
 	}
-#if MULTIDISPLAY
-	for (i = 0; Displays[i].name; i++) {
-		struct LibResolution res = { 0 };
-		struct MultiDisplay *md = &Displays[i];
-		int w = md->rect.right - md->rect.left;
-		int h = md->rect.bottom - md->rect.top;
-		TCHAR tmp[100];
-		if (md->primary)
-			strcpy (tmp, "UAE:Primary");
-		else
-			_stprintf (tmp, "UAE:Display#%d", i);
-		addmode (AmigaBoardInfo, &amem, &res, w, h, tmp, i + 1, &unkcnt);
-		write_log (_T("%08X %4dx%4d %s\n"), res.DisplayID, res.Width + 16, res.Height, res.Name);
-		LibResolutionStructureCount++;
-		CopyLibResolutionStructureU2A (&res, amem);
-#if P96TRACING_ENABLED && P96TRACING_LEVEL > 1
-		DumpLibResolutionStructure(amem);
-#endif
-		AmigaListAddTail (AmigaBoardInfo + PSSO_BoardInfo_ResolutionsList, amem);
-		amem += PSSO_LibResolution_sizeof;
-	}
-#endif
 
 	if (amem > picasso96_amemend)
 		write_log (_T("P96: display resolution list corruption %08x<>%08x (%d)\n"), amem, picasso96_amemend, i);
@@ -2837,6 +2935,7 @@ static uae_u32 REGPARAM2 picasso_SetPanning (TrapContext *ctx)
 	picasso96_state.VirtualWidth = bme_width;
 	picasso96_state.VirtualHeight = bme_height;
 	picasso96_state.RGBFormat = (RGBFTYPE)m68k_dreg (regs, 7);
+    DebOut("picasso96_state.RGBFormat: %d\n", picasso96_state.RGBFormat);
 	picasso96_state.BytesPerPixel = GetBytesPerPixel (picasso96_state.RGBFormat);
 	picasso96_state.BytesPerRow = picasso96_state.VirtualWidth * picasso96_state.BytesPerPixel;
 	picasso_SetPanningInit();
@@ -4768,16 +4867,19 @@ void uaegfx_install_code (uaecptr start)
 
 static uae_u32 REGPARAM2 gfx_open (TrapContext *context)
 {
+  DebOut("entered\n");
 	put_word (uaegfx_base + 32, get_word (uaegfx_base + 32) + 1);
 	return uaegfx_base;
 }
 static uae_u32 REGPARAM2 gfx_close (TrapContext *context)
 {
+  DebOut("entered\n");
 	put_word (uaegfx_base + 32, get_word (uaegfx_base + 32) - 1);
 	return 0;
 }
 static uae_u32 REGPARAM2 gfx_expunge (TrapContext *context)
 {
+  DebOut("entered\n");
 	return 0;
 }
 
@@ -4834,12 +4936,16 @@ static uaecptr uaegfx_card_install (TrapContext *ctx, uae_u32 extrasize)
 	m68k_areg (regs, 2) = 0;
 	m68k_dreg (regs, 0) = CARD_SIZEOF + extrasize;
 	m68k_dreg (regs, 1) = 0;
+  DebOut("calling MakeLibrary\n");
 	uaegfx_base = CallLib (ctx, exec, -0x54); /* MakeLibrary */
+  DebOut("MakeLibrary called (libbase %lx)\n", uaegfx_base);
 	m68k_areg (regs, 2) = a2;
 	if (!uaegfx_base)
 		return 0;
 	m68k_areg (regs, 1) = uaegfx_base;
+  DebOut("call AddLibrary..\n");
 	CallLib (ctx, exec, -0x18c); /* AddLibrary */
+  DebOut("AddLibrary survived\n");
 	m68k_areg (regs, 1) = EXPANSION_explibname;
 	m68k_dreg (regs, 0) = 0;
 	put_long (uaegfx_base + CARD_EXPANSIONBASE, CallLib (ctx, exec, -0x228)); /* OpenLibrary */
@@ -4848,18 +4954,26 @@ static uaecptr uaegfx_card_install (TrapContext *ctx, uae_u32 extrasize)
 	put_long (uaegfx_base + CARD_NAME, uaegfx_resname);
 	put_long (uaegfx_base + CARD_RESLIST, uaegfx_base + CARD_SIZEOF);
 	put_long (uaegfx_base + CARD_RESLISTSIZE, extrasize);
+  DebOut("uaegfx_base populated\n");
 
 	if (currprefs.rtg_hardwareinterrupt)
 		initvblankirq (ctx, uaegfx_base);
 
 	write_log (_T("uaegfx.card %d.%d init @%08X\n"), UAEGFX_VERSION, UAEGFX_REVISION, uaegfx_base);
 	uaegfx_active = 1;
+  DebOut("uaegfx_active: 1\n");
 	return uaegfx_base;
 }
 
+/*
+ * gets called from uaelib_demux2
+ *
+ */
 uae_u32 picasso_demux (uae_u32 arg, TrapContext *ctx)
 {
 	uae_u32 num = get_long (m68k_areg (regs, 7) + 4);
+
+  DebOut("entered\n");
 
 	if (uaegfx_base) {
 		if (num >= 16 && num <= 39) {
@@ -4872,6 +4986,7 @@ uae_u32 picasso_demux (uae_u32 arg, TrapContext *ctx)
 		uaegfx_old = 1;
 		uaegfx_active = 1;
 	}
+  DebOut("hook num: %d\n", num);
 	switch (num)
 	{
      case 16: return picasso_FindCard (ctx);
@@ -4942,6 +5057,7 @@ uae_u8 *restore_p96 (uae_u8 *src)
   DebOut("changed_prefs.rtgmem_size:=%d\n", changed_prefs.rtgmem_size);
 	picasso96_state.Address = restore_u32 ();
 	picasso96_state.RGBFormat = (RGBFTYPE)restore_u32 ();
+    DebOut("picasso96_state.RGBFormat: %d\n", picasso96_state.RGBFormat);
 	picasso96_state.Width = restore_u16 ();
 	picasso96_state.Height = restore_u16 ();
 	picasso96_state.VirtualWidth = restore_u16 ();
