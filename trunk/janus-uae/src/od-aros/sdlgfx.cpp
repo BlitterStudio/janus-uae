@@ -722,7 +722,7 @@ void fill_DisplayModes(struct MultiDisplay *md) {
 
       /* Build list of screenmodes */
       mode_count = find_screen_modes (info->vfmt, &screenmode[0], MAX_SDL_SCREENMODE);
-      md->DisplayModes = xmalloc (struct PicassoResolution, MAX_PICASSO_MODES);
+      md->DisplayModes = xcalloc (struct PicassoResolution, MAX_PICASSO_MODES);
       for (i=0; i<mode_count; i++) {
         //md->DisplayModes[i]=(struct PicassoResolution *) malloc(sizeof(struct PicassoResolution));
         md->DisplayModes[i].res.width=screenmode[i].w;
