@@ -702,6 +702,9 @@ struct uae_prefs {
 	TCHAR input_config_name[GAMEPORT_INPUT_SETTINGS][256];
 	int dongle;
 	int input_contact_bounce;
+#ifdef USE_GL
+  bool use_gl;
+#endif
 };
 
 extern int config_changed;
