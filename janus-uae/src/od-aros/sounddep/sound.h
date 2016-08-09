@@ -64,7 +64,7 @@ int blocking_sound_device (struct sound_data *sd);
 extern int outputsample, doublesample;
 #endif
 
-static uae_u16 *paula_sndbufpt_prev, *paula_sndbufpt_start;
+//static uae_u16 *paula_sndbufpt_prev, *paula_sndbufpt_start;
 
 STATIC_INLINE void set_sound_buffers (void)
 {
