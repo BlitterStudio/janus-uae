@@ -107,7 +107,7 @@
 
 #define UAE_RAND_MAX RAND_MAX
 /* missing types, maybe move somewhere else? */
-#define WPARAM UINT
+#define WPARAM IPTR
 #define LPARAM IPTR
 /* old */
 
