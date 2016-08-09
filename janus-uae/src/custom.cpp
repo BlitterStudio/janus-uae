@@ -9496,8 +9496,8 @@ uae_u8 *restore_custom_extra (uae_u8 *src)
 
 	//currprefs.a2091rom.enabled = changed_prefs.a2091rom.enabled = RBB;
 	//currprefs.a4091rom.enabled = changed_prefs.a4091rom.enabled = RBB;
-	RBB;
-	RBB;
+	RB;
+	RB;
 	currprefs.cs_cdtvscsi = changed_prefs.cs_cdtvscsi = RBB;
 
 	currprefs.cs_pcmcia = changed_prefs.cs_pcmcia = RBB;
