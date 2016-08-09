@@ -16,6 +16,11 @@
 
 #ifdef __AROS__
 #include "aros.h"
+
+int max(int a, int b) {
+  if(a>b) return a;
+  return b;
+}
 #endif
 
 #include "options.h"
