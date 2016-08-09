@@ -4201,7 +4201,8 @@ static void m68k_modify (TCHAR **inptr)
 {
 	uae_u32 v;
 	TCHAR parm[10];
-	TCHAR c1, c2;
+	TCHAR c1;
+        unsigned int c2;
 	int i;
 
 	if (!next_string (inptr, parm, sizeof (parm) / sizeof (TCHAR), 1))
@@ -4209,9 +4210,8 @@ static void m68k_modify (TCHAR **inptr)
 	c1 = _totupper (parm[0]);
 	c2 = 99;
 	if (c1 == 'A' || c1 == 'D' || c1 == 'P') {
-		c2 = _totupper (parm[1]);
-		if (isdigit (c2))
-			c2 -= '0';
+		if (isdigit (_totupper (parm[1])))
+			c2 -= (unsigned int)'0';
 		else
 			c2 = 99;
 	}
@@ -4762,7 +4762,7 @@ void debug (void)
 							seglist = BPTR2APTR(get_long_debug (activetask + 128));
 							seglist = BPTR2APTR(get_long_debug (seglist + 12));
 						}
-						if (activetask == processptr || (processname && (!stricmp (name, processname) || (command && command[0] && !strnicmp (command + 1, processname, command[0]) && processname[command[0]] == 0)))) {
+						if (activetask == processptr || (processname && (!stricmp (name, processname) || (command && command[0] && !strnicmp (command + 1, processname, command[0]) && processname[(unsigned int)command[0]] == 0)))) {
 							while (seglist) {
 								uae_u32 size = get_long_debug (seglist - 4) - 4;
 								if (pc >= (seglist + 4) && pc < (seglist + size)) {
