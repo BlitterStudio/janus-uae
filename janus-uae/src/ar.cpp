@@ -214,7 +214,6 @@
 #include "crc32.h"
 #include "akiko.h"
 
-#define DEBUG
 #ifdef DEBUG
 #define write_log_debug write_log
 #else
