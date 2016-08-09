@@ -6414,8 +6414,13 @@ static void buildin_default_prefs (struct uae_prefs *p)
 	p->cs_agnusrev = -1;
 	p->cs_deniserev = -1;
 	p->cs_mbdmac = 0;
-	p->cs_cd32c2p = p->cs_cd32cd = p->cs_cd32nvram = p->cs_cd32fmv = false;
-	p->cs_cdtvcd = p->cs_cdtvram = p->cs_cdtvcard = false;
+	p->cs_cd32c2p = false;
+        p->cs_cd32cd = false;
+        p->cs_cd32nvram = false;
+        p->cs_cd32fmv = false;
+	p->cs_cdtvcd = false;
+        p->cs_cdtvram = false; 
+        p->cs_cdtvcard = false;
 	p->cs_ide = 0;
 	p->cs_pcmcia = 0;
 	p->cs_ksmirror_e0 = 1;
