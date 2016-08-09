@@ -31,6 +31,7 @@
 
 #ifndef UAE_MINI
 
+//#define USE_GL
 #define DEBUGGER
 #define FILESYS    /* filesys emulation */
 #define UAE_FILESYS_THREADS
@@ -393,13 +394,13 @@
 #define PACKAGE_NAME "Janus-UAE2"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "Janus-UAE2 0.1"
+#define PACKAGE_STRING "Janus-UAE2 0.3"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "janus-uae"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.1"
+#define PACKAGE_VERSION "0.3"
 
 /* Define to the necessary symbol if this constant uses a non-standard name on
    your system. */
