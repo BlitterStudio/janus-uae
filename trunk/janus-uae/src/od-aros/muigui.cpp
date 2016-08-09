@@ -6712,7 +6712,7 @@ GUI_STATIC INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wPara
                     if (recursive > 0)
                             break;
                     recursive++;
-                    if ((HWND)lParam == GetDlgItem(hDlg, IDC_QUICKSTART_COMPATIBILITY)) {
+                    if (lParam == IDC_QUICKSTART_COMPATIBILITY) {
 #ifndef __AROS__
                             val = SendMessage((HWND)lParam, TBM_GETPOS, 0, 0);
 #else
@@ -11731,7 +11731,7 @@ static INT_PTR CALLBACK SoundDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 		break;
 
 	case WM_HSCROLL:
-		if ((HWND)lParam == GetDlgItem (hDlg, IDC_SOUNDBUFFERRAM)) {
+		if (lParam == IDC_SOUNDBUFFERRAM) {
 			int v = SendMessage (GetDlgItem (hDlg, IDC_SOUNDBUFFERRAM), TBM_GETPOS, 0, 0);
 			if (v >= 0)
 				workprefs.sound_maxbsiz = sndbufsizes[v];
@@ -12975,7 +12975,7 @@ static void new_harddrive (HWND hDlg, int entry)
 
 static void harddisk_remove (HWND hDlg)
 {
-	int entry = listview_find_selected (GetDlgItem (hDlg, IDC_VOLUMELIST));
+	int entry = listview_find_selected ((HWND)IDC_VOLUMELIST);
 	if (entry < 0)
 		return;
 	kill_filesys_unitconfig (&workprefs, entry);
@@ -12983,7 +12983,7 @@ static void harddisk_remove (HWND hDlg)
 
 static void harddisk_move (HWND hDlg, int up)
 {
-	int entry = listview_find_selected (GetDlgItem (hDlg, IDC_VOLUMELIST));
+	int entry = listview_find_selected ((HWND)IDC_VOLUMELIST);
 	if (entry < 0)
 		return;
 	move_filesys_unitconfig (&workprefs, entry, up ? entry - 1 : entry + 1);
@@ -12991,7 +12991,7 @@ static void harddisk_move (HWND hDlg, int up)
 
 static void harddisk_edit (HWND hDlg)
 {
-	int entry = listview_find_selected (GetDlgItem (hDlg, IDC_VOLUMELIST));
+	int entry = listview_find_selected ((HWND)IDC_VOLUMELIST);
 	int type;
 	struct uaedev_config_data *uci;
 	struct mountedinfo mi;
@@ -19970,7 +19970,7 @@ int gui_message_multibutton (int flags, const TCHAR *format,...)
 	int focuso = isfocus ();
 	int ret;
 	DWORD mbflags;
-	HWND hwnd;
+	HWND hwnd = 0;
 
 	mbflags = MB_ICONWARNING | MB_TASKMODAL;
 	if (flags == 0)
