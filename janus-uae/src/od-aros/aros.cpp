@@ -1,5 +1,5 @@
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #include <proto/dos.h>
 #include <proto/timer.h>
@@ -273,7 +273,6 @@ void fetch_datapath (TCHAR *out, int size)
 
 
 void fetch_path (const TCHAR *name, TCHAR *out, int size) {
-  int size2 = size;
   TCHAR tmp[256];
   int old;
 
@@ -536,11 +535,8 @@ DWORD GetFullPathName(const TCHAR *lpFileName, DWORD nBufferLength, LPTSTR lpBuf
 
 static struct MultiDisplay *getdisplay2 (struct uae_prefs *p, int index)
 {
-  int max;
 #ifndef __AROS__
   int display = index < 0 ? p->gfx_apmode[screen_is_picasso ? APMODE_RTG : APMODE_NATIVE].gfx_display - 1 : index;
-#else
-  int display=0;
 #endif
 
   write_log ("Multimonitor detection disabled\n");
@@ -666,7 +662,7 @@ void fetch_rompath (TCHAR *out, int size)
   fetch_path (_T("KickstartPath"), out, size);
 }
 
-static bool rawinput_enabled_mouse;
+//static bool rawinput_enabled_mouse;
 static bool rawinput_enabled_keyboard=FALSE;
 
 int input_get_default_keyboard (int i)
@@ -806,7 +802,6 @@ void amiga_to_timeval (struct mytimeval *tv, int days, int mins, int ticks)
 BOOL FindNextFile(HANDLE hFindFile, LPWIN32_FIND_DATA lpFindFileData) {
 
   INTERNAL_HANDLE *h=(INTERNAL_HANDLE*) hFindFile;
-  struct timespec time;
   char full_path[256];
 
 next:
@@ -1225,7 +1220,7 @@ void setpathmode (pathtype pt)
 static int parseversion (TCHAR **vs)
 {
   TCHAR tmp[10];
-  int i;
+  unsigned int i;
 
   i = 0;
   while (**vs >= '0' && **vs <= '9') {
@@ -1259,9 +1254,9 @@ static int checkversion (TCHAR *vs)
 UAEREG *read_disk_history (int type);
 
 void WIN32_HandleRegistryStuff (void) {
-  RGBFTYPE colortype = RGBFB_NONE;
+  //RGBFTYPE colortype = RGBFB_NONE;
   //DWORD dwType = REG_DWORD;
-  DWORD dwDisplayInfoSize = sizeof (colortype);
+  //DWORD dwDisplayInfoSize = sizeof (colortype);
   int size;
   TCHAR path[MAX_DPATH] = _T("");
   TCHAR version[100];
@@ -1337,7 +1332,7 @@ void WIN32_HandleRegistryStuff (void) {
   /* AROS paths have no trailing \\ */
   path[_tcslen (path) - 1] = 0;
 #endif
-  if (GetFileAttributes (path) == 0xffffffff) {
+  if (GetFileAttributes (path) == ~0) {
     TCHAR path2[MAX_DPATH];
     _tcscpy (path2, path);
     createdir (path);
@@ -1375,7 +1370,6 @@ static void figure_processor_speed_rdtsc (void)
 {
   frame_time_t clockrate;
 	BYTE oldpri;
-	HANDLE th;
 
 	if (freqset)
 		return;
