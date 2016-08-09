@@ -52,7 +52,7 @@ AROS_UFH3S(LONG, display_func, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(cha
   struct hook_data *h_data = (struct hook_data *) hook->h_Data;
   struct Element *elem;
   int i;
-  int t;
+  ULONG t;
   ULONG c=0;
 
   /* get elem for this object */
@@ -88,7 +88,7 @@ AROS_UFH3S(LONG, display_func, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(cha
   }
 
 EXIT:
-  ;
+  return 0;
   AROS_USERFUNC_EXIT
 }
 
@@ -139,9 +139,9 @@ Object *new_listview(struct Element *elem, ULONG i, void *f, struct Data *data, 
 
   Object *listview=NULL;
   Object *nlist;
-  int *(*func) (Element *hDlg, UINT msg, ULONG wParam, IPTR lParam);
-  func=(int* (*)(Element*, uint32_t, ULONG, IPTR)) f;
-  ULONG t=0;
+  //int *(*func) (Element *hDlg, UINT msg, ULONG wParam, IPTR lParam);
+  //func=(int* (*)(Element*, uint32_t, ULONG, IPTR)) f;
+  //ULONG t=0;
   DebOut("i (not used): %d\n", i);
 
   nlist=ListObject,
@@ -228,6 +228,7 @@ void ListView_SetItemState(int hwnd, int i, UINT state, UINT mask) {
 
 LONG Button_SetElevationRequiredState(HWND hDlg, int nIDDlgItem, BOOL fRequired) {
   TODO();
+  return 1;
 }
 
 /*
@@ -481,7 +482,7 @@ VOID ListView_SetItemText(int nIDDlgItem, int line, int iSubItem, const char *ps
   int i;
   struct view_line *old_line;
   struct view_line *new_line;
-  ULONG pos;
+  LONG pos;
 
   DebOut("line %d, column %d: %s\n", line, iSubItem, pszText);
 
@@ -549,7 +550,7 @@ UINT ListView_GetItemState(int nIDDlgItem, int  nr, UINT mask) {
   int i;
   IPTR act;
 
-  DebOut("nIDDlgItem %d, i: %d\n", nIDDlgItem, i);
+  DebOut("nIDDlgItem %d: %d\n", nIDDlgItem);
 
   /* usual "find ourselves" */
   elem=get_elem(nIDDlgItem);
