@@ -25,9 +25,9 @@ typedef struct _SECURITY_ATTRIBUTES {
 #define TRUNCATE_EXISTING       5
 
 #define INVALID_HANDLE_VALUE     ((IPTR)0)
-#define INVALID_FILE_SIZE        (~0u)
-#define INVALID_SET_FILE_POINTER (~0u)
-#define INVALID_FILE_ATTRIBUTES  (~0u)
+#define INVALID_FILE_SIZE        (~0)
+#define INVALID_SET_FILE_POINTER (~0)
+#define INVALID_FILE_ATTRIBUTES  (~0)
 
 /* winbase end */
 
