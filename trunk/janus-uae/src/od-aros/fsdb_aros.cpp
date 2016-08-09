@@ -1103,6 +1103,7 @@ const TCHAR *my_getfilepart(const TCHAR *filename) {
 
 bool my_createshortcut(const TCHAR *source, const TCHAR *target, const TCHAR *description) {
   TODO();
+  return TRUE;
 }
 
 bool myAddPart(TCHAR *dirname, const TCHAR *filename, ULONG size ) {
