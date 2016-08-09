@@ -679,7 +679,6 @@ void amiga_clipboard_task_start (uaecptr data)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
   TODO();
-    return 0;
 }
 
 int input_get_default_joystick (struct uae_input_device *uid, int i, int port, int af, int mode) 
@@ -834,7 +833,6 @@ void XzUnpacker_Free(CXzUnpacker *p)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
 	TODO();
-    return 0;
 }
 
 char *ua (const TCHAR *s) {
