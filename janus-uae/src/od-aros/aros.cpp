@@ -39,7 +39,6 @@
 //#include "wintablet.h"
 //#include <pktdef.h>
 
-#include "sysdeps.h"
 #include "options.h"
 #include "audio.h"
 #include "sounddep/sound.h"
