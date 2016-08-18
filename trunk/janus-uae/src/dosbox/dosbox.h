@@ -8,6 +8,7 @@
 
 #ifndef CH_STRING
 #define CH_STRING
+#undef wchar_t
 #include <string>
 #endif
 
