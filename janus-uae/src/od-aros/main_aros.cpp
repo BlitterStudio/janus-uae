@@ -26,7 +26,7 @@
 #include <exec/execbase.h>
 #include <proto/dos.h>
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -39,6 +39,7 @@
 #include "gui.h"
 #include "registry.h"
 #ifdef __AROS__
+#include "gui/gui_mui.h"
 #include "winnt.h"
 #endif
 
@@ -60,7 +61,9 @@ extern void logging_deinit (void);
  */
 static void getstartpaths (void)
 {
+#if 0
 	UAEREG *key;
+#endif
 
   DebOut("entered\n");
 
