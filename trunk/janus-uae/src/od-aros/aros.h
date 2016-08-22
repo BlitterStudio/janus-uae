@@ -4,7 +4,6 @@
 #include <stdint.h>
 
 #include "sys/mman.h"
-#include "gui/gui_mui.h"
 #include "zfile.h"
 
 #if !defined(XGET)
@@ -121,34 +120,6 @@ int my_rmdir (const TCHAR *name);
 /* gui */
 extern void *hInst;
 extern void *hUIDLL;
-int LoadString(APTR hInstance, TCHAR *uID, TCHAR * lpBuffer, int nBufferMax);
-BOOL SetDlgItemText(struct Element *elem, int nIDDlgItem, const TCHAR *lpString);
-LONG SendDlgItemMessage(struct Element *hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam);
-BOOL CheckDlgButton(Element *elem, int button, UINT uCheck);
-BOOL SetDlgItemInt(HWND hDlg, int nIDDlgItem, UINT uValue, BOOL bSigned);
-BOOL SetWindowText(HWND hWnd, TCHAR *lpString);
-BOOL SetWindowText(HWND hWnd, DWORD id, TCHAR *lpString);
-int GetWindowText(HWND   hWnd, LPTSTR lpString, int nMaxCount);
-int GetWindowText(HWND   hWnd, DWORD id, LPTSTR lpString, int nMaxCount);
-BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDCheckButton);
-int MessageBox(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType);
-int MessageBox_fixed(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType);
-UINT IsDlgButtonChecked(HWND elem, int item);
-BOOL EnableWindow(HWND hWnd, DWORD id, BOOL bEnable);
-UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount);
-LRESULT SendMessage(int hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
-LRESULT SendMessage(struct Element *hWnd, DWORD id, UINT Msg, WPARAM wParam, LPARAM lParam);
-
-void *ShellExecute(HWND hwnd, TCHAR *lpOperation, TCHAR *lpFile, TCHAR *lpParameters, TCHAR *lpDirectory, int nShowCmd);
-DWORD GetTempPath(DWORD nBufferLength, TCHAR *lpBuffer);
-DWORD GetFullPathName(const TCHAR *lpFileName, DWORD nBufferLength, LPTSTR lpBuffer, LPTSTR *lpFilePart);
-
-void read_rom_list (void);
-void set_path (const TCHAR *name, TCHAR *path, pathtype mode);
-void set_path (const TCHAR *name, TCHAR *path);
-void setpathmode (pathtype pt);
-void gui_message_id (TCHAR *id);
-
 
 /* this function is defined in uaeunp.cpp, uses one parameter less that
  * the amiga_to_timeval from filesys.cpp ..
@@ -158,7 +129,6 @@ extern bool resumepaused (int priority);
 extern bool setpaused (int priority);
 
 extern int quickstart, configurationcache, saveimageoriginalpath, relativepaths, recursiveromscan;
-extern Object *app, *win;
 int aros_init_gui(void);
 
 /* gfx */
@@ -196,7 +166,11 @@ typedef struct _WIN32_FIND_DATA {
 } WIN32_FIND_DATA, *PWIN32_FIND_DATA, *LPWIN32_FIND_DATA;
 
 
-#define HANDLE void *
+/* see https://msdn.microsoft.com/en-us/library/windows/desktop/aa383751%28v=vs.85%29.aspx */
+typedef void *PVOID;
+typedef PVOID HANDLE; /* handle to an object. might be pointer/number etc. "magic number" */
+typedef HANDLE HWND;  /* handle to a window object */
+
 HANDLE FindFirstFile(const TCHAR *lpFileName, WIN32_FIND_DATA *lpFindFileData);
 BOOL FindNextFile(HANDLE hFindFile, LPWIN32_FIND_DATA lpFindFileData);
 BOOL FindClose(HANDLE hFindFile);
