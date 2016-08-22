@@ -1734,13 +1734,10 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_UNSUPPORTEDPIXELFORMAT 
-                            "Error: unsupported pixel format. Please use a different screen mode.\n"
-    IDS_MUSTENTERNAME       "You must select a configuration or enter a name before selecting Save...\n"
-    IDS_MUSTSELECTCONFIGFORDELETE 
-                            "You must select a configuration or enter a name before selecting Delete...\n"
-    IDS_DELETECONFIGCONFIRMATION 
-                            "Are you sure you want to Delete this configuration?\n"
+    IDS_UNSUPPORTEDPIXELFORMAT "Error: unsupported pixel format. Please use a different screen mode.\n"
+    IDS_MUSTENTERNAME       "You must select a configuration or enter a name before selecting Save...\n" 
+    IDS_MUSTSELECTCONFIGFORDELETE "You must select a configuration or enter a name before selecting Delete...\n"
+    IDS_DELETECONFIGCONFIRMATION "Are you sure you want to Delete this configuration?\n"
     IDS_DELETECONFIGTITLE   "Confirm Delete"
     IDS_MUSTSELECTPATH      "You must select a path!"
     IDS_SETTINGSERROR       "Settings error"
@@ -1784,20 +1781,15 @@ BEGIN
     IDS_AVIOUTPUT_NOCODEC   "no codec selected"
     IDS_DISK_IMAGENAME      "Disk image"
     IDS_DISK_DRIVENAME      "Drive"
-    IDS_UNSUPPORTEDSCREENMODE 
-                            "The selected screen mode can't be displayed in a window, because %s\nSwitching to full-screen display."
-    IDS_UNSUPPORTEDSCREENMODE_1 
-                            "the desktop is running in an unknown color mode."
+    IDS_UNSUPPORTEDSCREENMODE "The selected screen mode can't be displayed in a window, because %s\nSwitching to full-screen display."
+    IDS_UNSUPPORTEDSCREENMODE_1 "the desktop is running in an unknown color mode."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_UNSUPPORTEDSCREENMODE_2 
-                            "the desktop is running in 8-bit color depth, which WinUAE can't use in windowed mode."
-    IDS_UNSUPPORTEDSCREENMODE_3 
-                            "the desktop is too small for the specified window size."
-    IDS_UNSUPPORTEDSCREENMODE_4 
-                            "you selected an RTG (Picasso96) display with unsupported color depth."
+    IDS_UNSUPPORTEDSCREENMODE_2 "the desktop is running in 8-bit color depth, which WinUAE can't use in windowed mode."
+    IDS_UNSUPPORTEDSCREENMODE_3 "the desktop is too small for the specified window size."
+    IDS_UNSUPPORTEDSCREENMODE_4 "you selected an RTG (Picasso96) display with unsupported color depth."
     IDS_FLOPPYTYPE35DD      "3.5"" DD"
     IDS_FLOPPYTYPE35HD      "3.5"" HD"
     IDS_FLOPPYTYPE525SD     "5.25"" SD"
