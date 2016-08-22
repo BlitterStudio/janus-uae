@@ -71,9 +71,9 @@ BOOL mui_get_filename(TCHAR *lpstrTitle, TCHAR *lpstrInitialDir, TCHAR *lpstrFil
    * to AROS patterns like 
    *   "#?.hdf|#?.vhd|#?.rdf|#?.hdz|#?.rdz|#?.ch"
    */
-  if(b=strchr(lpstrFilter, (int) '(')) {
+  if((b=strchr(lpstrFilter, (int) '('))) {
     /* windows filter */
-    if(e=strchr(lpstrFilter, (int) ')')) {
+    if((e=strchr(lpstrFilter, (int) ')'))) {
       DebOut("found Windows pattern:  %s\n", lpstrFilter);
       b++;
       e--;
@@ -152,7 +152,7 @@ BOOL mui_get_dir(TCHAR *lpstrTitle, TCHAR *path) {
     return FALSE;
   }
 
-  if(path[0]=(char) 0) {
+  if(path[0]==(char) 0) {
     strcpy(path, "PROGDIR:");
   }
   DebOut("path: %s\n", path);
