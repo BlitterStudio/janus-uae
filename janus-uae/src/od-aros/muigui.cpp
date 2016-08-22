@@ -123,12 +123,13 @@
 #include "aros.h"
 #include "sys/mman.h"
 #include "gfx.h"
-#include "string_resource.h"
+//#include "string_resource.h"
 #include "gui/mui_data.h"
 #include "gui/mui_listview.h"
 #include "gui/fs.h"
 #include "gui/cursor.h"
 #include "tchar.h"
+#include "../od-win32/resources/resource.h"
 #define fgetws fgets
 #define fputws fputs
 #endif
@@ -183,7 +184,7 @@ extern HWND (WINAPI *pHtmlHelp)(HWND, LPCWSTR, UINT, LPDWORD);
 { TCHAR szMessage[MAX_DPATH]; WIN32GUI_LoadUIString (IDS_NOHELP, szMessage, MAX_DPATH); gui_message (szMessage); }
 #else
 void check_currentpage(int shouldbe);
-int CustomDialogBox (Element *templ, HWND hDlg, INT_PTR (*proc) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam));
+int CustomDialogBox (int templ, HWND hDlg, INT_PTR (*proc) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam));
 #endif
 
 extern TCHAR help_file[MAX_DPATH];
@@ -236,14 +237,13 @@ static int scsiromselectedcatnum = 0;
 
 #define Error(x) MessageBox (NULL, (x), _T("WinUAE Error"), MB_OK)
 
-#ifndef __AROS__
 wstring WIN32GUI_LoadUIString (DWORD id)
 {
 	wchar_t tmp[MAX_DPATH];
 	tmp[0] = 0;
 	if (LoadString (hUIDLL ? hUIDLL : hInst, id, tmp, MAX_DPATH) == 0)
 		LoadString (hInst, id, tmp, MAX_DPATH);
-	return wstring(tmp);
+	return strdup(tmp);
 }
 
 void WIN32GUI_LoadUIString (DWORD id, TCHAR *string, DWORD dwStringLen)
@@ -252,7 +252,8 @@ void WIN32GUI_LoadUIString (DWORD id, TCHAR *string, DWORD dwStringLen)
 		LoadString (hInst, id, string, dwStringLen);
 }
 
-#else
+//#else
+#if 0
 
 wstring WIN32GUI_LoadUIString (TCHAR * id)
 {
@@ -308,7 +309,8 @@ struct ToolTipHWNDS {
 };
 static struct ToolTipHWNDS ToolTipHWNDS2[MAX_IMAGETOOLTIPS + 1];
 #else
-static Element *customDlgType;
+static int customDlgType;
+//static Element *customDlgType;
 #endif
 
 struct GUIPAGE {
@@ -350,20 +352,19 @@ static void setfocus (HWND hDlg, int id)
 #endif
 static void ew (HWND hDlg, DWORD id, int enable)
 {
-#ifndef __AROS__
 	HWND w = GetDlgItem (hDlg, id);
 	if (!w)
 		return;
+#ifndef __AROS__
 	if (!enable && w == GetFocus ())
 		SendMessage (hDlg, WM_NEXTDLGCTL, 0, FALSE);
-	EnableWindow (w, !!enable);
-#else
-	EnableWindow (GetDlgItem (hDlg, id), !!enable);
 #endif
 }
 static void hide (HWND hDlg, DWORD id, int hide)
 {
+#ifndef __AROS__
 	HWND w;
+#endif
 	if (id < 0)
 		return;
 #ifndef __AROS__
@@ -2006,7 +2007,6 @@ static int scan_roms_2 (UAEREG *fkey, const TCHAR *path, bool deepscan, int leve
 #else
 static int scan_roms_2 (UAEREG *fkey, const TCHAR *path, bool deepscan, int level) {
 
-	TCHAR buf[MAX_DPATH];
 	int ret=0;
   struct FileLock *lock;
   struct FileInfoBlock *fib_ptr;
@@ -2196,15 +2196,15 @@ int scan_roms (HWND hDlg, int show)
 
 end:
 	if (infoboxhwnd) {
-		HWND hwnd = infoboxhwnd;
-		infoboxhwnd = NULL;
 #ifndef __AROS__
+		HWND hwnd = infoboxhwnd;
 		DestroyWindow (hwnd);
 		while (PeekMessage (&msg, 0, 0, 0, PM_REMOVE)) {
 			TranslateMessage (&msg);
 			DispatchMessage (&msg);
 		}
 #endif
+		infoboxhwnd = NULL;
 	}
 	read_rom_list ();
 	if (show)
@@ -2317,6 +2317,7 @@ int target_cfgfile_load (struct uae_prefs *p, const TCHAR *filename, int type, i
 			regqueryint (NULL, configreg2[i], &ct);
 			if (ct && ((i == 1 && p->config_hardware_path[0] == 0) || (i == 2 && p->config_host_path[0] == 0) || ct2)) {
 				size = sizeof (tmp1) / sizeof (TCHAR);
+        DebOut("fetch configreg[%d] (%s)\n", i, configreg[i]);
 				regquerystr (NULL, configreg[i], tmp1, &size);
 				fetch_path (_T("ConfigurationPath"), tmp2, sizeof (tmp2) / sizeof (TCHAR));
 				_tcscat (tmp2, tmp1);
@@ -2396,6 +2397,8 @@ void gui_display (int shortcut)
 		h = currprefs.gfx_size.height;
 	}
 	manual_painting_needed++; /* So that WM_PAINT will refresh the display */
+#else
+  w++; /* make gcc happy :( */
 #endif
 
 	flush_log ();
@@ -2711,17 +2714,19 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 	TCHAR filtername[MAX_DPATH] = _T("");
 #ifndef __AROS__
 	OPENFILENAME openFileName;
+	TCHAR *amiga_path = NULL;
+  TCHAR *nextp;
 #endif
+	int nosavepath = 0;
 	TCHAR full_path[MAX_DPATH] = _T("");
 	TCHAR full_path2[MAX_DPATH];
 	TCHAR file_name[MAX_DPATH] = _T("");
 	TCHAR init_path[MAX_DPATH] = _T("");
 	BOOL result = FALSE;
-	TCHAR *amiga_path = NULL, *initialdir = NULL, *defext = NULL;
-	TCHAR *p, *nextp;
+	TCHAR *initialdir = NULL, *defext = NULL;
+	TCHAR *p;
 	int all = 1;
 	int next;
-	int nosavepath = 0;
 #ifndef __AROS__
 	const GUID *guid = NULL;
 #else
@@ -3189,6 +3194,12 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 			wParam = next;
 #ifndef __AROS__
 	}
+#else
+/* do sth to make gcc happy .. */
+  if(guid || all) {
+    flag++; 
+    nosavepath++;
+  }
 #endif
 	return result;
 }
@@ -3262,7 +3273,7 @@ static BOOL CreateHardFile (HWND hDlg, UINT hfsizem, const TCHAR *dostype, TCHAR
 			SetCursor (LoadCursor (NULL, IDC_WAIT));
 			if ((hf = CreateFile (init_path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL)) != INVALID_HANDLE_VALUE) {
 				if (sparse) {
-					DWORD ret;
+					DWORD ret __attribute__ ((unused));
 					DeviceIoControl (hf, FSCTL_SET_SPARSE, NULL, 0, NULL, 0, &ret, NULL);
 				}
 				if (hfsize >= 0x80000000) {
@@ -4438,6 +4449,8 @@ void InitializeListView (HWND hDlg)
 	int listview_column_width[HARDDISK_COLUMNS];
 	DWORD extraflags = 0;
 
+  DebOut("hDlg: %lx\n", hDlg);
+
 	if (cachedlist) {
 		if (lv_old_type >= 0) {
 			lv_oldidx[lv_old_type] = ListView_GetTopIndex (cachedlist);
@@ -4446,10 +4459,14 @@ void InitializeListView (HWND hDlg)
 		cachedlist = NULL;
 	}
 
+  DebOut("..\n");
+
 	if (hDlg == pages[HARDDISK_ID]) {
+    DebOut("HARDDISK_ID\n");
 
 		listview_num_columns = HARDDISK_COLUMNS;
 		lv_type = LV_HARDDISK;
+  DebOut("..\n");
 		_tcscpy (column_heading[0], _T("*"));
 		WIN32GUI_LoadUIString (IDS_DEVICE, column_heading[1], MAX_COLUMN_HEADING_WIDTH);
 		WIN32GUI_LoadUIString (IDS_VOLUME, column_heading[2], MAX_COLUMN_HEADING_WIDTH);
@@ -4458,11 +4475,13 @@ void InitializeListView (HWND hDlg)
 		WIN32GUI_LoadUIString (IDS_BLOCKSIZE, column_heading[5], MAX_COLUMN_HEADING_WIDTH);
 		WIN32GUI_LoadUIString (IDS_HFDSIZE, column_heading[6], MAX_COLUMN_HEADING_WIDTH);
 		WIN32GUI_LoadUIString (IDS_BOOTPRI, column_heading[7], MAX_COLUMN_HEADING_WIDTH);
+  DebOut("HARDDISK_ID 2\n");
 #ifndef __AROS__
 		list = GetDlgItem (hDlg, IDC_VOLUMELIST);
 #else
     list=(HWND)IDC_VOLUMELIST;
 #endif
+  DebOut("HARDDISK_ID done\n");
 
 	} else if (hDlg == pages[INPUT_ID]) {
 
@@ -4542,6 +4561,7 @@ void InitializeListView (HWND hDlg)
 #endif
 	}
 
+  DebOut("..\n");
 #ifndef __AROS__
 	int flags = LVS_EX_DOUBLEBUFFER | extraflags;
 	if (lv_type != LV_MISC1)
@@ -4553,6 +4573,7 @@ void InitializeListView (HWND hDlg)
 	ListView_RemoveAllGroups (list);
 	ListView_DeleteAllItems (list);
 
+  DebOut("..\n");
 	cachedlist = list;
 
 #ifndef __AROS__
@@ -4573,6 +4594,7 @@ void InitializeListView (HWND hDlg)
 		}
 	}
 
+  DebOut("..\n");
 	if (lv_type == LV_MISC2) {
 
 		listview_column_width[0] = 180;
@@ -4667,6 +4689,7 @@ void InitializeListView (HWND hDlg)
 				break;
 			}
 
+  DebOut("..\n");
 			lvstruct.mask     = LVIF_TEXT | LVIF_PARAM;
 			lvstruct.pszText  = itemname;
 			lvstruct.lParam   = 0;
@@ -4743,6 +4766,7 @@ void InitializeListView (HWND hDlg)
 		}
 
 	} else if (lv_type == LV_HARDDISK) {
+    DebOut("LV_HARDDISK\n");
 #ifdef FILESYS
 		listview_column_width[1] = 60;
 		for (i = 0; i < workprefs.mountitems; i++)
@@ -4754,6 +4778,7 @@ void InitializeListView (HWND hDlg)
 			TCHAR *rootdir, *rootdirp;
 
 			type = get_filesys_unitconfig (&workprefs, i, &mi);
+    DebOut("LV_HARDDISK\n");
 			if (type < 0) {
 				type = ci->type == UAEDEV_HDF || ci->type == UAEDEV_CD || ci->type == UAEDEV_TAPE ? FILESYS_HARDFILE : FILESYS_VIRTUAL;
 				nosize = 1;
@@ -4770,6 +4795,7 @@ void InitializeListView (HWND hDlg)
 				if (p)
 					*p = 0;
 			}
+    DebOut("LV_HARDDISK\n");
 
 			if (nosize)
 				_tcscpy (size_str, _T("n/a"));
@@ -4787,6 +4813,7 @@ void InitializeListView (HWND hDlg)
 					_T("IDE:%d"),
 					_T("A600/A1200/A4000:%d"),
 				};
+    DebOut("LV_HARDDISK\n");
 				_stprintf (blocksize_str, _T("%d"), ci->blocksize);
 				if (ert) {
 					if (ci->controller_type_unit == 0)
@@ -4807,6 +4834,7 @@ void InitializeListView (HWND hDlg)
 					_T("A4000T:%s"),
 					_T("CDTV:%s"),
 				};
+    DebOut("LV_HARDDISK\n");
 				if (ci->controller_unit == 8 && ert && !_tcscmp(ert->name, _T("a2091")))
 					_tcscpy(sid, _T("XT"));
 				else if (ci->controller_unit == 8 && ert && !_tcscmp(ert->name, _T("a2090a")))
@@ -4835,6 +4863,7 @@ void InitializeListView (HWND hDlg)
 				_tcscpy (volname_str, _T("PCMCIA"));
 				_tcscpy (bootpri_str, _T("n/a"));
 			} else if (type == FILESYS_HARDFILE) {
+    DebOut("LV_HARDDISK FILESYS_HARDFILE\n");
 				_stprintf (blocksize_str, _T("%d"), ci->blocksize);
 				_tcscpy (devname_str, ci->devname);
 				_tcscpy (volname_str, _T("n/a"));
@@ -4850,6 +4879,7 @@ void InitializeListView (HWND hDlg)
 				harddisktype (volname_str, ci);
 				_tcscpy (bootpri_str, _T("n/a"));
 			} else {
+        DebOut("else..\n");
 				_tcscpy (blocksize_str, _T("n/a"));
 				_tcscpy (devname_str, ci->devname);
 				_tcscpy (volname_str, ci->volname);
@@ -4865,20 +4895,25 @@ void InitializeListView (HWND hDlg)
 				rootdir = my_strdup (_T("-"));
 				rootdirp = rootdir;
 			}
+      DebOut("2 ..\n");
 			WIN32GUI_LoadUIString (ci->readonly ? IDS_NO : IDS_YES, readwrite_str, sizeof (readwrite_str) / sizeof (TCHAR));
 
 			lvstruct.mask     = LVIF_TEXT | LVIF_PARAM;
 			lvstruct.pszText  = mi.ismedia == false ? (TCHAR *)_T("E") : (nosize && mi.size >= 0 ? (TCHAR *)_T("X") : (mi.ismounted ? (TCHAR *)_T("*") : (TCHAR *)_T(" ")));
+      DebOut("alive\n");
 			if (mi.error == -1)
 				lvstruct.pszText = _T("?");
 			else if (mi.error == -2)
 				lvstruct.pszText = _T("!");
 			if (ci->controller_type != HD_CONTROLLER_TYPE_UAE && mi.ismedia)
 				lvstruct.pszText = _T(" ");
+      DebOut("..\n");
 			lvstruct.lParam   = 0;
 			lvstruct.iItem    = i;
 			lvstruct.iSubItem = 0;
+      DebOut("..\n");
 			result = ListView_InsertItem (list, &lvstruct);
+      DebOut("still alive!!!\n");
 			if (result != -1) {
 
 				listview_column_width[0] = 20;
@@ -5092,11 +5127,11 @@ static HTREEITEM AddConfigNode (HWND hDlg, struct ConfigStruct *config, const TC
 	is.itemex.pszText = s;
 	is.itemex.iImage = is.itemex.iSelectedImage = isdir > 0 ? 0 : (isdir < 0) ? 2 : 1;
 	is.itemex.lParam = (LPARAM)config;
-#ifndef __AROS__
+//#ifndef __AROS__
 	return TreeView_InsertItem (TVhDlg, &is);
-#else
-  return TreeView_InsertItem (TVhDlg, IDC_CONFIGTREE, &is);
-#endif
+//#else
+  //return TreeView_InsertItem (TVhDlg, IDC_CONFIGTREE, &is);
+//#endif
 }
 
 static int LoadConfigTreeView (HWND hDlg, int idx, HTREEITEM parent)
@@ -5292,7 +5327,9 @@ static struct ConfigStruct *initloadsave (HWND hDlg, struct ConfigStruct *config
 	SetDlgItemText (hDlg, IDC_EDITPATH, _T(""));
 	SetDlgItemText (hDlg, IDC_EDITDESCRIPTION, workprefs.description);
 	root = InitializeConfigTreeView (hDlg);
+  DebOut("fetch configreg[%d] (%s)\n", configtypepanel, configreg[configtypepanel]);
 	if (regquerystr (NULL, configreg[configtypepanel], name_buf, &dwRFPsize)) {
+    DebOut("success!\n");
 		if (init) {
 			if (_tcsicmp(name_buf, _T("default.uae")))
 				target_cfgfile_load (&workprefs, name_buf, CONFIG_TYPE_DEFAULT, 0);
@@ -5302,7 +5339,9 @@ static struct ConfigStruct *initloadsave (HWND hDlg, struct ConfigStruct *config
 			config = config2;
 		checkautoload (hDlg, config);
 	}
+  DebOut("cont!\n");
 	config = fixloadconfig (hDlg, config);
+  DebOut("cont!\n");
   TODO();
 #ifndef __AROS__
 	if (config && config->item)
@@ -5310,9 +5349,11 @@ static struct ConfigStruct *initloadsave (HWND hDlg, struct ConfigStruct *config
 	else
 		TreeView_SelectItem (GetDlgItem(hDlg, IDC_CONFIGTREE), root);
 #endif
+  DebOut("cont!\n");
 	EnableWindow (GetDlgItem(hDlg, IDC_CONFIGAUTO), configtypepanel > 0);
 	EnableWindow (GetDlgItem(hDlg, IDC_CONFIGLINK), configtypepanel == 0);
 	EnableWindow (GetDlgItem(hDlg, IDC_CONFIGNOLINK), configtypepanel == 0);
+  DebOut("cont!\n");
 	return config;
 }
 
@@ -5384,6 +5425,7 @@ static void loadsavecommands (HWND hDlg, WPARAM wParam, struct ConfigStruct **co
 		}
 		break;
 	case IDC_SETINFO:
+    DebOut("IDC_SETINFO\n");
 		if (CustomDialogBox(IDD_SETINFO, hDlg, InfoSettingsProc))
 			EnableWindow( GetDlgItem( hDlg, IDC_VIEWINFO ), workprefs.info[0] );
 		break;
@@ -5603,6 +5645,8 @@ static INT_PTR CALLBACK ContributorsProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 
 static void DisplayContributors (HWND hDlg)
 {
+#warning DisplayContributors is TODO
+#if 0
 #ifndef __AROS__
 	CustomDialogBox (IDD_CONTRIBUTORS, hDlg, ContributorsProc);
 #else
@@ -5611,6 +5655,7 @@ static void DisplayContributors (HWND hDlg)
   _stprintf (szContributors, _T("%s%s\nNick Andrews - AROS port\nOliver Brunner - AROS port\n"), IDS_CONTRIBUTORS1, IDS_CONTRIBUTORS2);
 
 	MessageBox (hDlg, szContributors, "UAE Authors and Contributors...", 0);
+#endif
 #endif
 }
 
@@ -6239,13 +6284,14 @@ GUI_STATIC INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 	return FALSE;
 }
 
-#ifndef __AROS__
+//#ifndef __AROS__
 struct amigamodels {
 	int compalevels;
 	int id;
 };
 #define modelarcadia IDS_QS_MODEL_ARCADIA
-#else
+//#else
+#if 0
 struct amigamodels {
 	int compalevels;
 	TCHAR *id;
@@ -6455,9 +6501,9 @@ static void testimage (HWND hDlg, int num)
 	int ret;
 	int reload = 0;
 	struct diskinfo di;
-#ifndef __AROS__
 	int messageid = -1;
-#else
+#if 0
+//#else
   TCHAR *messageid=(TCHAR *) -1;
 #endif
 	TCHAR tmp[MAX_DPATH];
@@ -6708,25 +6754,24 @@ GUI_STATIC INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wPara
 		}
 		recursive--;
 	case WM_HSCROLL:
-                {
-                    if (recursive > 0)
-                            break;
-                    recursive++;
-                    if (lParam == IDC_QUICKSTART_COMPATIBILITY) {
+		if (recursive > 0)
+			break;
+		recursive++;
+		//if ((HWND)lParam == GetDlgItem (hDlg, IDC_QUICKSTART_COMPATIBILITY)) {
+    if (lParam == IDC_QUICKSTART_COMPATIBILITY) {
 #ifndef __AROS__
-                            val = SendMessage((HWND)lParam, TBM_GETPOS, 0, 0);
+      val = SendMessage((HWND)lParam, TBM_GETPOS, 0, 0);
 #else
-          val = SendDlgItemMessage (hDlg, IDC_QUICKSTART_COMPATIBILITY, TBM_GETPOS, 0, 0);
+      val = SendDlgItemMessage (hDlg, IDC_QUICKSTART_COMPATIBILITY, TBM_GETPOS, 0, 0);
 #endif
-                            if (val >= 0 && val != quickstart_compa) {
-                                    quickstart_compa = val;
-                                    init_quickstartdlg (hDlg);
-                                    if (quickstart)
-                                            load_quickstart (hDlg, 0);
-                            }
-                    }
-                    recursive--;
-                }
+      if (val >= 0 && val != quickstart_compa) {
+        quickstart_compa = val;
+        init_quickstartdlg (hDlg);
+        if (quickstart)
+          load_quickstart (hDlg, 0);
+      }
+    }
+    recursive--;
 		break;
 	}
 	if (recursive == 0 && quickstart) {
@@ -11902,11 +11947,12 @@ static INT_PTR CALLBACK VolumeSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, 
 {
 	static int recursive = 0;
 
-  DebOut("VolumeSettingsProc entered\n");
+  DebOut("VolumeSettingsProc entered (msg: %d)\n", msg);
 
 	switch (msg) {
 	case WM_INITDIALOG:
 		{
+      DebOut("WM_INITDIALOG\n");
 			archivehd = -1;
 			if (my_existsfile (current_fsvdlg.ci.rootdir))
 				archivehd = 1;
@@ -11925,9 +11971,11 @@ static INT_PTR CALLBACK VolumeSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, 
 			ew (hDlg, IDC_FS_RW, archivehd <= 0);
 			recursive--;
 		}
+    DebOut("left!\n");
 		return TRUE;
 
 	case WM_CONTEXTMENU:
+      DebOut("WM_CONTEXTMENU\n");
 		if (GetDlgCtrlID ((HWND)wParam) == IDC_FS_SELECT_FILE) {
 			TCHAR *s = favoritepopup (hDlg);
 			if (s) {
@@ -11948,6 +11996,7 @@ static INT_PTR CALLBACK VolumeSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, 
 	case WM_COMMAND:
 		if (recursive)
 			break;
+      DebOut("WM_COMMAND\n");
 		recursive++;
 		if (HIWORD (wParam) == BN_CLICKED) {
 			switch (LOWORD (wParam))
@@ -11974,8 +12023,11 @@ static INT_PTR CALLBACK VolumeSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, 
 			}
 		}
 		GetDlgItemText (hDlg, IDC_PATH_NAME, current_fsvdlg.ci.rootdir, sizeof current_fsvdlg.ci.rootdir / sizeof (TCHAR));
+    DebOut("current_fsvdlg.ci.rootdir: %s\n", current_fsvdlg.ci.rootdir);
 		GetDlgItemText (hDlg, IDC_VOLUME_NAME, current_fsvdlg.ci.volname, sizeof current_fsvdlg.ci.volname / sizeof (TCHAR));
+    DebOut("current_fsvdlg.ci.volname: %s\n", current_fsvdlg.ci.volname);
 		GetDlgItemText (hDlg, IDC_VOLUME_DEVICE, current_fsvdlg.ci.devname, sizeof current_fsvdlg.ci.devname / sizeof (TCHAR));
+    DebOut("current_fsvdlg.ci.devname: %s\n", current_fsvdlg.ci.devname);
 		current_fsvdlg.ci.readonly = !ischecked (hDlg, IDC_FS_RW);
 		current_fsvdlg.ci.bootpri = GetDlgItemInt (hDlg, IDC_VOLUME_BOOTPRI, NULL, TRUE);
 		if(LOWORD (wParam) == IDC_FS_AUTOBOOT) {
@@ -11989,6 +12041,7 @@ static INT_PTR CALLBACK VolumeSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, 
 		recursive--;
 		break;
 	}
+  DebOut("left!\n");
 	return FALSE;
 }
 
@@ -12906,6 +12959,7 @@ static void new_filesys (HWND hDlg, int entry)
 {
 	struct uaedev_config_data *uci;
 	struct uaedev_config_info ci;
+  DebOut("entered\n");
 	memcpy (&ci, &current_fsvdlg.ci, sizeof (struct uaedev_config_info));
 	uci = add_filesys_config (&workprefs, entry, &ci);
 	if (uci) {
@@ -12914,11 +12968,13 @@ static void new_filesys (HWND hDlg, int entry)
 		else if (uci->configoffset >= 0)
 			filesys_eject (uci->configoffset);
 	}
+  DebOut("left\n");
 }
 
 static void new_cddrive (HWND hDlg, int entry)
 {
 	struct uaedev_config_info ci = { 0 };
+  DebOut("entered\n");
 	ci.device_emu_unit = 0;
 	ci.controller_type = current_cddlg.ci.controller_type;
 	ci.controller_unit = current_cddlg.ci.controller_unit;
@@ -12932,6 +12988,7 @@ static void new_tapedrive (HWND hDlg, int entry)
 {
 	struct uaedev_config_data *uci;
 	struct uaedev_config_info ci = { 0 };
+  DebOut("entered\n");
 	ci.controller_type = current_tapedlg.ci.controller_type;
 	ci.controller_unit = current_tapedlg.ci.controller_unit;
 	ci.readonly = current_tapedlg.ci.readonly;
@@ -12948,6 +13005,7 @@ static void new_hardfile (HWND hDlg, int entry)
 {
 	struct uaedev_config_data *uci;
 	struct uaedev_config_info ci;
+  DebOut("entered\n");
 	memcpy (&ci, &current_hfdlg.ci, sizeof (struct uaedev_config_info));
 	uci = add_filesys_config (&workprefs, entry, &ci);
 	if (uci) {
@@ -12963,6 +13021,8 @@ static void new_harddrive (HWND hDlg, int entry)
 {
 	struct uaedev_config_data *uci;
 
+  DebOut("new_harddrive..\n");
+
 	uci = add_filesys_config (&workprefs, entry, &current_hfdlg.ci);
 	if (uci) {
 		struct hardfiledata *hfd = get_hardfile_data (uci->configoffset);
@@ -12976,6 +13036,7 @@ static void new_harddrive (HWND hDlg, int entry)
 static void harddisk_remove (HWND hDlg)
 {
 	int entry = listview_find_selected ((HWND)IDC_VOLUMELIST);
+  DebOut("entered\n");
 	if (entry < 0)
 		return;
 	kill_filesys_unitconfig (&workprefs, entry);
@@ -12984,6 +13045,7 @@ static void harddisk_remove (HWND hDlg)
 static void harddisk_move (HWND hDlg, int up)
 {
 	int entry = listview_find_selected ((HWND)IDC_VOLUMELIST);
+  DebOut("entered\n");
 	if (entry < 0)
 		return;
 	move_filesys_unitconfig (&workprefs, entry, up ? entry - 1 : entry + 1);
@@ -12995,6 +13057,8 @@ static void harddisk_edit (HWND hDlg)
 	int type;
 	struct uaedev_config_data *uci;
 	struct mountedinfo mi;
+
+  DebOut("entered\n");
 
 	if (entry < 0 || entry >= workprefs.mountitems)
 		return;
@@ -13025,6 +13089,7 @@ static void harddisk_edit (HWND hDlg)
 	}
 	else if (type == FILESYS_HARDDRIVE) /* harddisk */
 	{
+    DebOut("type == FILESYS_HARDDRIVE\n");
 		memcpy (&current_hfdlg.ci, uci, sizeof (struct uaedev_config_info));
 		if (CustomDialogBox (IDD_HARDDRIVE, hDlg, HarddriveSettingsProc)) {
 			new_harddrive (hDlg, entry);
@@ -13220,12 +13285,14 @@ GUI_STATIC INT_PTR CALLBACK HarddiskDlgProc (HWND hDlg, UINT msg, WPARAM wParam,
 {
 	switch (msg) {
 	case WM_INITDIALOG:
+    DebOut("WM_INITDIALOG\n");
 		clicked_entry = 0;
 		pages[HARDDISK_ID] = hDlg;
 		currentpage = HARDDISK_ID;
 		Button_SetElevationRequiredState (GetDlgItem (hDlg, IDC_NEW_HD), TRUE);
 
 	case WM_USER:
+    DebOut("WM_USER\n");
 		CheckDlgButton (hDlg, IDC_MAPDRIVES_AUTO, workprefs.win32_automount_removable);
 		CheckDlgButton (hDlg, IDC_MAPDRIVES, workprefs.win32_automount_drives);
 		CheckDlgButton (hDlg, IDC_MAPDRIVES_CD, workprefs.win32_automount_cddrives);
@@ -13235,11 +13302,17 @@ GUI_STATIC INT_PTR CALLBACK HarddiskDlgProc (HWND hDlg, UINT msg, WPARAM wParam,
 		CheckDlgButton (hDlg, IDC_NORECYCLEBIN, workprefs.win32_norecyclebin);
 		CheckDlgButton (hDlg, IDC_MAPDRIVES_LIMIT, workprefs.filesys_limit != 0);
 		CheckDlgButton (hDlg, IDC_CD_SPEED, workprefs.cd_speed == 0);
+    DebOut("..\n");
 		InitializeListView (hDlg);
+    DebOut("..\n");
 		setautocomplete (hDlg, IDC_CD_TEXT);
+    DebOut("..\n");
 		addhistorymenu (hDlg, workprefs.cdslots[0].name, IDC_CD_TEXT, HISTORY_CD, true);
+    DebOut("..\n");
 		addcdtype (hDlg, IDC_CD_TYPE);
+    DebOut("..\n");
 		hilitehd (hDlg);
+    DebOut("WM_USER left!\n");
 		break;
 
 #ifndef __AROS__
@@ -19099,7 +19172,7 @@ struct newresource *getresource (int tmpl)
 	return nr;
 }
 #else
-struct newresource *getresource (struct Element *tmpl) {
+struct newresource *getresource (int tmpl) {
 
   struct newresource *nr;
   nr = xcalloc (struct newresource, 1);
@@ -19111,11 +19184,13 @@ struct newresource *getresource (struct Element *tmpl) {
 #ifndef __AROS__
 INT_PTR CustomDialogBox (int templ, HWND hDlg, DLGPROC proc)
 #else
-int CustomDialogBox (Element *templ, HWND hDlg, INT_PTR (*proc) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam))
+int CustomDialogBox (int templ, HWND hDlg, INT_PTR (*proc) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam))
 #endif
 {
 	struct newresource *res, *r;
 	INT_PTR h = -1;
+
+  DebOut("templ %d, hDlg %lx, proc %lx\n", templ, hDlg, proc);
 
 	res = getresource (templ);
   /* res->tmpl is now templ */
@@ -19123,13 +19198,14 @@ int CustomDialogBox (Element *templ, HWND hDlg, INT_PTR (*proc) (HWND hDlg, UINT
 		return h;
 	r = scaleresource (res, hDlg, -1, 0, 0);
 	if (r) {
+    DebOut("call DialogBoxIndirect ..\n");
     /* r->tmpl is now templ */
-#ifndef __AROS__
+//#ifndef __AROS__
 		h = DialogBoxIndirect (r->inst, r->resource, hDlg, proc);
-#else
+//#else
     /* DialogBoxIndirect should get a template here, r->resource seems to be one on windows? */
-		h = DialogBoxIndirect (r->inst, (LPCDLGTEMPLATE) templ, hDlg, proc);
-#endif
+		//h = DialogBoxIndirect (r->inst, (LPCDLGTEMPLATE) templ, hDlg, proc);
+//#endif
 		freescaleresource (r);
 	}
 	customDlgType = 0;
@@ -19161,11 +19237,11 @@ HWND CustomCreateDialog (int templ, HWND hDlg, DLGPROC proc)
 
 static int id = 0;
 
-#ifndef __AROS__
+//#ifndef __AROS__
 static int init_page (int tmpl, int icon, int title,
-#else
-static int init_page (struct Element *tmpl, int icon, const TCHAR *title,
-#endif
+//#else
+//static int init_page (struct Element *tmpl, int icon, const TCHAR *title,
+//#endif
 	INT_PTR (CALLBACK FAR *func) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam), ACCEL *accels, const TCHAR *help, int focusid)
 {
 	LPTSTR lpstrTitle;
@@ -19174,11 +19250,11 @@ static int init_page (struct Element *tmpl, int icon, const TCHAR *title,
 
 	res = getresource (tmpl);
 	if (!res) {
-#ifndef __AROS__
+//#ifndef __AROS__
 		write_log (_T("init_page(%d) failed\n"), tmpl);
-#else
-		write_log (_T("init_page(%p) failed\n"), tmpl);
-#endif
+//#else
+		//write_log (_T("init_page(%p) failed\n"), tmpl);
+//#endif
 		return -1;
 	}
 #ifndef __AROS__
@@ -19202,7 +19278,8 @@ static int init_page (struct Element *tmpl, int icon, const TCHAR *title,
 	ppage[id].accel = CreateAcceleratorTable (accels, i);
 #else
   /* TODO: REMOVE ME AGAIN? */
-  func (tmpl, WM_INITDIALOG, 0, 0);
+#warning TODO: call WM_INITDIALOG??
+  //func (tmpl, WM_INITDIALOG, 0, NULL);
 #endif
 	if (tmpl == IDD_FRONTEND)
 		ppage[id].fullpanel = TRUE;

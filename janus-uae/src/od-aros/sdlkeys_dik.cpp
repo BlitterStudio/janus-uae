@@ -8,6 +8,8 @@
  *
  */
 
+#define JUAE_DEBUG
+
 #include "sysconfig.h"
 #include "include/sysdeps.h"
 
@@ -89,7 +91,7 @@ static int kc_dik_decode (int key)
       case SDLK_F9:     return DIK_F9;
       case SDLK_F10:    return DIK_F10;
       case SDLK_F11:    return DIK_F11;
-      case SDLK_F12:    return DIK_F12;
+      case SDLK_F12:    DebOut("DIK_F12\n"); return DIK_F12;
       case SDLK_F13:    return DIK_F13;
       case SDLK_F14:    return DIK_F14;
       case SDLK_F15:    return DIK_F15;

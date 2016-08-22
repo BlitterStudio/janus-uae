@@ -7,8 +7,11 @@
 #include <exec/types.h>
 #include <libraries/mui.h>
 
+#include "../aros.h"
+
 enum {
   NJET,
+  DIALOGEX,
   GROUPBOX,
   CONTROL,
   PUSHBUTTON,
@@ -18,6 +21,11 @@ enum {
   LTEXT,
   DEFPUSHBUTTON,
 };
+
+/* hmm, see https://msdn.microsoft.com/en-us/library/windows/desktop/ms645505%28v=vs.85%29.aspx */
+#define IDOK 1
+#define IDCANCEL 2
+#define IDHELP 8 /* help is not defined there.. */
 
 enum {
   IDI_APPICON, // "winuae.ico"
@@ -54,7 +62,7 @@ struct TREEITEM {
 
 typedef struct TREEITEM *HTREEITEM;
 
-extern Object *app;
+extern Object *app, *win;
 BOOL mui_get_dir(TCHAR *lpstrTitle, TCHAR *path);
 
 /* mem[0]:         "empty"
@@ -79,9 +87,10 @@ typedef struct Element {
   LONG    value;   // check/non checked etc.
   Object *action;  // special child object, which gets calls directly (list in listview for example)
   IPTR   *var_data;// a lot of stuff can go in here. For Listviews, these are hooks..
+  int     fake_id; // evil way to be able to store an int in a struct Element*. If >0 everything else is void
 } Element;
 
-typedef Element *HWND;
+extern Element WIN_RES[];
 
 typedef char* LPTSTR;
 typedef struct tagTVITEM {
@@ -155,10 +164,38 @@ BOOL ShowWindow(struct Window *win, int nCmdShow);
 
 UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount);
 BOOL TreeView_DeleteAllItems(HWND hDlg, int nIDDlgItem);
-HTREEITEM TreeView_InsertItem(HWND hwnd, int nIDDlgItem, LPTVINSERTSTRUCT lpis);
-BOOL TreeView_DeleteItem(HWND hwndTV, int nIDDlgItem, HTREEITEM hitem);
-HTREEITEM TreeView_GetSelection(HWND elem, int item);
-BOOL TreeView_GetItem(HWND elem, int item, APTR pitem);
+HTREEITEM TreeView_InsertItem(HWND hwnd, LPTVINSERTSTRUCT lpis);
+BOOL TreeView_DeleteItem(HWND hwndTV, HTREEITEM hitem);
+HTREEITEM TreeView_GetSelection(HWND elem);
+BOOL TreeView_GetItem(HWND elem, APTR pitem);
+
+
+int LoadString(APTR hInstance, uint32_t uID, TCHAR * lpBuffer, int nBufferMax);
+BOOL SetDlgItemText(HWND elem, int nIDDlgItem, const TCHAR *lpString);
+LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam);
+BOOL CheckDlgButton(HWND elem, int button, UINT uCheck);
+BOOL SetDlgItemInt(HWND hDlg, int nIDDlgItem, UINT uValue, BOOL bSigned);
+BOOL SetWindowText(HWND hWnd, TCHAR *lpString);
+BOOL SetWindowText(HWND hWnd, DWORD id, TCHAR *lpString);
+int GetWindowText(HWND   hWnd, LPTSTR lpString, int nMaxCount);
+int GetWindowText(HWND   hWnd, DWORD id, LPTSTR lpString, int nMaxCount);
+BOOL CheckRadioButton(HWND elem, int nIDFirstButton, int nIDLastButton, int nIDCheckButton);
+int MessageBox(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType);
+int MessageBox_fixed(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType);
+UINT IsDlgButtonChecked(HWND elem, int item);
+BOOL EnableWindow(HWND hWnd, BOOL bEnable);
+UINT GetDlgItemText(HWND elem, int nIDDlgItem, TCHAR *lpString, int nMaxCount);
+LRESULT SendMessage(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
+
+void *ShellExecute(HWND hwnd, TCHAR *lpOperation, TCHAR *lpFile, TCHAR *lpParameters, TCHAR *lpDirectory, int nShowCmd);
+DWORD GetTempPath(DWORD nBufferLength, TCHAR *lpBuffer);
+DWORD GetFullPathName(const TCHAR *lpFileName, DWORD nBufferLength, LPTSTR lpBuffer, LPTSTR *lpFilePart);
+
+void read_rom_list (void);
+void set_path (const TCHAR *name, TCHAR *path, pathtype mode);
+void set_path (const TCHAR *name, TCHAR *path);
+void setpathmode (pathtype pt);
+void gui_message_id (TCHAR *id);
 
 void send_WM_INITDIALOG(ULONG nr);
 
@@ -199,8 +236,9 @@ void delete_class(void);
 ULONG xget(Object *obj, ULONG attr);
 #endif
 
-LONG get_index(Element *elem, int item);
-Element *get_elem(int nIDDlgItem);
+//LONG get_index(HWND elem, int item);
+//Element *get_elem(int nIDDlgItem);
+Element *get_control(HWND hDlg, int item);
 
 extern struct MUI_CustomClass *CL_Fixed;
 

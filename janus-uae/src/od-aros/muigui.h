@@ -55,6 +55,6 @@ extern void scaleresource_setdefaults (void);
 extern void scaleresource_setfont (HWND hDlg);
 extern double scaleresource_getdpimult (void);
 
-#define GetDlgItem(a,b) a,b
+#define GetDlgItem(a,b) get_control(a,b)
 BOOL mui_get_filename(TCHAR *lpstrTitle, TCHAR *lpstrInitialDir, TCHAR *lpstrFile, TCHAR *lpstrFilter, TCHAR *lpstrFileTitle, ULONG flags, TCHAR *defext);
 #endif

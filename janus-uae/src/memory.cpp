@@ -6,7 +6,7 @@
 * (c) 1995 Bernd Schmidt
 */
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 #define DEBUG_STUPID 0
 
 #include "sysconfig.h"

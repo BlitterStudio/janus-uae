@@ -145,9 +145,9 @@ AROS_UFH2(void, MUIHook_list, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR
     }
   }
 
-OK:
-  DebOut("currentpage is now: %d\n", currentpage);
+  DebOut("set currentpage to %d ..\n", currentpage);
   DoMethod(pages, MUIM_Set, MUIA_Group_ActivePage, nr);
+  DebOut("currentpage is now: %d\n", currentpage);
 
   AROS_USERFUNC_EXIT
 }
@@ -215,7 +215,7 @@ int *MemoryDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *HarddiskDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
-#define SHOW_INCLOMPLETE_PAGES 
+//#define SHOW_INCLOMPLETE_PAGES 
 Object* FixedObj(IPTR src)
 {
  Object *_fObj = NULL;
@@ -245,6 +245,7 @@ Object* FixedProcObj(IPTR src, IPTR proc)
  Object *_fpObj = NULL;
 
   DebOut("==========================================================================\n");
+  DebOut("src %lx, proc %lx\n", src, proc);
     struct TagItem fo_tags[] =
     {
         { MA_src, src}, 
@@ -262,7 +263,6 @@ Object* FixedProcObj(IPTR src, IPTR proc)
 }
 
 Object* build_gui(void) {
-  int i=0;
 
   DebOut("src: %lx\n", IDD_FLOPPY);
 
@@ -272,12 +272,12 @@ Object* build_gui(void) {
   }
 
   app = MUI_NewObject(MUIC_Application,
-                      MUIA_Application_Author, (IPTR) "Oliver Brunner",
+                      MUIA_Application_Author, (IPTR) "Toni Willen, many others and Oliver Brunner",
                       MUIA_Application_Base, (IPTR)   "AROSUAE",
-                      MUIA_Application_Copyright, (IPTR)"(c) 2015 Oliver Brunner",
+                      MUIA_Application_Copyright, (IPTR)"(c) 2016 Oliver Brunner",
                       MUIA_Application_Description, (IPTR)"AROS port of WinUAE",
                       MUIA_Application_Title, (IPTR)"Janus-UAE2",
-                      MUIA_Application_Version, (IPTR)"$VER: Janus-UAE2 0.1 (x.x.2015)",
+                      MUIA_Application_Version, (IPTR)"$VER: Janus-UAE2 0.3 (11.3.2016)",
                       MUIA_Application_Window, (IPTR)(win = MUI_NewObject(MUIC_Window,
                         MUIA_Window_Title, (IPTR)"Janus-UAE2 Properties",
                         MUIA_Window_RootObject, root=MUI_NewObject(MUIC_Group,
@@ -483,7 +483,9 @@ static void *gui_thread (void *dummy) {
 #endif
 
 int aros_init_gui(void) {
+#if 0
   ULONG w;
+#endif
 
   DebOut("entered\n");
 
@@ -558,10 +560,12 @@ int aros_show_gui(void) {
   }
 
   /* activate current page */
-  DebOut("currentpage: %d\n", currentpage);
+  DebOut("set currentpage to %d ..\n", currentpage);
   DoMethod(leftframe, MUIM_Set, MUIA_List_Active, currentpage);
+  DebOut("currentpage switched to %d\n", currentpage);
 
   DoMethod(win, MUIM_Set, MUIA_Window_Open, TRUE);
+  DebOut("window opened!\n");
 
   ret = aros_main_loop();
 

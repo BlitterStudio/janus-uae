@@ -8,7 +8,7 @@
 *
 */
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #define CDADS 0
 
@@ -249,6 +249,7 @@ bool cda_audio::play(int bufnum)
 
 #else
   TODO();
+  return false;
 #endif
 	return true;
 }
@@ -280,4 +281,5 @@ bool cda_audio::isplaying(int bufnum)
     TODO();
     return false;
 #endif
+  return false;
 }

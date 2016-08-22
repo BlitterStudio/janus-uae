@@ -23,7 +23,7 @@ struct newresource
     LPCDLGTEMPLATEW resource;
     HINSTANCE inst;
     int size;
-    Element *tmpl;
+    int tmpl;
     int width, height;
 };
 

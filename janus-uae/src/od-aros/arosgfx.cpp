@@ -23,7 +23,7 @@
  *
  ************************************************************************/
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #include "sysconfig.h"
 
@@ -151,9 +151,10 @@ int isfullscreen (void)
 	return isfullscreen_2 (&currprefs);
 }
 
-void update_gfxparams (void)
-{
+void update_gfxparams (void) {
+
 	updatewinfsmode (&currprefs);
+
 #ifdef PICASSO96
 	currentmode->vsync = 0;
 	if (screen_is_picasso) {

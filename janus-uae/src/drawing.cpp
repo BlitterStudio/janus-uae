@@ -28,7 +28,7 @@ resolution.
 To prevent extremely bad things (think pixels cut in half by window borders) from
 happening, all ports should restrict window widths to be multiples of 16 pixels.  */
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -254,7 +254,12 @@ bool picasso_requested_on;
 bool picasso_on;
 
 uae_sem_t gui_sem;
-int inhibit_frame;
+/* inhibit_frame > 0 => don't update display
+ *   IHF_SCROLLLOCK: inhibit_frame 0
+ *   IHF_QUIT_PROGRAM: inhibit_frame 2
+ *   IHF_PICASSO: inhibit_frame 4
+ */
+int inhibit_frame=0;
 
 int framecnt = 0;
 static int frame_redraw_necessary;
@@ -320,6 +325,7 @@ static void reset_decision_table (void)
 STATIC_INLINE void count_frame (void)
 {
 	framecnt++;
+  DebOut("framecnt %d >= %d, inhibit_frame %d\n", framecnt, currprefs.gfx_framerate, inhibit_frame);
 	if (framecnt >= currprefs.gfx_framerate)
 		framecnt = 0;
 	if (inhibit_frame)
@@ -362,6 +368,7 @@ STATIC_INLINE int res_shift_from_amiga (int x)
 
 void notice_screen_contents_lost (void)
 {
+  DebOut("notice_screen_contents_lost!\n");
 	picasso_redraw_necessary = 1;
 	frame_redraw_necessary = 2;
 }
@@ -2482,6 +2489,8 @@ static void do_flush_screen (struct vidbuffer *vb, int start, int stop)
 	Should be corrected.
 	(sjo 26.9.99) */
 
+  DebOut("do_flush_screen(%lx, %d, %d)\n", vb, start, stop);
+
 	if (vb != gfxvidinfo.outbuffer)
 		return;
 
@@ -3509,6 +3518,8 @@ static void finish_drawing_frame (void)
 	bool didflush = false;
 	struct vidbuffer *vb = &gfxvidinfo.drawbuffer;
 
+  DebOut("calling do_flush_screen?\n");
+
 	gfxvidinfo.outbuffer = vb;
 
 	if (! lockscr (vb, false)) {
@@ -3518,8 +3529,10 @@ static void finish_drawing_frame (void)
 
 #ifndef SMART_UPDATE
 	/* @@@ This isn't exactly right yet. FIXME */
-	if (!interlace_seen)
+	if (!interlace_seen) {
+    DebOut("call do_flush_screen\n");
 		do_flush_screen (first_drawn_line, last_drawn_line);
+  }
 	else
 		unlockscr ();
 	return;
@@ -3567,6 +3580,7 @@ static void finish_drawing_frame (void)
 			}
 			specialmonitoron = true;
 			pfield_set_linetoscr();
+    DebOut("call do_flush_screen\n");
 			do_flush_screen (vb, 0, vb->outheight);
 			didflush = true;
 		} else {
@@ -3592,6 +3606,7 @@ static void finish_drawing_frame (void)
 		if (vb->nativepositioning)
 			setnativeposition(vb);
 		gfxvidinfo.drawbuffer.tempbufferinuse = true;
+    DebOut("call do_flush_screen\n");
 		do_flush_screen(vb, 0, vb->outheight);
 		didflush = true;
 	}
@@ -3602,6 +3617,7 @@ static void finish_drawing_frame (void)
 			vb = gfxvidinfo.outbuffer = &gfxvidinfo.tempbuffer;
 			setnativeposition(vb);
 			gfxvidinfo.drawbuffer.tempbufferinuse = true;
+    DebOut("call do_flush_screen\n");
 			do_flush_screen(vb, 0, vb->outheight);
 			didflush = true;
 		} else {
@@ -3609,8 +3625,12 @@ static void finish_drawing_frame (void)
 		}
 	}
 
-	if (!didflush)
+	if (!didflush) {
+    /* non p96 screens call do_flush_screen here.. */
+    DebOut("call do_flush_screen\n");
 		do_flush_screen (vb, first_drawn_line, last_drawn_line);
+
+  }
 }
 
 void hardware_line_completed (int lineno)
@@ -3640,6 +3660,7 @@ static void check_picasso (void)
 	if (picasso_requested_on == picasso_on)
 		return;
 
+  DebOut("check_picasso: Switch from/to picasso detected!\n");
 	picasso_on = picasso_requested_on;
 
 	if (!picasso_on)
@@ -3658,6 +3679,7 @@ static void check_picasso (void)
 
 void redraw_frame (void)
 {
+  DebOut("redraw_frame..\n");
 	last_drawn_line = 0;
 	first_drawn_line = 32767;
 	finish_drawing_frame ();
@@ -3691,9 +3713,11 @@ bool vsync_handle_check (void)
 void vsync_handle_redraw (int long_field, int lof_changed, uae_u16 bplcon0p, uae_u16 bplcon3p)
 {
 	last_redraw_point++;
+
 	if (lof_changed || interlace_seen <= 0 || (currprefs.gfx_iscanlines && interlace_seen > 0) || last_redraw_point >= 2 || long_field || doublescan < 0) {
 		last_redraw_point = 0;
 
+    DebOut("framecnt: %d\n", framecnt);
 		if (framecnt == 0)
 			finish_drawing_frame ();
 #if 0
@@ -3904,6 +3928,7 @@ void freevidbuffer (struct vidbuffer *buf)
 void reset_drawing (void)
 {
 	unsigned int i;
+  DebOut("reset_drawing\n");
 
 	max_diwstop = 0;
 

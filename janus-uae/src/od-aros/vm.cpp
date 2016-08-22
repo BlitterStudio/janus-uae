@@ -6,7 +6,7 @@
  * See the file 'COPYING' for full license text.
  */
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"

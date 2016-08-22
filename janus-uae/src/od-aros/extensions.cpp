@@ -10,7 +10,7 @@
 
 //#define MEMDEBUG
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #include <stdlib.h>
 #include <stdarg.h>
@@ -62,6 +62,7 @@
 
 #ifdef __AROS__
 #include "aros.h"
+#include "../od-win32/resources/resource.h"
 #endif
 
 static struct  contextcommand cc_disk[] = {

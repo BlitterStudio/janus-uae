@@ -7,7 +7,7 @@
  *           2010-2011 Mustafa Tufan
  */
 
-//#define JUAE_DEBUG
+#define JUAE_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -385,11 +385,14 @@ void my_kbd_handler (int keyboard, int scancode, int newstate)
 		scancode = 0;
 
 	if (newstate) {
+    DebOut("newstate!\n");
 		int defaultguikey = amode ? DIK_F12 : DIK_NUMLOCK;
 		if (currprefs.win32_guikey >= 0x100) {
+      DebOut("currprefs.win32_guikey: %x (DIK_F12 is %x)\n", currprefs.win32_guikey, DIK_F12);
 			if (scancode_new == DIK_F12)
 				return;
 		} else if (currprefs.win32_guikey >= 0) {
+      DebOut("currprefs.win32_guikey. %x\n", currprefs.win32_guikey);
 			if (scancode_new == defaultguikey && currprefs.win32_guikey != scancode_new) {
 				scancode = 0;
 				if (specialpressed () && ctrlpressed() && shiftpressed() && altpressed ())
@@ -399,6 +402,7 @@ void my_kbd_handler (int keyboard, int scancode, int newstate)
 				scancode = 0;
 			}
 		} else if (!specialpressed () && !ctrlpressed() && !shiftpressed() && !altpressed () && scancode_new == defaultguikey) {
+      DebOut("shiftpressed: %d\n", shiftpressed());
 			inputdevice_add_inputcode (AKS_ENTERGUI, 1);
 			scancode = 0;
 		}

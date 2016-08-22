@@ -344,6 +344,7 @@ static bool gfxboard_setmode(void)
 	picasso96_state.Height = vga_height;
 	picasso96_state.BytesPerPixel = bpp / 8;
 	picasso96_state.RGBFormat = RGBFB_CLUT;
+  DebOut("picasso96_state.RGBFormat: %d\n", picasso96_state.RGBFormat);
 	write_log(_T("GFXBOARD %dx%dx%d\n"), vga_width, vga_height, bpp);
 	gfx_set_picasso_modeinfo(vga_width, vga_height, bpp, RGBFB_NONE);
 	fullrefresh = 2;

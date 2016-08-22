@@ -7,7 +7,7 @@
 * Copyright 1995, 1996, 1997 Bernd Schmidt
 */
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"
