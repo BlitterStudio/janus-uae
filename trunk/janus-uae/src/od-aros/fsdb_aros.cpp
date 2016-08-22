@@ -23,7 +23,7 @@
  *
  ************************************************************************/
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 #include <stdio.h>
 #include <proto/dos.h>
 #include <dos/dos.h>

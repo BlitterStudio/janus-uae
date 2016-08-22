@@ -28,7 +28,7 @@ typedef struct _LV_COLUMN {
 
 int  ListView_GetItemCount(HWND hwnd);
 void ListView_SetItemState(HWND hwnd, int i, UINT state, UINT mask);
-LONG Button_SetElevationRequiredState(HWND hDlg, int nIDDlgItem, BOOL fRequired);
+LONG Button_SetElevationRequiredState(HWND hDlg, BOOL fRequired);
 int ListView_GetTopIndex(HWND hwnd);
 int ListView_GetCountPerPage(HWND hwnd);
 void ListView_SetExtendedListViewStyleEx(HWND hwndLV, DWORD dwExMask, DWORD dwExStyle);

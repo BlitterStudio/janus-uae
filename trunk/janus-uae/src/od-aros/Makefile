@@ -52,7 +52,7 @@ AR         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ar
 LD         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ld
 
 # suppress warning: deprecated conversion from string constant to ‘char*’
-FLAGS      = -Wno-write-strings -O2 #-Wall
+FLAGS      = -Wno-write-strings -O2 -Wall -Wno-unused -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-value -Wno-unused-variable -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-sign-compare #-Werror
 DEBUGFLAGS = -g
 
 CDEFS   = -DUAE_ABI_$(ABI)
@@ -280,7 +280,7 @@ DEP_OBJS=$(COMMON_OBJS)
 all: uae
 
 uae: string_resource.h sdl_config_lib libmpeg2 gui common aros
-	$(CPP) $(CFLAGS) $(COMMON_OBJS) $(AROS_OBJS) -o $(EXE) $(LINK_LIBS) 
+	$(CPP) $(CFLAGS) -static-libstdc++ $(COMMON_OBJS) $(AROS_OBJS) -o $(EXE) $(LINK_LIBS) 
 
 sdl_config_lib:
 	@echo building SDL_Config library ..
@@ -301,7 +301,7 @@ libmpeg2: libmpeg2/libmpeg2/.libs/libmpeg2.a libmpeg2/libmpeg2/convert/.libs/lib
 
 # generate libmpeg2.a and libmpeg2convert.a
 # this is still some magic here, works on some machines, on others build will break here.
-# the libraries are not difficult to build, it is harder to inegrate them into the build system ;-)
+# the libraries are not difficult to build, it is harder to integrate them into the build system ;-)
 libmpeg2/libmpeg2/.libs/libmpeg2.a:
 	@echo building mpeg2 libraries ..
 	@cd libmpeg2;export SDLCONFIG="$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/AROS/Development/bin/sdl-config";./configure --host=$(CPU)-aros

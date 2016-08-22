@@ -2,7 +2,7 @@
 // Copyright (C) 2000, Brian King
 // GNU Public License
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #include <float.h>
 

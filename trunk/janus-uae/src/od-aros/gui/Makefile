@@ -45,7 +45,7 @@ AR         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ar
 LD         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ld
 
 # suppress warning: deprecated conversion from string constant to ‘char*’
-FLAGS      = -Wno-write-strings -O2 #-Wall
+FLAGS      = -Wno-write-strings -O2 -Wall
 ARFLAGS    = rc
 DEBUGFLAGS = -g
 

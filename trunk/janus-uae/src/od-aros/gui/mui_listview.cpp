@@ -62,7 +62,7 @@ AROS_UFH3S(LONG, display_func, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(cha
   i   =h_data->item;
   DebOut("elem: %lx, i: %d\n", elem, i);
 
-  if(!elem[i].mem || !elem[i].mem[0]) {
+  if(!elem->mem || !elem->mem[0]) {
     DebOut("no columns..!?\n");
     *array++ = foo;
     *array++ = foo;
@@ -71,15 +71,15 @@ AROS_UFH3S(LONG, display_func, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(cha
 
   if(!entry) {
     /* title */
-    while(elem[i].mem[c]) {
-      DebOut("elem[i].mem[c]: %s\n", elem[i].mem[c]);
-      *array++ = elem[i].mem[c];
+    while(elem->mem[c]) {
+      DebOut("elem->mem[c]: %s\n", elem->mem[c]);
+      *array++ = elem->mem[c];
       c++;
     }
   }
   else {
     /* count columns */
-    while(elem[i].mem[c]) {
+    while(elem->mem[c]) {
       c++;
     }
     for(t=0;t<c;t++) {
@@ -202,31 +202,32 @@ Object *new_listview(struct Element *elem, ULONG i, void *f, struct Data *data, 
  *
  * see Warning above
  */
-int ListView_GetItemCount(int nIDDlgItem) {
-  HWND elem;
-  int i;
+int ListView_GetItemCount(HWND hwnd) {
+  Element *elem;
   int nr=0;
 
-  DebOut("nIDDlgItem: %d\n", nIDDlgItem);
+  DebOut("hwnd: %p\n", hwnd);
 
-  elem=get_elem(nIDDlgItem);
+  elem=(Element *) hwnd;
   if(!elem) return 0;
+#if 0
   i=get_index(elem, nIDDlgItem);
   if(i<0) return 0;
+#endif
 
-  DebOut("list obj: %lx\n", elem[i].action);
-  nr=(int) XGET(elem[i].action, MUIA_List_Entries);
+  DebOut("list obj: %lx\n", elem->action);
+  nr=(int) XGET(elem->action, MUIA_List_Entries);
   DebOut("MUIA_List_Entries: %d\n", nr);
  
   return nr;
 }
 
-void ListView_SetItemState(int hwnd, int i, UINT state, UINT mask) {
+void ListView_SetItemState(HWND hwnd, int i, UINT state, UINT mask) {
   TODO();
 }
 
 
-LONG Button_SetElevationRequiredState(HWND hDlg, int nIDDlgItem, BOOL fRequired) {
+LONG Button_SetElevationRequiredState(HWND hDlg, BOOL fRequired) {
   TODO();
   return 1;
 }
@@ -236,11 +237,7 @@ LONG Button_SetElevationRequiredState(HWND hDlg, int nIDDlgItem, BOOL fRequired)
  * or report view. You can use this macro or send the LVM_GETTOPINDEX message 
  * explicitly. 
  */
-/* WARNING: on windows, this function gets a HWND, which does not work for us.
- * maybe it was a bad decision, to fake HWND.. we can only supply one parameter here,
- * so we use the nIDDlgItem and search for the correct HWND..
- */
-int ListView_GetTopIndex(int nIDDlgItem) {
+int ListView_GetTopIndex(HWND hwnd) {
   TODO();
   return 1;
 }
@@ -249,9 +246,8 @@ int ListView_GetTopIndex(int nIDDlgItem) {
  * Calculates the number of items that can fit vertically in the visible area of a 
  * list-view control when in list or report view. Only fully visible items are counted.
  *
- * See WARNING above!
  */
-int ListView_GetCountPerPage(int hwnd) {
+int ListView_GetCountPerPage(HWND hwnd) {
   TODO(); /* return number of items.. */
   return 100;
 }
@@ -259,35 +255,32 @@ int ListView_GetCountPerPage(int hwnd) {
 /*
  * Sets extended styles for list-view controls using the style mask.
  * (ignored so far..)
- * See WARNING above!
  */
-void ListView_SetExtendedListViewStyleEx(int hwndLV, DWORD dwExMask, DWORD dwExStyle) {
+void ListView_SetExtendedListViewStyleEx(HWND hwndLV, DWORD dwExMask, DWORD dwExStyle) {
   TODO();
 }
 
 /* 
  * Removes all groups from a list-view control. 
- * See WARNING above!
  */
-void ListView_RemoveAllGroups(int hwnd) {
+void ListView_RemoveAllGroups(HWND hwnd) {
   TODO();
 }
 
 /*
  * Removes all items from a list-view control.
- * See WARNING above!
  */
-BOOL ListView_DeleteAllItems(int nIDDlgItem) {
-  struct Element *elem;
-  int i;
+BOOL ListView_DeleteAllItems(HWND hwnd) {
+  Element *elem=(Element *) hwnd;
 
-  elem=get_elem(nIDDlgItem);
+#if 0
   if(!elem) return FALSE;
   i=get_index(elem, nIDDlgItem);
   if(i<0) return FALSE;
-  DebOut("elem: %lx, i: %d elem[i].action: %lx\n", elem, i, elem[i].action);
+#endif
+  DebOut("elem: %lx: %d elem->action: %lx\n", elem, elem->action);
 
-  DoMethod(elem[i].action, MUIM_List_Clear);
+  DoMethod(elem->action, MUIM_List_Clear);
 
   return TRUE;
 }
@@ -295,22 +288,22 @@ BOOL ListView_DeleteAllItems(int nIDDlgItem) {
 /*
  * Gets the attributes of a list-view control's column.
  * 
- * See WARNING above!
  * WARNING: for WinUAE it is enough, to return FALSE, if there are no columns and
  *          TRUE, if there are already colums.
  */
-BOOL ListView_GetColumn(int nIDDlgItem, int iCol, LPLVCOLUMN pcol) {
-  HWND elem;
-  int i;
+BOOL ListView_GetColumn(HWND hwnd, int iCol, LPLVCOLUMN pcol) {
+  Element *elem=(Element *) hwnd;
 
-  DebOut("nIDDlgItem: %d\n", nIDDlgItem);
+  DebOut("elem: %p\n", elem);
 
+#if 0
   elem=get_elem(nIDDlgItem);
   if(!elem) return FALSE;
   i=get_index(elem, nIDDlgItem);
   if(i<0) return FALSE;
+#endif
 
-  if(elem[i].mem) {
+  if(elem->mem) {
     DebOut("we have columns: TRUE!\n");
     return TRUE;
   }
@@ -325,11 +318,10 @@ BOOL ListView_GetColumn(int nIDDlgItem, int iCol, LPLVCOLUMN pcol) {
  *
  * For us it should be enough to just care for pszText
  * We store all columns in elem->mem..
- * See WARNING above!
  */
-int ListView_InsertColumn(int nIDDlgItem, int iCol, const LPLVCOLUMN pcol) {
-  HWND elem;
-  ULONG i=0;
+int ListView_InsertColumn(HWND hwnd, int iCol, const LPLVCOLUMN pcol) {
+  Element *elem;
+  //ULONG i=0;
   ULONG t=0;
   ULONG u=0;
   char format[128];
@@ -340,18 +332,20 @@ int ListView_InsertColumn(int nIDDlgItem, int iCol, const LPLVCOLUMN pcol) {
 
   DebOut("pszText: %s\n", pcol->pszText);
 
-  elem=get_elem(nIDDlgItem);
+  elem=(Element *)hwnd;
+#if 0
   if(!elem) return 0;
   i=get_index(elem, nIDDlgItem);
   if(i<0) return 0;
   DebOut("elem: %lx, i: %d\n", elem, i);
+#endif
 
-  if(!elem[i].mem) {
-    elem[i].mem=(char **) calloc(32, sizeof(IPTR)); /* 32 columns should be enough for everybody.. */
-    elem[i].mem[0]=NULL;
+  if(!elem->mem) {
+    elem->mem=(char **) calloc(32, sizeof(IPTR)); /* 32 columns should be enough for everybody.. */
+    elem->mem[0]=NULL;
   }
 
-  while(elem[i].mem[t]!=NULL) {
+  while(elem->mem[t]!=NULL) {
     t++;
   }
 
@@ -361,8 +355,8 @@ int ListView_InsertColumn(int nIDDlgItem, int iCol, const LPLVCOLUMN pcol) {
   }
 
   DebOut("t: %d\n", t);
-  elem[i].mem[t]=strdup(pcol->pszText);
-  elem[i].mem[t+1]=NULL;
+  elem->mem[t]=strdup(pcol->pszText);
+  elem->mem[t+1]=NULL;
 
   strcpy(format,"BAR");
   format[3]=(char) 0;
@@ -372,39 +366,40 @@ int ListView_InsertColumn(int nIDDlgItem, int iCol, const LPLVCOLUMN pcol) {
   }
 
   DebOut("format: >%s<\n", format);
-  DebOut("elem[i].action: %lx\n", elem[i].action);
+  DebOut("elem->action: %lx\n", elem->action);
 
 
   /* if this is our first column, we need to setup the display hook */
-  if(!elem[i].var_data) {
+  if(!elem->var_data) {
     /* store hooks in var_data*/
     DebOut("init hooks..\n");
-    elem[i].var_data   =(IPTR *) calloc(16, sizeof(IPTR));
-    elem[i].var_data[0]=(IPTR)   calloc( 1, sizeof(struct hook_data));
-    elem[i].var_data[1]=(IPTR)   calloc( 1, sizeof(struct Hook)); /* display hook */
-    elem[i].var_data[2]=(IPTR)   calloc( 1, sizeof(struct Hook)); /* construct hook */
-    elem[i].var_data[3]=(IPTR)   calloc( 1, sizeof(struct Hook)); /* destruct hook */
+    elem->var_data   =(IPTR *) calloc(16, sizeof(IPTR));
+    elem->var_data[0]=(IPTR)   calloc( 1, sizeof(struct hook_data));
+    elem->var_data[1]=(IPTR)   calloc( 1, sizeof(struct Hook)); /* display hook */
+    elem->var_data[2]=(IPTR)   calloc( 1, sizeof(struct Hook)); /* construct hook */
+    elem->var_data[3]=(IPTR)   calloc( 1, sizeof(struct Hook)); /* destruct hook */
 
-    h_data      =(struct hook_data *) elem[i].var_data[0];
+    h_data      =(struct hook_data *) elem->var_data[0];
     h_data->elem=elem;
-    h_data->item=i;
+    h_data->item=elem->idc;
 
-    display_hook         =(struct Hook *) elem[i].var_data[1];
+    display_hook         =(struct Hook *) elem->var_data[1];
     display_hook->h_Entry=(APTR) display_func;
     display_hook->h_Data =(APTR) h_data;
 
-    construct_hook         =(struct Hook *) elem[i].var_data[2];
+    construct_hook         =(struct Hook *) elem->var_data[2];
     construct_hook->h_Entry=(APTR) construct_func;
     construct_hook->h_Data =(APTR) h_data;
 
-    destruct_hook         =(struct Hook *) elem[i].var_data[3];
+    destruct_hook         =(struct Hook *) elem->var_data[3];
     destruct_hook->h_Entry=(APTR) destruct_func;
     destruct_hook->h_Data =(APTR) h_data;
 
-    //SetAttrs(elem[i].action, MUIA_List_Title, FALSE, TAG_DONE);
+    //SetAttrs(elem->action, MUIA_List_Title, FALSE, TAG_DONE);
 
-    DebOut("set MUIA_List_ConstructHook for object %lx\n", elem[i].action);
-    SetAttrs(elem[i].action, MUIA_List_DisplayHook,   display_hook,
+    DebOut("set MUIA_List_ConstructHook for object %p\n", elem->action);
+    DebOut("set MUIA_List_ConstructHook: %p\n", construct_hook);
+    SetAttrs(elem->action, MUIA_List_DisplayHook,   display_hook,
                              MUIA_List_ConstructHook, construct_hook,
                              MUIA_List_DestructHook,  destruct_hook,
                              MUIA_List_Format,        format, 
@@ -412,7 +407,7 @@ int ListView_InsertColumn(int nIDDlgItem, int iCol, const LPLVCOLUMN pcol) {
                              TAG_DONE);
   }
   else {
-    SetAttrs(elem[i].action, MUIA_List_Format, format, TAG_DONE);
+    SetAttrs(elem->action, MUIA_List_Format, format, TAG_DONE);
   }
 
   return 1;
@@ -423,12 +418,10 @@ int ListView_InsertColumn(int nIDDlgItem, int iCol, const LPLVCOLUMN pcol) {
  *
  * Seems to insert a new line, text is text of first row.. returns new line number
  *
- * see WARNING above! 
  */
-int ListView_InsertItem(int nIDDlgItem, const LPLVITEM pitem) {
+int ListView_InsertItem(HWND hwnd, const LPLVITEM pitem) {
 
-  struct Element *elem;
-  int i;
+  Element *elem=(Element *) hwnd;
   struct view_line *new_line;
   ULONG pos;
 
@@ -439,11 +432,13 @@ int ListView_InsertItem(int nIDDlgItem, const LPLVITEM pitem) {
   if (pitem->iImage) DebOut("iImage (ignored!!): %s\n", pitem->iImage);
 #endif
 
+#if 0
   elem=get_elem(nIDDlgItem);
   if(!elem) return -1;
   i=get_index(elem, nIDDlgItem);
   if(i<0) return -1;
-  DebOut("elem: %lx, i: %d\n", elem, i);
+#endif
+  DebOut("elem: %p\n", elem);
 
   new_line=(struct view_line *) AllocVec(sizeof(struct view_line), MEMF_CLEAR);
   if(!new_line) return -1;
@@ -451,13 +446,13 @@ int ListView_InsertItem(int nIDDlgItem, const LPLVITEM pitem) {
   DebOut("sizeof(struct view_line): %d\n", sizeof(struct view_line));
 
   strcpy(new_line->column[0], pitem->pszText);
-  DebOut("elem[%d].action: %lx\n", i, elem[i].action);
-  DoMethod(elem[i].action, MUIM_List_InsertSingle, new_line, MUIV_List_Insert_Bottom);
+  DebOut("elem->action: %lx\n", elem->action);
+  DoMethod(elem->action, MUIM_List_InsertSingle, new_line, MUIV_List_Insert_Bottom);
   FreeVec(new_line);
   new_line=NULL;
 
   DebOut("..\n");
-  pos=XGET(elem[i].action, MUIA_List_InsertPosition);
+  pos=XGET(elem->action, MUIA_List_InsertPosition);
   //pos--; /* why --? Seems as if Zune always return "one too much"? */
   DebOut("pos: %d\n", pos);
 
@@ -470,35 +465,34 @@ int ListView_InsertItem(int nIDDlgItem, const LPLVITEM pitem) {
  * i is line number from ListView_InsertItem
  * iSubItem is column number
  * pszText is item text
- * see WARNING above! 
  *
  * Zune has no function to modify single columns. So we fetch the old line,
  * copy contents over and replace just the single column. Then we remove
  * the old line and insert our new one..
  */
-VOID ListView_SetItemText(int nIDDlgItem, int line, int iSubItem, const char *pszText) {
+VOID ListView_SetItemText(HWND hwnd, int line, int iSubItem, const char *pszText) {
 
-  struct Element *elem;
-  int i;
+  Element *elem;
   struct view_line *old_line;
   struct view_line *new_line;
   LONG pos;
 
   DebOut("line %d, column %d: %s\n", line, iSubItem, pszText);
 
-  /* usual "find ourselves" */
-  elem=get_elem(nIDDlgItem);
+  elem=(Element *) hwnd;
+#if 0
   if(!elem) return;
   i=get_index(elem, nIDDlgItem);
   if(i<0) return;
-  DebOut("elem: %lx, i: %d\n", elem, i);
+#endif
+  DebOut("elem: %p: %d\n", elem);
 
   /* build new line. not on the stack, as it is "big" */
   new_line=(struct view_line *) AllocVec(sizeof(struct view_line), MEMF_CLEAR);
   if(!new_line) return;
 
   /* fetch current content */
-  DoMethod(elem[i].action, MUIM_List_GetEntry, line, &old_line);
+  DoMethod(elem->action, MUIM_List_GetEntry, line, &old_line);
   if(!old_line) {
     DebOut("old line not found !? so maybe we are the first line!?\n");
     for(pos=0; pos<MAX_COL; pos++) {
@@ -527,14 +521,14 @@ VOID ListView_SetItemText(int nIDDlgItem, int line, int iSubItem, const char *ps
       }
     }
     /* replace old line with new one */
-    DoMethod(elem[i].action, MUIM_List_Remove, line);
+    DoMethod(elem->action, MUIM_List_Remove, line);
   }
   DebOut("MUIM_List_InsertSingle %d\n", line);
-  DoMethod(elem[i].action, MUIM_List_InsertSingle, new_line, line);
+  DoMethod(elem->action, MUIM_List_InsertSingle, new_line, line);
   /* TODO (?): FreeVec */
 }
 
-int ListView_GetStringWidth(int nIDDlgItem, const char *psz) {
+int ListView_GetStringWidth(HWND hwnd, const char *psz) {
 
   TODO();
   return 1;
@@ -543,21 +537,21 @@ int ListView_GetStringWidth(int nIDDlgItem, const char *psz) {
 /*
  * Gets the state of a list-view item. 
  *
- * see WARNING above! 
  */
-UINT ListView_GetItemState(int nIDDlgItem, int  nr, UINT mask) {
-  struct Element *elem;
-  int i;
+UINT ListView_GetItemState(HWND hwnd, int  nr, UINT mask) {
+  Element *elem=(Element *) hwnd;
   IPTR act;
 
-  DebOut("nIDDlgItem %d: %d\n", nIDDlgItem);
+  DebOut("elem %p\n", elem);
 
   /* usual "find ourselves" */
+#if 0
   elem=get_elem(nIDDlgItem);
   if(!elem) return 0;
   i=get_index(elem, nIDDlgItem);
   if(i<0) return 0;
   DebOut("elem: %lx, i: %d\n", elem, i);
+#endif
 
   if(mask!=LVIS_SELECTED) {
     DebOut("mask %d not implemented!\n", mask);
@@ -565,7 +559,7 @@ UINT ListView_GetItemState(int nIDDlgItem, int  nr, UINT mask) {
     return FALSE;
   }
 
-  act=XGET(elem[i].action, MUIA_List_Active);
+  act=XGET(elem->action, MUIA_List_Active);
   DebOut("active entry: %d\n", act);
 
   if((IPTR) nr== act) {

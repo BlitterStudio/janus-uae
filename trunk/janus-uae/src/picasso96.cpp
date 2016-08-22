@@ -508,7 +508,8 @@ static void do_fillrect (uae_u8 *src, int x, int y, int width, int height,
  * must do it by hand using the data in the save area, pointed to by
  * srcp.
  */
-static void do_blit (struct RenderInfo *ri, int Bpp, int srcx, int srcy,
+ ooo
+void do_blit (struct RenderInfo *ri, int Bpp, int srcx, int srcy,
 		     int dstx, int dsty, int width, int height,
 		     BLIT_OPCODE opcode, int can_do_blit)
 {

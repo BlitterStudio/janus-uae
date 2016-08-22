@@ -10,7 +10,7 @@
 
 #include <graphics/gfxbase.h>
 
-//#define JUAE_DEBUG
+#define JUAE_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -75,7 +75,6 @@ static void aros_dialog_loop(void) {
 INT_PTR DialogBoxIndirect(HINSTANCE hInstance, LPCDLGTEMPLATE lpTemplate, HWND hWndParent, INT_PTR (CALLBACK FAR *func) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam))  {
 
   Object *mui_win;
-  Object *mui_root;
   Object *mui_content;
 
   DebOut("lpTemplate: %lx\n", lpTemplate);
@@ -101,6 +100,7 @@ INT_PTR DialogBoxIndirect(HINSTANCE hInstance, LPCDLGTEMPLATE lpTemplate, HWND h
 
   return_value=0;
 
+  DebOut("OM_ADDMEMBER..\n");
   DoMethod(app, OM_ADDMEMBER, (IPTR) mui_win);
   SetAttrs(win, MUIA_Window_Sleep, TRUE, TAG_DONE);
 
@@ -108,13 +108,18 @@ INT_PTR DialogBoxIndirect(HINSTANCE hInstance, LPCDLGTEMPLATE lpTemplate, HWND h
 
   SetAttrs(mui_win, MUIA_Window_Open, TRUE, TAG_DONE);
 
+  DebOut("start aros_dialog_loop\n");
   aros_dialog_loop();
+
+  DebOut("shut down dialog..\n");
 
   SetAttrs(mui_win, MUIA_Window_Open, FALSE, TAG_DONE);
   DoMethod(app, OM_REMMEMBER, (IPTR) mui_win);
   DisposeObject(mui_win);
   mui_win=NULL;
   SetAttrs(win, MUIA_Window_Sleep, FALSE, TAG_DONE);
+
+  DebOut("DialogBoxIndirect closed! return %d\n", return_value);
 
   return return_value;
 }

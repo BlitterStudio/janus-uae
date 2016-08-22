@@ -8,6 +8,8 @@
 * Copyright 2000-2015 Toni Wilen
 */
 
+//#define JUAE_DEBUG 
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -7418,6 +7420,7 @@ static void vsync_handler_pre (void)
 	while (handle_events ()) {
 		// we are paused, do all config checks but don't do any emulation
 		if (vsync_handle_check ()) {
+      /* vsync_handle_check may return true, if check_prefs_changed_gfx is true .. */
 			redraw_frame ();
 			render_screen (true);
 			show_screen (0);
@@ -7461,6 +7464,12 @@ static void vsync_handler_pre (void)
 			frame_shown = show_screen_maybe (isvsync_chipset () >= 0);
 		}
 	}
+#warning XXXXXXXXXXXXXXXXXXXXXXXXXXXX HERE XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+#if 0
+  else {
+    redraw_frame();
+  }
+#endif
 
 	fpscounter (frameok);
 

@@ -34,7 +34,7 @@ ifeq ($(BITS),64)
 CPU      = x86_64
 # AROS source svn
 SVN        = $(HOME)/tc/svn
-ABI        = v1
+ABI        = v1.gcc.6.1
 else
 # 32 bit
 CPU      = i386

@@ -1,4 +1,4 @@
-//#define JUAE_DEBUG
+#define JUAE_DEBUG
 
 #include <exec/types.h>
 #include <libraries/mui.h>
@@ -40,7 +40,7 @@
 //#define EMPTY_SELECTION "<-- none -->"
 #define EMPTY_SELECTION ""
 
-static const char *Cycle_Dummy[] = { NULL };
+//static const char *Cycle_Dummy[] = { NULL };
 
 struct ReqToolsBase *ReqToolsBase=NULL;
 struct MUI_CustomClass *CL_Fixed=NULL;
@@ -57,6 +57,7 @@ IPTR xget(Object *obj, IPTR attr) {
 }
 #endif
 
+#if 0
 /* return index in elem[] for item IDC_* */
 LONG get_index(Element *elem, int item) {
   int i=0;
@@ -65,8 +66,8 @@ LONG get_index(Element *elem, int item) {
     return -1;
   }
 
-  while(elem[i].exists) {
-    if(elem[i].idc == item) {
+  while(elem->exists) {
+    if(elem->idc == item) {
       return i;
     }
     i++;
@@ -90,6 +91,31 @@ Element *get_elem(int nIDDlgItem) {
     i++;
   }
   
+  return NULL;
+}
+#endif
+
+/* return the control (Element *) of the item in the hDlg
+ * if hDlg is NULL, search global
+ */
+Element *get_control(HWND hDlg, int item) {
+  ULONG i=0;
+  Element *elem=(Element *) hDlg;
+
+  if(hDlg) {
+    while(WIN_RES[i].idc && (WIN_RES[i].idc != elem->idc)) {
+      i++;
+    }
+  }
+
+  while(WIN_RES[i].idc) {
+    if(WIN_RES[i].idc==item) {
+      return &WIN_RES[i];
+    }
+    i++;
+  }
+
+  DebOut("ERROR (?): can't find control %d in %p (NULL is ok here)\n", item, hDlg);
   return NULL;
 }
 
@@ -390,8 +416,8 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
     case MUILM_MINMAX: {
 
       struct Data *data = (struct Data *) hook->h_Data;
-      ULONG i=0;
-      struct Element *element=data->src;
+      //ULONG i=0;
+      //struct Element *element=data->src;
       ULONG mincw, minch, defcw, defch, maxcw, maxch;
 
       //DebOut("MUILM_MINMAX obj %lx\n", obj);
@@ -508,7 +534,6 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
     GETDATA;
     //struct TextAttr ta;
     struct TextFont *old;
-    Object *foo;
 
     data->width =396;
     data->height=320;
@@ -544,7 +569,9 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
     i=0;
     while(src[i].windows_type) {
       DebOut("========== i=%d =========\n", i);
-      DebOut("add %s\n", src[i].text);
+      //DebOut("src[i].text: %lx\n", src[i].text);
+      //DebOut("add %s\n", src[i].text);
+      //DebOut("src[i].text: %lx\n", src[i].text);
       switch(src[i].windows_type) {
         case GROUPBOX:
           child=HGroup, MUIA_Frame, MUIV_Frame_Group,

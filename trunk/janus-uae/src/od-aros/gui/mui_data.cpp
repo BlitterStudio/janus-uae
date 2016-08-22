@@ -11,8 +11,11 @@
 
 #include "mui_data.h"
 
+#include "../od-win32/resources/resource.h"
+
+Element WIN_RES[] = {
 /* IDD_KICKSTART DIALOGEX 0, 0, 396, 204 */
-Element IDD_KICKSTART[] = {
+  { 0, IDD_KICKSTART, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 204,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, GROUPBOX   , NULL,   1,  58, 394,  91, "System ROM Settings", NULL, 0x10000000, 0, 0 },
   { 0, IDC_ROMTEXT         , 0, NULL, NULL, NULL, LTEXT      , NULL,  14,  71, 263,  10, "Main ROM file:", NULL, 0x10000000, 0, 0 },
   { 0, IDC_ROMFILE         , 0, NULL, NULL, NULL, COMBOBOX   , NULL,  12,  83, 361,  15, "IDC_ROMFILE", NULL, 0x10010002, 0, 0 },
@@ -32,11 +35,8 @@ Element IDD_KICKSTART[] = {
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, LTEXT      , NULL,  12, 225, 313,  15, "Real Time Clock file", NULL, 0x10000000, 0, 0 },
   { 0, IDC_RTCFILE         , 0, NULL, NULL, NULL, EDITTEXT   , NULL,  12, 241, 361,  13, "IDC_RTCFILE", NULL, 0x10000000, 0, 0 },
   { 0, IDC_RTCCHOOSER      , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 376, 239,  10,  15, "...", NULL, 0x10000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_DISPLAY DIALOGEX 0, 0, 396, 298 */
-Element IDD_DISPLAY[] = {
+  { 0, IDD_DISPLAY, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 298,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_SCREENRESTEXT   , 0, NULL, NULL, NULL, GROUPBOX   , NULL,   1,  11, 393,  77, "Screen", NULL, 0x10000000, 0, 0 },
   { 0, IDC_DISPLAYSELECT   , 0, NULL, NULL, NULL, COMBOBOX   , NULL,  10,  24, 375,  15, "IDC_DISPLAYSELECT", NULL, 0x10010003, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, RTEXT      , NULL,   3,  44,  51,  15, "Fullscreen:", NULL, 0x10000000, 0, 0 },
@@ -87,11 +87,8 @@ Element IDD_DISPLAY[] = {
   { 0, IDC_LM_IDOUBLED     , 2, NULL, NULL, NULL, CONTROL    , "Button"  , 299, 262,  90,  10, "Double, frames", NULL, 0x10010000, 9, 0 },
   { 0, IDC_LM_IDOUBLED2    , 2, NULL, NULL, NULL, CONTROL    , "Button"  , 299, 275,  90,  10, "Double, fields", NULL, 0x10010000, 9, 0 },
   { 0, IDC_LM_IDOUBLED3    , 2, NULL, NULL, NULL, CONTROL    , "Button"  , 299, 288,  90,  10, "Double, fields+", NULL, 0x10010000, 9, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_MEMORY DIALOGEX 0, 0, 396, 246 */
-Element IDD_MEMORY[] = {
+  { 0, IDD_MEMORY, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 246,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, GROUPBOX   , NULL,   1,  44, 393, 117, "Memory Settings", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, RTEXT      , NULL,   7,  62,  60,  15, "Chip:", NULL, 0x10000000, 0, 0 },
   { 0, IDC_CHIPMEM         , 0, NULL, NULL, NULL, CONTROL    , "msctls_trackbar32",  68,  59,  60,  20, "Slider1", NULL, 0x10010000, 0, 0 },
@@ -122,11 +119,8 @@ Element IDD_MEMORY[] = {
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, RTEXT      , NULL, 149, 256,  93,  15, "Z3 mapping mode:", NULL, 0x10000000, 0, 0 },
   { 0, IDC_Z3MAPPING       , 0, NULL, NULL, NULL, COMBOBOX   , NULL, 249, 257, 117,  15, "IDC_Z3MAPPING", NULL, 0x10010003, 0, 0 },
   { 0, IDC_FASTMEMAUTOCONFIG, 0, NULL, NULL, NULL, CONTROL    , "Button"  ,  11, 231, 120,  10, "Autoconfig Z2 Fast RAM", NULL, 0x10010000, 3, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_CPU DIALOGEX 0, 0, 396, 317 */
-Element IDD_CPU[] = {
+  { 0, IDD_CPU, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 317,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, GROUPBOX   , NULL,   1,   2, 129, 184, "CPU", NULL, 0x10000000, 0, 0 },
   { 0, IDC_CPU0            , 1, NULL, NULL, NULL, CONTROL    , "Button"  ,   8,  20,  63,  10, "68000", NULL, 0x10030000, 9, 0 },
   { 0, IDC_CPU1            , 1, NULL, NULL, NULL, CONTROL    , "Button"  ,   8,  34,  63,  10, "68010", NULL, 0x10010000, 9, 0 },
@@ -176,11 +170,8 @@ Element IDD_CPU[] = {
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, RTEXT      , NULL, 147, 222,  55,   9, "CPU Speed", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, GROUPBOX   , NULL, 136, 203, 258,  42, "x86 Bridgeboard CPU options", NULL, 0x10000000, 0, 0 },
   { 0, IDC_CPUTEXT_x86     , 0, NULL, NULL, NULL, EDITTEXT   , NULL, 224, 221,  39,  13, "IDC_CPUTEXT_x86", NULL, 0x10000800, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_FLOPPY DIALOGEX 0, 0, 396, 261 */
-Element IDD_FLOPPY[] = {
+  { 0, IDD_FLOPPY, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 261,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_SETTINGSTEXT3   , 0, NULL, NULL, NULL, GROUPBOX   , NULL,   1,  29, 393, 163, "Floppy Drives", NULL, 0x10000000, 0, 0 },
   { 0, IDC_DF0ENABLE       , 0, NULL, NULL, NULL, CONTROL    , "Button"  ,   7,  43,  34,  15, "DF0:", NULL, 0x18010000, 3, 0 },
   { 0, IDC_SAVEIMAGE0      , 0, NULL, NULL, NULL, PUSHBUTTON , NULL,  69,  42,  78,  15, "Delete save image", NULL, 0x00000000, 0, 0 },
@@ -229,11 +220,8 @@ Element IDD_FLOPPY[] = {
   { 0, IDC_CREATE_NAME     , 0, NULL, NULL, NULL, EDITTEXT   , NULL, 130, 272,  97,  13, "IDC_CREATE_NAME", NULL, 0x10000000, 0, 0 },
   { 0, IDC_FLOPPY_BOOTABLE , 0, NULL, NULL, NULL, CONTROL    , "Button"  , 235, 271,  59,  15, "Bootblock", NULL, 0x10010000, 3, 0 },
   { 0, IDC_FLOPPY_FFS      , 0, NULL, NULL, NULL, CONTROL    , "Button"  , 300, 271,  34,  15, "FFS", NULL, 0x10010000, 3, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_HARDDISK DIALOGEX 0, 0, 396, 318 */
-Element IDD_HARDDISK[] = {
+  { 0, IDD_HARDDISK, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 318,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_VOLUMELIST      , 0, NULL, NULL, NULL, CONTROL    , "SysListView32",   1,   3, 393, 149, "List1", NULL, 0x10010000, 0, 0 },
   { 0, IDC_NEW_FS          , 0, NULL, NULL, NULL, PUSHBUTTON , NULL,   1, 154, 128,  15, "Add _Directory or Archive...", NULL, 0x10000000, 0, 0 },
   { 0, IDC_NEW_HF          , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 135, 154, 126,  15, "Add _Hardfile...", NULL, 0x10000000, 0, 0 },
@@ -258,11 +246,8 @@ Element IDD_HARDDISK[] = {
   { 0, IDC_CD_EJECT        , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 360, 267,  30,  15, "Eject", NULL, 0x10000000, 0, 0 },
   { 0, IDC_CD_TEXT         , 0, NULL, NULL, NULL, COMBOBOX   , NULL,   5, 286, 386,  15, "IDC_CD_TEXT", NULL, 0x10010002, 0, 0 },
   { 0, IDC_CD_SPEED        , 0, NULL, NULL, NULL, CONTROL    ,  "Button" ,  11, 302, 201,  11, "CDTV/CDTV-CR/CD32 turbo CD read speed", NULL, 0x10010000, 3, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_SOUND DIALOGEX 0, 0, 396, 306 */
-Element IDD_SOUND[] = {
+  { 0, IDD_SOUND, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 306,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_SOUNDCARDLIST   , 0, NULL, NULL, NULL, COMBOBOX   , NULL,   1,   8, 393,  15, "IDC_SOUNDCARDLIST", NULL, 0x10010003, 0, 0 },
   { 0, IDC_SOUNDSETTINGS   , 0, NULL, NULL, NULL, GROUPBOX   , NULL,   1,  26, 132, 112, "Sound Emulation", NULL, 0x10000000, 0, 0 },
   { 0, IDC_SOUND0          , 1, NULL, NULL, NULL, CONTROL    , "Button"  ,  13,  42, 108,  10, "Disabled", NULL, 0x10030000, 9, 0 },
@@ -307,11 +292,8 @@ Element IDD_SOUND[] = {
   { 0, IDC_SOUND_WASAPI    , 0, NULL, NULL, NULL, CONTROL    , "Button"  , 292, 255,  98,  10, "WASAPI", NULL, 0x10030000, 3, 0 },
   { 0, IDC_SOUND_OPENAL    , 0, NULL, NULL, NULL, CONTROL    , "Button"  , 292, 269,  98,  10, "OpenAL", NULL, 0x10030000, 3, 0 },
   { 0, IDC_SOUND_PORTAUDIO , 0, NULL, NULL, NULL, CONTROL    , "Button"  , 292, 283,  98,  10, "PortAudio", NULL, 0x10030000, 3, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_LOADSAVE DIALOGEX 0, 0, 396, 318 */
-Element IDD_LOADSAVE[] = {
+  { 0, IDD_LOADSAVE, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 318,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_CONFIGTREE      , 0, NULL, NULL, NULL, CONTROL    , "SysTreeView32",   1,   6, 393, 227, "", NULL, 0x10010000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, RTEXT      , NULL,   4, 242,  47,   8, "Name:", NULL, 0x10000000, 0, 0 },
   { 0, IDC_EDITNAME        , 0, NULL, NULL, NULL, EDITTEXT   , NULL,  55, 240, 230,  13, "IDC_EDITNAME", NULL, 0x10000000, 0, 0 },
@@ -330,11 +312,8 @@ Element IDD_LOADSAVE[] = {
   { 0, IDC_LOAD            , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 162, 302,  60,  15, "Load From...", NULL, 0x10000000, 0, 0 },
   { 0, IDC_SAVE            , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 226, 302,  60,  15, "Save As...", NULL, 0x10000000, 0, 0 },
   { 0, IDC_DELETE          , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 335, 302,  60,  15, "Delete", NULL, 0x10000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_IOPORTS DIALOGEX 0, 0, 396, 295 */
-Element IDD_IOPORTS[] = {
+  { 0, IDD_IOPORTS, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 295,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, GROUPBOX   , NULL,   1,  13, 393, 131, "Parallel Port", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, RTEXT      , NULL,   6,  28,  57,  15, "Printer:", NULL, 0x10000000, 0, 0 },
   { 0, IDC_PRINTERLIST     , 0, NULL, NULL, NULL, COMBOBOX   , NULL,  67,  29, 317,  15, "IDC_PRINTERLIST", NULL, 0x10010003, 0, 0 },
@@ -362,11 +341,8 @@ Element IDD_IOPORTS[] = {
   { 0, IDC_MIDIROUTER      , 0, NULL, NULL, NULL, CONTROL    , "Button"  ,  41, 239, 170,  12, "Route MIDI In to MIDI Out", NULL, 0x10010000, 3, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, GROUPBOX   , NULL,   1, 264, 393,  41, "Protection Dongle", NULL, 0x10000000, 0, 0 },
   { 0, IDC_DONGLELIST      , 0, NULL, NULL, NULL, COMBOBOX   , NULL,  58, 282, 232,  15, "IDC_DONGLELIST", NULL, 0x10010003, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_GAMEPORTS DIALOGEX 0, 0, 396, 288 */
-Element IDD_GAMEPORTS[] = {
+  { 0, IDD_GAMEPORTS, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 288,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, GROUPBOX   , NULL,   1,  19, 393, 211, "Mouse and Joystick settings", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, RTEXT      , NULL,   4,  34,  37,  15, "Port 1:", NULL, 0x10000000, 0, 0 },
   { 0, IDC_PORT0_JOYS      , 0, NULL, NULL, NULL, COMBOBOX   , NULL,  45,  35, 342,  15, "IDC_PORT0_JOYS", NULL, 0x10010003, 0, 0 },
@@ -395,26 +371,17 @@ Element IDD_GAMEPORTS[] = {
   { 0, IDC_PORT_TABLET_FULL, 0, NULL, NULL, NULL, CONTROL    ,  "Button" , 140, 286, 106,  11, "Full tablet input emulation", NULL, 0x10010000, 3, 0 },
   { 0, IDC_PORT_TABLET_LIBRARY, 0, NULL, NULL, NULL, CONTROL    ,  "Button" , 267, 287, 117,  11, "Tablet.library emulation", NULL, 0x10010000, 3, 0 },
   { 0, IDC_PORT_AUTOSWITCH , 0, NULL, NULL, NULL, CONTROL    ,  "Button" , 136, 118, 172,  11, "Mouse/Joystick autoswitching", " Press button to automatically insert inactive input device in to joystick/mouse port", 0x10010000, 3, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_CONTRIBUTORS DIALOGEX 0, 0, 530, 345 */
-Element IDD_CONTRIBUTORS[] = {
+  { 0, IDD_CONTRIBUTORS, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 530, 345,  "", NULL, 0x10000000, 0, 0 },
   { 0, ID_OK               , 0, NULL, NULL, NULL, DEFPUSHBUTTON, NULL, 238, 311,  53,  14, "Ok", NULL, 0x10000000, 0, 0 },
   { 0, IDC_CONTRIBUTORS    , 0, NULL, NULL, NULL, CONTROL    , "RICHEDIT",   4,  -7, 521, 311, "", NULL, 0x10010000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_ERRORLOG DIALOGEX 0, 0, 530, 345 */
-Element IDD_ERRORLOG[] = {
+  { 0, IDD_ERRORLOG, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 530, 345,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDOK                , 0, NULL, NULL, NULL, DEFPUSHBUTTON, NULL, 176, 309,  65,  15, "OK", NULL, 0x10000000, 0, 0 },
   { 0, IDC_ERRORLOGCLEAR   , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 288, 309,  65,  15, "Clear log", NULL, 0x10000000, 0, 0 },
   { 0, IDC_ERRORLOGMESSAGE , 0, NULL, NULL, NULL, CONTROL    , "RICHEDIT",   4,  -7, 521, 309, "", NULL, 0x10010000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_ABOUT DIALOGEX 0, 0, 345, 258 */
-Element IDD_ABOUT[] = {
+  { 0, IDD_ABOUT, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 345, 258,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_RICHEDIT1       , 0, NULL, NULL, NULL, CONTROL    , "RICHEDIT",  65,  41, 210,  35, "", NULL, 0x18000000, 0, 0 },
   { 0, IDC_RICHEDIT2       , 0, NULL, NULL, NULL, CONTROL    , "RICHEDIT",   1,  89, 343,  28, "", NULL, 0x18000000, 0, 0 },
   { 0, IDC_CONTRIBUTORS    , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 132, 131,  80,  15, "Contributors", NULL, 0x10000000, 0, 0 },
@@ -426,11 +393,8 @@ Element IDD_ABOUT[] = {
   { 0, IDC_CLOANTOHOME     , 0, NULL, NULL, NULL, CONTROL    , "RICHEDIT",   2, 199, 112,  24, "", NULL, 0x18000000, 0, 0 },
   { 0, IDC_AMIGASYS        , 0, NULL, NULL, NULL, CONTROL    , "RICHEDIT",   2, 256, 112,  24, "", NULL, 0x18000000, 0, 0 },
   { 0, IDC_AMIKIT          , 0, NULL, NULL, NULL, CONTROL    , "RICHEDIT", 231, 256, 112,  24, "", NULL, 0x18000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_MISC1 DIALOGEX 0, 0, 396, 318 */
-Element IDD_MISC1[] = {
+  { 0, IDD_MISC1, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 318,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_MISCLIST        , 0, NULL, NULL, NULL, CONTROL    , "SysListView32",   3,   6, 258, 232, "", NULL, 0x10010000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, GROUPBOX   , NULL, 266,   3, 128, 138, "Miscellaneous Options", NULL, 0x10000000, 0, 0 },
   { 0, IDC_SCSIMODE        , 0, NULL, NULL, NULL, COMBOBOX   , NULL, 287,  29,  87,  15, "IDC_SCSIMODE", NULL, 0x10010003, 0, 0 },
@@ -455,11 +419,8 @@ Element IDD_MISC1[] = {
   { 0, IDC_KBLED2          , 0, NULL, NULL, NULL, COMBOBOX   , NULL,  97, 296,  64,  15, "IDC_KBLED2", NULL, 0x10010003, 0, 0 },
   { 0, IDC_KBLED3          , 0, NULL, NULL, NULL, COMBOBOX   , NULL, 184, 296,  64,  15, "IDC_KBLED3", NULL, 0x10010003, 0, 0 },
   { 0, IDC_KBLED_USB       , 0, NULL, NULL, NULL, CONTROL    , "Button"  , 264, 297,  64,  11, "USB mode", NULL, 0x10010000, 3, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_HARDFILE DIALOGEX 0, 0, 397, 279 */
-Element IDD_HARDFILE[] = {
+  { 0, IDD_HARDFILE, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 397, 279,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, GROUPBOX   , NULL,   2,  22, 392, 183, "Settings", NULL, 0x10000000, 0, 0 },
   { 0, IDC_HARDFILE_DIR_TEXT, 0, NULL, NULL, NULL, RTEXT      , NULL,  10,  38,  37,  10, "Path:", NULL, 0x10000000, 0, 0 },
   { 0, IDC_PATH_NAME       , 0, NULL, NULL, NULL, COMBOBOX   , NULL,  52,  35, 325,  15, "IDC_PATH_NAME", NULL, 0x10010002, 0, 0 },
@@ -504,11 +465,8 @@ Element IDD_HARDFILE[] = {
   { 0, IDOK                , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 147, 278,  50,  14, "OK", NULL, 0x10000000, 0, 0 },
   { 0, IDCANCEL            , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 203, 278,  50,  14, "Cancel", NULL, 0x10000000, 0, 0 },
   { 0, IDC_CYLINDERS_TEXT  , 0, NULL, NULL, NULL, RTEXT      , NULL, 300, 133,  43,  10, "Cylinders:", NULL, 0x00000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_FILESYS DIALOGEX 15, 25, 396, 111 */
-Element IDD_FILESYS[] = {
+  { 0, IDD_FILESYS, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   15, 25, 396, 111,  "", NULL, 0x10000000, 0, 0 },
   { 0, -1                  , 0, NULL, NULL, NULL, RTEXT      , NULL,   4, 111,  65,  10, "Device name:", NULL, 0x10000000, 0, 0 },
   { 0, IDC_VOLUME_DEVICE   , 0, NULL, NULL, NULL, EDITTEXT   , NULL,  73, 109, 104,  15, "IDC_VOLUME_DEVICE", NULL, 0x10000000, 0, 0 },
   { 0, -1                  , 0, NULL, NULL, NULL, RTEXT      , NULL,   6, 132,  63,  10, "Volume label:", NULL, 0x10000000, 0, 0 },
@@ -524,21 +482,15 @@ Element IDD_FILESYS[] = {
   { 0, IDOK                , 0, NULL, NULL, NULL, PUSHBUTTON , NULL,  72, 194,  62,  15, "OK", NULL, 0x10000000, 0, 0 },
   { 0, IDCANCEL            , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 138, 194,  62,  15, "Cancel", NULL, 0x10000000, 0, 0 },
   { 0, IDC_FS_SELECT_EJECT , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 258, 194,  62,  15, "Eject", NULL, 0x10000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_SETINFO DIALOGEX 0, 0, 396, 85 */
-Element IDD_SETINFO[] = {
+  { 0, IDD_SETINFO, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 85,  "", NULL, 0x10000000, 0, 0 },
   { 0, -1                  , 0, NULL, NULL, NULL, RTEXT      , NULL,   5, 137,  36,  15, "Path:", NULL, 0x10000000, 0, 0 },
   { 0, IDC_PATH_NAME       , 0, NULL, NULL, NULL, EDITTEXT   , NULL,  46, 137, 324,  15, "IDC_PATH_NAME", NULL, 0x10000000, 0, 0 },
   { 0, IDC_SELECTOR        , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 376, 137,  10,  15, "...", NULL, 0x10000000, 0, 0 },
   { 0, IDOK                , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 146, 174,  48,  15, "OK", NULL, 0x10000000, 0, 0 },
   { 0, IDCANCEL            , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 201, 174,  48,  15, "Cancel", NULL, 0x10000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_CHIPSET DIALOGEX 0, 0, 396, 192 */
-Element IDD_CHIPSET[] = {
+  { 0, IDD_CHIPSET, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 192,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, GROUPBOX   , NULL,   1,  64, 212, 136, "Chipset", NULL, 0x10000000, 0, 0 },
   { 0, IDC_OCS             , 1, NULL, NULL, NULL, CONTROL    ,  "Button" ,  14,  79,  88,  10, "OCS", " Original chipset. A1000 and most A500s.", 0x10030000, 9, 0 },
   { 0, IDC_ECS_AGNUS       , 1, NULL, NULL, NULL, CONTROL    ,  "Button" ,  14,  95,  88,  10, "ECS Agnus", " Enhanced chipset (ECS Agnus chip only). CDTV and later A500 and A2000 hardware revisions.", 0x10010000, 9, 0 },
@@ -564,11 +516,8 @@ Element IDD_CHIPSET[] = {
   { 0, IDC_GENLOCKMODE     , 0, NULL, NULL, NULL, COMBOBOX   , NULL, 237, 141, 103,  15, "IDC_GENLOCKMODE", NULL, 0x10010003, 0, 0 },
   { 0, IDC_GENLOCKMIX      , 0, NULL, NULL, NULL, COMBOBOX   , NULL, 346, 141,  38,  15, "IDC_GENLOCKMIX", NULL, 0x10010003, 0, 0 },
   { 0, IDC_CYCLEEXACT      , 0, NULL, NULL, NULL, CONTROL    ,  "Button" ,  13, 146, 194,  10, "Cycle-exact (Full)", " The most compatible A500/A1200 emulation mode.", 0x10030000, 3, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_CHIPSET2 DIALOGEX 0, 0, 396, 305 */
-Element IDD_CHIPSET2[] = {
+  { 0, IDD_CHIPSET2, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 305,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_CS_COMPATIBLE   , 0, NULL, NULL, NULL, CONTROL    , "Button"  ,  14,  13, 234,  10, "Compatible Settings", NULL, 0x10010000, 3, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, GROUPBOX   , NULL,   1,  29, 394,  31, "Battery Backed Up Real Time Clock", NULL, 0x10000000, 0, 0 },
   { 0, IDC_CS_RTC1         , 1, NULL, NULL, NULL, CONTROL    , "Button"  ,  15,  43,  57,  10, "None", NULL, 0x10030000, 9, 0 },
@@ -617,11 +566,8 @@ Element IDD_CHIPSET2[] = {
   { 0, IDC_CS_AGNUSREV     , 0, NULL, NULL, NULL, EDITTEXT   , NULL, 311, 281,  45,  13, "IDC_CS_AGNUSREV", NULL, 0x10000000, 0, 0 },
   { 0, IDC_CS_DENISEREV    , 0, NULL, NULL, NULL, EDITTEXT   , NULL, 311, 296,  45,  13, "IDC_CS_DENISEREV", NULL, 0x10000000, 0, 0 },
   { 0, IDC_CS_BYTECUSTOMWRITEBUG, 0, NULL, NULL, NULL, CONTROL    ,  "Button" , 127, 204, 130,  11, "Custom register byte write bug", NULL, 0x10010000, 3, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_AVIOUTPUT DIALOGEX 0, 0, 396, 260 */
-Element IDD_AVIOUTPUT[] = {
+  { 0, IDD_AVIOUTPUT, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 260,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, GROUPBOX   , NULL,   1,  30, 393, 123, "Output Properties", NULL, 0x10000000, 0, 0 },
   { 0, IDC_AVIOUTPUT_FILETEXT, 0, NULL, NULL, NULL, EDITTEXT   , NULL,  15,  45, 342,  13, "IDC_AVIOUTPUT_FILETEXT", NULL, 0x10000800, 0, 0 },
   { 0, IDC_AVIOUTPUT_FILE  , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 362,  45,  23,  12, "...", NULL, 0x10000000, 0, 0 },
@@ -648,11 +594,8 @@ Element IDD_AVIOUTPUT[] = {
   { 0, IDC_STATEREC_RATE   , 0, NULL, NULL, NULL, COMBOBOX   , NULL, 141, 263,  38,  15, "IDC_STATEREC_RATE", NULL, 0x10010002, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, RTEXT      , NULL, 195, 265,  91,  10, "Recording buffers:", NULL, 0x10010000, 0, 0 },
   { 0, IDC_STATEREC_BUFFERSIZE, 0, NULL, NULL, NULL, COMBOBOX   , NULL, 291, 263,  38,  15, "IDC_STATEREC_BUFFERSIZE", NULL, 0x10010002, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_INPUT DIALOGEX 0, 0, 396, 318 */
-Element IDD_INPUT[] = {
+  { 0, IDD_INPUT, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 318,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_INPUTTYPE       , 0, NULL, NULL, NULL, COMBOBOX   , NULL,   5,   5, 106,  15, "IDC_INPUTTYPE", NULL, 0x10010003, 0, 0 },
   { 0, IDC_INPUTDEVICE     , 0, NULL, NULL, NULL, COMBOBOX   , NULL, 116,   5, 192,  15, "IDC_INPUTDEVICE", NULL, 0x10010003, 0, 0 },
   { 0, -1                  , 0, NULL, NULL, NULL, RTEXT      , NULL, 313,   7,  66,  11, "Device enabled", NULL, 0x10000000, 0, 0 },
@@ -673,11 +616,8 @@ Element IDD_INPUT[] = {
   { 0, IDC_INPUTCOPY       , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 324, 269,  70,  14, "Copy from:", NULL, 0x10000000, 0, 0 },
   { 0, IDC_INPUTCOPYFROM   , 0, NULL, NULL, NULL, COMBOBOX   , NULL, 324, 287,  70,  15, "IDC_INPUTCOPYFROM", NULL, 0x10010003, 0, 0 },
   { 0, IDC_INPUTSWAP       , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 324, 304,  70,  14, "Swap 1<>2", NULL, 0x10000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_FILTER DIALOGEX 0, 0, 396, 295 */
-Element IDD_FILTER[] = {
+  { 0, IDD_FILTER, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 295,  "", NULL, 0x10000000, 0, 0 },
   { 0, -1                  , 0, NULL, NULL, NULL, GROUPBOX   , NULL,   1,  13, 393, 160, "Filter Settings", NULL, 0x10000000, 0, 0 },
   { 0, IDC_FILTERMODE      , 0, NULL, NULL, NULL, COMBOBOX   , NULL,   9,  43, 153,  15, "IDC_FILTERMODE", NULL, 0x10010003, 0, 0 },
   { 0, IDC_FILTERSTACK     , 0, NULL, NULL, NULL, COMBOBOX   , NULL, 167,  43,  27,  15, "IDC_FILTERSTACK", NULL, 0x10010003, 0, 0 },
@@ -717,11 +657,8 @@ Element IDD_FILTER[] = {
   { 0, IDC_FILTERPRESETLOAD, 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 205, 284,  55,  14, "Load", NULL, 0x10000000, 0, 0 },
   { 0, IDC_FILTERPRESETSAVE, 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 265, 284,  55,  14, "Save", NULL, 0x10000000, 0, 0 },
   { 0, IDC_FILTERPRESETDELETE, 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 325, 284,  55,  14, "Delete", NULL, 0x10000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_HARDDRIVE DIALOGEX 0, 0, 396, 109 */
-Element IDD_HARDDRIVE[] = {
+  { 0, IDD_HARDDRIVE, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 109,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, LTEXT      , NULL,   7, 116,  80,  10, "Hard drive:", NULL, 0x10000000, 0, 0 },
   { 0, IDC_HARDDRIVE       , 0, NULL, NULL, NULL, COMBOBOX   , NULL,  49, 114, 339,  15, "IDC_HARDDRIVE", NULL, 0x10010003, 0, 0 },
   { 0, IDC_HDFINFO         , 0, NULL, NULL, NULL, EDITTEXT   , NULL,   5, 134, 385,  13, "IDC_HDFINFO", NULL, 0x10000800, 0, 0 },
@@ -733,11 +670,8 @@ Element IDD_HARDDRIVE[] = {
   { 0, IDC_HDF_CONTROLLER_UNIT, 0, NULL, NULL, NULL, COMBOBOX   , NULL, 179, 194,  25,  15, "IDC_HDF_CONTROLLER_UNIT", NULL, 0x10010003, 0, 0 },
   { 0, IDOK                , 0, NULL, NULL, NULL, DEFPUSHBUTTON, NULL, 236, 192,  73,  14, "Add hard drive", NULL, 0x10000000, 0, 0 },
   { 0, IDCANCEL            , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 316, 192,  73,  14, "Cancel", NULL, 0x10000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_MISC2 DIALOGEX 0, 0, 396, 278 */
-Element IDD_MISC2[] = {
+  { 0, IDD_MISC2, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 278,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, GROUPBOX   , NULL,   1,  28, 125, 105, "When Active", NULL, 0x10000000, 0, 0 },
   { 0, IDC_ACTIVE_PRIORITY , 0, NULL, NULL, NULL, COMBOBOX   , NULL,  10,  54, 108,  15, "IDC_ACTIVE_PRIORITY", NULL, 0x10010003, 0, 0 },
   { 0, IDC_ACTIVE_PAUSE    , 0, NULL, NULL, NULL, CONTROL    , "Button"  ,  10,  88, 109,  10, "Pause emulation", NULL, 0x10010000, 3, 0 },
@@ -756,21 +690,15 @@ Element IDD_MISC2[] = {
   { 0, IDC_ASSOCIATELIST   , 0, NULL, NULL, NULL, CONTROL    , "SysListView32",   9, 158, 238, 108, "", NULL, 0x10010000, 0, 0 },
   { 0, IDC_ASSOCIATE_ON    , 0, NULL, NULL, NULL, PUSHBUTTON , NULL,  36, 274,  85,  14, "Associate all", NULL, 0x10000000, 0, 0 },
   { 0, IDC_ASSOCIATE_OFF   , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 125, 274,  85,  14, "Deassociate all", NULL, 0x10000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_DISK DIALOGEX 0, 0, 396, 318 */
-Element IDD_DISK[] = {
+  { 0, IDD_DISK, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 318,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_DISKLISTINSERT  , 0, NULL, NULL, NULL, PUSHBUTTON , NULL,   8, 300, 121,  15, "Insert floppy disk image", NULL, 0x10000000, 0, 0 },
   { 0, IDC_DISKLISTREMOVE  , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 137, 300, 121,  15, "Remove floppy disk image", NULL, 0x10000000, 0, 0 },
   { 0, IDC_DISKLISTREMOVEALL, 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 266, 300, 121,  15, "Remove all", NULL, 0x10000000, 0, 0 },
   { 0, IDC_DISKTEXT        , 0, NULL, NULL, NULL, COMBOBOX   , NULL,   1, 282, 393,  15, "IDC_DISKTEXT", NULL, 0x10010002, 0, 0 },
   { 0, IDC_DISKLIST        , 0, NULL, NULL, NULL, CONTROL    , "SysListView32",   1,   5, 393, 275, "", NULL, 0x10010000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_PANEL DIALOGEX 0, 0, 530, 345 */
-Element IDD_PANEL[] = {
+  { 0, IDD_PANEL, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 530, 345,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_PANELTREE       , 0, NULL, NULL, NULL, CONTROL    , "SysTreeView32",   3,  -7, 110, 321, "", NULL, 0x10010000, 0, 0 },
   { 0, IDC_PANEL_FRAME_OUTER, 0, NULL, NULL, NULL, GROUPBOX   , NULL, 116, -10, 409, 324, "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_PANEL_FRAME     , 0, NULL, NULL, NULL, GROUPBOX   , NULL, 119,  -7, 402, 318, "", NULL, 0x00000000, 0, 0 },
@@ -781,11 +709,8 @@ Element IDD_PANEL[] = {
   { 0, IDOK                , 0, NULL, NULL, NULL, DEFPUSHBUTTON, NULL, 375, 315,  47,  14, "OK", NULL, 0x10000000, 0, 0 },
   { 0, IDCANCEL            , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 427, 315,  47,  14, "Cancel", NULL, 0x10000000, 0, 0 },
   { 0, IDHELP              , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 479, 315,  47,  14, "Help", NULL, 0x18000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_PATHS DIALOGEX 0, 0, 396, 303 */
-Element IDD_PATHS[] = {
+  { 0, IDD_PATHS, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 303,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_PATHS_ROML      , 0, NULL, NULL, NULL, LTEXT      , NULL,   3,  10, 167,   8, "System ROMs:", NULL, 0x10000000, 0, 0 },
   { 0, IDC_PATHS_ROM       , 0, NULL, NULL, NULL, EDITTEXT   , NULL,   3,  21, 377,  15, "IDC_PATHS_ROM", NULL, 0x10000000, 0, 0 },
   { 0, IDC_PATHS_ROMS      , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 384,  21,  11,  15, "...", NULL, 0x10000000, 0, 0 },
@@ -824,11 +749,8 @@ Element IDD_PATHS[] = {
   { 0, IDC_LOGSAVE         , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 337, 272,  51,  14, "Save All", " Create zip file that includes both logs and config file.", 0x10000000, 0, 0 },
   { 0, IDC_LOGOPEN         , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 337, 288,  51,  14, "Open", " Open selected file.", 0x10000000, 0, 0 },
   { 0, IDC_LOGPATH         , 0, NULL, NULL, NULL, EDITTEXT   , NULL,   7, 289, 324,  13, "IDC_LOGPATH", NULL, 0x10000800, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_QUICKSTART DIALOGEX 0, 0, 396, 262 */
-Element IDD_QUICKSTART[] = {
+  { 0, IDD_QUICKSTART, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 262,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_QUICKSTART_CONFIG, 0, NULL, NULL, NULL, GROUPBOX   , NULL,   1,  29, 393,  54, "Emulated Hardware", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, RTEXT      , NULL,   5,  43,  68,  10, "Model:", NULL, 0x10000000, 0, 0 },
   { 0, IDC_QUICKSTART_MODEL, 0, NULL, NULL, NULL, COMBOBOX   , NULL,  77,  41, 263,  15, "IDC_QUICKSTART_MODEL", NULL, 0x10010003, 0, 0 },
@@ -861,34 +783,22 @@ Element IDD_QUICKSTART[] = {
   { 0, IDC_QUICKSTART_SETCONFIG, 0, NULL, NULL, NULL, PUSHBUTTON , NULL,   9, 268,  88,  15, "Set configuration", NULL, 0x00000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, GROUPBOX   , NULL, 250, 260, 144,  28, "Mode", NULL, 0x10000000, 0, 0 },
   { 0, IDC_QUICKSTARTMODE  , 0, NULL, NULL, NULL, CONTROL    , "Button"  , 259, 271, 131,  12, "Start in Quickstart mode", NULL, 0x10010000, 3, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_FRONTEND DIALOGEX 0, 0, 420, 242 */
-Element IDD_FRONTEND[] = {
+  { 0, IDD_FRONTEND, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 420, 242,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_FE_LIST         , 0, NULL, NULL, NULL, CONTROL    , "SysListView32",   6,  48, 235, 124, "", NULL, 0x10010000, 0, 0 },
   { 0, IDC_FE_INFO         , 0, NULL, NULL, NULL, GROUPBOX   , NULL, 249, 179, 160,  95, "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_FE_SCREENSHOT   , 0, NULL, NULL, NULL, GROUPBOX   , NULL, 249,  46, 160, 128, "", NULL, 0x10000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_PROGRESSBAR DIALOGEX 0, 0, 396, 58 */
-Element IDD_PROGRESSBAR[] = {
+  { 0, IDD_PROGRESSBAR, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 58,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDCANCEL            , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 169, 171,  58,  14, "Cancel", NULL, 0x10000000, 0, 0 },
   { 0, IDC_PROGRESSBAR     , 0, NULL, NULL, NULL, CONTROL    , "msctls_progress32",   7, 150, 381,  14, "", NULL, 0x10000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_STRINGBOX DIALOGEX 0, 0, 396, 209 */
-Element IDD_STRINGBOX[] = {
+  { 0, IDD_STRINGBOX, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 209,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STRINGBOXEDIT   , 0, NULL, NULL, NULL, EDITTEXT   , NULL,   6,  63, 383, 176, "IDC_STRINGBOXEDIT", NULL, 0x10000000, 0, 0 },
   { 0, IDOK                , 0, NULL, NULL, NULL, DEFPUSHBUTTON, NULL, 120, 245,  50,  14, "OK", NULL, 0x10000000, 0, 0 },
   { 0, IDCANCEL            , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 224, 245,  50,  14, "Cancel", NULL, 0x10000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_DEBUGGER DIALOGEX 0, 0, 454, 368 */
-Element IDD_DEBUGGER[] = {
+  { 0, IDD_DEBUGGER, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 454, 368,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_DBG_OUTPUT2     , 0, NULL, NULL, NULL, EDITTEXT   , NULL,   1,  55, 370, 262, "IDC_DBG_OUTPUT2", NULL, 0x10000800, 0, 0 },
   { 0, IDC_DBG_MEMTOPC     , 0, NULL, NULL, NULL, PUSHBUTTON , NULL,  38,  55,  45,  12, "Set to PC", NULL, 0x10000000, 0, 0 },
   { 0, IDC_DBG_AUTOSET     , 0, NULL, NULL, NULL, CONTROL    , "Button"  ,  84,  55,  50,  12, "Auto set", NULL, 0x10000000, 3, 0 },
@@ -897,19 +807,13 @@ Element IDD_DEBUGGER[] = {
   { 0, IDC_DBG_HELP        , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 356, 318,  15,  12, "?", NULL, 0x10000000, 0, 0 },
   { 0, IDC_DBG_STATUS      , 0, NULL, NULL, NULL, CONTROL    , "msctls_statusbar32",   0, 331, 453,  12, "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_DBG_MEMINPUT    , 0, NULL, NULL, NULL, EDITTEXT   , NULL,   1,  55,  36,  13, "IDC_DBG_MEMINPUT", NULL, 0x10000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_DBGMEMINPUT DIALOGEX 0, 0, 150, 58 */
-Element IDD_DBGMEMINPUT[] = {
+  { 0, IDD_DBGMEMINPUT, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 150, 58,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDOK                , 0, NULL, NULL, NULL, DEFPUSHBUTTON, NULL,  15, 170,  50,  14, "OK", NULL, 0x10000000, 0, 0 },
   { 0, IDCANCEL            , 0, NULL, NULL, NULL, PUSHBUTTON , NULL,  75, 170,  50,  14, "Cancel", NULL, 0x10000000, 0, 0 },
   { 0, IDC_DBG_MEMINPUT2   , 0, NULL, NULL, NULL, EDITTEXT   , NULL,  20, 143, 100,  14, "IDC_DBG_MEMINPUT2", NULL, 0x10000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_EXPANSION DIALOGEX 0, 0, 396, 194 */
-Element IDD_EXPANSION[] = {
+  { 0, IDD_EXPANSION, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 194,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, GROUPBOX   , NULL,   1,  63, 393, 189, "RTG Graphics Card", NULL, 0x10000000, 0, 0 },
   { 0, IDC_RTG_Z2Z3        , 0, NULL, NULL, NULL, COMBOBOX   , NULL,  26,  77, 215,  15, "IDC_RTG_Z2Z3", NULL, 0x10010003, 0, 0 },
   { 0, IDC_GFXCARDTEXT     , 0, NULL, NULL, NULL, RTEXT      , NULL,   2,  98,  76,  10, "VRAM size:", " Graphics card memory. Required for RTG (Picasso96) emulation.", 0x10000000, 0, 0 },
@@ -929,11 +833,8 @@ Element IDD_EXPANSION[] = {
   { 0, IDC_RTG_VBLANKRATE  , 0, NULL, NULL, NULL, COMBOBOX   , NULL,  29, 225,  84,  15, "IDC_RTG_VBLANKRATE", NULL, 0x10010002, 0, 0 },
   { 0, IDC_RTG_BUFFERCNT   , 0, NULL, NULL, NULL, COMBOBOX   , NULL, 153, 225,  84,  15, "IDC_RTG_BUFFERCNT", NULL, 0x10010003, 0, 0 },
   { 0, IDC_RTG_SCALE_ASPECTRATIO, 0, NULL, NULL, NULL, COMBOBOX   , NULL, 282, 225,  84,  15, "IDC_RTG_SCALE_ASPECTRATIO", NULL, 0x10010003, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_INPUTMAP DIALOGEX 0, 0, 421, 341 */
-Element IDD_INPUTMAP[] = {
+  { 0, IDD_INPUTMAP, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 421, 341,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDOK                , 0, NULL, NULL, NULL, DEFPUSHBUTTON, NULL, 147,  40,  58,  14, "OK", NULL, 0x00000000, 0, 0 },
   { 0, IDC_INPUTMAPLIST    , 0, NULL, NULL, NULL, CONTROL    , "SysListView32",   1,  -9, 418, 257, "", NULL, 0x10010000, 0, 0 },
   { 0, IDC_INPUTMAPOUT     , 0, NULL, NULL, NULL, EDITTEXT   , NULL,   1, 250, 418,  14, "IDC_INPUTMAPOUT", NULL, 0x18000800, 0, 0 },
@@ -945,38 +846,26 @@ Element IDD_INPUTMAP[] = {
   { 0, IDC_INPUTMAP_DELETE , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 170, 313,  80,  14, "Delete", NULL, 0x10000000, 0, 0 },
   { 0, IDC_INPUTMAP_DELETEALL, 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 254, 313,  80,  14, "Delete all", NULL, 0x10000000, 0, 0 },
   { 0, IDC_INPUTMAP_EXIT   , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 338, 313,  80,  14, "Exit", NULL, 0x10000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_INFOBOX DIALOGEX 0, 0, 420, 68 */
-Element IDD_INFOBOX[] = {
+  { 0, IDD_INFOBOX, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 420, 68,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDOK                , 0, NULL, NULL, NULL, DEFPUSHBUTTON, NULL, 147, 177,  58,  14, "OK", NULL, 0x00000000, 0, 0 },
   { 0, IDCANCEL            , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 214, 177,  58,  14, "Cancel", NULL, 0x10000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_LIST DIALOGEX 0, 0, 316, 206 */
-Element IDD_LIST[] = {
+  { 0, IDD_LIST, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 316, 206,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDOK                , 0, NULL, NULL, NULL, DEFPUSHBUTTON, NULL, 205, 242,  50,  14, "OK", NULL, 0x10000000, 0, 0 },
   { 0, IDCANCEL            , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 259, 242,  50,  14, "Cancel", NULL, 0x10000000, 0, 0 },
   { 0, IDC_LISTDIALOG_CLEAR, 0, NULL, NULL, NULL, DEFPUSHBUTTON, NULL,   6, 242,  50,  14, "Clear", NULL, 0x10000000, 0, 0 },
   { 0, IDC_LISTDIALOG_LIST , 0, NULL, NULL, NULL, CONTROL    , "SysListView32",   7,  64, 302, 171, "", NULL, 0x10010000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_CDDRIVE DIALOGEX 0, 0, 395, 109 */
-Element IDD_CDDRIVE[] = {
+  { 0, IDD_CDDRIVE, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 395, 109,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, RTEXT      , NULL,   7, 195,  65,  10, "HD Controller:", NULL, 0x10000000, 0, 0 },
   { 0, IDC_HDF_CONTROLLER  , 0, NULL, NULL, NULL, COMBOBOX   , NULL,  80, 194, 122,  15, "IDC_HDF_CONTROLLER", NULL, 0x10010003, 0, 0 },
   { 0, IDC_HDF_CONTROLLER_UNIT, 0, NULL, NULL, NULL, COMBOBOX   , NULL, 208, 194,  25,  15, "IDC_HDF_CONTROLLER_UNIT", NULL, 0x10010003, 0, 0 },
   { 0, IDOK                , 0, NULL, NULL, NULL, DEFPUSHBUTTON, NULL, 238, 194,  73,  14, "Add CD Drive", NULL, 0x10000000, 0, 0 },
   { 0, IDCANCEL            , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 318, 194,  73,  14, "Cancel", NULL, 0x10000000, 0, 0 },
   { 0, IDC_CDLIST          , 0, NULL, NULL, NULL, CONTROL    , "SysListView32",   4, 109, 387,  77, "", NULL, 0x10010000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_TAPEDRIVE DIALOGEX 0, 0, 395, 97 */
-Element IDD_TAPEDRIVE[] = {
+  { 0, IDD_TAPEDRIVE, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 395, 97,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, RTEXT      , NULL,   4, 129,  43,  10, "Path:", NULL, 0x10000000, 0, 0 },
   { 0, IDC_PATH_NAME       , 0, NULL, NULL, NULL, COMBOBOX   , NULL,  52, 126, 332,  15, "IDC_PATH_NAME", NULL, 0x10010002, 0, 0 },
   { 0, IDC_TAPE_SELECT_DIR , 0, NULL, NULL, NULL, PUSHBUTTON , NULL,  13, 147, 123,  15, "Select Directory", NULL, 0x10000000, 0, 0 },
@@ -988,19 +877,13 @@ Element IDD_TAPEDRIVE[] = {
   { 0, IDC_TAPE_RW         , 0, NULL, NULL, NULL, CONTROL    , "Button"  , 277, 169,  67,  10, "Read/write", NULL, 0x10010000, 3, 0 },
   { 0, IDOK                , 0, NULL, NULL, NULL, DEFPUSHBUTTON, NULL, 106, 186,  88,  14, "Add Tape Drive", NULL, 0x10000000, 0, 0 },
   { 0, IDCANCEL            , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 200, 187,  88,  14, "Cancel", NULL, 0x10000000, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_DISKINFO DIALOGEX 0, 0, 491, 323 */
-Element IDD_DISKINFO[] = {
+  { 0, IDD_DISKINFO, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 491, 323,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDOK                , 0, NULL, NULL, NULL, DEFPUSHBUTTON, NULL, 220, 301,  50,  14, "OK", NULL, 0x10000000, 0, 0 },
   { 0, IDC_SAVEBOOTBLOCK   , 0, NULL, NULL, NULL, PUSHBUTTON , NULL, 397, 301,  89,  14, "Save bootblock", NULL, 0x00000000, 0, 0 },
   { 0, IDC_DISKINFOBOX     , 0, NULL, NULL, NULL, EDITTEXT   , NULL,   5,   2, 481, 292, "IDC_DISKINFOBOX", NULL, 0x10000800, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
-};
-
 /* IDD_EXPANSION2 DIALOGEX 0, 0, 396, 315 */
-Element IDD_EXPANSION2[] = {
+  { 0, IDD_EXPANSION2, 0, NULL, NULL, NULL, DIALOGEX   , NULL,   0, 0, 396, 315,  "", NULL, 0x10000000, 0, 0 },
   { 0, IDC_STATIC          , 0, NULL, NULL, NULL, RTEXT      , NULL, 155, 146, 104,  15, "Accelerator board memory:", NULL, 0x10000000, 0, 0 },
   { 0, IDC_CPUBOARDMEM     , 0, NULL, NULL, NULL, CONTROL    , "msctls_trackbar32", 269, 143,  68,  20, "", NULL, 0x10010000, 0, 0 },
   { 0, IDC_CPUBOARDRAM     , 0, NULL, NULL, NULL, EDITTEXT   , NULL, 343, 148,  40,  13, "IDC_CPUBOARDRAM", NULL, 0x10000800, 0, 0 },
@@ -1042,51 +925,308 @@ Element IDD_EXPANSION2[] = {
   { 0, IDC_ACCELERATORBOARDITEMSELECTOR, 0, NULL, NULL, NULL, COMBOBOX   , NULL,  12, 170, 157,  15, "IDC_ACCELERATORBOARDITEMSELECTOR", NULL, 0x10010003, 0, 0 },
   { 0, IDC_ACCELERATORBOARDCHECKBOX, 0, NULL, NULL, NULL, CONTROL    , "Button"  , 202, 171,  99,  12, "", NULL, 0x10010000, 3, 0 },
   { 0, IDC_ACCELERATORBOARDSELECTOR, 0, NULL, NULL, NULL, COMBOBOX   , NULL, 202, 171, 171,  15, "IDC_ACCELERATORBOARDSELECTOR", NULL, 0x10010003, 0, 0 },
-  { 0, 0, NULL, NULL, 0,            0,   0,   0,   0,  NULL, 0 }
+  { 0, 0, 0, NULL, 0,            0,   0,   0,   0,  0, 0 }
 };
-
-/* list of all pages */
-Element *IDD_ELEMENT[] = {
-  IDD_KICKSTART,
-  IDD_DISPLAY,
-  IDD_MEMORY,
-  IDD_CPU,
-  IDD_FLOPPY,
-  IDD_HARDDISK,
-  IDD_SOUND,
-  IDD_LOADSAVE,
-  IDD_IOPORTS,
-  IDD_GAMEPORTS,
-  IDD_CONTRIBUTORS,
-  IDD_ERRORLOG,
-  IDD_ABOUT,
-  IDD_MISC1,
-  IDD_HARDFILE,
-  IDD_FILESYS,
-  IDD_SETINFO,
-  IDD_CHIPSET,
-  IDD_CHIPSET2,
-  IDD_AVIOUTPUT,
-  IDD_INPUT,
-  IDD_FILTER,
-  IDD_HARDDRIVE,
-  IDD_MISC2,
-  IDD_DISK,
-  IDD_PANEL,
-  IDD_PATHS,
-  IDD_QUICKSTART,
-  IDD_FRONTEND,
-  IDD_PROGRESSBAR,
-  IDD_STRINGBOX,
-  IDD_DEBUGGER,
-  IDD_DBGMEMINPUT,
-  IDD_EXPANSION,
-  IDD_INPUTMAP,
-  IDD_INFOBOX,
-  IDD_LIST,
-  IDD_CDDRIVE,
-  IDD_TAPEDRIVE,
-  IDD_DISKINFO,
-  IDD_EXPANSION2,
-  NULL,
+/* STRINGTABLE contains all winuae.rc strings. For index values see mui_data.h */
+char *STRINGTABLE[] = {
+  "ROM",
+  "Disk swapper",
+  "Display",
+  "CD & Hard drives",
+  "Floppy drives",
+  "About",
+  "Configurations",
+  "Output",
+  "IO ports",
+  "Miscellaneous",
+  "RAM",
+  "CPU and FPU",
+  "Chipset",
+  "Input",
+  "Filter",
+  "Pri. & Extensions",
+  "Paths",
+  "Quickstart",
+  "Frontend",
+  "Adv. Chipset",
+  "Game ports",
+  "RTG board",
+  "Expansions",
+  "Floppy disk image files",
+  "ADF",
+  "Sound",
+  "CD-ROM",
+  "Every %1Frame",
+  "second ",
+  "third ",
+  "fourth ",
+  "fifth ",
+  "sixth ",
+  "seventh ",
+  "eighth ",
+  "ninth ",
+  "tenth ",
+  "Select a floppy disk image file...",
+  "Floppy disk image files",
+  "Choose a blank floppy disk image file...",
+  "Select a hard disk image file...",
+  "Hard disk image files",
+  "Select a WinUAE configuration file...",
+  "WinUAE configuration files",
+  "Select a system ROM file...",
+  "System ROM files",
+  "Select a system ROM key file...",
+  "System ROM key files",
+  "Select information for your configuration...",
+  "none",
+  "Volume",
+  "Please select the root directory of the file system...",
+  "Default MIDI-Out Device",
+  "Bernd Schmidt - The Grand-Master\nSam Jordan - Custom-chip, floppy-DMA, etc.\nMathias Ortmann - Original WinUAE Main Guy, BSD Socket support\nBrian King - Picasso96 Support, Integrated GUI for WinUAE, previous WinUAE Main Guy\nToni Wilen - Core updates, WinUAE Main Guy\nGustavo Goedert/Peter Remmers/Michael Sontheimer/Tomi Hakala/Tim Gunn/Nemo Pohle - DOS Port Stuff\nSamuel Devulder/Olaf Barthel/Sam Jordan - Amiga Ports\nKrister Bergman - XFree86 and OS/2 Port\nA. Blanchard/Ernesto Corvi - MacOS Port\nChristian Bauer - BeOS Port\nIan Stephenson - NextStep Port\nPeter Teichmann - Acorn/RiscOS Port\nStefan Reinauer - ZorroII/III AutoConfig, Serial Support\nChristian Schmitt/Chris Hames - Serial Support\nHerman ten Brugge - 68020/68881 Emulation Code\nTauno Taipaleenmaki - Various UAE-Control/UAE-Library Support\nBrett Eden/Tim Gunn/Paolo Besser/Nemo Pohle - Various Docs and Web-Sites\nGeorg Veichtlbauer - Help File coordinator, German GUI\nFulvio Leonardi - Italian translator for WinUAE\n",
+  "Arnljot Arntsen, Bill Panagouleas, Cloanto - Hardware support\nSpecial thanks to Alexander Kneer and Tobias Abt (The Picasso96 Team)\nSteven Weiser - Postscript printing emulation idea and testing.\nPéter Tóth /Balázs Rátkai/Iván Herczeg/András Arató - Hungarian translation.\nKarsten Bock, Gavin Fance, Dirk Trowe and Christian Schindler - Freezer cartridge hardware support.\nMikko Nieminen - Demo compatibility testing.\nArabuusimiehet - [This information is on a need-to-know basis]",
+  "The printer you have in this configuration is not valid on this machine.\n",
+  "Restore a WinUAE snapshot file",
+  "WinUAE snapshot files",
+  "Select a flash or battery-backed RAM file...",
+  "WinUAE flash or battery-backed RAM file",
+  "Input source",
+  "Input target",
+  "Autofire",
+  "Save a WinUAE snapshot file",
+  "Sysexbuffer overflow. Should not happen.",
+  "Path",
+  "R/W",
+  "Sectors",
+  "Surfaces",
+  "Reserved",
+  "Block size",
+  "Name",
+  "Description",
+  "Could not load the selected configuration!\n",
+  "Online help is disabled because the HTML Help functionality is not installed on this system. HTML Help is available from http://www.microsoft.com/downloads/.\n",
+  "You must select a configuration or enter a name before selecting Load...\n",
+  "The serial port you have in this configuration is not valid on this machine.\n",
+  "Size",
+  "Device",
+  "BootPri",
+  " (compatible)",
+  "Turbo",
+  "yes",
+  "no",
+  "Above Normal",
+  "Normal",
+  "Below Normal",
+  "Low",
+  "The installed LIBS:Picasso96/rtg.library (%d.%d) should be updated.\nA newer version is included in the ""Amiga Programs"" directory\n of the WinUAE distribution archive.\n\nNewer library version fixes graphics problems and increases performance.",
+  "Amiga Forever",
+  "WinUAE default (EXE directory)",
+  "Cloned Stereo (4 Channels)",
+  "<Custom event>",
+  "WinUAE default (User directory)",
+  "Cloned Stereo (5.1)",
+  "5.1 Channels",
+  "Automatic",
+  "All",
+  "Toggle",
+  "Cable disconnected",
+  "CD",
+  "Autodetect",
+  "Image mode",
+  "Input captured. F12 = Exit.",
+  "No overlays available",
+  "No CD inserted",
+  "on",
+  "Error: unsupported pixel format. Please use a different screen mode.\n",
+  "You must select a configuration or enter a name before selecting Save...\n",
+  "You must select a configuration or enter a name before selecting Delete...\n",
+  "Are you sure you want to Delete this configuration?\n",
+  "Confirm Delete",
+  "You must select a path!",
+  "Settings error",
+  "You must select a name for the volume!",
+  "You must select a file!",
+  "Failed to create hard disk image file...",
+  "Creation error",
+  "WinUAE message",
+  "WinUAE Input Recording",
+  "Playback a WinUAE input recording",
+  "Record a WinUAE input recording",
+  "Windowed",
+  "Fullscreen",
+  "Full-window",
+  "Legacy VSync",
+  "Legacy VS, 50/60Hz",
+  "Mono",
+  "Mixed",
+  "Stereo",
+  "Disabled",
+  "Always off",
+  "Emulated (A500)",
+  "Emulated (A1200)",
+  "Game Ports Panel",
+  "Configuration #%d",
+  "GamePorts",
+  "Config #%d",
+  "Point (%d-bit)",
+  "Bilinear (%d-bit)",
+  "Default refresh rate",
+  "No sound",
+  "A500 (WinUAE built-in)",
+  "no codec selected",
+  "Disk image",
+  "Drive",
+  "The selected screen mode can't be displayed in a window, because %s\nSwitching to full-screen display.",
+  "the desktop is running in an unknown color mode.",
+  "the desktop is running in 8-bit color depth, which WinUAE can't use in windowed mode.",
+  "the desktop is too small for the specified window size.",
+  "you selected an RTG (Picasso96) display with unsupported color depth.",
+  "3.5"" DD",
+  "3.5"" HD",
+  "5.25"" SD",
+  "Disabled",
+  "No floppy disk inserted",
+  "Hardware",
+  "Host",
+  "Miscellaneous",
+  "Settings",
+  "[ALT+TAB or middle mouse button untraps mouse - F12 opens settings]",
+  "[ALT+TAB untraps mouse - F12 opens settings]",
+  "Start",
+  "About",
+  "No hard disks detected that were either empty or RDB-partitioned.",
+  "Default Configuration",
+  "4 Channels",
+  "Custom",
+  "Select file system handler (FFS, PFS, SFS, etc.)",
+  "Keyboard Layout A (Numeric keypad, 0 and 5 = Fire)\nKeyboard Layout B (Cursor keys, Right CTRL and ALT = Fire)\nKeyboard Layout C (W=Up S=Down A=Left D=Right, Left ALT = Fire)\nX-Arcade (Left)\nX-Arcade (Right)",
+  "Uncompressed",
+  "RAM dump",
+  "Wave audio dump",
+  "Paula only",
+  "AHI only",
+  "Both",
+  "Always on (A500)",
+  "Always on (A1200)",
+  "PC floppy drive %c",
+  "3.5"" ESCOM",
+  "The software uses a non-standard floppy disk format. You may need to use a custom floppy disk image file instead of a standard one. This message will not appear again.",
+  "Could not find system ROM key file.",
+  "System ROM checksum incorrect. The system ROM image file may be corrupt.",
+  "Error while reading system ROM.",
+  "No extended ROM found.",
+  "No music modules or packed data found.",
+  "Scan finished.",
+  "Module/packed data found\n%s\nStart address %08.8X, Size %d bytes\n'%s'\nWould you like to save it?",
+  "The selected system ROM requires a 68020 with 32-bit addressing or 68030 or higher CPU.",
+  "One of the following system ROMs is required:\n\n%s\n\nCheck the System ROM path in the Paths panel and click Rescan ROMs.",
+  "WARNING: Current configuration is not fully compatible with state saves.\nThis message will not appear again.",
+  "Selected disk image needs the SPS plugin\nwhich is available from\nhttp//www.softpres.org/",
+  "You need an updated SPS plugin\nwhich is available from\nhttp//www.softpres.org/",
+  "The selected floppy disk image is not bootable (boot block checksum error)",
+  "The selected floppy disk image is not bootable (no boot block)",
+  "The selected floppy disk image is damaged or unformatted",
+  "The selected floppy disk image requires a 2.04 or later system ROM.\nThe configuration has been updated.",
+  "The selected floppy disk image requires a 3.0 or later system ROM.\nThe configuration has been updated.",
+  "Scan of ROMs finished",
+  "available",
+  "unavailable",
+  "The selected system ROM requires a 68020 with 24-bit addressing or higher CPU.",
+  "No supported system ROMs detected.",
+  "You need to have a floppy disk (image file) in DF0: to use the system ROM replacement.",
+  "The floppy disk (image file) in DF0: is not compatible with the system ROM replacement functionality.",
+  "Could not load system ROM, trying system ROM replacement.",
+  "Hard drive image file created succesfully.",
+  "Hard drive image file creation failed.\nError %d:%d (%s).",
+  "The selected system ROM requires a 68030 CPU.",
+  "One of the following expansion boot ROMs is required:\n\n%s\n\nCheck the System ROM path in the Paths panel and click Rescan ROMs.",
+  "Enter name...",
+  "Enter custom event string..",
+  "A500\nA500+\nA600\nA1000\nA1200\nA3000\nA4000\nCD32\nCDTV\nArcadia Multi Select system\nExpanded WinUAE example configuration",
+  "1.3 ROM, OCS, 512 KB Chip + 512 KB Slow RAM (most common)\nThis configuration is capable of running most games and demos produced for first-generation hardware. Only few exceptions need a different configuration (e.g. the oldest games tend to be incompatible with this configuration).\n1.3 ROM, ECS Agnus, 512 KB Chip RAM + 512 KB Slow RAM\nLater hardware revision of the A500. Nearly 100% compatible with the previous configuration.\n1.3 ROM, ECS Agnus, 1 MB Chip RAM\nFew newer games and demos require this configuration.\n1.3 ROM, OCS Agnus, 512 KB Chip RAM\nVery old (e.g. pre-1988) games and demos may require this configuration.\n1.2 ROM, OCS Agnus, 512 KB Chip RAM\nAs available for the A1000, and installed on the first A500 and A2000 series. Some very old programs only work correctly with this configuration. Note: This system ROM version can only boot from floppy disk (no hard disk boot support).\n1.2 ROM, OCS Agnus, 512 KB Chip RAM + 512 KB Slow RAM\nThis configuration adds expansion memory to the first A500 produced. Try this if your game does not work with newer configurations, but works with the previous one. It could add some features to the game, including faster loading times. Note: This system ROM version can only boot from floppy disk (no hard disk boot support).",
+  "Basic non-expanded configuration\nThe A500+ adds an ECS Agnus chip, 1 MB of Chip RAM and a 2.0 ROM to the A500. Many A500 games and demos don't work properly on an A500+.\n2 MB Chip RAM expanded configuration\n\n4 MB Fast RAM expanded configuration\n",
+  "Basic non-expanded configuration\nThe A600 is smaller than the A500+ and has an updated 2.0 ROM.\n2 MB Chip RAM expanded configuration\n\n4 MB Fast RAM expanded configuration\n",
+  "512 KB Chip RAM\nThe A1000 was the first model produced, with a configuration equivalent to that of an A500 with OCS chipset. You normally don't need to use this configuration, unless you are nostalgic and would like to hear the short A1000 boot tune\n""ICS"" Denise without EHB support\nVery first A1000 models had Denise without EHB capability.\n256 KB Chip RAM\n Unexpanded A1000. All later A1000 models were sold with a 256 KB RAM expansion built-in.\nA1000 ""Velvet"" Prototype\n",
+  "Basic non-expanded configuration\nUse this configuration to run most AGA demos and games\n4 MB Fast RAM expanded configuration\nSome newer AGA games and demos need an expanded A1200 to run.\nBlizzard 1230 IV\n\nBlizzard 1240\n\nBlizzard 1260\n\nBlizzard PPC\n",
+  "CD32\nThe CD32 was one the first 32-bit consoles on the market. It is basically an A1200 with a built-in CD-ROM drive. Insert your CD32 or CDTV CD-ROM into a free CD-ROM drive before starting the emulation.\nCD32 with Full Motion Video cartridge\n",
+  "CDTV\nThe CDTV was the first model with a built-in CD-ROM drive. Looking like a black CD player, it featured a configuration equivalent to that of an A500 with 1 MB RAM and an ECS chipset.\nFloppy drive and 64KB SRAM card expanded CDTV\n\nCDTV-CR\n",
+  "High-end expanded configuration",
+  "Arcadia\nArcadia Multi Select system is arcade platform developed by Arcadia and Mastertronic. It is based on an A500 mainboard with ROM cage attached to expansion port. Arcadia ROM files go to ""Cartridge ROM File"" in ROM-panel.",
+  "1.4 ROM, 2MB Chip + 8MB Fast\n\n2.04 ROM, 2MB Chip + 8MB Fast\n\n3.1 ROM, 2MB Chip + 8MB Fast\n",
+  "68030, 3.1 ROM, 2MB Chip + 8MB Fast\n\n68040, 3.1 ROM, 2MB Chip + 8MB Fast\n\nCyberStorm PPC\n",
+  "A4000T (test)\nA4000T",
+  "3.5"" DD (PC)",
+  "3.5"" HD (PC)",
+  "Default",
+  "Mouse",
+  "Joystick",
+  "Analog joystick",
+  "Light pen",
+  "CDTV remote mouse",
+  "CD32 pad",
+  "Show both cursors",
+  "Show native cursor only",
+  "Show host cursor only",
+  "No scaling",
+  "Automatic scaling",
+  "Automatic resize",
+  "ASCII-Only",
+  "Epson Matrix Printer Emulation, 9pin",
+  "PostScript (Passthrough)",
+  "PostScript (Emulation, GhostScript required)",
+  "Passthrough",
+  "Lores",
+  "Hires (normal)",
+  "SuperHires",
+  "Epson Matrix Printer Emulation, 48pin",
+  "Select a CD image file...",
+  "CD image files",
+  "No buffering",
+  "Double buffering",
+  "Triple buffering",
+  "Automatic center",
+  "Fullscreen (Max)",
+  "Fullscreen (TV)",
+  "Gamepad",
+  "Default",
+  "Manual",
+  "Autofire",
+  "Autofire (toggle)",
+  "Autofire (always)",
+  "No autofire",
+  "Integer scaling",
+  "Low latency VS, 50/60Hz",
+  "Low latency VSync",
+  "-",
+  "Masks",
+  "Overlays",
+  "Auto Integer scaling",
+  "Borderless",
+  "Minimal",
+  "Qualifiers",
+  "Generic",
+  "Autodetect",
+  "off",
+  "Standard",
+  "Extended",
+  "Untrap = middle button\nShow GUI on startup\nUse CTRL-F11 to quit\nDon't show taskbar button\nDon't show notification icon\n",
+  "Always on top\nDisable screensaver\nSynchronize clock\nOne second reboot pause\nFaster RTG\nClipboard sharing\nAllow native code\n",
+  "Native on-screen display\nRTG on-screen display\nCreate winuaelog.txt log\nLog illegal memory accesses\nBlank unused displays\nStart mouse uncaptured\nStart minimized\nMinimize when focus is lost\n100/120Hz VSync black frame insertion\nMaster floppy write protection\nHide all UAE autoconfig boards\n",
+  "Wheel Mouse",
+  "The selected system ROM requires a 68030 or higher CPU.",
+  "Select a Tape directory or archive file...",
+  "Native",
+  "RTG",
+  "Native",
+  "Current Configuration",
+  "Select",
+  "SCSI Emulation *",
+  "SLIRP User Mode NAT",
+  "SLIRP + Open ports (21-23,80)",
+  "Brightness\nContrast\nSaturation\nGamma\nScanlines\nBlurriness\nNoise\n",
+  "Point/Bilinear\nScanline opacity\nScanline level\n",
+  "Always on",
+  "Brightness\nContrast\nGamma\nGamma [R]\nGamma [G]\nGamma [B]",
+  "PPC CPU was started but PPC CPU emulation core plugin was not found. Download available from http://www.winuae.net/",
+  "PPC native OS booted with UAE boot ROM active. UAE expansions are not hardware emulated and are not PPC compatible. (UAE HD controller, uaescsi.device, uaeserial, bsdsocket and so on..)",
+  "Overscan blanking",
 };
