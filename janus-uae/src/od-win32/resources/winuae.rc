@@ -1852,8 +1852,7 @@ BEGIN
     IDS_NUMSG_STATEHD       "WARNING: Current configuration is not fully compatible with state saves.\nThis message will not appear again."
     IDS_NUMSG_NOCAPS        "Selected disk image needs the SPS plugin\nwhich is available from\nhttp//www.softpres.org/"
     IDS_NUMSG_OLDCAPS       "You need an updated SPS plugin\nwhich is available from\nhttp//www.softpres.org/"
-    IDS_IMGCHK_BOOTBLOCKCRCERROR 
-                            "The selected floppy disk image is not bootable (boot block checksum error)"
+    IDS_IMGCHK_BOOTBLOCKCRCERROR "The selected floppy disk image is not bootable (boot block checksum error)"
     IDS_IMGCHK_BOOTBLOCKNO  "The selected floppy disk image is not bootable (no boot block)"
     IDS_IMGCHK_DAMAGED      "The selected floppy disk image is damaged or unformatted"
     IDS_IMGCHK_KS2          "The selected floppy disk image requires a 2.04 or later system ROM.\nThe configuration has been updated."
@@ -1923,8 +1922,7 @@ STRINGTABLE
 BEGIN
     IDS_PRINTER_EPSON9      "Epson Matrix Printer Emulation, 9pin"
     IDS_PRINTER_POSTSCRIPT_DETECTION "PostScript (Passthrough)"
-    IDS_PRINTER_POSTSCRIPT_EMULATION 
-                            "PostScript (Emulation, GhostScript required)"
+    IDS_PRINTER_POSTSCRIPT_EMULATION "PostScript (Emulation, GhostScript required)"
     IDS_PRINTER_PASSTHROUGH "Passthrough"
     IDS_RES_LORES           "Lores"
     IDS_RES_HIRES           "Hires (normal)"
@@ -1995,8 +1993,7 @@ BEGIN
     IDS_ALWAYS_ON           "Always on"
     IDS_DISPLAY_ATTRIBUTES  "Brightness\nContrast\nGamma\nGamma [R]\nGamma [G]\nGamma [B]"
     IDS_NUMSG_NO_PPC        "PPC CPU was started but PPC CPU emulation core plugin was not found. Download available from http://www.winuae.net/"
-    IDS_NUMSG_UAEBOOTROM_PCC 
-                            "PPC native OS booted with UAE boot ROM active. UAE expansions are not hardware emulated and are not PPC compatible. (UAE HD controller, uaescsi.device, uaeserial, bsdsocket and so on..)"
+    IDS_NUMSG_UAEBOOTROM_PCC "PPC native OS booted with UAE boot ROM active. UAE expansions are not hardware emulated and are not PPC compatible. (UAE HD controller, uaescsi.device, uaeserial, bsdsocket and so on..)"
     IDS_AUTOSCALE_OVERSCAN_BLANK "Overscan blanking"
 END
 
