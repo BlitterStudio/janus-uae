@@ -35,7 +35,7 @@
 #undef IDS_DISABLED
 
 #include "gui.h"
-#include "string_resource.h"
+#include "gui/mui_data.h"
 
 
 /*
@@ -48,7 +48,7 @@ int machdep_init (void) {
 
 typedef struct {
   int idx;
-  const char *msg;
+  ULONG msg;
 } s_table;
 
 static s_table transla[] = {
@@ -72,15 +72,17 @@ static s_table transla[] = {
 	NUMSG_NOCAPS, IDS_NUMSG_NOCAPS,
 	NUMSG_KICKREP, IDS_NUMSG_KICKREP,
 	NUMSG_KICKREPNO, IDS_NUMSG_KICKREPNO,
-	-1, NULL
+	-1, 0
 };
+
+extern char* STRINGTABLE[];
 
 static const char *gettranslation (int msg)
 {
 	int i = 0;
 	while (transla[i].idx != -1) {
 		if (transla[i].idx == msg)
-			return transla[i].msg;
+			return STRINGTABLE[transla[i].msg];
 		i++;
 	}
 	return NULL;
