@@ -1536,10 +1536,6 @@ static int load_kickstart (void)
 		}
 	}
 
-#if defined(AMIGA)
-chk_sum:
-#endif
-
 	kickstart_version = (kickmem_bank.baseaddr[12] << 8) | kickmem_bank.baseaddr[13];
 	if (kickstart_version == 0xffff) {
 		// 1.0-1.1 and older
