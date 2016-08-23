@@ -40,8 +40,7 @@
 #if defined(JIT)
 #define USE_JIT_FPU
 #endif
-//#define NATMEM_OFFSET natmem_offset /* j-uae has it not defined */
-#define NATMEM_OFFSET natmem_offset
+#define NATMEM_OFFSET natmem_offset /* j-uae has it not defined */
 //#define CATWEASEL /* Catweasel MK2/3 support */
 #define ECS_DENISE /* ECS DENISE new features */
 #define AGA        /* AGA chipset emulation (ECS_DENISE must be enabled) */
@@ -548,6 +547,9 @@
 
 
 #ifdef __AROS__
+
+#include <aros/macros.h>
+#define UAE_MAKEID AROS_MAKE_ID
 
 #define _cdecl
 #define __cdecl
