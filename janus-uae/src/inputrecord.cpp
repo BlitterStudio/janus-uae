@@ -114,7 +114,7 @@ static bool inprec_rstart (uae_u8 type)
 	lastcycle = get_cycles ();
 	int mvp = current_maxvpos ();
 	if ((type != INPREC_DEBUG && type != INPREC_DEBUG2 && type != INPREC_CIADEBUG) || (0 && vsync_counter >= 49 && vsync_counter <= 51))
-		write_log (_T("INPREC: %010d/%03d: %d (%d/%d) %08x\n"), hsync_counter, current_hpos (), type, hsync_counter % mvp, mvp, lastcycle);
+		write_log (_T("INPREC: %010d/%03d: %d (%d/%d) %08x\n"), (int)hsync_counter, current_hpos(), type, (int)(hsync_counter % mvp), mvp, lastcycle);
 	inprec_plast = inprec_p;
 	inprec_ru8 (type);
 	inprec_ru16 (0xffff);
@@ -778,7 +778,7 @@ void inprec_setposition (int offset, int replaycounter)
 	replaypos = replaycounter;
 	write_log (_T("INPREC: setpos=%d\n"), offset);
 	if (offset < header_end || offset > zfile_size (inprec_zf)) {
-		write_log (_T("INPREC: buffer corruption. offset=%d, size=%d\n"), offset, zfile_size (inprec_zf));
+		write_log (_T("INPREC: buffer corruption. offset=%d, size=%d\n"), offset, (int)zfile_size (inprec_zf));
 		gui_message (_T("INPREC error"));
 	}
 	zfile_fseek (inprec_zf, 0, SEEK_SET);
@@ -922,6 +922,24 @@ bool inprec_realtime (void)
 	return inprec_realtime (false);
 }
 
+static inline int inprec_gethr(int hsync, int vp)
+{
+    int val = ((int)hsync / (vblank_hz * vp * 60));
+    return val;
+}
+
+static inline int inprec_getmin(int hsync, int vp)
+{
+    int val = ((int)(hsync / (vblank_hz * vp)) % 60);
+    return val;
+}
+
+static inline int inprec_getsec(int hsync, int vp)
+{
+    int val = ((int)(hsync / vp) % (int)vblank_hz);
+    return val;
+}
+
 void inprec_getstatus (TCHAR *title)
 {
 	TCHAR *p;
@@ -940,9 +958,8 @@ void inprec_getstatus (TCHAR *title)
 	p = title + _tcslen (title);
 	int mvp = current_maxvpos ();
 	_stprintf (p, _T("%03d %02d:%02d:%02d/%02d:%02d:%02d"), replaypos,
-		lasthsync / (vblank_hz * mvp * 60), ((int)(lasthsync / (vblank_hz * mvp)) % 60), (lasthsync / mvp) % (int)vblank_hz,
-		endhsync / (vblank_hz * mvp * 60), ((int)(endhsync / (vblank_hz * mvp)) % 60), (endhsync / mvp) % (int)vblank_hz);
+		inprec_gethr(lasthsync, mvp), inprec_getmin(lasthsync, mvp), inprec_getsec(lasthsync, mvp),
+		inprec_gethr(endhsync, mvp), inprec_getmin(endhsync, mvp), inprec_getsec(endhsync, mvp));
 	p += _tcslen (p);
 	_tcscat (p, _T("] "));
-
 }
