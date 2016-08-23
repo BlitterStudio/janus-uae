@@ -17,7 +17,7 @@ struct Data {
   struct Hook MyMUIHook_tree_display;
 #endif
   ULONG width, height;
-  struct Element *src;
+  Element *src;
   struct TextFont *font;
   int *(*func) (Element *hDlg, UINT msg, ULONG wParam, IPTR lParam);
 };
