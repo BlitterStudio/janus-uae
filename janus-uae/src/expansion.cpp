@@ -2786,7 +2786,7 @@ static const struct expansionboardsettings x86_athdxt_settings[] = {
 
 static void fastlane_memory_callback(struct romconfig *rc, uae_u8 *ac, int size)
 {
-	struct zfile *z = read_device_from_romconfig(rc, NULL);
+	struct zfile *z = read_device_from_romconfig(rc, 0);
 	if (z) {
 		// load autoconfig data from rom file
 		uae_u8 act[16] = { 0 };
@@ -2883,6 +2883,7 @@ static const struct expansionboardsettings a4091_settings[] = {
 
 
 const struct expansionromtype expansionroms[] = {
+#if (0)
 	{
 		_T("cpuboard"), _T("Accelerator"), _T("Accelerator"),
 		NULL, NULL, add_cpuboard_unit, ROMTYPE_CPUBOARD, 0, 0, 0, true,
@@ -3257,15 +3258,16 @@ const struct expansionromtype expansionroms[] = {
 		_T("picassoiv"), _T("Picasso IV"), _T("Village Tronic"),
 		NULL, NULL, NULL, ROMTYPE_PICASSOIV | ROMTYPE_NONE, 0, 0, BOARD_IGNORE, true,
 		NULL, 0,
-		false, EXPANSIONTYPE_RTG,
+		false, EXPANSIONTYPE_RTG
 	},
+
 	{
 		_T("x86vga"), _T("x86 VGA"), _T("x86"),
 		NULL, NULL, NULL, ROMTYPE_x86_VGA | ROMTYPE_NONE, 0, 0, BOARD_IGNORE, true,
 		NULL, 0,
-		false, EXPANSIONTYPE_RTG,
+		false, EXPANSIONTYPE_RTG
 	},
-
+#endif
 
 	{
 		NULL
@@ -3633,6 +3635,6 @@ const struct cpuboardtype cpuboards[] = {
 	},
 #endif
 	{
-		NULL
+		0
 	}
 };
