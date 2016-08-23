@@ -2504,7 +2504,11 @@ void memory_init (void)
 	extendedkickmem2_bank.allocated = 0;
 	extendedkickmem_type = 0;
 	chipmem_bank.baseaddr = 0;
+#if (0)
 	mem25bit_bank.allocated = mem25bit_bank.allocated = 0;
+#else
+	mem25bit_bank.allocated = 0;
+#endif
 	a3000lmem_bank.allocated = a3000hmem_bank.allocated = 0;
 	a3000lmem_bank.baseaddr = a3000hmem_bank.baseaddr = NULL;
 	bogomem_bank.baseaddr = NULL;
