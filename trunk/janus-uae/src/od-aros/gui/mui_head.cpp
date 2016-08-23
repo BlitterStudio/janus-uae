@@ -1,3 +1,5 @@
+#define JUAE_DEBUG
+
 #include "sysdeps.h"
 #include "sysconfig.h"
 
@@ -11,7 +13,6 @@
 #include <clib/alib_protos.h>
 #include <utility/hooks.h>
 
-//#define JUAE_DEBUG
 #include "uae.h"
 #include "thread.h"
 #include "aros.h"
@@ -267,30 +268,30 @@ Object* FixedProcObj(Element *src, IPTR proc)
 Object* FixedProcObj(ULONG idc, IPTR proc) {
   Element *elem;
 
-  DebOut("idc %d, proc %lx\n", src, proc);
+  DebOut("idc %d, proc %lx\n", idc, proc);
   elem=get_control(NULL, idc);
   DebOut("=> elem: %p:\n", elem);
   return FixedProcObj(elem, proc);
 }
 
 extern char *STRINGTABLE[];
-static char list_source_array[20][50];
+static char *list_source_array[20];
 
 Object* build_gui(void) {
   ULONG i;
-
-  DebOut("src: %lx\n", IDD_FLOPPY);
 
   if(app) {
     DebOut("build_gui was already called before, do nothing!\n");
     return app;
   }
 
+  /* build array for left listview, strdup gets freed automatically on exit */
   i=0;
   while(listelements[i]) {
-    strncpy(list_source_array[i], STRINGTABLE[listelements[i]], 49);
+    list_source_array[i]=strdup(STRINGTABLE[listelements[i]]); 
     i++;
   }
+  list_source_array[i]=(char *)NULL;
 
   app = MUI_NewObject(MUIC_Application,
                       MUIA_Application_Author, (IPTR) "Toni Willen, many others and Oliver Brunner",
