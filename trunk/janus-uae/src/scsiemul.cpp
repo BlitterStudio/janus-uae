@@ -44,7 +44,7 @@
 #define ASYNC_REQUEST_CHANGEINT 10
 #define ASYNC_REQUEST_FRAMEINT 11
 
-struct devstruct {
+struct scsi_devstruct {
 	int unitnum, aunit;
 	int opencnt;
 	int changenum;
@@ -78,12 +78,12 @@ struct priv_devstruct {
 	int flags; /* OpenDevice() */
 };
 
-static struct devstruct devst[MAX_TOTAL_SCSI_DEVICES];
+static struct scsi_devstruct devst[MAX_TOTAL_SCSI_DEVICES];
 static struct priv_devstruct pdevst[MAX_OPEN_DEVICES];
 static uae_u32 nscmd_cmd;
 static uae_sem_t change_sem;
 
-static struct device_info *devinfo (struct devstruct *devst, struct device_info *di)
+static struct device_info *devinfo (struct scsi_devstruct *devst, struct device_info *di)
 {
 	struct device_info *dio = sys_command_info (devst->unitnum, di, 0);
 	if (dio) {
@@ -102,7 +102,7 @@ static void io_log (const TCHAR *msg, uaecptr request)
 		get_long (request + 32), get_byte (request + 31));
 }
 
-static struct devstruct *getdevstruct (int unit)
+static struct scsi_devstruct *getdevstruct (int unit)
 {
 	int i;
 	for (i = 0; i < MAX_TOTAL_SCSI_DEVICES; i++) {
@@ -135,7 +135,7 @@ static const TCHAR *getdevname (int type)
 }
 
 static void *dev_thread (void *devs);
-static int start_thread (struct devstruct *dev)
+static int start_thread (struct scsi_devstruct *dev)
 {
 	if (dev->thread_running)
 		return 1;
@@ -146,7 +146,7 @@ static int start_thread (struct devstruct *dev)
 	return dev->thread_running;
 }
 
-static void dev_close_3 (struct devstruct *dev, struct priv_devstruct *pdev)
+static void dev_close_3 (struct scsi_devstruct *dev, struct priv_devstruct *pdev)
 {
 	if (!dev->opencnt) return;
 	dev->opencnt--;
@@ -161,7 +161,7 @@ static uae_u32 REGPARAM2 dev_close_2 (TrapContext *context)
 {
 	uae_u32 request = m68k_areg (regs, 1);
 	struct priv_devstruct *pdev = getpdevstruct (request);
-	struct devstruct *dev;
+	struct scsi_devstruct *dev;
 
 	if (!pdev)
 		return 0;
@@ -197,7 +197,7 @@ static uae_u32 REGPARAM2 dev_open_2 (TrapContext *context, int type)
 	uaecptr ioreq = m68k_areg (regs, 1);
 	uae_u32 unit = m68k_dreg (regs, 0);
 	uae_u32 flags = m68k_dreg (regs, 1);
-	struct devstruct *dev = getdevstruct (unit);
+	struct scsi_devstruct *dev = getdevstruct (unit);
 	struct priv_devstruct *pdev = 0;
 	int i, v;
 
@@ -261,7 +261,7 @@ static uae_u32 REGPARAM2 diskdev_expunge (TrapContext *context)
 	return 0;
 }
 
-static int is_async_request (struct devstruct *dev, uaecptr request)
+static int is_async_request (struct scsi_devstruct *dev, uaecptr request)
 {
 	int i = 0;
 	while (i < MAX_ASYNC_REQUESTS) {
@@ -274,7 +274,7 @@ static int is_async_request (struct devstruct *dev, uaecptr request)
 #if 0
 static int scsiemul_switchscsi (const TCHAR *name)
 {
-	struct devstruct *dev = NULL;
+	struct scsi_devstruct *dev = NULL;
 	struct device_info *discsi, discsi2;
 	int i, opened[MAX_TOTAL_SCSI_DEVICES];
 	bool wasopen = false;
@@ -332,7 +332,7 @@ int scsi_do_disk_change (int unitnum, int insert, int *pollmode)
 		return ret;
 	uae_sem_wait (&change_sem);
 	for (i = 0; i < MAX_TOTAL_SCSI_DEVICES; i++) {
-		struct devstruct *dev = &devst[i];
+		struct scsi_devstruct *dev = &devst[i];
 		if (dev->di.unitnum == unitnum + 1) {
 			ret = i;
 			if ((dev->changeint_mediastate > 0 && insert == 0) || (dev->changeint_mediastate <= 0 && insert)) {
@@ -365,7 +365,7 @@ int scsi_do_disk_change (int unitnum, int insert, int *pollmode)
 	return ret;
 }
 
-static int add_async_request (struct devstruct *dev, uaecptr request, int type, uae_u32 data)
+static int add_async_request (struct scsi_devstruct *dev, uaecptr request, int type, uae_u32 data)
 {
 	int i;
 
@@ -393,7 +393,7 @@ static int add_async_request (struct devstruct *dev, uaecptr request, int type, 
 	return -1;
 }
 
-static int release_async_request (struct devstruct *dev, uaecptr request)
+static int release_async_request (struct scsi_devstruct *dev, uaecptr request)
 {
 	int i = 0;
 
@@ -412,7 +412,7 @@ static int release_async_request (struct devstruct *dev, uaecptr request)
 	return -1;
 }
 
-static void abort_async (struct devstruct *dev, uaecptr request, int errcode, int type)
+static void abort_async (struct scsi_devstruct *dev, uaecptr request, int errcode, int type)
 {
 	int i;
 	i = 0;
@@ -430,7 +430,7 @@ static void abort_async (struct devstruct *dev, uaecptr request, int errcode, in
 		write_log (_T("asyncronous request=%08X aborted, error=%d\n"), request, errcode);
 }
 
-static int command_read (struct devstruct *dev, uaecptr data, uae_u64 offset, uae_u32 length, uae_u32 *io_actual)
+static int command_read (struct scsi_devstruct *dev, uaecptr data, uae_u64 offset, uae_u32 length, uae_u32 *io_actual)
 {
 	int blocksize = dev->di.bytespersector;
 
@@ -448,7 +448,7 @@ static int command_read (struct devstruct *dev, uaecptr data, uae_u64 offset, ua
 	return 0;
 }
 
-static int command_write (struct devstruct *dev, uaecptr data, uae_u64 offset, uae_u32 length, uae_u32 *io_actual)
+static int command_write (struct scsi_devstruct *dev, uaecptr data, uae_u64 offset, uae_u32 length, uae_u32 *io_actual)
 {
 	uae_u32 blocksize = dev->di.bytespersector;
 	length /= blocksize;
@@ -469,7 +469,7 @@ static int command_write (struct devstruct *dev, uaecptr data, uae_u64 offset, u
 	return 0;
 }
 
-static int command_cd_read (struct devstruct *dev, uaecptr data, uae_u64 offset, uae_u32 length, uae_u32 *io_actual)
+static int command_cd_read (struct scsi_devstruct *dev, uaecptr data, uae_u64 offset, uae_u32 length, uae_u32 *io_actual)
 {
 	uae_u32 len, sector, startoffset;
 	int blocksize;
@@ -512,7 +512,7 @@ static int command_cd_read (struct devstruct *dev, uaecptr data, uae_u64 offset,
 	return 0;
 }
 
-static int dev_do_io_other (struct devstruct *dev, uaecptr request)
+static int dev_do_io_other (struct scsi_devstruct *dev, uaecptr request)
 {
 	uae_u32 command;
 	uae_u32 io_data = get_long (request + 40); // 0x28
@@ -561,7 +561,7 @@ static int dev_do_io_other (struct devstruct *dev, uaecptr request)
 }
 
 
-static int dev_do_io_tape (struct devstruct *dev, uaecptr request)
+static int dev_do_io_tape (struct scsi_devstruct *dev, uaecptr request)
 {
 	uae_u32 command;
 	uae_u32 io_data = get_long (request + 40); // 0x28
@@ -609,7 +609,7 @@ static int dev_do_io_tape (struct devstruct *dev, uaecptr request)
 	return 0;
 }
 
-static int dev_do_io_cd (struct devstruct *dev, uaecptr request)
+static int dev_do_io_cd (struct scsi_devstruct *dev, uaecptr request)
 {
 	uae_u32 command;
 	uae_u32 io_data = get_long (request + 40); // 0x28
@@ -994,7 +994,7 @@ no_media:
 	return async;
 }
 
-static int dev_do_io (struct devstruct *dev, uaecptr request)
+static int dev_do_io (struct scsi_devstruct *dev, uaecptr request)
 {
 	if (dev->drivetype == INQ_SEQD) {
 		return dev_do_io_tape (dev, request);
@@ -1026,7 +1026,7 @@ static int dev_can_quick (uae_u32 command)
 	return 0;
 }
 
-static int dev_canquick (struct devstruct *dev, uaecptr request)
+static int dev_canquick (struct scsi_devstruct *dev, uaecptr request)
 {
 	uae_u32 command = get_word (request + 28);
 	return dev_can_quick (command);
@@ -1038,7 +1038,7 @@ static uae_u32 REGPARAM2 dev_beginio (TrapContext *context)
 	uae_u8 flags = get_byte (request + 30);
 	int command = get_word (request + 28);
 	struct priv_devstruct *pdev = getpdevstruct (request);
-	struct devstruct *dev;
+	struct scsi_devstruct *dev;
 	int canquick;
 
 	put_byte (request + 8, NT_MESSAGE);
@@ -1068,7 +1068,7 @@ static uae_u32 REGPARAM2 dev_beginio (TrapContext *context)
 
 static void *dev_thread (void *devs)
 {
-	struct devstruct *dev = (struct devstruct*)devs;
+	struct scsi_devstruct *dev = (struct scsi_devstruct*)devs;
 
 	uae_set_thread_priority (NULL, 1);
 	dev->thread_running = 1;
@@ -1115,7 +1115,7 @@ static uae_u32 REGPARAM2 dev_abortio (TrapContext *context)
 {
 	uae_u32 request = m68k_areg (regs, 1);
 	struct priv_devstruct *pdev = getpdevstruct (request);
-	struct devstruct *dev;
+	struct scsi_devstruct *dev;
 
 	if (!pdev) {
 		put_byte (request + 31, 32);
@@ -1139,7 +1139,7 @@ uae_u32 scsi_get_cd_drive_mask (void)
 {
 	uae_u32 mask = 0;
 	for (int i = 0; i < MAX_TOTAL_SCSI_DEVICES; i++) {
-		struct devstruct *dev = &devst[i];
+		struct scsi_devstruct *dev = &devst[i];
 		if (dev->iscd)
 			mask |= 1 << i;
 	}
@@ -1149,7 +1149,7 @@ uae_u32 scsi_get_cd_drive_media_mask (void)
 {
 	uae_u32 mask = 0;
 	for (int i = 0; i < MAX_TOTAL_SCSI_DEVICES; i++) {
-		struct devstruct *dev = &devst[i];
+		struct scsi_devstruct *dev = &devst[i];
 		if (dev->iscd && dev->changeint_mediastate)
 			mask |= 1 << i;
 	}
@@ -1158,7 +1158,7 @@ uae_u32 scsi_get_cd_drive_media_mask (void)
 int scsi_add_tape (struct uaedev_config_info *uci)
 {
 	for (int i = 4; i < MAX_TOTAL_SCSI_DEVICES; i++) {
-		struct devstruct *dev = &devst[i];
+		struct scsi_devstruct *dev = &devst[i];
 		if (dev->unitnum >= 0 || dev->drivetype > 0)
 			continue;
 		if (sys_command_open_tape (i, uci->rootdir, uci->readonly)) {
@@ -1175,7 +1175,7 @@ int scsi_add_tape (struct uaedev_config_info *uci)
 static void dev_reset (void)
 {
 	int i, j;
-	struct devstruct *dev;
+	struct scsi_devstruct *dev;
 	int unitnum = 0;
 
 	for (i = 0; i < MAX_TOTAL_SCSI_DEVICES; i++) {
@@ -1190,7 +1190,7 @@ static void dev_reset (void)
 			if (dev->unitnum >= 0)
 				sys_command_close (dev->unitnum);
 		}
-		memset (dev, 0, sizeof (struct devstruct));
+		memset (dev, 0, sizeof (struct scsi_devstruct));
 		xfree (dev->tape_directory);
 		dev->unitnum = dev->aunit = -1;
 	}
@@ -1499,7 +1499,7 @@ uae_u8 *save_scsidev (int num, int *len, uae_u8 *dstptr)
 {
 	uae_u8 *dstbak, *dst;
 	struct priv_devstruct *pdev;
-	struct devstruct *dev;
+	struct scsi_devstruct *dev;
 
 	pdev = &pdevst[num];
 	if (!pdev->inuse)
@@ -1544,7 +1544,7 @@ uae_u8 *save_scsidev (int num, int *len, uae_u8 *dstptr)
 uae_u8 *restore_scsidev (uae_u8 *src)
 {
 	struct priv_devstruct *pdev;
-	struct devstruct *dev;
+	struct scsi_devstruct *dev;
 	int i;
 
 	int num = restore_u32 ();
