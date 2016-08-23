@@ -692,17 +692,17 @@ void unprotect_maprom (void) {
  * appends a terminating null character.
  */
 
-extern char *STRINGTABLE;
+extern char *STRINGTABLE[];
 
 int LoadString(APTR hInstance, uint32_t uID, TCHAR * lpBuffer, int nBufferMax) {
     int len = 0;
     bug("[JUAE:AROS] %s(uId %d)\n", __PRETTY_FUNCTION__, uID);
     if(uID != -1)
     {
-    bug("[JUAE] %s: copying '%s' to buffer @ 0x%p\n", __PRETTY_FUNCTION__, STRINGTABLE[uID]);
+      bug("[JUAE] %s: copying '%s' to buffer @ 0x%p\n", __PRETTY_FUNCTION__, STRINGTABLE[uID], lpBuffer);
 
-        strncpy(lpBuffer, (const char *) STRINGTABLE[uID], nBufferMax);
-        len = strlen(lpBuffer)-1;
+      strncpy(lpBuffer, STRINGTABLE[uID], nBufferMax);
+      len = strlen(lpBuffer)-1;
     }
     return len;
 }
