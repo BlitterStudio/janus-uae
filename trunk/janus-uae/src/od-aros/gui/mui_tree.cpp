@@ -32,7 +32,6 @@
 #include "registry.h"
 #include "muigui.h"
 
-#include "../od-win32/resources/resource.h"
 #if 0
 #include "png2c/misc.h"
 #include "png2c/folder.h"
@@ -343,7 +342,7 @@ static void tree_send_notify(ULONG type, Object *obj, struct Data *data, struct 
   TODO();
 
   DebOut("[%lx] call function: %lx(IDC %d, WM_NOTIFY, %lx)\n", obj, data->func, 0, nm);
-  data->func(data->src, WM_NOTIFY, 0, (IPTR) nm);
+  data->func((Element *) data->hwnd, WM_NOTIFY, 0, (IPTR) nm);
 
 TREE_SEND_NOTIFY_EXIT:
   if(nm) FreeVec(nm);

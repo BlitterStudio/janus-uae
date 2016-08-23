@@ -582,8 +582,22 @@ while(<RESFILE>) {
 }
 print CPPFILE "};\n";
 
-print HFILE "};\n";
+print HFILE "};\n\n";
 
+
+# now copy windows resource.h to our own resource.h
+# remove all strings, we already have them in mui_data.h
+
+close(RESHFILE);
+open(RESHFILE, "<$resh_file" ) or die "unable to open $resh_file: $!";
+while(<RESHFILE>) {
+  $line=$_;
+  $line=~s/^M//;
+  chop($line);
+  if($line=~/^#define/ and not $line=~/IDS_/) {
+    print HFILE $line."\n"
+  }
+}
 
 # final close
 print HFILE   "\n#endif /* __".$if_def."__ */\n\n";
@@ -591,4 +605,6 @@ print HFILE   "\n#endif /* __".$if_def."__ */\n\n";
 close(CPPFILE);
 close(HFILE);
 close(RESFILE);
+close(RESHFILE);
+
 

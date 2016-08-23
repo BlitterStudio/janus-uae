@@ -18,8 +18,6 @@
 #include "gui_mui.h"
 #include "mui_data.h"
 
-#include "../od-win32/resources/resource.h"
-
 Object *app, *win; 
 static Object *root, *leftframe, *pages;
 static Object *start, *cancel, *help, *errorlog, *quit;
@@ -244,15 +242,15 @@ Object* FixedObj(IPTR src)
     return _fObj;
 }
 
-Object* FixedProcObj(IPTR src, IPTR proc)
+Object* FixedProcObj(Element *src, IPTR proc)
 {
  Object *_fpObj = NULL;
 
   DebOut("==========================================================================\n");
-  DebOut("src %lx, proc %lx\n", src, proc);
+  DebOut("src %p, proc %lx\n", src, proc);
     struct TagItem fo_tags[] =
     {
-        { MA_src, src}, 
+        { MA_src, (IPTR) src}, 
         { MA_dlgproc, proc},
         { TAG_DONE, 0}
     };
@@ -264,6 +262,15 @@ Object* FixedProcObj(IPTR src, IPTR proc)
 
     return _fpObj;
 
+}
+
+Object* FixedProcObj(ULONG idc, IPTR proc) {
+  Element *elem;
+
+  DebOut("idc %d, proc %lx\n", src, proc);
+  elem=get_control(NULL, idc);
+  DebOut("=> elem: %p:\n", elem);
+  return FixedProcObj(elem, proc);
 }
 
 extern char *STRINGTABLE[];

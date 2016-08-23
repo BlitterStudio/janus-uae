@@ -62,7 +62,7 @@
 
 #ifdef __AROS__
 #include "aros.h"
-#include "../od-win32/resources/resource.h"
+#include "gui/mui_data.h"
 #endif
 
 static struct  contextcommand cc_disk[] = {

@@ -45,7 +45,7 @@ BOOL EndDialog(HWND hDlg, int nResult) {
   return nResult;
 }
 
-Object* FixedProcObj(IPTR src, IPTR proc);
+Object* FixedProcObj(Element  src, IPTR proc);
 Object* FixedObj(IPTR src);
 extern Object *app;
 extern Object *win;
@@ -80,7 +80,9 @@ INT_PTR DialogBoxIndirect(HINSTANCE hInstance, LPCDLGTEMPLATE lpTemplate, HWND h
   DebOut("lpTemplate: %lx\n", lpTemplate);
   DebOut("lpDialogFunc: %lx\n", func);
 
-  mui_content=FixedProcObj((IPTR) lpTemplate, (IPTR)func);
+  bug("FIXME here: %s:%d\n", __FILE__, __LINE__);
+  exit(1);
+  //TODO :mui_content=FixedProcObj((Element *) lpTemplate, (IPTR)func);
   DebOut("content: %lx\n", mui_content);
   if(!mui_content) {
     DebOut("ERROR: could create window content!?\n");

@@ -73,7 +73,7 @@ BOOL mui_get_dir(TCHAR *lpstrTitle, TCHAR *path);
 typedef struct Element {
   BOOL    exists;  // element exists
   LONG    idc;     // windows rc identifier (IDC_CPU0, IDC_Z3CHIPRAM, etc)
-  ULONG   group;   // group id (AUTORADIOBUTTON)
+  ULONG   group;   // group id (for AUTORADIOBUTTON)
   Object *obj;     // Zune object pointer
   char  **mem;     // Allocated memory for var. Can contain one string [0]="<<empty>>" and continues in var
   char  **var;     // variable data pointer, dependent on windows_type

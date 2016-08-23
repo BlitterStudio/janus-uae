@@ -60,6 +60,7 @@ LINK_LIBS=-larossupport -lmui
 # ============== common ====================
 
 COMMON_OBJS= \
+	mui_class.o \
 	mui_head.o \
 	mui_data.o \
 	mui_file_request.o \
@@ -70,8 +71,7 @@ COMMON_OBJS= \
 	mui_dialog.o \
 	combo.o \
 	fs.o \
-	cursor.o \
-	mui_class.o 
+	cursor.o 
 
 # build dependencies magic
 DEP_OBJS=$(COMMON_OBJS)

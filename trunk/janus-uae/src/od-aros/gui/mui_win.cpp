@@ -29,8 +29,6 @@
 #include "winnt.h"
 #include "mui_data.h"
 
-#include "../od-win32/resources/resource.h"
-
 BOOL flag_editable(ULONG flags);
 
 /*
