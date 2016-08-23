@@ -22,8 +22,8 @@
 #include "filesys.h"
 
 #ifdef __AROS__
-#include "string_resource.h"
 #include <proto/dos.h>
+#include "od-win32/resources/resource.h"
 #endif
 
 #define SAVE_ROM 0
