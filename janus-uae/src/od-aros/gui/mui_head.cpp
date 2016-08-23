@@ -18,6 +18,8 @@
 #include "gui_mui.h"
 #include "mui_data.h"
 
+#include "../od-win32/resources/resource.h"
+
 Object *app, *win; 
 static Object *root, *leftframe, *pages;
 static Object *start, *cancel, *help, *errorlog, *quit;
@@ -35,6 +37,7 @@ Element IDD_FLOPPY[] = {
 };
 #endif
 
+#if 0
 #define IDS_KICKSTART           "ROM"
 #define IDS_DISK                "Disk swapper"
 #define IDS_DISPLAY             "Display"
@@ -62,14 +65,15 @@ Element IDD_FLOPPY[] = {
 #define IDS_EXPANSION2          "RTG board"
 #define IDS_CDROM               "CD-ROM"
 #define IDS_SOUND               "Sound"
+#endif
 
 
-static const char *listelements[] = {
+static const ULONG listelements[] = {
   IDS_ABOUT,
   IDS_PATHS,
   IDS_QUICKSTART,
   IDS_LOADSAVE,
-  IDS_LOADSAVE1,
+  IDS_TREEVIEW_HARDWARE,
   IDS_CPU,
   IDS_CHIPSET,
   IDS_CHIPSET2,
@@ -79,7 +83,7 @@ static const char *listelements[] = {
   IDS_HARDDISK,
   IDS_EXPANSION,
   IDS_EXPANSION2,
-  IDS_LOADSAVE2,
+  IDS_TREEVIEW_HOST,
   IDS_DISPLAY,
   IDS_SOUND,
   IDS_GAMEPORTS,
@@ -90,7 +94,7 @@ static const char *listelements[] = {
   IDS_DISK,
   IDS_MISC1,
   IDS_MISC2,
-  NULL
+  0
 };
 
 static Object *page_obj[50];
@@ -262,13 +266,23 @@ Object* FixedProcObj(IPTR src, IPTR proc)
 
 }
 
+extern char *STRINGTABLE[];
+static char list_source_array[20][50];
+
 Object* build_gui(void) {
+  ULONG i;
 
   DebOut("src: %lx\n", IDD_FLOPPY);
 
   if(app) {
     DebOut("build_gui was already called before, do nothing!\n");
     return app;
+  }
+
+  i=0;
+  while(listelements[i]) {
+    strncpy(list_source_array[i], STRINGTABLE[listelements[i]], 49);
+    i++;
   }
 
   app = MUI_NewObject(MUIC_Application,
@@ -290,7 +304,7 @@ Object* build_gui(void) {
                                 ListviewObject,
                                           MUIA_Listview_List, leftframe=ListObject,
                                             MUIA_Frame, MUIV_Frame_ReadList,
-                                            MUIA_List_SourceArray, (IPTR) listelements,
+                                            MUIA_List_SourceArray, (IPTR) list_source_array,
                                             MUIA_Background, "2:FFFFFFFF,FFFFFFFF,FFFFFFFF",
                                             MUIA_Font, MUIV_Font_List, 
                                           End,
@@ -311,33 +325,33 @@ Object* build_gui(void) {
                               MUIA_Group_Horiz, FALSE,
                               MUIA_Group_Child,
                                 pages=PageGroup,
-                                  Child, page_obj[0]=FixedProcObj((IPTR)IDD_ABOUT,      (IPTR) &AboutDlgProc     ),
-                                  Child, page_obj[1]=FixedProcObj((IPTR)IDD_PATHS,      (IPTR) &PathsDlgProc     ),
-                                  Child, page_obj[2]=FixedProcObj((IPTR)IDD_QUICKSTART, (IPTR) &QuickstartDlgProc),
-                                  Child, page_obj[3]=FixedProcObj((IPTR)IDD_LOADSAVE,   (IPTR) &LoadSaveDlgProc  ),
+                                  Child, page_obj[0]=FixedProcObj(IDD_ABOUT,      (IPTR) &AboutDlgProc     ),
+                                  Child, page_obj[1]=FixedProcObj(IDD_PATHS,      (IPTR) &PathsDlgProc     ),
+                                  Child, page_obj[2]=FixedProcObj(IDD_QUICKSTART, (IPTR) &QuickstartDlgProc),
+                                  Child, page_obj[3]=FixedProcObj(IDD_LOADSAVE,   (IPTR) &LoadSaveDlgProc  ),
                                   //Child, FixedObj((IPTR)IDD_LOADSAVE),
                                   Child, TextObject,  MUIA_Text_Contents, "\33c\33bTODO", End,
-                                  Child, page_obj[5]=FixedProcObj((IPTR)IDD_CPU,        (IPTR) &CPUDlgProc       ),
-                                  Child, page_obj[6]=FixedProcObj((IPTR)IDD_CHIPSET,    (IPTR) &ChipsetDlgProc   ),
-                                  Child, page_obj[7]=FixedProcObj((IPTR)IDD_CHIPSET2,   (IPTR) &ChipsetDlgProc2  ),
-                                  Child, page_obj[8]=FixedProcObj((IPTR)IDD_KICKSTART,  (IPTR) &KickstartDlgProc ),
-                                  Child, page_obj[9]=FixedProcObj((IPTR)IDD_MEMORY,     (IPTR) &MemoryDlgProc    ),
-                                  Child, page_obj[10]=FixedProcObj((IPTR)IDD_FLOPPY,    (IPTR) &FloppyDlgProc   ),
-                                  Child, page_obj[11]=FixedProcObj((IPTR)IDD_HARDDISK,  (IPTR) &HarddiskDlgProc ),
-                                  Child, page_obj[12]=FixedObj((IPTR)IDD_EXPANSION2),
-                                  Child, page_obj[13]=FixedObj((IPTR)IDD_EXPANSION),
+                                  Child, page_obj[5]=FixedProcObj(IDD_CPU,        (IPTR) &CPUDlgProc       ),
+                                  Child, page_obj[6]=FixedProcObj(IDD_CHIPSET,    (IPTR) &ChipsetDlgProc   ),
+                                  Child, page_obj[7]=FixedProcObj(IDD_CHIPSET2,   (IPTR) &ChipsetDlgProc2  ),
+                                  Child, page_obj[8]=FixedProcObj(IDD_KICKSTART,  (IPTR) &KickstartDlgProc ),
+                                  Child, page_obj[9]=FixedProcObj(IDD_MEMORY,     (IPTR) &MemoryDlgProc    ),
+                                  Child, page_obj[10]=FixedProcObj(IDD_FLOPPY,    (IPTR) &FloppyDlgProc   ),
+                                  Child, page_obj[11]=FixedProcObj(IDD_HARDDISK,  (IPTR) &HarddiskDlgProc ),
+                                  Child, page_obj[12]=FixedObj(IDD_EXPANSION2),
+                                  Child, page_obj[13]=FixedObj(IDD_EXPANSION),
                                   //Child, FixedObj((IPTR)IDD_LOADSAVE),
                                   Child, TextObject,  MUIA_Text_Contents, "\33c\33bTODO", End,
-                                  Child, page_obj[15]=FixedObj((IPTR)IDD_DISPLAY),
-                                  Child, page_obj[16]=FixedObj((IPTR)IDD_SOUND),
-                                  Child, page_obj[17]=FixedObj((IPTR)IDD_GAMEPORTS),
-                                  Child, page_obj[18]=FixedObj((IPTR)IDD_IOPORTS),
-                                  Child, page_obj[19]=FixedObj((IPTR)IDD_INPUT),
-                                  Child, page_obj[20]=FixedObj((IPTR)IDD_AVIOUTPUT),
-                                  Child, page_obj[21]=FixedObj((IPTR)IDD_FILTER),
-                                  Child, page_obj[22]=FixedObj((IPTR)IDD_DISK),
-                                  Child, page_obj[23]=FixedObj((IPTR)IDD_MISC1),
-                                  Child, page_obj[24]=FixedObj((IPTR)IDD_MISC2),
+                                  Child, page_obj[15]=FixedObj(IDD_DISPLAY),
+                                  Child, page_obj[16]=FixedObj(IDD_SOUND),
+                                  Child, page_obj[17]=FixedObj(IDD_GAMEPORTS),
+                                  Child, page_obj[18]=FixedObj(IDD_IOPORTS),
+                                  Child, page_obj[19]=FixedObj(IDD_INPUT),
+                                  Child, page_obj[20]=FixedObj(IDD_AVIOUTPUT),
+                                  Child, page_obj[21]=FixedObj(IDD_FILTER),
+                                  Child, page_obj[22]=FixedObj(IDD_DISK),
+                                  Child, page_obj[23]=FixedObj(IDD_MISC1),
+                                  Child, page_obj[24]=FixedObj(IDD_MISC2),
                                 End,
                               MUIA_Group_Child,
                                 MUI_NewObject(MUIC_Group,
