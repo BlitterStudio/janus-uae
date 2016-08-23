@@ -369,7 +369,7 @@ int inprec_open (const TCHAR *fname, const TCHAR *statefilename)
 		zfile_fread (inprec_buffer, inprec_size, 1, inprec_zf);
 		inprec_plastptr = inprec_buffer;
 		id = inprec_pu32();
-		if (id != 'UAE\0') {
+		if (id != UAE_MAKEID('U','A','E','\0')) {
 			inprec_close (true);
 			return 0;
 		}
@@ -437,7 +437,7 @@ int inprec_open (const TCHAR *fname, const TCHAR *statefilename)
 	} else if (input_record) {
 		seed = uaesrand (seed);
 		inprec_buffer = inprec_p = xmalloc (uae_u8, inprec_size);
-		inprec_ru32 ('UAE\0');
+		inprec_ru32 (UAE_MAKEID('U','A','E','\0'));
 		inprec_ru8 (2);
 		inprec_ru8 (UAEMAJOR);
 		inprec_ru8 (UAEMINOR);
