@@ -525,8 +525,10 @@ print HFILE "/* index values for STRINGTABLE array in mui_data.cpp */\n";
 print HFILE "/* used by AROS .. */\n";
 print HFILE "#undef IDS_DISABLED\n\n";
 print HFILE "enum {\n";
+print HFILE "  IDS_IDS_dummy,\n"; # IDC must not start with 0
 print CPPFILE "/* STRINGTABLE contains all winuae.rc strings. For index values see mui_data.h */\n";
 print CPPFILE "char *STRINGTABLE[] = {\n";
+print CPPFILE "  \"THIS SHOULD NOT APPEAR!!\",\n";
 
 my $stringtable_start=0;
 my $stringtable_active=0;
