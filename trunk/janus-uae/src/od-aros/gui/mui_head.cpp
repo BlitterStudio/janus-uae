@@ -275,10 +275,12 @@ Object* FixedProcObj(ULONG idc, IPTR proc) {
 }
 
 extern char *STRINGTABLE[];
-static char *list_source_array[20];
+static char *list_source_array[30];
 
 Object* build_gui(void) {
   ULONG i;
+
+  DebOut("building gui..\n");
 
   if(app) {
     DebOut("build_gui was already called before, do nothing!\n");
@@ -289,6 +291,7 @@ Object* build_gui(void) {
   i=0;
   while(listelements[i]) {
     list_source_array[i]=strdup(STRINGTABLE[listelements[i]]); 
+    DebOut("list_source_array[%d]=%s\n", i, list_source_array[i]);
     i++;
   }
   list_source_array[i]=(char *)NULL;
