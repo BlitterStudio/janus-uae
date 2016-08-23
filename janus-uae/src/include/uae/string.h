@@ -21,23 +21,37 @@
 #define _istdigit isdigit
 #define _istspace isspace
 #define _istupper isupper
-#define _sntprintf snprintf
+#ifndef _sntprintf
+#define	_sntprintf	_snprintf
+#endif
 #define _stprintf sprintf
+#ifndef _strtoui64
+#if defined (__AROS__)
+#define _strtoui64 strtoull
+#else
 #define _strtoui64 strtoll
+#endif
+#endif
 #define _tcscat strcat
 #define _tcschr strchr
 #define _tcscmp strcmp
 #define _tcscpy strcpy
 #define _tcscspn strcspn
-#define _tcsdup strdup
+#ifndef _tcsdup
+#define	_tcsdup		_strdup
+#endif
 #define _tcsftime strftime
 #define _tcsftime strftime
-#define _tcsicmp strcasecmp
+#ifndef _tcsicmp
+#define	_tcsicmp	_stricmp
+#endif
 #define _tcslen strlen
 #define _tcsncat strncat
 #define _tcsncmp strncmp
 #define _tcsncpy strncpy
-#define _tcsnicmp strncasecmp
+#ifndef _tcsnicmp
+#define	_tcsnicmp	_strnicmp
+#endif
 #define _tcsrchr strrchr
 #define _tcsspn strspn
 #define _tcsstr strstr
@@ -48,7 +62,11 @@
 #define _totupper toupper
 #define _tprintf printf
 #define _tstof atof
+#if defined(__AROS__)
+#define _tstoi64 atoi
+#else
 #define _tstoi64 atoll
+#endif
 #define _tstoi atoi
 #define _tstol atol
 #define _vsnprintf vsnprintf

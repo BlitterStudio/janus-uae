@@ -165,15 +165,25 @@ typedef char	TCHAR;
  * Non-unicode (standard) functions
  */
 
+#ifndef _tprintf
 #define	_tprintf	printf
+#endif
 #define _ftprintf	fprintf
+#ifndef _stprintf
 #define	_stprintf	sprintf
+#endif
+#ifndef _sntprintf
 #define	_sntprintf	_snprintf
+#endif
 #define	_vtprintf	vprintf
 #define	_vftprintf	vfprintf
 #define _vstprintf	vsprintf
+#ifndef _vsntprintf
 #define	_vsntprintf	vsnprintf
+#endif
+#ifndef _vsnprintf 
 #define _vsnprintf      vsnprintf
+#endif
 #define	_tscanf		scanf
 #define	_ftscanf	fscanf
 #define	_stscanf	sscanf
@@ -205,9 +215,15 @@ typedef char	TCHAR;
 #define _tcsspn		strspn
 #define	_tcsstr		strstr
 #define _tcstok		strtok
+#ifndef _tcsdup
 #define	_tcsdup		_strdup
+#endif
+#ifndef _tcsicmp
 #define	_tcsicmp	_stricmp
+#endif
+#ifndef _tcsnicmp
 #define	_tcsnicmp	_strnicmp
+#endif
 #define	_tcsnset	_strnset
 #define	_tcsrev		_strrev
 #define _tcsset		_strset
@@ -237,7 +253,9 @@ typedef char	TCHAR;
 #ifdef __AROS__
 #define fputws          fputs
 #endif
+#ifndef _tstoi64
 #define _tstoi64        atoi
+#endif
 
 #endif	/* Not _UNICODE */
 
