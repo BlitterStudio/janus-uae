@@ -581,8 +581,10 @@ extern void REGPARAM3 Exception (int) REGPARAM;
 
 #define _strdup strdup
 #define _stricmp stricmp 
-#define _strnicmp strnicmp 
-#define _strtoui64(x,y,z) strtoull(x,y,z)
+#define _strnicmp strnicmp
+#ifndef _strtoui64
+#define _strtoui64 strtoull
+#endif
 #define _tstol atol
 #define _tstof atof
 #define _tstoi atoi
