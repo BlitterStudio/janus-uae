@@ -5572,7 +5572,7 @@ static void matchdevices (struct inputdevice_functions *inf, struct uae_input_de
 				} else if (p1 && p2 && p1 - bname == p2 - bname2) {
 					*p1 = 0;
 					*p2 = 0;
-					if (bname && !_tcscmp (bname2, bname))
+					if (!_tcscmp (bname2, bname))
 						matched = true;
 				}
 				if (matched) {
