@@ -460,18 +460,17 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
         i++;
       }
 
-      //DebOut("MUILM_LAYOUT obj %lx\n", obj);
-      //DebOut("data:        %lx\n", data);
-      //DebOut("data->src:   %lx\n", data->src);
+      DebOut("MUILM_LAYOUT obj %lx\n", obj);
+      DebOut("data:        %lx\n", data);
 
       /* all our lovely childs */
       i++;
       while(WIN_RES[i].exists && WIN_RES[i].windows_type != DIALOGEX) {
         //DebOut("  child i=%d\n", i);
-        //DebOut("   obj[%d]: %lx\n", i, element[i].obj);
-        //DebOut("   idc: %d (dummy is %d)\n", element[i].idc, IDC_dummy);
-        //DebOut("   x, y: %d, %d  w, h: %d, %d\n", element[i].x, element[i].y, element[i].w, element[i].h);
-        if(element[i].obj != obj) {
+        DebOut("   obj[%d]: %p\n", i, WIN_RES[i].obj);
+        DebOut("   idc: %d\n", WIN_RES[i].idc);
+        DebOut("   x, y: %d, %d  w, h: %d, %d\n", WIN_RES[i].x, WIN_RES[i].y, WIN_RES[i].w, WIN_RES[i].h);
+        if(WIN_RES[i].obj != obj) {
           if (!MUI_Layout(WIN_RES[i].obj,
                           WIN_RES[i].x * RESIZE_X,
                           WIN_RES[i].y * RESIZE_Y,
@@ -506,9 +505,8 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
 
   struct TagItem *tstate, *tag;
   ULONG i=0;
-  IPTR s=0;
-  struct Element *src=NULL;
-  Object *child      =NULL; /* TODO: remove me */
+  struct Element *elem=NULL;
+  Object *child       =NULL; /* TODO: remove me */
   int *(*func) (Element *hDlg, UINT msg, ULONG wParam, IPTR lParam);
   func=NULL;
 
@@ -527,7 +525,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
     DebOut("tag->ti_Tag: %lx\n", tag->ti_Tag);
     switch (tag->ti_Tag) {
       case MA_src:
-        s = tag->ti_Data;
+        elem = (Element *) tag->ti_Data;
         break;
       case MA_dlgproc:
         DebOut("MA_dlgproc: %lx\n", tag->ti_Data);
@@ -536,7 +534,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
     }
   }
 
-  if(!s) {
+  if(!elem) {
     DebOut("mNew: MA_src not supplied!\n");
     return (IPTR) NULL;
   }
@@ -544,9 +542,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
   /* place vertically */
   DoMethod((Object *) obj, MUIM_Set, MUIA_Group_Horiz, FALSE);
 
-  src=(struct Element *) s;
-
-  DebOut("receive: %lx\n", s);
+  DebOut("receive: %p\n", elem);
   {
     GETDATA;
     //struct TextAttr ta;
@@ -554,7 +550,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
 
     data->width =396;
     data->height=320;
-    data->hwnd  =src;
+    data->hwnd  =elem;
     data->func  =func;
 
     DebOut("YYYYYYYYYYYYYYYYYY\n");
@@ -582,24 +578,31 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
 #endif
 
 
-    DebOut("XXXXXXXXXXXXXXXXXXXXXX\n");
+    DebOut("XXX add childs to our new class XXX\n");
+
+    /* find start of our children */
     i=0;
-    while(src[i].windows_type) {
+    while(WIN_RES[i].idc && &WIN_RES[i]!=elem) {
+      i++;
+    }
+    i++;
+
+    while(WIN_RES[i].idc && WIN_RES[i].windows_type!=DIALOGEX) {
       DebOut("========== i=%d =========\n", i);
-      //DebOut("src[i].text: %lx\n", src[i].text);
-      //DebOut("add %s\n", src[i].text);
-      //DebOut("src[i].text: %lx\n", src[i].text);
-      switch(src[i].windows_type) {
+      if(WIN_RES[i].text) {
+        DebOut("add \"%s\"\n", WIN_RES[i].text);
+      }
+      switch(WIN_RES[i].windows_type) {
         case GROUPBOX:
           child=HGroup, MUIA_Frame, MUIV_Frame_Group,
-                              MUIA_FrameTitle, src[i].text,
+                              MUIA_FrameTitle, WIN_RES[i].text,
                               End;
-          src[i].exists=TRUE;
-          src[i].obj=child;
+          WIN_RES[i].exists=TRUE;
+          WIN_RES[i].obj=child;
         break;
 
         case CONTROL:
-          if(!strcmp(src[i].windows_class, "msctls_trackbar32")) {
+          if(!strcmp(WIN_RES[i].windows_class, "msctls_trackbar32")) {
             /* Proportional/slider gadget! */
             child=VGroup,
                     MUIA_UserData         , i,
@@ -619,50 +622,50 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                   End;
 
             if(child) {
-              src[i].exists=TRUE;
-              src[i].obj=child;
+              WIN_RES[i].exists=TRUE;
+              WIN_RES[i].obj=child;
               data->MyMUIHook_slide.h_Entry=(APTR) MUIHook_slide;
               data->MyMUIHook_slide.h_Data =(APTR) data;
 
-              DebOut("DoMethod(%lx, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime..)\n", src[i].obj);
-              DoMethod(src[i].obj, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_slide, func); 
+              DebOut("DoMethod(%lx, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime..)\n", WIN_RES[i].obj);
+              DoMethod(WIN_RES[i].obj, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, (IPTR) WIN_RES[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_slide, func); 
  
             }
             break;
           }
-          if(!strcmp(src[i].windows_class, "SysTreeView32")) {
+          if(!strcmp(WIN_RES[i].windows_class, "SysTreeView32")) {
             /* Tree gadget! */
             DebOut("SysTreeView32\n");
             Object *nlisttree=NULL;
             child=new_tree(i, (void *) func, data, &nlisttree); 
             DebOut("child: %lx\n", child);
             if(child) {
-              src[i].exists=TRUE;
-              src[i].obj=nlisttree;
+              WIN_RES[i].exists=TRUE;
+              WIN_RES[i].obj=nlisttree;
             }
             break;
           }
 
-          if(!strcmp(src[i].windows_class, "SysListView32")) {
+          if(!strcmp(WIN_RES[i].windows_class, "SysListView32")) {
             /* Tree gadget! */
             DebOut("SysListView32\n");
             Object *list=NULL;
 
-            child=new_listview(src, i, (void *) func, data, &list); 
+            child=new_listview(WIN_RES, i, (void *) func, data, &list); 
             DebOut("child: %lx\n", child);
             if(child) {
-              src[i].exists=TRUE;
-              src[i].obj=child;
-              src[i].action=list;
+              WIN_RES[i].exists=TRUE;
+              WIN_RES[i].obj=child;
+              WIN_RES[i].action=list;
             }
             break;
           }
-          if(src[i].windows_class==NULL || !strcmp(src[i].windows_class, "Button") || /* TODO: */ !strcmp(src[i].windows_class, "Static") ) {
+          if(WIN_RES[i].windows_class==NULL || !strcmp(WIN_RES[i].windows_class, "Button") || /* TODO: */ !strcmp(WIN_RES[i].windows_class, "Static") ) {
             DebOut("Button found\n");
-            if(src[i].flags2==BS_AUTORADIOBUTTON) {
+            if(WIN_RES[i].flags2==BS_AUTORADIOBUTTON) {
               child=HGroup,
                     MUIA_UserData         , i,
-                    Child, src[i].obj=ImageObject,
+                    Child, WIN_RES[i].obj=ImageObject,
                         NoFrame,
                         //MUIA_CycleChain       , 1,
                         MUIA_InputMode        , MUIV_InputMode_Toggle,
@@ -673,7 +676,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                       End,
                     Child, TextObject,
                         MUIA_Font, Topaz8Font,
-                        MUIA_Text_Contents, src[i].text,
+                        MUIA_Text_Contents, WIN_RES[i].text,
                         MUIA_UserData         , i,
                       End,
 
@@ -682,14 +685,14 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
               data->MyMUIHook_select.h_Entry=(APTR) MUIHook_select;
               data->MyMUIHook_select.h_Data =(APTR) data;
 
-              DoMethod(src[i].obj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_select, func); 
+              DoMethod(WIN_RES[i].obj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, (IPTR) WIN_RES[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_select, func); 
 
             }
             else {
-              if(src[i].text && (src[i].text[0]!=(char) 0)) {
+              if(WIN_RES[i].text && (WIN_RES[i].text[0]!=(char) 0)) {
                 child=HGroup,
                   MUIA_UserData         , i,
-                  Child, src[i].obj=ImageObject,
+                  Child, WIN_RES[i].obj=ImageObject,
                     ImageButtonFrame,
                     MUIA_InputMode   , MUIV_InputMode_Toggle,
                     MUIA_Image_Spec  , MUII_CheckMark,
@@ -700,7 +703,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                   End,
                   Child, TextObject,
                     MUIA_Font, Topaz8Font,
-                    MUIA_Text_Contents, src[i].text,
+                    MUIA_Text_Contents, WIN_RES[i].text,
                     MUIA_UserData         , i,
                     End,
                 End;
@@ -709,7 +712,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                 /* button without text must be without text, otherwise zune draws "over the border" */
                 child=HGroup,
                   MUIA_UserData         , i,
-                  Child, src[i].obj=ImageObject,
+                  Child, WIN_RES[i].obj=ImageObject,
                     ImageButtonFrame,
                     MUIA_InputMode   , MUIV_InputMode_Toggle,
                     MUIA_Image_Spec  , MUII_CheckMark,
@@ -723,18 +726,18 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
               data->MyMUIHook_select.h_Entry=(APTR) MUIHook_select;
               data->MyMUIHook_select.h_Data =(APTR) data;
 
-              DebOut("DoMethod(%lx, MUIM_Notify, MUIA_Selected, MUIV_EveryTime..)\n", src[i].obj);
-              DoMethod(src[i].obj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_select, func); 
+              DebOut("DoMethod(%lx, MUIM_Notify, MUIA_Selected, MUIV_EveryTime..)\n", WIN_RES[i].obj);
+              DoMethod(WIN_RES[i].obj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, (IPTR) WIN_RES[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_select, func); 
             }
           }
-          else if(!strcmp(src[i].windows_class, "RICHEDIT")) {
-            DebOut("RICHEDIT found (text: %s)\n", src[i].text);
+          else if(!strcmp(WIN_RES[i].windows_class, "RICHEDIT")) {
+            DebOut("RICHEDIT found (text: %s)\n", WIN_RES[i].text);
             child=NULL;
 #ifndef DONT_USE_URLOPEN
             child=UrltextObject, 
                     MUIA_Font, Topaz8Font,
                     MUIA_Text_PreParse, "\33c",
-                    MUIA_Urltext_Text, src[i].text, 
+                    MUIA_Urltext_Text, WIN_RES[i].text, 
                     MUIA_Urltext_Url, "http://", 
                     MUIA_UserData, i,
                     End;
@@ -745,19 +748,19 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
               child=TextObject,
                     MUIA_Font, Topaz8Font,
                     MUIA_Text_PreParse, "\33c",
-                    MUIA_Text_Contents, src[i].text,
+                    MUIA_Text_Contents, WIN_RES[i].text,
                     MUIA_UserData         , i,
                   End;
             }
           }
           else {
-            fprintf(stderr, "ERROR: Unknown windows class \"%s\" found!\n", src[i].windows_class);
-            DebOut("ERROR: Unknown windows class \"%s\" found!\n", src[i].windows_class);
+            fprintf(stderr, "ERROR: Unknown windows class \"%s\" found!\n", WIN_RES[i].windows_class);
+            DebOut("ERROR: Unknown windows class \"%s\" found!\n", WIN_RES[i].windows_class);
             DebOut("We *will* crash on this!!\n");
           }
           if(child) {
-            src[i].exists=TRUE;
-            src[i].obj=child;
+            WIN_RES[i].exists=TRUE;
+            WIN_RES[i].obj=child;
           }
         break;
 
@@ -770,16 +773,16 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                                 MUIA_UserData         , i,
                                 MUIA_Font, Topaz8Font,
                                 MUIA_Text_PreParse, "\33c",
-                                MUIA_Text_Contents, (IPTR) src[i].text,
+                                MUIA_Text_Contents, (IPTR) WIN_RES[i].text,
                               End,
                             End;
 
-          src[i].exists=TRUE;
-          src[i].obj=child;
+          WIN_RES[i].exists=TRUE;
+          WIN_RES[i].obj=child;
           /* Add hook */
           data->MyMUIHook_pushbutton.h_Entry=(APTR) MUIHook_pushbutton;
           data->MyMUIHook_pushbutton.h_Data =(APTR) data;
-          DoMethod(src[i].obj, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_pushbutton, func); 
+          DoMethod(WIN_RES[i].obj, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) WIN_RES[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_pushbutton, func); 
         break;
 
         case RTEXT:
@@ -787,102 +790,102 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                         //MUIA_Background, MUII_MARKBACKGROUND,
                         MUIA_Font, Topaz8Font,
                         MUIA_Text_PreParse, "\33r",
-                        MUIA_Text_Contents, (IPTR) src[i].text,
+                        MUIA_Text_Contents, (IPTR) WIN_RES[i].text,
                       End;
-          src[i].exists=TRUE;
-          src[i].obj=child;
+          WIN_RES[i].exists=TRUE;
+          WIN_RES[i].obj=child;
         break;
 
         case LTEXT:
           child=TextObject,
                         MUIA_Font, Topaz8Font,
                         MUIA_Text_PreParse, "\33l",
-                        MUIA_Text_Contents, (IPTR) src[i].text,
+                        MUIA_Text_Contents, (IPTR) WIN_RES[i].text,
                       End;
-          src[i].exists=TRUE;
-          src[i].obj=child;
+          WIN_RES[i].exists=TRUE;
+          WIN_RES[i].obj=child;
         break;
 
 
         case EDITTEXT:
-          if(src[i].flags & ES_READONLY) {
+          if(WIN_RES[i].flags & ES_READONLY) {
             child=TextObject,
                         TextFrame,
                         MUIA_Font, Topaz8Font,
                         MUIA_Text_PreParse, "\33c",
-                        MUIA_Text_Contents, (IPTR) src[i].text,
+                        MUIA_Text_Contents, (IPTR) WIN_RES[i].text,
                       End;
-            src[i].obj=child;
+            WIN_RES[i].obj=child;
           }
           else {
             child=StringObject,
                           StringFrame,
                           MUIA_Font, Topaz8Font,
-                          MUIA_String_Contents, (IPTR) src[i].text,
+                          MUIA_String_Contents, (IPTR) WIN_RES[i].text,
                         End;
-            src[i].obj=child;
+            WIN_RES[i].obj=child;
           }
-          src[i].exists=TRUE;
-          src[i].var=(char **) calloc(256, sizeof(IPTR)); // array for cycle texts
-          src[i].var[0]=NULL;
+          WIN_RES[i].exists=TRUE;
+          WIN_RES[i].var=(char **) calloc(256, sizeof(IPTR)); // array for cycle texts
+          WIN_RES[i].var[0]=NULL;
             data->MyMUIHook_entry.h_Entry=(APTR) MUIHook_entry;
             data->MyMUIHook_entry.h_Data =(APTR) data;
-            DoMethod(src[i].obj, MUIM_Notify,  MUIA_String_Contents , MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_entry, func); 
+            DoMethod(WIN_RES[i].obj, MUIM_Notify,  MUIA_String_Contents , MUIV_EveryTime, (IPTR) WIN_RES[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_entry, func); 
 
         break;
 
 
         case COMBOBOX:
-          src[i].mem=(char **) calloc(256, sizeof(IPTR)); // array for cycle texts
-          src[i].mem[0]=NULL; // always terminate
-          if(!flag_editable(src[i].flags)) {
+          WIN_RES[i].mem=(char **) calloc(256, sizeof(IPTR)); // array for cycle texts
+          WIN_RES[i].mem[0]=NULL; // always terminate
+          if(!flag_editable(WIN_RES[i].flags)) {
             DebOut("not editable => Cycle Gadget\n");
             child=CycleObject,
                          MUIA_Font, Topaz8Font,
-                         MUIA_Cycle_Entries, src[i].mem,  // start empty
+                         MUIA_Cycle_Entries, WIN_RES[i].mem,  // start empty
                        End;
-            src[i].exists=TRUE;
-            src[i].obj=child;
+            WIN_RES[i].exists=TRUE;
+            WIN_RES[i].obj=child;
             data->MyMUIHook_combo.h_Entry=(APTR) MUIHook_combo;
             data->MyMUIHook_combo.h_Data =(APTR) data;
-            DoMethod(src[i].obj, MUIM_Notify, MUIA_Cycle_Active , MUIV_EveryTime, (IPTR) src[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_combo, func); 
+            DoMethod(WIN_RES[i].obj, MUIM_Notify, MUIA_Cycle_Active , MUIV_EveryTime, (IPTR) WIN_RES[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_combo, func); 
           }
           else {
             DebOut("Editable => use own Combo class\n");
             child=(Object *) NewObject(CL_Combo->mcc_Class, NULL,TAG_DONE);
-            src[i].exists=TRUE;
-            src[i].obj=child;
-            DoMethod(child, MUIM_List_Insert, src[i].mem);
+            WIN_RES[i].exists=TRUE;
+            WIN_RES[i].obj=child;
+            DoMethod(child, MUIM_List_Insert, WIN_RES[i].mem);
           }
         break;
 
 
         default:
-          DebOut("ERROR: unknown windows_type %d\n", src[i].windows_type);
+          DebOut("ERROR: unknown windows_type %d\n", WIN_RES[i].windows_type);
       }
       DebOut("RESULT: child:   %lx\n", child);
-      DebOut("RESULT: src.obj: %lx\n", src[i].obj);
+      DebOut("RESULT: src.obj: %lx\n", WIN_RES[i].obj);
       if(child) {
-        if(src[i].help) {
-          DebOut("add HOTHELP: %s\n", src[i].help);
-          DoMethod(child, MUIM_Set, MUIA_ShortHelp, (IPTR) src[i].help);
+        if(WIN_RES[i].help) {
+          DebOut("add HOTHELP: %s\n", WIN_RES[i].help);
+          DoMethod(child, MUIM_Set, MUIA_ShortHelp, (IPTR) WIN_RES[i].help);
         }
-        if(!(src[i].flags & WS_VISIBLE)) {
+        if(!(WIN_RES[i].flags & WS_VISIBLE)) {
           DoMethod(child, MUIM_Set, MUIA_ShowMe, (IPTR) 0);
         }
         /*
          * bad idea?
-        if(src[i].flags & WS_DISABLED) {
+        if(WIN_RES[i].flags & WS_DISABLED) {
           DebOut("WS_DISABLED!\n");
           DoMethod(child, MUIM_Set, MUIA_Disabled, TRUE);
         }
         */
-        if(src[i].flags & WS_TABSTOP) {
+        if(WIN_RES[i].flags & WS_TABSTOP) {
           DoMethod(child, MUIM_Set, MUIA_CycleChain, (IPTR) 1);
         }
         child=NULL;
       }
-      DebOut("  src[%d].obj=%lx\n", i, src[i].obj);
+      DebOut("  WIN_RES[%d].obj=%lx\n", i, WIN_RES[i].obj);
       i++;
 
     }
@@ -898,9 +901,9 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
   
     DoMethod((Object *) obj, MUIM_Set, MUIA_Group_LayoutHook, &data->LayoutHook);
     i=0;
-    while(src[i].exists) {
-      DebOut("i: %d (add %lx to %lx)\n", i, src[i].obj, obj);
-      DoMethod((Object *) obj, OM_ADDMEMBER,(IPTR) src[i].obj);
+    while(WIN_RES[i].exists) {
+      DebOut("i: %d (add %lx to %lx)\n", i, WIN_RES[i].obj, obj);
+      DoMethod((Object *) obj, OM_ADDMEMBER,(IPTR) WIN_RES[i].obj);
       i++;
     }
 
