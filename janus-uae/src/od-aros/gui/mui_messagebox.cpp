@@ -31,8 +31,6 @@ extern Object *win;
  * This is no WinAPI call.
  */
 int MessageBox_fixed(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType/*, UINT size*/) {
-  rtReqInfo *req;
-  ULONG ret;
   BOOL i_opened_it=false;
   struct TextFont *font;
   struct Window *window;
@@ -40,12 +38,12 @@ int MessageBox_fixed(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType/*, U
       "fixed.font",
       8,
       0,
-      NULL
+      0
   };
 
   struct TagItem tags[]={
     {RT_TextAttr, (IPTR) &myta},
-    {RT_Window, NULL},
+    {RT_Window, 0},
     {RTEZ_ReqTitle , (IPTR) lpCaption},
     {RT_ReqPos, REQPOS_CENTERSCR},
     {RT_WaitPointer, TRUE},
@@ -84,7 +82,7 @@ int MessageBox_fixed(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType/*, U
     return FALSE;
   }
 
-  ret=rtEZRequestA(lpText, "Ok", NULL, NULL, tags);
+  rtEZRequestA(lpText, "Ok", NULL, NULL, tags);
 
   if(i_opened_it) {
     CloseLibrary((struct Library *)ReqToolsBase);
