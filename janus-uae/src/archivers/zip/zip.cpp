@@ -1071,7 +1071,9 @@ extern int ZEXPORT zipOpenNewFileInZip4_64 (zipFile file, const char* filename, 
     int err = ZIP_OK;
 
 #    ifdef NOCRYPT
+#if !defined(__AROS__)
     (crcForCrypting);
+#endif
     if (password != NULL)
         return ZIP_PARAMERROR;
 #    endif
