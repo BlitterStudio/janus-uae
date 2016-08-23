@@ -1,6 +1,15 @@
 #ifndef QEMU_HW_ESP_H
 #define QEMU_HW_ESP_H
 
+#if defined(__AROS__)
+#ifdef CMD_FLUSH
+#undef CMD_FLUSH
+#endif
+#ifdef CMD_RESET
+#undef CMD_RESET
+#endif
+#endif
+
 /* esp.c */
 #define ESP_MAX_DEVS 7
 typedef int (*ESPDMAMemoryReadWriteFunc)(void *opaque, uint8_t *buf, int len);
@@ -76,8 +85,10 @@ struct ESPState {
 #define CMD_CMD 0x7f
 
 #define CMD_NOP      0x00
+#if !defined(__AROS__)
 #define CMD_FLUSH    0x01
 #define CMD_RESET    0x02
+#endif
 #define CMD_BUSRESET 0x03
 #define CMD_TI       0x10
 #define CMD_ICCS     0x11
