@@ -17,12 +17,12 @@ struct Data {
   struct Hook MyMUIHook_tree_display;
 #endif
   ULONG width, height;
-  Element *src;
+  HWND hwnd;
   struct TextFont *font;
   int *(*func) (Element *hDlg, UINT msg, ULONG wParam, IPTR lParam);
 };
 
-int get_elem_from_obj(struct Data *data, Object *obj);
+Element *get_elem_from_obj(struct Data *data, Object *obj);
 Object *new_tree(ULONG i, void *f, struct Data *data, Object **nlisttree);
 
 #endif

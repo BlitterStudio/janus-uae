@@ -66,7 +66,6 @@
 #include "cdtv.h"
 #include "blkdev.h"
 #include "gfx.h"
-#include "string_resource.h"
 
 void target_fixup_options (struct uae_prefs *p) {
 }

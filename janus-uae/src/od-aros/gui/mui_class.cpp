@@ -130,30 +130,40 @@ BOOL flag_editable(ULONG flags) {
 /*************************************
  * get index of Zune object
  *************************************/
-int get_elem_from_obj(struct Data *data, Object *obj) {
+Element *get_elem_from_obj(struct Data *data, Object *obj) {
 
   int i=0;
 
-  //DebOut("obj: %lx, data %lx\n", obj, data);
+  DebOut("obj: %lx, data %lx\n", obj, data);
 
+#if 0
   /* first try userdata */
   i=XGET(obj, MUIA_UserData);
   if(i>0) {
     //DebOut("MUIA_UserData: %d\n", i);
     return i;
   }
+#endif
 
   i=0;
+  while(WIN_RES[i].idc) {
+    if(WIN_RES[i].obj == obj) {
+      DebOut("found! elem: %p\n", WIN_RES[i]);
+      return &WIN_RES[i];
+    }
+    i++;
+  }
+#if 0
   while(data->src[i].exists) {
     if(data->src[i].obj == obj) {
-      //DebOut("found! i: %d\n", i);
       return i;
     }
     i++;
   }
+#endif
 
   DebOut("ERROR: obj %lx, data %lx not found!\n", obj, data);
-  return -1;
+  return NULL;
 }
 
 /****************************************
@@ -179,8 +189,8 @@ AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
 
   AROS_USERFUNC_INIT
 
-  int i;
   ULONG wParam;
+  Element *elem;
 
   struct Data *data = (struct Data *) hook->h_Data;
 
@@ -189,26 +199,26 @@ AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
   //DebOut("[%lx] hook.h_Data: %lx\n", obj, hook->h_Data);
   //DebOut("[%lx] obj: %lx\n", obj);
 
-  i=get_elem_from_obj(data, (Object *) obj);
+  elem=get_elem_from_obj(data, (Object *) obj);
 
   //DebOut("[%lx] i: %d\n", obj, i);
 
-  data->src[i].value=XGET((Object *) obj, MUIA_Cycle_Active);
+  elem->value=XGET((Object *) obj, MUIA_Cycle_Active);
   //DebOut("[%lx] MUIA_Cycle_Active: %d (mui obj: %lx)\n", obj, data->src[i].value, obj);
 
-  DebOut("[%lx] state: %d\n", obj, data->src[i].value);
+  DebOut("[%lx] state: %d\n", obj, elem->value);
 
   if(data->func) {
-    if(data->src[i].mem[data->src[i].value] && !strcmp(data->src[i].mem[data->src[i].value], EMPTY_SELECTION)) {
+    if(elem->mem[elem->value] && !strcmp(elem->mem[elem->value], EMPTY_SELECTION)) {
       DebOut("[%lx] Empty selection (%s), do nothing\n", obj, EMPTY_SELECTION);
     }
     else {
-      if(flag_editable(data->src[i].flags)) {
-        data->src[i].value--;
+      if(flag_editable(elem->flags)) {
+        elem->value--;
       }
-      wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
-      DebOut("[%lx] call function: %lx(IDC %d, CBN_SELCHANGE)\n", obj, data->func, data->src[i].idc);
-      data->func(data->src, WM_COMMAND, wParam, 0);
+      wParam=MAKELPARAM(elem->idc, CBN_SELCHANGE);
+      DebOut("[%lx] call function: %lx(IDC %d, CBN_SELCHANGE)\n", obj, data->func, elem->idc);
+      data->func(elem, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
     }
   }
   else {
@@ -222,7 +232,7 @@ AROS_UFH2(void, MUIHook_entry, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
 
   AROS_USERFUNC_INIT
 
-  int i;
+  Element *elem;
   ULONG wParam;
 
   struct Data *data = (struct Data *) hook->h_Data;
@@ -231,13 +241,13 @@ AROS_UFH2(void, MUIHook_entry, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
   //DebOut("[%lx] hook.h_Data: %lx\n", obj, hook->h_Data);
   //DebOut("[%lx] obj: %lx\n", obj);
 
-  i=get_elem_from_obj(data, (Object *) obj);
+  elem=get_elem_from_obj(data, (Object *) obj);
 
-  DebOut("[%lx] i: %d\n", obj, i);
+  DebOut("[%lx] elem: %p\n", obj, elem);
 
   if(data->func) {
-    wParam=MAKELPARAM(data->src[i].idc, 0); /* 0? really? */
-    data->func(data->src, WM_COMMAND, wParam, 0);
+    wParam=MAKELPARAM(elem->idc, 0); /* 0? really? */
+    data->func(elem, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
   }
   else {
     DebOut("[%lx] function is zero: %lx\n", obj, data->func);
@@ -252,12 +262,12 @@ AROS_UFH2(void, MUIHook_slide, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
   AROS_USERFUNC_INIT
 
   struct Data *data = (struct Data *) hook->h_Data;
-  int i;
+  Element *elem;
   ULONG wParam;
 
   DebOut("Sliding..\n");
 
-  i=get_elem_from_obj(data, (Object *) obj);
+  elem=get_elem_from_obj(data, (Object *) obj);
 
   if(data->func) {
 #if 0
@@ -269,10 +279,10 @@ AROS_UFH2(void, MUIHook_slide, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
     /* warning: should we call BN_CLICKED here, too?
      * open console in Paths won't work without .. 
      */
-    wParam=MAKELPARAM(data->src[i].idc, BN_CLICKED);
-    data->func(data->src, WM_COMMAND, wParam, 0);
+    wParam=MAKELPARAM(elem->idc, BN_CLICKED);
+    data->func(elem, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
 
-    data->func(data->src, WM_HSCROLL, 0, 0);
+    data->func(elem, WM_HSCROLL, 0, 0);
 
   }
   else {
@@ -292,7 +302,7 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
 
   AROS_USERFUNC_INIT
 
-  int i;
+  Element *elem;
   ULONG t;
   ULONG wParam;
   ULONG newstate;
@@ -301,28 +311,28 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
 
   DebOut("entered (hook.h_Data: %lx)\n", hook->h_Data);
 
-  i=get_elem_from_obj(data, (Object *) obj);
+  elem=get_elem_from_obj(data, (Object *) obj);
 
-  if(data->src[i].text) {
-    DebOut("obj: %lx => i: %d (%s)\n", obj, i, data->src[i].text);
+  if(elem->text) {
+    DebOut("obj: %lx => %p: %d (%s)\n", obj, elem, elem->text);
   }
   else {
-    DebOut("obj: %lx => i: %d\n", obj, i);
+    DebOut("obj: %lx => %p: %d\n", obj, elem);
   }
 
   newstate=XGET((Object *) obj, MUIA_Selected);
-  DebOut("MUIA_Selected is (now): %d (group: %d)\n", newstate, data->src[i].group);
+  DebOut("MUIA_Selected is (now): %d (group: %d)\n", newstate, elem->group);
 
-  if((data->src[i].windows_type==CONTROL) && 
-     (data->src[i].flags2==BS_AUTORADIOBUTTON) && 
-     (data->src[i].group)) {
+  if((elem->windows_type==CONTROL) && 
+     (elem->flags2==BS_AUTORADIOBUTTON) && 
+     (elem->group)) {
 
     /*** AUTORADIOBUTTON / Radio button logic: ***/
 
-    if(data->src[i].value == 1) {
+    if(elem->value == 1) {
       /* we were already the active one, we want to stay that, too! */
       DebOut("we were already the active one!\n");
-      DoMethod(data->src[i].obj, MUIM_NoNotifySet, MUIA_Selected, TRUE);
+      DoMethod(elem->obj, MUIM_NoNotifySet, MUIA_Selected, TRUE);
       /* no event */
       goto DONE;
     }
@@ -335,29 +345,29 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
     DebOut("deselect all my brothers\n");
     /* as we are part of a group, unselect all our active friends */
     t=0;
-    while(data->src[t].exists) {
-      if(data->src[t].value && data->src[i].group == data->src[t].group && t!=i) {
+    while(WIN_RES[t].idc) {
+      if(WIN_RES[t].group == elem->group && WIN_RES[t].value && WIN_RES[t].idc!=elem->idc) {
         /* same group */
         DebOut("  => also activated, same group, other guy!\n");
-        DoMethod(data->src[t].obj, MUIM_NoNotifySet, MUIA_Selected, FALSE); 
-        data->src[t].value=0;
+        DoMethod(WIN_RES[t].obj, MUIM_NoNotifySet, MUIA_Selected, FALSE); 
+        WIN_RES[t].value=0;
       }
       t++;
     }
   }
-  else if(data->src[i].windows_type==COMBOBOX) {
+  else if(elem->windows_type==COMBOBOX) {
 
     /*** COMBOBOX ***/
 
     /* CBN_SELCHANGE: A new combo box list item is selected. */
     if(data->func) {
-      wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
-      DebOut("call function: %lx (IDC %d, wParam: %lx)\n", data->func, data->src[i].idc, wParam);
-      data->func(data->src, WM_COMMAND, wParam, 0);
+      wParam=MAKELPARAM(elem->idc, CBN_SELCHANGE);
+      DebOut("call function: %lx (IDC %d, wParam: %lx)\n", data->func, elem->idc, wParam);
+      data->func(elem, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
     }
     goto DONE;
   }
-  data->src[i].value=newstate;
+  elem->value=newstate;
 
 
 DONE:
@@ -365,8 +375,8 @@ DONE:
     /* warning: should we call BN_CLICKED here, too?
      * open console in Paths won't work without .. 
      */
-    wParam=MAKELPARAM(data->src[i].idc, BN_CLICKED);
-    data->func(data->src, WM_COMMAND, wParam, 0);
+    wParam=MAKELPARAM(elem->idc, BN_CLICKED);
+    data->func(elem, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
   }
   else {
     DebOut("WARNING: function is zero: %lx\n", data->func);
@@ -379,24 +389,24 @@ DONE:
 AROS_UFH2(void, MUIHook_pushbutton, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
 
   AROS_USERFUNC_INIT
-  int i;
+  Element *elem;
   ULONG wParam;
 
   struct Data *data = (struct Data *) hook->h_Data;
 
   DebOut("[%lx] entered\n", obj);
 
-  i=get_elem_from_obj(data, (Object *) obj);
+  elem=get_elem_from_obj(data, (Object *) obj);
 
-  DebOut("i: %d\n", i);
+  DebOut("elem: %p\n", elem);
 
   if(data->func) {
     DebOut("call function: %lx\n", data->func);
-    DebOut("IDC: %d\n", data->src[i].idc);
+    DebOut("IDC: %d\n", elem->idc);
     DebOut("WM_COMMAND: %d\n", WM_COMMAND);
 
-    wParam=MAKELPARAM(data->src[i].idc, BN_CLICKED);
-    data->func(data->src, WM_COMMAND, wParam, 0);
+    wParam=MAKELPARAM(elem->idc, BN_CLICKED);
+    data->func(elem, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
   }
   else {
     DebOut("function is zero: %lx\n", data->func);
@@ -418,7 +428,7 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
       struct Data *data = (struct Data *) hook->h_Data;
       //ULONG i=0;
       //struct Element *element=data->src;
-      ULONG mincw, minch, defcw, defch, maxcw, maxch;
+      //ULONG mincw, minch, defcw, defch, maxcw, maxch;
 
       //DebOut("MUILM_MINMAX obj %lx\n", obj);
       //DebOut("data:        %lx\n", data);
@@ -443,30 +453,37 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
     case MUILM_LAYOUT: {
       struct Data *data = (struct Data *) hook->h_Data;
       ULONG i=0;
-      struct Element *element=data->src;
+      Element *element=(Element *) data->hwnd;
+
+      /* find our position */
+      while(&WIN_RES[i] != element) {
+        i++;
+      }
 
       //DebOut("MUILM_LAYOUT obj %lx\n", obj);
       //DebOut("data:        %lx\n", data);
       //DebOut("data->src:   %lx\n", data->src);
 
-      while(element[i].exists) {
+      /* all our lovely childs */
+      i++;
+      while(WIN_RES[i].exists && WIN_RES[i].windows_type != DIALOGEX) {
         //DebOut("  child i=%d\n", i);
         //DebOut("   obj[%d]: %lx\n", i, element[i].obj);
         //DebOut("   idc: %d (dummy is %d)\n", element[i].idc, IDC_dummy);
         //DebOut("   x, y: %d, %d  w, h: %d, %d\n", element[i].x, element[i].y, element[i].w, element[i].h);
         if(element[i].obj != obj) {
-          if (!MUI_Layout(element[i].obj,
-                          element[i].x * RESIZE_X,
-                          element[i].y * RESIZE_Y,
-                          element[i].w * RESIZE_X,
-                          element[i].h * RESIZE_Y, 0)
+          if (!MUI_Layout(WIN_RES[i].obj,
+                          WIN_RES[i].x * RESIZE_X,
+                          WIN_RES[i].y * RESIZE_Y,
+                          WIN_RES[i].w * RESIZE_X,
+                          WIN_RES[i].h * RESIZE_Y, 0)
              ) {
             DebOut("MUI_Layout failed!\n");
             return FALSE;
           }
         }
         else {
-          DebOut("   RECURSION !?!?!: %lx\n", element[i].obj);
+          DebOut("   RECURSION !?!?!: %lx\n", WIN_RES[i].obj);
         }
         i++;
       }
@@ -533,11 +550,11 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
   {
     GETDATA;
     //struct TextAttr ta;
-    struct TextFont *old;
+    //struct TextFont *old;
 
     data->width =396;
     data->height=320;
-    data->src   =src;
+    data->hwnd  =src;
     data->func  =func;
 
     DebOut("YYYYYYYYYYYYYYYYYY\n");
@@ -910,7 +927,7 @@ static IPTR mGet(struct Data *data, APTR obj, struct opGet *msg, struct IClass *
       rc = (IPTR) data->func; 
       break;
     case MA_src:
-      rc = (IPTR) data->src; 
+      rc = (IPTR) data->hwnd; 
       break;
 
     default: return DoSuperMethodA(cl, (Object *) obj, (Msg)msg);

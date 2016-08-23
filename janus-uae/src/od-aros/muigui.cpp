@@ -129,7 +129,6 @@
 #include "gui/fs.h"
 #include "gui/cursor.h"
 #include "tchar.h"
-#include "../od-win32/resources/resource.h"
 #define fgetws fgets
 #define fputws fputs
 #endif
@@ -246,9 +245,10 @@ wstring WIN32GUI_LoadUIString (DWORD id)
 	return strdup(tmp);
 }
 
+/* WIN32GUI_LoadUIString (IDS_CURRENT_CONFIGURATION, tmp, sizeof tmp / sizeof (TCHAR));*/
 void WIN32GUI_LoadUIString (DWORD id, TCHAR *string, DWORD dwStringLen)
 {
-	if (LoadString (hUIDLL ? hUIDLL : hInst, id, string, dwStringLen) == 0)
+	//if (LoadString (hUIDLL ? hUIDLL : hInst, id, string, dwStringLen) == 0)
 		LoadString (hInst, id, string, dwStringLen);
 }
 
@@ -6001,6 +6001,8 @@ static void savelog (HWND hDlg, int all)
 #endif
 }
 
+extern char *STRINGTABLE[];
+
 pathtype path_type;
 GUI_STATIC INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -6068,6 +6070,30 @@ GUI_STATIC INT_PTR CALLBACK PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 		SendDlgItemMessage (hDlg, IDC_LOGSELECT, CB_RESETCONTENT, 0, 0);
 		SendDlgItemMessage (hDlg, IDC_LOGSELECT, CB_ADDSTRING, 0, (LPARAM)_T("winuaebootlog.txt"));
 		SendDlgItemMessage (hDlg, IDC_LOGSELECT, CB_ADDSTRING, 0, (LPARAM)_T("winuaelog.txt"));
+    
+    DebOut("IDS_KICKSTART: %d\n", IDS_KICKSTART);
+    DebOut("IDS_CPU: %d\n", IDS_CPU);
+    DebOut("IDS_FILTER: %d\n", IDS_FILTER);
+    DebOut("IDS_QUICKSTART: %d\n", IDS_QUICKSTART);
+    DebOut("IDS_CHIPSET2: %d\n", IDS_CHIPSET2);
+    DebOut("IDS_GAMEPORTS: %d\n", IDS_GAMEPORTS);
+    DebOut("IDS_EXPANSION: %d\n", IDS_EXPANSION);
+    DebOut("IDS_EXPANSION2: %d\n", IDS_EXPANSION2);
+    DebOut("IDS_EXTTEXT: %d\n", IDS_EXTTEXT);
+    DebOut("IDS_FRAMERATE: %d\n", IDS_FRAMERATE);
+    DebOut("IDS_EIGHTH: %d\n", IDS_EIGHTH);
+    DebOut("IDS_DEVICE: %d\n", IDS_DEVICE);
+    DebOut("IDS_TREEVIEW_ABOUT: %d\n", IDS_TREEVIEW_ABOUT);
+    DebOut("IDS_CD: %d\n", IDS_CD);
+    DebOut("IDS_DISPLAYMODE_NATIVE: %d\n", IDS_DISPLAYMODE_NATIVE);
+    DebOut("IDS_CURRENT_CONFIGURATION: %d\n", IDS_CURRENT_CONFIGURATION);
+    DebOut("IDS_CURRENT_CONFIGURATION: %s\n", STRINGTABLE[IDS_CURRENT_CONFIGURATION]);
+    {
+      int foo=0;
+      for(foo=0;foo<IDS_AUTOSCALE_OVERSCAN_BLANK;foo++) {
+        DebOut("foo %d: %s\n", foo, STRINGTABLE[foo]);
+      }
+    }
 		WIN32GUI_LoadUIString (IDS_CURRENT_CONFIGURATION, tmp, sizeof tmp / sizeof (TCHAR));
 		SendDlgItemMessage (hDlg, IDC_LOGSELECT, CB_ADDSTRING, 0, (LPARAM)tmp);
 		SendDlgItemMessage (hDlg, IDC_LOGSELECT, CB_SETCURSEL, 0, 0);
