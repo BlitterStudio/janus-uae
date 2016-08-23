@@ -76,7 +76,8 @@ static int blit_maxcyclecounter, blit_slowdown, blit_totalcyclecounter;
 static int blit_startcycles, blit_misscyclecounter;
 
 #ifdef CPUEMU_13
-extern uae_u8 cycle_line[256];
+extern uae_u8 cycle_line[];
+#define cycle_line_size 256
 #endif
 
 static long blit_firstline_cycles;
@@ -1247,7 +1248,7 @@ static void blitter_force_finish (void)
 		if (blitter_cycle_exact && !immediate_blits) {
 			int rounds = 10000;
 			while (bltstate != BLT_done && rounds > 0) {
-				memset (cycle_line, 0, sizeof cycle_line);
+				memset (cycle_line, 0, cycle_line_size);
 				decide_blitter (-1);
 				rounds--;
 			}
