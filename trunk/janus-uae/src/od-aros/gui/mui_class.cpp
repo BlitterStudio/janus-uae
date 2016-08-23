@@ -466,8 +466,10 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
       /* all our lovely childs */
       i++;
       while(WIN_RES[i].exists && WIN_RES[i].windows_type != DIALOGEX) {
-        //DebOut("  child i=%d\n", i);
         DebOut("   obj[%d]: %p\n", i, WIN_RES[i].obj);
+        if(WIN_RES[i].text) {
+          DebOut("          : %s\n", WIN_RES[i].text);
+        }
         DebOut("   idc: %d\n", WIN_RES[i].idc);
         DebOut("   x, y: %d, %d  w, h: %d, %d\n", WIN_RES[i].x, WIN_RES[i].y, WIN_RES[i].w, WIN_RES[i].h);
         if(WIN_RES[i].obj != obj) {
@@ -588,7 +590,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
     i++;
 
     while(WIN_RES[i].idc && WIN_RES[i].windows_type!=DIALOGEX) {
-      DebOut("========== i=%d =========\n", i);
+      DebOut("========== i=%d idc: %d =========\n", i, WIN_RES[i].idc);
       if(WIN_RES[i].text) {
         DebOut("add \"%s\"\n", WIN_RES[i].text);
       }
@@ -900,8 +902,14 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
      */
   
     DoMethod((Object *) obj, MUIM_Set, MUIA_Group_LayoutHook, &data->LayoutHook);
+
+    /* find start of our children */
     i=0;
-    while(WIN_RES[i].exists) {
+    while(WIN_RES[i].idc && &WIN_RES[i]!=elem) {
+      i++;
+    }
+    i++;
+    while(WIN_RES[i].idc && WIN_RES[i].windows_type!=DIALOGEX) {
       DebOut("i: %d (add %lx to %lx)\n", i, WIN_RES[i].obj, obj);
       DoMethod((Object *) obj, OM_ADDMEMBER,(IPTR) WIN_RES[i].obj);
       i++;

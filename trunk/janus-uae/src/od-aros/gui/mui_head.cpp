@@ -249,19 +249,19 @@ Object* FixedProcObj(Element *src, IPTR proc)
 
   DebOut("==========================================================================\n");
   DebOut("src %p, proc %lx\n", src, proc);
-    struct TagItem fo_tags[] =
-    {
-        { MA_src, (IPTR) src}, 
-        { MA_dlgproc, proc},
-        { TAG_DONE, 0}
-    };
+  struct TagItem fo_tags[] =
+  {
+      { MA_src, (IPTR) src}, 
+      { MA_dlgproc, proc},
+      { TAG_DONE, 0}
+  };
 
-    if (CL_Fixed)
-    {
-        _fpObj = (Object*) NewObjectA(CL_Fixed->mcc_Class, NULL, fo_tags);
-    }
+  if (CL_Fixed)
+  {
+      _fpObj = (Object*) NewObjectA(CL_Fixed->mcc_Class, NULL, fo_tags);
+  }
 
-    return _fpObj;
+  return _fpObj;
 
 }
 
