@@ -14,8 +14,7 @@ endif
 ##COMMON_FLAGS += -DJUAE_DEBUG=1 -DDEBUG=1
 
 #MM local-juae-emulator : local-juae-gui
-#MM local-juae-emulator : local-juae-mpeg2
-#MM local-juae-emulator : local-juae-mpeg2convert
+#MM local-juae-emulator : linklibs-libmpeg2
 #MM local-juae-emulator : local-juae-sdlconfig
 #MM local-juae-emulator : local-juae-hosttools
 #MM local-juae-emulator : local-juae-linetoscr
@@ -262,11 +261,11 @@ ifneq (,$(COMMON_FLAGS))
 USER_CXXFLAGS := $(USER_CXXFLAGS) $(COMMON_FLAGS)
 endif
 
-JUAE_LDFLAGS := -static-libstdc++ -L$(GENDIR)/$(CURDIR)/lib -lgui -lmpeg2 -lmpeg2convert -lSDL_Config
+JUAE_LDFLAGS := -static-libstdc++ -L$(GENDIR)/$(CURDIR)/lib -lgui -lSDL_Config
 
 %build_prog mmake=local-juae-emulator \
     progname=J-UAE targetdir=$(JUAEDIR) files="" cxxfiles="$(JUAESRCS)" \
-    uselibs="png SDL arossupport z GL mui lowlevel" ldflags="$(JUAE_LDFLAGS)"
+    uselibs="png SDL mpeg2convert mpeg2 arossupport z GL mui lowlevel" ldflags="$(JUAE_LDFLAGS)"
 
 %build_icons mmake=local-juae-icons-emulator icons="J-UAE" \
              dir=$(AROS_CONTRIB)/Emu/J-UAE
