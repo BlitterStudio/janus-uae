@@ -56,13 +56,18 @@ Element *get_control(HWND hDlg, int item) {
   ULONG i=0;
   Element *elem=(Element *) hDlg;
 
+  DebOut("elem: %p, item: %d\n", elem, item);
+
+  /* skip to hDlg */
   if(hDlg) {
     while(WIN_RES[i].idc && (WIN_RES[i].idc != elem->idc)) {
+      //DebOut("WIN_RES[%d].idc: %d, elem->idc %d\n", i, WIN_RES[i].idc, elem->idc);
       i++;
     }
   }
 
   while(WIN_RES[i].idc) {
+    //DebOut("WIN_RES[%d].idc: %d, item %d\n", i, WIN_RES[i].idc, item);
     if(WIN_RES[i].idc==item) {
       return &WIN_RES[i];
     }
@@ -218,19 +223,22 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
   ULONG t;
   ULONG wParam;
   ULONG newstate;
+  ULONG i;
 
   struct Data *data = (struct Data *) hook->h_Data;
 
   DebOut("entered (hook.h_Data: %lx)\n", hook->h_Data);
   DebOut("data->hwnd: %p\n", data->hwnd );
+  i=XGET((Object *) obj, MUIA_UserData);
+  DebOut("MUIA_UserData: %d\n", i);
 
-  elem=(Element *) data->hwnd;
+  elem=&WIN_RES[i];
 
   if(elem->text) {
-    DebOut("obj: %lx => %p: %d (%s)\n", obj, elem, elem->text);
+    DebOut("obj: %lx => elem %p: %d (%s)\n", obj, elem, elem->text);
   }
   else {
-    DebOut("obj: %lx => %p: %d\n", obj, elem);
+    DebOut("obj: %lx => elem %p\n", obj, elem);
   }
 
   newstate=XGET((Object *) obj, MUIA_Selected);
