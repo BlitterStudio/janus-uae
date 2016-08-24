@@ -1,0 +1,7 @@
+# Copyright © 2016, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+%build_with_configure mmake=linklibs-libmpeg2 prefix=$(AROS_DEVELOPMENT) nix=yes \
+    extraoptions=""
