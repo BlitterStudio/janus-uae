@@ -310,8 +310,9 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
   struct Data *data = (struct Data *) hook->h_Data;
 
   DebOut("entered (hook.h_Data: %lx)\n", hook->h_Data);
+  DebOut("data->hwnd: %p\n", data->hwnd );
 
-  elem=get_elem_from_obj(data, (Object *) obj);
+  elem=(Element *) data->hwnd;
 
   if(elem->text) {
     DebOut("obj: %lx => %p: %d (%s)\n", obj, elem, elem->text);
