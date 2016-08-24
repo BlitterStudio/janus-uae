@@ -56,11 +56,11 @@ AROS_UFH3S(LONG, display_func, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(cha
   ULONG c=0;
 
   /* get elem for this object */
-  DebOut("Display hook entered (entry=%lx)\n", entry);
+  DebOut("Display hook entered (entry=0x%p)\n", entry);
 
   elem=h_data->elem;
   i   =h_data->item;
-  DebOut("elem: %lx, i: %d\n", elem, i);
+  DebOut("elem: 0x%p, i: %d\n", elem, i);
 
   if(!elem->mem || !elem->mem[0]) {
     DebOut("no columns..!?\n");
@@ -149,11 +149,11 @@ Object *new_listview(struct Element *elem, ULONG i, void *f, struct Data *data, 
         MUIA_List_Title, TRUE, /* title can't be switched on/off in Zune !? */
        End;
 
-  DebOut("new ListObject: %lx\n", nlist);
+  DebOut("new ListObject: 0x%p\n", nlist);
 
 
   DoMethod(nlist, MUIM_List_Clear, TRUE);
-  DebOut("ListObject %lx cleared\n", nlist);
+  DebOut("ListObject 0x%p cleared\n", nlist);
 
   listview=ListviewObject,
             MUIA_Listview_List, nlist,
@@ -161,7 +161,7 @@ Object *new_listview(struct Element *elem, ULONG i, void *f, struct Data *data, 
             //MUIA_Listview_ScrollerPos, MUIV_Listview_ScrollerPos_None,
            End;
 
-  DebOut("new ListViewObject: %lx\n", listview);
+  DebOut("new ListViewObject: 0x%p\n", listview);
   //char *str = "New entry";
   //DoMethod(*list,MUIM_List_Insert,&str,1,MUIV_List_Insert_Bottom);
 
@@ -215,7 +215,7 @@ int ListView_GetItemCount(HWND hwnd) {
   if(i<0) return 0;
 #endif
 
-  DebOut("list obj: %lx\n", elem->action);
+  DebOut("list obj: 0x%p\n", elem->action);
   nr=(int) XGET(elem->action, MUIA_List_Entries);
   DebOut("MUIA_List_Entries: %d\n", nr);
  
@@ -278,7 +278,7 @@ BOOL ListView_DeleteAllItems(HWND hwnd) {
   i=get_index(elem, nIDDlgItem);
   if(i<0) return FALSE;
 #endif
-  DebOut("elem: %lx: %d elem->action: %lx\n", elem, elem->action);
+  DebOut("elem: 0x%p: %d elem->action: 0x%p\n", elem, elem->action);
 
   DoMethod(elem->action, MUIM_List_Clear);
 
@@ -337,7 +337,7 @@ int ListView_InsertColumn(HWND hwnd, int iCol, const LPLVCOLUMN pcol) {
   if(!elem) return 0;
   i=get_index(elem, nIDDlgItem);
   if(i<0) return 0;
-  DebOut("elem: %lx, i: %d\n", elem, i);
+  DebOut("elem: 0x%p, i: %d\n", elem, i);
 #endif
 
   if(!elem->mem) {
@@ -366,7 +366,7 @@ int ListView_InsertColumn(HWND hwnd, int iCol, const LPLVCOLUMN pcol) {
   }
 
   DebOut("format: >%s<\n", format);
-  DebOut("elem->action: %lx\n", elem->action);
+  DebOut("elem->action: 0x%p\n", elem->action);
 
 
   /* if this is our first column, we need to setup the display hook */
@@ -446,7 +446,7 @@ int ListView_InsertItem(HWND hwnd, const LPLVITEM pitem) {
   DebOut("sizeof(struct view_line): %d\n", sizeof(struct view_line));
 
   strcpy(new_line->column[0], pitem->pszText);
-  DebOut("elem->action: %lx\n", elem->action);
+  DebOut("elem->action: 0x%p\n", elem->action);
   DoMethod(elem->action, MUIM_List_InsertSingle, new_line, MUIV_List_Insert_Bottom);
   FreeVec(new_line);
   new_line=NULL;
@@ -550,7 +550,7 @@ UINT ListView_GetItemState(HWND hwnd, int  nr, UINT mask) {
   if(!elem) return 0;
   i=get_index(elem, nIDDlgItem);
   if(i<0) return 0;
-  DebOut("elem: %lx, i: %d\n", elem, i);
+  DebOut("elem: 0x%p, i: %d\n", elem, i);
 #endif
 
   if(mask!=LVIS_SELECTED) {

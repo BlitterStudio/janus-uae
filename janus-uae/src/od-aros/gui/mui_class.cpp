@@ -114,32 +114,32 @@ AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
 
   struct Data *data = (struct Data *) hook->h_Data;
 
-  //DebOut("[%lx] entered\n", obj);
-  //DebOut("[%lx] hook.h_Data: %lx\n", obj, hook->h_Data);
-  //DebOut("[%lx] obj: %lx\n", obj);
+  //DebOut("[0x%p] entered\n", obj);
+  //DebOut("[0x%p] hook.h_Data: 0x%p\n", obj, hook->h_Data);
+  //DebOut("[0x%p] obj: 0x%p\n", obj);
 
   elem=(Element *) data->hwnd;
 
   elem->value=XGET((Object *) obj, MUIA_Cycle_Active);
-  //DebOut("[%lx] MUIA_Cycle_Active: %d (mui obj: %lx)\n", obj, data->src[i].value, obj);
+  //DebOut("[0x%p] MUIA_Cycle_Active: %d (mui obj: 0x%p)\n", obj, data->src[i].value, obj);
 
-  DebOut("[%lx] state: %d\n", obj, elem->value);
+  DebOut("[0x%p] state: %d\n", obj, elem->value);
 
   if(data->func) {
     if(elem->mem[elem->value] && !strcmp(elem->mem[elem->value], EMPTY_SELECTION)) {
-      DebOut("[%lx] Empty selection (%s), do nothing\n", obj, EMPTY_SELECTION);
+      DebOut("[0x%p] Empty selection (%s), do nothing\n", obj, EMPTY_SELECTION);
     }
     else {
       if(flag_editable(elem->flags)) {
         elem->value--;
       }
       wParam=MAKELPARAM(elem->idc, CBN_SELCHANGE);
-      DebOut("[%lx] call function: %lx(IDC %d, CBN_SELCHANGE)\n", obj, data->func, elem->idc);
+      DebOut("[0x%p] call function: 0x%p(IDC %d, CBN_SELCHANGE)\n", obj, data->func, elem->idc);
       data->func(elem, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
     }
   }
   else {
-    DebOut("[%lx] function is zero: %lx\n", obj, data->func);
+    DebOut("[0x%p] function is zero: 0x%p\n", obj, data->func);
   }
 
   AROS_USERFUNC_EXIT
@@ -154,20 +154,20 @@ AROS_UFH2(void, MUIHook_entry, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
 
   struct Data *data = (struct Data *) hook->h_Data;
 
-  //DebOut("[%lx] entered\n", obj);
-  //DebOut("[%lx] hook.h_Data: %lx\n", obj, hook->h_Data);
-  //DebOut("[%lx] obj: %lx\n", obj);
+  //DebOut("[0x%p] entered\n", obj);
+  //DebOut("[0x%p] hook.h_Data: 0x%p\n", obj, hook->h_Data);
+  //DebOut("[0x%p] obj: 0x%p\n", obj);
 
   elem=(Element *) data->hwnd;
 
-  DebOut("[%lx] elem: %p\n", obj, elem);
+  DebOut("[0x%p] elem: %p\n", obj, elem);
 
   if(data->func) {
     wParam=MAKELPARAM(elem->idc, 0); /* 0? really? */
     data->func(elem, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
   }
   else {
-    DebOut("[%lx] function is zero: %lx\n", obj, data->func);
+    DebOut("[0x%p] function is zero: 0x%p\n", obj, data->func);
   }
 
   AROS_USERFUNC_EXIT
@@ -189,7 +189,7 @@ AROS_UFH2(void, MUIHook_slide, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
   if(data->func) {
 #if 0
     wParam=MAKELPARAM(data->src[i].idc, CBN_SELCHANGE);
-    DebOut("call function: %lx (IDC %d, wParam: %lx)\n", data->func, data->src[i].idc, wParam);
+    DebOut("call function: 0x%p (IDC %d, wParam: 0x%p)\n", data->func, data->src[i].idc, wParam);
     data->func(data->src, WM_COMMAND, wParam, 0);
 #endif
 
@@ -203,7 +203,7 @@ AROS_UFH2(void, MUIHook_slide, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
 
   }
   else {
-    DebOut("WARNING: function is zero: %lx\n", data->func);
+    DebOut("WARNING: function is zero: 0x%p\n", data->func);
     /* Solution: add DlgProc in mNew in mui_head.cpp */
   }
 
@@ -227,7 +227,7 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
 
   struct Data *data = (struct Data *) hook->h_Data;
 
-  DebOut("entered (hook.h_Data: %lx)\n", hook->h_Data);
+  DebOut("entered (hook.h_Data: 0x%p)\n", hook->h_Data);
   DebOut("data->hwnd: %p\n", data->hwnd );
   i=XGET((Object *) obj, MUIA_UserData);
   DebOut("MUIA_UserData: %d\n", i);
@@ -235,10 +235,10 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
   elem=&WIN_RES[i];
 
   if(elem->text) {
-    DebOut("obj: %lx => elem %p: %d (%s)\n", obj, elem, elem->text);
+    DebOut("obj: 0x%p => elem %p: (%s)\n", obj, elem, elem->text);
   }
   else {
-    DebOut("obj: %lx => elem %p\n", obj, elem);
+    DebOut("obj: 0x%p => elem %p\n", obj, elem);
   }
 
   newstate=XGET((Object *) obj, MUIA_Selected);
@@ -283,7 +283,7 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
     /* CBN_SELCHANGE: A new combo box list item is selected. */
     if(data->func) {
       wParam=MAKELPARAM(elem->idc, CBN_SELCHANGE);
-      DebOut("call function: %lx (IDC %d, wParam: %lx)\n", data->func, elem->idc, wParam);
+      DebOut("call function: 0x%p (IDC %d, wParam: 0x%p)\n", data->func, elem->idc, wParam);
       data->func(elem, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
     }
     goto DONE;
@@ -300,7 +300,7 @@ DONE:
     data->func(elem, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
   }
   else {
-    DebOut("WARNING: function is zero: %lx\n", data->func);
+    DebOut("WARNING: function is zero: 0x%p\n", data->func);
     /* Solution: add DlgProc in mNew in mui_head.cpp */
   }
 
@@ -315,14 +315,14 @@ AROS_UFH2(void, MUIHook_pushbutton, AROS_UFHA(struct Hook *, hook, A0), AROS_UFH
 
   struct Data *data = (struct Data *) hook->h_Data;
 
-  DebOut("[%lx] entered\n", obj);
+  DebOut("[0x%p] entered\n", obj);
 
   elem=(Element *) data->hwnd;
 
   DebOut("elem: %p\n", elem);
 
   if(data->func) {
-    DebOut("call function: %lx\n", data->func);
+    DebOut("call function: 0x%p\n", data->func);
     DebOut("IDC: %d\n", elem->idc);
     DebOut("WM_COMMAND: %d\n", WM_COMMAND);
 
@@ -330,7 +330,7 @@ AROS_UFH2(void, MUIHook_pushbutton, AROS_UFHA(struct Hook *, hook, A0), AROS_UFH
     data->func(elem, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
   }
   else {
-    DebOut("function is zero: %lx\n", data->func);
+    DebOut("function is zero: 0x%p\n", data->func);
   }
 
   AROS_USERFUNC_EXIT
@@ -350,9 +350,9 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
       //struct Element *element=data->src;
       //ULONG mincw, minch, defcw, defch, maxcw, maxch;
 
-      //DebOut("MUILM_MINMAX obj %lx\n", obj);
-      //DebOut("data:        %lx\n", data);
-      //DebOut("data->src:   %lx\n", data->src);
+      //DebOut("MUILM_MINMAX obj 0x%p\n", obj);
+      //DebOut("data:        0x%p\n", data);
+      //DebOut("data->src:   0x%p\n", data->src);
 
       lm->lm_MinMax.MinWidth  = data->width * RESIZE_X;
       lm->lm_MinMax.MinHeight = data->height * RESIZE_Y;
@@ -380,8 +380,8 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
         i++;
       }
 
-      DebOut("MUILM_LAYOUT obj %lx\n", obj);
-      DebOut("data:        %lx\n", data);
+      DebOut("MUILM_LAYOUT obj 0x%p\n", obj);
+      DebOut("data:        0x%p\n", data);
 
       /* all our lovely childs */
       i++;
@@ -404,7 +404,7 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
           }
         }
         else {
-          DebOut("   RECURSION !?!?!: %lx\n", WIN_RES[i].obj);
+          DebOut("   RECURSION !?!?!: 0x%p\n", WIN_RES[i].obj);
         }
         i++;
       }
@@ -444,13 +444,13 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
   tstate=((struct opSet *)msg)->ops_AttrList;
 
   while ((tag = (struct TagItem *) NextTagItem((ABI_CONST TagItem**) &tstate))) {
-    DebOut("tag->ti_Tag: %lx\n", tag->ti_Tag);
+    DebOut("tag->ti_Tag: 0x%p\n", tag->ti_Tag);
     switch (tag->ti_Tag) {
       case MA_src:
         elem = (Element *) tag->ti_Data;
         break;
       case MA_dlgproc:
-        DebOut("MA_dlgproc: %lx\n", tag->ti_Data);
+        DebOut("MA_dlgproc: 0x%p\n", tag->ti_Data);
         func=(int* (*)(Element*, uint32_t, ULONG, IPTR)) tag->ti_Data;
         break;
     }
@@ -479,7 +479,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
 
     struct TextAttr ta = { (STRPTR)"Vera Sans", 12, 0, 0 };
     TextFont *Topaz8Font = OpenDiskFont(&ta);
-    DebOut("Topaz8Font: %lx\n", Topaz8Font);
+    DebOut("Topaz8Font: 0x%p\n", Topaz8Font);
 #if 0
     foo=TextObject, MUIA_Text_Contents, (IPTR) "XYZ", End;
     old=(struct TextFont *) XGET(foo, MUIA_Font);
@@ -496,7 +496,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
     ta.ta_Flags = GfxBase->DefaultFont->tf_Flags;
     DebOut("OpenFont: %s\n", ta.ta_Name);
     data->font=OpenDiskFont(&ta);
-    DebOut("data->font: %lx\n", data->font);
+    DebOut("data->font: 0x%p\n", data->font);
 #endif
 
 
@@ -549,7 +549,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
               data->MyMUIHook_slide.h_Entry=(APTR) MUIHook_slide;
               data->MyMUIHook_slide.h_Data =(APTR) data;
 
-              DebOut("DoMethod(%lx, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime..)\n", WIN_RES[i].obj);
+              DebOut("DoMethod(0x%p, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime..)\n", WIN_RES[i].obj);
               DoMethod(WIN_RES[i].obj, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, (IPTR) WIN_RES[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_slide, func); 
  
             }
@@ -560,7 +560,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
             DebOut("SysTreeView32\n");
             Object *nlisttree=NULL;
             child=new_tree(i, (void *) func, data, &nlisttree); 
-            DebOut("child: %lx\n", child);
+            DebOut("child: 0x%p\n", child);
             if(child) {
               WIN_RES[i].exists=TRUE;
               WIN_RES[i].obj=nlisttree;
@@ -574,7 +574,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
             Object *list=NULL;
 
             child=new_listview(WIN_RES, i, (void *) func, data, &list); 
-            DebOut("child: %lx\n", child);
+            DebOut("child: 0x%p\n", child);
             if(child) {
               WIN_RES[i].exists=TRUE;
               WIN_RES[i].obj=child;
@@ -648,7 +648,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
               data->MyMUIHook_select.h_Entry=(APTR) MUIHook_select;
               data->MyMUIHook_select.h_Data =(APTR) data;
 
-              DebOut("DoMethod(%lx, MUIM_Notify, MUIA_Selected, MUIV_EveryTime..)\n", WIN_RES[i].obj);
+              DebOut("DoMethod(0x%p, MUIM_Notify, MUIA_Selected, MUIV_EveryTime..)\n", WIN_RES[i].obj);
               DoMethod(WIN_RES[i].obj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, (IPTR) WIN_RES[i].obj, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_select, func); 
             }
           }
@@ -785,8 +785,8 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
         default:
           DebOut("ERROR: unknown windows_type %d\n", WIN_RES[i].windows_type);
       }
-      DebOut("RESULT: child:   %lx\n", child);
-      DebOut("RESULT: src.obj: %lx\n", WIN_RES[i].obj);
+      DebOut("RESULT: child:   0x%p\n", child);
+      DebOut("RESULT: src.obj: 0x%p\n", WIN_RES[i].obj);
       if(child) {
         if(WIN_RES[i].help) {
           DebOut("add HOTHELP: %s\n", WIN_RES[i].help);
@@ -807,7 +807,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
         }
         child=NULL;
       }
-      DebOut("  WIN_RES[%d].obj=%lx\n", i, WIN_RES[i].obj);
+      DebOut("  WIN_RES[%d].obj=0x%p\n", i, WIN_RES[i].obj);
       i++;
 
     }
@@ -830,7 +830,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
     }
     i++;
     while(WIN_RES[i].idc && WIN_RES[i].windows_type!=DIALOGEX) {
-      DebOut("i: %d (add %lx to %lx)\n", i, WIN_RES[i].obj, obj);
+      DebOut("i: %d (add 0x%p to 0x%p)\n", i, WIN_RES[i].obj, obj);
       DoMethod((Object *) obj, OM_ADDMEMBER,(IPTR) WIN_RES[i].obj);
       i++;
     }
@@ -850,11 +850,11 @@ static IPTR mGet(struct Data *data, APTR obj, struct opGet *msg, struct IClass *
   switch (msg->opg_AttrID)
   {
     case MA_Data: 
-      DebOut("data: %lx\n", data);
+      DebOut("data: 0x%p\n", data);
       rc = (IPTR) data; 
       break;
     case MA_dlgproc:
-      DebOut("data: %lx\n", data);
+      DebOut("data: 0x%p\n", data);
       rc = (IPTR) data->func; 
       break;
     case MA_src:
@@ -903,7 +903,7 @@ static VOID mRemMember(struct Data *data, struct opMember *msg) {
 BEGINMTABLE
 GETDATA;
 
-//DebOut("(%lx)->msg->MethodID: %lx\n",obj,msg->MethodID);
+//DebOut("(0x%p)->msg->MethodID: 0x%p\n",obj,msg->MethodID);
 
 
   switch (msg->MethodID)

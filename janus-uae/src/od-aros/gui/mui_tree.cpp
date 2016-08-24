@@ -59,7 +59,7 @@ BOOL TreeView_DeleteAllItems(HWND h, int item) {
   }
 #endif
 
-  DebOut("elem->obj: %lx\n", elem->obj);
+  DebOut("elem->obj: 0x%p\n", elem->obj);
 
   DoMethod(elem->obj, MUIM_NListtree_Clear, NULL, 0);
 
@@ -98,7 +98,7 @@ HTREEITEM TreeView_InsertItem(HWND hwndTV, LPTVINSERTSTRUCT lpis) {
   }
 #endif
 
-  DebOut("elem->obj: %lx\n", elem->obj);
+  DebOut("elem->obj: 0x%p\n", elem->obj);
 
   /* Handle to the parent item. 
    * If this member is the TVI_ROOT value or NULL, the item is inserted 
@@ -110,7 +110,7 @@ HTREEITEM TreeView_InsertItem(HWND hwndTV, LPTVINSERTSTRUCT lpis) {
   }
   else {
     DebOut("insert in hParent (TODO)!!\n");
-    DebOut("hParent: %lx\n", lpis->hParent);
+    DebOut("hParent: 0x%p\n", lpis->hParent);
   }
 #endif
 
@@ -132,7 +132,7 @@ HTREEITEM TreeView_InsertItem(HWND hwndTV, LPTVINSERTSTRUCT lpis) {
 
   listnode=(struct MUI_NListtree_TreeNode *) MUIV_NListtree_Insert_ListNode_Root;
   if(lpis->hParent && lpis->hParent!=TVI_ROOT) {
-    DebOut("we need to insert into node: %lx\n", lpis->hParent);
+    DebOut("we need to insert into node: 0x%p\n", lpis->hParent);
     listnode=(struct MUI_NListtree_TreeNode *) lpis->hParent;
   }
 
@@ -143,7 +143,7 @@ HTREEITEM TreeView_InsertItem(HWND hwndTV, LPTVINSERTSTRUCT lpis) {
                     MUIV_NListtree_Insert_PrevNode_Tail,
                     flags);
 
-  DebOut("newnode: %lx\n", newnode);
+  DebOut("newnode: 0x%p\n", newnode);
   
   return (HTREEITEM) newnode;
 }
@@ -204,8 +204,8 @@ BOOL TreeView_GetItem(HWND hwndTV, APTR pitem_void) {
 
   act_node=(struct MUI_NListtree_TreeNode *) XGET(elem->obj, MUIA_NListtree_Active);
 
-  DebOut("act_node: %lx\n", act_node);
-  DebOut("act_node->tn_User: %lx\n", act_node->tn_User);
+  DebOut("act_node: 0x%p\n", act_node);
+  DebOut("act_node->tn_User: 0x%p\n", act_node->tn_User);
 
   /* is this correct !? */
   if(act_node == MUIV_NListtree_Active_Off) {
@@ -214,7 +214,7 @@ BOOL TreeView_GetItem(HWND hwndTV, APTR pitem_void) {
   }
 
   pitem->lParam=(LPARAM) act_node->tn_User;
-  DebOut("pitem->lParam: %lx\n", pitem->lParam);
+  DebOut("pitem->lParam: 0x%p\n", pitem->lParam);
 
   return TRUE;
 }
@@ -240,7 +240,7 @@ HOOKPROTONHNO(TreeView_DisplayHookFunction, void, struct MUIP_NListtree_DisplayM
 
   struct TreeLine *line=(struct TreeLine *) ndm->TreeNode->tn_User;
 
-  DebOut("line: %lx\n", line);
+  DebOut("line: 0x%p\n", line);
 
   if(line) {
     DebOut("line->: %s\n", line->name);
@@ -255,12 +255,12 @@ HOOKPROTONHNO(TreeView_DisplayHookFunction, void, struct MUIP_NListtree_DisplayM
 }
 
 HOOKPROTONHNO(TreeView_ConstructHookFunction, APTR, struct MUIP_NListtree_ConstructMessage *ncm) {
-  DebOut("ncm: %lx\n", ncm);
+  DebOut("ncm: 0x%p\n", ncm);
 
   struct TreeLine *line=(struct TreeLine *) AllocVec(sizeof(struct TreeLine), 0);
 
   TVINSERTSTRUCT *is=(TVINSERTSTRUCT *) ncm->UserData;
-  DebOut("is: %lx\n", is);
+  DebOut("is: 0x%p\n", is);
   DebOut("ncm->name: %s\n", ncm->Name);
 
   if(line && is) {
@@ -279,7 +279,7 @@ HOOKPROTONHNO(TreeView_ConstructHookFunction, APTR, struct MUIP_NListtree_Constr
     DebOut("NOT ENOUGH MEMORY!\n");
   }
 
-  DebOut("return: %lx\n", line);
+  DebOut("return: 0x%p\n", line);
 
   return line;
 }
@@ -288,7 +288,7 @@ HOOKPROTONHNO(TreeView_DestructHook, void, struct NList_DestructMessage *ndm) {
 
   struct TreeLine *line;
 
-  DebOut("ndm: %lx\n", ndm);
+  DebOut("ndm: 0x%p\n", ndm);
 
   if (ndm->entry) {
     line=(struct TreeLine *) ndm->entry;
@@ -309,12 +309,12 @@ static void tree_send_notify(ULONG type, Object *obj, struct Data *data, struct 
   LPNMTREEVIEW tv;
   struct MUI_NListtree_TreeNode *node;
 
-  DebOut("[%lx] entered\n", obj);
+  DebOut("[0x%p] entered\n", obj);
 
   //i=get_elem_from_obj(data, (Object *) obj);
 
   if(!data->func) {
-    DebOut("[%lx] function is zero: %lx\n", obj, data->func);
+    DebOut("[0x%p] function is zero: 0x%p\n", obj, data->func);
     goto TREE_SEND_NOTIFY_EXIT;
   }
 
@@ -324,7 +324,7 @@ static void tree_send_notify(ULONG type, Object *obj, struct Data *data, struct 
     goto TREE_SEND_NOTIFY_EXIT;
   }
 
-  DebOut("node: %lx\n", node);
+  DebOut("node: 0x%p\n", node);
  
   /* LPNMHDR is sent in itemNew.lParam */
   /* WARNING: all other fields are not correctly set */
@@ -341,7 +341,7 @@ static void tree_send_notify(ULONG type, Object *obj, struct Data *data, struct 
   /* still a lot of unfilled attributes! */
   TODO();
 
-  DebOut("[%lx] call function: %lx(IDC %d, WM_NOTIFY, %lx)\n", obj, data->func, 0, nm);
+  DebOut("[0x%p] call function: 0x%p(IDC %d, WM_NOTIFY, 0x%p)\n", obj, data->func, 0, nm);
   data->func((Element *) data->hwnd, WM_NOTIFY, 0, (IPTR) nm);
 
 TREE_SEND_NOTIFY_EXIT:
@@ -355,7 +355,7 @@ AROS_UFH2(void, tree_active, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR,
   struct MUI_NListtree_TreeNode *node;
   struct Data *data = (struct Data *) hook->h_Data;
 
-  DebOut("entered (obj %lx)\n", obj);
+  DebOut("entered (obj 0x%p)\n", obj);
 
   node=(struct MUI_NListtree_TreeNode *) XGET((Object *) obj, MUIA_NListtree_Active);
 
@@ -373,7 +373,7 @@ AROS_UFH2(void, tree_double, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR,
   struct MUI_NListtree_TreeNode *node;
   struct Data *data = (struct Data *) hook->h_Data;
 
-  DebOut("entered (obj %lx)\n", obj);
+  DebOut("entered (obj 0x%p)\n", obj);
 
   node=(struct MUI_NListtree_TreeNode *) XGET((Object *) obj, MUIA_NListtree_Active);
 
@@ -425,8 +425,8 @@ Object *new_tree(ULONG i, void *f, struct Data *data, Object **nlisttree) {
     return NULL;
   }
 
-  DebOut("new tree: %lx\n", tree);
-  DebOut("new listtree: %lx\n", *nlisttree);
+  DebOut("new tree: 0x%p\n", tree);
+  DebOut("new listtree: 0x%p\n", *nlisttree);
 
   /* setup hooks */
   data->MyMUIHook_tree_active.h_Entry=(APTR) tree_active;
