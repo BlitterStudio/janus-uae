@@ -49,52 +49,6 @@ static VOID mSet(struct Data *data, APTR obj, struct opSet *msg, ULONG is_new);
 
 extern Object *win;
 
-#if (0)
-IPTR xget(Object *obj, IPTR attr) {
-  IPTR b = 0;
-  GetAttr(attr, obj, (IPTR *)&b);
-  return b;
-}
-#endif
-
-#if 0
-/* return index in elem[] for item IDC_* */
-LONG get_index(Element *elem, int item) {
-  int i=0;
-
-  if(!elem) {
-    return -1;
-  }
-
-  while(elem->exists) {
-    if(elem->idc == item) {
-      return i;
-    }
-    i++;
-  }
-
-  DebOut("item %d (0x%lx) not found in element %lx!!\n", item, item, elem);
-  return -1;
-}
-
-/* return elem of item IDC_* */
-Element *get_elem(int nIDDlgItem) {
-  ULONG i=0;
-  int res;
-
-  while(IDD_ELEMENT[i]!=NULL) {
-    res=get_index(IDD_ELEMENT[i], nIDDlgItem);
-    if(res!=-1) {
-      DebOut("found %d in Element number %d\n", nIDDlgItem, i);
-      return IDD_ELEMENT[i];
-    }
-    i++;
-  }
-  
-  return NULL;
-}
-#endif
-
 /* return the control (Element *) of the item in the hDlg
  * if hDlg is NULL, search global
  */
@@ -127,45 +81,6 @@ BOOL flag_editable(ULONG flags) {
   return TRUE;
 }
 
-/*************************************
- * get index of Zune object
- *************************************/
-Element *get_elem_from_obj(struct Data *data, Object *obj) {
-
-  int i=0;
-
-  DebOut("obj: %lx, data %lx\n", obj, data);
-
-#if 0
-  /* first try userdata */
-  i=XGET(obj, MUIA_UserData);
-  if(i>0) {
-    //DebOut("MUIA_UserData: %d\n", i);
-    return i;
-  }
-#endif
-
-  i=0;
-  while(WIN_RES[i].idc) {
-    if(WIN_RES[i].obj == obj) {
-      DebOut("found! elem: %p\n", WIN_RES[i]);
-      return &WIN_RES[i];
-    }
-    i++;
-  }
-#if 0
-  while(data->src[i].exists) {
-    if(data->src[i].obj == obj) {
-      return i;
-    }
-    i++;
-  }
-#endif
-
-  DebOut("ERROR: obj %lx, data %lx not found!\n", obj, data);
-  return NULL;
-}
-
 /****************************************
  * send_WM_INITDIALOG
  *
@@ -194,14 +109,11 @@ AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
 
   struct Data *data = (struct Data *) hook->h_Data;
 
-
   //DebOut("[%lx] entered\n", obj);
   //DebOut("[%lx] hook.h_Data: %lx\n", obj, hook->h_Data);
   //DebOut("[%lx] obj: %lx\n", obj);
 
-  elem=get_elem_from_obj(data, (Object *) obj);
-
-  //DebOut("[%lx] i: %d\n", obj, i);
+  elem=(Element *) data->hwnd;
 
   elem->value=XGET((Object *) obj, MUIA_Cycle_Active);
   //DebOut("[%lx] MUIA_Cycle_Active: %d (mui obj: %lx)\n", obj, data->src[i].value, obj);
@@ -241,7 +153,7 @@ AROS_UFH2(void, MUIHook_entry, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
   //DebOut("[%lx] hook.h_Data: %lx\n", obj, hook->h_Data);
   //DebOut("[%lx] obj: %lx\n", obj);
 
-  elem=get_elem_from_obj(data, (Object *) obj);
+  elem=(Element *) data->hwnd;
 
   DebOut("[%lx] elem: %p\n", obj, elem);
 
@@ -267,7 +179,7 @@ AROS_UFH2(void, MUIHook_slide, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
 
   DebOut("Sliding..\n");
 
-  elem=get_elem_from_obj(data, (Object *) obj);
+  elem=(Element *) data->hwnd;
 
   if(data->func) {
 #if 0
@@ -397,7 +309,7 @@ AROS_UFH2(void, MUIHook_pushbutton, AROS_UFHA(struct Hook *, hook, A0), AROS_UFH
 
   DebOut("[%lx] entered\n", obj);
 
-  elem=get_elem_from_obj(data, (Object *) obj);
+  elem=(Element *) data->hwnd;
 
   DebOut("elem: %p\n", elem);
 
@@ -427,7 +339,6 @@ AROS_UFH3(static ULONG, LayoutHook, AROS_UFHA(struct Hook *, hook, a0), AROS_UFH
     case MUILM_MINMAX: {
 
       struct Data *data = (struct Data *) hook->h_Data;
-      //ULONG i=0;
       //struct Element *element=data->src;
       //ULONG mincw, minch, defcw, defch, maxcw, maxch;
 
