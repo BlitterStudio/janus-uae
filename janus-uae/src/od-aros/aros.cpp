@@ -419,12 +419,14 @@ void fullpath(TCHAR *inpath, int size) {
   BPTR    lock;
   BOOL    result;
 
-  bug("[JUAE:AROS] %s: convert %s to an absolute, full path\n", __PRETTY_FUNCTION__, path);
+  bug("[JUAE:AROS] %s('%s', %d)\n", __PRETTY_FUNCTION__, path, size);
 
   if(path[0] == '.' && (path[1] == '\\' || path[1] == '/')) {
     /* skip .\ or ./ */
     path=path+2;
   }
+
+  bug("[JUAE:AROS] %s: using : '%s'\n", __PRETTY_FUNCTION__, path);
 
   tmp[0]     =(char) 0;
   abs_in[0]  =(char) 0;
@@ -433,9 +435,11 @@ void fullpath(TCHAR *inpath, int size) {
   if(!strchr(path, ':')) {
     strcpy(tmp, "PROGDIR:");
   }
-  strcat(tmp, path);
+  AddPart(tmp, path, MAX_DPATH);
+  //strcat(tmp, path);
   DebOut("tmp: %s\n", tmp);
 
+  bug("[JUAE:AROS] %s: ------------> '%s'\n", __PRETTY_FUNCTION__, tmp);
 
   lock=Lock(tmp, SHARED_LOCK);
   if(!lock) {
