@@ -11009,9 +11009,11 @@ static void values_to_cpudlg (HWND hDlg)
 	CheckDlgButton (hDlg, IDC_CPU_UNIMPLEMENTED, !workprefs.int_no_unimplemented || workprefs.cachesize);
 	SendDlgItemMessage (hDlg, IDC_CPUIDLE, TBM_SETPOS, TRUE, workprefs.cpu_idle == 0 ? 0 : 12 - workprefs.cpu_idle / 15);
 	SendDlgItemMessage (hDlg, IDC_PPC_CPUIDLE, TBM_SETPOS, TRUE, workprefs.ppc_cpu_idle);
+  DebOut("workprefs.cpu_model: %d\n", workprefs.cpu_model);
 	cpu = (workprefs.cpu_model - 68000) / 10;
 	if (cpu >= 5)
 		cpu--;
+  DebOut("cpu: %d, cpu_ids[cpu]: %d\n", cpu, cpu_ids[cpu]);
 	CheckRadioButton (hDlg, IDC_CPU0, IDC_CPU5, cpu_ids[cpu]);
 	CheckRadioButton (hDlg, IDC_FPU0, IDC_FPU3, fpu_ids[workprefs.fpu_model == 0 ? 0 : (workprefs.fpu_model == 68881 ? 1 : (workprefs.fpu_model == 68882 ? 2 : 3))]);
 
@@ -11055,6 +11057,7 @@ static void values_from_cpudlg (HWND hDlg)
 	int newcpu, oldcpu, newfpu, newtrust, oldcache, jitena, idx;
 	static int cachesize_prev, trust_prev;
 
+
 	workprefs.cpu_compatible = workprefs.cpu_memory_cycle_exact | (ischecked (hDlg, IDC_COMPATIBLE) ? 1 : 0);
 	workprefs.fpu_strict = ischecked (hDlg, IDC_COMPATIBLE_FPU) ? 1 : 0;
 	workprefs.fpu_no_unimplemented = ischecked (hDlg, IDC_FPU_UNIMPLEMENTED) ? 0 : 1;
@@ -11072,6 +11075,7 @@ static void values_from_cpudlg (HWND hDlg)
 		: ischecked (hDlg, IDC_CPU3) ? 68030
 		: ischecked (hDlg, IDC_CPU4) ? 68040
 		: ischecked (hDlg, IDC_CPU5) ? 68060 : 0;
+  DebOut("newcpu: %d\n", newcpu);
 	newfpu = ischecked (hDlg, IDC_FPU0) ? 0
 		: ischecked (hDlg, IDC_FPU1) ? 1
 		: ischecked (hDlg, IDC_FPU2) ? 2
@@ -11079,6 +11083,7 @@ static void values_from_cpudlg (HWND hDlg)
 
 	/* When switching away from 68000, disable 24 bit addressing.  */
 	oldcpu = workprefs.cpu_model;
+  DebOut("oldcpu: %d\n", oldcpu);
 	if (workprefs.cpu_model != newcpu && newcpu <= 68010)
 		newfpu = 0;
 	workprefs.cpu_model = newcpu;

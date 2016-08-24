@@ -474,7 +474,8 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
       DebOut("WARNING: TBM_SETPAGESIZE seems not to be possible in Zune/MUI !?\n");
       break;
     case TBM_SETPOS:
-       DebOut("TBM_SETPOS(%d)\n", lParam);
+       DebOut("TBM_SETPOS(%d) => DoMethod(%p, MUIM_NoNotifySet, MUIA_Numeric_Value, %d)\n", 
+               lParam, elem->obj, lParam);
        DoMethod(elem->obj, MUIM_NoNotifySet, MUIA_Numeric_Value, lParam);
       break;
     case TBM_GETPOS:
@@ -488,7 +489,6 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
       return FALSE;
   }
 
-  /* never reach this */
   return TRUE;
 }
 
@@ -751,6 +751,10 @@ UINT IsDlgButtonChecked(HWND hDlg, int item) {
   DebOut("item: %d\n", item);
   elem=get_control(hDlg, item);
   DebOut("elem: %d\n", elem);
+  if(!elem) {
+    bug("ERROR: can't find item %d in hDlg %p! (fatal error)\n", item, hDlg);
+    /* crash .. */
+  }
 
 #if 0
   i=get_index(elem, item);
