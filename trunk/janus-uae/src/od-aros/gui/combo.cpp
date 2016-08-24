@@ -72,7 +72,7 @@
 #define GETDATA struct Data *data = (struct Data *)INST_DATA(cl, obj)
 
 #if defined(JUAE_DEBUG)
-#define DebOut(...) do { bug("[%lx]: %s:%d %s(): ",FindTask(NULL),__FILE__,__LINE__,__func__);bug(__VA_ARGS__); } while(0)
+#define DebOut(...) do { bug("[0x%p]: %s:%d %s(): ",FindTask(NULL),__FILE__,__LINE__,__func__);bug(__VA_ARGS__); } while(0)
 #define TODO() bug("TODO ==> %s:%d: %s\n", __FILE__, __LINE__, __PRETTY_FUNCTION__)
 #else
 #define DebOut(...)
@@ -378,7 +378,7 @@ static IPTR mSet(struct IClass *cl, APTR obj, struct opSet *msg) {
   struct TagItem *tstate, *tag;
   GETDATA;
 
-  DebOut("mSet(%lx,entry %lx,%lx)\n",data,obj,msg);
+  DebOut("mSet(0x%p,entry 0x%p,0x%p)\n",data,obj,msg);
 
   tstate = msg->ops_AttrList;
   while ((tag = (struct TagItem *) NextTagItem((TagItem**) &tstate))) {
@@ -402,7 +402,7 @@ static IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg) {
   GETDATA;
   IPTR t;
 
-  DebOut("mGet(%lx,entry %lx,%lx)\n",data,obj,msg);
+  DebOut("mGet(0x%p,entry 0x%p,0x%p)\n",data,obj,msg);
 
   switch (msg->opg_AttrID) {
       case MUIA_List_Active:
@@ -541,7 +541,7 @@ static IPTR mInsert(struct IClass *cl, Object *obj, struct MUIP_List_Insert *msg
 BOOPSI_DISPATCHER(IPTR, mDispatcher, cl, obj, msg) {
   GETDATA;
 
-  //DebOut("(%lx)->msg->MethodID: %lx\n",obj,msg->MethodID);
+  //DebOut("(0x%p)->msg->MethodID: 0x%p\n",obj,msg->MethodID);
 
   switch (msg->MethodID)
   {

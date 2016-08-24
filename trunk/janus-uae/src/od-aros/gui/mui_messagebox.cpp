@@ -62,7 +62,7 @@ int MessageBox_fixed(HWND hWnd, TCHAR *lpText, TCHAR *lpCaption, UINT uType/*, U
 
   window=(struct Window *)XGET(win, MUIA_Window_Window);
   if(window) {
-    DebOut("window: %lx\n", window);
+    DebOut("window: 0x%p\n", window);
     tags[1].ti_Data=(IPTR) window;
   }
   else {

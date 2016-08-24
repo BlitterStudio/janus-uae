@@ -248,7 +248,7 @@ Object* FixedProcObj(Element *elem, IPTR proc)
   elem->obj= NULL;
 
   DebOut("==========================================================================\n");
-  DebOut("elem %p, proc %lx\n", elem, proc);
+  DebOut("elem %p, proc 0x%p\n", elem, proc);
   struct TagItem fo_tags[] =
   {
       { MA_src, (IPTR) elem}, 
@@ -269,7 +269,7 @@ Object* FixedProcObj(Element *elem, IPTR proc)
 Object* FixedProcObj(ULONG idc, IPTR proc) {
   Element *elem;
 
-  DebOut("idc %d, proc %lx\n", idc, proc);
+  DebOut("idc %d, proc 0x%p\n", idc, proc);
   elem=get_control(NULL, idc);
   DebOut("=> elem: %p:\n", elem);
   return FixedProcObj(elem, proc);
@@ -390,7 +390,7 @@ Object* build_gui(void) {
 
 
   /* List click events */
-  //kprintf("leftframe: %lx\n", leftframe);
+  //kprintf("leftframe: 0x%p\n", leftframe);
 
   MyMuiHook_list.h_Entry=(APTR) MUIHook_list;
   MyMuiHook_list.h_Data =NULL;

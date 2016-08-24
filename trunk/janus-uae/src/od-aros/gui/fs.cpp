@@ -47,7 +47,7 @@ BOOL WriteFile(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDW
 
   LONG written;
 
-  DebOut("write %d bytes to file handle %lx\n", nNumberOfBytesToWrite, hFile);
+  DebOut("write %d bytes to file handle 0x%p\n", nNumberOfBytesToWrite, hFile);
 
   written=write((IPTR) hFile, lpBuffer, nNumberOfBytesToWrite);
 
@@ -86,7 +86,7 @@ DWORD SetFilePointer(HANDLE hFile, LONG lDistanceToMove, PLONG lpDistanceToMoveH
     return 0;
   }
 
-  DebOut("hFile %lx, lDistanceToMove: %d\n", lDistanceToMove);
+  DebOut("hFile 0x%p, lDistanceToMove: %d\n", lDistanceToMove);
 
   switch(dwMoveMethod) {
     case FILE_BEGIN:

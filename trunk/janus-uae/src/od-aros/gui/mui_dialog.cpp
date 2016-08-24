@@ -77,13 +77,13 @@ INT_PTR DialogBoxIndirect(HINSTANCE hInstance, LPCDLGTEMPLATE lpTemplate, HWND h
   Object *mui_win;
   Object *mui_content;
 
-  DebOut("lpTemplate: %lx\n", lpTemplate);
-  DebOut("lpDialogFunc: %lx\n", func);
+  DebOut("lpTemplate: 0x%p\n", lpTemplate);
+  DebOut("lpDialogFunc: 0x%p\n", func);
 
   bug("FIXME here: %s:%d\n", __FILE__, __LINE__);
   exit(1);
   //TODO :mui_content=FixedProcObj((Element *) lpTemplate, (IPTR)func);
-  DebOut("content: %lx\n", mui_content);
+  DebOut("content: 0x%p\n", mui_content);
   if(!mui_content) {
     DebOut("ERROR: could create window content!?\n");
     return 0;
@@ -128,7 +128,7 @@ INT_PTR DialogBoxIndirect(HINSTANCE hInstance, LPCDLGTEMPLATE lpTemplate, HWND h
 
 struct newresource *scaleresource (struct newresource *res, HWND parent, int resize, int fullscreen, DWORD exstyle) {
 
-  DebOut("res: %lx\n", res);
+  DebOut("res: 0x%p\n", res);
 
   struct newresource *ns;
   ns = xcalloc (struct newresource, 1);
@@ -143,7 +143,7 @@ struct newresource *scaleresource (struct newresource *res, HWND parent, int res
 
 void freescaleresource (struct newresource *ns) {
 
-  DebOut("ns: %lx\n", ns);
+  DebOut("ns: 0x%p\n", ns);
 
   xfree ((void*)ns->resource);
   xfree (ns);

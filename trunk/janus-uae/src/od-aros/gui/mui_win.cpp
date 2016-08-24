@@ -60,7 +60,7 @@ LRESULT SendMessage____untested____(int item, UINT Msg, WPARAM wParam, LPARAM lP
     DebOut("ERROR: nIDDlgItem %d found nowhere!?\n", item);
     return 0;
   }
-  DebOut("elem: %lx, i: %d\n", elem, i);
+  DebOut("elem: 0x%p, i: %d\n", elem, i);
 
 #if 0
   /* yes, I know, this is ugly ..
@@ -114,10 +114,10 @@ BOOL SetDlgItemText(HWND hDlg, int item, const TCHAR *lpString) {
   elem=get_control(hDlg, item);
   DebOut("elem: %p\n", elem);
 
-  DebOut("elem->obj: %lx\n", elem->obj);
+  DebOut("elem->obj: 0x%p\n", elem->obj);
 
   if(elem->windows_type==EDITTEXT && !(elem->flags & ES_READONLY)) {
-    DebOut("call set(%lx, MUIA_String_Contents, %s)\n", elem->obj,lpString);
+    DebOut("call set(0x%p, MUIA_String_Contents, %s)\n", elem->obj,lpString);
     DoMethod(elem->obj, MUIM_Set, MUIA_String_Contents, lpString);
   }
   else if (elem->windows_type==COMBOBOX) {
@@ -154,7 +154,7 @@ BOOL CheckDlgButton(HWND hDlg, int button, UINT uCheck) {
   //LONG i;
   Element *elem=(Element *) hDlg;
 
-  DebOut("elem: %lx\n", elem);
+  DebOut("elem: 0x%p\n", elem);
   DebOut("button: %d\n", button);
   DebOut("uCheck: %d\n", uCheck);
 
@@ -173,7 +173,7 @@ BOOL CheckDlgButton(HWND hDlg, int button, UINT uCheck) {
   }
 #endif
 
-  DebOut("elem->obj: %lx\n", elem->obj);
+  DebOut("elem->obj: 0x%p\n", elem->obj);
 
   DoMethod(elem->obj, MUIM_NoNotifySet, MUIA_Selected, uCheck);
   //SET(elem->obj, MUIA_Pressed, uCheck);
@@ -190,7 +190,7 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
   TCHAR *buf;
   Element *elem;
 
-  DebOut("hDlg: %p, nIDDlgItem: %d, lParam: %lx\n", hDlg, nIDDlgItem, lParam);
+  DebOut("hDlg: %p, nIDDlgItem: %d, lParam: 0x%p\n", hDlg, nIDDlgItem, lParam);
 
 #if 0
   i=get_index(elem, nIDDlgItem);
@@ -208,7 +208,7 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
 #endif
   elem=get_control(hDlg, nIDDlgItem);
 
-  DebOut("elem->var: %lx\n", elem->var);
+  DebOut("elem->var: 0x%p\n", elem->var);
 
   switch(Msg) {
 
@@ -224,7 +224,7 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
         GetAttr(MUIA_Cycle_Active, elem->obj, (IPTR *) &old_active);
       }
 
-      DebOut("elem->mem: %lx\n", elem->mem);
+      DebOut("elem->mem: 0x%p\n", elem->mem);
 
       l=0;
       DebOut("old list:\n");
@@ -281,7 +281,7 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
       //elem->var[0]=strdup("<empty>");
       //elem->var[1]=NULL;
       elem->mem[0]=NULL;
-      DebOut("elem->obj: %lx\n", elem->obj);
+      DebOut("elem->obj: 0x%p\n", elem->obj);
       DoMethod(elem->obj, MUIM_NoNotifySet, MUIA_List_Entries, (IPTR) elem->mem);
       break;
     case CB_FINDSTRING:
@@ -305,11 +305,11 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
       break;
     case WM_GETTEXT:
     case CB_GETLBTEXT:
-      DebOut("[%lx] WM_GETTEXT / CB_GETLBTEXT\n", elem->obj);
+      DebOut("[0x%p] WM_GETTEXT / CB_GETLBTEXT\n", elem->obj);
       {
         TCHAR *string=(TCHAR *) lParam;
-        DebOut("[%lx] elem->value: %d\n", elem->obj, elem->value);
-        DebOut("[%lx] wParam: %d\n", elem->obj, wParam);
+        DebOut("[0x%p] elem->value: %d\n", elem->obj, elem->value);
+        DebOut("[0x%p] wParam: %d\n", elem->obj, wParam);
         if(elem->windows_type==COMBOBOX) {
           if(elem->value<0 || elem->mem[elem->value]==NULL) {
             string[0]=(char) 0;
@@ -364,7 +364,7 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
       }
 
       DebOut("elem: %p\n", elem);
-      DebOut("elem->mem[0]: %lx\n", elem->mem[0]);
+      DebOut("elem->mem[0]: 0x%p\n", elem->mem[0]);
 
       l=0;
       while(elem->mem[l] != NULL) {
@@ -374,7 +374,7 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
           found=l;
           DebOut("we already have that string at position %d!\n", found);
           //DebOut("activate string %d in combo box!\n", l);
-          //DebOut("elem->obj: %lx\n", elem->obj);
+          //DebOut("elem->obj: 0x%p\n", elem->obj);
           //SetAttrs(elem->obj, MUIA_String_Contents, lParam, TAG_DONE);
           break;
         }
@@ -447,7 +447,7 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
       }
       else {
         /* cycle gadget */
-        DebOut("cycle gadget muiobj: %lx\n", elem->obj);
+        DebOut("cycle gadget muiobj: 0x%p\n", elem->obj);
         if(wParam >= 0) {
           DebOut("MUIM_NoNotifySet, MUIA_Cycle_Active, %d\n", wParam);
           DoMethod(elem->obj, MUIM_NoNotifySet, MUIA_Cycle_Active, wParam);
@@ -466,7 +466,7 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
       /* lParam: The LOWORD specifies the minimum position for the slider, 
        *         and the HIWORD specifies the maximum position.
        */
-       DebOut("TBM_SETRANGE %lx (%d, %d)\n", lParam, LOWORD(lParam), HIWORD(lParam));
+       DebOut("TBM_SETRANGE 0x%p (%d, %d)\n", lParam, LOWORD(lParam), HIWORD(lParam));
        DoMethod(elem->obj, MUIM_Set, MUIA_Numeric_Min, LOWORD(lParam));
        DoMethod(elem->obj, MUIM_Set, MUIA_Numeric_Max, HIWORD(lParam));
        break;
@@ -521,7 +521,7 @@ UINT GetDlgItemText(HWND hDlg, int nIDDlgItem, TCHAR *lpString, int nMaxCount) {
 
   elem=get_control(hDlg, nIDDlgItem);
 
-  DebOut("elem->obj: %lx\n", elem->obj);
+  DebOut("elem->obj: 0x%p\n", elem->obj);
   DebOut("elem->windows_type: %d\n", elem->windows_type);
 
   if(elem->windows_type==EDITTEXT || elem->windows_type==COMBOBOX) {
@@ -598,7 +598,7 @@ BOOL SetDlgItemInt(HWND hDlg, int item, UINT uValue, BOOL bSigned) {
   elem->var[0]=strdup(tmp);
   elem->var[1]=NULL;
 
-  DebOut("elem->obj: %lx\n", elem->obj);
+  DebOut("elem->obj: 0x%p\n", elem->obj);
   if(elem->windows_type==EDITTEXT) {
     DebOut("elem->windows_type==EDITTEXT\n");
     DoMethod(elem->obj, MUIM_Set, MUIA_String_Contents, elem->var[0]);
@@ -623,7 +623,7 @@ UINT GetDlgItemInt(HWND hDlg, int item, BOOL *lpTranslated,  BOOL bSigned) {
   char *end;
   Element *elem;
 
-  DebOut("hDlg %lx, nIDDlgItem %d\n", hDlg, item);
+  DebOut("hDlg 0x%p, nIDDlgItem %d\n", hDlg, item);
 
   if(lpTranslated) {
     *lpTranslated=FALSE;
@@ -747,7 +747,7 @@ UINT IsDlgButtonChecked(HWND hDlg, int item) {
   //int i;
   Element *elem;
 
-  DebOut("hDlg: %lx\n", hDlg);
+  DebOut("hDlg: 0x%p\n", hDlg);
   DebOut("item: %d\n", item);
   elem=get_control(hDlg, item);
   DebOut("elem: %d\n", elem);
@@ -769,8 +769,8 @@ UINT IsDlgButtonChecked(HWND hDlg, int item) {
   }
 #endif
 
-  DebOut("elem->obj: %lx\n", elem->obj);
-  DebOut("elem->value: %lx\n", elem->value);
+  DebOut("elem->obj: 0x%p\n", elem->obj);
+  DebOut("elem->value: 0x%p\n", elem->value);
   if(elem->text) {
     DebOut("elem->text: %s\n", elem->text);
   }
@@ -800,7 +800,7 @@ BOOL EnableWindow(HWND hWnd, BOOL bEnable) {
   }
 
   if(i<0) {
-    DebOut("ERROR: could not find elem %lx id %d\n", hWnd, id);
+    DebOut("ERROR: could not find elem 0x%p id %d\n", hWnd, id);
     return FALSE;
   }
 #endif
@@ -824,7 +824,7 @@ HWND GetDlgItem(HWND hDlg, int nIDDlgItem) {
   i=get_index(hDlg, nIDDlgItem);
 
   if(i<0) {
-    DebOut("ERROR: nIDDlgItem %d not found in %lx!?\n", nIDDlgItem, hDlg);
+    DebOut("ERROR: nIDDlgItem %d not found in 0x%p!?\n", nIDDlgItem, hDlg);
     return NULL;
   }
   DebOut("index: %d\n", i);
@@ -840,7 +840,7 @@ HWND GetDlgItem(HWND hDlg, int nIDDlgItem) {
 BOOL SetWindowText(HWND hWnd, TCHAR *lpString) {
 
   if(hWnd==NULL) {
-    DebOut("hWnd: %lx\n", hWnd);
+    DebOut("hWnd: 0x%p\n", hWnd);
     TODO();
     return FALSE;
   }
@@ -856,10 +856,10 @@ BOOL SetWindowText(HWND hWnd, DWORD id, TCHAR *lpString) {
 }
 
 int GetWindowText(HWND   hWnd, LPTSTR lpString, int nMaxCount) {
-  DebOut("hWnd: %lx\n", hWnd);
+  DebOut("hWnd: 0x%p\n", hWnd);
 
   if(hWnd==NULL) {
-    DebOut("hWnd is NULL!: %lx\n", hWnd);
+    DebOut("hWnd is NULL!: 0x%p\n", hWnd);
     TODO();
     return 0;
   }
@@ -887,7 +887,7 @@ BOOL ShowWindow(HWND hWnd, int nCmdShow) {
   //int i;
   Element *elem=(Element *) hWnd;
 
-  DebOut("elem: %lx\n", hWnd);
+  DebOut("elem: 0x%p\n", hWnd);
 
 #if 0
   i=get_index(hWnd, id);
@@ -897,12 +897,12 @@ BOOL ShowWindow(HWND hWnd, int nCmdShow) {
   }
 
   if(i<0) {
-    DebOut("ERROR: could not find elem %lx id %d\n", hWnd, id);
+    DebOut("ERROR: could not find elem 0x%p id %d\n", hWnd, id);
     return FALSE;
   }
 #endif
 
-  DebOut("elem->obj: %lx\n", elem->obj);
+  DebOut("elem->obj: 0x%p\n", elem->obj);
 
   if(nCmdShow==SW_SHOW) {
     DoMethod(elem->obj, MUIM_Set, MUIA_ShowMe, TRUE);

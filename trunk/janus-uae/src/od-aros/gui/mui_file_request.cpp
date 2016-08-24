@@ -61,9 +61,9 @@ BOOL mui_get_filename(TCHAR *lpstrTitle, TCHAR *lpstrInitialDir, TCHAR *lpstrFil
   DebOut("lpstrDefExt:     %s\n", lpstrDefExt);
 
   win=(struct Window *) XGET(app, MUIA_Window_Window);
-  DebOut("win: %lx\n", win);
+  DebOut("win: 0x%p\n", win);
   GetAttr(MUIA_Window_Window, app, (IPTR *)&win);
-  DebOut("win: %lx\n", win);
+  DebOut("win: 0x%p\n", win);
   /* TODO: win is always NULL!? */
 
   /* convert Windows filter like 
