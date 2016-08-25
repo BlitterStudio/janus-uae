@@ -114,37 +114,41 @@ BOOL SetDlgItemText(HWND hDlg, int item, const TCHAR *lpString) {
   elem=get_control(hDlg, item);
   DebOut("elem: %p\n", elem);
 
-  DebOut("elem->obj: 0x%p\n", elem->obj);
+  if (elem)
+  {
+      DebOut("elem->obj: 0x%p\n", elem->obj);
 
-  if(elem->windows_type==EDITTEXT && !(elem->flags & ES_READONLY)) {
-    DebOut("call set(0x%p, MUIA_String_Contents, %s)\n", elem->obj,lpString);
-    DoMethod(elem->obj, MUIM_Set, MUIA_String_Contents, lpString);
-  }
-  else if (elem->windows_type==COMBOBOX) {
-    DebOut("COMBOBOX: call SendDlgItemMessage instead:\n");
-    return SendDlgItemMessage(hDlg, item, CB_ADDSTRING, 0, (LPARAM) lpString);
-  }
-  else {
-    if(elem->windows_class && !strcmp(elem->windows_class, "RICHEDIT")) {
+      if(elem->windows_type==EDITTEXT && !(elem->flags & ES_READONLY)) {
+        DebOut("call set(0x%p, MUIA_String_Contents, %s)\n", elem->obj,lpString);
+        DoMethod(elem->obj, MUIM_Set, MUIA_String_Contents, lpString);
+      }
+      else if (elem->windows_type==COMBOBOX) {
+        DebOut("COMBOBOX: call SendDlgItemMessage instead:\n");
+        return SendDlgItemMessage(hDlg, item, CB_ADDSTRING, 0, (LPARAM) lpString);
+      }
+      else {
+        if(elem->windows_class && !strcmp(elem->windows_class, "RICHEDIT")) {
 #ifndef DONT_USE_URLOPEN
-      /* Urltext */
-      DebOut("call MUIA_Urltext_Text, %s\n", lpString);
-      SetAttrs(elem->obj,
-                //MUIA_Urltext_Text,   lpString,
-                MUIA_Urltext_Text,  lpString,
-                MUIA_Urltext_Url,   "http://TODO/text",
-                TAG_DONE);
+          /* Urltext */
+          DebOut("call MUIA_Urltext_Text, %s\n", lpString);
+          SetAttrs(elem->obj,
+                    //MUIA_Urltext_Text,   lpString,
+                    MUIA_Urltext_Text,  lpString,
+                    MUIA_Urltext_Url,   "http://TODO/text",
+                    TAG_DONE);
 #else
-      DoMethod(elem->obj, MUIM_Set, MUIA_Text_Contents,   lpString);
+          DoMethod(elem->obj, MUIM_Set, MUIA_Text_Contents,   lpString);
 #endif
-    }
-    else {
-      DebOut("call MUIA_Text_Contents, %s\n", lpString);
-      DoMethod(elem->obj, MUIM_Set, MUIA_Text_Contents,   lpString);
-    }
-  }
+        }
+        else {
+          DebOut("call MUIA_Text_Contents, %s\n", lpString);
+          DoMethod(elem->obj, MUIM_Set, MUIA_Text_Contents,   lpString);
+        }
+      }
 
-  return TRUE;
+      return TRUE;
+  }
+  return FALSE;
 }
 
 /*
