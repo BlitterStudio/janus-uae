@@ -149,8 +149,9 @@ STATIC_INLINE int comp_fp_get (uae_u32 opcode, uae_u16 extra, int treg)
 					float si = (float)li;
 
 					if (li == (int)si) {
+                                                uae_u32 *si_ptr = (uae_u32 *)&si;
 						//write_log ("converted immediate LONG constant to SINGLE\n");
-						mov_l_mi(uae_p32(temp_fp), *(uae_u32 *)&si);
+						mov_l_mi(uae_p32(temp_fp), *si_ptr);
 						fmovs_rm(treg, uae_p32(temp_fp));
 						return 1;
 					}
@@ -174,9 +175,10 @@ STATIC_INLINE int comp_fp_get (uae_u32 opcode, uae_u16 extra, int treg)
 				case 4:
 				{
 					float si = (float)(uae_s16)comp_get_iword(m68k_pc_offset-2);
+					uae_u32 *si_ptr = (uae_u32 *)&si;
 
 					//write_log (_T("converted immediate WORD constant %f to SINGLE\n"), si);
-					mov_l_mi(uae_p32(temp_fp),*(uae_u32 *)&si);
+					mov_l_mi(uae_p32(temp_fp),*si_ptr);
 					fmovs_rm(treg,uae_p32(temp_fp));
 					return 1;
 				}
@@ -184,11 +186,13 @@ STATIC_INLINE int comp_fp_get (uae_u32 opcode, uae_u16 extra, int treg)
 				{
 					uae_u32 longarray[] = { comp_get_ilong(m68k_pc_offset - 4),
 						comp_get_ilong(m68k_pc_offset - 8) };
-					float si = (float)*(double *)longarray;
+                                        double *doub_array = (double *)longarray;
+					float si = (float)(*doub_array);
 
-					if (*(double *)longarray == (double)si) {
+					if (*doub_array == (double)si) {
+                                                uae_u32 *si_ptr = (uae_u32 *)&si;
 						//write_log (_T("SPEED GAIN: converted a DOUBLE constant to SINGLE\n"));
-						mov_l_mi(uae_p32(temp_fp), *(uae_u32 *)&si);
+						mov_l_mi(uae_p32(temp_fp), *si_ptr);
 						fmovs_rm(treg, uae_p32(temp_fp));
 						return 1;
 					}
@@ -201,9 +205,10 @@ STATIC_INLINE int comp_fp_get (uae_u32 opcode, uae_u16 extra, int treg)
 				case 6:
 				{
 					float si = (float)(uae_s8)comp_get_ibyte(m68k_pc_offset - 2);
+                                        uae_u32 *si_ptr = (uae_u32 *)&si;
 
 					//write_log (_T("converted immediate BYTE constant to SINGLE\n"));
-					mov_l_mi(uae_p32(temp_fp), *(uae_u32 *)&si);
+					mov_l_mi(uae_p32(temp_fp), *si_ptr);
 					fmovs_rm(treg, uae_p32(temp_fp));
 					return 1;
 				}
