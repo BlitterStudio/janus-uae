@@ -966,7 +966,7 @@ static void ibm_data (FDI *fdi, uae_u8 *data, uae_u8 *crc, int len)
 {
 	int i;
 	uae_u8 crcbuf[2];
-	uae_u16 crcv;
+	uae_u16 crcv = 0;
 
 	word_add (fdi, 0x4489);
 	word_add (fdi, 0x4489);
@@ -1178,7 +1178,7 @@ static void track_amiga (struct fdi *fdi, int first_sector, int max_sector)
 }
 static void track_atari_st (struct fdi *fdi, int max_sector)
 {
-	int i, gap3;
+	int i, gap3 = 0;
 	uae_u8 *p = fdi->track_src;
 
 	switch (max_sector) {
@@ -1820,7 +1820,7 @@ static int decode_lowlevel_track (FDI *fdi, int track, struct fdi_cache *cache)
 	uae_u32 maxidx, totalavg, weakbits;
 	int i, j, len, pulses, indexoffset;
 	int avg_free, min_free = 0, max_free = 0, idx_free;
-	int idx_off1, idx_off2, idx_off3;
+	int idx_off1 = 0, idx_off2 = 0, idx_off3 = 0;
 
 	d = fdi->track_dst;
 	p1 = fdi->track_src;
