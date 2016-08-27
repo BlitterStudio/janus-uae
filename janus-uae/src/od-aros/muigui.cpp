@@ -2119,7 +2119,7 @@ int scan_roms (HWND hDlg, int show)
 {
 	TCHAR path[MAX_DPATH];
 	static int recursive;
-	int id, i, ret, keys, cnt;
+	int id, i, ret = 0, keys, cnt;
 	UAEREG *fkey, *fkey2;
 	TCHAR *paths[MAX_ROM_PATHS];
 #ifndef __AROS__
@@ -2147,7 +2147,7 @@ int scan_roms (HWND hDlg, int show)
 #endif
 
 	cnt = 0;
-	ret = 0;
+
 	for (i = 0; i < MAX_ROM_PATHS; i++)
 		paths[i] = NULL;
 	scan_rom_hook (NULL, 0);
@@ -3486,7 +3486,7 @@ static struct ConfigStruct *readconfigcache (const TCHAR *path)
 	FILETIME t;
 	SYSTEMTIME st;
 #endif
-	ULARGE_INTEGER t1, stt, dirtt;
+	ULARGE_INTEGER t1, stt = {0,0}, dirtt;
 	HANDLE h;
 	WIN32_FIND_DATA ffd;
 
@@ -4461,7 +4461,7 @@ void InitializeListView (HWND hDlg)
 
   DebOut("..\n");
 
-	if (hDlg == pages[HARDDISK_ID]) {
+	if ((HARDDISK_ID != -1) && (hDlg == pages[HARDDISK_ID])) {
     DebOut("HARDDISK_ID\n");
 
 		listview_num_columns = HARDDISK_COLUMNS;
@@ -4483,7 +4483,7 @@ void InitializeListView (HWND hDlg)
 #endif
   DebOut("HARDDISK_ID done\n");
 
-	} else if (hDlg == pages[INPUT_ID]) {
+	} else if ((INPUT_ID != -1) && (hDlg == pages[INPUT_ID])) {
 
 		listview_num_columns = INPUT_COLUMNS;
 		lv_type = LV_INPUT;
@@ -4500,7 +4500,7 @@ void InitializeListView (HWND hDlg)
     list = (HWND)IDC_INPUTLIST;
 #endif
 
-	} else if (hDlg == pages[INPUTMAP_ID]) {
+	} else if ((INPUTMAP_ID != -1) && (hDlg == pages[INPUTMAP_ID])) {
 
 		listview_num_columns = INPUTMAP_COLUMNS;
 		lv_type = LV_INPUTMAP;
@@ -4511,7 +4511,7 @@ void InitializeListView (HWND hDlg)
     list = (HWND)IDC_INPUTLIST;
 #endif
 
-	} else if (hDlg == pages[MISC2_ID]) {
+	} else if ((MISC2_ID != -1) && (hDlg == pages[MISC2_ID])) {
 
 		listview_num_columns = MISC2_COLUMNS;
 		lv_type = LV_MISC2;
@@ -4523,7 +4523,7 @@ void InitializeListView (HWND hDlg)
     list = (HWND)IDC_ASSOCIATELIST;
 #endif
 
-	} else if (hDlg == pages[MISC1_ID]) {
+	} else if ((MISC1_ID != -1) && (hDlg == pages[MISC1_ID])) {
 
 		listview_num_columns = MISC1_COLUMNS;
 		lv_type = LV_MISC1;
@@ -4535,7 +4535,7 @@ void InitializeListView (HWND hDlg)
 		list = (HWND)IDC_MISCLIST;
 #endif
 
-	} else if (hDlg == pages[DISK_ID]) {
+	} else if ((DISK_ID != -1) && (hDlg == pages[DISK_ID])) {
 
 		listview_num_columns = DISK_COLUMNS;
 		lv_type = LV_DISK;
@@ -5512,7 +5512,7 @@ GUI_STATIC INT_PTR CALLBACK LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam,
 #ifndef __AROS__
 			if (nm->hwndFrom == GetDlgItem (hDlg, IDC_CONFIGTREE)) {
 #else
-      if (nm->hwndFrom == IDC_CONFIGTREE) {
+			if (nm->hwndFrom == IDC_CONFIGTREE) {
 #endif
 				switch (nm->code)
 				{
@@ -9614,10 +9614,10 @@ static INT_PTR CALLBACK Expansion2DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LP
 					v = SendDlgItemMessage(hDlg, IDC_NETDEVICE, CB_GETCURSEL, 0, 0L);
 					if (v != CB_ERR) {
 						const TCHAR *s;
-						if (v == 0) {
+						if ((v == 0)  || !(ndd[v])){
 							s = _T("none");
 						}
-						else if (ndd[v]) {
+						else {
 							v--;
 							s = ndd[v]->name;
 						}
@@ -11420,7 +11420,7 @@ static int sounddrivers[] = { IDC_SOUND_DS, IDC_SOUND_WASAPI, IDC_SOUND_OPENAL, 
 
 static void values_to_sounddlg (HWND hDlg)
 {
-	int which_button;
+	int which_button = 0;
 	int sound_freq = workprefs.sound_freq;
 	int produce_sound = workprefs.produce_sound;
 	int stereo = workprefs.sound_stereo;
@@ -19453,6 +19453,8 @@ static int GetSettings (int all_options, HWND hwnd)
 		MISC2_ID = init_page (IDD_MISC2, IDI_MISC2, IDS_MISC2, MiscDlgProc2, NULL, _T("gui/misc2.htm"), 0);
 		FRONTEND_ID = init_page (IDD_FRONTEND, IDI_QUICKSTART, IDS_FRONTEND, AboutDlgProc, NULL, NULL, 0);
 		C_PAGES = FRONTEND_ID + 1;
+#else
+		C_PAGES = GAMEPORTS_ID + 1;
 #endif
 		init_called = 1;
 		if (quickstart && !qs_override)
