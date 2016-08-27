@@ -992,7 +992,7 @@ int hdf_read_target (struct hardfiledata *hfd, void *buffer, uae_u64 offset, int
 	offset -= hfd->virtual_size;
 	while (len > 0) {
 		int maxlen;
-		IPTR ret;
+		IPTR ret = 0;
 		if (hfd->physsize < CACHE_SIZE) {
 			hfd->cache_valid = 0;
 			hdf_seek (hfd, offset);
