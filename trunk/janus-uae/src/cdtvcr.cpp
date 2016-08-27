@@ -439,7 +439,7 @@ static void cdtvcr_play(uae_u32 start, uae_u32 end)
 static void cdtvcr_play_track(uae_u32 track_start, uae_u32 track_end)
 {
 	int start_found, end_found;
-	uae_u32 start, end;
+	uae_u32 start, end = 0;
 
 	start_found = end_found = 0;
 	for (int j = toc.first_track_offset; j <= toc.last_track_offset; j++) {
