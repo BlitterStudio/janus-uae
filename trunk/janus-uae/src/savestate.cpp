@@ -1129,7 +1129,7 @@ void savestate_quick (int slot, int save)
 	i = len - 1;
 	while (i >= 0 && savestate_fname[i] != '_')
 		i--;
-	if (i < len - 6 || i <= 0) { /* "_?.uss" */
+	if (((len >= 7) && (i < len - 6)) || (i <= 0)) { /* "_?.uss" */
 		i = len - 1;
 		while (i >= 0 && savestate_fname[i] != '.')
 			i--;
