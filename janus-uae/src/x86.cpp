@@ -475,7 +475,7 @@ static void timing(int count)
 
 static void out8253(uint16_t portnum, uint8_t value)
 {
-	uint8_t curbyte;
+	uint8_t curbyte = 0;
 #if DEBUG_PIT
 	write_log("out8253(0x%X = %02x);\n", portnum, value);
 #endif
@@ -519,7 +519,7 @@ static void out8253(uint16_t portnum, uint8_t value)
 
 static uint8_t in8253(uint16_t portnum)
 {
-	uint8_t curbyte;
+	uint8_t curbyte = 0;
 	uint8_t out = 0;
 #if DEBUG_PIT
 	uint16_t portnum2 = portnum;
