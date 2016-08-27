@@ -7725,7 +7725,7 @@ static void dmal_emu (uae_u32 v)
 		last_custom_value1 = dat;
 		AUDxDAT (nr, dat, pt);
 	} else {
-		uae_u16 dat;
+		uae_u16 dat = 0;
 		int w = v & 1;
 		uaecptr pt = disk_getpt ();
 		// disk_fifostatus() needed in >100% disk speed modes
