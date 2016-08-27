@@ -717,7 +717,7 @@ bool UAECALL uae_ppc_io_mem_write(uint32_t addr, uint32_t data, int size)
 
 bool UAECALL uae_ppc_io_mem_read(uint32_t addr, uint32_t *data, int size)
 {
-	uint32_t v;
+	uint32_t v = 0;
 	bool locked = false;
 
 	while (ppc_thread_running && ppc_cpu_lock_state < 0 && ppc_state);
