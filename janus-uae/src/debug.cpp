@@ -3932,7 +3932,7 @@ static void debug_sprite (TCHAR **inptr)
 	int ypos, ypos_ecs;
 	int ypose, ypose_ecs;
 	int attach;
-	uae_u64 w1, w2, ww1, ww2;
+	uae_u64 w1, w2, ww1 = 0, ww2 = 0;
 	int size = 1, width;
 	int ecs, sh10;
 	int y, i;
