@@ -2552,7 +2552,7 @@ static struct delayed_event *delayed_events;
 
 static int handle_custom_event (const TCHAR *custom)
 {
-	TCHAR *p, *buf, *nextp;
+	TCHAR *p, *buf, *nextp = NULL;
 	bool noquot = false;
 
 	if (custom == NULL)
@@ -2563,7 +2563,7 @@ static int handle_custom_event (const TCHAR *custom)
 	if (p[0] != '\"')
 		noquot = true;
 	while (p && *p) {
-		TCHAR *p2;
+		TCHAR *p2 = NULL;
 		if (!noquot) {
 			if (*p != '\"')
 				break;
