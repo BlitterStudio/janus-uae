@@ -18496,7 +18496,9 @@ static void CreateNode (HWND TVhDlg, int page, HTREEITEM parent, const TCHAR *la
 	p->tv = TreeView_InsertItem (TVhDlg, &is);
 	checkpagelabel (page, 0, label);
 }
-#define CN(page, label) CreateNode(TVhDlg, page, p, label);
+#define CN(page, label) \
+        if (page != -1) \
+            CreateNode(TVhDlg, page, p, label);
 
 static void createTreeView (HWND hDlg)
 {
