@@ -732,7 +732,7 @@ uae_u32 REGPARAM2 mmu_get_long_unaligned(uaecptr addr, bool data, bool rmw)
 
 uae_u32 REGPARAM2 mmu_get_ilong_unaligned(uaecptr addr)
 {
-	uae_u32 res;
+	uae_u32 res = 0;
 
 	if (likely(!(addr & 1))) {
 		res = (uae_u32)mmu_get_iword(addr, sz_long) << 16;
