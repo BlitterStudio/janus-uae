@@ -1550,9 +1550,9 @@ static bool ham_e(struct vidbuffer *src, struct vidbuffer *dst, bool doublelines
 	ystart = isntsc ? VBLANK_ENDLINE_NTSC : VBLANK_ENDLINE_PAL;
 	yend = isntsc ? MAXVPOS_NTSC : MAXVPOS_PAL;
 
-	uae_u8 r, g, b;
+	uae_u8 r = 0, g = 0, b = 0;
 	/* or is an alternative operator and cannot be used as an identifier */
-	uae_u8 or_, og, ob;
+	uae_u8 or_ = 0, og = 0, ob = 0;
 	int pcnt = 0;
 	int bank = 0;
 	int mode_active = 0;
