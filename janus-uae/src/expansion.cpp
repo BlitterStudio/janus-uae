@@ -292,7 +292,7 @@ static void addextrachip (uae_u32 sysbase)
 		uae_u32 first = get_long (ml + 16);
 		put_long (ml + 24, currprefs.chipmem_size); // mh_Upper
 		put_long (ml + 28, get_long (ml + 28) + added); // mh_Free
-		uae_u32 next;
+		uae_u32 next = 0;
 		while (first) {
 			next = first;
 			first = get_long (next);
