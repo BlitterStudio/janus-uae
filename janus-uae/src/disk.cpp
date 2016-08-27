@@ -2524,7 +2524,7 @@ bool disk_creatediskfile (const TCHAR *name, int type, drive_type adftype, const
 	uae_u8 *chunk = NULL;
 	int ddhd = 1;
 	bool ok = false;
-	uae_u64 pos;
+	uae_u64 pos = 0;
 
 	if (type == 1)
 		tracks = 2 * 83;
