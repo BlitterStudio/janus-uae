@@ -115,7 +115,7 @@ static void FPU_ST80(PhysPt addr,Bitu reg) {
 	struct {
 		Bit16s begin;
 		FPU_Reg eind;
-	} test;
+	} test = {0,0};
 	Bit64s sign80 = (fpu.regs[reg].ll&LONGTYPE(0x8000000000000000))?1:0;
 	Bit64s exp80 =  fpu.regs[reg].ll&LONGTYPE(0x7ff0000000000000);
 	Bit64s exp80final = (exp80>>52);
@@ -234,7 +234,7 @@ static void FPU_FST_I32(PhysPt addr) {
 }
 
 static void FPU_FST_I64(PhysPt addr) {
-	FPU_Reg blah;
+	FPU_Reg blah = { 0 };
 	blah.ll = static_cast<Bit64s>(FROUND(fpu.regs[TOP].d));
 	mem_writed(addr,blah.l.lower);
 	mem_writed(addr+4,blah.l.upper);
