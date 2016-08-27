@@ -4308,7 +4308,7 @@ static int exalldo (uaecptr exalldata, uae_u32 exalldatasize, uae_u32 type, uaec
 	int entrytype;
 	const TCHAR *xs = NULL, *commentx = NULL;
 	uae_u32 flags = 15;
-	int days, mins, ticks;
+	int days = 0, mins = 0, ticks = 0;
 	struct mystat statbuf;
 	int fsdb_can = fsdb_cando (unit);
 	uae_u16 uid = 0, gid = 0;
@@ -5365,7 +5365,7 @@ static void
 	uae_s64 res;
 	uae_s64 cur;
 	int whence = SEEK_CUR;
-	uae_s64 temppos, filesize;
+	uae_s64 temppos = 0, filesize;
 
 	if (k == 0) {
 		PUT_PCK_RES1 (packet, -1);
@@ -6159,7 +6159,7 @@ static void action_change_file_position64 (Unit *unit, dpacket packet)
 
 	cur = k->file_pos;
 	{
-		uae_s64 temppos;
+		uae_s64 temppos = 0;
 		uae_s64 filesize = key_filesize(k);
 
 		if (whence == SEEK_CUR)
@@ -6373,7 +6373,7 @@ static void action_seek64(Unit *unit, dpacket packet)
 
 	cur = k->file_pos;
 	{
-		uae_s64 temppos;
+		uae_s64 temppos = 0;
 		uae_s64 filesize = key_filesize(k);
 
 		if (whence == SEEK_CUR)
