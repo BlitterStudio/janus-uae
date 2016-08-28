@@ -218,7 +218,7 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
 
     case CB_ADDSTRING:
     {
-      IPTR old_active;
+      IPTR old_active = NULL;
       /* add string  */
       DebOut("CB_ADDSTRING (%s)\n", (TCHAR *) lParam);
 
@@ -504,7 +504,7 @@ LRESULT SendMessage(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 UINT GetDlgItemText(HWND hDlg, int nIDDlgItem, TCHAR *lpString, int nMaxCount) {
   //int i;
   //UINT ret;
-  char *buffer; 
+  char *buffer = NULL; 
   //IPTR t;
   Element *elem;
 

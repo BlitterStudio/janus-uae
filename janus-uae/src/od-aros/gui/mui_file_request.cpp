@@ -48,7 +48,7 @@ BOOL mui_get_filename(TCHAR *lpstrTitle, TCHAR *lpstrInitialDir, TCHAR *lpstrFil
                       TCHAR *lpstrFilter, TCHAR *lpstrFileTitle, ULONG flags, TCHAR *lpstrDefExt) {
 
   struct FileRequester *req;
-  struct Window *win;
+  struct Window *win = NULL;
   BOOL ret;
   char filter[256];
   char *b, *e;
