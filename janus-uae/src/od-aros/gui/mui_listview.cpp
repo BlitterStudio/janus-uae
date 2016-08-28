@@ -278,7 +278,7 @@ BOOL ListView_DeleteAllItems(HWND hwnd) {
   i=get_index(elem, nIDDlgItem);
   if(i<0) return FALSE;
 #endif
-  DebOut("elem: 0x%p: %d elem->action: 0x%p\n", elem, elem->action);
+  DebOut("elem: 0x%p: elem->action: 0x%p\n", elem, elem->action);
 
   DoMethod(elem->action, MUIM_List_Clear);
 
@@ -485,7 +485,7 @@ VOID ListView_SetItemText(HWND hwnd, int line, int iSubItem, const char *pszText
   i=get_index(elem, nIDDlgItem);
   if(i<0) return;
 #endif
-  DebOut("elem: %p: %d\n", elem);
+  DebOut("elem: %p\n", elem);
 
   /* build new line. not on the stack, as it is "big" */
   new_line=(struct view_line *) AllocVec(sizeof(struct view_line), MEMF_CLEAR);
