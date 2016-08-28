@@ -86,7 +86,7 @@ DWORD SetFilePointer(HANDLE hFile, LONG lDistanceToMove, PLONG lpDistanceToMoveH
     return 0;
   }
 
-  DebOut("hFile 0x%p, lDistanceToMove: %d\n", lDistanceToMove);
+  DebOut("hFile 0x%p, lDistanceToMove: %d\n", hFile, lDistanceToMove);
 
   switch(dwMoveMethod) {
     case FILE_BEGIN:
