@@ -109,7 +109,7 @@ AROS_UFH2(static void, MUIHook_list, AROS_UFHA(struct Hook *, hook, A0), AROS_UF
   AROS_USERFUNC_INIT
 
   struct Data *data=(struct Data *) hook->h_Data;
-  LONG active;
+  IPTR active = NULL;
 
   DebOut("List!\n");
 
@@ -312,7 +312,7 @@ static ULONG mGoActive (struct IClass *cl, APTR obj, Msg msg) {
 static ULONG mGoInactive (struct IClass *cl, APTR obj, Msg msg) {
 
   GETDATA;
-  IPTR pop, act, win;
+  IPTR pop = NULL, act, win;
 
   DebOut("mGoInactive begin!\n");
 
@@ -450,13 +450,13 @@ static IPTR mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent
         SetAttrs(data->obj_list, MUIA_List_Active, MUIV_List_Active_Down, TAG_DONE);
         break;
       case MUIKEY_GADGET_NEXT: {
-        LONG active;
+        IPTR active = NULL;
 
         /* gadget left with TAB, so user accepts listview value 
          * WARNING: needs updated window.c in AROS zune sources!! TODO
          */
         GetAttr(MUIA_List_Active, data->obj_list, (IPTR *) &active);
-        if(active >= 0) {
+        if((SIPTR)active >= 0) {
           SetAttrs(obj, MUIA_String_Contents, data->entries[active], TAG_DONE);
         }
         break;
@@ -473,7 +473,7 @@ static IPTR mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent
 
       case IDCMP_NEWSIZE: 
       case IDCMP_CHANGEWINDOW: {
-          IPTR wasopen;
+          IPTR wasopen = 0;
           GetAttr(MUIA_Window_Open, data->obj_popup_win, &wasopen);
           HidePopupWin(obj,data);
           if(wasopen) {
