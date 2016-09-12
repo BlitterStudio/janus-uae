@@ -585,23 +585,41 @@ while(<RESFILE>) {
 print CPPFILE "};\n";
 
 print HFILE "};\n\n";
-
+close(RESHFILE);
 
 # now copy windows resource.h to our own resource.h
 # remove all strings, we already have them in mui_data.h
-
-close(RESHFILE);
+# attention: we need unique IDS_ values (at least they make our live easier)
+my %ids;
+my $p1;
+my $p2;
+my $max=3000;
 open(RESHFILE, "<$resh_file" ) or die "unable to open $resh_file: $!";
 while(<RESHFILE>) {
   $line=$_;
   $line=~s/^M//;
   chop($line);
   if($line=~/^#define/ and not $line=~/IDS_/) {
-    print HFILE $line."\n"
+
+    $p1=(split(/\s+/, $line))[1];
+    $p2=(split(/\s+/, $line))[2];
+    if(not defined $ids{$p2}) {
+      $ids{$p2}=$p1;
+    }
+    else {
+      # dup!
+      while(defined $ids{$max}) {
+        $max++;
+      }
+      $ids{$max}=$p1; 
+    }
   }
 }
+# print them nicely and sorted!
+foreach $p2 (sort { $a <=> $b } keys %ids) {
+    printf(HFILE "#define %-35s %5s\n",$ids{$p2}, $p2);
+}
 
-# final close
 print HFILE   "\n#endif /* __".$if_def."__ */\n\n";
 
 close(CPPFILE);
