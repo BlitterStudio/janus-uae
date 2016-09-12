@@ -53,28 +53,41 @@ extern Object *win;
  * if hDlg is NULL, search global
  */
 Element *get_control(HWND hDlg, int item) {
-  ULONG i=0;
+  Element *e;
   Element *elem=(Element *) hDlg;
 
   DebOut("elem: %p, item: %d\n", elem, item);
 
-  /* skip to hDlg */
   if(hDlg) {
-    while(WIN_RES[i].idc && (WIN_RES[i].idc != elem->idc)) {
-      //DebOut("WIN_RES[%d].idc: %d, elem->idc %d\n", i, WIN_RES[i].idc, elem->idc);
-      i++;
-    }
+    e=(Element *) hDlg;
+  }
+  else {
+    e=WIN_RES;
   }
 
-  while(WIN_RES[i].idc) {
+  while(e->idc) {
     //DebOut("WIN_RES[%d].idc: %d, item %d\n", i, WIN_RES[i].idc, item);
-    if(WIN_RES[i].idc==item) {
-      return &WIN_RES[i];
+    if(e->idc==item) {
+      return e;
     }
-    i++;
+    e++;
   }
 
-  DebOut("ERROR (?): can't find control %d in %p (NULL is ok here)\n", item, hDlg);
+  /* item not found in dialog hDlg or later on, search before it in array,
+     if not already done (hDlg was NULL) */
+  if(hDlg) {
+    /* test: search everywhere else (from the beginning to hDlg): */
+    e=WIN_RES;
+    while(e!=hDlg && e->idc) {
+      if(e->idc==item) {
+        DebOut("found control %d outside of specified dialog window %p\n", item, hDlg);
+        return e;
+      }
+      e++;
+    }
+  }
+
+  DebOut("ERROR (?): can't find control %d anywhere !?\n", item, hDlg);
   return NULL;
 }
 
@@ -235,11 +248,11 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
 
   AROS_USERFUNC_INIT
 
+  Element *e;
   Element *elem;
-  ULONG t;
+  ULONG i;
   ULONG wParam;
   ULONG newstate;
-  ULONG i;
 
   struct Data *data = (struct Data *) hook->h_Data;
 
@@ -248,7 +261,17 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
   i=XGET((Object *) obj, MUIA_UserData);
   DebOut("MUIA_UserData: %d\n", i);
 
-  elem=&WIN_RES[i];
+  if(i) {
+    elem=&WIN_RES[i];
+  }
+  else {
+    elem=get_elem_from_obj((Object *) obj);
+  }
+
+  if(!elem) {
+    DebOut("ERROR: could not find Element for Object %p\n", obj);
+    goto ERROR;
+  }
 
   if(elem->text) {
     DebOut("obj: 0x%p => elem %p: (%s)\n", obj, elem, elem->text);
@@ -281,16 +304,17 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
 
     DebOut("deselect all my brothers\n");
     /* as we are part of a group, unselect all our active friends */
-    t=0;
-    while(WIN_RES[t].idc) {
-      if(WIN_RES[t].group == elem->group && WIN_RES[t].value && WIN_RES[t].idc!=elem->idc) {
+    e=WIN_RES;
+    while(e->idc) {
+      if(e->group == elem->group && e->value && e->idc!=elem->idc) {
         /* same group */
         DebOut("  => also activated, same group, other guy!\n");
-        DoMethod(WIN_RES[t].obj, MUIM_NoNotifySet, MUIA_Selected, FALSE); 
-        WIN_RES[t].value=0;
+        DoMethod(e->obj, MUIM_NoNotifySet, MUIA_Selected, FALSE); 
+        e->value=0;
       }
-      t++;
+      e++;
     }
+    DebOut("brothers cleared\n");
   }
   else if(elem->windows_type==COMBOBOX) {
 
@@ -298,8 +322,12 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
 
     /* CBN_SELCHANGE: A new combo box list item is selected. */
     if(data->func) {
-      wParam=MAKELPARAM(elem->idc, CBN_SELCHANGE);
+      WORD i;
+      i=XGET((Object *) obj, MUIA_UserData); /* TODO: test this! */
+      DebOut("i: %d\n", i);
+      wParam=MAKELPARAM(i, CBN_SELCHANGE);
       DebOut("call function: 0x%p (IDC %d, wParam: 0x%p)\n", data->func, elem->idc, wParam);
+      /* elem is bloody wrong here, I guess! TODO! */
       data->func(elem, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
     }
     goto DONE;
@@ -320,6 +348,8 @@ DONE:
     /* Solution: add DlgProc in mNew in mui_head.cpp */
   }
 
+ERROR:
+  ;
   AROS_USERFUNC_EXIT
 }
 
