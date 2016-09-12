@@ -311,6 +311,8 @@ AROS_UFH2(void, MUIHook_pushbutton, AROS_UFHA(struct Hook *, hook, A0), AROS_UFH
 
   AROS_USERFUNC_INIT
   Element *elem;
+  Element *e;
+  Element *obj_elem=NULL;
   ULONG wParam;
 
   struct Data *data = (struct Data *) hook->h_Data;
@@ -326,8 +328,22 @@ AROS_UFH2(void, MUIHook_pushbutton, AROS_UFHA(struct Hook *, hook, A0), AROS_UFH
     DebOut("IDC: %d\n", elem->idc);
     DebOut("WM_COMMAND: %d\n", WM_COMMAND);
 
-    wParam=MAKELPARAM(elem->idc, BN_CLICKED);
-    data->func(elem, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
+    e=WIN_RES;
+    while(e->idc) {
+      if(obj == e->obj) {
+        obj_elem=e;
+        break;
+      }
+      e++;
+    }
+
+    if(obj_elem) {
+      wParam=MAKELPARAM(obj_elem->idc, BN_CLICKED);
+      data->func(elem, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
+    }
+    else {
+      DebOut("WARNING: could not find object %p in Element List!\n", obj);
+    }
   }
   else {
     DebOut("function is zero: 0x%p\n", data->func);
