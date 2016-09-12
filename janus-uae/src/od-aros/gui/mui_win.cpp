@@ -841,7 +841,12 @@ HWND GetDlgItem(HWND hDlg, int nIDDlgItem) {
 /* Changes the text of the specified window's title bar (if it has one). 
  * If the specified window is a control, the text of the control is changed.
  */
+
 BOOL SetWindowText(HWND hWnd, TCHAR *lpString) {
+
+  LONG i;
+  LONG item=-1;
+  Element *e;
 
   if(hWnd==NULL) {
     DebOut("hWnd: 0x%p\n", hWnd);
@@ -849,14 +854,29 @@ BOOL SetWindowText(HWND hWnd, TCHAR *lpString) {
     return FALSE;
   }
   DebOut("lpString: %s\n", lpString);
-  SetAttrs(win, MUIA_Window_Title, lpString, TAG_DONE);
+  DebOut("hWnd:     %p\n", hWnd);
+
+  /* Check if it is a control first, not nice, I know. But I need the index here. */
+  i=0;
+  while(WIN_RES[i].idc) {
+    if(hWnd == &WIN_RES[i]) {
+      item=i;
+      break;
+    }
+    i++;
+  }
+
+  if(item>-1) {
+    DebOut("seems to be a control and not our main window, call SetDlgItemText instead\n");
+    /* in our "AROS" mapping layer, it is ok to supply a NULL handle here, item 
+       numbers are unique and will be found anyways */
+    SetDlgItemText(NULL, item, lpString);
+  }
+  else {
+    /* are we really sure, it is now our main window? */
+    SetAttrs(win, MUIA_Window_Title, lpString, TAG_DONE);
+  }
   return TRUE;
-}
-
-/* WARNING: not same API call as in Windows */
-BOOL SetWindowText(HWND hWnd, DWORD id, TCHAR *lpString) {
-
-  return SetWindowText(hWnd, lpString);
 }
 
 int GetWindowText(HWND   hWnd, LPTSTR lpString, int nMaxCount) {
