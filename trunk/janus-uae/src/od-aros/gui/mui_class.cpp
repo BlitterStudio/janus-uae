@@ -78,6 +78,22 @@ Element *get_control(HWND hDlg, int item) {
   return NULL;
 }
 
+/* find Element of mui object */
+Element *get_elem_from_obj(Object *obj) {
+  Element *e;
+ 
+  e=WIN_RES;
+  while(e->idc) {
+    if(obj == e->obj) {
+      return e;
+    }
+    e++;
+  }
+
+  DebOut("warning: could not find Element of MUI object %p\n", obj);
+  return NULL;
+}
+
 BOOL flag_editable(ULONG flags) {
 
   if((flags & CBS_DROPDOWNLIST)==CBS_DROPDOWNLIST) {
@@ -311,8 +327,7 @@ AROS_UFH2(void, MUIHook_pushbutton, AROS_UFHA(struct Hook *, hook, A0), AROS_UFH
 
   AROS_USERFUNC_INIT
   Element *elem;
-  Element *e;
-  Element *obj_elem=NULL;
+  Element *obj_elem;
   ULONG wParam;
 
   struct Data *data = (struct Data *) hook->h_Data;
@@ -328,14 +343,7 @@ AROS_UFH2(void, MUIHook_pushbutton, AROS_UFHA(struct Hook *, hook, A0), AROS_UFH
     DebOut("IDC: %d\n", elem->idc);
     DebOut("WM_COMMAND: %d\n", WM_COMMAND);
 
-    e=WIN_RES;
-    while(e->idc) {
-      if(obj == e->obj) {
-        obj_elem=e;
-        break;
-      }
-      e++;
-    }
+    obj_elem=get_elem_from_obj((Object *) obj);
 
     if(obj_elem) {
       wParam=MAKELPARAM(obj_elem->idc, BN_CLICKED);
