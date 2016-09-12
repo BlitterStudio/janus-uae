@@ -155,35 +155,17 @@ BOOL SetDlgItemText(HWND hDlg, int item, const TCHAR *lpString) {
  * select/deselect checkbox
  */
 BOOL CheckDlgButton(HWND hDlg, int button, UINT uCheck) {
-  //LONG i;
-  Element *elem=(Element *) hDlg;
+  Element *elem=GetDlgItem(hDlg, button);
 
-  DebOut("elem: 0x%p\n", elem);
+  DebOut("hDlg: 0x%p\n", hDlg);
   DebOut("button: %d\n", button);
   DebOut("uCheck: %d\n", uCheck);
-
-#if 0
-  i=get_index(elem, button);
-
-  if(i<0) {
-    elem=get_elem(button);
-    i=get_index(elem, button);
-  }
-
-  /* still not found !? */
-  if(i<0) {
-    DebOut("ERROR: button %d found nowhere!?\n", button);
-    return FALSE;
-  }
-#endif
-
+  DebOut("elem: 0x%p\n", elem);
   DebOut("elem->obj: 0x%p\n", elem->obj);
 
   DoMethod(elem->obj, MUIM_NoNotifySet, MUIA_Selected, uCheck);
-  //SET(elem->obj, MUIA_Pressed, uCheck);
 
   return TRUE;
-
 }
 
 LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam) {
@@ -678,8 +660,10 @@ BOOL CheckRadioButton(HWND hDlg, int nIDFirstButton, int nIDLastButton, int nIDC
   //IPTR act;
   Element *elem;
 
-  DebOut("%p, %d, %d, %d\n", hDlg, nIDFirstButton, nIDLastButton, nIDCheckButton);
+  DebOut("%p, nIDFirstButton %d, nIDLastButton %d, nIDCheckButton%d\n", 
+         hDlg, nIDFirstButton, nIDLastButton, nIDCheckButton);
   elem=get_control(hDlg, nIDCheckButton);
+  DebOut("Element: %p\n", elem);
 
 #if 0
   set=get_index(elem, nIDCheckButton);
