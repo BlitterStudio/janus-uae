@@ -593,7 +593,7 @@ close(RESHFILE);
 my %ids;
 my $p1;
 my $p2;
-my $max=3000;
+my $max=0;
 open(RESHFILE, "<$resh_file" ) or die "unable to open $resh_file: $!";
 while(<RESHFILE>) {
   $line=$_;
@@ -608,6 +608,7 @@ while(<RESHFILE>) {
     }
     else {
       # dup!
+      $max=$p2+1;
       while(defined $ids{$max}) {
         $max++;
       }
