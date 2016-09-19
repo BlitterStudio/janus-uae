@@ -359,6 +359,7 @@ static void ew (HWND hDlg, DWORD id, int enable)
 	if (!enable && w == GetFocus ())
 		SendMessage (hDlg, WM_NEXTDLGCTL, 0, FALSE);
 #endif
+  EnableWindow (w, !!enable);
 }
 static void hide (HWND hDlg, DWORD id, int hide)
 {
