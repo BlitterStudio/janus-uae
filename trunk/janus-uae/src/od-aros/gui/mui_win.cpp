@@ -194,6 +194,8 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
 #endif
   elem=get_control(hDlg, nIDDlgItem);
 
+  DebOut("elem:      0x%p\n", elem);
+  DebOut("elem->obj: 0x%p\n", elem->obj);
   DebOut("elem->var: 0x%p\n", elem->var);
 
   switch(Msg) {
