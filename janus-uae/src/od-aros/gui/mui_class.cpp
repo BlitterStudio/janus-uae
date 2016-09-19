@@ -66,7 +66,7 @@ Element *get_control(HWND hDlg, int item) {
   }
 
   while(e->idc) {
-    //DebOut("WIN_RES[%d].idc: %d, item %d\n", i, WIN_RES[i].idc, item);
+    //DebOut("e.idc: %d, item %d\n", e->idc, item);
     if(e->idc==item) {
       return e;
     }
@@ -105,6 +105,18 @@ Element *get_elem_from_obj(Object *obj) {
 
   DebOut("warning: could not find Element of MUI object %p\n", obj);
   return NULL;
+}
+
+ULONG get_index_from_elem(Element *elem) {
+  ULONG i=0;
+  while(WIN_RES[i].idc) {
+    if(elem==(Element *) &WIN_RES[i]) {
+      return i;
+    }
+    i++;
+  }
+
+  return 0;
 }
 
 BOOL flag_editable(ULONG flags) {
@@ -147,12 +159,11 @@ AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
   //DebOut("[0x%p] hook.h_Data: 0x%p\n", obj, hook->h_Data);
   //DebOut("[0x%p] obj: 0x%p\n", obj);
 
-  elem=(Element *) data->hwnd;
+  elem=get_elem_from_obj((Object *) obj);
+  DebOut("[0x%p] elem: %p\n", obj, elem);
 
   elem->value=XGET((Object *) obj, MUIA_Cycle_Active);
   //DebOut("[0x%p] MUIA_Cycle_Active: %d (mui obj: 0x%p)\n", obj, data->src[i].value, obj);
-
-  DebOut("[0x%p] state: %d\n", obj, elem->value);
 
   if(data->func) {
     if(elem->mem[elem->value] && !strcmp(elem->mem[elem->value], EMPTY_SELECTION)) {
@@ -162,9 +173,9 @@ AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
       if(flag_editable(elem->flags)) {
         elem->value--;
       }
-      wParam=MAKELPARAM(elem->idc, CBN_SELCHANGE);
+      wParam=MAKELPARAM(get_index_from_elem(elem), CBN_SELCHANGE);
       DebOut("[0x%p] call function: 0x%p(IDC %d, CBN_SELCHANGE)\n", obj, data->func, elem->idc);
-      data->func(elem, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
+      data->func((Element *) data->hwnd, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
     }
   }
   else {
