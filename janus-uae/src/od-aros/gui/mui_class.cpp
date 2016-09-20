@@ -173,9 +173,9 @@ AROS_UFH2(void, MUIHook_combo, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APT
       if(flag_editable(elem->flags)) {
         elem->value--;
       }
-      wParam=MAKELPARAM(get_index_from_elem(elem), CBN_SELCHANGE);
+      wParam=MAKELPARAM(elem->idc, CBN_SELCHANGE);
       DebOut("[0x%p] call function: 0x%p(IDC %d, CBN_SELCHANGE)\n", obj, data->func, elem->idc);
-      data->func((Element *) data->hwnd, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
+      data->func((Element *) data->hwnd, WM_COMMAND, wParam, 0); 
     }
   }
   else {
