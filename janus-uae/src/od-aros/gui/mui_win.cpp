@@ -172,7 +172,7 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
   //Object *obj;
   //LONG i;
   ULONG l;
-  IPTR activate;
+  //IPTR activate;
   TCHAR *buf;
   Element *elem;
 
@@ -202,7 +202,7 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
 
     case CB_ADDSTRING:
     {
-      IPTR old_active = NULL;
+      IPTR old_active = 0;
       /* add string  */
       DebOut("CB_ADDSTRING (%s)\n", (TCHAR *) lParam);
 
@@ -221,9 +221,8 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
         l++;
       }
       /* found next free string */
-      activate=l;
-#warning TODO: free strings again!
-      elem->mem[l]=strdup((TCHAR *) lParam);
+      //activate=l;
+      elem->mem[l]=strdup((TCHAR *) lParam); /* TODO: free strings again */
       elem->mem[l+1]=NULL;
 
 #if 0
@@ -261,8 +260,7 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
       l=0;
       /* free old strings */
       while(elem->mem[l] != NULL) {
-#warning free them!
-        //free(elem->mem[l]);
+        //free(elem->mem[l]); /* TODO: free them? */
         elem->mem[l]=NULL;
         l++;
       }
@@ -422,7 +420,7 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
 
       if(flag_editable(elem->flags)) {
         /* zune combo object */
-        if(wParam==-1) { /* TODO wParam unsigned!? */
+        if(wParam==-1) { /* TODO: wParam unsigned!? */
           DebOut("clear string gadget\n");
           DoMethod(elem->obj, MUIM_NoNotifySet, MUIA_String_Contents, (IPTR) "");
           return CB_ERR;
@@ -832,7 +830,6 @@ BOOL SetWindowText(HWND hWnd, TCHAR *lpString) {
 
   LONG i;
   LONG item=-1;
-  Element *e;
 
   if(hWnd==NULL) {
     DebOut("hWnd: 0x%p\n", hWnd);
