@@ -6310,7 +6310,7 @@ static struct amigamodels amodels[] = {
 	{ 4, IDS_QS_MODEL_A1200 }, // "Amiga 1200"
 	{ 2, IDS_QS_MODEL_A3000 }, // "Amiga 3000"
 	{ 1, IDS_QS_MODEL_A4000 }, // "Amiga 4000"
-	{ 1, IDS_QS_MODEL_A4000T }, // "Amiga 4000T"
+  { 0, }, //{ 1, IDS_QS_MODEL_A4000T }, // "Amiga 4000T"
 	{ 3, IDS_QS_MODEL_CD32 }, // "CD32"
 	{ 4, IDS_QS_MODEL_CDTV }, // "CDTV"
 	{ 4, modelarcadia }, // "Arcadia"
