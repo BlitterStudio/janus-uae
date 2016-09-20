@@ -31,5 +31,6 @@ int GetDlgCtrlID(HWND hwndCtl);
 BOOL EndDialog(HWND hDlg, int nResult);
 UINT GetDlgItemInt(HWND hDlg, int  nIDDlgItem, BOOL *lpTranslated,  BOOL bSigned);
 INT_PTR DialogBoxIndirect(HINSTANCE hInstance, LPCDLGTEMPLATE lpTemplate, HWND hWndParent, INT_PTR (*func) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam));
-
+/* AROS hack version: */
+INT_PTR DialogBoxIndirect(ULONG hInstance, LPCDLGTEMPLATE lpTemplate, HWND hWndParent, INT_PTR (*func) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam));
 #endif
