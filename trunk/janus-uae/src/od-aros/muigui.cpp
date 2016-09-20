@@ -6485,7 +6485,8 @@ static void init_quickstartdlg (HWND hDlg)
 	for (i = 0; i < configstoresize; i++) {
 		if (configstore[i]->Type == CONFIG_TYPE_HOST) {
 			_tcscpy (tmp2, configstore[i]->Path);
-			_tcsncat (tmp2, configstore[i]->Name, MAX_DPATH);
+      AddPart(tmp2, configstore[i]->Name, MAX_DPATH);
+			//_tcsncat (tmp2, configstore[i]->Name, MAX_DPATH);
 			if (!_tcscmp (tmp2, hostconf))
 				idx = j;
 			SendDlgItemMessage (hDlg, IDC_QUICKSTART_HOSTCONFIG, CB_ADDSTRING, 0, (LPARAM)tmp2);
