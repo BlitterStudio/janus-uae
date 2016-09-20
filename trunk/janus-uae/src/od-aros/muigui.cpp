@@ -4474,11 +4474,7 @@ void InitializeListView (HWND hDlg)
 		WIN32GUI_LoadUIString (IDS_HFDSIZE, column_heading[6], MAX_COLUMN_HEADING_WIDTH);
 		WIN32GUI_LoadUIString (IDS_BOOTPRI, column_heading[7], MAX_COLUMN_HEADING_WIDTH);
   DebOut("HARDDISK_ID 2\n");
-#ifndef __AROS__
 		list = GetDlgItem (hDlg, IDC_VOLUMELIST);
-#else
-    list=(HWND)IDC_VOLUMELIST;
-#endif
   DebOut("HARDDISK_ID done\n");
 
 	} else if ((INPUT_ID != -1) && (hDlg == pages[INPUT_ID])) {
@@ -4492,22 +4488,14 @@ void InitializeListView (HWND hDlg)
 		_tcscpy (column_heading[4], _T("Invert"));
 		WIN32GUI_LoadUIString (IDS_INPUTQUALIFIER, column_heading[5], MAX_COLUMN_HEADING_WIDTH);
 		_tcscpy (column_heading[6], _T("#"));
-#ifndef __AROS__
 		list = GetDlgItem (hDlg, IDC_INPUTLIST);
-#else
-    list = (HWND)IDC_INPUTLIST;
-#endif
 
 	} else if ((INPUTMAP_ID != -1) && (hDlg == pages[INPUTMAP_ID])) {
 
 		listview_num_columns = INPUTMAP_COLUMNS;
 		lv_type = LV_INPUTMAP;
 		column_heading[0][0] = 0;
-#ifndef __AROS__
 		list = GetDlgItem (hDlg, IDC_INPUTMAPLIST);
-#else
-    list = (HWND)IDC_INPUTLIST;
-#endif
 
 	} else if ((MISC2_ID != -1) && (hDlg == pages[MISC2_ID])) {
 
@@ -4515,22 +4503,16 @@ void InitializeListView (HWND hDlg)
 		lv_type = LV_MISC2;
 		_tcscpy (column_heading[0], _T("Extension"));
 		_tcscpy (column_heading[1], _T(""));
-#ifndef __AROS__
 		list = GetDlgItem (hDlg, IDC_ASSOCIATELIST);
-#else
-    list = (HWND)IDC_ASSOCIATELIST;
-#endif
 
 	} else if ((MISC1_ID != -1) && (hDlg == pages[MISC1_ID])) {
 
 		listview_num_columns = MISC1_COLUMNS;
 		lv_type = LV_MISC1;
 		column_heading[0][0] = 0;
-#ifndef __AROS__
 		list = GetDlgItem (hDlg, IDC_MISCLIST);
+#ifndef __AROS__
 		extraflags = LVS_EX_CHECKBOXES;
-#else
-		list = (HWND)IDC_MISCLIST;
 #endif
 
 	} else if ((DISK_ID != -1) && (hDlg == pages[DISK_ID])) {
@@ -4540,10 +4522,7 @@ void InitializeListView (HWND hDlg)
 		_tcscpy (column_heading[0], _T("#"));
 		WIN32GUI_LoadUIString (IDS_DISK_IMAGENAME, column_heading[1], MAX_COLUMN_HEADING_WIDTH);
 		WIN32GUI_LoadUIString (IDS_DISK_DRIVENAME, column_heading[2], MAX_COLUMN_HEADING_WIDTH);
-#ifndef __AROS__
 		list = GetDlgItem (hDlg, IDC_DISK);
-#endif
-    TODO();
 
 	} else {
 		// CD dialog
@@ -4552,11 +4531,7 @@ void InitializeListView (HWND hDlg)
 		_tcscpy (column_heading[0], _T("*"));
 		WIN32GUI_LoadUIString (IDS_DEVICE, column_heading[1], MAX_COLUMN_HEADING_WIDTH);
 		WIN32GUI_LoadUIString (IDS_PATH, column_heading[2], MAX_COLUMN_HEADING_WIDTH);
-#ifndef __AROS__
 		list = GetDlgItem (hDlg, IDC_CDLIST);
-#else
-    list = (HWND)IDC_CDLIST;
-#endif
 	}
 
   DebOut("..\n");
