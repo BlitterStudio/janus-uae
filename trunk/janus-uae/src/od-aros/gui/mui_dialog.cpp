@@ -45,8 +45,7 @@ BOOL EndDialog(HWND hDlg, int nResult) {
   return nResult;
 }
 
-Object* FixedProcObj(Element  src, IPTR proc);
-Object* FixedObj(IPTR src);
+Object* FixedProcObj(ULONG idc, IPTR proc);
 extern Object *app;
 extern Object *win;
 
@@ -70,19 +69,23 @@ static void aros_dialog_loop(void) {
 }
 
 
+/* Creates a modal dialog box from a dialog box template in memory. */
 /* return 1 on success, 0 for cancel */
-/* WARNING: contrary to Windows, we expect a real template in lpTemplate, not a struct LPCDLGTEMPLATE !! */
+
+/* original windows API: 
 INT_PTR DialogBoxIndirect(HINSTANCE hInstance, LPCDLGTEMPLATE lpTemplate, HWND hWndParent, INT_PTR (CALLBACK FAR *func) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam))  {
+*/
+/* WARNING: contrary to Windows, we expect an idc in hInstance, not a HINSTANCE  !! */
+INT_PTR DialogBoxIndirect(ULONG hInstance, LPCDLGTEMPLATE lpTemplate, HWND hWndParent, INT_PTR (CALLBACK FAR *func) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam))  {
 
   Object *mui_win;
   Object *mui_content;
 
   DebOut("lpTemplate: 0x%p\n", lpTemplate);
   DebOut("lpDialogFunc: 0x%p\n", func);
+  DebOut("hInstance: %d\n", hInstance);
 
-  bug("FIXME here: %s:%d\n", __FILE__, __LINE__);
-  exit(1);
-  //TODO :mui_content=FixedProcObj((Element *) lpTemplate, (IPTR)func);
+  mui_content=FixedProcObj((ULONG) hInstance, (IPTR)func);
   DebOut("content: 0x%p\n", mui_content);
   if(!mui_content) {
     DebOut("ERROR: could create window content!?\n");
