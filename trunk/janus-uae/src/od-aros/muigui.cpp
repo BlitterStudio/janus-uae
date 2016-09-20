@@ -363,21 +363,18 @@ static void ew (HWND hDlg, DWORD id, int enable)
 }
 static void hide (HWND hDlg, DWORD id, int hide)
 {
-#ifndef __AROS__
 	HWND w;
-#endif
+  DebOut("hDlg %p, id %d hide %d\n", hDlg, id, hide);
 	if (id < 0)
 		return;
-#ifndef __AROS__
 	w = GetDlgItem (hDlg, id);
 	if (!w)
 		return;
+#ifndef __AROS__
 	if (hide && w == GetFocus ())
 		SendMessage (hDlg, WM_NEXTDLGCTL, 0, FALSE);
-	ShowWindow (w, hide ? SW_HIDE : SW_SHOW);
-#else
-  TODO();
 #endif
+	ShowWindow (w, hide ? SW_HIDE : SW_SHOW);
 }
 
 static int scsiromselect_table[32];
