@@ -744,9 +744,9 @@
 #define IDC_YCENTER                     1519
 #define IDC_DISABLE0                    1519
 #define IDC_DF0WP                       1519
-#define IDC_OCS                         1520
 #define IDC_HDFLOPPY                    1520
 #define IDC_SETTINGSTEXT3               1520
+#define IDC_OCS                         1520
 #define IDC_ECS_AGNUS                   1521
 #define IDC_ECS_DENISE                  1522
 #define IDC_ECS                         1523
@@ -811,9 +811,9 @@
 #define IDC_MMUENABLE                   1585
 #define IDC_COLLISION0                  1589
 #define IDC_COLLISION1                  1590
-#define IDC_AUDIOSYNC                   1590
 #define IDC_COLLISION2                  1591
 #define IDC_COLLISION3                  1592
+#define IDC_AUDIOSYNC                   1590
 #define IDC_SOUNDLAGSLIDER              1592
 #define IDC_SOUNDLAGCAPTION             1594
 #define IDC_FLOPPYTYPE                  1594
