@@ -897,7 +897,7 @@ BOOL ShowWindow(HWND hWnd, int nCmdShow) {
   //int i;
   Element *elem=(Element *) hWnd;
 
-  DebOut("elem: 0x%p\n", hWnd);
+  DebOut("hWnd: 0x%p, nCmdShow %d\n", hWnd, nCmdShow);
 
 #if 0
   i=get_index(hWnd, id);
