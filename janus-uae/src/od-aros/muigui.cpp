@@ -5606,13 +5606,19 @@ static INT_PTR CALLBACK ErrorLogProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 	}
 	return FALSE;
 }
+#endif
 
 static INT_PTR CALLBACK ContributorsProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+#ifndef __AROS__
 	CHARFORMAT CharFormat;
+#else
+  LPARAM CharFormat;
+#endif
 	TCHAR szContributors1[MAX_CONTRIBUTORS_LENGTH];
 	TCHAR szContributors2[MAX_CONTRIBUTORS_LENGTH];
 	TCHAR szContributors[MAX_CONTRIBUTORS_LENGTH * 2];
+
 
 	switch (msg) {
 	case WM_COMMAND:
@@ -5622,31 +5628,33 @@ static INT_PTR CALLBACK ContributorsProc (HWND hDlg, UINT msg, WPARAM wParam, LP
 		}
 		break;
 	case WM_INITDIALOG:
+#ifndef __AROS__
 		CharFormat.cbSize = sizeof (CharFormat);
+#endif
 
 		WIN32GUI_LoadUIString(IDS_CONTRIBUTORS1, szContributors1, MAX_CONTRIBUTORS_LENGTH);
 		WIN32GUI_LoadUIString(IDS_CONTRIBUTORS2, szContributors2, MAX_CONTRIBUTORS_LENGTH);
 		_stprintf (szContributors, _T("%s%s"), szContributors1, szContributors2);
 
 		SetDlgItemText (hDlg, IDC_CONTRIBUTORS, szContributors );
+#ifndef __AROS__
 		SendDlgItemMessage (hDlg, IDC_CONTRIBUTORS, EM_GETCHARFORMAT, 0, (LPARAM) & CharFormat);
 		CharFormat.dwMask |= CFM_SIZE | CFM_FACE;
 		CharFormat.yHeight = 8 * 20; /* height in twips, where a twip is 1/20th of a point - for a pt.size of 18 */
 
 		_tcscpy (CharFormat.szFaceName, os_vista ? _T("Segoe UI") : _T("Tahoma"));
 		SendDlgItemMessage (hDlg, IDC_CONTRIBUTORS, EM_SETCHARFORMAT, SCF_ALL, (LPARAM) & CharFormat);
+#endif
 		return TRUE;
 	}
 	return FALSE;
 }
-#endif
 
 static void DisplayContributors (HWND hDlg)
 {
-#warning DisplayContributors is TODO
+	CustomDialogBox (IDD_CONTRIBUTORS, hDlg, ContributorsProc);
 #if 0
 #ifndef __AROS__
-	CustomDialogBox (IDD_CONTRIBUTORS, hDlg, ContributorsProc);
 #else
   TCHAR szContributors[MAX_CONTRIBUTORS_LENGTH * 2 + 50];
 
@@ -19209,7 +19217,7 @@ int CustomDialogBox (int templ, HWND hDlg, INT_PTR (*proc) (HWND hDlg, UINT msg,
     DebOut("call DialogBoxIndirect ..\n");
     /* r->tmpl is now templ */
 //#ifndef __AROS__
-		h = DialogBoxIndirect (r->inst, r->resource, hDlg, proc);
+		h = DialogBoxIndirect (templ, r->resource, hDlg, proc);
 //#else
     /* DialogBoxIndirect should get a template here, r->resource seems to be one on windows? */
 		//h = DialogBoxIndirect (r->inst, (LPCDLGTEMPLATE) templ, hDlg, proc);
