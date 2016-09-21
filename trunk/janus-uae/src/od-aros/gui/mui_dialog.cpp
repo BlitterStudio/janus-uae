@@ -76,16 +76,20 @@ static void aros_dialog_loop(void) {
 INT_PTR DialogBoxIndirect(HINSTANCE hInstance, LPCDLGTEMPLATE lpTemplate, HWND hWndParent, INT_PTR (CALLBACK FAR *func) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam))  {
 */
 /* WARNING: contrary to Windows, we expect an idc in hInstance, not a HINSTANCE  !! */
-INT_PTR DialogBoxIndirect(ULONG hInstance, LPCDLGTEMPLATE lpTemplate, HWND hWndParent, INT_PTR (CALLBACK FAR *func) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam))  {
+INT_PTR DialogBoxIndirect(ULONG idc, LPCDLGTEMPLATE lpTemplate, HWND hWndParent, INT_PTR (CALLBACK FAR *func) (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam))  {
 
-  Object *mui_win;
-  Object *mui_content;
+  Object  *mui_win;
+  Object  *mui_content;
+  Element *e;
 
-  DebOut("lpTemplate: 0x%p\n", lpTemplate);
+  DebOut("lpTemplate: 0x%p\n", lpTemplate); /* don't use! */
   DebOut("lpDialogFunc: 0x%p\n", func);
-  DebOut("hInstance: %d\n", hInstance);
+  DebOut("idc: %d\n", idc);
 
-  mui_content=FixedProcObj((ULONG) hInstance, (IPTR)func);
+  e=get_control(NULL, idc);
+  DebOut("e: 0x%p\n", e);
+
+  mui_content=FixedProcObj(idc, (IPTR)func);
   DebOut("content: 0x%p\n", mui_content);
   if(!mui_content) {
     DebOut("ERROR: could create window content!?\n");
@@ -93,7 +97,7 @@ INT_PTR DialogBoxIndirect(ULONG hInstance, LPCDLGTEMPLATE lpTemplate, HWND hWndP
   }
 
   mui_win=MUI_NewObject(MUIC_Window,
-                    MUIA_Window_Title, (IPTR) "Properties", /* CAPTION of DIALOGEX is not available.. */
+                    MUIA_Window_Title, (IPTR) "Properties", /* TODO: CAPTION of DIALOGEX */
                     MUIA_Window_RootObject, 
                       mui_content
                     );
@@ -109,7 +113,7 @@ INT_PTR DialogBoxIndirect(ULONG hInstance, LPCDLGTEMPLATE lpTemplate, HWND hWndP
   DoMethod(app, OM_ADDMEMBER, (IPTR) mui_win);
   SetAttrs(win, MUIA_Window_Sleep, TRUE, TAG_DONE);
 
-  func ((Element *)lpTemplate, WM_INITDIALOG, 0, 0);
+  func (e, WM_INITDIALOG, 0, 0);
 
   SetAttrs(mui_win, MUIA_Window_Open, TRUE, TAG_DONE);
 
