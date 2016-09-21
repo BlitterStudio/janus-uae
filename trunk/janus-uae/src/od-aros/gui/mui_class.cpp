@@ -493,6 +493,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
   struct TagItem *tstate, *tag;
   ULONG i=0;
   struct Element *elem=NULL;
+  struct Element *e   =NULL;
   Object *child       =NULL; /* TODO: remove me */
   int *(*func) (Element *hDlg, UINT msg, ULONG wParam, IPTR lParam);
   func=NULL;
@@ -534,6 +535,9 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
     GETDATA;
     //struct TextAttr ta;
     //struct TextFont *old;
+
+    DebOut("elem->width: %d (ignored)\n", elem->w);
+    DebOut("elem->height: %d (ignored)\n", elem->h);
 
     data->width =396;
     data->height=320;
@@ -888,16 +892,12 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
   
     DoMethod((Object *) obj, MUIM_Set, MUIA_Group_LayoutHook, &data->LayoutHook);
 
-    /* find start of our children */
-    i=0;
-    while(WIN_RES[i].idc && &WIN_RES[i]!=elem) {
-      i++;
-    }
-    i++;
-    while(WIN_RES[i].idc && WIN_RES[i].windows_type!=DIALOGEX) {
-      DebOut("i: %d (add 0x%p to 0x%p)\n", i, WIN_RES[i].obj, obj);
-      DoMethod((Object *) obj, OM_ADDMEMBER,(IPTR) WIN_RES[i].obj);
-      i++;
+    /* start of our children */
+    e=elem+1;
+    while(e->idc && e->windows_type!=DIALOGEX) {
+      DebOut("i: %d (add object 0x%p to 0x%p)\n", i, e->obj, obj);
+      DoMethod((Object *) obj, OM_ADDMEMBER,(IPTR) e->obj);
+      e++;
     }
 
     mSet(data, obj, (struct opSet *) msg, 1);
