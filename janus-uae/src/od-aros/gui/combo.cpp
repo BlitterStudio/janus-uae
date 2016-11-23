@@ -109,12 +109,12 @@ AROS_UFH2(static void, MUIHook_list, AROS_UFHA(struct Hook *, hook, A0), AROS_UF
   AROS_USERFUNC_INIT
 
   struct Data *data=(struct Data *) hook->h_Data;
-  IPTR active = NULL;
+  IPTR active = 0;
 
   DebOut("List!\n");
 
   if(data->entries) {
-    GetAttr(MUIA_List_Active, data->obj_list, (IPTR *) &active);
+    GetAttr(MUIA_List_Active, data->obj_list, &active);
     DebOut("active: %d\n", active);
 
     if(active>=0 && data->entries[active]) {
@@ -130,8 +130,7 @@ AROS_UFH2(static void, MUIHook_list, AROS_UFHA(struct Hook *, hook, A0), AROS_UF
 
 static VOID ShowPopupWin(Object *obj, struct Data *data) {
 
-  WORD x, y, winx, winy, winw, winh;
-  IPTR intui_win;
+  WORD winx, winy, winw;
 
   DebOut("ShowPopupWin!\n");
 
@@ -158,13 +157,6 @@ static VOID HidePopupWin(Object *obj, struct Data *data) {
 
 static BOOL MakePopupWin(Object *obj, struct Data *data) {
 
-    const struct ZuneFrameGfx *zframe;
-    struct RastPort *rp, *saverp;
-    Object *child, *cstate;
-    WORD i;
-    LONG winx, winy;
-    LONG winw;
-   
     if(data->obj_popup_win) {
       return TRUE;
     }
@@ -312,7 +304,7 @@ static ULONG mGoActive (struct IClass *cl, APTR obj, Msg msg) {
 static ULONG mGoInactive (struct IClass *cl, APTR obj, Msg msg) {
 
   GETDATA;
-  IPTR pop = NULL, act, win;
+  IPTR pop = 0;
 
   DebOut("mGoInactive begin!\n");
 
@@ -332,7 +324,6 @@ static ULONG mGoInactive (struct IClass *cl, APTR obj, Msg msg) {
 }
 
 static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
-  struct TagItem *tstate, *tag;
 
   obj = (APTR)DoSuperMethodA(cl, (Object *) obj, msg);
 
@@ -354,7 +345,6 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
                 MUIA_String_Acknowledge, MUIV_EveryTime, 
                 (IPTR) obj, 2,
                 MUIM_CallHook, (IPTR) &data->MyMuiHook_ack);
-
 
   data->MyMuiHook_content.h_Entry=(APTR) MUIHook_content;
   data->MyMuiHook_content.h_Data =data;
@@ -398,7 +388,6 @@ static IPTR mSet(struct IClass *cl, APTR obj, struct opSet *msg) {
 
 static IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg) {
 
-  struct TagItem *tstate, *tag;
   GETDATA;
   IPTR t;
 
@@ -433,7 +422,7 @@ static IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg) {
 
 
 /* check, if user clicked outside */
-static IPTR mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg) {
+static void mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg) {
 
   GETDATA;
   LONG muikey = msg->muikey;
@@ -450,13 +439,13 @@ static IPTR mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent
         SetAttrs(data->obj_list, MUIA_List_Active, MUIV_List_Active_Down, TAG_DONE);
         break;
       case MUIKEY_GADGET_NEXT: {
-        IPTR active = NULL;
+        IPTR active = 0;
 
         /* gadget left with TAB, so user accepts listview value 
          * WARNING: needs updated window.c in AROS zune sources!! TODO
          */
-        GetAttr(MUIA_List_Active, data->obj_list, (IPTR *) &active);
-        if((SIPTR)active >= 0) {
+        GetAttr(MUIA_List_Active, data->obj_list, &active);
+        if(active >= 0) {
           SetAttrs(obj, MUIA_String_Contents, data->entries[active], TAG_DONE);
         }
         break;
@@ -539,7 +528,7 @@ static IPTR mInsert(struct IClass *cl, Object *obj, struct MUIP_List_Insert *msg
 }
 
 BOOPSI_DISPATCHER(IPTR, mDispatcher, cl, obj, msg) {
-  GETDATA;
+  //GETDATA;
 
   //DebOut("(0x%p)->msg->MethodID: 0x%p\n",obj,msg->MethodID);
 
@@ -564,6 +553,10 @@ int create_combo_class(void) {
   if(!CL_Combo) {
     CL_Combo = MUI_CreateCustomClass(NULL, MUIC_String, NULL, sizeof(struct Data), (APTR)&mDispatcher);
   }
+  if(!CL_Combo) {
+    return 0;
+  }
+  return 1;
 }
 
 void delete_combo_class(void) {
