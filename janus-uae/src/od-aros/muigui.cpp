@@ -4449,6 +4449,11 @@ void InitializeListView (HWND hDlg)
 
   DebOut("hDlg: %lx\n", hDlg);
 
+  {
+    struct Task* task=FindTask(NULL);
+    DebOut("Task %p, stack lower %p, stack upper %p\n", task, task->tc_SPLower, task->tc_SPUpper);
+  }
+
 	if (cachedlist) {
 		if (lv_old_type >= 0) {
 			lv_oldidx[lv_old_type] = ListView_GetTopIndex (cachedlist);
@@ -4557,7 +4562,10 @@ void InitializeListView (HWND hDlg)
 	// If there are no columns, then insert some
 	lvcolumn.mask = LVCF_WIDTH;
 	if (ListView_GetColumn (list, 1, &lvcolumn) == FALSE) {
+    DebOut("no columns, then insert some\n");
 		for(i = 0; i < listview_num_columns; i++) {
+		//for(i = 0; i < 6; i++) {
+//7 crashes, 6 works: TODO!
 			lvcolumn.mask     = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
 			lvcolumn.iSubItem = i;
 			lvcolumn.fmt      = LVCFMT_LEFT;
@@ -4569,6 +4577,7 @@ void InitializeListView (HWND hDlg)
 
   DebOut("..\n");
 	if (lv_type == LV_MISC2) {
+    DebOut("LV_MISC2\n");
 
 		listview_column_width[0] = 180;
 		listview_column_width[1] = 10;
@@ -4582,6 +4591,7 @@ void InitializeListView (HWND hDlg)
 			ListView_SetItemText (list, result, 1, exts[i].enabled ? _T("*") : _T(""));
 		}
 	} else if (lv_type == LV_INPUT) {
+    DebOut("LV_INPUT\n");
     TODO();
 #ifndef __AROS__
 
@@ -4618,6 +4628,7 @@ void InitializeListView (HWND hDlg)
 
 	} else if (lv_type == LV_MISC1) {
     TODO();
+    DebOut("LV_MISC1\n");
 #ifndef __AROS__
 		int itemids[] = { IDS_MISCLISTITEMS1, IDS_MISCLISTITEMS2, IDS_MISCLISTITEMS3, -1 };
 		int itemoffset = 0;
@@ -4677,6 +4688,7 @@ void InitializeListView (HWND hDlg)
 		}
 #endif
 	} else if (lv_type == LV_DISK) {
+    DebOut("LV_DISK\n");
 
 		for (i = 0; i < MAX_SPARE_DRIVES; i++) {
 			int drv;
@@ -4714,6 +4726,7 @@ void InitializeListView (HWND hDlg)
 		listview_column_width[2] = 50;
 
 	} else if (lv_type == LV_CD) {
+    DebOut("LV_CD\n");
 
 		listview_column_width[2] = 450;
 		for (i = 0; i < MAX_TOTAL_SCSI_DEVICES; i++) {
@@ -4742,6 +4755,7 @@ void InitializeListView (HWND hDlg)
     DebOut("LV_HARDDISK\n");
 #ifdef FILESYS
 		listview_column_width[1] = 60;
+    DebOut("workprefs.mountitems: %d\n", workprefs.mountitems);
 		for (i = 0; i < workprefs.mountitems; i++)
 		{
 			struct uaedev_config_data *uci = &workprefs.mountconfig[i];
@@ -6307,6 +6321,7 @@ static void enable_for_quickstart (HWND hDlg)
 
 static void load_quickstart (HWND hDlg, int romcheck)
 {
+  DebOut("hDlg %p, romcheck %d\n", hDlg, romcheck);
 	ew (guiDlg, IDC_RESETAMIGA, FALSE);
 	workprefs.nr_floppies = quickstart_floppy;
 	quickstart_ok = built_in_prefs (&workprefs, quickstart_model, quickstart_conf, quickstart_compa, romcheck);
@@ -6577,6 +6592,8 @@ GUI_STATIC INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wPara
 	static int doinit;
 	LRESULT val;
 
+  DebOut("msg: %d\n", msg);
+
 	switch(msg)
 	{
 	case WM_INITDIALOG:
@@ -6619,6 +6636,7 @@ GUI_STATIC INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wPara
 		if (recursive > 0)
 			break;
 		recursive++;
+    DebOut("WM_COMMAND..\n");
 		if (HIWORD (wParam) == CBN_SELCHANGE || HIWORD (wParam) == CBN_KILLFOCUS)  {
 			switch (LOWORD (wParam))
 			{
@@ -6643,7 +6661,9 @@ GUI_STATIC INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wPara
 				}
 			break;
 			case IDC_QUICKSTART_MODEL:
+        DebOut("IDC_QUICKSTART_MODEL\n");
 				val = SendDlgItemMessage (hDlg, IDC_QUICKSTART_MODEL, CB_GETCURSEL, 0, 0L);
+        DebOut("val: %d (CB_ERR is %d)\n", val, CB_ERR);
 				if (val != CB_ERR) {
 					i = 0;
 					while (amodels[i].compalevels >= 0) {
@@ -6653,10 +6673,12 @@ GUI_STATIC INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wPara
 							break;
 						i++;
 					}
+          DebOut("val: %d, i %d, quickstart_model %d\n", val, i, quickstart_model);
 					if (i != quickstart_model) {
 						quickstart_model = i;
 						quickstart_conf = quickstart_model_confstore[quickstart_model];
 						init_quickstartdlg (hDlg);
+            DebOut("quickstart: %d\n", quickstart);
 						if (quickstart)
 							load_quickstart (hDlg, 1);
 						if (quickstart && !full_property_sheet)
@@ -6665,6 +6687,7 @@ GUI_STATIC INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wPara
 				}
 				break;
 			case IDC_QUICKSTART_CONFIGURATION:
+        DebOut("IDC_QUICKSTART_CONFIGURATION\n");
 				val = SendDlgItemMessage (hDlg, IDC_QUICKSTART_CONFIGURATION, CB_GETCURSEL, 0, 0L);
 				if (val != CB_ERR && val != quickstart_conf) {
 					quickstart_conf = val;
@@ -6677,6 +6700,7 @@ GUI_STATIC INT_PTR CALLBACK QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wPara
 				}
 				break;
 			case IDC_QUICKSTART_HOSTCONFIG:
+        DebOut("IDC_QUICKSTART_HOSTCONFIG\n");
 				val = SendDlgItemMessage (hDlg, IDC_QUICKSTART_HOSTCONFIG, CB_GETCURSEL, 0, 0);
 				if (val != CB_ERR) {
 					SendDlgItemMessage (hDlg, IDC_QUICKSTART_HOSTCONFIG, CB_GETLBTEXT, (WPARAM)val, (LPARAM)tmp);
@@ -11948,16 +11972,22 @@ static INT_PTR CALLBACK VolumeSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, 
 			else if (my_existsdir (current_fsvdlg.ci.rootdir))
 				archivehd = 0;
 			recursive++;
+      DebOut("WM_INITDIALOG\n");
 			setautocomplete (hDlg, IDC_PATH_NAME);
+      DebOut("WM_INITDIALOG\n");
 			addhistorymenu(hDlg, current_fsvdlg.ci.rootdir, IDC_PATH_NAME, HISTORY_DIR, false);
+      DebOut("WM_INITDIALOG\n");
 			SetDlgItemText (hDlg, IDC_VOLUME_NAME, current_fsvdlg.ci.volname);
 			SetDlgItemText (hDlg, IDC_VOLUME_DEVICE, current_fsvdlg.ci.devname);
 			SetDlgItemInt (hDlg, IDC_VOLUME_BOOTPRI, current_fsvdlg.ci.bootpri, TRUE);
+      DebOut("WM_INITDIALOG\n");
 			if (archivehd > 0)
 				current_fsvdlg.ci.readonly = true;
 			CheckDlgButton (hDlg, IDC_FS_RW, !current_fsvdlg.ci.readonly);
+      DebOut("WM_INITDIALOG\n");
 			CheckDlgButton (hDlg, IDC_FS_AUTOBOOT, ISAUTOBOOT(&current_fsvdlg.ci));
 			ew (hDlg, IDC_FS_RW, archivehd <= 0);
+      DebOut("WM_INITDIALOG\n");
 			recursive--;
 		}
     DebOut("left!\n");
@@ -13473,6 +13503,7 @@ static void addhistorymenu(HWND hDlg, const TCHAR *text, int f_text, int type, b
 	int nn = 1;
 	int curidx;
 
+  DebOut("hDlg: %p (text %s)\n", hDlg, text);
 	if (f_text < 0)
 		return;
 	SendDlgItemMessage (hDlg, f_text, CB_RESETCONTENT, 0, 0);
@@ -20174,7 +20205,6 @@ void pre_gui_message (const TCHAR *format,...)
 
 }
 
-#ifndef __AROS__
 static const int transla[] = {
 	NUMSG_NEEDEXT2, IDS_NUMSG_NEEDEXT2,
 	NUMSG_NOROMKEY,IDS_NUMSG_NOROMKEY,
@@ -20190,7 +20220,7 @@ static const int transla[] = {
 	NUMSG_KS68030,IDS_NUMSG_KS68030,
 	NUMSG_ROMNEED,IDS_NUMSG_ROMNEED,
 	NUMSG_EXPROMNEED,IDS_NUMSG_EXPROMNEED,
-	NUMSG_NOZLIB,IDS_NUMSG_NOZLIB,
+	//NUMSG_NOZLIB,IDS_NUMSG_NOZLIB,
 	NUMSG_STATEHD,IDS_NUMSG_STATEHD,
 	NUMSG_OLDCAPS, IDS_NUMSG_OLDCAPS,
 	NUMSG_NOCAPS, IDS_NUMSG_NOCAPS,
@@ -20215,6 +20245,7 @@ static int gettranslation (int msg)
 	return -1;
 }
 
+#ifndef __AROS__
 void notify_user (int msg)
 {
 	TCHAR tmp[MAX_DPATH];
@@ -20243,6 +20274,7 @@ void notify_user_parms (int msg, const TCHAR *parms, ...)
 	gui_message (msgtxt);
 	va_end (parms2);
 }
+#endif
 
 
 int translate_message (int msg,	TCHAR *out)
@@ -20254,7 +20286,6 @@ int translate_message (int msg,	TCHAR *out)
 	WIN32GUI_LoadUIString (msg, out, MAX_DPATH);
 	return 1;
 }
-#endif
 
 void gui_lock (void)
 {

@@ -362,27 +362,6 @@ void fetch_path (const TCHAR *name, TCHAR *out, int size) {
   relativepaths=old;
 }
 
-/* resides in win32gui.cpp normally 
- *
- * copies the text of message number msg to out (?)
- */
-int translate_message (int msg, TCHAR *out) {
-
-  DebOut("WARNING: change the call to translate_message from int to TCHAR !!\n");
-
-  out[0] = (TCHAR) 0;
-  return 0;
-}
-/* overload for AROS */
-int translate_message (const char *msg, TCHAR *out) {
-  if(!msg) {
-    out[0] = (TCHAR) 0;
-    return 0;
-  }
-  strcpy(out, msg);
-  return 1;
-}
-
 /* resides in win32.cpp normally
  *
  * loads amigaforever keyfiles ..?
