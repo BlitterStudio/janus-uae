@@ -14,8 +14,6 @@
 #include <graphics/gfxbase.h>
 #include <mui/Rawimage_mcc.h>
 #include <proto/reqtools.h>
-#include <mui/NListtree_mcc.h>
-#include <mui/NListview_mcc.h>
 #ifndef DONT_USE_URLOPEN
 #include <mui/Urltext_mcc.h>
 #endif
@@ -65,8 +63,9 @@ Element *get_control(HWND hDlg, int item) {
     e=WIN_RES;
   }
 
+  DebOut("e %p: e.idc %d, item %d\n", e, e->idc, item);
   while(e->idc) {
-    //DebOut("e.idc: %d, item %d\n", e->idc, item);
+    //DebOut("e %p: e.idc %d, item %d\n", e, e->idc, item);
     if(e->idc==item) {
       return e;
     }
@@ -80,7 +79,7 @@ Element *get_control(HWND hDlg, int item) {
     e=WIN_RES;
     while(e!=hDlg && e->idc) {
       if(e->idc==item) {
-        DebOut("found control %d outside of specified dialog window %p\n", item, hDlg);
+        DebOut("WARNING: found control %d only outside of specified dialog window %p\n", item, hDlg);
         return e;
       }
       e++;
@@ -261,9 +260,9 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
 
   Element *e;
   Element *elem;
-  ULONG i;
+  IPTR i;
   ULONG wParam;
-  ULONG newstate;
+  IPTR newstate;
 
   struct Data *data = (struct Data *) hook->h_Data;
 
@@ -334,7 +333,7 @@ AROS_UFH2(void, MUIHook_select, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
     /* CBN_SELCHANGE: A new combo box list item is selected. */
     if(data->func) {
       WORD i;
-      i=XGET((Object *) obj, MUIA_UserData); /* TODO: test this! */
+      i=(WORD) XGET((Object *) obj, MUIA_UserData); /* TODO: test this! */
       DebOut("i: %d\n", i);
       wParam=MAKELPARAM(i, CBN_SELCHANGE);
       DebOut("call function: 0x%p (IDC %d, wParam: 0x%p)\n", data->func, elem->idc, wParam);
@@ -370,14 +369,30 @@ AROS_UFH2(void, MUIHook_pushbutton, AROS_UFHA(struct Hook *, hook, A0), AROS_UFH
   Element *elem;
   Element *obj_elem;
   ULONG wParam;
+  IPTR i;
 
   struct Data *data = (struct Data *) hook->h_Data;
 
   DebOut("[0x%p] entered\n", obj);
 
-  elem=(Element *) data->hwnd;
+  DebOut("hook.h_Data: 0x%p\n", hook->h_Data);
+  DebOut("data->hwnd:  0x%p\n", data->hwnd );
+  i=XGET((Object *) obj, MUIA_UserData);
+  DebOut("MUIA_UserData: %d\n", i);
 
-  DebOut("elem: %p\n", elem);
+  if(i) {
+    elem=&WIN_RES[i];
+  }
+  else {
+    elem=get_elem_from_obj((Object *) obj);
+  }
+
+  if(!elem) {
+    DebOut("ERROR: could not find Element for Object %p\n", obj);
+    goto ERROR;
+  }
+
+  DebOut("elem: 0x%p\n", elem);
 
   if(data->func) {
     DebOut("call function: 0x%p\n", data->func);
@@ -388,7 +403,7 @@ AROS_UFH2(void, MUIHook_pushbutton, AROS_UFHA(struct Hook *, hook, A0), AROS_UFH
 
     if(obj_elem) {
       wParam=MAKELPARAM(obj_elem->idc, BN_CLICKED);
-      data->func(elem, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
+      data->func((Element *) data->hwnd, WM_COMMAND, wParam, 0); /* TODO: was data->src fist parameter.. correct now? */
     }
     else {
       DebOut("WARNING: could not find object %p in Element List!\n", obj);
@@ -398,6 +413,8 @@ AROS_UFH2(void, MUIHook_pushbutton, AROS_UFHA(struct Hook *, hook, A0), AROS_UFH
     DebOut("function is zero: 0x%p\n", data->func);
   }
 
+ERROR:
+  ;
   AROS_USERFUNC_EXIT
 }
 
@@ -895,7 +912,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
     /* start of our children */
     e=elem+1;
     while(e->idc && e->windows_type!=DIALOGEX) {
-      DebOut("i: %d (add object 0x%p to 0x%p)\n", i, e->obj, obj);
+      DebOut("  e %p: add object 0x%p to 0x%p\n", e, e->obj, obj);
       DoMethod((Object *) obj, OM_ADDMEMBER,(IPTR) e->obj);
       e++;
     }
@@ -987,6 +1004,7 @@ int init_class(void) {
     CL_Fixed = MUI_CreateCustomClass(NULL, MUIC_Group, NULL, sizeof(struct Data), (APTR)&mDispatcher);
   }
 
+  /* TODO: error handling! */
   create_combo_class();
 
   return CL_Fixed ? 1 : 0;
