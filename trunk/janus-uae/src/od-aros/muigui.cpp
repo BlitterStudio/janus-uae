@@ -2731,6 +2731,8 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 	APTR guid = NULL;
 #endif
 
+  DebOut("flag: %d, multi: %d\n", flag, multi);
+
 	TCHAR szTitle[MAX_DPATH] = { 0 };
 	TCHAR szFormat[MAX_DPATH];
 	TCHAR szFilter[MAX_DPATH] = { 0 };
@@ -3001,10 +3003,19 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
   else {
     result=mui_get_filename(szTitle, init_path, full_path, szFilter, file_name, 0, defext);
   }
+  DebOut("init_path: %s\n", init_path);
+  DebOut("full_path: %s\n", full_path);
+  DebOut("szFilter: %s\n", szFilter);
+  DebOut("file_name: %s\n", file_name);
+  DebOut("defext: %s\n", defext);
 
 	memcpy (full_path2, full_path, sizeof full_path);
 	memcpy (stored_path, full_path, sizeof stored_path);
-#ifndef __AROS__
+#ifdef __AROS__
+  if (path_out) {
+    _tcscpy (path_out, full_path2);
+  }
+#else
 	next = 0;
 	nextp = full_path2 + openFileName.nFileOffset;
 	if (path_out) {
@@ -3213,6 +3224,8 @@ int MultiDiskSelection (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *pr
 static int loopmulti (const TCHAR *s, TCHAR *out)
 {
 	static int index;
+
+  DebOut("s: %s, out: %s\n", s, out);
 
 	if (!out) {
 		index = _tcslen (s) + 1;
@@ -4447,7 +4460,6 @@ void InitializeListView (HWND hDlg)
 	int listview_column_width[HARDDISK_COLUMNS];
 	DWORD extraflags = 0;
 
-  DebOut("hDlg: %lx\n", hDlg);
 
   {
     struct Task* task=FindTask(NULL);
@@ -4462,7 +4474,9 @@ void InitializeListView (HWND hDlg)
 		cachedlist = NULL;
 	}
 
-  DebOut("..\n");
+  DebOut("hDlg: %p\n", hDlg);
+  DebOut("pages[HARDDISK_ID]=%p\n", pages[HARDDISK_ID]);
+  DebOut("pages[DISK_ID %d]=%p\n", DISK_ID, pages[DISK_ID]);
 
 	if ((HARDDISK_ID != -1) && (hDlg == pages[HARDDISK_ID])) {
     DebOut("HARDDISK_ID\n");
@@ -4527,7 +4541,8 @@ void InitializeListView (HWND hDlg)
 		_tcscpy (column_heading[0], _T("#"));
 		WIN32GUI_LoadUIString (IDS_DISK_IMAGENAME, column_heading[1], MAX_COLUMN_HEADING_WIDTH);
 		WIN32GUI_LoadUIString (IDS_DISK_DRIVENAME, column_heading[2], MAX_COLUMN_HEADING_WIDTH);
-		list = GetDlgItem (hDlg, IDC_DISK);
+		//list = GetDlgItem (hDlg, IDC_DISK);
+		list = GetDlgItem (hDlg, IDC_DISKLIST);
 
 	} else {
 		// CD dialog
@@ -4979,6 +4994,7 @@ void InitializeListView (HWND hDlg)
 static int listview_find_selected (HWND list)
 {
 	int i, items;
+  DebOut("list %p\n", list);
 	items = ListView_GetItemCount (list);
 	for (i = 0; i < items; i++) {
 		if (ListView_GetItemState (list, i, LVIS_SELECTED) == LVIS_SELECTED)
@@ -13124,14 +13140,14 @@ static void harddisk_edit (HWND hDlg)
 	}
 }
 
-#ifndef __AROS__
 static ACCEL HarddiskAccel[] = {
+#ifndef __AROS__
 	{ FVIRTKEY, VK_UP, 10001 }, { FVIRTKEY, VK_DOWN, 10002 },
 	{ FVIRTKEY|FSHIFT, VK_UP, IDC_UP }, { FVIRTKEY|FSHIFT, VK_DOWN, IDC_DOWN },
 	{ FVIRTKEY, VK_RETURN, IDC_EDIT }, { FVIRTKEY, VK_DELETE, IDC_REMOVE },
+#endif
 	{ 0, 0, 0 }
 };
-#endif
 
 static void hilitehd (HWND hDlg)
 {
@@ -14147,6 +14163,7 @@ static ACCEL SwapperAccel[] = {
 
 static void swapperhili (HWND hDlg, int entry)
 {
+  DebOut("hDlg %p, entry %d\n", hDlg, entry);
 	ListView_SetItemState (cachedlist, entry,
 		LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
 	SetDlgItemText (hDlg, IDC_DISKTEXT,  workprefs.dfxlist[entry]);
@@ -14198,10 +14215,14 @@ static void addswapperfile (HWND hDlg, int entry, TCHAR *newpath)
 	TCHAR path[MAX_DPATH];
 	int lastentry = entry;
 
+  DebOut("hDlg %p, entry %d, newpath %s\n", hDlg, entry, newpath);
+
 	path[0] = 0;
 	if (newpath)
 		_tcscpy (path, newpath);
 	if (MultiDiskSelection (hDlg, -1, 0, &changed_prefs, path)) {
+#ifndef __AROS__
+    /* sorry, I don't understamd what loopmulti really does.. */
 		TCHAR dpath[MAX_DPATH];
 		loopmulti (path, NULL);
 		while (loopmulti (path, dpath) && entry < MAX_SPARE_DRIVES) {
@@ -14209,21 +14230,26 @@ static void addswapperfile (HWND hDlg, int entry, TCHAR *newpath)
 			lastentry = entry;
 			entry++;
 		}
+#else
+    diskswapper_addfile (&workprefs, path);
+#endif
 		InitializeListView (hDlg);
 		swapperhili (hDlg, lastentry);
 	}
 }
 
-static INT_PTR CALLBACK SwapperDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK SwapperDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-#ifndef __AROS__
 	static int recursive = 0;
 	static int entry;
 	TCHAR tmp[MAX_DPATH];
 
+  DebOut("hDlg %p, msg %d\n", hDlg, msg);
+
 	switch (msg)
 	{
 	case WM_INITDIALOG:
+    DebOut("WM_INITDIALOG\n");
 		pages[DISK_ID] = hDlg;
 		currentpage = DISK_ID;
 		InitializeListView (hDlg);
@@ -14232,6 +14258,7 @@ static INT_PTR CALLBACK SwapperDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPAR
 		swapperhili (hDlg, entry);
 		setautocomplete (hDlg, IDC_DISKTEXT);
 		break;
+#if 0
 	case WM_LBUTTONUP:
 		{
 			int *draggeditems;
@@ -14267,8 +14294,10 @@ static INT_PTR CALLBACK SwapperDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPAR
 			}
 		}
 		break;
+#endif
 	case WM_COMMAND:
 		{
+      DebOut("WM_COMMAND\n");
 			switch (LOWORD (wParam))
 			{
 			case 10001:
@@ -14349,23 +14378,31 @@ static INT_PTR CALLBACK SwapperDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPAR
 				break;
 
 			case IDC_DISKLISTINSERT:
+        DebOut("IDC_DISKLISTINSERT\n");
+
+        DebOut("entry: %d\n", entry);
 				if (entry >= 0) {
 					if (getfloppybox (hDlg, IDC_DISKTEXT, tmp, sizeof (tmp) / sizeof (TCHAR), HISTORY_FLOPPY)) {
+            DebOut("tmp: %s\n", tmp);
 						_tcscpy (workprefs.dfxlist[entry], tmp);
 						addfloppyhistory (hDlg);
 						InitializeListView (hDlg);
 						swapperhili (hDlg, entry);
 					} else {
+            DebOut("call addswapperfile..\n");
 						addswapperfile (hDlg, entry, NULL);
 					}
 				}
 				break;
 			case IDC_DISKLISTREMOVE:
+        DebOut("IDC_DISKLISTREMOVE started\n");
+        DebOut("entry: %d\n", entry);
 				if (entry >= 0) {
 					workprefs.dfxlist[entry][0] = 0;
 					InitializeListView (hDlg);
 					swapperhili (hDlg, entry);
 				}
+        DebOut("IDC_DISKLISTREMOVE done\n");
 				break;
 			case IDC_DISKLISTREMOVEALL:
 			{
@@ -14399,6 +14436,7 @@ static INT_PTR CALLBACK SwapperDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPAR
 			}
 			break;
 		}
+#if 0
 	case WM_NOTIFY:
 		if (((LPNMHDR) lParam)->idFrom == IDC_DISKLIST)
 		{
@@ -14451,8 +14489,8 @@ static INT_PTR CALLBACK SwapperDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPAR
 				break;
 			}
 		}
-	}
 #endif
+	}
 	return FALSE;
 }
 
@@ -19422,41 +19460,42 @@ static int GetSettings (int all_options, HWND hwnd)
      * reordered them to mach the tree on the left side. Otherwise ID <-> nr page mapping would be
      * necessary. take care of that, when merging new stuff from upstream!
      */
+     
+    /************* Settings ***************/
+
+#if 0
+    /*Settings (not used so far) */
+		FRONTEND_ID = init_page (IDD_FRONTEND, IDI_QUICKSTART, IDS_FRONTEND, AboutDlgProc, NULL, NULL, 0);
+#endif
 		ABOUT_ID = init_page (IDD_ABOUT, IDI_ABOUT, IDS_ABOUT, AboutDlgProc, NULL, NULL, 0);
 		PATHS_ID = init_page (IDD_PATHS, IDI_PATHS, IDS_PATHS, PathsDlgProc, NULL, _T("gui/paths.htm"), 0);
 		QUICKSTART_ID = init_page (IDD_QUICKSTART, IDI_QUICKSTART, IDS_QUICKSTART, QuickstartDlgProc, NULL, _T("gui/quickstart.htm"), 0);
 		LOADSAVE_ID = init_page (IDD_LOADSAVE, IDI_FILE, IDS_LOADSAVE, LoadSaveDlgProc, NULL, _T("gui/configurations.htm"), IDC_CONFIGTREE);
+
+    /************* Hardware ***************/
+
 #ifdef __AROS__
     id++; /* skip "Hardware" (TODO!)*/
 #endif
+
 		CPU_ID = init_page (IDD_CPU, IDI_CPU, IDS_CPU, CPUDlgProc, NULL, _T("gui/cpu.htm"), 0);
 		CHIPSET_ID = init_page (IDD_CHIPSET, IDI_CPU, IDS_CHIPSET, ChipsetDlgProc, NULL, _T("gui/chipset.htm"), 0);
 		CHIPSET2_ID = init_page (IDD_CHIPSET2, IDI_CPU, IDS_CHIPSET2, ChipsetDlgProc2, NULL, _T("gui/chipset.htm"), 0);
 		KICKSTART_ID = init_page (IDD_KICKSTART, IDI_MEMORY, IDS_KICKSTART, KickstartDlgProc, NULL, _T("gui/rom.htm"), 0);
 		MEMORY_ID = init_page (IDD_MEMORY, IDI_MEMORY, IDS_MEMORY, MemoryDlgProc, NULL, _T("gui/ram.htm"), 0);
 		FLOPPY_ID = init_page (IDD_FLOPPY, IDI_FLOPPY, IDS_FLOPPY, FloppyDlgProc, NULL, _T("gui/floppies.htm"), 0);
-#ifndef __AROS__
 		HARDDISK_ID = init_page (IDD_HARDDISK, IDI_HARDDISK, IDS_HARDDISK, HarddiskDlgProc, HarddiskAccel, _T("gui/hard-drives.htm"), 0);
-#else
-		HARDDISK_ID = init_page (IDD_HARDDISK, IDI_HARDDISK, IDS_HARDDISK, HarddiskDlgProc, NULL, _T("gui/hard-drives.htm"), 0);
-#endif
 		EXPANSION_ID = init_page(IDD_EXPANSION, IDI_EXPANSION, IDS_EXPANSION, ExpansionDlgProc, NULL, _T("gui/expansion.htm"), 0);
 		EXPANSION2_ID = init_page(IDD_EXPANSION2, IDI_EXPANSION, IDS_EXPANSION2, Expansion2DlgProc, NULL, _T("gui/expansion2.htm"), 0);
+
+    /************* Host ***************/
+
 #ifdef __AROS__
     id++; /* skip "Host" (TODO!)*/
 #endif
+
 		DISPLAY_ID = init_page (IDD_DISPLAY, IDI_DISPLAY, IDS_DISPLAY, DisplayDlgProc, NULL, _T("gui/display.htm"), 0);
-#ifndef __AROS__
-#if defined (GFXFILTER)
-		HW3D_ID = init_page (IDD_FILTER, IDI_DISPLAY, IDS_FILTER, hw3dDlgProc, NULL, _T("gui/filter.htm"), 0);
-#endif
-#endif
 		SOUND_ID = init_page (IDD_SOUND, IDI_SOUND, IDS_SOUND, SoundDlgProc, NULL, _T("gui/sound.htm"), 0);
-#ifndef __AROS__
-		DISK_ID = init_page (IDD_DISK, IDI_FLOPPY, IDS_DISK, SwapperDlgProc, SwapperAccel, _T("gui/disk.htm"), IDC_DISKLIST);
-#endif
-#ifdef FILESYS
-#endif
 		GAMEPORTS_ID = init_page (IDD_GAMEPORTS, IDI_GAMEPORTS, IDS_GAMEPORTS, GamePortsDlgProc, NULL, _T("gui/gameports.htm"), 0);
 #ifndef __AROS__
 		IOPORTS_ID = init_page (IDD_IOPORTS, IDI_PORTS, IDS_IOPORTS, IOPortsDlgProc, NULL, _T("gui/ioports.htm"), 0);
@@ -19464,13 +19503,28 @@ static int GetSettings (int all_options, HWND hwnd)
 #ifdef AVIOUTPUT
 		AVIOUTPUT_ID = init_page (IDD_AVIOUTPUT, IDI_AVIOUTPUT, IDS_AVIOUTPUT, AVIOutputDlgProc, NULL, _T("gui/output.htm"), 0);
 #endif
+#if defined (GFXFILTER)
+		//HW3D_ID = init_page (IDD_FILTER, IDI_DISPLAY, IDS_FILTER, hw3dDlgProc, NULL, _T("gui/filter.htm"), 0);
+#endif
+#else
+    id++; /* skip "IO Ports" (TODO!)*/
+    id++; /* skip "Input" (TODO!)*/
+    id++; /* skip "Output" (TODO!)*/
+    id++; /* skip "Filter" (TODO!)*/
+#endif
+		DISK_ID = init_page (IDD_DISK, IDI_FLOPPY, IDS_DISK, SwapperDlgProc, SwapperAccel, _T("gui/disk.htm"), IDC_DISKLIST);
+    DebOut("DISK_ID: %d\n", DISK_ID);
+#ifndef __AROS__
 		MISC1_ID = init_page (IDD_MISC1, IDI_MISC1, IDS_MISC1, MiscDlgProc1, NULL, _T("gui/misc.htm"), 0);
 		MISC2_ID = init_page (IDD_MISC2, IDI_MISC2, IDS_MISC2, MiscDlgProc2, NULL, _T("gui/misc2.htm"), 0);
-		FRONTEND_ID = init_page (IDD_FRONTEND, IDI_QUICKSTART, IDS_FRONTEND, AboutDlgProc, NULL, NULL, 0);
-		C_PAGES = FRONTEND_ID + 1;
 #else
-		C_PAGES = GAMEPORTS_ID + 1;
+    MISC1_ID=DISK_ID+1;
+    MISC2_ID=DISK_ID+2;
+    id++;
+    id++;
 #endif
+
+		C_PAGES = MISC2_ID + 1;
 		init_called = 1;
 		if (quickstart && !qs_override)
 			currentpage = QUICKSTART_ID;
