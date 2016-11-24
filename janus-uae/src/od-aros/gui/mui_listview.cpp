@@ -45,7 +45,10 @@ static char foo[]="hey ho";
 /* 
  * ListView display hook
  */
-AROS_UFH3S(LONG, display_func, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(char **, array, A2), AROS_UFHA(struct view_line *, entry, A1)) {
+AROS_UFH3S(APTR, display_func, 
+           AROS_UFHA(struct Hook *, hook, A0), 
+           AROS_UFHA(char **, array, A2), 
+           AROS_UFHA(struct view_line *, entry, A1)) {
 
   AROS_USERFUNC_INIT
 
@@ -55,6 +58,10 @@ AROS_UFH3S(LONG, display_func, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(cha
   ULONG t;
   ULONG c=0;
 
+  {
+    struct Task* task=FindTask(NULL);
+    DebOut("Task %p, stack lower %p, stack upper %p\n", task, task->tc_SPLower, task->tc_SPUpper);
+  }
   /* get elem for this object */
   DebOut("Display hook entered (entry=0x%p)\n", entry);
 
@@ -92,7 +99,10 @@ EXIT:
   AROS_USERFUNC_EXIT
 }
 
-AROS_UFH3S(APTR, construct_func, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, pool, A2), AROS_UFHA(struct view_line *, entry, A1)) {
+AROS_UFH3S(APTR, construct_func, 
+           AROS_UFHA(struct Hook *, hook, A0), 
+           AROS_UFHA(APTR, pool, A2), 
+           AROS_UFHA(struct view_line *, entry, A1)) {
 
   AROS_USERFUNC_INIT
 
@@ -130,6 +140,32 @@ AROS_UFH3S(void, destruct_func, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
   AROS_USERFUNC_EXIT
 }
 
+AROS_UFH2(void, list_active, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
+
+  AROS_USERFUNC_INIT
+
+  ULONG wParam;
+  IPTR a;
+
+  struct Data *data = (struct Data *) hook->h_Data;
+
+  DebOut("entered (obj 0x%p)\n", obj);
+
+  if(data->func) {
+    a=XGET((Object *) obj, MUIA_List_Active);
+    DebOut("active: %d\n",a);
+    /* I have no idea, really no idea, where this 10001 magic comes from.
+     * I could not find it somewhere in the MS docs, but WinUAE uses 
+     * value-10001 to fetch the currently active element..
+     */
+    wParam=MAKEWPARAM(10001+a, 0);
+    data->func((Element *) data->hwnd, WM_COMMAND, wParam, 0);
+  }
+
+  AROS_USERFUNC_EXIT
+}
+
+
 
 /*
  * return new listview object
@@ -147,6 +183,8 @@ Object *new_listview(struct Element *elem, ULONG i, void *f, struct Data *data, 
   nlist=ListObject,
         InputListFrame,
         MUIA_List_Title, TRUE, /* title can't be switched on/off in Zune !? */
+        MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
+        MUIA_List_DestructHook, MUIV_List_DestructHook_String,
        End;
 
   DebOut("new ListObject: 0x%p\n", nlist);
@@ -173,17 +211,17 @@ Object *new_listview(struct Element *elem, ULONG i, void *f, struct Data *data, 
   *list=nlist;
 
 
-#if 0
   /* setup hooks */
 #ifdef UAE_ABI_v0
-  data->MyMUIHook_tree_active.h_Entry=(HOOKFUNC) tree_active;
+  data->MyMUIHook_list_active.h_Entry=(HOOKFUNC) list_active;
 #else
-  data->MyMUIHook_tree_active.h_Entry=(APTR) tree_active;
+  data->MyMUIHook_list_active.h_Entry=(APTR) list_active;
 #endif
-  data->MyMUIHook_tree_active.h_Data =(APTR) data;
+  data->MyMUIHook_list_active.h_Data =(APTR) data;
 
-  DoMethod(tree, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR) tree, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_tree_active, func); 
+  DoMethod(listview, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR) listview, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_list_active, NULL); 
 
+#if 0
 #ifdef UAE_ABI_v0
   data->MyMUIHook_tree_double.h_Entry=(HOOKFUNC) tree_double;
 #else
@@ -271,6 +309,7 @@ void ListView_RemoveAllGroups(HWND hwnd) {
  * Removes all items from a list-view control.
  */
 BOOL ListView_DeleteAllItems(HWND hwnd) {
+
   Element *elem=(Element *) hwnd;
 
 #if 0
@@ -278,7 +317,12 @@ BOOL ListView_DeleteAllItems(HWND hwnd) {
   i=get_index(elem, nIDDlgItem);
   if(i<0) return FALSE;
 #endif
-  DebOut("elem: 0x%p: elem->action: 0x%p\n", elem, elem->action);
+  DebOut("elem: 0x%p\n", elem);
+  if(!elem) {
+    DebOut("ERROR: hwnd is NULL\n");
+    return FALSE;
+  }
+  DebOut("elem->action: 0x%p\n", elem->action);
 
   DoMethod(elem->action, MUIM_List_Clear);
 
@@ -294,7 +338,7 @@ BOOL ListView_DeleteAllItems(HWND hwnd) {
 BOOL ListView_GetColumn(HWND hwnd, int iCol, LPLVCOLUMN pcol) {
   Element *elem=(Element *) hwnd;
 
-  DebOut("elem: %p\n", elem);
+  DebOut("elem: %p (idc: %d)\n", elem, elem->idc);
 
 #if 0
   elem=get_elem(nIDDlgItem);
@@ -319,15 +363,17 @@ BOOL ListView_GetColumn(HWND hwnd, int iCol, LPLVCOLUMN pcol) {
  * For us it should be enough to just care for pszText
  * We store all columns in elem->mem..
  */
+#define INSERT_COLUMN_FORMAT_SIZE 127
+
 int ListView_InsertColumn(HWND hwnd, int iCol, const LPLVCOLUMN pcol) {
   Element *elem;
   //ULONG i=0;
   ULONG t=0;
   ULONG u=0;
-  char format[128];
-  struct Hook *display_hook;
-  struct Hook *construct_hook;
-  struct Hook *destruct_hook;
+  char   format[INSERT_COLUMN_FORMAT_SIZE+1];
+  struct Hook      *display_hook;
+  struct Hook      *construct_hook;
+  struct Hook      *destruct_hook;
   struct hook_data *h_data; 
 
   DebOut("pszText: %s\n", pcol->pszText);
@@ -342,6 +388,7 @@ int ListView_InsertColumn(HWND hwnd, int iCol, const LPLVCOLUMN pcol) {
 
   if(!elem->mem) {
     elem->mem=(char **) calloc(32, sizeof(IPTR)); /* 32 columns should be enough for everybody.. */
+    DebOut("alloc new mem array for columns (elem->mem=%p)\n", elem->mem);
     elem->mem[0]=NULL;
   }
 
@@ -362,11 +409,16 @@ int ListView_InsertColumn(HWND hwnd, int iCol, const LPLVCOLUMN pcol) {
   format[3]=(char) 0;
 
   for(u=0;u<t;u++) {
-    strcpy(format+strlen(format),",BAR");
+    strncat(format, ",BAR", INSERT_COLUMN_FORMAT_SIZE);
   }
 
   DebOut("format: >%s<\n", format);
   DebOut("elem->action: 0x%p\n", elem->action);
+
+  {
+    struct Task* task=FindTask(NULL);
+    DebOut("Task %p, stack lower %p, stack upper %p\n", task, task->tc_SPLower, task->tc_SPUpper);
+  }
 
 
   /* if this is our first column, we need to setup the display hook */
@@ -400,11 +452,11 @@ int ListView_InsertColumn(HWND hwnd, int iCol, const LPLVCOLUMN pcol) {
     DebOut("set MUIA_List_ConstructHook for object %p\n", elem->action);
     DebOut("set MUIA_List_ConstructHook: %p\n", construct_hook);
     SetAttrs(elem->action, MUIA_List_DisplayHook,   display_hook,
-                             MUIA_List_ConstructHook, construct_hook,
-                             MUIA_List_DestructHook,  destruct_hook,
-                             MUIA_List_Format,        format, 
-                             MUIA_List_Title,         TRUE, 
-                             TAG_DONE);
+                           MUIA_List_ConstructHook, construct_hook,
+                           MUIA_List_DestructHook,  destruct_hook,
+                           MUIA_List_Format,        format, 
+                           MUIA_List_Title,         TRUE, 
+                           TAG_DONE);
   }
   else {
     SetAttrs(elem->action, MUIA_List_Format, format, TAG_DONE);
