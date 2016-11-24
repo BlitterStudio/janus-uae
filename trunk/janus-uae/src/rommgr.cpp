@@ -1175,6 +1175,7 @@ void getromname	(const struct romdata *rd, TCHAR *name)
 	while (rd->group)
 		rd--;
 	_tcscat (name, rd->name);
+  DebOut("name: %s, rd->name: %s\n", name, rd->name);
 	if ((rd->subrev || rd->subver) && rd->subver != rd->ver)
 		_stprintf (name + _tcslen (name), _T(" rev %d.%d"), rd->subver, rd->subrev);
 	if (rd->size > 0)
@@ -1263,7 +1264,7 @@ void romwarning (const int *ids)
 	TCHAR tmp1[MAX_DPATH], tmp2[MAX_DPATH];
 	TCHAR tmp3[MAX_DPATH];
 
-  DebOut("entered\n");
+  DebOut("entered (ids: %d)\n", ids);
 
 	if (ids[0] == -1)
 		return;
@@ -1282,8 +1283,7 @@ void romwarning (const int *ids)
 		}
 		i++;
 	}
-	//translate_message (exp ? NUMSG_EXPROMNEED : NUMSG_ROMNEED, tmp3);
-	translate_message (exp ? IDS_NUMSG_EXPROMNEED : IDS_NUMSG_ROMNEED, tmp3);
+	translate_message (exp ? NUMSG_EXPROMNEED : NUMSG_ROMNEED, tmp3);
 	gui_message (tmp3, tmp2);
 }
 
@@ -1663,6 +1663,8 @@ int configure_rom (struct uae_prefs *p, const int *rom, int msg)
 	TCHAR *path = 0;
 	int i;
 
+  DebOut("rom: %d, msg: %d\n", rom, msg);
+
 	if (rom[0] < 0)
 		return 1;
 	i = 0;
@@ -1677,6 +1679,7 @@ int configure_rom (struct uae_prefs *p, const int *rom, int msg)
 			break;
 		i++;
 	}
+  DebOut("path: %s\n", path);
 	if (!path) {
 		if (msg)
 			romwarning(rom);
