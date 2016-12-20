@@ -4707,6 +4707,7 @@ void InitializeListView (HWND hDlg)
 
 		for (i = 0; i < MAX_SPARE_DRIVES; i++) {
 			int drv;
+      DebOut("i: %d\n", i);
 			_stprintf (tmp, _T("%d"), i + 1);
 			lvstruct.mask     = LVIF_TEXT | LVIF_PARAM;
 			lvstruct.pszText  = tmp;
@@ -4714,7 +4715,9 @@ void InitializeListView (HWND hDlg)
 			lvstruct.iItem    = i;
 			lvstruct.iSubItem = 0;
 			result = ListView_InsertItem (list, &lvstruct);
+      DebOut("result: %d\n", result);
 			_tcscpy (tmp2, workprefs.dfxlist[i]);
+      DebOut("tmp2: %s\n", tmp2);
 			j = _tcslen (tmp2) - 1;
 			if (j < 0)
 				j = 0;
@@ -4725,6 +4728,7 @@ void InitializeListView (HWND hDlg)
 				}
 				j--;
 			}
+      DebOut("tmp2+j: %s\n", tmp2 + j);
 			ListView_SetItemText (list, result, 1, tmp2 + j);
 			drv = disk_in_drive (i);
 			tmp[0] = 0;
@@ -4991,9 +4995,16 @@ void InitializeListView (HWND hDlg)
 	lv_old_type = lv_type;
 }
 
-static int listview_find_selected (HWND list)
+static int listview_find_selected (HWND nr)
 {
 	int i, items;
+  /* o1i: for some obscure reason, calls for listview_find_selected are
+          not done by supplying a HWND, but the IDC_ .. which seems
+          to be the same. But I doubt, this is leagel win32 coding.
+          So we have to do a manual lookup here :(.
+   */
+  HWND list=get_control(NULL, (long int) nr);
+
   DebOut("list %p\n", list);
 	items = ListView_GetItemCount (list);
 	for (i = 0; i < items; i++) {
@@ -13775,12 +13786,16 @@ static int getfloppybox (HWND hDlg, int f_text, TCHAR *out, int maxlen, int type
 	TCHAR *tmp;
 	int i;
 
+  DebOut("hDlg %p, f_text %d, maxlen %d, type %d\n", hDlg, f_text, maxlen, type);
+
 	out[0] = 0;
 	val = SendDlgItemMessage (hDlg, f_text, CB_GETCURSEL, 0, 0L);
 	if (val != CB_ERR)
 		val = SendDlgItemMessage (hDlg, f_text, CB_GETLBTEXT, (WPARAM)val, (LPARAM)out);
 	else
 		SendDlgItemMessage (hDlg, f_text, WM_GETTEXT, (WPARAM)maxlen, (LPARAM)out);
+
+  DebOut("out: %s\n", out);
 
 	tmp = xmalloc (TCHAR, maxlen + 1);
 	_tcscpy (tmp, out);
