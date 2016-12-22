@@ -2657,7 +2657,6 @@ static void ejectfloppy (int n)
 	}
 }
 
-#ifndef __AROS__
 static void selectcd (struct uae_prefs *prefs, HWND hDlg, int num, int id, const TCHAR *full_path)
 {
 	SetDlgItemText (hDlg, id, full_path);
@@ -2667,16 +2666,13 @@ static void selectcd (struct uae_prefs *prefs, HWND hDlg, int num, int id, const
 	fullpath (prefs->cdslots[0].name, sizeof prefs->cdslots[0].name / sizeof (TCHAR));
 	DISK_history_add (prefs->cdslots[0].name, -1, HISTORY_CD, 0);
 }
-#endif
 
 static void selectdisk (struct uae_prefs *prefs, HWND hDlg, int num, int id, const TCHAR *full_path)
 {
-#ifndef __AROS__
 	if (iscd (num)) {
 		selectcd (prefs, hDlg, num, id, full_path);
 		return;
 	}
-#endif
 	SetDlgItemText (hDlg, id, (TCHAR *) full_path);
 	_tcscpy(prefs->floppyslots[num].df, full_path);
 	fullpath (prefs->floppyslots[num].df, sizeof prefs->floppyslots[num].df / sizeof (TCHAR));
@@ -3052,11 +3048,9 @@ int DiskSelection_2 (HWND hDlg, WPARAM wParam, int flag, struct uae_prefs *prefs
 			}
 			SetDlgItemText (hDlg, wParam, full_path);
 			break;
-#ifndef __AROS__
 		case IDC_CD_SELECT:
 			selectcd (prefs, hDlg, 0, IDC_CD_TEXT, full_path);
 			break;
-#endif
 		case IDC_DF0:
 		case IDC_DF0QQ:
 			selectdisk (prefs, hDlg, 0, IDC_DF0TEXT, full_path);
