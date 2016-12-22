@@ -12184,6 +12184,8 @@ static void addhdcontroller(HWND hDlg, const struct expansionromtype *erc, int *
 static void inithdcontroller (HWND hDlg, int ctype, int ctype_unit, int devtype)
 {
 	hdmenutable[0] = -1;
+
+  DebOut("entered\n");
 	
 	SendDlgItemMessage(hDlg, IDC_HDF_CONTROLLER, CB_RESETCONTENT, 0, 0);
 
@@ -12252,6 +12254,9 @@ static void inithdcontroller (HWND hDlg, int ctype, int ctype_unit, int devtype)
 		ew(hDlg, IDC_HDF_CONTROLLER_UNIT, FALSE);
 	}
 
+#ifndef __AROS__
+  /* this window has *no* IDC_HDF_CONTROLLER_TYPE/IDC_HDF_FEATURE_LEVEL button. 
+     AROS crashes, windows does survive this? */
 	SendDlgItemMessage (hDlg, IDC_HDF_CONTROLLER_TYPE, CB_RESETCONTENT, 0, 0);
 	SendDlgItemMessage (hDlg, IDC_HDF_CONTROLLER_TYPE, CB_ADDSTRING, 0, (LPARAM)_T("HD"));
 	SendDlgItemMessage (hDlg, IDC_HDF_CONTROLLER_TYPE, CB_ADDSTRING, 0, (LPARAM)_T("CF"));
@@ -12270,6 +12275,7 @@ static void inithdcontroller (HWND hDlg, int ctype, int ctype_unit, int devtype)
 			SendDlgItemMessage(hDlg, IDC_HDF_FEATURE_LEVEL, CB_ADDSTRING, 0, (LPARAM)_T("SASI CHS"));
 		}
 	}
+#endif
 }
 
 static void inithardfile (HWND hDlg)
@@ -12566,10 +12572,13 @@ static INT_PTR CALLBACK CDDriveSettingsProc (HWND hDlg, UINT msg, WPARAM wParam,
 	static int recursive = 0;
 	int posn;
 
+  DebOut("entered\n");
+
 	switch (msg) {
 
 	case WM_INITDIALOG:
 		recursive++;
+    DebOut("WM_INITDIALOG\n");
 		if (current_cddlg.ci.controller_type == HD_CONTROLLER_TYPE_UAE)
 			current_cddlg.ci.controller_type = (cfgfile_board_enabled(&workprefs, ROMTYPE_A2091, 0) ||
 			cfgfile_board_enabled(&workprefs, ROMTYPE_GVPS2, 0) || cfgfile_board_enabled(&workprefs, ROMTYPE_A4091, 0) ||
@@ -12594,6 +12603,7 @@ static INT_PTR CALLBACK CDDriveSettingsProc (HWND hDlg, UINT msg, WPARAM wParam,
 #endif
 		break;		
 	case WM_COMMAND:
+    DebOut("WM_COMMAND\n");
 		if (recursive)
 			break;
 		recursive++;
