@@ -260,15 +260,18 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
       l=0;
       /* free old strings */
       while(elem->mem[l] != NULL) {
-        //free(elem->mem[l]); /* TODO: free them? */
+        free(elem->mem[l]); /* TODO: free them? */
         elem->mem[l]=NULL;
         l++;
       }
       //elem->var[0]=strdup("<empty>");
       //elem->var[1]=NULL;
-      elem->mem[0]=NULL;
       DebOut("elem->obj: 0x%p\n", elem->obj);
-      DoMethod(elem->obj, MUIM_NoNotifySet, MUIA_List_Entries, (IPTR) elem->mem);
+      if(flag_editable(elem->flags)) {
+        DoMethod(elem->obj, MUIM_NoNotifySet, MUIA_String_Contents, (IPTR) "");
+      }
+      //DoMethod(elem->obj, MUIM_NoNotifySet, MUIA_List_Entries, (IPTR) elem->mem);
+      DoMethod(elem->obj, MUIM_List_Clear);
       break;
     case CB_FINDSTRING:
       /* return string index */
@@ -427,7 +430,7 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
         }
         else {
           /* check, if wParam is valid!? */
-          DebOut("activate string: %s\n", elem->mem[wParam]);
+          DebOut("activate string nr %d: %s\n", wParam, elem->mem[wParam]);
           DoMethod(elem->obj, MUIM_NoNotifySet, MUIA_String_Contents, (IPTR) elem->mem[wParam]);
         }
       }
@@ -507,6 +510,9 @@ UINT GetDlgItemText(HWND hDlg, int nIDDlgItem, TCHAR *lpString, int nMaxCount) {
 
   elem=get_control(hDlg, nIDDlgItem);
 
+  DebOut("hDlg: %d\n", hDlg);
+  DebOut("nIDDlgItem: %d\n", nIDDlgItem);
+  DebOut("elem: %p\n", elem);
   DebOut("elem->obj: 0x%p\n", elem->obj);
   DebOut("elem->windows_type: %d\n", elem->windows_type);
 
