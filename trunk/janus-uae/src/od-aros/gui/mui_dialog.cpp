@@ -107,6 +107,11 @@ INT_PTR DialogBoxIndirect(ULONG idc, LPCDLGTEMPLATE lpTemplate, HWND hWndParent,
     return 0;
   }
 
+  if(e->text) {
+    DebOut("DialogBoxIndirect %s\n", e->text);
+    DoMethod(mui_win, MUIM_Set, MUIA_Window_Title, e->text);
+  }
+
   return_value=0;
 
   DebOut("OM_ADDMEMBER..\n");
