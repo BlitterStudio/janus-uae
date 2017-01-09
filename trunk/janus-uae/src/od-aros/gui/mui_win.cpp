@@ -173,7 +173,6 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
   //LONG i;
   ULONG l;
   //IPTR activate;
-  TCHAR *buf;
   Element *elem;
 
   DebOut("hDlg: %p, nIDDlgItem: %d, lParam: 0x%p\n", hDlg, nIDDlgItem, lParam);
@@ -235,7 +234,8 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
 #endif
  
       if(flag_editable(elem->flags)) {
-        DoMethod(elem->obj, MUIM_List_Insert, (IPTR) elem->mem);
+        DebOut("insert element..\n");
+        DoMethod(elem->obj, MUIM_List_Insert, (IPTR) elem->mem, -1, MUIV_List_Insert_Bottom);
         DoMethod(elem->obj, MUIM_NoNotifySet, MUIA_String_Contents, (IPTR) lParam);
       }
       else {
@@ -324,9 +324,18 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
       }
       break;
     case WM_SETTEXT: {
-      LONG found=-1;
 
       DebOut("WM_SETTEXT\n");
+
+      /*
+       * https://msdn.microsoft.com/de-de/library/windows/desktop/ms632644.aspx
+       *
+       * This message does not change the current selection in the list box of a combo box. 
+       * For an edit control, the text is the contents of the edit control. 
+       * For a combo box, the text is the contents of the edit-control portion of the combo box. 
+       * For a button, the text is the button name. For other windows, the text is the window title. 
+       *
+       */
 
       if(lParam==0 || strlen((TCHAR *)lParam)==0) {
         DebOut("lParam is empty!\n");
@@ -348,59 +357,16 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
       if(!flag_editable(elem->flags)) {
         DebOut("WM_SETTEXT for !editable!\n");
         /* "It is CB_ERR if this message is sent to a combo box without an edit control." */
-        /* REALLY !? */
         return CB_ERR;
       }
 
+      /* flag_editable => combobox */
+
+      DebOut("=> combobox!\n");
       DebOut("elem: %p\n", elem);
-      DebOut("elem->mem[0]: 0x%p\n", elem->mem[0]);
 
-      l=0;
-      while(elem->mem[l] != NULL) {
-        DebOut("  compare with >%s<\n", elem->mem[l]);
-        DebOut("  l: %d\n", l);
-        if(!strcmp(elem->mem[l], (TCHAR *) lParam)) {
-          found=l;
-          DebOut("we already have that string at position %d!\n", found);
-          //DebOut("activate string %d in combo box!\n", l);
-          //DebOut("elem->obj: 0x%p\n", elem->obj);
-          //SetAttrs(elem->obj, MUIA_String_Contents, lParam, TAG_DONE);
-          break;
-        }
-        l++;
-      }
-
-      DebOut("found: %d\n", found);
- 
-      if(flag_editable(elem->flags)) {
-        /* custom combo box */
-        if(found > -1) {
-          DoMethod(elem->obj, MUIM_NoNotifySet, MUIA_String_Contents, lParam);
-          /* we are done! */
-          return 1;
-        }
-      }
-      DebOut("new string, add it to top\n");
-      l=0;
-      buf=elem->mem[l+1];
-      while(buf != NULL) {
-        elem->mem[l+1]=elem->mem[l];
-        l++;
-        buf=elem->mem[l+1];
-      }
-      /* store new string */
-      elem->mem[0]=strdup((TCHAR *) lParam);
-      /* terminate list */
-      elem->mem[l+1]=NULL;
-
-      if(flag_editable(elem->flags)) {
-        DoMethod(elem->obj, MUIM_List_Insert, elem->mem);
-      }
-      else {
-        DoMethod(elem->obj, MUIM_Set,         MUIA_Cycle_Entries, (IPTR) elem->mem);
-        DebOut("MUIA_Cycle_Active\n");
-        DoMethod(elem->obj, MUIM_NoNotifySet, MUIA_Cycle_Active, 0);
-      }
+      /* don't add string to drop down menu!, just set the content of the text field */
+      DoMethod(elem->obj, MUIM_NoNotifySet, MUIA_String_Contents, lParam);
  
       return TRUE;
     }
