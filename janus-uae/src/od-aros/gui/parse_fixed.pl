@@ -30,6 +30,7 @@ require Tree::Simple;
 use Data::TreeDumper;
 use List::MoreUtils qw/ uniq /;
 use File::Basename;
+use Fcntl qw(SEEK_SET SEEK_CUR SEEK_END); 
 
 # TODO!!!!!!!!!!!!
 # idc must be in the right order !!!
@@ -383,6 +384,7 @@ if(!defined $ARGV[1]) {
 }
 
 my @h_elements;
+my $dialogex_line;
 
 while(<RESFILE>) {
   $line=$back.$_;
@@ -413,7 +415,8 @@ while(<RESFILE>) {
     $idd_name=$t[0];
     $debug && print "=== $idd_name ===\n";
     #print CPPFILE "Element ".$idd_name."[] = {\n";
-    print CPPFILE "  { 0, ".$idd_name.", 0, NULL, NULL, NULL, DIALOGEX   , NULL,   ".$t[2].", ".$t[3].", ".$t[4].", ".$t[5].",  \"\", NULL, 0x10000000, 0, 0 },\n";
+    $dialogex_line="  { 0, ".$idd_name.", 0, NULL, NULL, NULL, DIALOGEX   , NULL,   ".$t[2].", ".$t[3].", ".$t[4].", ".$t[5].",  \"\", NULL, 0x10000000, 0, 0 },\n";
+    print CPPFILE $dialogex_line;
     push @idc, "oli was here\n"; 
     $plus_height=($totalheight-$t[5])/2;
     push @h_elements, $idd_name;
@@ -422,6 +425,20 @@ while(<RESFILE>) {
     shift(@t);
     shift(@t);
     #$debug && print "    x ".$root{'x'}." y ".$root{'y'}." w ".$root{'w'}." h ".$root{'h'}."\n";
+  }
+  elsif($line =~ /^CAPTION/) {
+    # a CAPTION may appear between DIALOGEX and BEGIN 
+    # so we remove the last written line and add the CAPTION to the DIALOGEX
+    # description..
+    seek(CPPFILE, -length($dialogex_line), SEEK_CUR); # move back
+    # take caption text between ""
+    my $cap;
+    $line =~ /\"(.*?)\"/;
+    $cap=$1;
+    # patch cap into old dialogex_line 
+    $dialogex_line=~s/\"\"/\"$cap\"/;
+    # write it back again
+    print CPPFILE $dialogex_line;
   }
   else {
     if($idd_active) {
