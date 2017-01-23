@@ -253,9 +253,9 @@ BEGIN
     CONTROL         "No flags",IDC_NOFLAGS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,299,299,68,11
     CONTROL         "Direct",IDC_TRUST0,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,143,299,72,10
     CONTROL         "Indirect",IDC_TRUST1,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,221,299,72,10
+    GROUPBOX        "PPC CPU options",IDC_STATIC,136,144,258,57
     CONTROL         "PPC CPU emulation (Blizzard PPC / CyberStorm PPC) [] Automatically configure CyberStorm PPC or Blizzard PPC setup.",IDC_CPU_PPC,
                     "Button",BS_AUTOCHECKBOX | BS_LEFT | WS_GROUP | WS_TABSTOP,145,161,236,10
-    GROUPBOX        "PPC CPU options",IDC_STATIC,136,144,258,57
     RTEXT           "Stopped M68K CPU idle mode",IDC_STATIC,180,183,121,9
     CONTROL         "",IDC_PPC_CPUIDLE,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,308,177,69,21
     CONTROL         "",IDC_SPEED_x86,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,278,215,108,20
