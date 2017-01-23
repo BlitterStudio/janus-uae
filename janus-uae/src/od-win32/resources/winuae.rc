@@ -1216,6 +1216,7 @@ IDD_EXPANSION2 DIALOGEX 0, 0, 396, 315
 STYLE DS_LOCALEDIT | DS_SETFONT | DS_3DLOOK | DS_CONTROL | WS_CHILD
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
+    GROUPBOX        "Accelerator Board Settings",IDC_STATIC,1,96,394,97
     RTEXT           "Accelerator board memory:",IDC_STATIC,155,144,104,15,SS_CENTERIMAGE
     CONTROL         "",IDC_CPUBOARDMEM,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,269,141,68,20
     EDITTEXT        IDC_CPUBOARDRAM,343,146,40,12,ES_CENTER | ES_READONLY
@@ -1233,7 +1234,6 @@ BEGIN
     LTEXT           "Accelerator board ROM file:",IDC_STATIC,203,104,170,15,SS_CENTERIMAGE
     COMBOBOX        IDC_CPUBOARDROMFILE,202,119,169,75,CBS_DROPDOWN | CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "...",IDC_CPUBOARDROMCHOOSER,376,119,10,15
-    GROUPBOX        "Accelerator Board Settings",IDC_STATIC,1,96,394,97
     GROUPBOX        "Miscellaneous Expansions",IDC_STATIC,1,199,172,113
     CONTROL         "Catweasel Z2 emulation [] Catweasel MK2 Zorro II card emulation. Physical Windows compatible Catweasel card and drivers required.",IDC_CATWEASEL,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,218,147,11
