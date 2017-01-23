@@ -25,16 +25,13 @@
 #define FILE_ATTRIBUTE_VALID_FLAGS         0x00017fb7
 #define FILE_ATTRIBUTE_VALID_SET_FLAGS     0x000031a7 
 
-/* usually, this macro seems to be defined as: */
 /* even on 64bit, MAKELONG returns a 32bit value, see:
-  https://msdn.microsoft.com/en-us/library/windows/desktop/ms632660.aspx and
-  https://msdn.microsoft.com/en-us/library/windows/desktop/aa383751.aspx
+ * https://msdn.microsoft.com/en-us/library/windows/desktop/ms632660.aspx and
+ * https://msdn.microsoft.com/en-us/library/windows/desktop/aa383751.aspx
+ *
+ * usually, this macro seems to be defined as: 
  */
-
-#define MAKELONG(a,b) ((LONG)(((WORD)(a))|(((DWORD)((WORD)(b)))<<16)))
-
-/* but for -9, -1 it is *worng*, at least on AROS 32bit? This one works correct: */
-//#define MAKELONG(a,b) (a&0xFFFF)|(b&0xFFFF)<<16
+#define MAKELONG(a,b) ((LONG)(((WORD)(a)&0xFFFF)|(((DWORD)((WORD)(b)))<<16)))
 
 #define LOWORD(l) ((WORD)((DWORD)(l)))
 #define HIWORD(l) ((WORD)(((DWORD)(l)>>16)&0xFFFF))
