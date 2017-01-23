@@ -55,7 +55,7 @@ LD         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ld
 FLAGS      = -Wno-write-strings -O2 -Wall -Wno-unused -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-value -Wno-unused-variable -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-sign-compare #-Werror
 DEBUGFLAGS = -g
 
-CDEFS   = -DUAE_ABI_$(ABI)
+CDEFS   = -DUAE_ABI_$(ABI) -DJIT
 INCLUDES= -I. -I../include -I../md-i386-gcc -I.. -I../archivers/zip -I$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/$(SUB)/include/SDL -Ilibmpeg2/include
 
 #-I/home/oli/svn/$(ABI)/AROS/bin/linux-$(CPU)/AROS/Development/include/SDL
@@ -153,7 +153,7 @@ COMMON_OBJS= \
 	filesys.o \
 	../fpp.o \
 	../fsdb.o \
-	../fsusage.o \
+	fsusage.o \
 	../gayle.o \
 	../gfxboard.o \
 	../ide.o \
