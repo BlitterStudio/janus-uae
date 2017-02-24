@@ -27,7 +27,7 @@
 #include <proto/processor.h>
 #include <resources/processor.h>
 
-#include <SDL.h>
+#include <SDL/SDL.h>
 
 
 #include "sysconfig.h"
