@@ -19,7 +19,7 @@
 
 /* not used anymore */
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -31,8 +31,8 @@
 #include "picasso96_aros.h"
 #include "gfx.h"
 
-#include <SDL.h>
-#include <SDL_endian.h>
+#include <SDL/SDL.h>
+#include <SDL/SDL_endian.h>
 
 #include <GL/glut.h>
 
