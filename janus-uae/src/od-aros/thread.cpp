@@ -102,8 +102,8 @@ void uae_set_thread_priority (uae_thread_id *tid, int pri) {
 #endif
 
 #ifdef USE_SDL
-#include <SDL.h>
-#include <SDL_thread.h>
+#include <SDL/SDL.h>
+#include <SDL/SDL_thread.h>
 #endif
 
 #ifdef USE_PTHREADS
