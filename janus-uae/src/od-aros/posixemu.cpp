@@ -97,10 +97,12 @@ int uae_start_thread (const TCHAR *name, void *(*f)(void *), void *arg, uae_thre
 
     newtask = CreateNewProc (procTags);
 
-    bug("[JUAE:PX] %s: Process @ %p, MsgPort @ %p\n", __PRETTY_FUNCTION__, newtask, newtask->pr_MsgPort);
+    bug("[JUAE:PX] %s: Process @ %p\n", __PRETTY_FUNCTION__, newtask);
 
     if(newtask) {
         struct startupmsg msg;
+
+        bug("[JUAE:PX] %s: MsgPort @ %p\n", __PRETTY_FUNCTION__, &newtask->pr_MsgPort);
 
         msg.msg.mn_ReplyPort = replyport;
         msg.msg.mn_Length    = sizeof msg;
