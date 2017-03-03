@@ -261,11 +261,11 @@ ifneq (,$(COMMON_FLAGS))
 USER_CXXFLAGS := $(USER_CXXFLAGS) $(COMMON_FLAGS)
 endif
 
-JUAE_LDFLAGS := -static-libstdc++ -L$(GENDIR)/$(CURDIR)/lib -lgui -lSDL_Config
+USER_LDFLAGS := -static-libstdc++ -L$(GENDIR)/$(CURDIR)/lib -lgui -lSDL_Config
 
 %build_prog mmake=local-juae-emulator \
     progname=J-UAE targetdir=$(JUAEDIR) files="" cxxfiles="$(JUAESRCS)" \
-    uselibs="png SDL mpeg2convert mpeg2 arossupport z GL mui lowlevel" ldflags="$(JUAE_LDFLAGS)"
+    uselibs="png SDL mpeg2convert mpeg2 arossupport z mui lowlevel"
 
 %build_icons mmake=local-juae-icons-emulator icons="J-UAE" \
              dir=$(AROS_CONTRIB)/Emu/J-UAE
@@ -286,6 +286,8 @@ HOST_CXXFLAGS := -DCROSS_COMPILE -Wall -Wno-switch  -fpermissive -g $(HOST_INCLU
 ifneq (,$(COMMON_FLAGS))
 HOST_CXXFLAGS := $(COMMON_FLAGS) $(HOST_CXXFLAGS)
 endif
+
+USER_LDFLAGS :=
 
 #MM local-juae-genblitter : local-juae-hostconfig
 
