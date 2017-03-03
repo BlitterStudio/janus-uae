@@ -34,7 +34,9 @@
 #include <SDL/SDL.h>
 #include <SDL/SDL_endian.h>
 
+#ifdef USE_GL
 #include <GL/glut.h>
+#endif
 
 #define SDLGD(x)
 
@@ -1556,7 +1558,7 @@ void gfx_set_picasso_state (int on)
 
     graphics_subshutdown ();
     screen_was_picasso = screen_is_picasso;
-    DebOut("screen_is_picasso: %d\n", screen_is_picasso);
+    DebOut("screen_was_picasso: %d\n", screen_was_picasso);
     screen_is_picasso = on;
     DebOut("screen_is_picasso: %d\n", screen_is_picasso);
 
