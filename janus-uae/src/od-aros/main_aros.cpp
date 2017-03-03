@@ -43,6 +43,8 @@
 #include "winnt.h"
 #endif
 
+//#define UNLOCKTDNESTCNT
+
 TCHAR VersionStr[256];
 TCHAR BetaStr[64];
 
@@ -349,12 +351,14 @@ int main (int argc, TCHAR **argv) {
     exit(1);
   }
 
+#if (UNLOCKTDNESTCNT)
   if(SysBase->TDNestCnt>=0) {
     bug("Permit required a1\n");
     Permit();
     Permit();
     Permit();
   }
+#endif
 
 #ifdef UAE_ABI_v0
   vm_prep();
@@ -370,9 +374,11 @@ int main (int argc, TCHAR **argv) {
 
   write_log("Stack size: %d\n", stacksize);
 
+#if (UNLOCKTDNESTCNT)
   if(SysBase->TDNestCnt>=0) {
     bug("Permit required a2\n");
   }
+#endif
 
 #ifndef NATMEM_OFFSET
   if(!init_memory()) {
@@ -403,10 +409,11 @@ int main (int argc, TCHAR **argv) {
 // warning ====================================================================
 
 
+#if (UNLOCKTDNESTCNT)
   if(SysBase->TDNestCnt>=0) {
     bug("Permit required a3\n");
   }
-
+#endif
 
   /* call graphics_setup already here, this fills the screenmodes, we need in sortdisplays.. */
   graphics_setup();
@@ -458,9 +465,11 @@ int main (int argc, TCHAR **argv) {
 	//enumserialports ();
 	//enummidiports ();
 
+#if (UNLOCKTDNESTCNT)
   if(SysBase->TDNestCnt>=0) {
     bug("Permit required a4\n");
   }
+#endif
 
 	DebOut("calling real_main..\n");
 	real_main (argc, argv);
@@ -501,7 +510,7 @@ static void proc_entry () {
   my_msg->rc=newstack_main(my_msg->argc, my_msg->argv); 
   
   Forbid(); 
-  ReplyMsg(&my_msg->msg); 
+  ReplyMsg(&my_msg->msg);
 }
 #define MIN_STACK 128*1024
 
