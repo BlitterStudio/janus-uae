@@ -43,8 +43,6 @@
 #include "winnt.h"
 #endif
 
-//#define UNLOCKTDNESTCNT
-
 TCHAR VersionStr[256];
 TCHAR BetaStr[64];
 
