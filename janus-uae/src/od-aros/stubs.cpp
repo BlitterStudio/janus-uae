@@ -290,6 +290,7 @@ int handle_msgpump (void)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
 
+#if (UNLOCKTDNESTCNT)
   if(SysBase->TDNestCnt>=0) {
     bug("ERROR: Should not be in Forbid here!!\n");
     while(SysBase->TDNestCnt>=0) {
@@ -297,6 +298,7 @@ int handle_msgpump (void)
       Permit();
     }
   }
+#endif
   //TODO();
 	return 0;
 }
