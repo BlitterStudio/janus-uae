@@ -58,7 +58,7 @@ $(GENDIR)/$(CURDIR)/mui_data.o: $(GENDIR)/$(CURDIR)/mui_data.cpp
 	@$(AROS_CXX) $(TARGET_CFLAGS) $(NOWARN_FLAGS) $(USER_INCLUDES) -o $@ -c $<
 
 $(GENDIR)/$(CURDIR)/%.o: %.cpp
-	@$(AROS_CXX) $(TARGET_CFLAGS) $(NOWARN_FLAGS) $(USER_INCLUDES) -o $@ -c $<
+	@$(AROS_CXX) $(TARGET_CXXFLAGS) $(NOWARN_FLAGS) $(USER_INCLUDES) -o $@ -c $<
 
 $(GENDIR)/$(CURDIR)/%.o: $(GENDIR)/$(CURDIR)/%.c
 	$(TARGET_CC) $(TARGET_CFLAGS) $(NOWARN_FLAGS) $(USER_INCLUDES) -o $@ -c $<
