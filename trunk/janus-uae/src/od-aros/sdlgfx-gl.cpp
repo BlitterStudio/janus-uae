@@ -20,11 +20,11 @@
  * OpenGL functions moved to own file by Oliver Brunner
  */
 
-#ifdef USE_GL
-
 //#define JUAE_DEBUG
 
 #include "sysconfig.h"
+
+#ifdef USE_GL
 #include "sysdeps.h"
 #include "keymap.h"
 #include "sdlkeys_dik.h"
