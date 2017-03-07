@@ -30,12 +30,6 @@
 #define GFXFILTER
 
 
-/*
-  uncomment to perform additional Permits()
-  while debugging forbid issues
-  */
-//#define UNLOCKTDNESTCNT
-
 #ifndef UAE_MINI
 
 //#define USE_GL
