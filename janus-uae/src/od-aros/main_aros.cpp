@@ -349,15 +349,6 @@ int main (int argc, TCHAR **argv) {
     exit(1);
   }
 
-#if (UNLOCKTDNESTCNT)
-  if(SysBase->TDNestCnt>=0) {
-    bug("Permit required a1\n");
-    Permit();
-    Permit();
-    Permit();
-  }
-#endif
-
 #ifdef UAE_ABI_v0
   vm_prep();
 #endif
@@ -371,12 +362,6 @@ int main (int argc, TCHAR **argv) {
 	log_scsi=1;
 
   write_log("Stack size: %d\n", stacksize);
-
-#if (UNLOCKTDNESTCNT)
-  if(SysBase->TDNestCnt>=0) {
-    bug("Permit required a2\n");
-  }
-#endif
 
 #ifndef NATMEM_OFFSET
   if(!init_memory()) {
@@ -406,12 +391,6 @@ int main (int argc, TCHAR **argv) {
 // warning  max_z3fastmem=100 * 1024 * 1024; !!!!!!!!!!!!!!!!!!!!!!!!!
 // warning ====================================================================
 
-
-#if (UNLOCKTDNESTCNT)
-  if(SysBase->TDNestCnt>=0) {
-    bug("Permit required a3\n");
-  }
-#endif
 
   /* call graphics_setup already here, this fills the screenmodes, we need in sortdisplays.. */
   graphics_setup();
@@ -462,12 +441,6 @@ int main (int argc, TCHAR **argv) {
 	//serialipc = createIPC (COMPIPENAME, 1);
 	//enumserialports ();
 	//enummidiports ();
-
-#if (UNLOCKTDNESTCNT)
-  if(SysBase->TDNestCnt>=0) {
-    bug("Permit required a4\n");
-  }
-#endif
 
 	DebOut("calling real_main..\n");
 	real_main (argc, argv);
