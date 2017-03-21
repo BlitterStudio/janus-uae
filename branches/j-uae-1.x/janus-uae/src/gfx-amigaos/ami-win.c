@@ -1341,7 +1341,7 @@ static int setup_publicscreen(void) {
               WA_AutoAdjust,   TRUE,
               WA_InnerWidth,   gfxvidinfo.width,
               WA_InnerHeight,  gfxvidinfo.height,
-              WA_Shape,        shape,
+              WA_ShapeRegion,  shape,
               WA_PubScreen,    (ULONG)S,
               WA_Zoom,         (ULONG)ZoomArray,
               WA_IDCMP,        IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY
