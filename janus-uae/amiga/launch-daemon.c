@@ -56,8 +56,8 @@
 #include <proto/timer.h>
 #endif
 
-#include <libraries/wbstart.h>
-#include <inline/wbstart.h>
+#include "include/wbstart.h"
+#include "include/inline/wbstart.h"
 
 #include "janus-daemon.h"
 #include "launch-daemon.h"
@@ -65,7 +65,7 @@
 struct Library *WBStartBase=NULL;
 struct Library *DOSBase    =NULL;
 
-char verstag[] = "\0$VER: launch-daemon 0.2";
+char verstag[] = "\0$VER: launch-daemon 0.3";
 LONG          *cmdbuffer=NULL;
 
 /* signal sent by j-uae to tell us, we have to do something! */
@@ -81,7 +81,7 @@ struct Task *mytask = NULL;
  */
 ULONG (*calltrap)(ULONG __asm("d0"),
                   ULONG __asm("d1"),
-		  APTR  __asm("a0")) = (APTR) AROSTRAPBASE;
+      APTR  __asm("a0")) = (APTR) AROSTRAPBASE;
 
 BOOL open_libs() {
 
@@ -90,7 +90,7 @@ BOOL open_libs() {
      return FALSE;
    }
 
-   if (!(WBStartBase=OpenLibrary("wbstart.library",2L))) {
+   if (!(WBStartBase=OpenLibrary("wbstart.library", 2L))) {
      printf("unable to open wbstart.library! Get it from aminet.\n");
      return FALSE;
    }
@@ -168,15 +168,15 @@ static LONG start_it(char *path, char *filename, struct WBArg *args) {
 
   if(nr_args) {
     rc = WBStartTags(WBStart_DirectoryName,  (ULONG) path,
-    		      WBStart_Name,          (ULONG) filename,
-   		      WBStart_ArgumentCount,  nr_args,
-		      WBStart_ArgumentList,   (ULONG) args,
-  		      TAG_DONE);
+              WBStart_Name,          (ULONG) filename,
+             WBStart_ArgumentCount,  nr_args,
+          WBStart_ArgumentList,   (ULONG) args,
+            TAG_DONE);
   }
   else {
     rc = WBStartTags(WBStart_DirectoryName, (ULONG) path,
-    		      WBStart_Name,          (ULONG) filename,
-  		      TAG_DONE);
+              WBStart_Name,          (ULONG) filename,
+            TAG_DONE);
   }
 
   if(rc != RETURN_OK) {
@@ -350,48 +350,48 @@ static void handle_launch_signal(void) {
     else {
       if(command_mem[0]==1) {
 
-	/* WB == 1 */
+  /* WB == 1 */
 
-	command_string=(char *) command_mem;
-	path          =command_string + command_mem[1];
-	filename      =command_string + command_mem[2];
+  command_string=(char *) command_mem;
+  path          =command_string + command_mem[1];
+  filename      =command_string + command_mem[2];
 
-	DebOut("launchd: Start WB program \n", filename);
+  DebOut("launchd: Start WB program \n", filename);
 
-	if(command_mem[3]) {
-	  wbargs      =create_wbargs(pool, command_mem);
-	}
-	else {
-	  DebOut("launchd: we have no arguments\n");
-	}
+  if(command_mem[3]) {
+    wbargs      =create_wbargs(pool, command_mem);
+  }
+  else {
+    DebOut("launchd: we have no arguments\n");
+  }
 
-	start_it(path, filename, wbargs);
-	/* TODO: unlock all :( */
+  start_it(path, filename, wbargs);
+  /* TODO: unlock all :( */
       }
       else {
-	/* CLI == 2 */
-	/* we get everything in path: path,filename and arguments */
+  /* CLI == 2 */
+  /* we get everything in path: path,filename and arguments */
 
-	command_string=(char *) command_mem;
-	fullpath      =         command_string + command_mem[1];
+  command_string=(char *) command_mem;
+  fullpath      =         command_string + command_mem[1];
 #if 0
-	filename      =         command_string + command_mem[2];
+  filename      =         command_string + command_mem[2];
 #endif
 
-	DebOut("launchd: fullpath: >%s<\n", fullpath);
+  DebOut("launchd: fullpath: >%s<\n", fullpath);
 #if 0
-	DebOut("launchd: cmd:  >%s<\n", filename);
-	sprintf(cli_cmd, "%s/%s\n", path, filename);
-	DebOut("cli_cmd: %s\n", cli_cmd);
+  DebOut("launchd: cmd:  >%s<\n", filename);
+  sprintf(cli_cmd, "%s/%s\n", path, filename);
+  DebOut("cli_cmd: %s\n", cli_cmd);
 #endif
 
-	result=SystemTags(fullpath,
-			      SYS_Asynch, TRUE,
-			      SYS_Input,  Open("CON://200/100/RunAmigaOs/CLOSE/AUTO/WAIT", MODE_OLDFILE),
-			      SYS_Output, NULL,
-			      TAG_DONE);
+  result=SystemTags(fullpath,
+            SYS_Asynch, TRUE,
+            SYS_Input,  Open("CON://200/100/RunAmigaOs/CLOSE/AUTO/WAIT", MODE_OLDFILE),
+            SYS_Output, NULL,
+            TAG_DONE);
 
-	DebOut("result: %d\n", result);
+  DebOut("result: %d\n", result);
 
       }
     }
@@ -430,8 +430,8 @@ static void runme(void) {
     if(set) {
 
       if(newsignals & launchsignal) {
-	DebOut("launchd: launchsignal from UAE received\n");
-	handle_launch_signal();
+  DebOut("launchd: launchsignal from UAE received\n");
+  handle_launch_signal();
       }
     }
 
