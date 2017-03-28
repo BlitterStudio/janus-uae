@@ -31,7 +31,10 @@ SMOBJS     = clonescreenmode.o
 
 HEADERS    = ../janus-daemon.h ../clip-daemon.h
 
-all: janusd launchd clipd
+# only build janusd as AROS executeable. 
+# All other daemons should run fine in 68k.
+# launchd will not work compiled for AROS (see warning in source)
+all: janusd 
 	@rm -f version.h
 
 #clipd launchd janus-splash clonescreenmode
