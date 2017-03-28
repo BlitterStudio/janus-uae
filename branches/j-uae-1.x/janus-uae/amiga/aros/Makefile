@@ -12,26 +12,26 @@
 #=====================================
 
 CC           = /home/oli/svn/m68k/AROS/bin/linux-i386/tools/crosstools/m68k-aros-gcc
-TARGETDIR    = /home/oli/svn/v0/AROS/bin/linux-i386/AROS/icaros-aros68k/C
+TARGETDIR    = /home/oli/svn/v0/ABI_V0-20161228/AROS/bin/linux-i386/AROS/icaros-aros68k/C
 
 FLAGS     = -Wall -fno-strict-aliasing
 CDEFS     = 
 #CDEFS     = -DDEBUG
-INCLUDES  =
+INCLUDES  = -I../include
 DEBUGFLAGS=
 LD_FLAGS  = 
 
 CFLAGS    = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
-JOBJS      = janus-daemon.o sync-mouse.o patch.o sync-windows.o sync-screens.o public-screen.o lock-window.o messages.o debug.o notify.o version.o
-COBJS      = clip-daemon.o debug.o
-LOBJS      = launch-daemon.o debug.o
+JOBJS      = janus-daemon.o sync-mouse.o patch.o sync-windows.o sync-screens.o public-screen.o lock-window.o messages.o debug.o notify.o version.o trap.o
+COBJS      = clip-daemon.o debug.o trap.o
+LOBJS      = launch-daemon.o debug.o trap.o
 SOBJS      = splash.o debug.o
 SMOBJS     = clonescreenmode.o
 
 HEADERS    = ../janus-daemon.h ../clip-daemon.h
 
-all: janusd 
+all: janusd launchd clipd
 	@rm -f version.h
 
 #clipd launchd janus-splash clonescreenmode

@@ -80,16 +80,6 @@ struct ClipHookMsg ClipHookMsg = {0, CMD_UPDATE, 0};
 
 struct IOClipReq *ior;
 
-/*
- * d0 is the function to be called (AD_*)
- * d1 is the size of the memory supplied by a0
- * a0 memory, where to put out command in and 
- *    where we store the result
- */
-ULONG (*calltrap)(ULONG __asm("d0"),
-                  ULONG __asm("d1"),
-		  APTR  __asm("a0")) = (APTR) AROSTRAPBASE;
-
 BOOL open_libs() {
 #if 0
    if (!(IntuitionBase=(struct IntuitionBase *) OpenLibrary("intuition.library",39))) {
@@ -111,7 +101,7 @@ static struct IOClipReq *open_device(ULONG unit) {
 
   if (( mp = CreatePort(0L, 0L) )) {
     if (( ior=(struct IORequest *) CreateExtIO(mp,sizeof(struct IOClipReq)) )) {
-        if (!(OpenDevice("clipboard.device", unit, ior, 0L))) {
+        if (!(OpenDevice((CONST_STRPTR) "clipboard.device", unit, ior, 0L))) {
 	    C_LEAVE
             return((struct IOClipReq *) ior);
 	}
@@ -193,7 +183,7 @@ int setup(struct Task *task, ULONG to_aros_signal, ULONG to_amigaos_signal, ULON
  * get the length of the AROS clipboard
  **************************************************************/
 static ULONG get_aros_len() {
-  LONG  *command_mem;
+  ULONG  *command_mem;
   LONG   len;
 
   C_ENTER

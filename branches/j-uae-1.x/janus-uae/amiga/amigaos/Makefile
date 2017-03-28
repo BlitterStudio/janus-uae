@@ -12,7 +12,7 @@
 #=====================================
 
 CC           = /usr/local/amiga/bin/m68k-amigaos-gcc
-TARGETDIR    = /home/oli/svn/v0/AROS/bin/linux-i386/AROS/m68k/
+TARGETDIR    = /home/oli/svn/v0/ABI_V0-20161228/AROS/bin/linux-i386/AROS/m68k/
 
 FLAGS     = -Wall
 CDEFS     = 
@@ -23,9 +23,9 @@ LD_FLAGS  =  -noixemul
 
 CFLAGS    = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 
-JOBJS      = janus-daemon.o sync-mouse.o patch.o sync-windows.o sync-screens.o public-screen.o lock-window.o messages.o debug.o notify.o
-COBJS      = clip-daemon.o debug.o
-LOBJS      = launch-daemon.o debug.o
+JOBJS      = janus-daemon.o sync-mouse.o patch.o sync-windows.o sync-screens.o public-screen.o lock-window.o messages.o debug.o notify.o trap.o
+COBJS      = clip-daemon.o debug.o trap.o
+LOBJS      = launch-daemon.o debug.o trap.o
 SOBJS      = splash.o debug.o
 SMOBJS     = clonescreenmode.o
 

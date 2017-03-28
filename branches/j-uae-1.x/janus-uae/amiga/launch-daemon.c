@@ -57,12 +57,16 @@
 #endif
 
 #include "include/wbstart.h"
+#ifndef __AROS__
 #include "include/inline/wbstart.h"
+#endif
 
 #include "janus-daemon.h"
 #include "launch-daemon.h"
 
+#ifndef __AROS__
 struct Library *WBStartBase=NULL;
+#endif
 struct Library *DOSBase    =NULL;
 
 char verstag[] = "\0$VER: launch-daemon 0.3";
@@ -73,27 +77,20 @@ BYTE         launch_signal_bit;
 ULONG        launchsignal;
 
 struct Task *mytask = NULL;
-/*
- * d0 is the function to be called (AD_*)
- * d1 is the size of the memory supplied by a0
- * a0 memory, where to put out command in and 
- *    where we store the result
- */
-ULONG (*calltrap)(ULONG __asm("d0"),
-                  ULONG __asm("d1"),
-      APTR  __asm("a0")) = (APTR) AROSTRAPBASE;
 
 BOOL open_libs() {
 
-   if(!(DOSBase=OpenLibrary("dos.library",36L))) {
+   if(!(DOSBase=OpenLibrary((CONST_STRPTR) "dos.library",36L))) {
      printf("unable to open dos.library!?\n");
      return FALSE;
    }
 
-   if (!(WBStartBase=OpenLibrary("wbstart.library", 2L))) {
+#ifndef __AROS__
+   if (!(WBStartBase=OpenLibrary((CONST_STRPTR) "wbstart.library", 2L))) {
      printf("unable to open wbstart.library! Get it from aminet.\n");
      return FALSE;
    }
+#endif
 
    return TRUE;
 }
@@ -166,18 +163,23 @@ static LONG start_it(char *path, char *filename, struct WBArg *args) {
 #endif
   DebOut("launchd: #args: %d\n", nr_args);
 
+#ifndef __AROS__
   if(nr_args) {
     rc = WBStartTags(WBStart_DirectoryName,  (ULONG) path,
-              WBStart_Name,          (ULONG) filename,
-             WBStart_ArgumentCount,  nr_args,
-          WBStart_ArgumentList,   (ULONG) args,
-            TAG_DONE);
+                     WBStart_Name,          (ULONG) filename,
+                     WBStart_ArgumentCount,  nr_args,
+                     WBStart_ArgumentList,   (ULONG) args,
+                     TAG_DONE);
   }
   else {
     rc = WBStartTags(WBStart_DirectoryName, (ULONG) path,
-              WBStart_Name,          (ULONG) filename,
-            TAG_DONE);
+                     WBStart_Name,          (ULONG) filename,
+                     TAG_DONE);
   }
+#else
+#warning TODO -------------------
+  rc=0;
+#endif
 
   if(rc != RETURN_OK) {
     DebOut("launchd: unable to start it: rc=%d\n", rc);
@@ -207,15 +209,15 @@ static BYTE *str_dup_pool(void *pool, char *in) {
 }
 
 static char *get_filename(char *in) {
-  char *sep;
+  STRPTR sep;
 
   DebOut("get_filename(%s)\n", in);
 
-  sep=PathPart(in);
+  sep=PathPart((CONST_STRPTR) in);
 
   DebOut("launchd: filename: %s\n", sep+1);
 
-  return sep+1;
+  return (char *) sep+1;
 }
 
 /* WARNING: this destroys in !!*/
@@ -226,7 +228,7 @@ static char *get_path(void *pool, char *in) {
 
   DebOut("get_path(%s)\n", in);
 
-  sep=PathPart(in);
+  sep=(char *) PathPart((CONST_STRPTR) in);
   restore=sep[0];
   sep[0]=(char) 0;
 
@@ -293,7 +295,7 @@ static struct WBArg *create_wbargs(void *pool, ULONG *in) {
   t=0;
   for(i=0; i<nr; i++) {
     path=get_path(pool, strings + ref[i]);
-    lock=Lock(path, ACCESS_READ);
+    lock=Lock((CONST_STRPTR) path, ACCESS_READ);
     if(lock) {
       /* attention: get_path destroys input strings, so use get_filename first! */
       args[t].wa_Name=str_dup_pool(pool, get_filename(strings + ref[i]) );
@@ -308,7 +310,7 @@ static struct WBArg *create_wbargs(void *pool, ULONG *in) {
 
   /* terminate it, not neccessary, but feels better */
   args[t].wa_Name=NULL;
-  args[t].wa_Lock=NULL;
+  args[t].wa_Lock=0;
 
   return args;
 }
@@ -322,7 +324,7 @@ static void handle_launch_signal(void) {
   struct WBArg *wbargs=NULL;
   void  *pool;
   BOOL   done;
-  ULONG  result;
+  LONG  result;
 
   C_ENTER
 
@@ -385,9 +387,9 @@ static void handle_launch_signal(void) {
   DebOut("cli_cmd: %s\n", cli_cmd);
 #endif
 
-  result=SystemTags(fullpath,
+  result=SystemTags((STRPTR) fullpath,
             SYS_Asynch, TRUE,
-            SYS_Input,  Open("CON://200/100/RunAmigaOs/CLOSE/AUTO/WAIT", MODE_OLDFILE),
+            SYS_Input,  Open((CONST_STRPTR) "CON://200/100/RunAmigaOs/CLOSE/AUTO/WAIT", MODE_OLDFILE),
             SYS_Output, NULL,
             TAG_DONE);
 
@@ -410,7 +412,6 @@ static void handle_launch_signal(void) {
 static void runme(void) {
   ULONG        newsignals;
   BOOL         done;
-  BOOL         init;
   BOOL         set=TRUE;
 
   C_ENTER
@@ -419,7 +420,6 @@ static void runme(void) {
   setup(mytask, launchsignal, 0);
 
   done=FALSE;
-  init=FALSE;
   while(!done) {
     newsignals=Wait(launchsignal | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
 
