@@ -38,14 +38,6 @@
 #define JD_CLIP_GET_AROS_LEN   4
 #define JD_CLIP_COPY_FROM_AROS 5
 
-#define AROSTRAPBASE 0xF0FF90
-
-#define REG(reg,arg) arg __asm(#reg)
-
-extern ULONG (*calltrap)(ULONG __asm("d0"), 
-                         ULONG __asm("d1"), 
-			 APTR  __asm("a0"));
-
 /* debug.c */
 void PrintOut(const char *file, unsigned int line, const char *func, const char *format, ...);
 

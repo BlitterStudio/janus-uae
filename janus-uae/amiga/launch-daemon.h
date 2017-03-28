@@ -39,8 +39,12 @@ void PrintOut(const char *file, unsigned int line, const char *func, const char 
 
 #define REG(reg,arg) arg __asm(#reg)
 
+#ifndef __AROS__
 extern ULONG (*calltrap)(ULONG __asm("d0"), 
                          ULONG __asm("d1"), 
-			 APTR  __asm("a0"));
+                         APTR  __asm("a0"));
+#else
+ULONG calltrap(ULONG arg1, ULONG arg2, ULONG *arg3);
+#endif
 
 #endif

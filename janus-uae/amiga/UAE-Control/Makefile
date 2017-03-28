@@ -12,7 +12,7 @@
 #=====================================
 
 CC           = /usr/local/amiga/bin/m68k-amigaos-gcc
-TARGETDIR    = /home/oli/svn/v0/AROS/bin/linux-i386/AROS/m68k/
+TARGETDIR    = /home/oli/svn/v0/ABI_V0-20161228/AROS/bin/linux-i386/AROS/m68k/
 
 FLAGS     = -Wall
 CDEFS     = 
