@@ -234,6 +234,7 @@ USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/include
 USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/archivers/zip
 USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/od-aros/libmpeg2/include
 USER_INCLUDES += -I$(AROS_INCLUDES)/SDL
+USER_INCLUDES += -I$(AROS_CONTRIB_INCLUDES)
 
 ifneq (,$(DOJIT))
 COMMON_FLAGS += -DJIT
@@ -261,7 +262,7 @@ ifneq (,$(COMMON_FLAGS))
 USER_CXXFLAGS := $(USER_CXXFLAGS) $(COMMON_FLAGS)
 endif
 
-USER_LDFLAGS := -static-libstdc++ -L$(GENDIR)/$(CURDIR)/lib -lgui -lSDL_Config
+USER_LDFLAGS := -static-libstdc++ -L$(AROS_CONTRIB_LIB) -L$(GENDIR)/$(CURDIR)/lib -lgui -lSDL_Config
 
 %build_prog mmake=local-juae-emulator \
     progname=J-UAE targetdir=$(JUAEDIR) files="" cxxfiles="$(JUAESRCS)" \
