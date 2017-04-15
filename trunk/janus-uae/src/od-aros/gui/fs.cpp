@@ -62,7 +62,7 @@ BOOL WriteFile(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDW
 
 /* not needed. Just flushes file to disk */
 BOOL SetEndOfFile(HANDLE hFile) {
-  ;
+  return TRUE;
 }
 
 /*
@@ -73,11 +73,13 @@ BOOL SetEndOfFile(HANDLE hFile) {
 
 DWORD SetFilePointer(HANDLE hFile, LONG lDistanceToMove, PLONG lpDistanceToMoveHigh, DWORD  dwMoveMethod) {
 
+#if (0)
   LONG mode;
   LONG res;
   IPTR t;
+#endif
   IPTR act_size;
-  IPTR start_pos;
+  __unused IPTR start_pos;
   void *ptr;
   LONG remaining;
 

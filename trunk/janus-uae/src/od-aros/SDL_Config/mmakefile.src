@@ -1,7 +1,6 @@
 # $Id$
 
-include $(TOP)/config/make.cfg
--include $(GENDIR)/config/compiler.cfg
+include $(SRCDIR)/config/aros.cfg
 
 LIBSDLCONFFILES := \
         SDL_config
@@ -15,7 +14,8 @@ NOWARN_FLAGS := $(NOWARN_OVERFLOW) $(NOWARN_UNUSED_VALUE) \
     $(NOWARN_MISLEADING_INDENTATION) $(NOWARN_SIGN_COMPARE) \
     $(NOWARN_COMMENT)
 LIBSDLCONFOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/,$(LIBSDLCONFFILES)))
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(AROS_CONTRIB_INCLUDES)
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
 
 #MM local-juae-sdlconfig-obj : contrib-sdl local-juae-sdlconfig-dirs
 

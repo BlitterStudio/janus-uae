@@ -17,8 +17,10 @@
 
 HCURSOR LoadCursor( HINSTANCE hInstance, LPCTSTR lpCursorName) {
   TODO();
+    return NULL;
 }
 
 HCURSOR SetCursor(HCURSOR hCursor) {
   TODO();
+    return NULL;
 }

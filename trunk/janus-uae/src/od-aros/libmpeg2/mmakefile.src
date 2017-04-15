@@ -3,5 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+
 %build_with_configure mmake=linklibs-libmpeg2 prefix=$(AROS_DEVELOPER) nix=yes \
     extraoptions=""
