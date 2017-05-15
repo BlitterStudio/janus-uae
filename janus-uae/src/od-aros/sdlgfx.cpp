@@ -19,12 +19,13 @@
 
 /* not used anymore */
 
-//#define JUAE_DEBUG
+#define JUAE_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include "keymap.h"
 //#include "misc.h"
+#include "rtgmodes.h"
 #include "sdlkeys_dik.h"
 #include "options.h"
 #include "sdl_aros.h"
@@ -528,7 +529,8 @@ static long find_screen_modes (struct SDL_PixelFormat *vfmt, SDL_Rect *mode_list
 
         /* Filter list of modes SDL gave us and ignore duplicates */
         for (i = 0; modes[i] && count < mode_list_size; i++) {
-            if (modes[i]->w != w || modes[i]->h != h) {
+            if ( (modes[i]->w != w || modes[i]->h != h) &&
+                 (modes[i]->w >= 320 && modes[i]->h >= 200) ){
                 mode_list[count].w = w = modes[i]->w;
                 mode_list[count].h = h = modes[i]->h;
                 count++;
