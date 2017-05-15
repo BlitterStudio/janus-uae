@@ -56,7 +56,7 @@ FLAGS      = -Wno-write-strings -O2 -Wall -Wno-unused -Wno-unused-function -Wno-
 DEBUGFLAGS = -g
 
 CDEFS   = -DUAE_ABI_$(ABI) -DJIT
-INCLUDES= -I. -I../include -I../md-i386-gcc -I.. -I../archivers/zip -I$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/$(SUB)/include/SDL -Ilibmpeg2/include
+INCLUDES= -I. -I../include -Iinclude -I../md-i386-gcc -I.. -I../archivers/zip -I$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/$(SUB)/include/SDL -Ilibmpeg2/include
 
 #-I/home/oli/svn/$(ABI)/AROS/bin/linux-$(CPU)/AROS/Development/include/SDL
 
@@ -257,6 +257,7 @@ COMMON_OBJS= \
 	screenshot.o \
 	vm.o \
 	keyboard.o \
+	video.o \
 	stubs.o
 
 	#../picasso96.o \
