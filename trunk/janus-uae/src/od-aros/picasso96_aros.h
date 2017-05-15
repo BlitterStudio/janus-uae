@@ -8,12 +8,21 @@
 #ifndef __PICASSO96_H__
 #define __PICASSO96_H__
 
-#ifdef PICASSO96
+#ifdef FSUAE // NL
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+#endif
 
 #include "rtgmodes.h"
-#include "gfx.h"
+
+#ifdef PICASSO96
+
+#include "dxwrap.h"
 
 #define NOSIGNAL 0xFFFFFFFF
+
+#ifdef __AROS__
 
 typedef enum {
     BLIT_FALSE,
@@ -32,10 +41,11 @@ typedef enum {
     BLIT_NOTONLYDST,
     BLIT_OR,
     BLIT_TRUE,
-    BLIT_SWAP = 30,
+    BLIT_SWAP,
     BLIT_LAST
 } BLIT_OPCODE;
 
+#endif
 /************************************************************************/
 /* Types for BoardType Identification
  */
@@ -145,7 +155,7 @@ struct CLUTEntry {
 #define PSSO_BitMap_Planes	     8
 #define PSSO_BitMap_sizeof	    40
 
-/* use native version on AROS 
+#ifndef __AROS__
 struct BitMap
 {
     uae_u16 BytesPerRow;
@@ -155,7 +165,7 @@ struct BitMap
     uae_u16 pad;
     uae_u8 *Planes[8];
 };
-*/
+#endif
 
 /************************************************************************/
 
@@ -237,7 +247,7 @@ struct LibResolution {
 
 struct RenderInfo {
     uae_u8 *Memory;
-    uae_u16 BytesPerRow;
+    uae_s16 BytesPerRow;
     uae_s16 pad;
     RGBFTYPE RGBFormat;
     uaecptr AMemory;
@@ -569,7 +579,6 @@ extern int uaegfx_card_found;
 extern struct picasso96_state_struct picasso96_state;
 extern uae_u16 picasso96_pixel_format;
 
-extern int DX_Blit (int srcx, int srcy, int dstx, int dsty, int width, int height, BLIT_OPCODE opcode);
 extern void picasso_enablescreen (int on);
 extern void picasso_refresh (void);
 extern void init_hz_p96 (void);
