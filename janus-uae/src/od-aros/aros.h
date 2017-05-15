@@ -240,4 +240,5 @@ struct winuae_currentmode {
 
 extern struct winuae_currentmode *currentmode;
 
+extern int g_amiga_rtg_modes[];
 #endif /* __AROS_H__ */
