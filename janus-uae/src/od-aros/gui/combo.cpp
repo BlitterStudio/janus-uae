@@ -72,7 +72,7 @@
 #define GETDATA struct Data *data = (struct Data *)INST_DATA(cl, obj)
 
 #if defined(JUAE_DEBUG)
-#define DebOut(...) do { bug("[0x%p]: %s:%d %s(): ",FindTask(NULL),__FILE__,__LINE__,__func__);bug(__VA_ARGS__); } while(0)
+#define DebOut(...) do { bug("[0x%lx]: %s:%d %s(): ",FindTask(NULL),__FILE__,__LINE__,__func__);bug(__VA_ARGS__); } while(0)
 #define TODO() bug("TODO ==> %s:%d: %s\n", __FILE__, __LINE__, __PRETTY_FUNCTION__)
 #else
 #define DebOut(...)
@@ -234,14 +234,18 @@ AROS_UFH2(static void, MUIHook_ack, AROS_UFHA(struct Hook *, hook, A0), AROS_UFH
 AROS_UFH2(static void, MUIHook_content, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
 
   AROS_USERFUNC_INIT
-  char *content=NULL;
+  char *content;
+  IPTR c=0;
   struct Data *data=(struct Data *) hook->h_Data;
   ULONG i=0;
   size_t l=0;
   BOOL match=FALSE;
 
-  GetAttr(MUIA_String_Contents, (Object *) obj, (IPTR *) &content);
-  DebOut("content: %s\n", content);
+  DebOut("obj: %p\n", obj);
+  GetAttr(MUIA_String_Contents, (Object *) obj, &c);
+  DebOut("content: %p\n", c);
+  content=(char *) c;
+  DebOut("content: %s\n", (char *) content);
 
   if(data->entries && content) {
     i=0;
@@ -335,6 +339,7 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
   GETDATA;
 
   data->obj_entry=(Object *) obj;
+  DebOut("new combo obj: %p\n", obj);
 
   SetAttrs(obj, MUIA_Frame, MUIV_Frame_String, MUIA_CycleChain, 1, TAG_DONE);
 
@@ -378,9 +383,10 @@ static IPTR mSet(struct IClass *cl, APTR obj, struct opSet *msg) {
         SetAttrs(data->obj_list, MUIA_List_Active, tag->ti_Data, TAG_DONE);
         return TRUE;
         break;
-      //case MUIA_String_Contents:
+      case MUIA_String_Contents:
+        DebOut("MUIA_String_Contents: %s\n", tag->ti_Data);
         //DoMethod(data->obj_popup_win, OM_DISPOSE);
-        //break;
+        break;
     }
   }
   return DoSuperMethodA(cl, (Object *) obj, (Msg) msg);
@@ -406,12 +412,17 @@ static IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg) {
       case MUIA_List_InsertPosition:
         GetAttr(MUIA_List_InsertPosition , data->obj_list, msg->opg_Storage);
         break;
+        /*
       case MUIA_String_Contents:
         t=XGET(data->obj_list, MUIA_List_Active);
         DebOut("result: %d\n", t);
+        if(t<0) {
+          // no entry selected, simpy return string contents 
+        }
         DebOut("result: %s\n", data->entries[t]);
         *msg->opg_Storage=(IPTR) data->entries[t];
         break;
+        */
       default:
         return DoSuperMethodA(cl, obj, (Msg) msg);
   }
@@ -427,7 +438,7 @@ static void mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent
   GETDATA;
   LONG muikey = msg->muikey;
 
-  //DebOut("entered (msg->muikey: %d)\n", msg->muikey);
+  DebOut("entered (msg->muikey: %d)\n", msg->muikey);
 
   /* up/down key? */
   if(muikey != MUIKEY_NONE && data->active) {
@@ -499,6 +510,7 @@ static void mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent
 #endif
     }
   }
+  DebOut("left (msg->muikey: %d)\n", msg->muikey);
 
 }
 
@@ -567,11 +579,24 @@ void delete_combo_class(void) {
 }
 
 /* simple standalone test case */
+
 #if 0
+AROS_UFH2(void, Hook_Print, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, obj, A2)) {
+  AROS_USERFUNC_INIT
+
+  printf("Hook_Print..\n");
+
+  printf("combo: %p\n", hook->h_Data);
+  printf("content >%s<\n", XGET((Object *) hook->h_Data, MUIA_String_Contents));
+
+  AROS_USERFUNC_EXIT
+}
+
 int main(void) {
 
-  Object *app, *wnd, *but, *combo;
+  Object *app, *wnd, *but, *combo, *print;
   STRPTR *e;
+  struct Hook PrintHook;
 
   if(!create_combo_class()) {
     printf("ERROR: creating class!\n");
@@ -604,7 +629,7 @@ int main(void) {
           Child, combo,
           Child, SimpleButton("foo 4"),
           Child, SimpleButton("foo 5"),
-          Child, SimpleButton("foo 6"),
+          Child, print = SimpleButton("print"),
           Child, but = SimpleButton("_Ok"),
           End,
       End,
@@ -613,6 +638,10 @@ int main(void) {
   if (app != NULL) {
 
     ULONG sigs = 0;
+
+    PrintHook.h_Entry=(APTR) Hook_Print;
+    PrintHook.h_Data=combo;
+    DoMethod(print, MUIM_Notify, MUIA_Pressed, FALSE, print, 3, MUIM_CallHook, (IPTR) &PrintHook, TRUE);
 
     SetAttrs(but, MUIA_CycleChain, 1, TAG_DONE);
 
@@ -647,4 +676,3 @@ int main(void) {
   return 0;
 }
 #endif
-
