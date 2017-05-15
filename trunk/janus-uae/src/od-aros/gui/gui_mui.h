@@ -648,7 +648,11 @@ extern struct MUI_CustomClass *CL_Fixed;
 #define CBN_EDITUPDATE      6
 #define CBN_DROPDOWN        7
 #define CBN_CLOSEUP         8
+#ifndef __AROS__
 #define CBN_SELENDOK        9
+#else
+#define CBN_SELENDOK        1
+#endif
 #define CBN_SELENDCANCEL    10
 
 /* button notification codes */
