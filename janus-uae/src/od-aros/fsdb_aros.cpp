@@ -23,7 +23,7 @@
  *
  ************************************************************************/
 
-//#define JUAE_DEBUG
+#define JUAE_DEBUG
 #include <stdio.h>
 #include <proto/dos.h>
 #include <dos/dos.h>
@@ -1063,7 +1063,7 @@ int fsdb_mode_supported (const a_inode *aino) {
 
   int mask = aino->amigaos_mode;
 
-  DebOut("aino: %lx\n", aino);
+  DebOut("aino: %lx (mask %lx)\n", aino, mask);
 
   if (0 && aino->dir)
     return 0;
