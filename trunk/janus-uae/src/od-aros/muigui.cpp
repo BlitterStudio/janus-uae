@@ -6342,7 +6342,7 @@ static void enable_for_quickstart (HWND hDlg)
 
 static void load_quickstart (HWND hDlg, int romcheck)
 {
-  DebOut("hDlg %p, romcheck %d\n", hDlg, romcheck);
+  DebOut("hDlg %p, romcheck %d (quickstart_model %d)\n", hDlg, romcheck, quickstart_model);
 	ew (guiDlg, IDC_RESETAMIGA, FALSE);
 	workprefs.nr_floppies = quickstart_floppy;
 	quickstart_ok = built_in_prefs (&workprefs, quickstart_model, quickstart_conf, quickstart_compa, romcheck);
@@ -9031,8 +9031,10 @@ static void init_expansion2(HWND hDlg, bool init)
 
 static void values_to_expansion2dlg_sub(HWND hDlg)
 {
+#ifndef __AROS__
 	SendDlgItemMessage(hDlg, IDC_CPUBOARDROMSUBSELECT, CB_RESETCONTENT, 0, 0);
 	ew(hDlg, IDC_CPUBOARDROMSUBSELECT, false);
+#endif
 
 	SendDlgItemMessage(hDlg, IDC_SCSIROMSUBSELECT, CB_RESETCONTENT, 0, 0);
 	const struct expansionromtype *er = &expansionroms[scsiromselected];
@@ -9391,7 +9393,7 @@ static void expansion2filebuttons(HWND hDlg, WPARAM wParam, TCHAR *path)
 }
 
 
-static INT_PTR CALLBACK Expansion2DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK Expansion2DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	int v, val;
 	TCHAR tmp[100];
@@ -9570,7 +9572,9 @@ static INT_PTR CALLBACK Expansion2DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LP
 					case IDC_SCSIROMFILE:
 					case IDC_SCSIROMID:
 					case IDC_CPUBOARDROMFILE:
+#ifndef __AROS__
 					case IDC_CPUBOARDROMSUBSELECT:
+#endif
 					values_from_expansion2dlg(hDlg);
 					values_to_expansion2_expansion_settings(hDlg);
 					break;
@@ -9847,7 +9851,7 @@ static void values_to_expansiondlg(HWND hDlg)
   DebOut("workprefs.rtgmem_size: %d\n", workprefs.rtgmem_size);
 }
 
-static INT_PTR CALLBACK ExpansionDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK ExpansionDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	int v;
 	TCHAR tmp[256];
@@ -11981,7 +11985,7 @@ static INT_PTR CALLBACK VolumeSettingsProc (HWND hDlg, UINT msg, WPARAM wParam, 
 {
 	static int recursive = 0;
 
-  DebOut("VolumeSettingsProc entered (msg: %d)\n", msg);
+  DebOut("================ VolumeSettingsProc entered (msg: %d) ================\n", msg);
 
 	switch (msg) {
 	case WM_INITDIALOG:
@@ -12888,6 +12892,8 @@ static INT_PTR CALLBACK HarddriveSettingsProc (HWND hDlg, UINT msg, WPARAM wPara
 	LRESULT posn;
 	static int oposn;
 
+  DebOut("============= HarddriveSettingsProc ===============\n");
+
 	switch (msg) {
 	case WM_INITDIALOG:
 		{
@@ -13534,7 +13540,7 @@ static void addhistorymenu(HWND hDlg, const TCHAR *text, int f_text, int type, b
 	int nn = 1;
 	int curidx;
 
-  DebOut("hDlg: %p (text %s)\n", hDlg, text);
+  DebOut("hDlg: %p (text %s, f_text %d)\n", hDlg, text);
 	if (f_text < 0)
 		return;
 	SendDlgItemMessage (hDlg, f_text, CB_RESETCONTENT, 0, 0);
@@ -13561,7 +13567,7 @@ static void addhistorymenu(HWND hDlg, const TCHAR *text, int f_text, int type, b
 				}
 			}
 			while (p > tmppath) {
-				if (*p == '\\' || *p == '/')
+				if (*p == '\\' || *p == '/' || *p == ':')
 					break;
 				p--;
 			}
@@ -13575,10 +13581,12 @@ static void addhistorymenu(HWND hDlg, const TCHAR *text, int f_text, int type, b
 		} else {
 			_tcscpy (tmpname, s);
 		}
-		if (f_text >= 0)
+		if (f_text >= 0) {
 			SendDlgItemMessage (hDlg, f_text, CB_ADDSTRING, 0, (LPARAM)tmpname);
-		if (!_tcscmp (text, s))
+    }
+		if (!_tcscmp (text, s)) {
 			curidx = i - 1;
+    }
 	}
 	if (f_text >= 0 && curidx >= 0)
 		SendDlgItemMessage (hDlg, f_text, CB_SETCURSEL, curidx, 0);
