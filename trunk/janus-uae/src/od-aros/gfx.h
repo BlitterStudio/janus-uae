@@ -65,7 +65,7 @@ int WIN32GFX_AdjustScreenmode (struct MultiDisplay *md, int *pwidth, int *pheigh
 struct ScreenResolution {
 
   uae_u32 width;  /* in pixels */
-    uae_u32 height; /* in pixels */
+  uae_u32 height; /* in pixels */
 };
 
 
