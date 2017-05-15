@@ -60,8 +60,8 @@ Element IDD_FLOPPY[] = {
 #define IDS_FRONTEND            "Frontend"
 #define IDS_CHIPSET2            "Adv. Chipset"
 #define IDS_GAMEPORTS           "Game ports"
-#define IDS_EXPANSION           "Expansions"
 #define IDS_EXPANSION2          "RTG board"
+#define IDS_EXPANSION           "Expansions"
 #define IDS_CDROM               "CD-ROM"
 #define IDS_SOUND               "Sound"
 #endif
@@ -80,8 +80,8 @@ static const ULONG listelements[] = {
   IDS_MEMORY,
   IDS_FLOPPY,
   IDS_HARDDISK,
-  IDS_EXPANSION,
   IDS_EXPANSION2,
+  IDS_EXPANSION,
   IDS_TREEVIEW_HOST,
   IDS_DISPLAY,
   IDS_SOUND,
@@ -119,6 +119,13 @@ AROS_UFH2(void, MUIHook_list, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR
 
   nr=XGET((Object *) obj, MUIA_List_Active);
 
+  DebOut("MUIHook_list entered\n");
+
+  {
+    struct Task* task=FindTask(NULL);
+    DebOut("Task %p, stack lower %p, stack upper %p\n", task, task->tc_SPLower, task->tc_SPUpper);
+  }
+
 #if 0
   /* we have to skip those configuration load/save pages here */
   if(nr==0 || nr==4 || nr==13) {
@@ -151,6 +158,7 @@ AROS_UFH2(void, MUIHook_list, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR
   DebOut("set currentpage to %d ..\n", currentpage);
   DoMethod(pages, MUIM_Set, MUIA_Group_ActivePage, nr);
   DebOut("currentpage is now: %d\n", currentpage);
+  DebOut("MUIHook_list left\n");
 
   AROS_USERFUNC_EXIT
 }
@@ -205,18 +213,21 @@ AROS_UFH2(void, MUIHook_quit, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR
   AROS_USERFUNC_EXIT
 }
 
-int *AboutDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-int *PathsDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-int *QuickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-int *LoadSaveDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *AboutDlgProc     (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *PathsDlgProc     (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *QuickstartDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *LoadSaveDlgProc  (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
-int *CPUDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-int *ChipsetDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-int *ChipsetDlgProc2 (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *CPUDlgProc       (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *ChipsetDlgProc   (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *ChipsetDlgProc2  (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 int *KickstartDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-int *MemoryDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-int *FloppyDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-int *HarddiskDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *MemoryDlgProc    (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *FloppyDlgProc    (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *HarddiskDlgProc  (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *ExpansionDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *Expansion2DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+int *SwapperDlgProc   (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
 //#define SHOW_INCLOMPLETE_PAGES 
 Object* FixedObj(IPTR src)
@@ -348,10 +359,10 @@ Object* build_gui(void) {
                                   Child, page_obj[7]=FixedProcObj(IDD_CHIPSET2,   (IPTR) &ChipsetDlgProc2  ),
                                   Child, page_obj[8]=FixedProcObj(IDD_KICKSTART,  (IPTR) &KickstartDlgProc ),
                                   Child, page_obj[9]=FixedProcObj(IDD_MEMORY,     (IPTR) &MemoryDlgProc    ),
-                                  Child, page_obj[10]=FixedProcObj(IDD_FLOPPY,    (IPTR) &FloppyDlgProc   ),
-                                  Child, page_obj[11]=FixedProcObj(IDD_HARDDISK,  (IPTR) &HarddiskDlgProc ),
-                                  Child, page_obj[12]=FixedObj(IDD_EXPANSION2),
-                                  Child, page_obj[13]=FixedObj(IDD_EXPANSION),
+                                  Child, page_obj[10]=FixedProcObj(IDD_FLOPPY,    (IPTR) &FloppyDlgProc    ),
+                                  Child, page_obj[11]=FixedProcObj(IDD_HARDDISK,  (IPTR) &HarddiskDlgProc  ),
+                                  Child, page_obj[12]=FixedProcObj(IDD_EXPANSION2,(IPTR) &Expansion2DlgProc),
+                                  Child, page_obj[13]=FixedProcObj(IDD_EXPANSION, (IPTR) &ExpansionDlgProc ),
                                   //Child, FixedObj((IPTR)IDD_LOADSAVE),
                                   Child, TextObject,  MUIA_Text_Contents, "\33c\33bTODO", End,
                                   Child, page_obj[15]=FixedObj(IDD_DISPLAY),
@@ -361,7 +372,7 @@ Object* build_gui(void) {
                                   Child, page_obj[19]=FixedObj(IDD_INPUT),
                                   Child, page_obj[20]=FixedObj(IDD_AVIOUTPUT),
                                   Child, page_obj[21]=FixedObj(IDD_FILTER),
-                                  Child, page_obj[22]=FixedObj(IDD_DISK),
+                                  Child, page_obj[22]=FixedProcObj(IDD_DISK,      (IPTR) &SwapperDlgProc  ),
                                   Child, page_obj[23]=FixedObj(IDD_MISC1),
                                   Child, page_obj[24]=FixedObj(IDD_MISC2),
                                 End,
