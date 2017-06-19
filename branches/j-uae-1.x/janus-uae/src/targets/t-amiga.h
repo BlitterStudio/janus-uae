@@ -31,7 +31,7 @@
     "     2 => Ask the user to select a screen mode with ASL requester;\n" \
     "     3 => use a 320x256 graffiti screen.\n\n"
 
-#define DEFSERNAME "ser:"
+#define DEFSERNAME "nil:"
 #define DEFPRTNAME "par:"
 
 #define PICASSO96_SUPPORTED
@@ -39,3 +39,4 @@
 #define NO_MAIN_IN_MAIN_C
 
 #define AROS_SERIAL_HACK
+#define SERIAL_PORT
