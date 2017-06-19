@@ -119,6 +119,7 @@ static const struct cfg_lines opttable[] =
 #endif
     {"parallel_on_demand", "" },
     {"serial_on_demand", "" },
+    {"serial_filename", "Write serial output to this file (default: NIL:)" },
     {"scsi", "scsi.device emulation" },
     {"scsi_device", "SCSI device/bus to scan for SCSI devices"},
     {"joyport0", "" },
@@ -143,10 +144,10 @@ static const struct cfg_lines opttable[] =
     {"catweasel_joy","Use Catweasel Joystick" },
 #endif
 #ifdef JANUS
-    {"jcoherence","Integrate os3 windows into host window environment"},
-    {"jclipboard","Transparent clipboard data exchange between host and aos3"},
-    {"jmouse",    "Mouse sync between aros host and aos3"},
-    {"jlaunch",   "launch aos3 workbench executeables from AROS wanderer"}
+    {"jcoherence","Integrate os3/aros m68k windows into AROS x86 host window environment"},
+    {"jclipboard","Transparent clipboard data exchange between host and aos3/AROS m68k "},
+    {"jmouse",    "Mouse sync between AROS x86 host and aos3/AROS m68k "},
+    {"jlaunch",   "launch aos3 workbench/AROS m68k wanderer executeables from AROS x86 wanderer"}
 #endif
 };
 
@@ -436,6 +437,7 @@ void save_options (FILE *f, const struct uae_prefs *p, int type)
 #endif
     cfgfile_write (f, "parallel_on_demand=%s\n", p->parallel_demand ? "true" : "false");
     cfgfile_write (f, "serial_on_demand=%s\n", p->serial_demand ? "true" : "false");
+    cfgfile_write_file_option (f, "serial_filename", "", p->sername);
     cfgfile_write (f, "serial_hardware_ctsrts=%s\n", p->serial_hwctsrts ? "true" : "false");
     cfgfile_write (f, "serial_direct=%s\n", p->serial_direct ? "true" : "false");
     cfgfile_write (f, "scsi=%s\n", p->scsi ? "true" : "false");
@@ -1203,6 +1205,7 @@ static int cfgfile_parse_hardware (struct uae_prefs *p, char *option, char *valu
         || cfgfile_yesno (option, value, "parallel_on_demand", &p->parallel_demand)
         || cfgfile_yesno (option, value, "serial_on_demand", &p->serial_demand)
         || cfgfile_yesno (option, value, "serial_hardware_ctsrts", &p->serial_hwctsrts)
+        || cfgfile_string (option, value,"serial_filename",  p->sername,  256)
         || cfgfile_yesno (option, value, "serial_direct", &p->serial_direct)
 #ifdef JIT
         || cfgfile_yesno (option, value, "comp_nf", &p->compnf)
