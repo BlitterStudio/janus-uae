@@ -404,3 +404,19 @@ void console_out_f (const TCHAR *format,...)
 	va_end (parms);
 	console_out (buffer);
 }
+
+
+TCHAR* buf_out (TCHAR *buffer, int *bufsize, const TCHAR *format, ...)
+{
+	int count;
+	va_list parms;
+	va_start (parms, format);
+
+	if (buffer == NULL)
+		return 0;
+	count = _vsntprintf (buffer, (*bufsize) - 1, format, parms);
+	va_end (parms);
+	*bufsize -= _tcslen (buffer);
+	return buffer + _tcslen (buffer);
+}
+

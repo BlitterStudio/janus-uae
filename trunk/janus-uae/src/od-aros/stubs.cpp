@@ -741,13 +741,6 @@ uae_u16 SERDATR (void)
     return 0;
 }
 
-TCHAR* buf_out (TCHAR *buffer, int *bufsize, const TCHAR *format, ...)
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));    
-  TODO();
-    return NULL;
-}
-
 uae_u8 *save_log (int bootlog, int *len)
 {
     STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
