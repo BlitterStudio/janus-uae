@@ -552,8 +552,15 @@ struct my_opendir_s *my_opendir (const TCHAR *name) {
 uae_s64 int my_fsize (struct my_openfile_s *mos) {
 
   struct FileInfoBlock * fib=NULL;
-  BPTR lock=NULL;
+  BPTR lock;
   uae_s64 size;
+
+  lock=mos->lock;
+  if(!lock) {
+    bug("[JUAE:A-FSDB] %s: NULL lock in mos 0x%p!\n", __PRETTY_FUNCTION__, mos);
+    size=-1;
+    goto EXIT;
+  }
 
   if(!(fib=(struct FileInfoBlock *) AllocDosObject(DOS_FIB, NULL)) || !Examine(lock, fib)) {
     bug("[JUAE:A-FSDB] %s: failed to examine lock @ 0x%p [fib @ 0x%p]\n", __PRETTY_FUNCTION__, lock, fib);
