@@ -244,11 +244,7 @@ Object *new_listview(struct Element *elem, ULONG i, void *f, struct Data *data, 
 
 
   /* setup hooks */
-#ifdef UAE_ABI_v0
-  data->MyMUIHook_list_active.h_Entry=(HOOKFUNC) list_active;
-#else
   data->MyMUIHook_list_active.h_Entry=(APTR) list_active;
-#endif
   data->MyMUIHook_list_active.h_Data =(APTR) data;
 
   DoMethod(listview, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR) listview, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_list_active, NULL); 
@@ -485,6 +481,7 @@ int ListView_InsertColumn(HWND hwnd, int iCol, const LPLVCOLUMN pcol) {
     destruct_hook->h_Data =(APTR) h_data;
 
     //SetAttrs(elem->action, MUIA_List_Title, FALSE, TAG_DONE);
+  }
 
     DebOut("set MUIA_List_ConstructHook for object %p\n", elem->action);
     DebOut("set MUIA_List_ConstructHook: %p\n", construct_hook);
@@ -498,6 +495,7 @@ int ListView_InsertColumn(HWND hwnd, int iCol, const LPLVCOLUMN pcol) {
     SetAttrs(elem->action, MUIA_List_Title,         TRUE, 
                            TAG_DONE);
     testpool(__LINE__);
+#if 0
   }
   else {
     testpool(__LINE__);
@@ -506,6 +504,7 @@ int ListView_InsertColumn(HWND hwnd, int iCol, const LPLVCOLUMN pcol) {
     SetAttrs(elem->action, MUIA_List_Format, format, TAG_DONE);
     testpool(__LINE__);
   }
+#endif
 
   testpool(__LINE__);
   return 1;
