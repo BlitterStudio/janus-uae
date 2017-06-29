@@ -2,7 +2,7 @@
  *
  * mui_file_request.cpp
  *
- * Copyright 2015 Oliver Brunner - aros<at>oliver-brunner.de
+ * Copyright 2017 Oliver Brunner - aros<at>oliver-brunner.de
  *
  * This file is part of Janus-UAE2.
  *
@@ -20,6 +20,8 @@
  * along with Janus-UAE. If not, see <http://www.gnu.org/licenses/>.
  *
  ************************************************************************/
+//#define JUAE_DEBUG
+
 #include <exec/types.h>
 #include <libraries/mui.h>
  
@@ -77,7 +79,7 @@ BOOL mui_get_filename(TCHAR *lpstrTitle, TCHAR *lpstrInitialDir, TCHAR *lpstrFil
       DebOut("found Windows pattern:  %s\n", lpstrFilter);
       b++;
       e--;
-      while(b < e) {
+      while(b <= e) {
         if(b[0]=='*') {
           filter[i++]='#';
           filter[i++]='?';
