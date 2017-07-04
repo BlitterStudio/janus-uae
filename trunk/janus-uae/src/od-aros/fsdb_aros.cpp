@@ -347,7 +347,7 @@ struct my_opendir_s {
 };
 
 struct my_openfile_s {
-  BPTR lock;
+  BPTR handle;
 };
 
 /* return next dir entry */
@@ -377,7 +377,6 @@ void my_closedir (struct my_opendir_s *mod) {
 
 struct my_openfile_s *my_open (const TCHAR *name, int flags) {
   struct my_openfile_s *mos;
-  BPTR h;
   TCHAR path[MAX_DPATH];
   LONG access_mode=MODE_OLDFILE;
 
@@ -409,15 +408,16 @@ struct my_openfile_s *my_open (const TCHAR *name, int flags) {
     access_mode=MODE_NEWFILE;
   }
 
-  h=Open(name, access_mode);
+  mos->handle=Open(name, access_mode);
 
-  if(!h) {
+  if(!mos->handle) {
     DebOut("Could not open %s\n", name);
     FreeVec(mos);
     return NULL;
   }
 
-  mos->lock=h;
+  DebOut("file %s opened: filehandle%p\n", name, mos->handle);
+
   return mos;
 }
 
@@ -430,9 +430,9 @@ void my_close (struct my_openfile_s *mos) {
     return;
   }
 
-  if(mos->lock) {
-    Close(mos->lock);
-    mos->lock=NULL;
+  if(mos->handle) {
+    Close(mos->handle);
+    mos->handle=NULL;
   }
 
   FreeVec(mos);
@@ -445,18 +445,18 @@ uae_s64 int my_lseek (struct my_openfile_s *mos, uae_s64 int offset, int whence)
 
   DebOut("mos: %lx offset: %d whence: %d\n", mos, offset, whence);
 
-  if(!mos->lock) {
-    DebOut("ERROR: no lock!\n");
+  if(!mos->handle) {
+    DebOut("ERROR: no handle!\n");
     exit(1);
   }
 
   switch(whence) {
     case SEEK_CUR:
-      return (uae_s64 int) Seek(mos->lock, offset, OFFSET_CURRENT);
+      return (uae_s64 int) Seek(mos->handle, offset, OFFSET_CURRENT);
     case SEEK_SET:
-      return (uae_s64 int) Seek(mos->lock, offset, OFFSET_BEGINNING);
+      return (uae_s64 int) Seek(mos->handle, offset, OFFSET_BEGINNING);
     case SEEK_END:
-      return (uae_s64 int) Seek(mos->lock, offset, OFFSET_END);
+      return (uae_s64 int) Seek(mos->handle, offset, OFFSET_END);
   }
 
   DebOut("ERROR: unknown whence %d\n", whence);
@@ -468,24 +468,24 @@ unsigned int my_read (struct my_openfile_s *mos, void *b, unsigned int size) {
   LONG r;
   DebOut("mos: %lx\n", mos);
 
-  if(!mos->lock) {
-    DebOut("ERROR: no lock!\n");
+  if(!mos->handle) {
+    DebOut("ERROR: no handle!\n");
     exit(1);
   }
 
-  return Read(mos->lock, b, size);
+  return Read(mos->handle, b, size);
 }
 
 unsigned int my_write (struct my_openfile_s *mos, void *b, unsigned int size) {
 
   DebOut("mos: %lx, b: %lx, size: %d\n", mos, b, size);
 
-  if(!mos->lock) {
-    DebOut("ERROR: no lock!\n");
+  if(!mos->handle) {
+    DebOut("ERROR: no handle!\n");
     exit(1);
   }
 
-  return Write(mos->lock, b, size);
+  return Write(mos->handle, b, size);
 }
 
 
@@ -552,23 +552,21 @@ struct my_opendir_s *my_opendir (const TCHAR *name) {
 uae_s64 int my_fsize (struct my_openfile_s *mos) {
 
   struct FileInfoBlock * fib=NULL;
-  BPTR lock;
   uae_s64 size;
 
-  lock=mos->lock;
-  if(!lock) {
-    bug("[JUAE:A-FSDB] %s: NULL lock in mos 0x%p!\n", __PRETTY_FUNCTION__, mos);
+  if(!mos->handle) {
+    bug("[JUAE:A-FSDB] %s: NULL handle in mos 0x%p!\n", __PRETTY_FUNCTION__, mos);
     size=-1;
     goto EXIT;
   }
 
-  if(!(fib=(struct FileInfoBlock *) AllocDosObject(DOS_FIB, NULL)) || !Examine(lock, fib)) {
-    bug("[JUAE:A-FSDB] %s: failed to examine lock @ 0x%p [fib @ 0x%p]\n", __PRETTY_FUNCTION__, lock, fib);
+  if(!(fib=(struct FileInfoBlock *) AllocDosObject(DOS_FIB, NULL)) || !ExamineFH(mos->handle, fib)) {
+    bug("[JUAE:A-FSDB] %s: failed to examine fh 0x%p [fib @ 0x%p]\n", __PRETTY_FUNCTION__, mos->handle, fib);
     size=-1;
     goto EXIT;
   }
 
-#ifndef UAE_ABI_v0
+#if 0
   /* test for 64 bit filesize */
   if(fib->fib_Size >= 0x7FFFFFFF) {
 
