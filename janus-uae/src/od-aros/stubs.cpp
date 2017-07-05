@@ -520,14 +520,6 @@ void master_sound_volume (int dir)
   TODO();
 }
 
-/*
-frame_time_t read_processor_time (void) 
-{
-    STUBD(bug("[JUAE:Stub] %s()\n", __PRETTY_FUNCTION__));
-  TODO();
-}
-*/
-
 static unsigned int serial_hsynchandler_count;
 /* seems to be necessary, calls ... => hsyncstuff ! */
 void serial_hsynchandler (void)
