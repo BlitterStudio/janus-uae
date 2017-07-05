@@ -94,10 +94,8 @@ int debug_rtg_blitter = 3;
 #define CURSORMAXWIDTH 128
 // FIXME: justing setting static value here -FS
 #define CURSORMAXHEIGHT 128
-// FIXME: justing setting static value here -FS
-#ifndef __AROS__
+
 int default_freq = 50;
-#endif
 
 #endif
 
