@@ -23,7 +23,7 @@
  *
  ************************************************************************/
 
-//#define JUAE_DEBUG
+#define JUAE_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -269,8 +269,11 @@ int fs_condition_wait_until(fs_condition *condition, fs_mutex *mutex,
              &condition->condition, &mutex->mutex, end_time);
     return !result;
 #elif defined(USE_SDL)
+    Uint32 ms=(Uint32) (end_time / 1000);
     // FIXME: no timed wait...
-    return SDL_CondWait(condition->condition, mutex->mutex);
+    //return SDL_CondWait(condition->condition, mutex->mutex);
+    //WARNING: never tested (Timeout) oli
+    return SDL_CondWaitTimeout(condition->condition, mutex->mutex, ms);
 #else
 #error no thread support
 #endif
