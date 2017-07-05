@@ -81,7 +81,6 @@ int debug_rtg_blitter = 3;
 #define NOBLITTER_BLIT (0 || !(debug_rtg_blitter & 2))
 
 #define USE_HARDWARESPRITE 1
-#define P96TRACING_ENABLED 2
 #define P96SPRTRACING_ENABLED 2
 
 #ifdef FSUAE // NL
@@ -1455,6 +1454,8 @@ static int do_blitrect_frame_buffer (struct RenderInfo *ri, struct
 			case BLIT_OR: BLIT_OR_32 (PARMS); break;
 			case BLIT_TRUE: BLIT_TRUE_32 (PARMS); break;
 			case BLIT_SWAP: BLIT_SWAP_32 (PARMS); break;
+      default:
+        DebOut("WARNING: opcode %d not handled (ignored)\n", opcode);
 			}
 		} else if (Bpp == 3) {
 
@@ -1476,6 +1477,8 @@ static int do_blitrect_frame_buffer (struct RenderInfo *ri, struct
 			case BLIT_OR: BLIT_OR_24 (PARMS); break;
 			case BLIT_TRUE: BLIT_TRUE_24 (PARMS); break;
 			case BLIT_SWAP: BLIT_SWAP_24 (PARMS); break;
+      default:
+        DebOut("WARNING: opcode %d not handled (ignored)\n", opcode);
 			}
 
 		} else if (Bpp == 2) {
@@ -1498,6 +1501,8 @@ static int do_blitrect_frame_buffer (struct RenderInfo *ri, struct
 			case BLIT_OR: BLIT_OR_16 (PARMS); break;
 			case BLIT_TRUE: BLIT_TRUE_16 (PARMS); break;
 			case BLIT_SWAP: BLIT_SWAP_16 (PARMS); break;
+      default:
+        DebOut("WARNING: opcode %d not handled (ignored)\n", opcode);
 			}
 
 		} else if (Bpp == 1) {
@@ -1520,6 +1525,8 @@ static int do_blitrect_frame_buffer (struct RenderInfo *ri, struct
 			case BLIT_OR: BLIT_OR_8 (PARMS); break;
 			case BLIT_TRUE: BLIT_TRUE_8 (PARMS); break;
 			case BLIT_SWAP: BLIT_SWAP_8 (PARMS); break;
+      default:
+        DebOut("WARNING: opcode %d not handled (ignored)\n", opcode);
 			}
 
 		}
