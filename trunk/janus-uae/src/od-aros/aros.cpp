@@ -1441,8 +1441,8 @@ static int figure_processor_speed_cpuid (void) {
   }
   f=strtod(val, NULL);
   f=f*mult;
-  DebOut("speed: %4.2f MHz\n", f);
-  write_log (_T("CLOCKFREQ: CPUID %4.2fMHz\n"), f);
+  write_log (_T("CLOCKFREQ: CPUID %sMHz\n"), val); // AROS can't print floats !?
+  DebOut (_T("CLOCKFREQ: CPUID %sMHz\n"), val); // AROS can't print floats !?
 
   f=(f*1000000.0);
   syncbase=((unsigned int) f)>>6;
