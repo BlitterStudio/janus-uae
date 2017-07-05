@@ -1,5 +1,5 @@
 
-//#define JUAE_DEBUG
+#define JUAE_DEBUG
 
 #include <proto/dos.h>
 #include <proto/timer.h>
@@ -1351,6 +1351,105 @@ void WIN32_HandleRegistryStuff (void) {
  */
 static int freqset=0;
 
+#include <cpuid.h>
+/*
+ * see https://stackoverflow.com/questions/11706563/how-can-i-programmatically-find-the-cpu-frequency-with-c
+ * and http://c9x.me/x86/html/file_module_x86_id_45.html
+ */
+
+static void add_word(char *string, unsigned int ea) {
+  unsigned int len=strlen(string);
+  char *foo;
+
+  string=string+len;
+  foo=(char *)&ea;
+  strncat(string, foo, 4);
+  string[4]=0;
+}
+
+static void add_string(char *string, unsigned int eax, unsigned int ebx, unsigned int ecx, unsigned int edx) {
+
+  add_word(string, eax);
+  add_word(string, ebx);
+  add_word(string, ecx);
+  add_word(string, edx);
+}
+
+static int figure_processor_speed_cpuid (void) {
+  unsigned eax=0, ebx=0, ecx=0, edx=0;
+  char string[128];
+  char *foo;
+  unsigned int mult;
+  float f;
+
+#if 0
+  __get_cpuid(0, &eax, &ebx, &ecx, &edx);
+  printf("MAX xpuid: %d\n", eax);
+
+  __get_cpuid(1, &eax, &ebx, &ecx, &edx);
+  printf("stepping %d\n", eax & 0xF);
+  printf("model %d\n", (eax >> 4) & 0xF);
+  printf("family %d\n", (eax >> 8) & 0xF);
+  printf("processor type %d\n", (eax >> 12) & 0x3);
+  printf("extended model %d\n", (eax >> 16) & 0xF);
+  printf("extended family %d\n", (eax >> 20) & 0xFF);
+#endif
+
+  /* check, if we can get the processor brand string*/
+  __get_cpuid(0x80000000, &eax, &ebx, &ecx, &edx);
+  DebOut("cpuInfo[0]=%x\n", eax);
+  if(eax < 0x80000004) {
+    DebOut("cpuid based frequency detection not available\n");
+    return 0;
+  }
+
+  string[0]=0;
+
+  __get_cpuid(0x80000002, &eax, &ebx, &ecx, &edx);
+  add_string(string, eax, ebx, ecx, edx);
+  DebOut("string: %s\n", string);
+
+  __get_cpuid(0x80000003, &eax, &ebx, &ecx, &edx);
+  add_string(string, eax, ebx, ecx, edx);
+  DebOut("string: %s\n", string);
+
+  __get_cpuid(0x80000004, &eax, &ebx, &ecx, &edx);
+  add_string(string, eax, ebx, ecx, edx);
+  DebOut ("string: %s\n", string);
+
+  char *val;
+  mult=0;
+  if((val=strstr(string, "MHz"))) {
+    mult=1;
+  }
+  else if((val=strstr(string, "GHz"))) {
+    mult=1000;
+  }
+  else if((val=strstr(string, "THz"))) {
+    // Phone me now!!
+    mult=1000000;
+  }
+  if(mult==0) {
+    DebOut("cpuid based frequency detection failed\n");
+    return 0;
+  }
+
+  // 1.5GHz => get value
+  val[0]=0; // end of value
+  while(val[0]!=' ') {
+    val--;
+  }
+  f=strtod(val, NULL);
+  f=f*mult;
+  DebOut("speed: %4.2f MHz\n", f);
+  write_log (_T("CLOCKFREQ: CPUID %4.2fMHz\n"), f);
+
+  f=(f*1000000.0);
+  syncbase=((unsigned int) f)>>6;
+  DebOut("syncbase: %d\n", syncbase);
+  return 1;
+}
+
 static void figure_processor_speed_rdtsc (void)
 {
   frame_time_t clockrate;
@@ -1371,24 +1470,30 @@ static void figure_processor_speed_rdtsc (void)
   clockrate=clockrate*64;
 
 	write_log (_T("CLOCKFREQ: RDTSC %.2fMHz\n"), clockrate / 1000000.0);
-  DebOut("CLOCKFREQ: RDTSC %6.2f MHz\n", clockrate / 1000000.0);
+  DebOut("CLOCKFREQ: RDTSC %.2f MHz\n", clockrate / 1000000.0);
 	syncbase = clockrate >> 6;
 }
 
 void figure_processor_speed (void)
 {
-    UQUAD cpuspeed;
+    UQUAD cpuspeed=0;
+    STRPTR modelstr = NULL;
+
     struct TagItem tags [] = { {GCIT_SelectedProcessor, 0},
                                {GCIT_ProcessorSpeed, (IPTR)&cpuspeed},
+                               //{GCIT_ModelString, (IPTR)&modelstr },
                                {TAG_DONE, TAG_DONE} };
 
     if (freqset)
         return;
 
+    DebOut("figure_processor_speed called!\n");
     ProcessorBase=OpenResource(PROCESSORNAME);
     if(ProcessorBase)
     {
+      DebOut("ProcessorBase %p\n", ProcessorBase);
         GetCPUInfo(tags);
+        //DebOut("GCIT_ModelString: %s\n", modelstr);
         if(cpuspeed)
         {
             write_log (_T("CLOCKFREQ: AROS %.2fMHz\n"), cpuspeed / 1000000.0);
@@ -1397,9 +1502,15 @@ void figure_processor_speed (void)
             return;
         }
     }
-
     write_log(_T("CLOCKFREQ: unable to get cpu speed with AROS API\n"));
-    return figure_processor_speed_rdtsc();
+
+    if(figure_processor_speed_cpuid()) {
+      freqset = 1;
+      return;
+    }
+    write_log(_T("CLOCKFREQ: unable to get cpu speed with CPUID API\n"));
+
+    figure_processor_speed_rdtsc();
 }
 
 /* 
