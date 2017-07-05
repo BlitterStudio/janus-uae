@@ -4604,7 +4604,7 @@ bool picasso_flushpixels (uae_u8 *src, int off)
 							picasso96_state.BytesPerRow, picasso96_state.BytesPerPixel,
 							picasso_vidinfo.rowbytes, picasso_vidinfo.pixbytes,
 							picasso96_state.RGBFormat == host_mode, picasso_convert);
-						flushlines++;
+          flushlines++;
 					w = (gwwpagesize - (picasso96_state.BytesPerRow - x * picasso96_state.BytesPerPixel)) / picasso96_state.BytesPerPixel;
 					if (y < miny)
 						miny = y;
