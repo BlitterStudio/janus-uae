@@ -42,21 +42,6 @@ struct view_line {
 };
 
 static char foo[]="hey ho";
-
-APTR mypool;
-
-void testpool(unsigned int line) {
-  APTR foo;
-  if(!mypool) {
-    return;
-  }
-
-  DebOut("test pool: %p begin (line %d) ====================\n", mypool, line);
-  foo=AllocPooled(mypool, 20000);
-  FreePooled(mypool, foo, 20000);
-  DebOut("test pool: %p ok    ====================\n", mypool);
-
-}
 /* 
  * ListView display hook
  */
@@ -73,7 +58,6 @@ AROS_UFH3S(APTR, display_func,
   ULONG t;
   ULONG c=0;
 
-  testpool(__LINE__);
   {
     struct Task* task=FindTask(NULL);
     DebOut("Task %p, stack lower %p, stack upper %p\n", task, task->tc_SPLower, task->tc_SPUpper);
@@ -95,7 +79,7 @@ AROS_UFH3S(APTR, display_func,
   if(!entry) {
     /* title */
     while(elem->mem[c]) {
-      DebOut("elem->mem[c]: array %p (old %p) now points to %s (%p)\n", array, *array, elem->mem[c], elem->mem[c]);
+      DebOut("elem->mem[c]: %s\n", elem->mem[c]);
       *array++ = elem->mem[c];
       c++;
     }
@@ -106,12 +90,10 @@ AROS_UFH3S(APTR, display_func,
       c++;
     }
     for(t=0;t<c;t++) {
-      DebOut("entry->column[%d]: %s\n", t, entry->column[t]);
       *array++ = (STRPTR) entry->column[t];
     }
   }
 
-  testpool(__LINE__);
 EXIT:
   return 0;
   AROS_USERFUNC_EXIT
@@ -129,7 +111,6 @@ AROS_UFH3S(APTR, construct_func,
 
   DebOut("Construct hook entered (pool: %p)\n", pool);
 
-  testpool(__LINE__);
   if((new_line = (struct view_line *) AllocPooled(pool, sizeof(struct view_line)))) {
     DebOut("AllocPooled(pool %p)=%p\n", pool, entry);
     for(i=0; i<MAX_COL; i++) {
@@ -143,7 +124,6 @@ AROS_UFH3S(APTR, construct_func,
     }
   }
 
-  testpool(__LINE__);
   return new_line;
 
   AROS_USERFUNC_EXIT
@@ -155,7 +135,6 @@ AROS_UFH3S(void, destruct_func, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(AP
   DebOut("Destruct hook entered (pool: %p)\n", pool);
   DebOut("FreePooled(pool %p, entry %p)\n", pool, entry);
 
-  testpool(__LINE__);
   FreePooled(pool, entry, sizeof(struct view_line));
 
   AROS_USERFUNC_EXIT
@@ -182,7 +161,6 @@ AROS_UFH2(void, list_active, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR,
     wParam=MAKEWPARAM(10001+a, 0);
     data->func((Element *) data->hwnd, WM_COMMAND, wParam, 0);
   }
-  testpool(__LINE__);
 
   AROS_USERFUNC_EXIT
 }
@@ -201,25 +179,16 @@ Object *new_listview(struct Element *elem, ULONG i, void *f, struct Data *data, 
   //func=(int* (*)(Element*, uint32_t, ULONG, IPTR)) f;
   //ULONG t=0;
   DebOut("i (not used): %d\n", i);
-  APTR pool;
-
-  pool=CreatePool(MEMF_CLEAR, 16384,16384);
-  DebOut("MY POOL: %p\n", pool);
-
-  mypool=pool;
-  testpool(__LINE__);
 
   nlist=ListObject,
         InputListFrame,
         MUIA_List_Title, TRUE, /* title can't be switched on/off in Zune !? */
         MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
         MUIA_List_DestructHook, MUIV_List_DestructHook_String,
-        MUIA_List_Pool, pool,
        End;
 
   DebOut("new ListObject: 0x%p\n", nlist);
 
-  testpool(__LINE__);
 
   DoMethod(nlist, MUIM_List_Clear, TRUE);
   DebOut("ListObject 0x%p cleared\n", nlist);
@@ -230,7 +199,6 @@ Object *new_listview(struct Element *elem, ULONG i, void *f, struct Data *data, 
             //MUIA_Listview_ScrollerPos, MUIV_Listview_ScrollerPos_None,
            End;
 
-  testpool(__LINE__);
   DebOut("new ListViewObject: 0x%p\n", listview);
   //char *str = "New entry";
   //DoMethod(*list,MUIM_List_Insert,&str,1,MUIV_List_Insert_Bottom);
@@ -244,7 +212,11 @@ Object *new_listview(struct Element *elem, ULONG i, void *f, struct Data *data, 
 
 
   /* setup hooks */
+#ifdef UAE_ABI_v0
+  data->MyMUIHook_list_active.h_Entry=(HOOKFUNC) list_active;
+#else
   data->MyMUIHook_list_active.h_Entry=(APTR) list_active;
+#endif
   data->MyMUIHook_list_active.h_Data =(APTR) data;
 
   DoMethod(listview, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR) listview, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_list_active, NULL); 
@@ -260,7 +232,6 @@ Object *new_listview(struct Element *elem, ULONG i, void *f, struct Data *data, 
   DoMethod(tree, MUIM_Notify, MUIA_List_DoubleClick, MUIV_EveryTime, (IPTR) tree, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_tree_double, func); 
 #endif
 
-  testpool(__LINE__);
   return listview;
 }
 
@@ -415,8 +386,6 @@ int ListView_InsertColumn(HWND hwnd, int iCol, const LPLVCOLUMN pcol) {
   DebOut("elem: 0x%p, i: %d\n", elem, i);
 #endif
 
-  testpool(__LINE__);
-
   if(!elem->mem) {
     elem->mem=(char **) calloc(32, sizeof(IPTR)); /* 32 columns should be enough for everybody.. */
     DebOut("alloc new mem array for columns (elem->mem=%p)\n", elem->mem);
@@ -439,7 +408,6 @@ int ListView_InsertColumn(HWND hwnd, int iCol, const LPLVCOLUMN pcol) {
   strcpy(format,"BAR");
   format[3]=(char) 0;
 
-  testpool(__LINE__);
   for(u=0;u<t;u++) {
     strncat(format, ",BAR", INSERT_COLUMN_FORMAT_SIZE);
   }
@@ -453,7 +421,6 @@ int ListView_InsertColumn(HWND hwnd, int iCol, const LPLVCOLUMN pcol) {
   }
 
 
-  testpool(__LINE__);
   /* if this is our first column, we need to setup the display hook */
   if(!elem->var_data) {
     /* store hooks in var_data*/
@@ -481,32 +448,20 @@ int ListView_InsertColumn(HWND hwnd, int iCol, const LPLVCOLUMN pcol) {
     destruct_hook->h_Data =(APTR) h_data;
 
     //SetAttrs(elem->action, MUIA_List_Title, FALSE, TAG_DONE);
-  }
 
     DebOut("set MUIA_List_ConstructHook for object %p\n", elem->action);
     DebOut("set MUIA_List_ConstructHook: %p\n", construct_hook);
-    SetAttrs(elem->action, MUIA_List_DisplayHook,   display_hook, TAG_DONE);
-    testpool(__LINE__);
-    SetAttrs(elem->action, MUIA_List_ConstructHook, construct_hook,
+    SetAttrs(elem->action, MUIA_List_DisplayHook,   display_hook,
+                           MUIA_List_ConstructHook, construct_hook,
                            MUIA_List_DestructHook,  destruct_hook,
+                           MUIA_List_Format,        format, 
+                           MUIA_List_Title,         TRUE, 
                            TAG_DONE);
-    testpool(__LINE__);
-    SetAttrs(elem->action, MUIA_List_Format,        format, TAG_DONE);
-    SetAttrs(elem->action, MUIA_List_Title,         TRUE, 
-                           TAG_DONE);
-    testpool(__LINE__);
-#if 0
   }
   else {
-    testpool(__LINE__);
-    DebOut("set format: >%s<\n", format);
-#warning ENABLE!
     SetAttrs(elem->action, MUIA_List_Format, format, TAG_DONE);
-    testpool(__LINE__);
   }
-#endif
 
-  testpool(__LINE__);
   return 1;
 }
 
@@ -521,39 +476,37 @@ int ListView_InsertItem(HWND hwnd, const LPLVITEM pitem) {
   Element *elem=(Element *) hwnd;
   struct view_line *new_line;
   ULONG pos;
-  struct view_line *lines[3];
 
-  testpool(__LINE__);
-  DebOut("elem: %p\n", elem);
   DebOut("pszText: %s\n", pitem->pszText);
-  DebOut("iItem: %d\n", pitem->iItem);
 #if 0
+  if (pitem->iItem) DebOut("iItem (ignored!!): %s\n", pitem->iItem);
   if (pitem->iSubItem) DebOut("iSubItem (ignored!!): %s\n", pitem->iSubItem);
   if (pitem->iImage) DebOut("iImage (ignored!!): %s\n", pitem->iImage);
 #endif
 
+#if 0
+  elem=get_elem(nIDDlgItem);
+  if(!elem) return -1;
+  i=get_index(elem, nIDDlgItem);
+  if(i<0) return -1;
+#endif
+  DebOut("elem: %p\n", elem);
+
   new_line=(struct view_line *) AllocVec(sizeof(struct view_line), MEMF_CLEAR);
   if(!new_line) return -1;
 
-  testpool(__LINE__);
+  DebOut("sizeof(struct view_line): %d\n", sizeof(struct view_line));
+
   strcpy(new_line->column[0], pitem->pszText);
   DebOut("elem->action: 0x%p\n", elem->action);
-  lines[0]=new_line;
-  lines[1]=NULL;
-
-#warning ENABLE!
-  //DoMethod(elem->action, MUIM_List_InsertSingle, new_line, MUIV_List_Insert_Bottom);
-  //DoMethod(elem->action, MUIM_List_InsertSingle, new_line, pitem->iItem);
-  DebOut("call MUIM_List_Insert\n");
-  DoMethod(elem->action, MUIM_List_Insert, (IPTR) lines, -1, MUIV_List_Insert_Bottom);
-  DebOut("done with MUIM_List_Insert\n");
+  DoMethod(elem->action, MUIM_List_InsertSingle, new_line, MUIV_List_Insert_Bottom);
   FreeVec(new_line);
   new_line=NULL;
 
+  DebOut("..\n");
   pos=XGET(elem->action, MUIA_List_InsertPosition);
   //pos--; /* why --? Seems as if Zune always return "one too much"? */
   DebOut("pos: %d\n", pos);
-  testpool(__LINE__);
 
   return pos;
 }
@@ -577,8 +530,6 @@ VOID ListView_SetItemText(HWND hwnd, int line, int iSubItem, const char *pszText
   LONG pos;
 
   DebOut("line %d, column %d: %s\n", line, iSubItem, pszText);
-
-  testpool(__LINE__);
 
   elem=(Element *) hwnd;
 #if 0
