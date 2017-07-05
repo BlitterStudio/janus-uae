@@ -94,6 +94,7 @@ int debug_rtg_blitter = 3;
 #define CURSORMAXWIDTH 128
 // FIXME: justing setting static value here -FS
 #define CURSORMAXHEIGHT 128
+// FIXME: justing setting static value here -FS
 
 int default_freq = 50;
 
@@ -125,21 +126,31 @@ int p96hsync_counter, full_refresh;
 #define P96TRACING_LEVEL 1
 #endif
 #if P96TRACING_ENABLED
+#ifndef __AROS__
 #define P96TRACE(x) do { write_log x; } while(0)
+#else
+#define P96TRACE(x) DebOut x
+#endif
 #else
 #define P96TRACE(x)
 #endif
 #if P96SPRTRACING_ENABLED
+#ifndef __AROS__
 #define P96TRACE_SPR(x) do { write_log x; } while(0)
+#else
+#define P96TRACE_SPR(x) DebOut x
+#endif
 #else
 #define P96TRACE_SPR(x)
 #endif
-#define P96TRACE2(x) do { write_log x; } while(0)
 
-#define write_log printf
-#define P96TRACE(x) printf x
-#define P96TRACE_SPR(x) printf x
-#define P96TRACE2(x) printf x
+#ifndef __AROS__
+#define P96TRACE2(x) do { write_log x; } while(0)
+#else
+#define P96TRACE2(x) DebOut x
+#define write_log DebOut
+#endif
+
 
 static uae_u8 all_ones_bitmap, all_zeros_bitmap; /* yuk */
 
@@ -209,7 +220,6 @@ typedef enum {
 
 #include "win32gui.h"
 #include "resource.h"
-
 static uae_u32 p2ctab[256][2];
 static int set_gc_called = 0, init_picasso_screen_called = 0;
 //fastscreen
@@ -236,6 +246,7 @@ STATIC_INLINE void endianswap (uae_u32 *vp, int bpp)
 */
 static void DumpModeInfoStructure (uaecptr amigamodeinfoptr)
 {
+  DebOut("DumpModeInfoStructure!\n");
 	write_log (_T("ModeInfo Structure Dump:\n"));
 	write_log (_T("  Node.ln_Succ  = 0x%x\n"), get_long (amigamodeinfoptr));
 	write_log (_T("  Node.ln_Pred  = 0x%x\n"), get_long (amigamodeinfoptr + 4));
@@ -1046,6 +1057,8 @@ static int getconvert (int rgbformat, int pixbytes)
 static void setconvert (void)
 {
 	static int ohost_mode, orgbformat;
+
+  DebOut("entered\n");
 #undef FSUAE
 	picasso_convert = getconvert (picasso96_state.RGBFormat, picasso_vidinfo.pixbytes);
 
@@ -1524,6 +1537,7 @@ d7: RGBFTYPE RGBFormat
 */
 static uae_u32 REGPARAM2 picasso_SetSpritePosition (TrapContext *ctx)
 {
+  DebOut("entered\n");
 	uaecptr bi = m68k_areg (regs, 0);
 	boardinfo = bi;
 	newcursor_x = (uae_s16)get_word (bi + PSSO_BoardInfo_MouseX) - picasso96_state.XOffset;
@@ -1548,6 +1562,7 @@ This function changes one of the possible three colors of the hardware sprite.
 */
 static uae_u32 REGPARAM2 picasso_SetSpriteColor (TrapContext *ctx)
 {
+  DebOut("entered\n");
 	uaecptr bi = m68k_areg (regs, 0);
 	uae_u8 idx = m68k_dreg (regs, 0);
 	uae_u8 red = m68k_dreg (regs, 1);
@@ -1928,6 +1943,7 @@ compensate for this when accounting for hotspot offsets and sprite dimensions.
 */
 static uae_u32 REGPARAM2 picasso_SetSpriteImage (TrapContext *ctx)
 {
+  DebOut("entered\n");
 	uaecptr bi = m68k_areg (regs, 0);
 	boardinfo = bi;
 	return setspriteimage (bi);
@@ -1944,6 +1960,7 @@ This function activates or deactivates the hardware sprite.
 */
 static uae_u32 REGPARAM2 picasso_SetSprite (TrapContext *ctx)
 {
+  DebOut("entered\n");
 	uae_u32 result = 0;
 	uae_u32 activate = m68k_dreg (regs, 0);
 	if (!hwsprite)
@@ -1985,8 +2002,10 @@ static uae_u32 REGPARAM2 picasso_FindCard (TrapContext *ctx)
 	if (!uaegfx_active || !gfxmem_bank.start)
 		return 0;
 	if (uaegfx_base) {
+    DebOut("uaegfx_base %lx!\n", uaegfx_base);
 		put_long (uaegfx_base + CARD_BOARDINFO, AmigaBoardInfo);
 	} else if (uaegfx_old) {
+    DebOut("uaegfx_old!\n");
 		picasso96_alloc2 (ctx);
 	}
 	boardinfo = AmigaBoardInfo;
@@ -1997,8 +2016,10 @@ static uae_u32 REGPARAM2 picasso_FindCard (TrapContext *ctx)
     DebOut("mark card as being found\n");
 		picasso96_state.CardFound = 1; /* mark our "card" as being found */
 		return -1;
-	} else
-		return 0;
+	}
+
+  DebOut("return 0\n");
+	return 0;
 }
 
 static void FillBoardInfo (uaecptr amigamemptr, struct LibResolution *res, int width, int height, int depth)
@@ -2771,6 +2792,7 @@ static uae_u32 REGPARAM2 picasso_SetSwitch (TrapContext *ctx)
 {
 	uae_u16 flag = m68k_dreg (regs, 0) & 0xFFFF;
 	TCHAR p96text[100];
+  DebOut("entered\n");
 
 	/* Do not switch immediately.  Tell the custom chip emulation about the
 	* desired state, and wait for custom.c to call picasso_enablescreen
@@ -2818,13 +2840,14 @@ static void resetpalette(void)
 static int updateclut (uaecptr clut, int start, int count)
 {
 	int i, changed = 0;
+  DebOut("entered\n");
 	clut += start * 3;
 	for (i = start; i < start + count; i++) {
 		int r = get_byte (clut);
 		int g = get_byte (clut + 1);
 		int b = get_byte (clut + 2);
 
-		//write_log(_T("%d: %02x%02x%02x\n"), i, r, g, b);
+		write_log(_T("updateclut: old %d: %02x%02x%02x\n"), i, r, g, b);
 		changed |= picasso96_state.CLUT[i].Red != r
 			|| picasso96_state.CLUT[i].Green != g
 			|| picasso96_state.CLUT[i].Blue != b;
@@ -2838,12 +2861,15 @@ static int updateclut (uaecptr clut, int start, int count)
 		clut += 3;
 	}
 	changed |= picasso_palette ();
+  DebOut("left\n");
 	return changed;
 }
 static uae_u32 REGPARAM2 picasso_SetColorArray (TrapContext *ctx)
 {
 	/* Fill in some static UAE related structure about this new CLUT setting
 	* We need this for CLUT-based displays, and for mapping CLUT to hi/true colour */
+  DebOut("entered\n");
+
 	uae_u16 start = m68k_dreg (regs, 0);
 	uae_u16 count = m68k_dreg (regs, 1);
 	uaecptr boardinfo = m68k_areg (regs, 0);
@@ -2853,6 +2879,7 @@ static uae_u32 REGPARAM2 picasso_SetColorArray (TrapContext *ctx)
 	if (updateclut (clut, start, count))
 		full_refresh = 1;
 	P96TRACE((_T("SetColorArray(%d,%d)\n"), start, count));
+	DebOut("SetColorArray(%d,%d)\n", start, count);
 	return 1;
 }
 
@@ -2913,6 +2940,7 @@ static void init_picasso_screen (void)
 */
 static uae_u32 REGPARAM2 picasso_SetGC (TrapContext *ctx)
 {
+  DebOut("entered\n");
 	/* Fill in some static UAE related structure about this new ModeInfo setting */
 	uaecptr AmigaBoardInfo = m68k_areg (regs, 0);
 	uae_u32 border   = m68k_dreg (regs, 0);
@@ -2973,6 +3001,7 @@ static void picasso_SetPanningInit (void)
 
 static uae_u32 REGPARAM2 picasso_SetPanning (TrapContext *ctx)
 {
+  DebOut("entered\n");
 	uae_u16 Width = m68k_dreg (regs, 0);
 	uaecptr start_of_screen = m68k_areg (regs, 1);
 	uaecptr bi = m68k_areg (regs, 0);
@@ -3083,6 +3112,7 @@ static void do_xor8 (uae_u8 *p, int w, uae_u32 v)
 */
 static uae_u32 REGPARAM2 picasso_InvertRect (TrapContext *ctx)
 {
+  DebOut("entered\n");
 	uaecptr renderinfo = m68k_areg (regs, 1);
 	uae_u32 X = (uae_u16)m68k_dreg (regs, 0);
 	uae_u32 Y = (uae_u16)m68k_dreg (regs, 1);
@@ -3136,6 +3166,7 @@ FillRect:
 ***********************************************************/
 static uae_u32 REGPARAM2 picasso_FillRect (TrapContext *ctx)
 {
+  DebOut("entered\n");
 	uaecptr renderinfo = m68k_areg (regs, 1);
 	uae_u32 X = (uae_u16)m68k_dreg (regs, 0);
 	uae_u32 Y = (uae_u16)m68k_dreg (regs, 1);
@@ -3318,6 +3349,7 @@ BlitRect:
 ***********************************************************/
 static uae_u32 REGPARAM2 picasso_BlitRect (TrapContext *ctx)
 {
+  DebOut("entered\n");
 	uaecptr renderinfo = m68k_areg (regs, 1);
 	unsigned long srcx = (uae_u16)m68k_dreg (regs, 0);
 	unsigned long srcy = (uae_u16)m68k_dreg (regs, 1);
@@ -3355,6 +3387,7 @@ BlitRectNoMaskComplete:
 ***********************************************************/
 static uae_u32 REGPARAM2 picasso_BlitRectNoMaskComplete (TrapContext *ctx)
 {
+  DebOut("entered\n");
 	uaecptr srcri = m68k_areg (regs, 1);
 	uaecptr dstri = m68k_areg (regs, 2);
 	unsigned long srcx = (uae_u16)m68k_dreg (regs, 0);
@@ -3423,6 +3456,7 @@ STATIC_INLINE void PixelWrite (uae_u8 *mem, int bits, uae_u32 fgpen, int Bpp, ua
 */
 static uae_u32 REGPARAM2 picasso_BlitPattern (TrapContext *ctx)
 {
+  DebOut("entered\n");
 	uaecptr rinf = m68k_areg (regs, 1);
 	uaecptr pinf = m68k_areg (regs, 2);
 	uae_u32 X = (uae_u16)m68k_dreg (regs, 0);
@@ -3587,6 +3621,7 @@ BlitTemplate:
 ***********************************************************************************/
 static uae_u32 REGPARAM2 picasso_BlitTemplate (TrapContext *ctx)
 {
+  DebOut("entered\n");
 	uae_u8 inversion = 0;
 	uaecptr rinf = m68k_areg (regs, 1);
 	uaecptr tmpl = m68k_areg (regs, 2);
@@ -3750,6 +3785,7 @@ static uae_u32 REGPARAM2 picasso_BlitTemplate (TrapContext *ctx)
 */
 static uae_u32 REGPARAM2 picasso_CalculateBytesPerRow (TrapContext *ctx)
 {
+  DebOut("entered\n");
 	uae_u16 width = m68k_dreg (regs, 0);
 	uae_u32 type = m68k_dreg (regs, 7);
 	width = GetBytesPerPixel (type) * width;
@@ -3884,6 +3920,7 @@ static void PlanarToChunky (struct RenderInfo *ri, struct BitMap *bm,
 */
 static uae_u32 REGPARAM2 picasso_BlitPlanar2Chunky (TrapContext *ctx)
 {
+  DebOut("entered\n");
 	uaecptr bm = m68k_areg (regs, 1);
 	uaecptr ri = m68k_areg (regs, 2);
 	unsigned long srcx = (uae_u16)m68k_dreg (regs, 0);
@@ -4022,6 +4059,7 @@ static void PlanarToDirect (struct RenderInfo *ri, struct BitMap *bm,
 */
 static uae_u32 REGPARAM2 picasso_BlitPlanar2Direct (TrapContext *ctx)
 {
+  DebOut("entered\n");
 	uaecptr bm = m68k_areg (regs, 1);
 	uaecptr ri = m68k_areg (regs, 2);
 	uaecptr cim = m68k_areg (regs, 3);
@@ -4668,6 +4706,7 @@ void InitPicasso96 (void)
 
 static uae_u32 REGPARAM2 picasso_SetInterrupt (TrapContext *ctx)
 {
+  DebOut("entered\n");
 	uaecptr bi = m68k_areg (regs, 0);
 	uae_u32 onoff = m68k_dreg (regs, 0);
 	interrupt_enabled = onoff;
@@ -4717,6 +4756,7 @@ static void initvblankirq (TrapContext *ctx, uaecptr base)
 
 static uae_u32 REGPARAM2 picasso_SetClock(TrapContext *ctx)
 {
+  DebOut("entered\n");
 	uaecptr bi = m68k_areg (regs, 0);
 	P96TRACE((_T("SetClock\n")));
 	return 0;
@@ -4724,6 +4764,7 @@ static uae_u32 REGPARAM2 picasso_SetClock(TrapContext *ctx)
 
 static uae_u32 REGPARAM2 picasso_SetMemoryMode(TrapContext *ctx)
 {
+  DebOut("entered\n");
 	uaecptr bi = m68k_areg (regs, 0);
 	uae_u32 rgbformat = m68k_dreg (regs, 7);
 	P96TRACE((_T("SetMemoryMode\n")));
@@ -4764,6 +4805,8 @@ static void inituaegfxfuncs (uaecptr start, uaecptr ABI)
 {
 	if (uaegfx_old)
 		return;
+
+  DebOut("start: %lx\n", start);
 	org (start);
 
 	dw (RTS);
@@ -4947,16 +4990,19 @@ void uaegfx_install_code (uaecptr start)
 
 static uae_u32 REGPARAM2 gfx_open (TrapContext *context)
 {
+  DebOut("entered\n");
 	put_word (uaegfx_base + 32, get_word (uaegfx_base + 32) + 1);
 	return uaegfx_base;
 }
 static uae_u32 REGPARAM2 gfx_close (TrapContext *context)
 {
+  DebOut("entered\n");
 	put_word (uaegfx_base + 32, get_word (uaegfx_base + 32) - 1);
 	return 0;
 }
 static uae_u32 REGPARAM2 gfx_expunge (TrapContext *context)
 {
+  DebOut("entered\n");
 	return 0;
 }
 
@@ -5032,6 +5078,7 @@ static uaecptr uaegfx_card_install (TrapContext *ctx, uae_u32 extrasize)
 		initvblankirq (ctx, uaegfx_base);
 
 	write_log (_T("uaegfx.card %d.%d init @%08X\n"), UAEGFX_VERSION, UAEGFX_REVISION, uaegfx_base);
+	DebOut ("uaegfx.card %d.%d init @%08X\n", UAEGFX_VERSION, UAEGFX_REVISION, uaegfx_base);
 	uaegfx_active = 1;
 	return uaegfx_base;
 }
