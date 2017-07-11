@@ -39,7 +39,7 @@
 #include <GL/glut.h>
 #endif
 
-#define SDLGD(x)
+#define SDLGD(x) 
 
 void inputdevice_release_all_keys (void);
 
@@ -434,11 +434,14 @@ int picasso_palette (void)
                         changed = 1;
                 }
         }
+        DebOut("left\n");
         return changed;
 }
 
 /*
  * Map an SDL pixel format to a P96 pixel format
+ *
+ * (not used)
  */
 static int get_p96_pixel_format (const struct SDL_PixelFormat *fmt)
 {
@@ -674,7 +677,7 @@ static void sdl_flush_clear_screen (struct vidbuf_description *gfxinfo, struct v
     DEBUG_LOG ("Function: flush_clear_screen\n");
 
     if (display) {
-        SDL_Rect rect = { 0, 0, display->w, display->h };
+        SDL_Rect rect = { 0, 0, (Uint16) display->w, (Uint16) display->h };
         SDL_FillRect (display, &rect, SDL_MapRGB (display->format, 0,0,0));
         SDL_UpdateRect (display, 0, 0, rect.w, rect.h);
     }
@@ -682,9 +685,9 @@ static void sdl_flush_clear_screen (struct vidbuf_description *gfxinfo, struct v
 
 void flush_screen (struct vidbuffer *vb, int first_line, int last_line) {
 
-    //SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
+  //SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__));
 
-  DebOut("%d -> %d\n", first_line, last_line);
+  //DebOut("%d -> %d\n", first_line, last_line);
 
 #ifndef USE_GL
   SDL_UpdateRect (display, 0, first_line, currentmode->current_width, last_line - first_line + 1);
@@ -1073,7 +1076,7 @@ bool handle_events (void)
             }
             if (buttonno >= 0)
                 setmousebuttonstate (0, buttonno, rEvent.type == SDL_MOUSEBUTTONDOWN ? 1:0);
-                break;
+            break;
             }
 
         case SDL_KEYUP:
@@ -1448,14 +1451,13 @@ void DX_SetPalette_vsync(void)
 }
 #endif
 
-void DX_Fill (int dstx, int dsty, int width, int height, uae_u32 color)
-{
+void DX_Fill (int dstx, int dsty, int width, int height, uae_u32 color) {
   DebOut("dstx %d, dsty %d, width %d, height %d, color %lx\n", dstx, dsty, width, height, color);
     SDLGD(bug("entered\n"));
 #ifdef USE_GL /* TODO think about optimization for GL */
     if (!currprefs.use_gl) {
 #endif /* USE_GL */
-    SDL_Rect rect = {dstx, dsty, width, height};
+    SDL_Rect rect = {(Sint16) dstx, (Sint16) dsty, (Uint16) width, (Uint16) height};
 
     DEBUG_LOG ("DX_Fill (x:%d y:%d w:%d h:%d color=%08x)\n", dstx, dsty, width, height, color);
 
@@ -1478,6 +1480,7 @@ int DX_Blit (int srcx, int srcy, int dstx, int dsty, int width, int height, BLIT
 
 static void set_window_for_picasso (void)
 {
+  TODO();
     SDLGD(bug("entered\n"));
     DEBUG_LOG ("Function: set_window_for_picasso\n");
 
@@ -1525,16 +1528,16 @@ void gfx_set_picasso_modeinfo (uae_u32 w, uae_u32 h, uae_u32 depth, RGBFTYPE rgb
   updatemodes();
 
   TODO();
-    DEBUG_LOG ("Function: gfx_set_picasso_modeinfo w: %i h: %i depth: %i rgbfmt: %i\n", w, h, depth, rgbfmt);
-    bug    ("Function: gfx_set_picasso_modeinfo w: %i h: %i depth: %i rgbfmt: %i\n", w, h, depth, rgbfmt);
+  DEBUG_LOG ("Function: gfx_set_picasso_modeinfo w: %i h: %i depth: %i rgbfmt: %i\n", w, h, depth, rgbfmt);
 
-    picasso_vidinfo.width = w;
-    picasso_vidinfo.height = h;
-    picasso_vidinfo.depth = depth;
-    picasso_vidinfo.pixbytes = bit_unit >> 3;
-    SDLGD(bug("gfxvidinfo.pixbytes: %d\n", picasso_vidinfo.pixbytes));
-    if (screen_is_picasso)
-        set_window_for_picasso();
+  picasso_vidinfo.width = w;
+  picasso_vidinfo.height = h;
+  picasso_vidinfo.depth = depth;
+  picasso_vidinfo.pixbytes = bit_unit >> 3;
+  SDLGD(bug("gfxvidinfo.pixbytes: %d\n", picasso_vidinfo.pixbytes));
+  if (screen_is_picasso) {
+    set_window_for_picasso();
+  }
 }
 
 /* Color management */
@@ -1591,6 +1594,10 @@ void gfx_set_picasso_state (int on)
         DX_SetPalette (0, 256);
 }
 
+/*******************************************************************
+ * lock host window system (here: sdl) and return pointer to
+ * pixel data
+ *******************************************************************/
 uae_u8 *gfx_lock_picasso (bool fullupdate, bool doclear)
 {
     //DEBUG_LOG ("Function: gfx_lock_picasso\n");
@@ -1608,12 +1615,6 @@ uae_u8 *gfx_lock_picasso (bool fullupdate, bool doclear)
         return (uint8_t *) display->pixels;
     }
 #endif /* USE_GL */
-}
-
-/* doclear is not used at all ? */
-uae_u8 *gfx_lock_picasso (bool fullupdate) {
-  TODO();
-  return gfx_lock_picasso (fullupdate, false);
 }
 
 void gfx_unlock_picasso (bool dorender)
