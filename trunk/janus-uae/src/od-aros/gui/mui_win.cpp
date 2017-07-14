@@ -417,6 +417,38 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
     } /* case block */
     break;
 
+    /* Searches the list of a combo box for an item that begins with the characters 
+     * in a specified string. If a matching item is found, it is selected and copied 
+     * to the edit control. Search is case-insensitive!
+     *
+     * wParam: start item, -1 means start from top (only -1 is supported)
+     * lParam: pointer to string 
+     *
+     * return index or CB_ERR (not found)
+     */
+    case CB_SELECTSTRING: {
+      ULONG i=0;
+      size_t length=0;
+
+      DebOut("CB_SELECTSTRING: elem %p string: %s\n", elem, lParam);
+
+      length=strlen((const char *) lParam);
+      /* elem->mem[] contains all strings, so we search it */
+      while(elem->mem[i]) {
+        if(!strncasecmp(elem->mem[i], (const char *) lParam, length)) {
+          DebOut("found: %s\n", lParam);
+          DoMethod(elem->obj, MUIM_NoNotifySet, MUIA_String_Contents, (IPTR) elem->mem[i]);
+          return i;
+        }
+        i++;
+
+      }
+      /* not found */
+      DebOut("string not found!\n");
+      return CB_ERR;
+    }
+    break;
+
     case TBM_SETRANGE:
       /* lParam: The LOWORD specifies the minimum position for the slider, 
        *         and the HIWORD specifies the maximum position.
