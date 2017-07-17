@@ -237,7 +237,6 @@ COMMON_OBJS= \
 	parser.o \
 	picasso96_aros.o \
 	options.o \
-	gfx.o \
 	mman.o \
 	memory_aros.o \
 	writelog.o \
