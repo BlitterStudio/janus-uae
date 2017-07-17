@@ -601,9 +601,6 @@ bool vsync_switchmode (int hz)
 	}
 }
 
-int default_freq = 0;
-
-
 void gui_restart (void)
 {
 	panel_done = panel_active_done = false;
@@ -715,6 +712,25 @@ int WIN32GFX_AdjustScreenmode (struct MultiDisplay *md, int *pwidth, int *pheigh
 		index = -1;
 
 	return index;
+}
+
+/*************************************************************
+ * enumeratedisplays
+ *
+ * Windows can have more than one physical monitor.
+ * enumeratedisplays tries to set them up for WinUAE.
+ *
+ * We don't have to care for that in AROS
+ *************************************************************/
+void enumeratedisplays (int multi) {
+
+  if (multi) {
+    write_log (_T("ERROR: Multimonitor does not work!\n"));
+  }
+  write_log (_T("Multimonitor detection disabled\n"));
+  Displays[0].primary = 1;
+  Displays[0].adaptername = my_strdup(_T("Display"));
+  Displays[0].monitorname = my_strdup(_T("Display"));
 }
 
 /* call SDL .. */
