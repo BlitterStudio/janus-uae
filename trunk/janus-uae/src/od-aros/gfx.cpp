@@ -57,6 +57,7 @@
 #ifdef RETROPLATFORM
 #include "rp.h"
 #endif
+#if 0
 
 static uae_u8 scrlinebuf[4096 * 4]; /* this is too large, but let's rather play on the safe side here */
 
@@ -80,5 +81,6 @@ void enumeratedisplays (int multi) {
 
   //Displays[0].disabled = 0;
 }
+#endif
 
 
