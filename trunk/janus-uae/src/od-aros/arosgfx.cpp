@@ -23,7 +23,7 @@
  *
  ************************************************************************/
 
-//#define JUAE_DEBUG
+#define JUAE_DEBUG
 
 #include "sysconfig.h"
 
@@ -301,16 +301,12 @@ const TCHAR *target_get_display_name (int num, bool friendlyname)
 {
 	if (num <= 0)
 		return NULL;
-#if 0
-	struct MultiDisplay *md = getdisplay2 (NULL, num - 1);
+	struct MultiDisplay *md = getdisplay (&currprefs);
 	if (!md)
 		return NULL;
 	if (friendlyname)
 		return md->monitorname;
 	return md->monitorid;
-#endif
-  TODO();
-  return "Default Monitor";
 }
 
 /* merged til here .. */
@@ -319,36 +315,9 @@ const TCHAR *target_get_display_name (int num, bool friendlyname)
 static int flushymin, flushymax;
 #define FLUSH_DIFF 50
 
-static void flushit (int lineno) {
-
-  TODO();
-#if 0
-	if (!currprefs.gfx_api)
-		return;
-	if (currentmode->flags & DM_SWSCALE)
-		return;
-	if (flushymin > lineno) {
-		if (flushymin - lineno > FLUSH_DIFF && flushymax != 0) {
-			D3D_flushtexture (flushymin, flushymax);
-			flushymin = currentmode->amiga_height;
-			flushymax = 0;
-		} else {
-			flushymin = lineno;
-		}
-	}
-	if (flushymax < lineno) {
-		if (lineno - flushymax > FLUSH_DIFF && flushymax != 0) {
-			D3D_flushtexture (flushymin, flushymax);
-			flushymin = currentmode->amiga_height;
-			flushymax = 0;
-		} else {
-			flushymax = lineno;
-		}
-	}
-#endif
-}
-
+#warning flush_line!! TODO
 void flush_line (struct vidbuffer *vb, int lineno) {
+  DebOut("called!?\n");
   TODO();
 
 	//flushit (lineno);
