@@ -528,6 +528,8 @@ bool vsync_switchmode (int hz)
 	else
 		hz = 50;
 
+  DebOut("DisplayModes used\n");
+
 	newh = h * (currprefs.ntscmode ? 60 : 50) / hz;
 
 	found = NULL;
@@ -660,6 +662,7 @@ int WIN32GFX_AdjustScreenmode (struct MultiDisplay *md, int *pwidth, int *pheigh
 		i = 0;
 		index = 0;
 
+    DebOut("DisplayModes used\n");
 		best = &md->DisplayModes[0];
 		dm = &md->DisplayModes[1];
 
@@ -740,6 +743,16 @@ void sortdisplays (void) {
 
   fill_DisplayModes(Displays);
 }
+
+/*************************************************************
+ * getdisplay 
+ *
+ * return default display
+ *************************************************************/
+struct MultiDisplay *getdisplay (struct uae_prefs *p) {
+  return &Displays[0];
+}
+
 
 double getcurrentvblankrate (void) {
     TODO();
