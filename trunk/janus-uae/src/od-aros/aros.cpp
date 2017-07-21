@@ -513,32 +513,6 @@ DWORD GetFullPathName(const TCHAR *lpFileName, DWORD nBufferLength, LPTSTR lpBuf
   return strlen(lpFileName)+1;
 }
 
-/* taken from puae/misc.c */
-
-static struct MultiDisplay *getdisplay2 (struct uae_prefs *p, int index)
-{
-#ifndef __AROS__
-  int display = index < 0 ? p->gfx_apmode[screen_is_picasso ? APMODE_RTG : APMODE_NATIVE].gfx_display - 1 : index;
-#endif
-
-  write_log ("Multimonitor detection disabled\n");
-  Displays[0].primary  = TRUE;
-  Displays[0].adaptername     = (TCHAR *) "Display";
-  Displays[0].monitorname     = (TCHAR *) "Display";
-  //Displays[0].disabled = 0;
-  if(Displays[0].DisplayModes == NULL) {
-    bug("[JUAE:AROS] %s: alloc DisplayModes array. Should this be done here !? really !?\n", __PRETTY_FUNCTION__);
-    Displays[0].DisplayModes = xmalloc (struct PicassoResolution, MAX_PICASSO_MODES);
-  }
-
-  return &Displays[0];
-}
-
-struct MultiDisplay *getdisplay (struct uae_prefs *p)
-{
-  return getdisplay2 (p, -1);
-}
-
 /* starts one command in the shell, before emulation starts ..? */
 void target_run (void)
 {
