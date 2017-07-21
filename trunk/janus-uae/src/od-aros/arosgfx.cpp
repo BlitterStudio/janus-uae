@@ -297,6 +297,9 @@ int target_get_display(const TCHAR *name) {
   return 0;
 }
 
+/* used by cfgfile.cpp only 
+ * we only have one display in AROS, btw
+ */
 const TCHAR *target_get_display_name (int num, bool friendlyname)
 {
 	if (num <= 0)
@@ -309,11 +312,10 @@ const TCHAR *target_get_display_name (int num, bool friendlyname)
 	return md->monitorid;
 }
 
-/* merged til here .. */
+/* merged till here .. */
 
 
 static int flushymin, flushymax;
-#define FLUSH_DIFF 50
 
 #warning flush_line!! TODO
 void flush_line (struct vidbuffer *vb, int lineno) {
@@ -369,6 +371,7 @@ static volatile bool render_ok, wait_render;
 
 #include <exec/execbase.h>
 
+/* this never renders anything on AROS. Seems not to be necessary */
 bool render_screen (bool immediate)
 {
 	bool v = false;
@@ -613,6 +616,8 @@ void updatewinfsmode (struct uae_prefs *p)
 /* DirectX will fail with "Mode not supported" if we try to switch to a full
 * screen mode that doesn't match one of the dimensions we got during enumeration.
 * So try to find a best match for the given resolution in our list.  */
+
+/* only used by init_display_mode in muigui.cpp, if fullscreen is true */
 int WIN32GFX_AdjustScreenmode (struct MultiDisplay *md, int *pwidth, int *pheight, int *ppixbits)
 {
 	struct PicassoResolution *best;
