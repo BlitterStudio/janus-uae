@@ -19,6 +19,7 @@ enum {
   EDITTEXT,
   RTEXT,
   LTEXT,
+  CTEXT,
   DEFPUSHBUTTON,
 };
 

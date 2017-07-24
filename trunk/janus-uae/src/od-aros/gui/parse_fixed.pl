@@ -298,6 +298,20 @@ sub gen_line($$) {
       printf(CPPFILE  "  { 0, %-20s, 0, NULL, NULL, NULL, %-11s, NULL, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d, 0 },\n", $attr[1], $type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]), parse_flags2($attr[6]));
     }
 
+    case "CTEXT" {
+      $debug && print "  = CTEXT {\n";
+      $debug && print "      string: ".$attr[0]."\n";
+      $debug && print "      x:      ".$attr[2]."\n";
+      $debug && print "      y:      ".$attr[3]."\n";
+      $debug && print "      w:      ".$attr[4]."\n";
+      $debug && print "      h:      ".$attr[5]."\n";
+      $debug && print "    }\n";
+      push @idc, $attr[1];
+      printf(CPPFILE  "  { 0, %-20s, 0, NULL, NULL, NULL, %-11s, NULL, %3d, %3d, %3d, %3d, %s, %s, 0x%08lx, %d, 0 },\n", $attr[1], $type, $attr[2], $attr[3]+$plus_height, $attr[4], $attr[5], get_text($attr[0]), get_help($attr[0]), parse_flags($attr[6]), parse_flags2($attr[6]));
+    }
+
+
+
     case "GROUPBOX" {
       $debug && print "  = GROUPBOX {\n";
       $debug && print "      string: ".$attr[0]."\n";
