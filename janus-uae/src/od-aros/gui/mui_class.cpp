@@ -814,6 +814,18 @@ static IPTR mNew(struct IClass *cl, APTR obj, Msg msg) {
           WIN_RES[i].obj=child;
         break;
 
+        case CTEXT:
+          child=TextObject,
+                        MUIA_Font, Topaz8Font,
+                        MUIA_Text_PreParse, "\33c",
+                        MUIA_Text_Contents, (IPTR) WIN_RES[i].text,
+                      End;
+          WIN_RES[i].exists=TRUE;
+          WIN_RES[i].obj=child;
+        break;
+
+
+
 
         case EDITTEXT:
           if(WIN_RES[i].flags & ES_READONLY) {
