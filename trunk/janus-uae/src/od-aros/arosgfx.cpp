@@ -706,8 +706,10 @@ void enumeratedisplays (int multi) {
   }
   write_log (_T("Multimonitor detection disabled\n"));
   Displays[0].primary = 1;
-  Displays[0].adaptername = my_strdup(_T("Display"));
-  Displays[0].monitorname = my_strdup(_T("Display"));
+  Displays[0].monitorname = my_strdup(_T("AROS Monitor Name"));
+  Displays[0].adaptername = my_strdup(_T("AROS Gfx Card"));
+  Displays[0].adapterkey  = my_strdup(_T("AROS Gfx Card"));
+  Displays[0].fullname    = my_strdup(_T("AROS Default Screen"));
 }
 
 /* call SDL .. */
