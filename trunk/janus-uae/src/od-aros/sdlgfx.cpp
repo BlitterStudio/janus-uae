@@ -6,6 +6,7 @@
  * Copyright 2001 Bernd Lachner (EMail: dev@lachner-net.de)
  * Copyright 2003-2007 Richard Drummond
  * Copyright 2006 Jochen Becher
+ * Copyright 2017 Oliver Brunner
  *
  * Partialy based on the UAE X interface (xwin.c)
  *
@@ -16,8 +17,6 @@
  * X11/DGA merge, hotkeys and grabmouse by Marcus Sundberg
  * OpenGL support by Jochen Becher, Richard Drummond
  */
-
-/* not used anymore */
 
 #define JUAE_DEBUG
 
@@ -58,6 +57,8 @@ void gfx_unlock_picasso (bool dorender);
 
 //#define DEBUG_LOG bug
 #define DEBUG_LOG DebOut
+
+struct screen_resolution global_screen_resolution[256];
 
 #if 0
 struct gl_buffer_t
@@ -122,11 +123,6 @@ extern void setid_af (struct uae_input_device *uid, int i, int slot, int sub, in
 SDL_Surface *display = NULL;
 SDL_Surface *screen = NULL;
 
-/* Standard P96 screen modes */
-#define MAX_SCREEN_MODES 12
-static int x_size_table[MAX_SCREEN_MODES] = { 320, 320, 320, 320, 640, 640, 640, 800, 1024, 1152, 1280 };
-static int y_size_table[MAX_SCREEN_MODES] = { 200, 240, 256, 400, 350, 480, 512, 600, 768,  864,  1024 };
-
 /* Supported SDL screen modes */
 #define MAX_SDL_SCREENMODE 32
 static SDL_Rect screenmode[MAX_SDL_SCREENMODE];
@@ -137,7 +133,6 @@ static int red_shift, green_shift, blue_shift, alpha_shift;
 static int alpha;
 
 #ifdef PICASSO96
-extern int screen_is_picasso;
 extern int screen_was_picasso;
 static char picasso_invalid_lines[1201];
 static int picasso_has_invalid_lines;
@@ -145,8 +140,7 @@ static int picasso_invalid_start, picasso_invalid_stop;
 static int picasso_maxw = 0, picasso_maxh = 0;
 #endif
 
-static int bitdepth, bit_unit;
-//static int current_width, current_height;
+static int bitdepth, bytes_per_pixel;
 
 #define MAX_MAPPINGS 256
 
@@ -518,7 +512,7 @@ static int get_p96_pixel_format (const struct SDL_PixelFormat *fmt)
  * Returns a count of the number of supported modes, -1 if any mode is supported,
  * or 0 if there are no modes with this pixel format.
  */
-static long find_screen_modes (struct SDL_PixelFormat *vfmt, SDL_Rect *mode_list, int mode_list_size)
+static long find_screen_modes (struct SDL_PixelFormat *vfmt, SDL_Rect *mode_list, struct screen_resolution* globel_screen_resolutions, int mode_list_size)
 {
     long count = 0;
     SDL_Rect **modes = SDL_ListModes (vfmt, SDL_FULLSCREEN | SDL_HWSURFACE);
@@ -533,9 +527,11 @@ static long find_screen_modes (struct SDL_PixelFormat *vfmt, SDL_Rect *mode_list
         /* Filter list of modes SDL gave us and ignore duplicates */
         for (i = 0; modes[i] && count < mode_list_size; i++) {
             if ( (modes[i]->w != w || modes[i]->h != h) &&
-                 (modes[i]->w >= 320 && modes[i]->h >= 200) ){
+                 (modes[i]->w > 320 && modes[i]->h > 240) ){
                 mode_list[count].w = w = modes[i]->w;
                 mode_list[count].h = h = modes[i]->h;
+                global_screen_resolution[count].width =modes[i]->w;
+                global_screen_resolution[count].height=modes[i]->h;
                 count++;
 
                 write_log ("SDLGFX: Found screenmode: %dx%d.\n", w, h);
@@ -544,6 +540,9 @@ static long find_screen_modes (struct SDL_PixelFormat *vfmt, SDL_Rect *mode_list
     } else
         count = (long) modes;
 
+    global_screen_resolution[count].width =-1;
+    global_screen_resolution[count].height=-1;
+
     return count;
 }
 
@@ -551,11 +550,13 @@ static long find_screen_modes (struct SDL_PixelFormat *vfmt, SDL_Rect *mode_list
  ** Buffer methods not implemented for this driver.
  **/
 
+#if 0
 static void sdl_flush_line (struct vidbuf_description *gfxinfo, int line_no)
 {
     SDLGD(bug("[JUAE:SDL] %s()\n", __PRETTY_FUNCTION__);)
 
 }
+#endif
 
 
 /**
@@ -699,11 +700,23 @@ void flush_screen (struct vidbuffer *vb, int first_line, int last_line) {
 
 static int graphics_setup_success=0;
 
+extern void add_mode (struct MultiDisplay *md, int w, int h, int d, int freq, int lace);
+
+/********************************************************************
+ * First we add all SDL native modes (AROS host modes) to the 
+ * list of modes supported by our virtual gfx card.
+ *
+ * Later on in picasso96_alloc2 eventually missing (non-native)
+ * modes get added.
+ *
+ * (At least, this is, how I think it should work. Some 
+ *  documentation would be really nice here.)
+ ********************************************************************/
 void fill_DisplayModes(struct MultiDisplay *md) {
   int result = 0;
   unsigned int i;
 
-  DebOut("md: %lx\n", md);
+  DebOut("md: %p\n", md);
 
   max_uae_width = 8192;
   max_uae_height = 8192;
@@ -722,27 +735,31 @@ void fill_DisplayModes(struct MultiDisplay *md) {
 
       /* Find default display depth */
       bitdepth = info->vfmt->BitsPerPixel;
-      SDLGD(bug("[JUAE:SDL] %s: bitdepth: %d\n", __PRETTY_FUNCTION__, bitdepth);)
-      bit_unit = info->vfmt->BytesPerPixel * 8;
+      bytes_per_pixel = info->vfmt->BytesPerPixel;
+      if(bytes_per_pixel==3) {
+        /* sorry, this is simply wrong on AROS.. */
+        bytes_per_pixel=4;
+      }
 
       write_log ("SDLGFX: Display is %d bits deep.\n", bitdepth);
+      write_log ("SDLGFX: Display has %d bytes per pixel.\n", info->vfmt->BytesPerPixel);
 
       /* Build list of screenmodes */
-      mode_count = find_screen_modes (info->vfmt, &screenmode[0], MAX_SDL_SCREENMODE);
+      DebOut("DisplayModes build list with native modes\n");
+      /* called before picasso96_alloc2!! */
+      mode_count = find_screen_modes (info->vfmt, &screenmode[0], &global_screen_resolution[0], MAX_SDL_SCREENMODE);
+
+      /* init and terminate list */
       md->DisplayModes = xcalloc (struct PicassoResolution, MAX_PICASSO_MODES);
+      md->DisplayModes[0].depth=-1;
+      md->DisplayModes[0].residx = -1;
+
       for (i=0; i<mode_count; i++) {
-        //md->DisplayModes[i]=(struct PicassoResolution *) malloc(sizeof(struct PicassoResolution));
-        md->DisplayModes[i].res.width=screenmode[i].w;
-        md->DisplayModes[i].res.height=screenmode[i].h;
-        md->DisplayModes[i].depth=bitdepth;
-        md->DisplayModes[i].lace=0;
-        md->DisplayModes[i].residx=i;
+        add_mode(md, screenmode[i].w, screenmode[i].h, bitdepth, 50, 0);
+
         DebOut("%dx%d, %d-bit\n", screenmode[i].w, screenmode[i].h, bitdepth);
         _stprintf (md->DisplayModes[i].name, _T("%dx%d, %d-bit"), screenmode[i].w, screenmode[i].h, bitdepth);
       }
-      /* terminat list */
-      md->DisplayModes[i+1].depth = -1;
-      md->DisplayModes[i+1].residx = -1;
 
       graphics_setup_success=1;
   }
@@ -794,6 +811,7 @@ static int graphics_subinit (void)
     }
 
     if(bitdepth==24) {
+      /* otherwise we get vertical "black stripes" on AROS :( */
       DEBUG_LOG ("force bitdepth of 32 instead of 24\n");
       bitdepth=32;
     }
@@ -873,6 +891,8 @@ static int graphics_subinit (void)
         gfxvidinfo.drawbuffer.linemem      = 0;
         gfxvidinfo.drawbuffer.pixbytes     = display->format->BytesPerPixel;
         SDLGD(bug("gfxvidinfo.pixbytes: %d\n", gfxvidinfo.drawbuffer.pixbytes));
+        gfxvidinfo.drawbuffer.pixbytes     = 4;
+        DebOut("WARNING: force gfxvidinfo.drawbuffer.pixbytes to 4!!\n");
 
         gfxvidinfo.drawbuffer.rowbytes     = display->pitch;
 
@@ -903,8 +923,9 @@ static int graphics_subinit (void)
     }
 #endif /* USE_GL */
 
-    //bug("force gfxvidinfo.drawbuffer.pixbytes %d to 4\n", gfxvidinfo.drawbuffer.pixbytes);
-    //gfxvidinfo.drawbuffer.pixbytes=4;
+    bug("force gfxvidinfo.drawbuffer.pixbytes %d to 4\n", gfxvidinfo.drawbuffer.pixbytes);
+    DebOut("WARNING: force gfxvidinfo.drawbuffer.pixbytes to 4!!\n");
+    gfxvidinfo.drawbuffer.pixbytes=4;
     /* Set UAE window title and icon name */
     setmaintitle ();
 
@@ -1533,8 +1554,12 @@ void gfx_set_picasso_modeinfo (uae_u32 w, uae_u32 h, uae_u32 depth, RGBFTYPE rgb
   picasso_vidinfo.width = w;
   picasso_vidinfo.height = h;
   picasso_vidinfo.depth = depth;
-  picasso_vidinfo.pixbytes = bit_unit >> 3;
+  DebOut("bytes_per_pixel: %d\n", bytes_per_pixel);
+  picasso_vidinfo.pixbytes = bytes_per_pixel;
+  DebOut("gfxvidinfo.pixbytes: %d\n", picasso_vidinfo.pixbytes);
   SDLGD(bug("gfxvidinfo.pixbytes: %d\n", picasso_vidinfo.pixbytes));
+  DebOut("WARNING: force gfxvidinfo.drawbuffer.pixbytes to 4!!\n");
+  picasso_vidinfo.pixbytes = 4;
   if (screen_is_picasso) {
     set_window_for_picasso();
   }
