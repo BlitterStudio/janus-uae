@@ -389,7 +389,7 @@ LONG SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPAR
 
       if(flag_editable(elem->flags)) {
         /* zune combo object */
-        if(wParam==-1) { /* TODO: wParam unsigned!? */
+        if((signed int) wParam==-1) { /* TODO: wParam unsigned!? */
           DebOut("clear string gadget\n");
           DoMethod(elem->obj, MUIM_NoNotifySet, MUIA_String_Contents, (IPTR) "");
           return CB_ERR;
@@ -835,9 +835,14 @@ BOOL SetWindowText(HWND hWnd, TCHAR *lpString) {
   LONG i;
   LONG item=-1;
 
+  if(!lpString) {
+    DebOut("lpString is NULL!?\n");
+    return FALSE;
+  }
+
   if(hWnd==NULL) {
-    DebOut("hWnd: 0x%p\n", hWnd);
-    TODO();
+    DebOut("hWnd is NULL => change main window title\n", hWnd);
+    SetAttrs(win, MUIA_Window_Title, lpString, TAG_DONE);
     return FALSE;
   }
   DebOut("lpString: %s\n", lpString);
@@ -866,21 +871,18 @@ BOOL SetWindowText(HWND hWnd, TCHAR *lpString) {
   return TRUE;
 }
 
-int GetWindowText(HWND   hWnd, LPTSTR lpString, int nMaxCount) {
-  DebOut("hWnd: 0x%p\n", hWnd);
+int GetWindowText(HWND hWnd, LPTSTR lpString, int nMaxCount) {
+  char *tmp;
 
-  if(hWnd==NULL) {
-    DebOut("hWnd is NULL!: 0x%p\n", hWnd);
-    TODO();
-    return 0;
-  }
+  DebOut("hWnd: %p\n", hWnd);
 
-  /* pray for enough space!! */
-  GetAttr(MUIA_String_Contents, win, (IPTR *) lpString);
+  GetAttr(MUIA_Window_Title, win, (IPTR *) &tmp);
+  DebOut("tmp: %s\n", tmp);
+
+  strncpy(lpString, tmp, nMaxCount);
 
   DebOut("lpString: %s\n", lpString);
   return strlen(lpString);
-
 }
 
 
