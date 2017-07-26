@@ -70,7 +70,6 @@ int scalepicasso;
 struct MultiDisplay Displays[MAX_DISPLAYS+1];
 
 static struct winuae_currentmode currentmodestruct;
-static int screen_is_initialized;
 static int display_change_requested;
 int window_led_drives, window_led_drives_end;
 int window_led_hd, window_led_hd_end;
@@ -578,22 +577,6 @@ bool vsync_switchmode (int hz)
 void gui_restart (void)
 {
 	panel_done = panel_active_done = false;
-}
-
-
-void updatedisplayarea (void) {
-	if (!screen_is_initialized) {
-    DebOut("screen_is_initialized==FALSE\n");
-		return;
-  }
-
-  DX_Invalidate(0, 0, -1, -1);
-}
-
-bool target_graphics_buffer_update (void) {
-  TODO();
-  //updatedisplayarea();
-  return TRUE;
 }
 
 
