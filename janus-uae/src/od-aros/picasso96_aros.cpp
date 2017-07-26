@@ -4471,9 +4471,6 @@ static void copyall (uae_u8 *src, uae_u8 *dst, int pwidth, int pheight, int srcb
 		for (y = 0; y < pheight; y++)
 			copyrow (src, dst, 0, y, pwidth, srcbytesperrow, srcpixbytes, dstbytesperrow, dstpixbytes, direct, mode_convert);
 	}
-  // oli: REMOVE ME!!!!
-  //DX_Fill (0, 0, picasso96_state.Width, picasso96_state.Height, 0);
-  DX_Fill (0, 0, 100, 100, 0);
 }
 
 uae_u8 *getrtgbuffer (int *widthp, int *heightp, int *pitch, int *depth, uae_u8 *palette)
