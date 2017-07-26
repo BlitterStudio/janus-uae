@@ -2314,7 +2314,6 @@ static void init_alloc (TrapContext *ctx, int size)
 	write_log (_T("P96 RESINFO: %08X-%08X (%d,%d)\n"), picasso96_amem, picasso96_amemend, size / PSSO_ModeInfo_sizeof, size);
 	picasso_allocatewritewatch (gfxmem_bank.allocated);
 #ifdef FSUAE
-	printf("setting gwwpagesize to something...\n");
 	gwwpagesize = 1024*1024*4; // FIXME:...
 
 	gwwbufsize = gfxmem_bank.allocated / gwwpagesize + 1;
@@ -2477,9 +2476,6 @@ static void picasso96_alloc2 (TrapContext *ctx)
 		depths++;
 	if (p96depth (32))
 		depths++;
-
-	printf("\n\npicasso96_alloc2\n\n\n");
-
 
   DebOut("DisplayModes used\n");
 	MultiDisplay *md1 = Displays;
@@ -2745,8 +2741,6 @@ static uae_u32 REGPARAM2 picasso_InitCard (TrapContext *ctx)
 	int i, j, unkcnt, cnt;
 	uaecptr amem;
 	uaecptr AmigaBoardInfo = m68k_areg (regs, 0);
-
-  printf("picasso_InitCard!!\n");
 
 	if (!picasso96_amem) {
 		write_log (_T("P96: InitCard() but no resolution memory!\n"));
@@ -5120,9 +5114,7 @@ static uaecptr uaegfx_card_install (TrapContext *ctx, uae_u32 extrasize)
 
 	/* InitCard */
 	initcardfunc = here ();
-  printf("calling picasso_InitCard..\n");
 	calltrap (deftrap (picasso_InitCard)); dw (RTS);
-  printf("picasso_InitCard done?\n");
 
 	functable = here ();
 	dl (openfunc);
