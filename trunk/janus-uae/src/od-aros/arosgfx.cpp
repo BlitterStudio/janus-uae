@@ -376,6 +376,8 @@ bool render_screen (bool immediate)
 	bool v = false;
 	int cnt;
 
+  DebOut("bla..\n");
+
 	render_ok = false;
 	if (/*minimized ||*/ picasso_on /*|| monitor_off || dx_islost ()*/)
 		return render_ok;

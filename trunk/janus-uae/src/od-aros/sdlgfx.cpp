@@ -1517,8 +1517,7 @@ static void set_window_for_picasso (void)
 }
 
 void clearscreen (void) {
-  DebOut("clear screen..\n");
-  SDL_FillRect(screen, NULL, 0x000000);
+  DebOut("clear screen (not working)..\n");
   SDL_Flip(screen);
 }
 
@@ -1710,6 +1709,7 @@ void gfx_unlock_picasso (bool dorender)
 #ifdef USE_GL
     }
 #endif /* USE_GL */
+    SDL_Flip(screen);
 }
 //#endif /* PICASSO96 */
 

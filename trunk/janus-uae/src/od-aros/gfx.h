@@ -15,7 +15,6 @@
 #define RTG_MODE_INTEGER_SCALE 3
 
 void DX_Invalidate (int x, int y, int width, int height);
-int DX_Fill (int dstx, int dsty, int width, int height, int color, unsigned int rgbtype);
 double getcurrentvblankrate (void);
 
 int isvsync_chipset (void);

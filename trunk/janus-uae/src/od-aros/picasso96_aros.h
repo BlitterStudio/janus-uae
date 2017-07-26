@@ -46,6 +46,16 @@ typedef enum {
 } BLIT_OPCODE;
 
 #endif
+
+/* helper struct to transfer results from sdlgfx.cpp to picasso96_aros.cpp */
+struct screen_resolution {
+  int width;
+  int height;
+  int depth;
+};
+
+extern struct screen_resolution global_screen_resolution[];
+
 /************************************************************************/
 /* Types for BoardType Identification
  */
