@@ -125,7 +125,7 @@ int p96hsync_counter, full_refresh;
 
 #ifdef DEBUG // Change this to _DEBUG for debugging
 #define P96TRACING_ENABLED 1
-#define P96TRACING_LEVEL 1
+#define P96TRACING_LEVEL 0
 #endif
 #if P96TRACING_ENABLED
 #ifndef __AROS__
@@ -228,6 +228,7 @@ static int set_gc_called = 0, init_picasso_screen_called = 0;
 static uaecptr oldscr = 0;
 
 
+/* only 2 and 4 require swapping. doing nothing for all other cases is ok */
 STATIC_INLINE void endianswap (uae_u32 *vp, int bpp)
 {
 	uae_u32 v = *vp;
@@ -239,8 +240,6 @@ STATIC_INLINE void endianswap (uae_u32 *vp, int bpp)
 	case 4:
 		*vp = ((v >> 24) & 0x000000ff) | ((v >> 8) & 0x0000ff00) | ((v << 8) & 0x00ff0000) | ((v << 24) & 0xff000000);
 		break;
-  default:
-    DebOut("ERROR: unsupported\n");
 	}
 }
 
@@ -756,23 +755,23 @@ static bool rtg_render (void)
 	bool flushed = false;
 	bool uaegfx = currprefs.rtgmem_type < GFXBOARD_HARDWARE;
 
-  DebOut("entered\n");
+  //DebOut("entered\n");
 
 	if (doskip () && p96skipmode == 0) {
     DebOut(";\n");
 		;
 	} else {
-		DebOut("else..\n");
+		//DebOut("else..\n");
 		if (uaegfx) {
-      DebOut("gfxmem_bank.start: %p, natmem_offset: %lx\n", gfxmem_bank.start, natmem_offset);
+      //DebOut("gfxmem_bank.start: %p, natmem_offset: %lx\n", gfxmem_bank.start, natmem_offset);
 			flushed = picasso_flushpixels (gfxmem_bank.start + natmem_offset, picasso96_state.XYOffset - gfxmem_bank.start);
-      DebOut("flushed: %d\n", flushed);
+      //DebOut("flushed: %d\n", flushed);
 		} else {
-      DebOut("call gfxboard_vsync_handler..\n");
+      //DebOut("call gfxboard_vsync_handler..\n");
 			gfxboard_vsync_handler ();
 #ifdef FSUAE
 #ifdef DEBUG_SHOW_SCREEN
-			printf("flushed = true\n");
+			//printf("flushed = true\n");
 #endif
 			// FIXME: hack to avoid double rendering due to
 			// both rtg_render and rtg_show directly or
@@ -781,7 +780,7 @@ static bool rtg_render (void)
 #endif
 		}
 	}
-  DebOut("flushed: %d\n", flushed);
+  //DebOut("flushed: %d\n", flushed);
 	return flushed;
 }
 static void rtg_show (void)
@@ -1095,8 +1094,6 @@ static int getconvert (int rgbformat, int pixbytes)
 	return v;
 }
 
-extern int get_host_mode(void);
-
 static void setconvert (void)
 {
 	static int ohost_mode, orgbformat;
@@ -1138,9 +1135,6 @@ static void setconvert (void)
 #endif
 #endif /* FSUAE */
 
-  DebOut("old host_mode: %d\n", host_mode);
-  //host_mode=get_host_mode();
-  DebOut("new host_mode: %d\n", host_mode);
 #define FSUAE 1
 	if (picasso_vidinfo.pixbytes == 4)
 		alloc_colors_rgb (8, 8, 8, 16, 8, 0, 0, 0, 0, 0, p96rc, p96gc, p96bc);
@@ -4217,8 +4211,11 @@ static void copyrow (uae_u8 *src, uae_u8 *dst, int x, int y, int width, int srcb
 				memcpy (dst2 + x * dstpix, src2 + x * srcpix, width * dstpix);
 			return;
 
+#warning necessary to implement other conversions?
+#if 0
       default:
-        DebOut("ERROR: unsupported convert_mode: %d\n", convert_mode);
+        DebOut("ERROR: unsupported convert_mode: %d (RGBFB_R5G6B5PC_32 %d)\n", convert_mode, RGBFB_R5G6B5PC_32);
+#endif
 		}
 	}
 
@@ -4454,11 +4451,13 @@ static void copyall (uae_u8 *src, uae_u8 *dst, int pwidth, int pheight, int srcb
 {
 	int y;
 
+#if 0
   DebOut("src: %p\n", src);
   DebOut("dst: %p\n", dst);
   DebOut("pwidth: %d, pheight: %d\n", pwidth,pheight);
   DebOut("srcbytesperrow: %d, srcpixbytes: %d, dstbytesperrow: %d, dstpixbytes: %d\n", srcbytesperrow, srcpixbytes, dstbytesperrow, dstpixbytes);
   DebOut("direct: %d, mode_convert: %d\n", direct, mode_convert);
+#endif
 
 	if (direct) {
 		int w = pwidth * picasso_vidinfo.pixbytes;
@@ -4556,7 +4555,7 @@ bool picasso_flushpixels (uae_u8 *src, int off)
 	int miny = pheight - 1;
 	int flushlines = 0, matchcount = 0;
 
-  DebOut("src: %p - off: %d\n", src, off);
+  //DebOut("src: %p - off: %d\n", src, off);
 
 #ifdef FSUAE // NL
 	picasso_vidinfo.extra_mem = 1;
@@ -4564,7 +4563,7 @@ bool picasso_flushpixels (uae_u8 *src, int off)
 
 	src_start = src + (off & ~gwwpagemask);
 	src_end = src + ((off + picasso96_state.BytesPerRow * pheight + gwwpagesize - 1) & ~gwwpagemask);
-#if 1
+#if 0
 	write_log (_T("%dx%d %dx%d %dx%d (%dx%d)\n"), picasso96_state.Width, picasso96_state.Width,
 		picasso96_state.VirtualWidth, picasso96_state.VirtualHeight,
 		picasso_vidinfo.width, picasso_vidinfo.height,
@@ -4572,7 +4571,7 @@ bool picasso_flushpixels (uae_u8 *src, int off)
 #endif
 	if (!picasso_vidinfo.extra_mem || !gwwbuf || src_start >= src_end) {
 #ifdef FSUAE
-		printf("%d %p %d returning\n", picasso_vidinfo.extra_mem, gwwbuf, src_start >= src_end);
+		//printf("%d %p %d returning\n", picasso_vidinfo.extra_mem, gwwbuf, src_start >= src_end);
 #endif
 		return false;
 	}
@@ -4621,7 +4620,7 @@ bool picasso_flushpixels (uae_u8 *src, int off)
 		dofull = gwwcnt >= ((src_end - src_start) / gwwpagesize) * 80 / 100;
 
 		dst = gfx_lock_picasso (dofull, rtg_clear_flag != 0);
-    DebOut("dst: %p\n", dst);
+    //DebOut("dst: %p\n", dst);
 		if (rtg_clear_flag)
 			rtg_clear_flag--;
 		if (dst == NULL)
@@ -4637,9 +4636,7 @@ bool picasso_flushpixels (uae_u8 *src, int off)
 			break;
 		}
 
-  DebOut("dofull: %d\n", dofull);
 		if (dofull) {
-      DebOut("flashscreen: %d\n", flashscreen);
 			if (flashscreen != 0) {
 				copyallinvert (src + off, dst, pwidth, pheight,
 					picasso96_state.BytesPerRow, picasso96_state.BytesPerPixel,
@@ -4658,8 +4655,6 @@ bool picasso_flushpixels (uae_u8 *src, int off)
 			flushlines = -1;
 			break;
 		}
-
-    DebOut("copy just rows..\n");
 
 		for (i = 0; i < gwwcnt; i++) {
 			uae_u8 *p = (uae_u8*)gwwbuf[i];
