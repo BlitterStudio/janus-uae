@@ -1517,7 +1517,12 @@ static void set_window_for_picasso (void)
 }
 
 void clearscreen (void) {
-  DebOut("clear screen (not working)..\n");
+  Uint32 black;
+
+  DebOut("clear screen ..\n");
+  black=SDL_MapRGB(screen->format, 0, 0, 0);
+
+  SDL_FillRect(screen, NULL, black);
   SDL_Flip(screen);
 }
 
