@@ -845,6 +845,7 @@ static int graphics_subinit (void)
 
     /* Set up buffer methods */
     if (SDL_MUSTLOCK (screen)) {
+      DebOut("SDL_MUSTLOCK!\n");
         gfxvidinfo.drawbuffer.lockscr     = sdl_lock;
         gfxvidinfo.drawbuffer.unlockscr   = sdl_unlock;
         gfxvidinfo.drawbuffer.flush_block = sdl_flush_block;
@@ -1515,8 +1516,10 @@ static void set_window_for_picasso (void)
     graphics_subinit();
 }
 
-static void clearscreen (void) {
-  TODO();
+void clearscreen (void) {
+  DebOut("clear screen..\n");
+  SDL_FillRect(screen, NULL, 0x000000);
+  SDL_Flip(screen);
 }
 
 static void updatemodes (void) {
@@ -1532,6 +1535,55 @@ static void updatemodes (void) {
   currentmode->native_height = currentmode->current_height;
 }
 
+
+void updatedisplayarea (void) {
+
+  DebOut("entered\n");
+
+	if (!screen) {
+    DebOut("screen is NULL\n");
+		return;
+  }
+
+  /* right thing to do here? */
+  DX_Invalidate(0, 0, -1, -1);
+  SDL_Flip(screen);
+}
+
+bool target_graphics_buffer_update (void) {
+
+	static bool	graphicsbuffer_retry;
+	int w, h;
+
+  DebOut("entered\n");
+	
+	graphicsbuffer_retry = false;
+	if (screen_is_picasso) {
+		w = picasso96_state.Width > picasso_vidinfo.width ? picasso96_state.Width : picasso_vidinfo.width;
+		h = picasso96_state.Height > picasso_vidinfo.height ? picasso96_state.Height : picasso_vidinfo.height;
+	} else {
+		struct vidbuffer *vb = gfxvidinfo.drawbuffer.tempbufferinuse ? &gfxvidinfo.tempbuffer : &gfxvidinfo.drawbuffer;
+		gfxvidinfo.outbuffer = vb;
+		w = vb->outwidth;
+		h = vb->outheight;
+	}
+	
+  /* WinUAE sets up the scaling here */
+#if 0
+  if (currentmode->flags & DM_SWSCALE) {
+    DebOut("WARNING: DM_SWSCALE not supported\n");
+  }
+#endif
+
+  /* clear screen */
+  clearscreen();
+
+  write_log (_T("Buffer size (%d*%d) %s\n"), w, h, screen_is_picasso ? _T("RTG") : _T("Native"));
+  DebOut("Buffer size (%d*%d) %s\n", w, h, screen_is_picasso ? _T("RTG") : _T("Native"));
+
+  updatedisplayarea();
+  return TRUE;
+}
 
 
 void gfx_set_picasso_modeinfo (uae_u32 w, uae_u32 h, uae_u32 depth, RGBFTYPE rgbfmt)
@@ -1630,8 +1682,10 @@ uae_u8 *gfx_lock_picasso (bool fullupdate, bool doclear)
 #ifdef USE_GL
     if (!currprefs.use_gl) {
 #endif /* USE_GL */
-        if (SDL_MUSTLOCK (screen))
+        if (SDL_MUSTLOCK (screen)) {
+          DebOut("SDL_LockSurface\n");
             SDL_LockSurface (screen);
+        }
         picasso_vidinfo.rowbytes = screen->pitch;
         return (uae_u8 *)screen->pixels;
 #ifdef USE_GL
@@ -1649,8 +1703,10 @@ void gfx_unlock_picasso (bool dorender)
 #ifdef USE_GL
     if (!currprefs.use_gl) {
 #endif /* USE_GL */
-        if (SDL_MUSTLOCK (screen))
+        if (SDL_MUSTLOCK (screen)) {
+          DebOut("SDL_UnockSurface\n");
             SDL_UnlockSurface (screen);
+        }
 #ifdef USE_GL
     }
 #endif /* USE_GL */
