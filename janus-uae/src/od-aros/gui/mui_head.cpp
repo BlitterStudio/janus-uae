@@ -20,7 +20,7 @@
 #include "mui_data.h"
 
 Object *app, *win; 
-static Object *root, *leftframe, *pages;
+Object *root, *leftframe, *pages;
 static Object *start, *cancel, *help, *errorlog, *quit;
 Object *reset;
 
@@ -67,33 +67,38 @@ Element IDD_FLOPPY[] = {
 #endif
 
 
-static const ULONG listelements[] = {
-  IDS_ABOUT,
-  IDS_PATHS,
-  IDS_QUICKSTART,
-  IDS_LOADSAVE,
-  IDS_TREEVIEW_HARDWARE,
-  IDS_CPU,
-  IDS_CHIPSET,
-  IDS_CHIPSET2,
-  IDS_KICKSTART,
-  IDS_MEMORY,
-  IDS_FLOPPY,
-  IDS_HARDDISK,
-  IDS_EXPANSION2,
-  IDS_EXPANSION,
-  IDS_TREEVIEW_HOST,
-  IDS_DISPLAY,
-  IDS_SOUND,
-  IDS_GAMEPORTS,
-  IDS_IOPORTS,
-  IDS_INPUT,
-  IDS_AVIOUTPUT,
-  IDS_FILTER,
-  IDS_DISK,
-  IDS_MISC1,
-  IDS_MISC2,
-  0
+struct my_list_element {
+  ULONG id;
+  char *icon_name;
+};
+
+static const struct my_list_element listelements[] = {
+  IDS_ABOUT,              "3:PROGDIR:images/amigainfo.png",
+  IDS_PATHS,              "3:PROGDIR:images/paths.png",
+  IDS_QUICKSTART,         "3:PROGDIR:images/quickstart.png",
+  IDS_LOADSAVE,           "3:PROGDIR:images/file.png",
+  IDS_TREEVIEW_HARDWARE,  "3:PROGDIR:images/root.png",
+  IDS_CPU,                "3:PROGDIR:images/cpu.png",
+  IDS_CHIPSET,            "3:PROGDIR:images/cpu.png",
+  IDS_CHIPSET2,           "3:PROGDIR:images/cpu.png",
+  IDS_KICKSTART,          "3:PROGDIR:images/chip.png",
+  IDS_MEMORY,             "3:PROGDIR:images/chip.png",
+  IDS_FLOPPY,             "3:PROGDIR:images/floppy35.png",
+  IDS_HARDDISK,           "3:PROGDIR:images/drive.png",
+  IDS_EXPANSION2,         "3:PROGDIR:images/expansion.png",
+  IDS_EXPANSION,          "3:PROGDIR:images/expansion.png",
+  IDS_TREEVIEW_HOST,      "3:PROGDIR:images/root.png",
+  IDS_DISPLAY,            "3:PROGDIR:images/screen.png",
+  IDS_SOUND,              "3:PROGDIR:images/sound.png",
+  IDS_GAMEPORTS,          "3:PROGDIR:images/joystick.png",
+  IDS_IOPORTS,            "3:PROGDIR:images/port.png",
+  IDS_INPUT,              "3:PROGDIR:images/joystick.png",
+  IDS_AVIOUTPUT,          "3:PROGDIR:images/avioutput.png",
+  IDS_FILTER,             "3:PROGDIR:images/screen.png",
+  IDS_DISK,               "3:PROGDIR:images/floppy35.png",
+  IDS_MISC1,              "3:PROGDIR:images/misc.png",
+  IDS_MISC2,              "3:PROGDIR:images/misc.png",
+  0, NULL
 };
 
 static Object *page_obj[50];
@@ -287,10 +292,17 @@ Object* FixedProcObj(ULONG idc, IPTR proc) {
 }
 
 extern char *STRINGTABLE[];
+#if 0
 static char *list_source_array[30];
+#endif
+
+extern struct MUI_CustomClass *CL_LeftFrame;
+struct MUI_CustomClass *LeftFrame_init(void);
 
 Object* build_gui(void) {
+#if 0
   ULONG i;
+#endif
 
   DebOut("building gui..\n");
 
@@ -299,14 +311,27 @@ Object* build_gui(void) {
     return app;
   }
 
+#if 0
   /* build array for left listview, strdup gets freed automatically on exit */
   i=0;
-  while(listelements[i]) {
-    list_source_array[i]=strdup(STRINGTABLE[listelements[i]]); 
+  while(listelements[i].id) {
+    list_source_array[i]=strdup(STRINGTABLE[listelements[i].id]); 
     DebOut("list_source_array[%d]=%s\n", i, list_source_array[i]);
     i++;
   }
   list_source_array[i]=(char *)NULL;
+#endif
+
+  LeftFrame_init();
+
+  struct TagItem frame_tags[] = {
+                  { MUIA_Frame, MUIV_Frame_ReadList },
+                  { MUIA_List_SourceArray, (IPTR) listelements },
+                  { MUIA_Background, (IPTR) "2:FFFFFFFF,FFFFFFFF,FFFFFFFF" },
+                  { MUIA_Font, MUIV_Font_List },
+                  { TAG_DONE, 0 }
+  };
+
 
   app = MUI_NewObject(MUIC_Application,
                       MUIA_Application_Author, (IPTR) "Toni Willen, many others and Oliver Brunner",
@@ -325,12 +350,14 @@ Object* build_gui(void) {
                               MUIA_Group_Horiz, FALSE,
                               MUIA_Group_Child,
                                 ListviewObject,
-                                          MUIA_Listview_List, leftframe=ListObject,
-                                            MUIA_Frame, MUIV_Frame_ReadList,
-                                            MUIA_List_SourceArray, (IPTR) list_source_array,
-                                            MUIA_Background, "2:FFFFFFFF,FFFFFFFF,FFFFFFFF",
-                                            MUIA_Font, MUIV_Font_List, 
-                                          End,
+                                          MUIA_Listview_List, leftframe=(Object *) NewObjectA(CL_LeftFrame->mcc_Class,
+                                            NULL,
+                                            //MUIA_Frame, MUIV_Frame_ReadList,
+                                            //MUIA_List_SourceArray, (IPTR) list_source_array,
+                                            //MUIA_Background, "2:FFFFFFFF,FFFFFFFF,FFFFFFFF",
+                                            //MUIA_Font, MUIV_Font_List
+                                            frame_tags
+                                          ),
                                         End,
                               /* reset /quit buttons! */
                               MUIA_Group_Child,
@@ -402,6 +429,19 @@ Object* build_gui(void) {
 
   /* List click events */
   //kprintf("leftframe: 0x%p\n", leftframe);
+
+#if 0
+  {
+    // foo
+    extern Object *image_obj;
+    static char blafoo[256];
+    sprintf(blafoo, "\33O[%016lx] foo", (APTR) image_obj);
+    DebOut("blafoo %s\n", blafoo);
+    DoMethod(leftframe, MUIM_List_InsertSingle, (APTR) blafoo, MUIV_List_Insert_Bottom);
+
+
+  }
+#endif
 
   MyMuiHook_list.h_Entry=(APTR) MUIHook_list;
   MyMuiHook_list.h_Data =NULL;
