@@ -58,7 +58,7 @@ uae_u32 max_z3fastmem;
 #define MAXZ3MEM64 0xF0000000
 
 static struct uae_shmid_ds shmids[MAX_SHMID];
-uae_u8 *natmem_reserved, *natmem_offset, *natmem_offset_end;
+uae_u8 *natmem_reserved=NULL, *natmem_offset=NULL, *natmem_offset_end=NULL;
 uae_u32 natmem_reserved_size;
 static uae_u8 *p96mem_offset;
 static int p96mem_size;
