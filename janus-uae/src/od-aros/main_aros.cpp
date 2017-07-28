@@ -370,15 +370,14 @@ int main (int argc, TCHAR **argv) {
   else {
     enumeratedisplays (FALSE /* multi_display*/);
   }
-
 #else
+  /* in AROS, we have NATMEM_OFFSET defined */
 
   if(preinit_shm() /* && WIN32_RegisterClasses () && WIN32_InitLibraries ()*/ ) {
     write_log (_T("Enumerating display devices.. \n"));
     enumeratedisplays (FALSE /* multi_display*/);
   }
   else {
-
     write_log(_T("preinit_shm FAILED\n"));
   }
 #endif /* NATMEM_OFFSET */
