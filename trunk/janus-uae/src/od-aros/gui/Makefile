@@ -71,6 +71,7 @@ COMMON_OBJS= \
 	mui_dialog.o \
 	combo.o \
 	fs.o \
+	leftframe_class.o \
 	cursor.o 
 
 # build dependencies magic
