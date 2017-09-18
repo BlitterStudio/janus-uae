@@ -1,4 +1,4 @@
-#define JUAE_DEBUG 1
+//#define JUAE_DEBUG 1
 
 #include "sysdeps.h"
 #include "sysconfig.h"
@@ -36,7 +36,6 @@ struct LeftFrame_Data
 
 extern Object *leftframe;
 
-
 /****************************************************************************************/
 
 char *list_source_array[30];
@@ -73,7 +72,8 @@ IPTR LeftFrame_New(struct IClass *cl, Object *obj, struct opSet *msg) {
 
   i=0;
   while(in[i].id) {
-    snprintf(t, 127, "\33I[%s] %s", in[i].icon_name, STRINGTABLE[in[i].id]);
+    //snprintf(t, 127, "\33I[%s] %s", in[i].icon_name, STRINGTABLE[in[i].id]);
+    snprintf(t, 127, "%s %s", in[i].icon_name, STRINGTABLE[in[i].id]);
     list_source_array[i]=strdup(t);
     i++;
   }
@@ -82,7 +82,9 @@ IPTR LeftFrame_New(struct IClass *cl, Object *obj, struct opSet *msg) {
   obj=(Object *)DoSuperNewTags(cl, obj, NULL,
       //MUIA_List_Format       , "DELTA=2,,,",
       MUIA_List_SourceArray, list_source_array,
+      MUIA_Background, (IPTR) "2:ffffffff,ffffffff,ffffffff",
       MUIA_List_MinLineHeight, 14,
+      MUIA_List_AdjustWidth, TRUE,
       TAG_DONE);
 
     return (IPTR)obj;
