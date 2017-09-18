@@ -1,4 +1,4 @@
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #include "sysdeps.h"
 #include "sysconfig.h"
@@ -24,80 +24,43 @@ Object *root, *leftframe, *pages;
 static Object *start, *cancel, *help, *errorlog, *quit;
 Object *reset;
 
-/* GUI thread */
-//static uae_thread_id tid;
-
-#if 0
-Element IDD_FLOPPY[] = {
-  { 0, NULL, GROUPBOX,  1,   0, 393, 163, "bla", 0 },
-  { 0, NULL, CONTROL,   7,  14,  34,  15, "DF0:", 0 },
-  { 0, NULL, GROUPBOX,  1, 170, 393,  35, "foo", 0 },
-  { 0, NULL, 0,         0,   0,   0,   0,  NULL, 0 }
-};
-#endif
-
-#if 0
-#define IDS_KICKSTART           "ROM"
-#define IDS_DISK                "Disk swapper"
-#define IDS_DISPLAY             "Display"
-#define IDS_HARDDISK            "CD & Hard drives"
-#define IDS_FLOPPY              "Floppy drives"
-#define IDS_ABOUT               "About"
-#define IDS_LOADSAVE            "Configurations"
-#define IDS_LOADSAVE1           "\33bHardware"
-#define IDS_LOADSAVE2           "\33bHost"
-#define IDS_AVIOUTPUT           "Output"
-#define IDS_IOPORTS             "IO ports"
-#define IDS_MISC1               "Miscellaneous"
-#define IDS_MEMORY              "RAM"
-#define IDS_CPU                 "CPU and FPU"
-#define IDS_CHIPSET             "Chipset"
-#define IDS_INPUT               "Input"
-#define IDS_FILTER              "Filter"
-#define IDS_MISC2               "Pri. & Extensions"
-#define IDS_PATHS               "Paths"
-#define IDS_QUICKSTART          "Quickstart"
-#define IDS_FRONTEND            "Frontend"
-#define IDS_CHIPSET2            "Adv. Chipset"
-#define IDS_GAMEPORTS           "Game ports"
-#define IDS_EXPANSION2          "RTG board"
-#define IDS_EXPANSION           "Expansions"
-#define IDS_CDROM               "CD-ROM"
-#define IDS_SOUND               "Sound"
-#endif
-
-
 struct my_list_element {
   ULONG id;
   char *icon_name;
 };
 
+#define K "\33I[3:PROGDIR:images/k.png]"  /* |- */
+#define L "\33I[3:PROGDIR:images/l.png]"  /* |  */
+#define I "\33I[3:PROGDIR:images/i.png]"  /* '- */
+#define E "\33I[3:PROGDIR:images/e.png]"  /*    */
+
+/* lazy coded WinUAE lookalike fake tree */
 static const struct my_list_element listelements[] = {
-  IDS_ABOUT,              "3:PROGDIR:images/amigainfo.png",
-  IDS_PATHS,              "3:PROGDIR:images/paths.png",
-  IDS_QUICKSTART,         "3:PROGDIR:images/quickstart.png",
-  IDS_LOADSAVE,           "3:PROGDIR:images/file.png",
-  IDS_TREEVIEW_HARDWARE,  "3:PROGDIR:images/root.png",
-  IDS_CPU,                "3:PROGDIR:images/cpu.png",
-  IDS_CHIPSET,            "3:PROGDIR:images/cpu.png",
-  IDS_CHIPSET2,           "3:PROGDIR:images/cpu.png",
-  IDS_KICKSTART,          "3:PROGDIR:images/chip.png",
-  IDS_MEMORY,             "3:PROGDIR:images/chip.png",
-  IDS_FLOPPY,             "3:PROGDIR:images/floppy35.png",
-  IDS_HARDDISK,           "3:PROGDIR:images/drive.png",
-  IDS_EXPANSION2,         "3:PROGDIR:images/expansion.png",
-  IDS_EXPANSION,          "3:PROGDIR:images/expansion.png",
-  IDS_TREEVIEW_HOST,      "3:PROGDIR:images/root.png",
-  IDS_DISPLAY,            "3:PROGDIR:images/screen.png",
-  IDS_SOUND,              "3:PROGDIR:images/sound.png",
-  IDS_GAMEPORTS,          "3:PROGDIR:images/joystick.png",
-  IDS_IOPORTS,            "3:PROGDIR:images/port.png",
-  IDS_INPUT,              "3:PROGDIR:images/joystick.png",
-  IDS_AVIOUTPUT,          "3:PROGDIR:images/avioutput.png",
-  IDS_FILTER,             "3:PROGDIR:images/screen.png",
-  IDS_DISK,               "3:PROGDIR:images/floppy35.png",
-  IDS_MISC1,              "3:PROGDIR:images/misc.png",
-  IDS_MISC2,              "3:PROGDIR:images/misc.png",
+  IDS_ABOUT,              K "\33I[3:PROGDIR:images/amigainfo.png]",
+  IDS_PATHS,              K "\33I[3:PROGDIR:images/paths.png]",
+  IDS_QUICKSTART,         K "\33I[3:PROGDIR:images/quickstart.png]",
+  IDS_LOADSAVE,           K "\33I[3:PROGDIR:images/file.png]",
+  IDS_TREEVIEW_HARDWARE,  K "\33I[3:PROGDIR:images/root.png]",
+  IDS_CPU,                I K "\33I[3:PROGDIR:images/cpu.png]",
+  IDS_CHIPSET,            I K "\33I[3:PROGDIR:images/cpu.png]",
+  IDS_CHIPSET2,           I K "\33I[3:PROGDIR:images/cpu.png]",
+  IDS_KICKSTART,          I K "\33I[3:PROGDIR:images/chip.png]",
+  IDS_MEMORY,             I K "\33I[3:PROGDIR:images/chip.png]",
+  IDS_FLOPPY,             I K "\33I[3:PROGDIR:images/floppy35.png]",
+  IDS_HARDDISK,           I K "\33I[3:PROGDIR:images/drive.png]",
+  IDS_EXPANSION2,         I K "\33I[3:PROGDIR:images/expansion.png]",
+  IDS_EXPANSION,          I L "\33I[3:PROGDIR:images/expansion.png]",
+  IDS_TREEVIEW_HOST,      L "\33I[3:PROGDIR:images/root.png]",
+  IDS_DISPLAY,            E K "\33I[3:PROGDIR:images/screen.png]",
+  IDS_SOUND,              E K "\33I[3:PROGDIR:images/sound.png]",
+  IDS_GAMEPORTS,          E K "\33I[3:PROGDIR:images/joystick.png]",
+  IDS_IOPORTS,            E K "\33I[3:PROGDIR:images/port.png]",
+  IDS_INPUT,              E K "\33I[3:PROGDIR:images/joystick.png]",
+  IDS_AVIOUTPUT,          E K "\33I[3:PROGDIR:images/avioutput.png]",
+  IDS_FILTER,             E K "\33I[3:PROGDIR:images/screen.png]",
+  IDS_DISK,               E K "\33I[3:PROGDIR:images/floppy35.png]",
+  IDS_MISC1,              E K "\33I[3:PROGDIR:images/misc.png]",
+  IDS_MISC2,              E L "\33I[3:PROGDIR:images/misc.png]",
   0, NULL
 };
 
@@ -327,7 +290,7 @@ Object* build_gui(void) {
   struct TagItem frame_tags[] = {
                   { MUIA_Frame, MUIV_Frame_ReadList },
                   { MUIA_List_SourceArray, (IPTR) listelements },
-                  { MUIA_Background, (IPTR) "2:FFFFFFFF,FFFFFFFF,FFFFFFFF" },
+                  { MUIA_Background, (IPTR) "2:ffffffff,ffffffff,ffffffff" },
                   { MUIA_Font, MUIV_Font_List },
                   { TAG_DONE, 0 }
   };
@@ -350,11 +313,14 @@ Object* build_gui(void) {
                               MUIA_Group_Horiz, FALSE,
                               MUIA_Group_Child,
                                 ListviewObject,
-                                          MUIA_Listview_List, leftframe=(Object *) NewObjectA(CL_LeftFrame->mcc_Class,
+                                          MUIA_Frame, MUIV_Frame_Group,
+                                          MUIA_Background, "2:FFFFFFFF,FFFFFFFF,FFFFFFFF",
+                                          MUIA_Listview_ScrollerPos, MUIV_Listview_ScrollerPos_None,
+                                          MUIA_Listview_List, 
+                                          leftframe=(Object *) NewObjectA(CL_LeftFrame->mcc_Class,
                                             NULL,
                                             //MUIA_Frame, MUIV_Frame_ReadList,
                                             //MUIA_List_SourceArray, (IPTR) list_source_array,
-                                            //MUIA_Background, "2:FFFFFFFF,FFFFFFFF,FFFFFFFF",
                                             //MUIA_Font, MUIV_Font_List
                                             frame_tags
                                           ),
@@ -412,7 +378,8 @@ Object* build_gui(void) {
                                     HSpace(0),
 
                                   MUIA_Group_Child,
-                                    errorlog=MUI_MakeObject(MUIO_Button,"Error log"),
+                                    errorlog=MUI_MakeObject(MUIO_Button,"Error log",
+                                    MUIA_Background, (IPTR) MUII_SHINE),
                                   MUIA_Group_Child,
                                     start=MUI_MakeObject(MUIO_Button,"Start"),
                                   MUIA_Group_Child,
