@@ -24,6 +24,8 @@
 
 #ifdef __AROS__
 /* here Unit defines are ok */
+#define JUAE_DEBUG 1
+
 #include <aros/asmcall.h>
 #include <proto/arossupport.h>
 #include <aros/debug.h>
@@ -102,7 +104,12 @@ int log_filesys = 0;
 #if 0
 #define TRACE(x) if (log_filesys > 0 && (unit->volflags & MYVOLUMEINFO_CDFS)) { write_log x; }
 #else
+#ifndef __AROS__
 #define TRACE(x) if (log_filesys > 0) { write_log x; }
+#else
+//#define TRACE(x) DebOut x
+#define TRACE(x) 
+#endif
 #endif
 #define TRACEI(x) if (log_filesys > 0) { write_log x; }
 #define TRACE2(x) if (log_filesys >= 2) { write_log x; }
@@ -3286,6 +3293,7 @@ static void
 	uae_u32 dostype;
 	bool fs = false, media = false;
 
+  DebOut("do_info..\n");
 	blocksize = 512;
 	/* not FFS because it is not understood by WB1.x C:Info */
 	dostype = DISK_TYPE_DOS;
@@ -3307,21 +3315,28 @@ static void
 			}
 		}
 	} else {
+    DebOut("not archive and not CD..\n");
 		ret = get_fs_usage (unit->ui.rootdir, 0, &fsu);
+    DebOut("ret: %d\n", ret);
 		if (ret)
 			err = dos_errno ();
 		fs = true;
 		media = filesys_isvolume (unit) != 0;
+    DebOut("media: %d\n", media);
 	}
 	if (ret != 0) {
+    DebOut("!=0\n");
 		PUT_PCK_RES1 (packet, DOS_FALSE);
 		PUT_PCK_RES2 (packet, err);
 		return;
 	}
+  DebOut("==0\n");
 	put_long (info, 0); /* errors */
 	put_long (info + 4, nr); /* unit number */
+  DebOut("nr: %d\n", nr);
 	put_long (info + 8, unit->ui.readonly || unit->ui.locked ? 80 : 82); /* state  */
 	put_long (info + 20, blocksize); /* bytesperblock */
+  DebOut("blocksize: %d\n", blocksize);
 	put_long (info + 32, 0); /* inuse */
 	if (unit->ui.unknown_media) {
 		if (!disk_info) {
@@ -3344,19 +3359,24 @@ static void
 		put_long (info + 24, -1); /* ID_NO_DISK_PRESENT */
 		put_long (info + 28, 0);
 	} else {
+    DebOut("foo\n");
 		if (fs && currprefs.filesys_limit) {
+      DebOut("filesys_limit!\n");
 			if (fsu.fsu_blocks > (uae_u64)currprefs.filesys_limit * 1024 / blocksize) {
 				uae_u32 oldblocks = fsu.fsu_blocks;
 				fsu.fsu_blocks = (uae_u32)((uae_u64)currprefs.filesys_limit * 1024 / blocksize);
 				fsu.fsu_bavail = (uae_u32)((uae_u64)fsu.fsu_bavail * fsu.fsu_blocks / oldblocks);
 			}
 		}
+    DebOut("fsu.fsu_blocks: %d\n", fsu.fsu_blocks);
 		put_long (info + 12, fsu.fsu_blocks); /* numblocks */
+    DebOut("fsu.fsu_bavail: %d\n", fsu.fsu_bavail);
 		put_long (info + 16, fsu.fsu_blocks - fsu.fsu_bavail); /* inuse */
 		put_long (info + 24, dostype); /* disk type */
 		put_long (info + 28, unit->volume >> 2); /* volume node */
 		put_long (info + 32, (get_long (unit->volume + 28) || unit->keys) ? -1 : 0); /* inuse */
 	}
+  DebOut("left..\n");
 	PUT_PCK_RES1 (packet, DOS_TRUE);
 }
 

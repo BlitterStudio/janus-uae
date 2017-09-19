@@ -83,7 +83,7 @@
 #include "win32gui.h"
 #include "win32gfx.h"
 #endif
-#include "sounddep/sound.h"
+#include "sound.h"
 #ifndef __AROS__
 #include "od-win32/parser.h"
 #include "od-win32/ahidsound.h"

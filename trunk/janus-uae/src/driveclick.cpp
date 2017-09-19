@@ -14,7 +14,7 @@
 #include "uae.h"
 #include "options.h"
 #include "audio.h"
-#include "sounddep/sound.h"
+#include "sound.h"
 #include "zfile.h"
 #include "fsdb.h"
 #include "events.h"

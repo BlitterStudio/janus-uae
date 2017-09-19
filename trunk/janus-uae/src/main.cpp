@@ -7,7 +7,7 @@
 * Copyright 1995, 1996, 1997 Bernd Schmidt
 */
 
-//#define JUAE_DEBUG
+#define JUAE_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -290,7 +290,7 @@ void fixup_cpu (struct uae_prefs *p)
 		p->cachesize = 0;
 	}
 	if (p->cachesize && (p->fpu_no_unimplemented || p->int_no_unimplemented)) {
-		error_log (_T("JIT is not compatible with unimplemented CPU/FPU instruction emulation."));
+		error_log (_T("JIT is not compatible with unimplemented CPU/FPU instruction emulation. (fpu_no_unimplemented %d, int_no_unimplemented %d)"));
 		p->fpu_no_unimplemented = p->int_no_unimplemented = false;
 	}
 
@@ -1015,6 +1015,7 @@ void do_start_program (void)
 	{
     DebOut("call m68k_go..\n");
 		m68k_go (1);
+    DebOut("m68k_go returned\n");
 	}
 #ifdef USE_STRUCTURED_EXCEPTION_HANDLING
 #ifdef JIT
@@ -1154,6 +1155,7 @@ static int real_main2 (int argc, TCHAR **argv)
 	rp_fixup_options (&currprefs);
 #endif
 	changed_prefs = currprefs;
+  DebOut("calling target_run ..\n");
 	target_run ();
 	/* force sound settings change */
 	currprefs.produce_sound = 0;

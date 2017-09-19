@@ -40,7 +40,7 @@
 #include "gui.h"
 #include "disk.h"
 #include "audio.h"
-#include "sounddep/sound.h"
+#include "sound.h"
 #include "savestate.h"
 #include "arcadia.h"
 #include "zfile.h"
@@ -1071,7 +1071,7 @@ void read_inputdevice_config (struct uae_prefs *pr, const TCHAR *option, TCHAR *
 				int flags2 = 0;
 				if (p[-1] == '.')
 					flags2 = getnum (&p) & ID_FLAG_SAVE_MASK_CONFIG;
-				if (p[-1] == '.' && (p[0] >= 'A' && p[0] <= 'Z') || (p[0] >= 'a' && p[0] <= 'z'))
+				if ((p[-1] == '.' && (p[0] >= 'A' && p[0] <= 'Z') ) || (p[0] >= 'a' && p[0] <= 'z'))
 					flags |= getqual (&p);
 				TCHAR *custom2 = NULL;
 				struct inputevent *ie2 = readevent (p2, &custom2);

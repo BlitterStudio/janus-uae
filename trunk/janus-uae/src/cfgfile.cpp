@@ -5011,7 +5011,6 @@ static int cfgfile_load_2 (struct uae_prefs *p, const TCHAR *filename, bool real
 #endif
 
 	while (cfg_fgets (linea, sizeof (linea), fh) != 0) {
-  DebOut("p->rtgmem_size: %d\n", p->rtgmem_size);
 		trimwsa (linea);
 		if (strlen (linea) > 0) {
 			if (linea[0] == '#' || linea[0] == ';') {
@@ -5107,7 +5106,9 @@ int cfgfile_load (struct uae_prefs *p, const TCHAR *filename, int *type, int ign
 		}
 		if (p->config_host_path[0]) {
 			fetch_configurationpath (tmp, sizeof (tmp) / sizeof (TCHAR));
+      DebOut("tmp: %s\n", tmp);
 			_tcsncat (tmp, p->config_host_path, sizeof (tmp) / sizeof (TCHAR) - _tcslen(tmp) - 1);
+      DebOut("tmp: %s\n", tmp);
 			type2 = CONFIG_TYPE_HOST;
 			cfgfile_load (p, tmp, &type2, 1, 0);
 		}
@@ -5984,7 +5985,7 @@ static void default_prefs_mini (struct uae_prefs *p, int type)
 }
 #endif
 
-#include "sounddep/sound.h"
+#include "sound.h"
 
 void default_prefs (struct uae_prefs *p, int type)
 {
@@ -7012,6 +7013,7 @@ int built_in_prefs (struct uae_prefs *p, int model, int config, int compa, int r
 	int v = 0;
 
 	buildin_default_prefs (p);
+  DebOut("model: %d\n", model);
 	switch (model)
 	{
 	case 0:

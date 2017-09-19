@@ -22,7 +22,7 @@
 #include "autoconf.h"
 #include "gensound.h"
 #include "audio.h"
-#include "sounddep/sound.h"
+#include "sound.h"
 #include "events.h"
 #include "savestate.h"
 #include "driveclick.h"

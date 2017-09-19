@@ -8,6 +8,7 @@
 
 #define IDE_LOG 2
 
+#define JUAE_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -1288,6 +1289,8 @@ void ide_write_reg (struct ide_hdf *ide, int ide_reg, uae_u32 val)
 static void *ide_thread (void *idedata)
 {
 	struct ide_thread_state *its = (struct ide_thread_state*)idedata;
+
+  DebOut("ide_thread started..\n");
 	for (;;) {
 		uae_u32 unit = read_comm_pipe_u32_blocking (&its->requests);
 		struct ide_hdf *ide;

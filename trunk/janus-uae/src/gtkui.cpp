@@ -25,7 +25,7 @@
 #include "newcpu.h"
 #include "autoconf.h"
 #include "threaddep/thread.h"
-#include "sounddep/sound.h"
+#include "sound.h"
 #include "savestate.h"
 #include "compemu.h"
 
