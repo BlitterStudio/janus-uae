@@ -55,6 +55,8 @@ using namespace std;
 #define CPU_arm 1
 #elif defined(__powerpc__) || defined(_M_PPC)
 #define CPU_powerpc 1
+#elif defined(__m68k__)
+#define CPU_m68k 1
 #else
 #error unrecognized CPU type
 #endif
