@@ -1,7 +1,7 @@
 #
 # simple Makefile to build SDL_Config link library for AROS
 #
-# Copyright 2011 Oliver Brunner - aros<at>oliver-brunner.de
+# Copyright 2011-2017 Oliver Brunner - aros<at>oliver-brunner.de
 #
 
 # to build for 
@@ -21,37 +21,40 @@ else
 	SVN        = /home/oli/svn
 endif
 
+OBJDIR  = obj/$(CPU)
+# build library in the parent object dir. It is fetched from there during linking 
+BIN     = ../$(OBJDIR)/libSDL_Config.a
+
 CPP     = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-c++
 CC      = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-gcc
 AR      = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ar
 
-OBJS    = SDL_config.o 
-TESTOBJ = initest.o
-TESTEXE = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/AROS/initest
+OBJS    = $(OBJDIR)/SDL_config.o 
+
 LINKOBJ = SDL_config.o 
+
 #INCS    = -I$(SVN)/$(ABI)/AROS/bin/linux-i386/gen/include/SDL
 #INCS    = -I$(SVN)/$(ABI)/AROS/bin/linux-i386/AROS/Development/include/SDL
-INCS     = 
+INCS     = -I$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/AROS/Extras/Developer/include -I$(SVN)/$(ABI)/AROS/bin/amiga-$(CPU)/AROS/Extras/Developer/include
 
-BIN     = libSDL_Config.a
 CPPFLAGS= $(INCS) -fexpensive-optimizations -O3
 RM      = rm -f
 
 
 .PHONY: all all-before all-after clean clean-custom
 
-all: $(BIN)
+all: prepare $(BIN)
 
-test: $(BIN) $(TESTOBJ)
-	$(CPP) $(CPPFLAGS) $(TESTOBJ) -L. -lSDL_Config -lSDL -o $(TESTEXE) 
+prepare:
+	mkdir -p $(OBJDIR)
 
 clean:
 	${RM} $(OBJS) $(BIN) $(TESTOBJ)
 
-$(BIN): $(LINKOBJ)
-	$(AR) r $(BIN) $(LINKOBJ)
+$(BIN): $(OBJS)
+	$(AR) r $(BIN) $(LINKOBJS)
 
 #ranlib $(BIN)
 
-%.o: %.c
+$(OBJDIR)/%.o: %.c
 	$(CPP) $(CPPFLAGS) -o $@ -c $*.c

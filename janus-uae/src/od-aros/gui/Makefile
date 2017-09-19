@@ -1,7 +1,7 @@
 #
 # simple Makefile for a Zune gui
 #
-# Copyright 2014 Oliver Brunner - aros<at>oliver-brunner.de
+# Copyright 2014-2017 Oliver Brunner - aros<at>oliver-brunner.de
 #
 # This file is part of Janus-UAE.
 #
@@ -36,11 +36,13 @@ else
 	SVN        = /home/oli/svn
 endif
 
-LIB        = libgui.a
+
+OBJDIR     = obj/$(CPU)
+# build library in the parent object dir. It is fetched from there during linking 
+LIB        = ../$(OBJDIR)/libgui.a
 
 CC         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-gcc
 CPP        = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-g++
-#RANLIB = 
 AR         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ar
 LD         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ld
 
@@ -60,39 +62,37 @@ LINK_LIBS=-larossupport -lmui
 # ============== common ====================
 
 COMMON_OBJS= \
-	mui_class.o \
-	mui_head.o \
-	mui_data.o \
-	mui_file_request.o \
-	mui_tree.o \
-	mui_messagebox.o \
-	mui_win.o \
-	mui_listview.o \
-	mui_dialog.o \
-	combo.o \
-	fs.o \
-	leftframe_class.o \
-	cursor.o 
+	$(OBJDIR)/mui_class.o \
+	$(OBJDIR)/mui_head.o \
+	$(OBJDIR)/mui_data.o \
+	$(OBJDIR)/mui_file_request.o \
+	$(OBJDIR)/mui_tree.o \
+	$(OBJDIR)/mui_messagebox.o \
+	$(OBJDIR)/mui_win.o \
+	$(OBJDIR)/mui_listview.o \
+	$(OBJDIR)/mui_dialog.o \
+	$(OBJDIR)/combo.o \
+	$(OBJDIR)/fs.o \
+	$(OBJDIR)/leftframe_class.o \
+	$(OBJDIR)/cursor.o 
 
 # build dependencies magic
 DEP_OBJS=$(COMMON_OBJS)
 
-%.o: %.c
-	$(CC) $(CFLAGS) -o $@ -c $*.c
-
-%.o: %.cpp
+$(OBJDIR)/%.o: %.cpp
 	@echo "building dependency for "$(subst .o,.cpp,$<)" .."
 	@$(CPP) -M $(CPPFLAGS) $(subst .o,.cpp,$<) > $@.$$$$;                      \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $(subst .o,.dep,$@);     \
 	rm -f $@.$$$$
 	$(CPP) $(CPPFLAGS) -o $@ -c $*.cpp
 
-
 all: uae 
 
-uae: mui_data.h common 
+uae: prepare mui_data.h common 
 	$(AR) $(ARFLAGS) $(LIB) $(COMMON_OBJS) 
 
+prepare:
+	@mkdir -p $(OBJDIR)
 
 common: $(COMMON_OBJS)
 	@echo building common ..
@@ -115,8 +115,6 @@ clean:
 	rm -f $(COMMON_OBJS) $(LIB)
 	cd png2c;make clean
 
-
 # ============== dependencies ====================
-
 -include $(subst .o,.dep,$(DEP_OBJS))
 

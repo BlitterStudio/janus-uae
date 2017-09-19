@@ -45,6 +45,12 @@ endif
 
 EXE        = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/AROS/wuae
 
+OBJDIR     = obj/$(CPU)
+PARENT     = $(OBJDIR)/parent
+
+#$(OBJDIR):
+	#@echo Create $(OBJDIR)
+
 CC         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-gcc
 CPP        = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-g++
 #RANLIB = 
@@ -69,218 +75,216 @@ ifeq ($(ABI), v0)
 V0_LIBS=-lGL
 endif
 
-LINK_LIBS=-Lgui -lgui -limagedata -larossupport -lz -lGL -lmui -lSDL -LSDL_Config -lSDL_Config -lpng -Llibmpeg2/libmpeg2/.libs -lmpeg2 -Llibmpeg2/libmpeg2/convert/.libs -lmpeg2convert $(V0_LIBS)
+LINK_LIBS=-L$(OBJDIR) -Lgui -lgui -larossupport -lz -lGL -lmui -lSDL -LSDL_Config -lSDL_Config -lpng -lmpeg2 -lmpeg2convert $(V0_LIBS)
 # ============== common ====================
 
 AROS_OBJS= 
 
-	#clipboard_aros.o \
-	#ahidsound_dsonly.o \
-	#ahidsound_new.o \
-	#unicode.o \
-	#writelog.o \
-	#mman.o \
-	#nogui.o \
-	#aros.o \
-	#scaler_more.o
-
 COMMON_OBJS= \
-	aros.o \
-	thread.o \
-	../a2065.o \
-	../a2091.o \
-	../akiko.o \
-	../amax.o \
-	../ar.o \
-	../arcadia.o \
-	../audio.o \
-	../autoconf.o \
-	../blitfunc.o \
-	../blittable.o \
-	../blitter.o \
-	../blkdev.o \
-	../blkdev_cdimage.o \
-	../bsdsocket.o \
-	../calc.o \
-	../catweasel.o \
-	../cd32_fmv.o \
-	../cd32_fmv_genlock.o \
-	cda_play.o \
-	../cdrom.o \
-	../cdtv.o \
-	../cdtvcr.o \
-	../cfgfile.o \
-	../cia.o \
-	../consolehook.o \
-	../cpudefs.o \
-	../cpuemu_0.o \
-	../cpuemu_11.o \
-	../cpuemu_13.o \
-	../cpuemu_20.o \
-	../cpuemu_21.o \
-	../cpuemu_22.o \
-	../cpuemu_23.o \
-	../cpuemu_24.o \
-	../cpuemu_31.o \
-	../cpuemu_32.o \
-	../cpuemu_33.o \
-	../cpuemu_40.o \
-	../cpuemu_50.o \
-	../cpummu.o \
-	../cpummu30.o \
-	../cpustbl.o \
-	../cpuboard.o \
-	../x86.o \
-	../crc32.o \
-	../custom.o \
-	../debug.o \
-	../def_icons.o \
-	../devices.o \
-	../disk.o \
-	../diskutil.o \
-	../dongle.o \
-	../drawing.o \
-	../driveclick.o \
-	../enforcer.o \
-	../epsonprinter.o \
-	../ethernet.o \
-	../events.o \
-	../expansion.o \
-	../fake86_cpu.o \
-	../fdi2raw.o \
-	../filesys.o \
-	../flashrom.o \
-	filesys.o \
-	../fpp.o \
-	../fsdb.o \
-	fsusage.o \
-	../gayle.o \
-	../gfxboard.o \
-	../ide.o \
-	../qemuvga/cirrus_vga.o \
-	../qemuvga/qemuuaeglue.o \
-	../qemuvga/vga.o \
-	../qemuvga/lsi53c895a.o \
-	../qemuvga/lsi53c710.o \
-	../qemuvga/es1370.o \
-	../qemuvga/ne2000.o \
-	../qemuvga/esp.o \
-	../gfxutil.o \
-	../hardfile.o \
-	../hrtmon.rom.o \
-	../identify.o \
-	../idecontrollers.o \
-	../inputdevice.o \
-	../inputrecord.o \
-	../keybuf.o \
-	../main.o \
-	../mame/a2410.o \
-	../mame/tm34010/tms34010.o \
-	../memory.o \
-	../native2amiga.o \
-	../ncr_scsi.o \
-	../ncr9x_scsi.o \
-	../newcpu.o \
-	../newcpu_common.o \
-	../rommgr.o \
-	../readcpu.o \
-	../sana2.o \
-	../savestate.o \
-	../scsi.o \
-	../scsitape.o \
-	../scsiemul.o \
-	../specialmonitors.o \
-	../statusline.o \
-	../test_card.o \
-	../traps.o \
-	../uaeexe.o \
-	../uaeipc.o \
-	../uaelib.o \
-	../uaeresource.o \
-	../uaeserial.o \
-	../isofs.o \
-	../jit/compemu.o \
-	../jit/compemu_fpp.o \
-	../jit/compemu_support.o \
-	../jit/compstbl.o \
-	../pci.o \
-	../zfile.o \
-	../zfile_archive.o \
-	../archivers/zip/zip.o \
-	../archivers/zip/ioapi.o \
-	../archivers/mp2/kjmp2.o \
-	../dosbox/cmos.o \
-	../dosbox/core_full.o \
-	../dosbox/core_normal.o \
-	../dosbox/core_simple.o \
-	../dosbox/cpu.o \
-	../dosbox/db_memory.o \
-	../dosbox/flags.o \
-	../dosbox/fpu.o \
-	../dosbox/keyboard.o \
-	../dosbox/modrm.o \
-	../dosbox/paging.o \
-	../dosbox/pic.o \
-	../dosbox/timer.o \
-	../ppc/ppc.o \
-	../ppc/ppcd.o \
-	main_aros.o \
-	avioutput.o \
-	unicode.o \
-	sounddep/sound.o \
-	serial.o \
-	joystick.o \
-	mouse.o \
-	scaler_more.o \
-	arosgfx.o \
-	aros_scaler.o \
-	parser.o \
-	picasso96_aros.o \
-	options.o \
-	mman.o \
-	memory_aros.o \
-	writelog.o \
-	keymap.o \
-	shm.o \
-	posixemu.o \
-	sdlgfx.o \
-	sdlkeys_dik.o \
-	rp.o \
-	registry.o \
-	muigui_helper.o \
-	muigui.o \
-	extensions.o \
-	fsdb_aros.o \
-	nogui_aros.o \
-	hardfile_aros.o \
-	screenshot.o \
-	vm.o \
-	keyboard.o \
-	video.o \
-	stubs.o
-
-	#../picasso96.o \
-	#../ersatz.o \
-#gui.o \
+	$(OBJDIR)/aros.o \
+	$(OBJDIR)/thread.o \
+	$(OBJDIR)/cda_play.o \
+	$(OBJDIR)/fsusage.o \
+	$(OBJDIR)/filesys.o \
+	$(OBJDIR)/main_aros.o \
+	$(OBJDIR)/avioutput.o \
+	$(OBJDIR)/unicode.o \
+	$(OBJDIR)/serial.o \
+	$(OBJDIR)/joystick.o \
+	$(OBJDIR)/mouse.o \
+	$(OBJDIR)/scaler_more.o \
+	$(OBJDIR)/arosgfx.o \
+	$(OBJDIR)/aros_scaler.o \
+	$(OBJDIR)/parser.o \
+	$(OBJDIR)/picasso96_aros.o \
+	$(OBJDIR)/options.o \
+	$(OBJDIR)/mman.o \
+	$(OBJDIR)/memory_aros.o \
+	$(OBJDIR)/writelog.o \
+	$(OBJDIR)/keymap.o \
+	$(OBJDIR)/shm.o \
+	$(OBJDIR)/posixemu.o \
+	$(OBJDIR)/sdlgfx.o \
+	$(OBJDIR)/sdlkeys_dik.o \
+	$(OBJDIR)/rp.o \
+	$(OBJDIR)/registry.o \
+	$(OBJDIR)/muigui_helper.o \
+	$(OBJDIR)/muigui.o \
+	$(OBJDIR)/extensions.o \
+	$(OBJDIR)/fsdb_aros.o \
+	$(OBJDIR)/nogui_aros.o \
+	$(OBJDIR)/hardfile_aros.o \
+	$(OBJDIR)/screenshot.o \
+	$(OBJDIR)/vm.o \
+	$(OBJDIR)/keyboard.o \
+	$(OBJDIR)/video.o \
+	$(OBJDIR)/sound.o \
+	$(OBJDIR)/stubs.o \
+	$(PARENT)/a2065.o \
+	$(PARENT)/a2091.o \
+	$(PARENT)/akiko.o \
+	$(PARENT)/amax.o \
+	$(PARENT)/ar.o \
+	$(PARENT)/arcadia.o \
+	$(PARENT)/audio.o \
+	$(PARENT)/autoconf.o \
+	$(PARENT)/blitfunc.o \
+	$(PARENT)/blittable.o \
+	$(PARENT)/blitter.o \
+	$(PARENT)/blkdev.o \
+	$(PARENT)/blkdev_cdimage.o \
+	$(PARENT)/bsdsocket.o \
+	$(PARENT)/calc.o \
+	$(PARENT)/catweasel.o \
+	$(PARENT)/cd32_fmv.o \
+	$(PARENT)/cd32_fmv_genlock.o \
+	$(PARENT)/cdrom.o \
+	$(PARENT)/cdtv.o \
+	$(PARENT)/cdtvcr.o \
+	$(PARENT)/cfgfile.o \
+	$(PARENT)/cia.o \
+	$(PARENT)/consolehook.o \
+	$(PARENT)/cpudefs.o \
+	$(PARENT)/cpuemu_0.o \
+	$(PARENT)/cpuemu_11.o \
+	$(PARENT)/cpuemu_13.o \
+	$(PARENT)/cpuemu_20.o \
+	$(PARENT)/cpuemu_21.o \
+	$(PARENT)/cpuemu_22.o \
+	$(PARENT)/cpuemu_23.o \
+	$(PARENT)/cpuemu_24.o \
+	$(PARENT)/cpuemu_31.o \
+	$(PARENT)/cpuemu_32.o \
+	$(PARENT)/cpuemu_33.o \
+	$(PARENT)/cpuemu_40.o \
+	$(PARENT)/cpuemu_50.o \
+	$(PARENT)/cpummu.o \
+	$(PARENT)/cpummu30.o \
+	$(PARENT)/cpustbl.o \
+	$(PARENT)/cpuboard.o \
+	$(PARENT)/x86.o \
+	$(PARENT)/crc32.o \
+	$(PARENT)/custom.o \
+	$(PARENT)/debug.o \
+	$(PARENT)/def_icons.o \
+	$(PARENT)/devices.o \
+	$(PARENT)/disk.o \
+	$(PARENT)/diskutil.o \
+	$(PARENT)/dongle.o \
+	$(PARENT)/drawing.o \
+	$(PARENT)/driveclick.o \
+	$(PARENT)/enforcer.o \
+	$(PARENT)/epsonprinter.o \
+	$(PARENT)/ethernet.o \
+	$(PARENT)/events.o \
+	$(PARENT)/expansion.o \
+	$(PARENT)/fake86_cpu.o \
+	$(PARENT)/fdi2raw.o \
+	$(PARENT)/filesys.o \
+	$(PARENT)/flashrom.o \
+	$(PARENT)/fpp.o \
+	$(PARENT)/fsdb.o \
+	$(PARENT)/gayle.o \
+	$(PARENT)/gfxboard.o \
+	$(PARENT)/ide.o \
+	$(PARENT)/gfxutil.o \
+	$(PARENT)/hardfile.o \
+	$(PARENT)/hrtmon.rom.o \
+	$(PARENT)/identify.o \
+	$(PARENT)/idecontrollers.o \
+	$(PARENT)/inputdevice.o \
+	$(PARENT)/inputrecord.o \
+	$(PARENT)/keybuf.o \
+	$(PARENT)/main.o \
+	$(PARENT)/memory.o \
+	$(PARENT)/native2amiga.o \
+	$(PARENT)/ncr_scsi.o \
+	$(PARENT)/ncr9x_scsi.o \
+	$(PARENT)/newcpu.o \
+	$(PARENT)/newcpu_common.o \
+	$(PARENT)/rommgr.o \
+	$(PARENT)/readcpu.o \
+	$(PARENT)/sana2.o \
+	$(PARENT)/savestate.o \
+	$(PARENT)/scsi.o \
+	$(PARENT)/scsitape.o \
+	$(PARENT)/scsiemul.o \
+	$(PARENT)/specialmonitors.o \
+	$(PARENT)/statusline.o \
+	$(PARENT)/test_card.o \
+	$(PARENT)/traps.o \
+	$(PARENT)/uaeexe.o \
+	$(PARENT)/uaeipc.o \
+	$(PARENT)/uaelib.o \
+	$(PARENT)/uaeresource.o \
+	$(PARENT)/uaeserial.o \
+	$(PARENT)/isofs.o \
+	$(PARENT)/pci.o \
+	$(PARENT)/zfile.o \
+	$(PARENT)/zfile_archive.o \
+	$(PARENT)/qemuvga/cirrus_vga.o \
+	$(PARENT)/qemuvga/qemuuaeglue.o \
+	$(PARENT)/qemuvga/vga.o \
+	$(PARENT)/qemuvga/lsi53c895a.o \
+	$(PARENT)/qemuvga/lsi53c710.o \
+	$(PARENT)/qemuvga/es1370.o \
+	$(PARENT)/qemuvga/ne2000.o \
+	$(PARENT)/qemuvga/esp.o \
+	$(PARENT)/mame/a2410.o \
+	$(PARENT)/jit/compemu.o \
+	$(PARENT)/jit/compemu_fpp.o \
+	$(PARENT)/jit/compemu_support.o \
+	$(PARENT)/jit/compstbl.o \
+	$(PARENT)/dosbox/cmos.o \
+	$(PARENT)/dosbox/core_full.o \
+	$(PARENT)/dosbox/core_normal.o \
+	$(PARENT)/dosbox/core_simple.o \
+	$(PARENT)/dosbox/cpu.o \
+	$(PARENT)/dosbox/db_memory.o \
+	$(PARENT)/dosbox/flags.o \
+	$(PARENT)/dosbox/fpu.o \
+	$(PARENT)/dosbox/keyboard.o \
+	$(PARENT)/dosbox/modrm.o \
+	$(PARENT)/dosbox/paging.o \
+	$(PARENT)/dosbox/pic.o \
+	$(PARENT)/dosbox/timer.o \
+	$(PARENT)/ppc/ppc.o \
+	$(PARENT)/ppc/ppcd.o \
+	$(PARENT)/mame/tm34010/tms34010.o \
+	$(PARENT)/archivers/zip/zip.o \
+	$(PARENT)/archivers/zip/ioapi.o \
+	$(PARENT)/archivers/mp2/kjmp2.o 
 
 # build dependencies magic
 DEP_OBJS=$(COMMON_OBJS)
 
-%.o: %.c
+# build source files in current dir
+$(OBJDIR)/%.o: %.c
+	@echo "building $@ .."
 	$(CC) $(CFLAGS) -o $@ -c $*.c
 
-%.o: %.cpp
+#build winuae sources from parent dir
+$(PARENT)/%.o: ../%.cpp
+	@echo "building dependency for "$(subst .o,.cpp,$<)" .."
+	@$(CPP) -M $(CPPFLAGS) $(subst .o,.cpp,$<) > $@.$$$$;                      \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $(subst .o,.dep,$@);     \
+	rm -f $@.$$$$
+	$(CPP) $(CPPFLAGS) -o $@ -c ../$*.cpp
+
+$(OBJDIR)/%.o: %.cpp
 	@echo "building dependency for "$(subst .o,.cpp,$<)" .."
 	@$(CPP) -M $(CPPFLAGS) $(subst .o,.cpp,$<) > $@.$$$$;                      \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $(subst .o,.dep,$@);     \
 	rm -f $@.$$$$
 	$(CPP) $(CPPFLAGS) -o $@ -c $*.cpp
 
+all: prepare uae $(COMMON_OBJS)
 
-all: uae
-
-uae: string_resource.h sdl_config_lib libmpeg2 gui common aros
+uae: string_resource.h sdl_config_lib gui common aros
 	$(CPP) $(CFLAGS) -static-libstdc++ $(COMMON_OBJS) $(AROS_OBJS) -o $(EXE) $(LINK_LIBS) 
+
+prepare:
+	mkdir -p $(OBJDIR) $(PARENT) $(PARENT)/qemuvga $(PARENT)/mame $(PARENT)/jit $(PARENT)/archivers $(PARENT)/dosbox $(PARENT)/ppc $(PARENT)/mame/tm34010 $(PARENT)/archivers/zip $(PARENT)/archivers/mp2
 
 sdl_config_lib:
 	@echo building SDL_Config library ..
@@ -297,16 +301,21 @@ gui:
 	@echo building gui library ..
 	@cd gui;make ABI="$(ABI)"
 	
-libmpeg2: libmpeg2/libmpeg2/.libs/libmpeg2.a libmpeg2/libmpeg2/convert/.libs/libmpeg2convert.a
+#libmpeg2: libmpeg2/libmpeg2/.libs/libmpeg2.a libmpeg2/libmpeg2/convert/.libs/libmpeg2convert.a
 
 # generate libmpeg2.a and libmpeg2convert.a
 # this is still some magic here, works on some machines, on others build will break here.
 # the libraries are not difficult to build, it is harder to integrate them into the build system ;-)
-libmpeg2/libmpeg2/.libs/libmpeg2.a:
+.PHONY: libmpeg2
+libmpeg2:
 	@echo building mpeg2 libraries ..
+	@cd libmpeg2;make clean
 	@cd libmpeg2;export SDLCONFIG="$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/AROS/Development/bin/sdl-config";./configure --host=$(CPU)-aros
 	@cd libmpeg2/libmpeg2/convert;make
 	@cd libmpeg2/libmpeg2;make
+	pwd
+	mv libmpeg2/libmpeg2/convert/.libs/*.a $(OBJDIR)
+	mv libmpeg2/libmpeg2/.libs/*.a $(OBJDIR)
 
 
 # ============== autogenerate some .c files ====================
