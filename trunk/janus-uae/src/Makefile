@@ -127,6 +127,11 @@ toolsclean:
 uae:
 	cd od-aros;make ABI="$(ABI)"
 
+# build this manually once for every target cpu/abi!
+# libmpeg2 is *not* built with a simple make call. You have to build it with "make libmpeg2"!
+libmpeg2:
+	@cd od-aros;make libmpeg2
+
 uaeclean:
 	cd od-aros;make clean ABI="$(ABI)"
 
