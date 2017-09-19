@@ -90,7 +90,7 @@ DEP_OBJS=$(COMMON_OBJS)
 
 all: uae 
 
-uae: tools mui_data.h common 
+uae: mui_data.h common 
 	$(AR) $(ARFLAGS) $(LIB) $(COMMON_OBJS) 
 
 
@@ -100,11 +100,6 @@ common: $(COMMON_OBJS)
 aros: $(AROS_OBJS)
 	@echo building aros objects ..
 
-tools:
-	@echo builing tools ..
-	cd png2c;export CC=gcc;make ABI="$(ABI)"
-
-	
 # ============== autogenerate some .cpp files ====================
 # never know, which one needs to be generated first. But only one
 # is actually executed as the other condition is already fulfilled.
