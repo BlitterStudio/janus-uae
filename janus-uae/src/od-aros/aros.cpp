@@ -41,7 +41,7 @@
 
 #include "options.h"
 #include "audio.h"
-#include "sounddep/sound.h"
+#include "sound.h"
 #include "uae.h"
 #include "memory.h"
 #include "rommgr.h"

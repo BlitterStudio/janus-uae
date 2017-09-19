@@ -25,7 +25,7 @@
 #include "xwin.h"
 #include "identify.h"
 #include "audio.h"
-#include "sounddep/sound.h"
+#include "sound.h"
 #include "disk.h"
 #include "savestate.h"
 #include "autoconf.h"
@@ -82,11 +82,15 @@ void deactivate_debugger (void)
 	processname = NULL;
 }
 
+extern void resetqualifiers(void);
+
 void activate_debugger (void)
 {
+  uae_u64 qualifiers;
 	do_skip = 0;
 	if (debugger_active)
 		return;
+
 	debugger_active = 1;
 	set_special (SPCFLAG_BRK);
 	debugging = 1;
@@ -4389,6 +4393,26 @@ static bool debug_line (TCHAR *input)
 			else
 				show_exec_lists (&inptr[0]);
 			break;
+		case 'F':
+      {
+        uaecptr execbase = get_long (4);
+        uaecptr nest=execbase+0x127;
+        console_out_f("old TDNestCnt: %d\n", get_byte(nest));
+        int foo=get_byte(nest);
+        foo++;
+        //set_byte(nest, foo);
+	
+        addrbank *ad;
+        ad = &get_mem_bank (nest);
+        if (ad) {
+          ad->bput (nest, 100);
+        }
+        else {
+          console_out_f("get_mem_bank failed !?\n");
+        }
+        console_out_f("new TDNestCnt: %d\n", get_byte(nest));
+      }
+      break;
 		case 't':
 			no_trace_exceptions = 0;
 			if (*inptr != 't') {

@@ -45,10 +45,10 @@ xhex_exp_1
 xhex_l10_2
 xhex_l10_e
 xhex_ln_10
-cache_free(unsigned char*)
+cache_free(unsigned char*) -> not used 
 do_nothing()
-cache_alloc(int)
-exec_nostats()
+cache_alloc(int) -> not used 
+exec_nostats() -> not used 
 read_table68k()
 execute_normal()
 au(char const*)

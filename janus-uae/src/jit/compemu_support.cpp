@@ -29,6 +29,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#define JUAE_DEBUG
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -111,9 +113,14 @@ static inline void *vm_acquire(size_t size, int options = VM_MAP_DEFAULT)
 #define UNUSED(x)
 #include "uae.h"
 #include "uae/log.h"
+#ifndef __AROS__
 #define jit_log(format, ...) \
 	uae_log("JIT: " format "\n", ##__VA_ARGS__);
 #define jit_log2(format, ...)
+#else
+  #define jit_log(format, ...) DebOut(format, ##__VA_ARGS__);bug("\n");
+  #define jit_log2(format, ...) DebOut(format, ##__VA_ARGS__);bug("\n");
+#endif
 
 #define MEMBaseDiff uae_p32(NATMEM_OFFSET)
 
@@ -3356,6 +3363,7 @@ void calc_disp_ea_020(int base, uae_u32 dp, int target, int tmp)
 
 void set_cache_state(int enabled)
 {
+  jit_log("enabled: %d", enabled);
 	if (enabled!=letit)
 		flush_icache_hard(0, 3);
 	letit=enabled;
@@ -3540,6 +3548,8 @@ static void show_checksum(CSI_TYPE* csi)
 int check_for_cache_miss(void)
 {
 	blockinfo* bi=get_blockinfo_addr(regs.pc_p);
+
+  jit_log("entered");
 
 	if (bi) {
 		int cl=cacheline(regs.pc_p);
@@ -3855,6 +3865,7 @@ static void prepare_block(blockinfo* bi)
 
 void compemu_reset(void)
 {
+  jit_log("entered");
 	set_cache_state(0);
 }
 
@@ -3942,6 +3953,9 @@ void build_comp(void)
 	const struct comptbl* tbl=op_smalltbl_0_comp_ff;
 	const struct comptbl* nftbl=op_smalltbl_0_comp_nf;
 	int count;
+
+  jit_log("entered");
+
 #ifdef NOFLAGS_SUPPORT
 	struct comptbl *nfctbl = (currprefs.cpu_level >= 5 ? op_smalltbl_0_nf
 		: currprefs.cpu_level == 4 ? op_smalltbl_1_nf
@@ -4137,14 +4151,19 @@ void flush_icache(uaecptr ptr, int n)
 	blockinfo* bi;
 	blockinfo* bi2;
 
+  jit_log("entered (%p, %d)", ptr, n);
+
 	if (currprefs.comp_hardflush) {
 		flush_icache_hard(ptr, n);
 		return;
 	}
 	soft_flush_count++;
-	if (!active)
+	if (!active) {
+    jit_log("not active");
 		return;
+  }
 
+  jit_log("one");
 	bi=active;
 	while (bi) {
 		uae_u32 cl=cacheline(bi->pc_p);
@@ -4166,14 +4185,18 @@ void flush_icache(uaecptr ptr, int n)
 		bi2=bi;
 		bi=bi->next;
 	}
+  jit_log("one");
 	/* bi2 is now the last entry in the active list */
 	bi2->next=dormant;
 	if (dormant)
 		dormant->prev_p=&(bi2->next);
 
+  jit_log("one");
 	dormant=active;
 	active->prev_p=&dormant;
 	active=NULL;
+
+  jit_log("left");
 }
 
 #ifdef UAE
@@ -4343,6 +4366,8 @@ static void compile_block(cpu_history* pc_hist, int blocklen)
 		blockinfo* bi=NULL;
 		blockinfo* bi2;
 		int extra_len=0;
+
+    jit_log("compile_block( .. , %d)", blocklen);
 
 		redo_current_block=0;
 		if (current_compile_p >= MAX_COMPILE_PTR)

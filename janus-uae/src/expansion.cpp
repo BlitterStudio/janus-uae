@@ -9,7 +9,7 @@
 *
 */
 
-//#define JUAE_DEBUG
+#define JUAE_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -1582,6 +1582,7 @@ static addrbank *expamem_init_z3fastmem2(int devnum)
 
 static addrbank *expamem_map_gfxcard_z3 (void)
 {
+  DebOut("entered\n");
 	gfxmem_bank.start = expamem_z3_pointer;
 	map_banks_z3(&gfxmem_bank, gfxmem_bank.start >> 16, gfxmem_bank.allocated >> 16);
 	return &gfxmem_bank;
@@ -1589,6 +1590,7 @@ static addrbank *expamem_map_gfxcard_z3 (void)
 
 static addrbank *expamem_map_gfxcard_z2 (void)
 {
+  DebOut("entered\n");
 	gfxmem_bank.start = expamem_z2_pointer;
 	map_banks_z2(&gfxmem_bank, gfxmem_bank.start >> 16, gfxmem_bank.allocated >> 16);
 	return &gfxmem_bank;
@@ -1639,10 +1641,12 @@ static addrbank *expamem_init_gfxcard (bool z3)
 }
 static addrbank *expamem_init_gfxcard_z3(int devnum)
 {
+  DebOut("entered\n");
 	return expamem_init_gfxcard (true);
 }
 static addrbank *expamem_init_gfxcard_z2 (int devnum)
 {
+  DebOut("entered\n");
 	return expamem_init_gfxcard (false);
 }
 #endif
