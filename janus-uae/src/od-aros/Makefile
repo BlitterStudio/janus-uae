@@ -28,43 +28,44 @@
 # => so do not use this Makefile directly!
 
 
-BITS := $(shell getconf LONG_BIT)
-ifeq ($(BITS),64)
+#BITS := $(shell getconf LONG_BIT)
+#ifeq ($(BITS),64)
 	# 64 bit
-	CPU      = x86_64
+	#CPU      = x86_64
 	# AROS source svn
-	SVN        = /home/oli/tc/svn
+	#SVN        = /home/oli/tc/svn
 	# SDL is somewhere else !?
-	SUB        = AROS/Development
-else
+	#SUB        = AROS/Development
+#else
 	# 32 bit
-	CPU      = i386
-	SVN        = /home/oli/svn
-	SUB        = AROS/Development
-endif
+	#CPU      = i386
+	#SVN        = /home/oli/svn
+	#SUB        = AROS/Development
+#endif
 
-EXE        = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/AROS/wuae
+EXE        = $(SVN)/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/AROS/wuae
 
 OBJDIR     = obj/$(CPU)
 PARENT     = $(OBJDIR)/parent
+SUB        = AROS/Development
 
 #$(OBJDIR):
 	#@echo Create $(OBJDIR)
 
-CC         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-gcc
-CPP        = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-g++
+CC         = $(SVN)/$(ABI)/AROS/bin/linux-x86_64/tools/crosstools/$(CPU)-aros-gcc
+CPP        = $(SVN)/$(ABI)/AROS/bin/linux-x86_64/tools/crosstools/$(CPU)-aros-g++
 #RANLIB = 
-AR         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ar
-LD         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ld
+AR         = $(SVN)/$(ABI)/AROS/bin/linux-x86_64/tools/crosstools/$(CPU)-aros-ar
+LD         = $(SVN)/$(ABI)/AROS/bin/linux-x86_64/tools/crosstools/$(CPU)-aros-ld
 
 # suppress warning: deprecated conversion from string constant to ‘char*’
 FLAGS      = -Wno-write-strings -O2 -Wall -Wno-unused -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-value -Wno-unused-variable -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-sign-compare #-Werror
 DEBUGFLAGS = -g
 
 CDEFS   = -DUAE_ABI_$(ABI) -DJIT
-INCLUDES= -I. -I../include -Iinclude -I../md-i386-gcc -I.. -I../archivers/zip -I$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/$(SUB)/include/SDL -I$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/AROS/Extras/Developer/include -Ilibmpeg2/include
+INCLUDES= -I. -I../include -Iinclude -I../md-i386-gcc -I.. -I../archivers/zip -I$(SVN)/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/$(SUB)/include/SDL -I$(SVN)/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/AROS/Extras/Developer/include -Ilibmpeg2/include
 
-#-I/home/oli/svn/$(ABI)/AROS/bin/linux-$(CPU)/AROS/Development/include/SDL
+#-I/home/oli/svn/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/AROS/Development/include/SDL
 
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 CPPFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
@@ -75,7 +76,7 @@ ifeq ($(ABI), v0)
 V0_LIBS=-lGL
 endif
 
-LINK_LIBS=-L$(OBJDIR) -Lgui -lgui -larossupport -lz -lGL -lmui -lSDL -LSDL_Config -lSDL_Config -lpng -lmpeg2 -lmpeg2convert $(V0_LIBS)
+LINK_LIBS=-L$(OBJDIR) -Lgui -lgui -larossupport -lz -lGL -lmui -lSDL -lSDL_Config -lpng -lmpeg2 -lmpeg2convert $(V0_LIBS)
 # ============== common ====================
 
 AROS_OBJS= 
@@ -280,7 +281,7 @@ $(OBJDIR)/%.o: %.cpp
 
 all: prepare uae $(COMMON_OBJS)
 
-uae: string_resource.h sdl_config_lib gui common aros
+uae: obj/$(CPU)/libmpeg2.a string_resource.h sdl_config_lib gui common aros 
 	$(CPP) $(CFLAGS) -static-libstdc++ $(COMMON_OBJS) $(AROS_OBJS) -o $(EXE) $(LINK_LIBS) 
 
 prepare:
@@ -288,7 +289,7 @@ prepare:
 
 sdl_config_lib:
 	@echo building SDL_Config library ..
-	@cd SDL_Config;make ABI="$(ABI)"
+	@cd SDL_Config;make SVN=$(SVN) ABI=$(ABI) CPU=$(CPU) ARCH=$(ARCH)
 
 common: ../blitfunc.cpp ../blittable.cpp ../blit.h ../linetoscr.cpp $(COMMON_OBJS)
 	@echo building common ..
@@ -298,22 +299,22 @@ aros: $(AROS_OBJS)
 
 .PHONY: gui
 gui: 
-	@echo building gui library ..
-	@cd gui;make ABI="$(ABI)"
+	@echo CPU: $(CPU)
+	@echo ABI: $(ABI)
+	@echo ARCH: $(ARCH)
+	@echo SVN: $(SVN)
+	@echo building gui library SVN $(SVN) ..
+	@cd gui;make SVN=$(SVN) ABI=$(ABI) CPU=$(CPU) ARCH=$(ARCH)
 	
-#libmpeg2: libmpeg2/libmpeg2/.libs/libmpeg2.a libmpeg2/libmpeg2/convert/.libs/libmpeg2convert.a
-
 # generate libmpeg2.a and libmpeg2convert.a
 # this is still some magic here, works on some machines, on others build will break here.
 # the libraries are not difficult to build, it is harder to integrate them into the build system ;-)
-.PHONY: libmpeg2
-libmpeg2:
+obj/$(CPU)/libmpeg2.a: 
 	@echo building mpeg2 libraries ..
 	@cd libmpeg2;make clean
-	@cd libmpeg2;export SDLCONFIG="$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/AROS/Development/bin/sdl-config";./configure --host=$(CPU)-aros
-	@cd libmpeg2/libmpeg2/convert;make
-	@cd libmpeg2/libmpeg2;make
-	pwd
+	@cd libmpeg2;PATH=$(PATH):$(SVN)/$(ABI)/AROS/bin/linux-x86_64/tools/crosstools;./configure --host=$(CPU)-aros
+	@cd libmpeg2/libmpeg2;PATH=$(PATH):$(SVN)/$(ABI)/AROS/bin/linux-x86_64/tools/crosstools;make
+	#pwd
 	mv libmpeg2/libmpeg2/convert/.libs/*.a $(OBJDIR)
 	mv libmpeg2/libmpeg2/.libs/*.a $(OBJDIR)
 
@@ -365,11 +366,11 @@ package: uae
 	@cp $(EXE) $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`/ABI_$(ABI)/janus-uae2
 	@mkdir -p $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/docs
 	@cp docs/* $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/docs/
-	@$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2.info
-	@$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/docs.info
-	@$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`.info
-	@$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`/ABI_$(ABI).info
-	@$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/ilbmtoicon --png icons/j-uae.info.src icons/j-uae.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`/ABI_$(ABI)/janus-uae2.info
+	@$(SVN)/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2.info
+	@$(SVN)/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/docs.info
+	@$(SVN)/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`.info
+	@$(SVN)/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`/ABI_$(ABI).info
+	@$(SVN)/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/tools/ilbmtoicon --png icons/j-uae.info.src icons/j-uae.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`/ABI_$(ABI)/janus-uae2.info
 	@cd $(RELEASEDIR)/`date +%Y%m%d`;tar cf Janus-UAE2.tar Janus-UAE2 Janus-UAE2.info;gzip Janus-UAE2.tar
 	@echo
 	@echo Package built at  $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/Janus-UAE2.tar.gz
