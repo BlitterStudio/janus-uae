@@ -212,11 +212,7 @@ Object *new_listview(struct Element *elem, ULONG i, void *f, struct Data *data, 
 
 
   /* setup hooks */
-#ifdef UAE_ABI_v0
-  data->MyMUIHook_list_active.h_Entry=(HOOKFUNC) list_active;
-#else
   data->MyMUIHook_list_active.h_Entry=(APTR) list_active;
-#endif
   data->MyMUIHook_list_active.h_Data =(APTR) data;
 
   DoMethod(listview, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR) listview, 2, MUIM_CallHook,(IPTR) &data->MyMUIHook_list_active, NULL); 
