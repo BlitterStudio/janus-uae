@@ -14,9 +14,7 @@
 #ifndef UAE_SYSDEPS_H
 #define UAE_SYSDEPS_H
 
-#if defined(__AROS__)
 #include <stdint.h>
-#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
