@@ -6,6 +6,8 @@
  * Copyright 1995,1996 Bernd Schmidt
  */
 
+#include <stdint.h>
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 #ifndef CROSS_COMPILE
