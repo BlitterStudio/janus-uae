@@ -9,13 +9,7 @@ This is totally different from Janus-UAE 1.x. This is Janus-UAE2.
 This is a non-feature-complete Alpha-Version (as defined in 
 https://en.wikipedia.org/wiki/Software_release_life_cycle#Pre-alpha).
 
-======================================================================
-This build is for ABI v1/x86_64 *only*!
-
-It will *not* work on Icaros!
-======================================================================
-
-It is a direct port of WinUAE 2.8.1 (which you can download from
+It is a direct port of WinUAE 3.2.0 (which you can download from
 http://www.winuae.net/frames/download.html). It is *not* based
 on e-uae or Janus-UAE 1.4.
 
@@ -32,18 +26,19 @@ we first need a stable, after that I'll merge the other features.
 What can this version do?
 -------------------------
 
-It offers the core functionality of WinUAE 2.8.1. 
+It offers the core functionality of WinUAE 3.2.0
 
-This should work:
+This might (should) work:
 
 - cpu emulation (with mmu)
 - ocs/ecs/aga
 - harddisk support (both hardfiles and host directories)
 - the WinUAE gui, converted to Zune
+- picasso96
 
 Parts of the gui are hidden for this release, as they are not
 complete/stable enough, even for an alpha-version ;).
-All other parts like mouse sync, picasso96, sound or whatever 
+All other parts like mouse sync, jit, sound or whatever 
 are not yet done. Some parts might work, but are completely untested.
 
 Bugs?
@@ -51,8 +46,9 @@ Bugs?
 
 For sure:
 - You need enough memory. 1GB should be enough.
-- On exit you might get a recoverable alert, this seems to be a bug in TLSF, 
-  more info on http://sourceforge.net/p/aros/bugs/488/
+- Janus-UAE is a ABI v1 application. The backport to v0 might suffer from AROS
+  bugs, which have been fixed in v1 but are not (yet?) backported to AROS v0
+- Some Kickstarts seem to cause problems
 
 ======================================================================
 
