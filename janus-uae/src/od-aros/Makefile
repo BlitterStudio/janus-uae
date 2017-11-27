@@ -60,9 +60,9 @@ LD         = $(SVN)/$(ABI)/AROS/bin/linux-x86_64/tools/crosstools/$(CPU)-aros-ld
 
 # suppress warning: deprecated conversion from string constant to ‘char*’
 FLAGS      = -Wno-write-strings -O2 -Wall -Wno-unused -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-value -Wno-unused-variable -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-sign-compare #-Werror
-DEBUGFLAGS = -g
+DEBUGFLAGS = -g #-DJUAE_DEBUG
 
-CDEFS   = -DUAE_ABI_$(ABI) -DJIT
+CDEFS   = -DUAE_ABI_$(ABI) #-DJIT
 INCLUDES= -I. -I../include -Iinclude -I../md-i386-gcc -I.. -I../archivers/zip -I$(SVN)/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/$(SUB)/include/SDL -I$(SVN)/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/AROS/Extras/Developer/include -Ilibmpeg2/include
 
 #-I/home/oli/svn/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/AROS/Development/include/SDL
@@ -360,17 +360,37 @@ clean:
 
 # ============== build package ====================
 #package: clean uae
-package: uae
+package:
 	@rm -rf  $(RELEASEDIR)/`date +%Y%m%d`
-	@mkdir -p $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`/ABI_$(ABI)
-	@cp $(EXE) $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`/ABI_$(ABI)/janus-uae2
+	@if [ -f $(SVN)/v0/AROS/bin/linux-i386/AROS/wuae ]; then \
+		echo "Adding i386/v0 version to package.."; \
+		mkdir -p $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/i386/ABI_v0; \
+		$(SVN)/v0/AROS/bin/linux-x86_64/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/i386.info;\
+		$(SVN)/v0/AROS/bin/linux-x86_64/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/i386/ABI_v0.info;\
+		cp $(SVN)/v0/AROS/bin/linux-i386/AROS/wuae $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/i386/ABI_v0/Janus-UAE2; \
+		$(SVN)/v0/AROS/bin/linux-x86_64/tools/ilbmtoicon --png icons/j-uae.info.src icons/j-uae.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/i386/ABI_v0/Janus-UAE2.info; \
+		mkdir -p $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/i386/ABI_v0/images; \
+		cp -r gui/images/*.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/i386/ABI_v0/images; \
+	fi
+
+	@if [ -f $(SVN)/v1.gcc.6.1/AROS/bin/linux-x86_64/AROS/wuae ]; then \
+		echo "Adding x86_64/v1 version to package.."; \
+		mkdir -p $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/x86_64/ABI_v1; \
+		$(SVN)/v0/AROS/bin/linux-x86_64/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/x86_64.info;\
+		$(SVN)/v0/AROS/bin/linux-x86_64/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/x86_64/ABI_v1.info;\
+		cp $(SVN)/v1.gcc.6.1/AROS/bin/linux-x86_64/AROS/wuae $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/x86_64/ABI_v1/Janus-UAE2; \
+		$(SVN)/v0/AROS/bin/linux-x86_64/tools/ilbmtoicon --png icons/j-uae.info.src icons/j-uae.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/x86_64/ABI_v1/Janus-UAE2.info; \
+		mkdir -p $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/x86_64/ABI_v1/images; \
+		cp -r gui/images/*.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/x86_64/ABI_v1/images; \
+	fi
+
+	@$(SVN)/v0/AROS/bin/linux-x86_64/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2.info
+	@echo "Adding documentation to package.."; 
 	@mkdir -p $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/docs
 	@cp docs/* $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/docs/
-	@$(SVN)/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2.info
-	@$(SVN)/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/docs.info
-	@$(SVN)/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`.info
-	@$(SVN)/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`/ABI_$(ABI).info
-	@$(SVN)/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/tools/ilbmtoicon --png icons/j-uae.info.src icons/j-uae.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/`uname -m`/ABI_$(ABI)/janus-uae2.info
+	@$(SVN)/v0/AROS/bin/linux-x86_64/tools/ilbmtoicon --png icons/j-uae-drawer.info.src icons/j-uae-drawer.png $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/docs.info
+
+	@echo "Gzip package.."; 
 	@cd $(RELEASEDIR)/`date +%Y%m%d`;tar cf Janus-UAE2.tar Janus-UAE2 Janus-UAE2.info;gzip Janus-UAE2.tar
 	@echo
 	@echo Package built at  $(RELEASEDIR)/`date +%Y%m%d`/Janus-UAE2/Janus-UAE2.tar.gz
