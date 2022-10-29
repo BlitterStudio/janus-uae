@@ -10,19 +10,19 @@ UAE integration (basic/initial)
 
 Objectives:
 
-1. Must be able to run some classical software which 
-   must include: WordWorth 6, Organizer 2, Datastore 2 
+1. Must be able to run some classical software which
+   must include: WordWorth 6, Organizer 2, Datastore 2
    and Money Matters 4.*
-2. Must provide support for window and screen based apps 
-   so they appear to be running on the host system - 
+2. Must provide support for window and screen based apps
+   so they appear to be running on the host system -
    including access to public screens.
-3. Doubling-clicking a 68k application in Wanderer will 
+3. Doubling-clicking a 68k application in Wanderer will
    cause that application to be run in the emulation.
-4. Each instance of emulation will be a commodity that can 
+4. Each instance of emulation will be a commodity that can
    be shut down via Exchange.
 5. Port over a Zune based UAE prefs application.
 6. UAE to use AROS clipboard.
-7. separate directory (for 68K files) dictated by the 
+7. separate directory (for 68K files) dictated by the
    chosen config.
 
 Bounty Status:
@@ -35,8 +35,29 @@ Bounty Status:
 6. Done.
 7. Done.
 
+Compilation:
+============
+Before you can compile Janus-UAE, you need to have completed the following:
+
+### Requirements
+
+- Clone the [AROS](https://github.com/aros-development-team/AROS) repository
+- Also get and compile the [contrib](https://github.com/aros-development-team/contrib) and [ports](https://github.com/aros-development-team/ports) AROS packages (`libSDL` is in contrib). Clone these inside your `AROS` cloned repo, as per the AROS documentation.
+- Create a separate directory to build AROS into, e.g. `AROS/build`
+- Run configure with your relevant options (again, check the AROS docs)
+- Build AROS (which means make sure you also have all the requirements for that in place (http://www.aros.org)
+- Create a symlink from `AROS/bin` to `AROS/build/bin` (or wherever your build directoy was).
+- Build `contrib` with `make contrib` - this will take a long time.
+
+### Compiling
+
+- Clone this repo, by default the expected location is in `$HOME/projects`
+- There are several Makefiles in the project that reference that path, if that's not the one you'll be using then you'll have to edit those paths manually.
+- cd into the `src` directory and use `make x86_64` (for linux-x86_64). Option `i386` might not work (not tested)
+- When the build is finished, you'll have the binary placed inside AROS' `SYS:` location, named `wuae`.
+
 Installation:
-============================================================
+====================================================
 It should be enough, to copy the janus-uae file from
 the aros directory in this archive to your
 preferred location inside AROS. In the amiga
@@ -112,10 +133,10 @@ of the amigaOS executeable.
 
 Configuration:
 ==============
-Janus-UAE uses a file uaerc.config whith the usual 
-uae config syntax. 
+Janus-UAE uses a file uaerc.config with the usual
+uae config syntax.
 
-You can show/hide the GUI at startup with use_gui=yes 
+You can show/hide the GUI at startup with use_gui=yes
 or use_gui=no. The GUI can also be shown/hidden
 via exchange. The hotkey "ctrl alt j" toggles
 GUI visibility.
