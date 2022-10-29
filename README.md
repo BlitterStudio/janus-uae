@@ -46,6 +46,7 @@ Before you can compile Janus-UAE, you need to have completed the following:
 
 - Clone this repo, by default the expected location is in `$HOME/projects`
 - There are several Makefiles in the project that reference that path, if that's not the one you'll be using then you'll have to edit those paths manually.
+- There are some perl modules required, which you can install with `CPAN` if you don't have already. Those are `Switch.pm`, `Data::TreeDumper`, `List::MoreUtils`, `Tree::Simple`
 - cd into the `src` directory and use `make x86_64` (for linux-x86_64). Option `i386` might not work (not tested)
 - When the build is finished, you'll have the binary placed inside AROS' `SYS:` location, named `wuae`.
 
