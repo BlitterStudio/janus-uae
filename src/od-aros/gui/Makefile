@@ -52,7 +52,7 @@ ARFLAGS    = rc
 DEBUGFLAGS = -g
 
 CDEFS   = -DUAE_ABI_$(ABI)
-INCLUDES= -I. -I.. -I../../include -I../../md-i386-gcc  -I$(SVN)/AROS/bin/linux-$(CPU)/gen/include/SDL -I$(SVN)/AROS/bin/linux-$(CPU)/$(SUB)/include
+INCLUDES= -I. -I.. -I../../include -I../../md-i386-gcc  -I$(SVN)/AROS/bin/linux-$(CPU)/gen/include/SDL -I$(SVN)/AROS/bin/linux-$(CPU)/$(SUB)/include -I$(SVN)/AROS/bin/$(ARCH)-$(CPU)/AROS/Developer/SDK/Extras/include
 
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 CPPFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
