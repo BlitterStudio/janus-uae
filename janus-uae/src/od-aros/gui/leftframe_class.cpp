@@ -19,8 +19,8 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "png2c/floppy35.h"
-#include "png2c/misc.h"
+//#include "png2c/floppy35.h"
+//#include "png2c/misc.h"
 
 
 /****************************************************************************************/

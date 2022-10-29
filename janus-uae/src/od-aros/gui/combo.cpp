@@ -40,6 +40,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <cstring>
 
 //#define JUAE_DEBUG
 
