@@ -39,8 +39,8 @@ Before you can compile Janus-UAE, you need to have completed the following:
 - Create a separate (sub)directory to build AROS into, e.g. `mkdir build` (for building inside `AROS/build`), and cd into it afterwards
 - Ensure you have all the requirements installed, then run `../configure` with any relevant options (again, check the AROS docs)
 - Build AROS: `make` - you can expect this to take a significant amount of time, even of fast systems.
-- Create a symlink from `AROS/bin` to `AROS/build/bin` (or wherever your build directoy was).
-- Build `contrib` with `make contrib` - this will also take a long time.
+- Create a symlink from `AROS/bin` to `AROS/build/bin` (or wherever your build directoy was), e.g. `cd .. && ln -s build/bin bin`
+- Build `contrib` with `make contrib` (from within your `build` directory again!) - this will also take a long time.
 
 ### Compiling
 
