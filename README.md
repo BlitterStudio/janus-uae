@@ -25,29 +25,22 @@ Objectives:
 7. separate directory (for 68K files) dictated by the
    chosen config.
 
-Bounty Status:
-==============
-1. Done.
-2. Done 
-3. Done.
-4. Done.
-5. Done.
-6. Done.
-7. Done.
-
 Compilation:
 ============
+These instructions require a Linux host. They have been tested on Ubuntu (even under WSL2) and Manjaro Linux.
 Before you can compile Janus-UAE, you need to have completed the following:
 
 ### Requirements
 
+- Read up on how to compile AROS in general, and install any requirements: http://www.aros.org/documentation/developers/compiling.php
 - Clone the [AROS](https://github.com/aros-development-team/AROS) repository
-- Also get and compile the [contrib](https://github.com/aros-development-team/contrib) and [ports](https://github.com/aros-development-team/ports) AROS packages (`libSDL` is in contrib). Clone these inside your `AROS` cloned repo, as per the AROS documentation.
-- Create a separate directory to build AROS into, e.g. `AROS/build`
-- Run configure with your relevant options (again, check the AROS docs)
-- Build AROS (which means make sure you also have all the requirements for that in place (http://www.aros.org)
+- cd into the `AROS` dir and clone the [contrib](https://github.com/aros-development-team/contrib) and [ports](https://github.com/aros-development-team/ports) AROS repos as well (`libSDL` is in contrib).
+- Restore all the git submodules: `git submodule update --init --recursive`
+- Create a separate (sub)directory to build AROS into, e.g. `mkdir build` (for building inside `AROS/build`)
+- Ensure you have all the requirements installed, then run `../configure` with any relevant options (again, check the AROS docs)
+- Build AROS: `make` - you can expect this to take a significant amount of time, even of fast systems.
 - Create a symlink from `AROS/bin` to `AROS/build/bin` (or wherever your build directoy was).
-- Build `contrib` with `make contrib` - this will take a long time.
+- Build `contrib` with `make contrib` - this will also take a long time.
 
 ### Compiling
 
