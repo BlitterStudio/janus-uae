@@ -12,18 +12,17 @@ ifeq ($(BITS),64)
 	# 64 bit
 	CPU      = x86_64
 	# AROS source svn
-	SVN        = /home/oli/tc/svn
+	SVN        = $(HOME)/projects
 else
 	# 32 bit
 	CPU      = i386
-	SVN        = /home/oli/svn
+	SVN        = $(HOME)/projects
 endif
 
-CC         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-gcc
-CPP        = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-g++
-#RANLIB = 
-AR         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ar
-LD         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ld
+CC         = $(SVN)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-gcc
+CPP        = $(SVN)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-g++
+AR         = $(SVN)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ar
+LD         = $(SVN)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ld
 
 HOST_CC    = gcc
 EXE        = ./png2c

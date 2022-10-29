@@ -12,17 +12,15 @@ OBJDIR  = obj/$(CPU)
 # build library in the parent object dir. It is fetched from there during linking 
 BIN     = ../$(OBJDIR)/libSDL_Config.a
 
-CPP     = $(SVN)/$(ABI)/AROS/bin/linux-x86_64/tools/crosstools/$(CPU)-aros-c++
-CC      = $(SVN)/$(ABI)/AROS/bin/linux-x86_64/tools/crosstools/$(CPU)-aros-gcc
-AR      = $(SVN)/$(ABI)/AROS/bin/linux-x86_64/tools/crosstools/$(CPU)-aros-ar
+CPP     = $(SVN)/AROS/bin/$(ARCH)-$(CPU)/tools/crosstools/$(CPU)-aros-c++
+CC      = $(SVN)/AROS/bin/$(ARCH)-$(CPU)/tools/crosstools/$(CPU)-aros-gcc
+AR      = $(SVN)/AROS/bin/$(ARCH)-$(CPU)/tools/crosstools/$(CPU)-aros-ar
 
 OBJS    = $(OBJDIR)/SDL_config.o 
 
 LINKOBJ = SDL_config.o 
-
-#INCS    = -I$(SVN)/$(ABI)/AROS/bin/linux-i386/gen/include/SDL
-#INCS    = -I$(SVN)/$(ABI)/AROS/bin/linux-i386/AROS/Development/include/SDL
-INCS     = -I$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/AROS/Extras/Developer/include -I$(SVN)/$(ABI)/AROS/bin/amiga-$(CPU)/AROS/Extras/Developer/include
+SUB     = AROS/Developer
+INCS     = -I$(SVN)/AROS/bin/$(ARCH)-$(CPU)/$(SUB)/include -I$(SVN)/AROS/bin/amiga-$(CPU)/$(SUB)/include
 
 CPPFLAGS= $(INCS) -fexpensive-optimizations -O3
 RM      = rm -f

@@ -28,44 +28,24 @@
 # => so do not use this Makefile directly!
 
 
-#BITS := $(shell getconf LONG_BIT)
-#ifeq ($(BITS),64)
-	# 64 bit
-	#CPU      = x86_64
-	# AROS source svn
-	#SVN        = /home/oli/tc/svn
-	# SDL is somewhere else !?
-	#SUB        = AROS/Development
-#else
-	# 32 bit
-	#CPU      = i386
-	#SVN        = /home/oli/svn
-	#SUB        = AROS/Development
-#endif
-
-EXE        = $(SVN)/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/AROS/wuae
+EXE        = $(SVN)/AROS/bin/$(ARCH)-$(CPU)/AROS/wuae
 
 OBJDIR     = obj/$(CPU)
 PARENT     = $(OBJDIR)/parent
-SUB        = AROS/Development
+SUB        = AROS/Developer
 
-#$(OBJDIR):
-	#@echo Create $(OBJDIR)
-
-CC         = $(SVN)/$(ABI)/AROS/bin/linux-x86_64/tools/crosstools/$(CPU)-aros-gcc
-CPP        = $(SVN)/$(ABI)/AROS/bin/linux-x86_64/tools/crosstools/$(CPU)-aros-g++
+CC         = $(SVN)/AROS/bin/$(ARCH)-$(CPU)/tools/crosstools/$(CPU)-aros-gcc
+CPP        = $(SVN)/AROS/bin/$(ARCH)-$(CPU)/tools/crosstools/$(CPU)-aros-g++
 #RANLIB = 
-AR         = $(SVN)/$(ABI)/AROS/bin/linux-x86_64/tools/crosstools/$(CPU)-aros-ar
-LD         = $(SVN)/$(ABI)/AROS/bin/linux-x86_64/tools/crosstools/$(CPU)-aros-ld
+AR         = $(SVN)/AROS/bin/$(ARCH)-$(CPU)/tools/crosstools/$(CPU)-aros-ar
+LD         = $(SVN)/AROS/bin/$(ARCH)-$(CPU)/tools/crosstools/$(CPU)-aros-ld
 
 # suppress warning: deprecated conversion from string constant to ‘char*’
 FLAGS      = -Wno-write-strings -O2 -Wall -Wno-unused -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-value -Wno-unused-variable -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-sign-compare #-Werror
 DEBUGFLAGS = -g #-DJUAE_DEBUG
 
 CDEFS   = -DUAE_ABI_$(ABI) #-DJIT
-INCLUDES= -I. -I../include -Iinclude -I../md-i386-gcc -I.. -I../archivers/zip -I$(SVN)/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/$(SUB)/include/SDL -I$(SVN)/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/AROS/Extras/Developer/include -Ilibmpeg2/include
-
-#-I/home/oli/svn/$(ABI)/AROS/bin/$(ARCH)-$(CPU)/AROS/Development/include/SDL
+INCLUDES= -I. -I../include -Iinclude -I../md-i386-gcc -I.. -I../archivers/zip -I$(SVN)/AROS/bin/$(ARCH)-$(CPU)/$(SUB)/include -Ilibmpeg2/include
 
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 CPPFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
@@ -311,9 +291,9 @@ gui:
 # the libraries are not difficult to build, it is harder to integrate them into the build system ;-)
 obj/$(CPU)/libmpeg2.a: 
 	@echo building mpeg2 libraries ..
-	@cd libmpeg2;make clean
-	@cd libmpeg2;PATH=$(PATH):$(SVN)/$(ABI)/AROS/bin/linux-x86_64/tools/crosstools;./configure --host=$(CPU)-aros
-	@cd libmpeg2/libmpeg2;PATH=$(PATH):$(SVN)/$(ABI)/AROS/bin/linux-x86_64/tools/crosstools;make
+#	@cd libmpeg2;make clean
+	@cd libmpeg2;PATH=$(PATH):$(SVN)/AROS/bin/linux-x86_64/tools/crosstools;./configure --host=$(CPU)-aros
+	@cd libmpeg2/libmpeg2;PATH=$(PATH):$(SVN)/AROS/bin/linux-x86_64/tools/crosstools;make
 	#pwd
 	mv libmpeg2/libmpeg2/convert/.libs/*.a $(OBJDIR)
 	mv libmpeg2/libmpeg2/.libs/*.a $(OBJDIR)

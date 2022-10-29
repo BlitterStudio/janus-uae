@@ -33,24 +33,24 @@ ifeq ($(BITS),64)
 # 64 bit
 CPU      = x86_64
 # AROS source svn
-SVN        = $(HOME)/tc/svn
-ABI        = v1.gcc.6.1
+SVN        = $(HOME)/projects
+ABI        = v1
 else
 # 32 bit
 CPU      = i386
-SVN        = $(HOME)/svn
+SVN        = $(HOME)/projects
 ABI        = v0
 endif
 
 # you have to adjust this of course..
-TARGET     = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/AROS/wuae
+TARGET     = $(SVN)/AROS/bin/linux-$(CPU)/AROS/wuae
 
-CC         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-gcc
+CC         = $(SVN)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-gcc
 #RANLIB = 
-AR         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ar
-LD         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ld
+AR         = $(SVN)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ar
+LD         = $(SVN)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ld
 
-RELEASEDIR = $(HOME)/tc/releases
+RELEASEDIR = $(HOME)/projects/aros-releases
 
 HOST_CC    = gcc
 
@@ -125,13 +125,13 @@ toolsclean:
 # ============== UAE ====================
 # Build with target compiler!
 
-SVN="/home/oli/tc/svn"
+SVN = $(HOME)/projects
 
 uae:
 	@echo "PLEASE: use make x86_64 | i386 | m68k"
 
 x86_64: tools
-	cd od-aros;make SVN=$(SVN) ABI="v1.gcc.6.1" CPU="x86_64" ARCH="linux" 
+	cd od-aros;make SVN=$(SVN) ABI="v1" CPU="x86_64" ARCH="linux" 
 
 i386: tools
 	cd od-aros;make SVN=$(SVN) ABI="v0" CPU="i386" ARCH="linux"

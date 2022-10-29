@@ -29,22 +29,22 @@ ifeq ($(BITS),64)
 	# 64 bit
 	CPU      = x86_64
 	# AROS source svn
-	SVN        = /home/oli/tc/svn
+	SVN        = $(HOME)/projects
 else
 	# 32 bit
 	CPU      = i386
-	SVN        = /home/oli/svn
+	SVN        = $(HOME)/projects
 endif
 
-
+SUB        = AROS/Developer
 OBJDIR     = obj/$(CPU)
 # build library in the parent object dir. It is fetched from there during linking 
 LIB        = ../$(OBJDIR)/libgui.a
 
-CC         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-gcc
-CPP        = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-g++
-AR         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ar
-LD         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ld
+CC         = $(SVN)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-gcc
+CPP        = $(SVN)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-g++
+AR         = $(SVN)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ar
+LD         = $(SVN)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ld
 
 # suppress warning: deprecated conversion from string constant to ‘char*’
 FLAGS      = -Wno-write-strings -O2 -Wall
@@ -52,7 +52,7 @@ ARFLAGS    = rc
 DEBUGFLAGS = -g
 
 CDEFS   = -DUAE_ABI_$(ABI)
-INCLUDES= -I. -I.. -I../../include -I../../md-i386-gcc  -I$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/gen/include/SDL -I$(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/AROS/Extras/Developer/include
+INCLUDES= -I. -I.. -I../../include -I../../md-i386-gcc  -I$(SVN)/AROS/bin/linux-$(CPU)/gen/include/SDL -I$(SVN)/AROS/bin/linux-$(CPU)/$(SUB)/include
 
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 CPPFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
