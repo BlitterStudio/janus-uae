@@ -45,7 +45,7 @@ FLAGS      = -Wno-write-strings -O2 -Wall -Wno-unused -Wno-unused-function -Wno-
 DEBUGFLAGS = -g #-DJUAE_DEBUG
 
 CDEFS   = -DUAE_ABI_$(ABI) #-DJIT
-INCLUDES= -I. -I../include -Iinclude -I../md-i386-gcc -I.. -I../archivers/zip -I$(SVN)/AROS/bin/$(ARCH)-$(CPU)/$(SUB)/include -Ilibmpeg2/include
+INCLUDES= -I. -I../include -Iinclude -I../md-i386-gcc -I.. -I../archivers/zip -I$(SVN)/AROS/bin/$(ARCH)-$(CPU)/$(SUB)/include -I$(SVN)/AROS/bin/$(ARCH)-$(CPU)/AROS/Developer/SDK/Extras/include -Ilibmpeg2/include
 
 CFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)
 CPPFLAGS = $(CDEFS) $(DEBUGFLAGS) $(FLAGS) $(INCLUDES)

@@ -20,7 +20,7 @@ OBJS    = $(OBJDIR)/SDL_config.o
 
 LINKOBJ = SDL_config.o 
 SUB     = AROS/Developer
-INCS     = -I$(SVN)/AROS/bin/$(ARCH)-$(CPU)/$(SUB)/include -I$(SVN)/AROS/bin/amiga-$(CPU)/$(SUB)/include
+INCS     = -I$(SVN)/AROS/bin/$(ARCH)-$(CPU)/$(SUB)/include -I$(SVN)/AROS/bin/amiga-$(CPU)/$(SUB)/include -I$(SVN)/AROS/bin/$(ARCH)-$(CPU)/AROS/Developer/SDK/Extras/include
 
 CPPFLAGS= $(INCS) -fexpensive-optimizations -O3
 RM      = rm -f
