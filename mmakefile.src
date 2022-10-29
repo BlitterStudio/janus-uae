@@ -1,0 +1,10 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM- local-juae : local-juae-copyfiles local-juae-icons-drawer
+
+%build_icons mmake=local-juae-icons-drawer icons="J-UAE" \
+             dir=$(AROS_CONTRIB)/Emu
+
+%copy_dir_recursive mmake=local-juae-copyfiles src=$(SRCDIR)/$(CURDIR)/files/. dst=$(AROS_CONTRIB)/Emu/J-UAE/

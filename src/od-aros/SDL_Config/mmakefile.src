@@ -1,0 +1,36 @@
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+LIBSDLCONFFILES := \
+        SDL_config
+##        SDL_config_cpp_interface \
+##        SDL_config_multi_values \
+##        SDL_config_cpp_readnwrite \
+##        SDL_config_saving \
+##        SDL_config_utils
+
+NOWARN_FLAGS := $(NOWARN_OVERFLOW) $(NOWARN_UNUSED_VALUE) \
+    $(NOWARN_MISLEADING_INDENTATION) $(NOWARN_SIGN_COMPARE) \
+    $(NOWARN_COMMENT)
+LIBSDLCONFOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/,$(LIBSDLCONFFILES)))
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(AROS_CONTRIB_INCLUDES)
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+
+#MM local-juae-sdlconfig-obj : contrib-sdl local-juae-sdlconfig-dirs
+
+local-juae-sdlconfig-obj: $(LIBSDLCONFOBJS)
+
+$(GENDIR)/$(CURDIR)/%.o: %.c
+	@$(AROS_CXX) $(CXXFLAGS) $(NOWARN_FLAGS) $(USER_INCLUDES) -o $@ -c $<
+
+#MM local-juae-sdlconfig : local-juae-sdlconfig-obj
+
+local-juae-sdlconfig:
+%mklib_q to=$(GENDIR)/$(CURDIR)/../../lib/libSDL_Config.a from="$(LIBSDLCONFOBJS)"
+
+#MM
+local-juae-sdlconfig-dirs :
+	%mkdirs_q $(GENDIR)/$(CURDIR) $(GENDIR)/$(CURDIR)/../../lib
+
+%common
