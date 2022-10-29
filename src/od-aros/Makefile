@@ -292,9 +292,8 @@ gui:
 obj/$(CPU)/libmpeg2.a: 
 	@echo building mpeg2 libraries ..
 #	@cd libmpeg2;make clean
-	@cd libmpeg2;PATH=$(PATH):$(SVN)/AROS/bin/linux-x86_64/tools/crosstools;./configure --host=$(CPU)-aros
-	@cd libmpeg2/libmpeg2;PATH=$(PATH):$(SVN)/AROS/bin/linux-x86_64/tools/crosstools;make
-	#pwd
+	@cd libmpeg2;export PATH=$$PATH:$(SVN)/AROS/bin/linux-x86_64/tools/crosstools;./configure --host=$(CPU)-aros
+	@cd libmpeg2/libmpeg2;export PATH=$$PATH:$(SVN)/AROS/bin/linux-x86_64/tools/crosstools;make
 	mv libmpeg2/libmpeg2/convert/.libs/*.a $(OBJDIR)
 	mv libmpeg2/libmpeg2/.libs/*.a $(OBJDIR)
 
