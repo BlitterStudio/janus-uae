@@ -9,7 +9,7 @@
 *
 */
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -3029,7 +3029,7 @@ const struct expansionromtype expansionroms[] = {
 		adscsi2000_settings
 	},
 	{
-		_T("kommos"), _T("A500/A2000 SCSI"), _T("Jürgen Kommos"),
+		_T("kommos"), _T("A500/A2000 SCSI"), _T("Jï¿½rgen Kommos"),
 		kommos_init, NULL, kommos_add_scsi_unit, ROMTYPE_KOMMOS, 0, 0, BOARD_NONAUTOCONFIG_BEFORE, true,
 		NULL, 0,
 		false, EXPANSIONTYPE_SCSI
@@ -3134,7 +3134,7 @@ const struct expansionromtype expansionroms[] = {
 		false, EXPANSIONTYPE_CUSTOM | EXPANSIONTYPE_SCSI
 	},
 	{
-		_T("promigos"), _T("Promigos"), _T("Flesch und Hörnemann"),
+		_T("promigos"), _T("Promigos"), _T("Flesch und Hï¿½rnemann"),
 		promigos_init, NULL, promigos_add_scsi_unit, ROMTYPE_PROMIGOS | ROMTYPE_NOT, 0, 0, BOARD_NONAUTOCONFIG_BEFORE, true,
 		NULL, 0,
 		false, EXPANSIONTYPE_CUSTOM | EXPANSIONTYPE_SCSI

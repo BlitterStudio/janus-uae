@@ -24,7 +24,7 @@
 
 #ifdef __AROS__
 /* here Unit defines are ok */
-#define JUAE_DEBUG 1
+//#define JUAE_DEBUG 1
 
 #include <aros/asmcall.h>
 #include <proto/arossupport.h>

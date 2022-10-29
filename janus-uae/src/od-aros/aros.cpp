@@ -1,5 +1,5 @@
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #include <proto/dos.h>
 #include <proto/timer.h>

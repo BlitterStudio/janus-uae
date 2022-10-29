@@ -29,7 +29,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #include "sysconfig.h"
 #include "sysdeps.h"

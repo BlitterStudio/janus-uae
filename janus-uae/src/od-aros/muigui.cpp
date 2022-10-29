@@ -7,7 +7,7 @@
 *
 ***************************************************************************/
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #define CONFIGCACHE 1
 #define FRONTEND 0
@@ -14967,7 +14967,7 @@ static void init_portsdlg (HWND hDlg)
 	SendDlgItemMessage (hDlg, IDC_DONGLELIST, CB_ADDSTRING, 0, (LPARAM)_T("Leader Board"));
 	SendDlgItemMessage (hDlg, IDC_DONGLELIST, CB_ADDSTRING, 0, (LPARAM)_T("B.A.T. II"));
 	SendDlgItemMessage (hDlg, IDC_DONGLELIST, CB_ADDSTRING, 0, (LPARAM)_T("Italy '90 Soccer"));
-	SendDlgItemMessage (hDlg, IDC_DONGLELIST, CB_ADDSTRING, 0, (LPARAM)_T("Dames Grand-Maître"));
+	SendDlgItemMessage (hDlg, IDC_DONGLELIST, CB_ADDSTRING, 0, (LPARAM)_T("Dames Grand-Maï¿½tre"));
 	SendDlgItemMessage (hDlg, IDC_DONGLELIST, CB_ADDSTRING, 0, (LPARAM)_T("Rugby Coach"));
 	SendDlgItemMessage (hDlg, IDC_DONGLELIST, CB_ADDSTRING, 0, (LPARAM)_T("Cricket Captain"));
 	SendDlgItemMessage (hDlg, IDC_DONGLELIST, CB_ADDSTRING, 0, (LPARAM)_T("Leviathan"));
@@ -19442,8 +19442,8 @@ static void dialogmousemove (HWND hDlg)
 #if 0
 static void blah(void)
 {
-	char *str1 = "äöå€õãñëÿüïñç";
-	TCHAR *str2 = _T("äöå€õãñëÿüïñç");
+	char *str1 = "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½";
+	TCHAR *str2 = _T("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
 	TCHAR *s1;
 	char *s2;
 	MessageBoxA(NULL, str1, "Test1 ANSI", MB_OK);

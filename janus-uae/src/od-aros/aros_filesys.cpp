@@ -8,8 +8,6 @@
 #include <proto/dos.h>
 
 //#define JUAE_DEBUG 
-#define JUAE_DEBUG
-
 
 #include "sysconfig.h"
 #include "sysdeps.h"

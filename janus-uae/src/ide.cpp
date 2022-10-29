@@ -8,7 +8,7 @@
 
 #define IDE_LOG 2
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 #include "sysconfig.h"
 #include "sysdeps.h"
 

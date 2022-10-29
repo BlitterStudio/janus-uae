@@ -41,7 +41,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define JUAE_DEBUG
+//#define JUAE_DEBUG
 
 #include <aros/debug.h>
 #include <exec/types.h>

@@ -30,7 +30,7 @@
 *   programs started from a Picasso workbench.
 */
 
-#define JUAE_DEBUG 
+//#define JUAE_DEBUG 
 #define FSUAE 1
 #define UAE_LOG_STUB(x)
 
