@@ -36,7 +36,7 @@ Before you can compile Janus-UAE, you need to have completed the following:
 - Clone the [AROS](https://github.com/aros-development-team/AROS) repository
 - cd into the `AROS` dir and clone the [contrib](https://github.com/aros-development-team/contrib) and [ports](https://github.com/aros-development-team/ports) AROS repos as well (`libSDL` is in contrib).
 - Restore all the git submodules: `git submodule update --init --recursive`
-- Create a separate (sub)directory to build AROS into, e.g. `mkdir build` (for building inside `AROS/build`)
+- Create a separate (sub)directory to build AROS into, e.g. `mkdir build` (for building inside `AROS/build`), and cd into it afterwards
 - Ensure you have all the requirements installed, then run `../configure` with any relevant options (again, check the AROS docs)
 - Build AROS: `make` - you can expect this to take a significant amount of time, even of fast systems.
 - Create a symlink from `AROS/bin` to `AROS/build/bin` (or wherever your build directoy was).
