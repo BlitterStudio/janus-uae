@@ -4,7 +4,7 @@ Janus-UAE is a fork of E-UAE 0.8.29-WIP4, so the same license(s)
 apply to it. I changed the name, as I have different goals than
 the e-uae develper. I only care for the AROS version and the
 main idea of Janus-UAE is the integration into AROS as described
-in http://www.power2people.org/bounty_001.html:
+in [http://www.power2people.org/bounty_001.html](https://web.archive.org/web/20090402145500/http://www.power2people.org/bounty_001.html):
 
 UAE integration (basic/initial)
 
